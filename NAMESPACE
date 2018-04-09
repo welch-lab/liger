@@ -1,0 +1,4 @@
+useDynLib(Analogizer, .registration=TRUE)
+importFrom(Rcpp, evalCpp)
+importFrom(plyr, rbind.fill.matrix)
+exportPattern("^[[:alpha:]]+")
