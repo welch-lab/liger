@@ -1,3 +1,0 @@
-#!/bin/bash
-
-qsub -I -q class_long -l nodes=1:m2090 -d $(pwd)

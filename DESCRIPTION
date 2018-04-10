@@ -7,6 +7,6 @@ Author: Who wrote it
 Maintainer: Who to complain to <yourfault@somewhere.net>
 Description: More about what it does (maybe more than one line)
 License: What license is it under?
-Imports: Rcpp (>= 0.12.16), plyr
+Imports: Rcpp (>= 0.12.10), plyr
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 6.0.1

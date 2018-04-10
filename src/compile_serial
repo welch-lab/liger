@@ -1,1 +1,0 @@
-c++ main_serial.cpp -o nmf_serial -Wall -g -O3

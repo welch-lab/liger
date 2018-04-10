@@ -14,7 +14,6 @@
 #include "mask.h"
 #include "nnls.h"
 #include "nmf.h"
-#include "reader.h"
 
 void checkvector(dtype*a,dtype*b,int size,std::string testname,dtype tol=0)
 {
@@ -427,15 +426,6 @@ void test_nmf_cpu()
 	printf("MATLAB nnmf() approximate Frobenius norm: %f\n",Fnorm(W_expected,H_expected,A));
 	printf("test_nmf_cpu completed.\n");
 }
-
-
-void test_reader(std::string filename,const char delimiter)
-{
-	DenseMatrix* A = readMatrix(filename,delimiter);
-	printf("Completed reader test.\n");
-	if(A) delete A;
-}
-
 
 void test_matmatmult_colmajor_cpu()
 {
