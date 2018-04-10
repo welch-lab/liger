@@ -30,6 +30,8 @@ The class provides functions for data preprocessing, integrative analysis, and v
 
 \item{\code{tsne.coords}}{Matrix of 2D coordinates obtained from running t-SNE on H.norm}
 
+\item{\code{clusters}}{Joint cluster assignments for cells}
+
 \item{\code{parameters}}{List of parameters used in analysis}
 }}
 

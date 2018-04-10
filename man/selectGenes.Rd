@@ -5,7 +5,7 @@
 \title{Select a subset of informative genes from each dataset and combine them.}
 \usage{
 selectGenes(object, alphathresh = 0.99, varthresh = 0.1, cex.use = 0.3,
-  combine = "union", keep.unique = F)
+  combine = "union", keep.unique = F, capitalize = F)
 }
 \arguments{
 \item{object}{analogizer object. Should have already called normalize.}
@@ -19,6 +19,8 @@ selectGenes(object, alphathresh = 0.99, varthresh = 0.1, cex.use = 0.3,
 \item{combine}{How to combine variable genes across experiments. Either "union" or "intersect"}
 
 \item{keep.unique}{Keep genes that occur (i.e., there is a corresponding column in raw.data) only in one dataset?}
+
+\item{capitalize}{Capitalize gene names to match homologous genes?}
 }
 \value{
 analogizer object

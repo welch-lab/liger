@@ -2,7 +2,7 @@
 % Please edit documentation in R/Analogizer.R
 \name{normalize}
 \alias{normalize}
-\title{Normalize datasets to column sums}
+\title{Normalize raw datasets to column sums}
 \usage{
 normalize(object)
 }
@@ -13,7 +13,7 @@ normalize(object)
 analogizer object
 }
 \description{
-Normalize datasets to column sums
+Normalize raw datasets to column sums
 }
 \examples{
 \dontrun{
