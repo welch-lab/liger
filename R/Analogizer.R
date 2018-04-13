@@ -280,7 +280,7 @@ plotByDatasetAndCluster = function(object)
 {
   tsne_df = data.frame(object@tsne.coords)
   colnames(tsne_df)=c("tsne1","tsne2")
-  tsne_df$Dataset = unlist(sapply(1:length(object@H),function(x){rep(names(object@H)[x],nrow(object@H[[x]]))}))
+  tsne_df$Dataset = as.factor(unlist(sapply(1:length(object@H),function(x){rep(names(object@H)[x],nrow(object@H[[x]]))})))
   tsne_df$Cluster = object@clusters
   print(plot_grid(ggplot(tsne_df,aes(x=tsne1,y=tsne2,color=Dataset))+geom_point(),ggplot(tsne_df,aes(x=tsne1,y=tsne2,color=Cluster))+geom_point()))
 }
@@ -511,10 +511,14 @@ optimizeNewData = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25)
 #' }
 optimizeSubset = function(object,cell.subset,lambda=5.0,thresh=1e-4,max_iters=25)
 {
+  old_names = names(object@raw.data)
   H = object@H
   H = lapply(1:length(object@H),function(i){object@H[[i]][cell.subset[[i]],]})
+  object@raw.data = lapply(1:length(object@raw.data),function(i){object@raw.data[[i]][,cell.subset[[i]]]})
+  object@norm.data = lapply(1:length(object@norm.data),function(i){object@norm.data[[i]][,cell.subset[[i]]]})
+  names(object@raw.data)=names(object@norm.data)=names(object@H)=old_names
   object = scaleNotCenter(object,cell.subset)
-  k = ncol(H)
+  k = ncol(H[[1]])
   object = optimizeALS(object,k=k,lambda=lambda,thresh=thresh,max_iters=max_iters,H_init=H,W_init=object@W,V_init=object@V,nrep=1)
   return(object)
 }
