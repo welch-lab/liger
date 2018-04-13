@@ -43,7 +43,7 @@ analogizer <- methods::setClass(
 )
 
 Analogizer <- function(raw.data) {
-  object <- new(
+  object <- methods::new(
     Class = "analogizer",
     raw.data = raw.data
   )
@@ -75,7 +75,10 @@ selectGenes = function(object,alphathresh=0.99,varthresh=0.1,cex.use=0.3,combine
   genes.use = c()
   for (i in 1:length(object@raw.data))
   {
-  if (capitalize){rownames(object@raw.data)=toupper(rownames(object@raw.data))}
+  if (capitalize){
+    rownames(object@raw.data[[i]])=toupper(rownames(object@raw.data[[i]]))
+    rownames(object@norm.data[[i]])=toupper(rownames(object@norm.data[[i]]))
+  }
   trx_per_cell <- colSums(object@raw.data[[i]])
   gene_expr_mean <- rowMeans(object@norm.data[[i]])  # Each gene's mean expression level (across all cells)
   gene_expr_var  <- apply( object@norm.data[[i]], 1, var  )  # Each gene's expression variance (across all cells)
@@ -142,9 +145,14 @@ normalize = function(object)
 #' analogy = scaleNotCenter(analogy)
 #' }
 
-scaleNotCenter = function(object)
+scaleNotCenter = function(object,cells=NULL)
 {
-  object@scale.data = lapply(object@norm.data,function(x){scale(t(x[object@var.genes,]),center=F,scale=T)})
+  if(is.null(cells))
+  {
+    cells = lapply(1:length(object@raw.data),function(i){1:ncol(object@raw.data[[i]])})
+  }
+  object@scale.data = lapply(1:length(object@norm.data),function(i){scale(t(object@norm.data[[i]][object@var.genes,]),center=F,scale=T)})
+  names(object@scale.data)=names(object@norm.data)
   for (i in 1:length(object@scale.data))
   {
     object@scale.data[[i]][is.na(object@scale.data[[i]])]=0
@@ -160,6 +168,7 @@ scaleNotCenter = function(object)
 #' the dataset with the largest number of cells is used.
 #' 
 #' @return analogizer object
+#' @importFrom FNN get.knn
 #' @export
 #' @examples
 #' \dontrun{
@@ -234,8 +243,9 @@ quantile_norm = function(object,quantiles=50,ref_dataset=NULL)
 #' Perform t-SNE on the normalized cell factors to generate a 2D embedding for visualization
 #'
 #' @param object analogizer object. Should run quantile_norm before calling.
-#' 
+#' @param rand.seed Random seed to make results reproducible
 #' @return analogizer object
+#' @importFrom Rtsne Rtsne
 #' @export
 #' @examples
 #' \dontrun{
@@ -245,8 +255,9 @@ quantile_norm = function(object,quantiles=50,ref_dataset=NULL)
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-run_tSNE = function(object)
+run_tSNE = function(object,rand.seed=42)
 {
+  set.seed(rand.seed)
   object@tsne.coords = Rtsne(object@H.norm,pca=F)$Y
   return (object)
 }
@@ -255,6 +266,8 @@ run_tSNE = function(object)
 #'
 #' @param object analogizer object. Should call run_tSNE before calling.
 #' @export
+#' @importFrom cowplot plot_grid
+#' @importFrom ggplot2 ggplot geom_point aes
 #' @examples
 #' \dontrun{
 #' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
@@ -303,6 +316,7 @@ setMethod(
 #' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
 #' @param max_iters Maximum number of block coordinate descent iterations to perform
 #' @param nrep Number of restarts to perform (NMF objectives are non-convex, so taking the best objective from multiple successive initializations is recommended)
+#' @param rand.seed Random seed to allow reproducible results
 #' @return list of length N+2 containing Hs, W, Vs, and run statistics
 #' @export
 #' @examples
@@ -314,13 +328,14 @@ setMethod(
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=100,nrep=20)
+optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,H_init=NULL,W_init=NULL,V_init=NULL,rand.seed=1)
 {
   E = object@scale.data
   N = length(E)
   ns = sapply(E,nrow)
 
   g = ncol(E[[1]])
+  set.seed(rand.seed)
   W_m = matrix(0, k, g)
   V_m = lapply(1:N,function(i){matrix(0, k, g)})
   H_m = lapply(ns,function(n){matrix(0, n, k)})
@@ -330,10 +345,24 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=100,nrep=20)
   for (i in 1:nrep)
   {
     start_time <- Sys.time()
-    W = matrix(0, k, g)
+    
+    W = matrix(abs(runif(g * k,0,2)), k, g)  
     V = lapply(1:N,function(i){matrix(abs(runif(g * k,0,2)), k, g)})
-    H = lapply(ns,function(n){matrix(abs(runif(n * k,0,2)), n, k)})
-
+    H = lapply(ns,function(n){matrix(abs(runif(n * k,0,2)), n, k)})  
+    
+    if (!is.null(W_init))
+    {
+      W = W_init  
+    }
+    if (!is.null(V_init))
+    {
+      V = V_init  
+    }
+    if (!is.null(H_init))
+    {
+      H = H_init  
+    }
+    
     delta = 1
     iters = 0
     pb = txtProgressBar(min=0,max=max_iters,style=3)
@@ -352,6 +381,10 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=100,nrep=20)
       setTxtProgressBar(pb,iters)
     }
     setTxtProgressBar(pb,max_iters)
+    if (iters==max_iters)
+    {
+      print("Warning: failed to converge within the allowed number of iterations. Re-running with a higher max_iter is recommended.")
+    }
     if (obj<best_obj)
     {
       W_m = W
@@ -371,3 +404,229 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=100,nrep=20)
   object@V = V_m
   return(object)
 }
+
+#' Optimize objective function for new value of k. Uses an efficient strategy for updating that takes advantage of the information in the existing factorization.
+#'
+#' @param object analogizer object. Should normalize, select genes, and scale before calling.
+#' @param k_new Inner dimension of factorization (number of factors)
+#' @param lambda Regularization parameter. Larger values penalize dataset-specific effects more strongly.
+#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
+#' @param max_iters Maximum number of block coordinate descent iterations to perform
+#' @return list of length N+2 containing Hs, W, Vs, and run statistics
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' }
+optimizeNewK = function(object,k_new,lambda=5.0,thresh=1e-4,max_iters=25,rand.seed=1)
+{
+  k = ncol(object@H[[1]])
+  if (k_new == k)
+  {
+    return(object)
+  }
+  H = object@H
+  W = object@W
+  V = object@V
+  
+  if (k_new > k)
+  {
+    sqrt_lambda = sqrt(lambda)
+    g = ncol(W)
+    N = length(H)
+    ns = sapply(H,nrow)
+    W_new = matrix(abs(runif(g * k,0,2)), k_new-k, g)
+    V_new = lapply(1:N,function(i){matrix(abs(runif(g * (k_new-k),0,2)), k_new-k, g)})
+    H_new = lapply(ns,function(n){matrix(abs(runif(n * (k_new-k),0,2)), n, k_new-k)})
+    H_new = lapply(1:N,function(i){t(solve_nnls(rbind(t(W_new)+t(V_new[[i]]),sqrt_lambda*t(V_new[[i]])),rbind(t(object@scale.data[[i]]-H[[i]]%*%(W+V[[i]])),matrix(0,nrow=g,ncol=ns[i]))))})
+    V_new = lapply(1:N,function(i){solve_nnls(rbind(H_new[[i]],sqrt_lambda*H_new[[i]]),rbind(object@scale.data[[i]]-H[[i]]%*%(W+V[[i]])-H_new[[i]]%*%W_new,matrix(0,nrow=ns[[i]],ncol=g)))})
+    W_new = solve_nnls(rbind.fill.matrix(H_new),rbind.fill.matrix(lapply(1:N,function(i){object@scale.data[[i]]-H[[i]]%*%(W+V[[i]])-H_new[[i]]%*%V_new[[i]]})))
+    H = lapply(1:N,function(i){cbind(H[[i]],H_new[[i]])})
+    V = lapply(1:N,function(i){rbind(V[[i]],V_new[[i]])})
+    W = rbind(W,W_new)
+  }
+  else
+  {
+    deltas = rep(0,k)
+    for (i in 1:length(object@H))
+    {
+      deltas = deltas + sapply(1:k,function(x){norm(H[[i]][,k] %*% t(W[k,]+V[[i]][k,]),"F")})
+    }
+    k.use = order(deltas,decreasing = T)[1:k_new]
+    W = W[k.use,]
+    H = lapply(H,function(x){x[,k.use]})
+    V = lapply(V,function(x){x[k.use,]})
+  }
+  object = optimizeALS(object,k_new,H_init=H,W_init=W,V_init=V,nrep=1)
+  return(object)
+}
+
+#' Optimize objective function for new data. Uses an efficient strategy for updating that takes advantage of the information in the existing factorization.
+#'
+#' @param object analogizer object. Should normalize, select genes, and scale before calling.
+#' @param new.data list of raw data matrices (one or more). Each list entry should be named.
+#' @param add.to.existing add the new data to existing datasets or treat as totally new datasets?
+#' @param which.datasets list of datasets to append new.data to if add.to.existing is true. Otherwise, the most similar existing datasets for each entry in new.data.
+#' @param lambda Regularization parameter. Larger values penalize dataset-specific effects more strongly.
+#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
+#' @param max_iters Maximum number of block coordinate descent iterations to perform
+#' @return list of length N+2 containing Hs, W, Vs, and run statistics
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' }
+optimizeNewData = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25)
+{
+  
+}
+
+#' Optimize objective function for a subset of the data. Uses an efficient strategy for updating that takes advantage of the information in the existing factorization.
+#'
+#' @param object analogizer object. Should normalize, select genes, and scale before calling.
+#' @param cell.subset list of cell names to retain from each dataset.
+#' @param lambda Regularization parameter. Larger values penalize dataset-specific effects more strongly.
+#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
+#' @param max_iters Maximum number of block coordinate descent iterations to perform
+#' @return list of length N+2 containing Hs, W, Vs, and run statistics
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' }
+optimizeSubset = function(object,cell.subset,lambda=5.0,thresh=1e-4,max_iters=25)
+{
+  H = object@H
+  H = lapply(1:length(object@H),function(i){object@H[[i]][cell.subset[[i]],]})
+  object = scaleNotCenter(object,cell.subset)
+  k = ncol(H)
+  object = optimizeALS(object,k=k,lambda=lambda,thresh=thresh,max_iters=max_iters,H_init=H,W_init=object@W,V_init=object@V,nrep=1)
+  return(object)
+}
+
+#' Word cloud plots coloring t-SNE points by their loading on specifed factors as well as the
+#' most highly loading shared and dataset-specific genes
+#'
+#' @param object analogizer object. Should call run_tSNE before calling.
+#' @param num_genes Number of genes to show in word clouds
+#' @param min_size Size of smallest gene symbol in word cloud
+#' @param max_size Size of largest gene symbol in word cloud
+#' @param dataset1 Name of first dataset
+#' @param dataset2 Name of second dataset
+#' @importFrom ggrepel geom_text_repel
+#' @importFrom grid roundrectGrob
+#' @importFrom grid gpar
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' }
+plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=NULL,dataset2=NULL)
+{
+  if (is.null(dataset1)|is.null(dataset2))
+  {
+    dataset1 = names(object@H)[1]
+    dataset2 = names(object@H)[2]
+  }
+  H_aligned = object@H.norm
+  W = t(object@W)
+  V1 = t(object@V[[dataset1]])
+  V2 = t(object@V[[dataset2]])
+  rownames(W)=rownames(V1)=rownames(V2)=analogy@var.genes
+  tsne_coords = object@tsne.coords
+  name1 = dataset1
+  name2 = dataset2
+  k = ncol(V1)
+  pb = txtProgressBar(min=0,max=k,style=3)
+  for (i in 1:k)
+  {
+    tsne_df = data.frame(H_aligned[,i],tsne_coords)
+    factorlab = paste("Factor",i,sep="")
+    colnames(tsne_df)=c(factorlab,"tSNE1","tSNE2")
+    p1 = ggplot(tsne_df,aes_string(x="tSNE1",y="tSNE2",color=factorlab))+geom_point()+scale_color_gradient(low="yellow",high="red")
+    
+    top_genes = row.names( V1 )[ order(V1[,i], decreasing=T )[1:num_genes] ]
+    gene_df = data.frame(genes=top_genes,loadings=V1[top_genes,i])
+    V1_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
+      geom_text_repel(force = 100,segment.color=NA) +
+      scale_size(range = c(min_size, max_size), guide = FALSE) +
+      scale_y_continuous(breaks = NULL) +
+      scale_x_continuous(breaks = NULL) +
+      labs(x = '', y = '')+ggtitle(label=name1)+coord_fixed()
+    
+    top_genes = row.names( W )[ order(W[,i], decreasing=T )[1:num_genes] ]
+    gene_df = data.frame(genes=top_genes,loadings=W[top_genes,i])
+    W_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
+      geom_text_repel(force = 100,segment.color=NA) +
+      scale_size(range = c(min_size, max_size), guide = FALSE) +
+      scale_y_continuous(breaks = NULL) +
+      scale_x_continuous(breaks = NULL) +
+      labs(x = '', y = '')+ggtitle(label="Shared")+coord_fixed()
+    
+    top_genes = row.names( V2 )[ order(V2[,i], decreasing=T )[1:num_genes] ]
+    gene_df = data.frame(genes=top_genes,loadings=V2[top_genes,i])
+    V2_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
+      geom_text_repel(force = 100,segment.color=NA) +
+      scale_size(range = c(min_size, max_size), guide = FALSE) +
+      scale_y_continuous(breaks = NULL) +
+      scale_x_continuous(breaks = NULL) +
+      labs(x = '', y = '')+ggtitle(label=name2)+coord_fixed()
+    
+    p2 = (plot_grid(V1_plot,W_plot,V2_plot,align="hv",nrow = 1)
+          + draw_grob(roundrectGrob(x=0.33,y=0.5,width=0.67,height=0.70,gp = gpar(fill = "khaki1", col = "Black",alpha=0.5,lwd=2))) 
+          + draw_grob(roundrectGrob(x=0.67,y=0.5,width=0.67,height=0.70,gp = gpar(fill = "indianred1", col = "Black",alpha=0.5,lwd=2))))
+    print(plot_grid(p1,p2,nrow=2,align="h"))
+    setTxtProgressBar(pb,i)
+  }
+}  
+
+#' Calculate alignment statistic to quantify how well-aligned two or more datasets are.
+#'
+#' @param object analogizer object. Should call quantile_norm before calling.
+#' @return alignment statistic
+#' @importFrom FNN get.knn
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' }
+alignment_metric = function(object)
+  {
+    num_cells = nrow(object@H.norm)
+    num_factors = ncol(object@H.norm)
+    k = floor(0.01*num_cells)
+    knn_graph = get.knn(nmf_factors[,1:num_factors],k)
+    dataset = unlist(sapply(1:length(object@H),function(x){rep(names(object@H)[x],nrow(object@H[[x]]))}))
+    num_same_dataset = rep(k,num_cells)
+    for (i in 1:num_cells)
+    {
+      inds = knn_graph$nn.index[i,]
+      num_same_dataset[i] = sum(dataset[inds]==dataset[i])
+    }
+    return(1-((mean(num_same_dataset)-(k/2))/(k/2)))
+  }

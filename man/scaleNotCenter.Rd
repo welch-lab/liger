@@ -4,7 +4,7 @@
 \alias{scaleNotCenter}
 \title{Scale genes to unit variance (but no mean centering).}
 \usage{
-scaleNotCenter(object)
+scaleNotCenter(object, cells = NULL)
 }
 \arguments{
 \item{object}{analogizer object. Should normalize and select genes before calling.}

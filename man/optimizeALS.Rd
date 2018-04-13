@@ -4,8 +4,9 @@
 \alias{optimizeALS}
 \title{Optimize objective function using block coordinate descent (alternating nonnegative least squares)}
 \usage{
-optimizeALS(object, k, lambda = 5, thresh = 1e-04, max_iters = 100,
-  nrep = 20)
+optimizeALS(object, k, lambda = 5, thresh = 1e-04, max_iters = 25,
+  nrep = 1, H_init = NULL, W_init = NULL, V_init = NULL,
+  rand.seed = 1)
 }
 \arguments{
 \item{object}{analogizer object. Should normalize, select genes, and scale before calling.}
@@ -19,6 +20,8 @@ optimizeALS(object, k, lambda = 5, thresh = 1e-04, max_iters = 100,
 \item{max_iters}{Maximum number of block coordinate descent iterations to perform}
 
 \item{nrep}{Number of restarts to perform (NMF objectives are non-convex, so taking the best objective from multiple successive initializations is recommended)}
+
+\item{rand.seed}{Random seed to allow reproducible results}
 }
 \value{
 list of length N+2 containing Hs, W, Vs, and run statistics

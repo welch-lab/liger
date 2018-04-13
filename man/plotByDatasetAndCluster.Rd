@@ -7,15 +7,7 @@
 plotByDatasetAndCluster(object)
 }
 \arguments{
-\item{object}{analogizer object. Should run optimizeALS before calling.}
-
-\item{quantiles}{Number of quantiles to use for quantile normalization}
-
-\item{ref_dataset}{Name of dataset to use as a "reference" for normalization. By default,
-the dataset with the largest number of cells is used.}
-}
-\value{
-analogizer object
+\item{object}{analogizer object. Should call run_tSNE before calling.}
 }
 \description{
 Plot t-SNE coordinates of aligned datasets, colored by dataset and by cluster

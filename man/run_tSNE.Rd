@@ -4,15 +4,12 @@
 \alias{run_tSNE}
 \title{Perform t-SNE on the normalized cell factors to generate a 2D embedding for visualization}
 \usage{
-run_tSNE(object)
+run_tSNE(object, rand.seed = 42)
 }
 \arguments{
-\item{object}{analogizer object. Should run optimizeALS before calling.}
+\item{object}{analogizer object. Should run quantile_norm before calling.}
 
-\item{quantiles}{Number of quantiles to use for quantile normalization}
-
-\item{ref_dataset}{Name of dataset to use as a "reference" for normalization. By default,
-the dataset with the largest number of cells is used.}
+\item{rand.seed}{Random seed to make results reproducible}
 }
 \value{
 analogizer object
