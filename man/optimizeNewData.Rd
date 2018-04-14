@@ -4,22 +4,23 @@
 \alias{optimizeNewData}
 \title{Optimize objective function for new data. Uses an efficient strategy for updating that takes advantage of the information in the existing factorization.}
 \usage{
-optimizeNewData(object, k, lambda = 5, thresh = 1e-04, max_iters = 25)
+optimizeNewData(object, new.data, which.datasets, add.to.existing = T,
+  lambda = 5, thresh = 1e-04, max_iters = 25)
 }
 \arguments{
 \item{object}{analogizer object. Should normalize, select genes, and scale before calling.}
+
+\item{new.data}{list of raw data matrices (one or more). Each list entry should be named.}
+
+\item{which.datasets}{list of datasets to append new.data to if add.to.existing is true. Otherwise, the most similar existing datasets for each entry in new.data.}
+
+\item{add.to.existing}{add the new data to existing datasets or treat as totally new datasets?}
 
 \item{lambda}{Regularization parameter. Larger values penalize dataset-specific effects more strongly.}
 
 \item{thresh}{Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh}
 
 \item{max_iters}{Maximum number of block coordinate descent iterations to perform}
-
-\item{new.data}{list of raw data matrices (one or more). Each list entry should be named.}
-
-\item{add.to.existing}{add the new data to existing datasets or treat as totally new datasets?}
-
-\item{which.datasets}{list of datasets to append new.data to if add.to.existing is true. Otherwise, the most similar existing datasets for each entry in new.data.}
 }
 \value{
 list of length N+2 containing Hs, W, Vs, and run statistics

@@ -16,6 +16,7 @@ NULL
 #' @slot V Dataset-specific gene loading factors
 #' @slot tsne.coords Matrix of 2D coordinates obtained from running t-SNE on H.norm
 #' @slot clusters Joint cluster assignments for cells
+#' @slot agg.data Data aggregated within clusters
 #' @slot parameters List of parameters used in analysis
 #'
 #' @name analogizer
@@ -38,6 +39,7 @@ analogizer <- methods::setClass(
     V = "list",
     tsne.coords = "matrix",
     clusters= "factor",
+    agg.data = "list",
     parameters = "list"
   )
 )
@@ -470,8 +472,8 @@ optimizeNewK = function(object,k_new,lambda=5.0,thresh=1e-4,max_iters=25,rand.se
 #'
 #' @param object analogizer object. Should normalize, select genes, and scale before calling.
 #' @param new.data list of raw data matrices (one or more). Each list entry should be named.
-#' @param add.to.existing add the new data to existing datasets or treat as totally new datasets?
 #' @param which.datasets list of datasets to append new.data to if add.to.existing is true. Otherwise, the most similar existing datasets for each entry in new.data.
+#' @param add.to.existing add the new data to existing datasets or treat as totally new datasets?
 #' @param lambda Regularization parameter. Larger values penalize dataset-specific effects more strongly.
 #' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
 #' @param max_iters Maximum number of block coordinate descent iterations to perform
@@ -486,9 +488,37 @@ optimizeNewK = function(object,k_new,lambda=5.0,thresh=1e-4,max_iters=25,rand.se
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-optimizeNewData = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25)
+optimizeNewData = function(object,new.data,which.datasets,add.to.existing=T,lambda=5.0,thresh=1e-4,max_iters=25)
 {
-  
+  if (add.to.existing)
+  {
+    object@raw.data = lapply(1:length(new.data),function(i){cbind(object@raw.data[which.datasets[[i]]],new.data[[i]])})
+    object = normalize(object)
+    object = scaleNotCenter(object)
+    H_new = lapply(1:length(new.data),function(i){t(solve_nnls(rbind(t(object@W)+t(object@V[which.datasets[[i]]]),sqrt_lambda*t(object@V[which.datasets[[i]]])),rbind(t(object@scale.data[which.datasets[[i]]][colnames(new.data[[i]]),]),matrix(0,nrow=g,ncol=ncol(new.data[[i]])))))})    
+    for (i in 1:length(new.data))
+    {
+      object@H[which.datasets[[i]]] = cbind(object@H[which.datasets[[i]]],H_new[[i]])
+    }
+  }
+  else
+  {
+    old.names = names(object@raw.data)
+    new.names = names(new.data)
+    combined.names = c(old.names,new.names)
+    object@V = c(object@V,object@V[which.datasets])
+    object@raw.data = c(object@raw.data,new.data)
+    names(object@raw.data)=names(object@V)=combined.names
+    object = normalize(object)
+    object = scaleNotCenter(object)
+    ns = lapply(object@raw.data,ncol)
+    H_new = lapply(1:N,function(i){t(solve_nnls(rbind(t(object@W)+t(object@V[[i]]),sqrt_lambda*t(object@V[[i]])),rbind(t(object@scale.data[[i]]),matrix(0,nrow=g,ncol=ns[i]))))})
+    object@H = c(object@H,H_new)
+    names(object@H) = combined.names
+  }
+  k = ncol(object@H[[1]])
+  object = optimizeALS(object,k,lambda,thresh,max_iters,H_init=object@H,W_init=object@W,V_init=object@V)
+  return(object)
 }
 
 #' Optimize objective function for a subset of the data. Uses an efficient strategy for updating that takes advantage of the information in the existing factorization.
@@ -633,4 +663,67 @@ alignment_metric = function(object)
       num_same_dataset[i] = sum(dataset[inds]==dataset[i])
     }
     return(1-((mean(num_same_dataset)-(k/2))/(k/2)))
+}
+
+#' Perform graph-based clustering (Louvain algorithm) using number of shared nearest neighbors (Jaccard index) as a distance metric.
+#'
+#' @param object analogizer object. Should call quantile_norm before calling.
+#' @param res.param cluster resolution parameter
+#' @param k.param nearest neighbor parameter for shared nearest neighbor graph construction
+#' @param k.scale scale parameter for shared nearest neighbor graph construction
+#' @return analogizer object with cluster assignments
+#' @importFrom Seurat FindClusters
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' analogy = quantile_norm(analogy)
+#' analogy = clusterLouvainJaccard(object)
+#' }
+clusterLouvainJaccard = function(object,res.param=0.1,k.param=25,k.scale=30)
+{
+  temp.seurat@scale.data = t(Reduce(rbind,object@scale.data))
+  temp.seurat@dr$NMF=new(Class="dim.reduction",cell.embeddings=object@H.norm,key="NMF")
+  temp.seurat <- FindClusters(object = temp.seurat, reduction.type = "NMF", dims.use = 1:ncol(object@H.norm),force.recalc=T,save.SNN = T,resolution=res.param,k.param=k.param,k.scale=k.scale)
+  object@cluster = temp.seurat@ident
+  return(object)
+}
+
+#' Aggregate gene-level measurements across cells within clusters to allow correlation across datasets
+#'
+#' @param object analogizer object. Should run quantile_norm and possibly clusterLouvainJaccard before calling.
+#' @return analogizer object with agg.data
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' analogy = quantile_norm(analogy)
+#' analogy = clusterLouvainJaccard(object)
+#' }
+aggregateByCluster = function(object)
+{
+  object@agg.data = list()
+  for (i in 1:length(object@raw.data))
+  {
+    clusters_i = object@clusters[names(object@clusters)%in%colnames(object@raw.data)]
+    temp = matrix(0,nrow(object@raw.data[[i]]),length(levels(object@clusters)))
+    for (j in 1:length(levels(object@clusters)))
+    {
+      temp[,j]=rowSums(object@raw.data[[i]][,clusters_i==levels(object@clusters)[j]])
+    }
+    object@agg.data[[names(object@raw.data)[i]]] = temp
+    print(dim(object@agg.data[[i]]))
   }
+  object@agg.data = lapply(object@agg.data,function(x){sweep(x,2,colSums(x),"/")})
+  return(object)
+}
