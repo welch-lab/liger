@@ -260,7 +260,7 @@ quantile_norm = function(object,quantiles=50,ref_dataset=NULL)
 run_tSNE = function(object,rand.seed=42)
 {
   set.seed(rand.seed)
-  object@tsne.coords = Rtsne(object@H.norm,pca=F)$Y
+  object@tsne.coords = Rtsne(object@H.norm,pca=F,check_duplicates = F)$Y
   return (object)
 }
 
@@ -473,7 +473,7 @@ optimizeNewK = function(object,k_new,lambda=5.0,thresh=1e-4,max_iters=25,rand.se
 #' @param object analogizer object. Should normalize, select genes, and scale before calling.
 #' @param new.data list of raw data matrices (one or more). Each list entry should be named.
 #' @param which.datasets list of datasets to append new.data to if add.to.existing is true. Otherwise, the most similar existing datasets for each entry in new.data.
-#' @param add.to.existing add the new data to existing datasets or treat as totally new datasets?
+#' @param add.to.existing add the new data to existing datasets or treat as totally new datasets (new Vs)?
 #' @param lambda Regularization parameter. Larger values penalize dataset-specific effects more strongly.
 #' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
 #' @param max_iters Maximum number of block coordinate descent iterations to perform
@@ -492,13 +492,20 @@ optimizeNewData = function(object,new.data,which.datasets,add.to.existing=T,lamb
 {
   if (add.to.existing)
   {
-    object@raw.data = lapply(1:length(new.data),function(i){cbind(object@raw.data[which.datasets[[i]]],new.data[[i]])})
-    object = normalize(object)
-    object = scaleNotCenter(object)
-    H_new = lapply(1:length(new.data),function(i){t(solve_nnls(rbind(t(object@W)+t(object@V[which.datasets[[i]]]),sqrt_lambda*t(object@V[which.datasets[[i]]])),rbind(t(object@scale.data[which.datasets[[i]]][colnames(new.data[[i]]),]),matrix(0,nrow=g,ncol=ncol(new.data[[i]])))))})    
     for (i in 1:length(new.data))
     {
-      object@H[which.datasets[[i]]] = cbind(object@H[which.datasets[[i]]],H_new[[i]])
+      print(dim(object@raw.data[[which.datasets[[i]]]]))
+      object@raw.data[[which.datasets[[i]]]] = cbind(object@raw.data[[which.datasets[[i]]]],new.data[[i]])
+      print(dim(object@raw.data[[which.datasets[[i]]]]))
+    }
+    object = normalize(object)
+    object = scaleNotCenter(object)
+    sqrt_lambda = sqrt(lambda)
+    g = ncol(object@W)
+    H_new = lapply(1:length(new.data),function(i){t(solve_nnls(rbind(t(object@W)+t(object@V[[which.datasets[[i]]]]),sqrt_lambda*t(object@V[[which.datasets[[i]]]])),rbind(t(object@scale.data[[which.datasets[[i]]]][colnames(new.data[[i]]),]),matrix(0,nrow=g,ncol=ncol(new.data[[i]])))))})    
+    for (i in 1:length(new.data))
+    {
+      object@H[[which.datasets[[i]]]] = rbind(object@H[[which.datasets[[i]]]],H_new[[i]])
     }
   }
   else
@@ -506,13 +513,27 @@ optimizeNewData = function(object,new.data,which.datasets,add.to.existing=T,lamb
     old.names = names(object@raw.data)
     new.names = names(new.data)
     combined.names = c(old.names,new.names)
-    object@V = c(object@V,object@V[which.datasets])
+    for (i in 1:length(which.datasets))
+    {
+      object@V[[names(new.data)[i]]] = object@V[[which.datasets[[i]]]]
+    }
     object@raw.data = c(object@raw.data,new.data)
     names(object@raw.data)=names(object@V)=combined.names
     object = normalize(object)
     object = scaleNotCenter(object)
     ns = lapply(object@raw.data,ncol)
-    H_new = lapply(1:N,function(i){t(solve_nnls(rbind(t(object@W)+t(object@V[[i]]),sqrt_lambda*t(object@V[[i]])),rbind(t(object@scale.data[[i]]),matrix(0,nrow=g,ncol=ns[i]))))})
+    N = length(ns)
+    g = ncol(object@W)
+    sqrt_lambda = sqrt(lambda)
+    for (i in 1:N)
+    {
+      print(ns[[i]])
+      print(dim(object@raw.data[[i]]))
+      print(dim(object@norm.data[[i]]))
+      print(dim(object@scale.data[[i]]))
+      print(dim(object@V[[i]]))
+    }
+    H_new = lapply(1:length(new.data),function(i){t(solve_nnls(rbind(t(object@W)+t(object@V[[new.names[i]]]),sqrt_lambda*t(object@V[[new.names[i]]])),rbind(t(object@scale.data[[new.names[i]]]),matrix(0,nrow=g,ncol=ncol(new.data[[i]])))))})
     object@H = c(object@H,H_new)
     names(object@H) = combined.names
   }
@@ -673,6 +694,7 @@ alignment_metric = function(object)
 #' @param k.scale scale parameter for shared nearest neighbor graph construction
 #' @return analogizer object with cluster assignments
 #' @importFrom Seurat FindClusters
+#' @importFrom Seurat CreateSeuratObject
 #' @export
 #' @examples
 #' \dontrun{
@@ -685,11 +707,12 @@ alignment_metric = function(object)
 #' analogy = quantile_norm(analogy)
 #' analogy = clusterLouvainJaccard(object)
 #' }
-clusterLouvainJaccard = function(object,res.param=0.1,k.param=25,k.scale=30)
+clusterLouvainJaccard = function(object,res.param=0.1)
 {
+  temp.seurat = CreateSeuratObject(t(Reduce(rbind,object@scale.data)))
   temp.seurat@scale.data = t(Reduce(rbind,object@scale.data))
   temp.seurat@dr$NMF=new(Class="dim.reduction",cell.embeddings=object@H.norm,key="NMF")
-  temp.seurat <- FindClusters(object = temp.seurat, reduction.type = "NMF", dims.use = 1:ncol(object@H.norm),force.recalc=T,save.SNN = T,resolution=res.param,k.param=k.param,k.scale=k.scale)
+  temp.seurat <- FindClusters(object = temp.seurat, reduction.type = "NMF", dims.use = 1:ncol(object@H.norm),force.recalc=T,save.SNN = T,resolution=res.param)
   object@cluster = temp.seurat@ident
   return(object)
 }

@@ -4,7 +4,7 @@
 \alias{clusterLouvainJaccard}
 \title{Perform graph-based clustering (Louvain algorithm) using number of shared nearest neighbors (Jaccard index) as a distance metric.}
 \usage{
-clusterLouvainJaccard(object, res.param = 0.1, k.param = 25, k.scale = 30)
+clusterLouvainJaccard(object, res.param = 0.1)
 }
 \arguments{
 \item{object}{analogizer object. Should call quantile_norm before calling.}
