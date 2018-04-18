@@ -14,7 +14,7 @@ optimizeNewData(object, new.data, which.datasets, add.to.existing = T,
 
 \item{which.datasets}{list of datasets to append new.data to if add.to.existing is true. Otherwise, the most similar existing datasets for each entry in new.data.}
 
-\item{add.to.existing}{add the new data to existing datasets or treat as totally new datasets?}
+\item{add.to.existing}{add the new data to existing datasets or treat as totally new datasets (new Vs)?}
 
 \item{lambda}{Regularization parameter. Larger values penalize dataset-specific effects more strongly.}
 
