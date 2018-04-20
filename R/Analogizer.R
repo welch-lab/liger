@@ -180,7 +180,7 @@ scaleNotCenter = function(object,cells=NULL)
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-quantile_norm = function(object,quantiles=50,ref_dataset=NULL)
+quantile_norm = function(object,quantiles=50,ref_dataset=NULL,min_cells=2)
 {
   if (is.null(ref_dataset))
   {
@@ -189,21 +189,23 @@ quantile_norm = function(object,quantiles=50,ref_dataset=NULL)
   }
   
   Hs_scaled = object@H
-  for (i in 1:ncol(Hs_scaled[[1]]))
-  {
+  #for (i in 1:ncol(Hs_scaled[[1]]))
+  #{
     for (j in 1:length(Hs_scaled)){
-      Hs_scaled[[j]][,i] = object@H[[j]][,i]/sqrt(sum(object@H[[j]][,i]^2))
+      #Hs_scaled[[j]][,i] = object@H[[j]][,i]/sqrt(sum(object@H[[j]][,i]^2))
+      Hs_scaled[[j]] = scale(Hs_scaled[[j]],scale=T,center=T)
     }
-  }
+  #}
   labels = list()
   for(i in 1:length(Hs_scaled)){
     knn_k=15
     knn = get.knn(object@H[[i]],knn_k)
     labels[[i]] = as.factor(apply(Hs_scaled[[i]],1,which.max))
-    labels[[i]] = as.factor(t(apply(knn$nn.index,1,function(x){which.max(table(labels[[i]][x]))}))[1,])
+    #labels[[i]] = as.factor(t(apply(knn$nn.index,1,function(x){which.max(table(labels[[i]][x]))}))[1,])
   }
   
   object@clusters = as.factor(unlist(lapply(labels,as.character)))
+  names(object@clusters)=unlist(lapply(object@scale.data,rownames))
   
   clusters = labels
   names(clusters)=names(object@H)
@@ -217,7 +219,7 @@ quantile_norm = function(object,quantiles=50,ref_dataset=NULL)
       {
         for (j in 1:num_clusters)
         {
-          if (sum(clusters[[ref_dataset]]==j)==0 | sum(clusters[[k]]==j)==0){next}
+          if (sum(clusters[[ref_dataset]]==j) < min_cells | sum(clusters[[k]]==j) < min_cells){next}
           if (sum(clusters[[k]]==j)==1){
             Hs[[k]][clusters[[k]]==j,i] = mean(Hs[[ref_dataset]][clusters[[ref_dataset]]==j,i])
             next
@@ -278,13 +280,22 @@ run_tSNE = function(object,rand.seed=42)
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-plotByDatasetAndCluster = function(object)
+plotByDatasetAndCluster = function(object,clusters)
 {
   tsne_df = data.frame(object@tsne.coords)
   colnames(tsne_df)=c("tsne1","tsne2")
   tsne_df$Dataset = as.factor(unlist(sapply(1:length(object@H),function(x){rep(names(object@H)[x],nrow(object@H[[x]]))})))
-  tsne_df$Cluster = object@clusters
-  print(plot_grid(ggplot(tsne_df,aes(x=tsne1,y=tsne2,color=Dataset))+geom_point(),ggplot(tsne_df,aes(x=tsne1,y=tsne2,color=Cluster))+geom_point()))
+  if(is.null(clusters))
+  {
+    clusters = object@clusters
+  }
+  tsne_df$Cluster = clusters[names(object@clusters)]
+  centroids = matrix(0,nrow=length(levels(tsne_df$Cluster)),ncol=2)
+  for(i in 1:nrow(centroids))
+  {
+    centroids[i,] = colMeans(tsne_df[tsne_df$Cluster==levels(tsne_df$Cluster)[i],c("tsne1","tsne2")],na.rm = T)
+  }
+  print(plot_grid(ggplot(tsne_df,aes(x=tsne1,y=tsne2,color=Dataset))+geom_point(),ggplot(tsne_df,aes(x=tsne1,y=tsne2,color=Cluster))+geom_point()+annotate("text",x=centroids[,1],y=centroids[,2],label=levels(tsne_df$Cluster)) + guides(colour = guide_legend(override.aes = list(size=5)))))
 }
 
 #' show method for analogizer
@@ -750,4 +761,23 @@ aggregateByCluster = function(object)
   }
   object@agg.data = lapply(object@agg.data,function(x){sweep(x,2,colSums(x),"/")})
   return(object)
+}
+
+plot_violin_summary = function(object,clusters=NULL,filename="violin_summary.pdf")
+{
+  pdf(filename)
+  nmf_factors = data.frame(rbind(object@H[[1]],object@H[[2]]))
+  colnames(nmf_factors)=c("tsne1","tsne2")
+  nmf_factors$Protocol = as.factor(unlist(sapply(1:length(object@H),function(x){rep(names(object@H)[x],nrow(object@H[[x]]))})))
+  if(is.null(clusters))
+  {
+    clusters = object@clusters
+  }
+  nmf_factors$Cluster = clusters[names(object@clusters)]
+  for (i in 1:(ncol(nmf_factors)-2))
+  {
+    print(ggplot(nmf_factors,aes(x=Protocol,y=nmf_factors[,i],fill=Protocol))+geom_violin() + geom_jitter(aes(colour=Cluster),shape=16,position=position_jitter(0.4),size=0.6) + guides(colour = guide_legend(override.aes = list(size=4)))+labs(y=paste("Factor",i)))
+    print(ggplot(nmf_factors,aes(x=Cluster,y=nmf_factors[,i],fill=Cluster))+geom_violin() + geom_jitter(aes(colour=Protocol),shape=16,position=position_jitter(0.4),size=0.6) + guides(colour = guide_legend(override.aes = list(size=4)))+labs(y=paste("Factor",i)))
+  }
+  dev.off()
 }

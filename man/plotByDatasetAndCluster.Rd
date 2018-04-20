@@ -4,7 +4,7 @@
 \alias{plotByDatasetAndCluster}
 \title{Plot t-SNE coordinates of aligned datasets, colored by dataset and by cluster}
 \usage{
-plotByDatasetAndCluster(object)
+plotByDatasetAndCluster(object, clusters)
 }
 \arguments{
 \item{object}{analogizer object. Should call run_tSNE before calling.}

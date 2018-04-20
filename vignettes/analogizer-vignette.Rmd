@@ -1,0 +1,51 @@
+---
+title: "Comparing and contrasting heterogeneous single cell profiles using Analogizer"
+author: "Joshua D. Welch"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Comparing and contrasting heterogeneous single cell profiles using Analogizer}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Data Preprocessing
+```r
+dge1 = readRDS("dge1.RDS") #genes in rows, cells in columns, rownames and colnames included. Sparse matrix format not accepted.
+dge2 = readRDS("dge2.RDS")
+analogy = Analogizer(list(name1=dge1,name2=dge2)) #Can also pass in more than 2 datasets
+analogy = normalize(analogy)
+analogy = selectGenes(analogy,varthresh = 0.2)
+analogy = scaleNotCenter(analogy)
+```
+
+## Performing the Factorization
+```r
+analogy = optimizeALS(analogy,k=10) #nrep=1 is the default and gives a good idea of the results. Recommend more than one initialization (nrep=10) for final analyses
+analogy = quantile_norm(analogy)
+analogy = clusterLouvainJaccard(analogy) #Optional clustering step to refine the clusters from the factorization
+```
+
+## Visualizing the results
+```r
+analogy = run_tSNE(analogy)
+plotByDatasetAndCluster(analogy) #Can also pass in different set of cluster labels to plot
+pdf("word_clouds.pdf")
+plot_word_clouds(analogy)
+dev.off()
+```
+
+## Updating the Factorization
+```r
+analogy = optimizeNewK(analogy,k=15) #Can also decrease K
+analogy = optimizeNewData(analogy,newdata=list(name1=dge1.new,name2=dge2.new),which.datasets=list(name1,name2),add.to.existing=T) #Add new batches from the same condition/technology/species/protocol
+analogy = optimizeNewData(analogy,newdata=list(name3=dge3,name4=dge4),which.datasets=list(name1,name2),add.to.existing=F) #Add completely new datasets. Specify which existing datasets are most similar.
+analogy = optimizeSubset(analogy,cell.subset) #cell.subset is a list of cells to retain from each dataset
+```
