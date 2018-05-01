@@ -189,18 +189,27 @@ quantile_norm = function(object,quantiles=50,ref_dataset=NULL,min_cells=2)
   }
   
   Hs_scaled = object@H
-  #for (i in 1:ncol(Hs_scaled[[1]]))
-  #{
+  for (i in 1:ncol(Hs_scaled[[1]]))
+  {
     for (j in 1:length(Hs_scaled)){
-      #Hs_scaled[[j]][,i] = object@H[[j]][,i]/sqrt(sum(object@H[[j]][,i]^2))
-      Hs_scaled[[j]] = scale(Hs_scaled[[j]],scale=T,center=T)
+      Hs_scaled[[j]][,i] = object@H[[j]][,i]/sqrt(sum(object@H[[j]][,i]^2))
+      #Hs_scaled[[j]] = scale(Hs_scaled[[j]],scale=T,center=T)
     }
-  #}
+  }
   labels = list()
   for(i in 1:length(Hs_scaled)){
-    knn_k=15
-    knn = get.knn(object@H[[i]],knn_k)
-    labels[[i]] = as.factor(apply(Hs_scaled[[i]],1,which.max))
+    #knn_k=15
+    #knn = get.knn(object@H[[i]],knn_k)
+    pct1 = apply(object@H[[i]],2,sum)/sum(apply(object@H[[i]],2,sum))
+    pct2 = apply(object@H[[ref_dataset]],2,sum)/sum(apply(object@H[[ref_dataset]],2,sum))
+    if (names(object@H)[i]==ref_dataset)
+    {
+      pct1 = apply(object@H[[i]],2,sum)/sum(apply(object@H[[i]],2,sum))
+      pct2 = apply(object@H[[2]],2,sum)/sum(apply(object@H[[2]],2,sum))
+    }
+    use_these_factors = which(log(pct1/pct2) > -2)
+    print(use_these_factors)
+    labels[[i]] = as.factor(use_these_factors[apply(Hs_scaled[[i]][,use_these_factors],1,which.max)])
     #labels[[i]] = as.factor(t(apply(knn$nn.index,1,function(x){which.max(table(labels[[i]][x]))}))[1,])
   }
   
@@ -280,7 +289,7 @@ run_tSNE = function(object,rand.seed=42)
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-plotByDatasetAndCluster = function(object,clusters)
+plotByDatasetAndCluster = function(object,clusters=NULL)
 {
   tsne_df = data.frame(object@tsne.coords)
   colnames(tsne_df)=c("tsne1","tsne2")
@@ -382,6 +391,7 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,H_ini
     sqrt_lambda = sqrt(lambda)
     obj0 = sum(sapply(1:N,function(i){norm(E[[i]]-H[[i]]%*%(W+V[[i]]),"F")^2}))+sum(sapply(1:N,function(i){lambda*norm(H[[i]]%*%V[[i]],"F")^2}))
     start_obj = obj0
+    
     while(delta > thresh & iters < max_iters)
     {
       H = lapply(1:N,function(i){t(solve_nnls(rbind(t(W)+t(V[[i]]),sqrt_lambda*t(V[[i]])),rbind(t(E[[i]]),matrix(0,nrow=g,ncol=ns[i]))))})
@@ -571,15 +581,27 @@ optimizeNewData = function(object,new.data,which.datasets,add.to.existing=T,lamb
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-optimizeSubset = function(object,cell.subset,lambda=5.0,thresh=1e-4,max_iters=25)
+optimizeSubset = function(object,cell.subset=NULL,lambda=5.0,thresh=1e-4,max_iters=25,datasets.scale=NULL)
 {
   old_names = names(object@raw.data)
   H = object@H
   H = lapply(1:length(object@H),function(i){object@H[[i]][cell.subset[[i]],]})
   object@raw.data = lapply(1:length(object@raw.data),function(i){object@raw.data[[i]][,cell.subset[[i]]]})
-  object@norm.data = lapply(1:length(object@norm.data),function(i){object@norm.data[[i]][,cell.subset[[i]]]})
+  for (i in 1:length(object@norm.data))
+  {
+    object@norm.data[[i]] = object@norm.data[[i]][,cell.subset[[i]]]   
+    if (names(object@norm.data)[i] %in% datasets.scale)
+    {
+      object@scale.data[[i]] = scale(t(object@norm.data[[i]]),scale=T,center=F)
+    }
+    else
+    {
+      object@scale.data[[i]] = t(object@norm.data[[i]])
+    }
+    print(dim(object@scale.data[[i]]))
+  }
+  
   names(object@raw.data)=names(object@norm.data)=names(object@H)=old_names
-  object = scaleNotCenter(object,cell.subset)
   k = ncol(H[[1]])
   object = optimizeALS(object,k=k,lambda=lambda,thresh=thresh,max_iters=max_iters,H_init=H,W_init=object@W,V_init=object@V,nrep=1)
   return(object)
@@ -618,6 +640,21 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
   W = t(object@W)
   V1 = t(object@V[[dataset1]])
   V2 = t(object@V[[dataset2]])
+  for (i in 1:nrow(W))
+  {
+    for (j in 1:ncol(W))
+    {
+      W[i,j] = min(W[i,j]+V1[i,j],W[i,j]+V2[i,j])
+    }
+  }
+  for (i in 1:nrow(W))
+  {
+    for (j in 1:ncol(W))
+    {
+      V1[i,j] = t(object@W)[i,j]+V1[i,j]-W[i,j]
+      V2[i,j] = t(object@W)[i,j]+V2[i,j]-W[i,j]
+    }
+  }
   rownames(W)=rownames(V1)=rownames(V2)=analogy@var.genes
   tsne_coords = object@tsne.coords
   name1 = dataset1
@@ -631,8 +668,20 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
     colnames(tsne_df)=c(factorlab,"tSNE1","tSNE2")
     p1 = ggplot(tsne_df,aes_string(x="tSNE1",y="tSNE2",color=factorlab))+geom_point()+scale_color_gradient(low="yellow",high="red")
     
-    top_genes = row.names( V1 )[ order(V1[,i], decreasing=T )[1:num_genes] ]
+    top_genes_V1 = row.names( V1 )[ order(V1[,i], decreasing=T )[1:num_genes] ]
+    top_genes_W = row.names( W )[ order(W[,i], decreasing=T )[1:num_genes] ]
+    top_genes_V2 = row.names( V2 )[ order(V2[,i], decreasing=T )[1:num_genes] ]
+    
+    #Remove dataset-specific genes that occur as top shared genes
+    top_genes_V1=setdiff(top_genes_V1,top_genes_W)
+    top_genes_V2=setdiff(top_genes_V2,top_genes_W)
+    dataset_specific_both = intersect(top_genes_V1,top_genes_V2)
+    top_genes_V1 = setdiff(top_genes_V1,dataset_specific_both)
+    top_genes_V2 = setdiff(top_genes_V2,dataset_specific_both)
+    
+    top_genes = top_genes_V1
     gene_df = data.frame(genes=top_genes,loadings=V1[top_genes,i])
+    
     V1_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
       geom_text_repel(force = 100,segment.color=NA) +
       scale_size(range = c(min_size, max_size), guide = FALSE) +
@@ -640,7 +689,7 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
       scale_x_continuous(breaks = NULL) +
       labs(x = '', y = '')+ggtitle(label=name1)+coord_fixed()
     
-    top_genes = row.names( W )[ order(W[,i], decreasing=T )[1:num_genes] ]
+    top_genes = top_genes_W
     gene_df = data.frame(genes=top_genes,loadings=W[top_genes,i])
     W_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
       geom_text_repel(force = 100,segment.color=NA) +
@@ -649,7 +698,7 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
       scale_x_continuous(breaks = NULL) +
       labs(x = '', y = '')+ggtitle(label="Shared")+coord_fixed()
     
-    top_genes = row.names( V2 )[ order(V2[,i], decreasing=T )[1:num_genes] ]
+    top_genes = top_genes_V2
     gene_df = data.frame(genes=top_genes,loadings=V2[top_genes,i])
     V2_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
       geom_text_repel(force = 100,segment.color=NA) +
@@ -750,16 +799,18 @@ aggregateByCluster = function(object)
   object@agg.data = list()
   for (i in 1:length(object@raw.data))
   {
-    clusters_i = object@clusters[names(object@clusters)%in%colnames(object@raw.data)]
+    clusters_i = object@clusters[names(object@clusters)%in%colnames(object@raw.data[[i]])]
     temp = matrix(0,nrow(object@raw.data[[i]]),length(levels(object@clusters)))
     for (j in 1:length(levels(object@clusters)))
     {
       temp[,j]=rowSums(object@raw.data[[i]][,clusters_i==levels(object@clusters)[j]])
     }
     object@agg.data[[names(object@raw.data)[i]]] = temp
+    rownames(object@agg.data[[i]])=rownames(object@raw.data[[i]])
     print(dim(object@agg.data[[i]]))
   }
   object@agg.data = lapply(object@agg.data,function(x){sweep(x,2,colSums(x),"/")})
+  
   return(object)
 }
 
@@ -780,4 +831,55 @@ plot_violin_summary = function(object,clusters=NULL,filename="violin_summary.pdf
     print(ggplot(nmf_factors,aes(x=Cluster,y=nmf_factors[,i],fill=Cluster))+geom_violin() + geom_jitter(aes(colour=Protocol),shape=16,position=position_jitter(0.4),size=0.6) + guides(colour = guide_legend(override.aes = list(size=4)))+labs(y=paste("Factor",i)))
   }
   dev.off()
+}
+
+calc_dataset_specificity=function(object)
+{
+  k = ncol(object@H[[1]])
+  pct1 = rep(0,k)
+  pct2 = rep(0,k)
+  for (i in 1:k)
+  {
+    pct1[i] = norm(object@H[[1]][,i] %*% t(object@W[i,] + object@V[[1]][i,]),"F")
+    pct2[i] = norm(object@H[[2]][,i] %*% t(object@W[i,] + object@V[[2]][i,]),"F")
+  }
+  pct1 = pct1/sum(pct1)
+  pct2 = pct2/sum(pct2)
+  barplot(abs(log(pct1/pct2))) # or possibly abs(pct1-pct2)
+  return(list(pct1,pct2,abs(log(pct1/pct2))))
+}
+
+#' Plot t-SNE coordinates per dataset, colored by expression of specified gene
+#'
+#' @param object analogizer object. Should call run_tSNE before calling.
+#' @export
+#' @importFrom cowplot plot_grid
+#' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' }
+plot_gene = function(object,gene)
+{
+  gene_vals = c()
+  for (i in 1:length(object@norm.data))
+  {
+    gene_vals = c(gene_vals,object@norm.data[[i]][gene,])
+  }
+  gene_vals = log(10000*gene_vals+1)
+  gene_df = data.frame(object@tsne.coords)
+  rownames(gene_df)=names(object@clusters)
+  gene_df$Gene = gene_vals[rownames(gene_df)]
+  colnames(gene_df)=c("tSNE1","tSNE2",gene)
+  gene_plots = list()
+  for (i in 1:length(object@norm.data))
+  {
+    plot_i = (ggplot(gene_df[rownames(object@scale.data[[i]]),],aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point()+scale_color_gradient2(low="yellow",mid="red",high="black",midpoint=(max(gene_vals)-min(gene_vals))/2,limits=c(min(gene_vals),max(gene_vals)))+ggtitle(names(object@scale.data)[i]))
+    gene_plots[[i]] = plot_i
+  }
+  print(plot_grid(plotlist=gene_plots,ncol=2))
 }
