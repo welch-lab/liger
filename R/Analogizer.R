@@ -207,8 +207,8 @@ quantile_norm = function(object,quantiles=50,ref_dataset=NULL,min_cells=2)
       pct1 = apply(object@H[[i]],2,sum)/sum(apply(object@H[[i]],2,sum))
       pct2 = apply(object@H[[2]],2,sum)/sum(apply(object@H[[2]],2,sum))
     }
-    use_these_factors = which(log(pct1/pct2) > -2)
-    print(use_these_factors)
+    use_these_factors = 1:ncol(object@H[[i]])#which(log(pct1/pct2) > -2)
+    
     labels[[i]] = as.factor(use_these_factors[apply(Hs_scaled[[i]][,use_these_factors],1,which.max)])
     #labels[[i]] = as.factor(t(apply(knn$nn.index,1,function(x){which.max(table(labels[[i]][x]))}))[1,])
   }
@@ -355,7 +355,7 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,H_ini
   E = object@scale.data
   N = length(E)
   ns = sapply(E,nrow)
-
+  
   g = ncol(E[[1]])
   set.seed(rand.seed)
   W_m = matrix(0, k, g)
@@ -651,11 +651,11 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
   {
     for (j in 1:ncol(W))
     {
-      V1[i,j] = t(object@W)[i,j]+V1[i,j]-W[i,j]
-      V2[i,j] = t(object@W)[i,j]+V2[i,j]-W[i,j]
+      V1[i,j] = t(object@V[[dataset1]])[i,j]
+      V2[i,j] = t(object@V[[dataset2]])[i,j]
     }
   }
-  rownames(W)=rownames(V1)=rownames(V2)=analogy@var.genes
+  rownames(W)=rownames(V1)=rownames(V2)=object@var.genes
   tsne_coords = object@tsne.coords
   name1 = dataset1
   name2 = dataset2
@@ -669,8 +669,11 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
     p1 = ggplot(tsne_df,aes_string(x="tSNE1",y="tSNE2",color=factorlab))+geom_point()+scale_color_gradient(low="yellow",high="red")
     
     top_genes_V1 = row.names( V1 )[ order(V1[,i], decreasing=T )[1:num_genes] ]
+    top_genes_V1 = top_genes_V1[which(V1[top_genes_V1,i]>0)]
     top_genes_W = row.names( W )[ order(W[,i], decreasing=T )[1:num_genes] ]
+    top_genes_W = top_genes_W[which(W[top_genes_W,i]>0)]
     top_genes_V2 = row.names( V2 )[ order(V2[,i], decreasing=T )[1:num_genes] ]
+    top_genes_V2 = top_genes_V2[which(V2[top_genes_V2,i]>0)]
     
     #Remove dataset-specific genes that occur as top shared genes
     top_genes_V1=setdiff(top_genes_V1,top_genes_W)
@@ -678,7 +681,7 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
     dataset_specific_both = intersect(top_genes_V1,top_genes_V2)
     top_genes_V1 = setdiff(top_genes_V1,dataset_specific_both)
     top_genes_V2 = setdiff(top_genes_V2,dataset_specific_both)
-    
+
     top_genes = top_genes_V1
     gene_df = data.frame(genes=top_genes,loadings=V1[top_genes,i])
     
@@ -715,6 +718,60 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
   }
 }  
 
+#' Calculate distortion statistic to quantify how much alignment distorts
+#' the geometry of the original datasets.
+#'
+#' @param object analogizer object. Should call quantile_norm before calling.
+#' @param dr_method Dimensionality reduction method to use for assessing pre-alignment geometry (either "PCA", "NMF", or "ICA"). Should call quantile_norm before calling.
+#' @return alignment statistic
+#' @importFrom FNN get.knn
+#' @importFrom NNLM nnmf
+#' @importFrom ICA icafast
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' }
+distortion_metric = function(object,dr_method="PCA",ndims=40,k=10)
+{
+  print(paste("Reducing dimensionality using",dr_method))
+  dr = list()
+  if (dr_method=="NMF")
+  {
+    dr = lapply(object@scale.data,function(x){nnmf(x,k=ndims)$W})
+  }
+  else if(dr_method=="ICA")
+  {
+    dr = lapply(object@scale.data,function(x){icafast(x,nc=ndims)$S})
+  }
+  else #PCA
+  {
+    dr = lapply(object@scale.data,function(x){suppressWarnings(prcomp(t(x),rank. = ndims,scale. = (colSums(x)>0),center=F)$rotation)})
+  }
+  ns = sapply(object@scale.data,nrow)
+  n = sum(ns)
+  jaccard_inds = c()
+  for (i in 1:length(dr))
+  {
+    
+    fnn.1 = get.knn(dr[[i]],k=k)
+    fnn.2 = get.knn(object@H[[i]],k=k)
+    jaccard_inds = c(jaccard_inds,sapply(1:ns[i],function(i){
+      intersect = intersect(fnn.1$nn.index[i,],fnn.2$nn.index[i,])
+      union = union(fnn.1$nn.index[i,],fnn.2$nn.index[i,])
+      length(intersect)/length(union)
+    }))
+    jaccard_inds = jaccard_inds[is.finite(jaccard_inds)]
+  }
+  
+  return(mean(jaccard_inds))
+}
+
 #' Calculate alignment statistic to quantify how well-aligned two or more datasets are.
 #'
 #' @param object analogizer object. Should call quantile_norm before calling.
@@ -730,22 +787,36 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-alignment_metric = function(object)
+alignment_metric<-function(object)
+{
+  num_cells = nrow(object@H.norm)
+  num_factors = ncol(object@H.norm)
+  nmf_factors = object@H.norm
+  N = length(object@H)
+  rownames(nmf_factors)=names(object@clusters)
+  
+  sampled_cells = c()
+  min_cells = min(sapply(object@H, function(x){nrow(x)}))
+  for (i in 1:N)
   {
-    num_cells = nrow(object@H.norm)
-    num_factors = ncol(object@H.norm)
-    k = floor(0.01*num_cells)
-    knn_graph = get.knn(nmf_factors[,1:num_factors],k)
-    dataset = unlist(sapply(1:length(object@H),function(x){rep(names(object@H)[x],nrow(object@H[[x]]))}))
-    num_same_dataset = rep(k,num_cells)
-    for (i in 1:num_cells)
-    {
-      inds = knn_graph$nn.index[i,]
-      num_same_dataset[i] = sum(dataset[inds]==dataset[i])
-    }
-    return(1-((mean(num_same_dataset)-(k/2))/(k/2)))
-}
+    sampled_cells = c(sampled_cells,sample(rownames(object@scale.data[[i]]),min_cells))
+  }
+  k = floor(0.01 * num_cells)
+  knn_graph = get.knn(nmf_factors[sampled_cells, 1:num_factors], k)
+  dataset = unlist(sapply(1:N, function(x) {
+    rep(names(object@H)[x], nrow(object@H[[x]]))
+  }))
+  names(dataset)=names(object@clusters)
+  dataset = dataset[sampled_cells]
+  num_sampled = N*min_cells
+  num_same_dataset = rep(k, num_sampled)
 
+  for (i in 1:num_sampled) {
+    inds = knn_graph$nn.index[i, ]
+    num_same_dataset[i] = sum(dataset[inds] == dataset[i])
+  }
+  return(1 - ((mean(num_same_dataset) - (k/N))/(k-k/N)))
+}
 #' Perform graph-based clustering (Louvain algorithm) using number of shared nearest neighbors (Jaccard index) as a distance metric.
 #'
 #' @param object analogizer object. Should call quantile_norm before calling.
@@ -814,7 +885,7 @@ aggregateByCluster = function(object)
   return(object)
 }
 
-plot_violin_summary = function(object,clusters=NULL,filename="violin_summary.pdf")
+plot_violin_summary = function(object,cluster,genes.use)
 {
   pdf(filename)
   nmf_factors = data.frame(rbind(object@H[[1]],object@H[[2]]))
