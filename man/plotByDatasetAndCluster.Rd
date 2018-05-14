@@ -4,10 +4,19 @@
 \alias{plotByDatasetAndCluster}
 \title{Plot t-SNE coordinates of aligned datasets, colored by dataset and by cluster}
 \usage{
-plotByDatasetAndCluster(object, clusters = NULL)
+plotByDatasetAndCluster(object, title = NULL, pt.size = 0.3,
+  text.size = 3, do.shuffle = T)
 }
 \arguments{
 \item{object}{analogizer object. Should call run_tSNE before calling.}
+
+\item{title}{Plot title}
+
+\item{pt.size}{Controls size of points representing cells}
+
+\item{text.size}{Controls size of plot text}
+
+\item{do.shuffle}{Randomly shuffle points so that points from same dataset are not plotted one after the other.}
 }
 \description{
 Plot t-SNE coordinates of aligned datasets, colored by dataset and by cluster

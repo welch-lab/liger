@@ -192,8 +192,8 @@ quantile_norm = function(object,quantiles=50,ref_dataset=NULL,min_cells=2)
   for (i in 1:ncol(Hs_scaled[[1]]))
   {
     for (j in 1:length(Hs_scaled)){
-      Hs_scaled[[j]][,i] = object@H[[j]][,i]/sqrt(sum(object@H[[j]][,i]^2))
-      #Hs_scaled[[j]] = scale(Hs_scaled[[j]],scale=T,center=T)
+      #Hs_scaled[[j]][,i] = object@H[[j]][,i]/sqrt(sum(object@H[[j]][,i]^2))
+      Hs_scaled[[j]] = scale(Hs_scaled[[j]],scale=T,center=T)
     }
   }
   labels = list()
@@ -257,6 +257,8 @@ quantile_norm = function(object,quantiles=50,ref_dataset=NULL,min_cells=2)
 #'
 #' @param object analogizer object. Should run quantile_norm before calling.
 #' @param rand.seed Random seed to make results reproducible
+#' @param use.raw Use scaled data or factorization result?
+#' @param factors.use Which factors to use for computing tSNE embedding
 #' @return analogizer object
 #' @importFrom Rtsne Rtsne
 #' @export
@@ -268,19 +270,28 @@ quantile_norm = function(object,quantiles=50,ref_dataset=NULL,min_cells=2)
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-run_tSNE = function(object,rand.seed=42)
+run_tSNE<-function (object, rand.seed = 42,use.raw = F,factors.use = 1:ncol(object@H.norm))
 {
   set.seed(rand.seed)
-  object@tsne.coords = Rtsne(object@H.norm,pca=F,check_duplicates = F)$Y
-  return (object)
+  if (use.raw) {
+    raw.data = do.call(rbind,object@H)
+    object@tsne.coords = Rtsne(raw.data[,factors.use])$Y
+  } else {
+    object@tsne.coords = Rtsne(object@H.norm[,factors.use], pca = F,check_duplicates = F)$Y
+  }
+  return(object)
 }
 
-#' Plot t-SNE coordinates of aligned datasets, colored by dataset and by cluster
+#' Run UMAP on the normalized cell factors to generate a 2D embedding for visualization
 #'
-#' @param object analogizer object. Should call run_tSNE before calling.
+#' @param object analogizer object. Should run quantile_norm before calling.
+#' @param rand.seed Random seed to make results reproducible
+#' @param use.raw Use scaled data or factorization result?
+#' @param k Number of dimensions to reduce to
+#' @param distance Name of distance metric to use in defining fuzzy simplicial sets
+#' @return analogizer object
+#' @importFrom reticulate import
 #' @export
-#' @importFrom cowplot plot_grid
-#' @importFrom ggplot2 ggplot geom_point aes
 #' @examples
 #' \dontrun{
 #' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
@@ -289,22 +300,57 @@ run_tSNE = function(object,rand.seed=42)
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-plotByDatasetAndCluster = function(object,clusters=NULL)
+run_umap<-function (object, rand.seed = 42,use.raw = F,k=2,distance = 'euclidean')
 {
+  UMAP<-import("umap")
+  umapper = UMAP$UMAP(n_components=as.integer(k),metric = distance)
+  Rumap = umapper$fit_transform
+  if (use.raw) {
+    raw.data = do.call(rbind,object@H)
+    object@tsne.coords = Rumap(raw.data)
+  } else {
+    object@tsne.coords = Rumap(object@H.norm)
+  }
+  return(object)
+}
+
+#' Plot t-SNE coordinates of aligned datasets, colored by dataset and by cluster
+#'
+#' @param object analogizer object. Should call run_tSNE before calling.
+#' @param title Plot title
+#' @param pt.size Controls size of points representing cells
+#' @param text.size Controls size of plot text
+#' @param do.shuffle Randomly shuffle points so that points from same dataset are not plotted one after the other.
+#' @export
+#' @importFrom cowplot plot_grid
+#' @importFrom ggplot2 ggplot geom_point aes
+#' @importFrom dplyr %>%
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' }
+plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,do.shuffle = T){
   tsne_df = data.frame(object@tsne.coords)
-  colnames(tsne_df)=c("tsne1","tsne2")
-  tsne_df$Dataset = as.factor(unlist(sapply(1:length(object@H),function(x){rep(names(object@H)[x],nrow(object@H[[x]]))})))
-  if(is.null(clusters))
-  {
-    clusters = object@clusters
+  colnames(tsne_df) = c("tsne1", "tsne2")
+  tsne_df$Dataset = unlist(lapply(1:length(object@H), function(x) {
+    rep(names(object@H)[x], nrow(object@H[[x]]))
+  }))
+  tsne_df$Cluster = object@clusters
+  if (do.shuffle) {
+    idx = sample(1:nrow(tsne_df))
+    tsne_df = tsne_df[idx,]
   }
-  tsne_df$Cluster = clusters[names(object@clusters)]
-  centroids = matrix(0,nrow=length(levels(tsne_df$Cluster)),ncol=2)
-  for(i in 1:nrow(centroids))
-  {
-    centroids[i,] = colMeans(tsne_df[tsne_df$Cluster==levels(tsne_df$Cluster)[i],c("tsne1","tsne2")],na.rm = T)
-  }
-  print(plot_grid(ggplot(tsne_df,aes(x=tsne1,y=tsne2,color=Dataset))+geom_point(),ggplot(tsne_df,aes(x=tsne1,y=tsne2,color=Cluster))+geom_point()+annotate("text",x=centroids[,1],y=centroids[,2],label=levels(tsne_df$Cluster)) + guides(colour = guide_legend(override.aes = list(size=5)))))
+  
+  print((ggplot(tsne_df, aes(x = tsne1, y = tsne2,
+                             color = Dataset)) + geom_point(size=pt.size)+ ggtitle(paste0(title,", dataset alignment"))))
+  centers <- tsne_df %>% dplyr::group_by(Cluster) %>% dplyr::summarize(tsne1 = median(x = tsne1),
+                                                                tsne2 = median(x = tsne2))
+  print(ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(alpha=0.5,size=pt.size) + geom_point(data = centers, mapping = aes(x = tsne1,y = tsne1), size = 0, alpha = 0) + geom_text(data=centers,mapping = aes(label = Cluster),colour='black',size=text.size) + ggtitle(paste0(title,", published clustering")))
+  
 }
 
 #' show method for analogizer
@@ -355,13 +401,14 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,H_ini
   E = object@scale.data
   N = length(E)
   ns = sapply(E,nrow)
-  
+  tmp = gc()
   g = ncol(E[[1]])
   set.seed(rand.seed)
   W_m = matrix(0, k, g)
   V_m = lapply(1:N,function(i){matrix(0, k, g)})
   H_m = lapply(ns,function(n){matrix(0, n, k)})
-
+  tmp = gc()
+  
   best_obj = Inf
   run_stats = matrix(0,nrow=nrep,ncol=2)
   for (i in 1:nrep)
@@ -371,6 +418,7 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,H_ini
     W = matrix(abs(runif(g * k,0,2)), k, g)  
     V = lapply(1:N,function(i){matrix(abs(runif(g * k,0,2)), k, g)})
     H = lapply(ns,function(n){matrix(abs(runif(n * k,0,2)), n, k)})  
+    tmp = gc()
     
     if (!is.null(W_init))
     {
@@ -391,13 +439,18 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,H_ini
     sqrt_lambda = sqrt(lambda)
     obj0 = sum(sapply(1:N,function(i){norm(E[[i]]-H[[i]]%*%(W+V[[i]]),"F")^2}))+sum(sapply(1:N,function(i){lambda*norm(H[[i]]%*%V[[i]],"F")^2}))
     start_obj = obj0
+    tmp = gc()
     
     while(delta > thresh & iters < max_iters)
     {
       H = lapply(1:N,function(i){t(solve_nnls(rbind(t(W)+t(V[[i]]),sqrt_lambda*t(V[[i]])),rbind(t(E[[i]]),matrix(0,nrow=g,ncol=ns[i]))))})
+      tmp = gc()
       V = lapply(1:N,function(i){solve_nnls(rbind(H[[i]],sqrt_lambda*H[[i]]),rbind(E[[i]]-H[[i]]%*%W,matrix(0,nrow=ns[[i]],ncol=g)))})
+      tmp = gc()
       W = solve_nnls(rbind.fill.matrix(H),rbind.fill.matrix(lapply(1:N,function(i){E[[i]]-H[[i]]%*%V[[i]]})))
+      tmp = gc()
       obj = sum(sapply(1:N,function(i){norm(E[[i]]-H[[i]]%*%(W+V[[i]]),"F")^2}))+sum(sapply(1:N,function(i){lambda*norm(H[[i]]%*%V[[i]],"F")^2}))
+      tmp = gc()
       delta = abs(obj0-obj)/(mean(obj0,obj))
       obj0 = obj
       iters = iters + 1
@@ -423,6 +476,7 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,H_ini
   cat("\nBest objective:",best_obj,"\n")
   names(H_m)=names(V_m)=names(object@raw.data)
   object@H = H_m
+  object@H=lapply(1:length(object@scale.data),function(i){rownames(object@H[[i]])=rownames(object@scale.data[[i]]);return (object@H[[i]])})
   object@W = W_m
   object@V = V_m
   return(object)
@@ -661,12 +715,14 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
   name2 = dataset2
   k = ncol(V1)
   pb = txtProgressBar(min=0,max=k,style=3)
+  dataset_specificity = calc_dataset_specificity(object)
   for (i in 1:k)
   {
     tsne_df = data.frame(H_aligned[,i],tsne_coords)
     factorlab = paste("Factor",i,sep="")
     colnames(tsne_df)=c(factorlab,"tSNE1","tSNE2")
-    p1 = ggplot(tsne_df,aes_string(x="tSNE1",y="tSNE2",color=factorlab))+geom_point()+scale_color_gradient(low="yellow",high="red")
+    factor_ds = paste("Factor",i,"Dataset Specificity:",dataset_specificity[[3]][i])
+    p1 = ggplot(tsne_df,aes_string(x="tSNE1",y="tSNE2",color=factorlab))+geom_point()+scale_color_gradient(low="yellow",high="red")+ggtitle(label=factor_ds)
     
     top_genes_V1 = row.names( V1 )[ order(V1[,i], decreasing=T )[1:num_genes] ]
     top_genes_V1 = top_genes_V1[which(V1[top_genes_V1,i]>0)]
@@ -684,7 +740,8 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
 
     top_genes = top_genes_V1
     gene_df = data.frame(genes=top_genes,loadings=V1[top_genes,i])
-    
+    if(length(top_genes)==0){ gene_df = data.frame(genes=c("no genes"),loadings=c(1))}
+    print(head(gene_df))
     V1_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
       geom_text_repel(force = 100,segment.color=NA) +
       scale_size(range = c(min_size, max_size), guide = FALSE) +
@@ -694,6 +751,8 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
     
     top_genes = top_genes_W
     gene_df = data.frame(genes=top_genes,loadings=W[top_genes,i])
+    if(length(top_genes)==0){ gene_df = data.frame(genes=c("no genes"),loadings=c(1))}
+    print(head(gene_df))
     W_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
       geom_text_repel(force = 100,segment.color=NA) +
       scale_size(range = c(min_size, max_size), guide = FALSE) +
@@ -703,6 +762,8 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
     
     top_genes = top_genes_V2
     gene_df = data.frame(genes=top_genes,loadings=V2[top_genes,i])
+    if(length(top_genes)==0){ gene_df = data.frame(genes=c("no genes"),loadings=c(1))}
+    print(head(gene_df))
     V2_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
       geom_text_repel(force = 100,segment.color=NA) +
       scale_size(range = c(min_size, max_size), guide = FALSE) +
@@ -817,6 +878,47 @@ alignment_metric<-function(object)
   }
   return(1 - ((mean(num_same_dataset) - (k/N))/(k-k/N)))
 }
+
+alignment_metric_per_factor<-function(object,k=NULL)
+{
+  H1_scaled = scale(object@H[[1]],center=F,scale=T)
+  H2_scaled = scale(object@H[[2]],center=F,scale=T)
+  H_scaled = rbind(H1_scaled,H2_scaled)
+  num_cells = nrow(H_scaled)
+  num_factors = ncol(H_scaled)
+  nmf_factors = H_scaled
+  N = length(object@H)
+  rownames(nmf_factors)=names(object@clusters)
+  num_clusters = length(levels(object@clusters))
+  
+  knn_graph = get.knn(nmf_factors[, 1:num_factors], k)
+  dataset = unlist(sapply(1:N, function(x) {
+    rep(names(object@H)[x], nrow(object@H[[x]]))
+  }))
+  names(dataset)=names(object@clusters)
+  align_metrics = rep(0,num_clusters)
+  for (i in 1:num_clusters)
+  {
+    cells_i = which(object@clusters==levels(object@clusters)[i])
+    num_cells = length(cells_i)
+    if(is.null(k))
+    {
+      k = max(floor(0.1 * num_cells),10)
+      print(k)    
+    }
+    
+    num_same_dataset = rep(0, num_cells)
+    num_diff_dataset = rep(0, num_cells)
+    for (j in 1:length(cells_i)) {
+      inds = knn_graph$nn.index[cells_i[j], ]
+      num_same_dataset[j] = sum(dataset[inds] == dataset[cells_i[j]])
+      num_diff_dataset[j] = sum(dataset[inds] != dataset[cells_i[j]])
+    }
+    align_metrics[i] = sum(num_diff_dataset/(num_same_dataset+num_diff_dataset))
+  }
+  return(align_metrics)
+}
+
 #' Perform graph-based clustering (Louvain algorithm) using number of shared nearest neighbors (Jaccard index) as a distance metric.
 #'
 #' @param object analogizer object. Should call quantile_norm before calling.
@@ -904,6 +1006,22 @@ plot_violin_summary = function(object,cluster,genes.use)
   dev.off()
 }
 
+#' Uses the factorization information to calculate a dataset-specificity score for each factor
+#'
+#' @param object analogizer object. Should run optimizeALS before calling.
+#' @return List containing three elements. First two elements are the norm of each metagene factor for each dataset. Last element is the vector of dataset specificity scores.
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' analogy = quantile_norm(analogy)
+#' analogy = clusterLouvainJaccard(object)
+#' }
 calc_dataset_specificity=function(object)
 {
   k = ncol(object@H[[1]])
@@ -911,13 +1029,13 @@ calc_dataset_specificity=function(object)
   pct2 = rep(0,k)
   for (i in 1:k)
   {
-    pct1[i] = norm(object@H[[1]][,i] %*% t(object@W[i,] + object@V[[1]][i,]),"F")
-    pct2[i] = norm(object@H[[2]][,i] %*% t(object@W[i,] + object@V[[2]][i,]),"F")
+    pct1[i] = norm(as.matrix(object@V[[1]][i,]+object@W[i,]),"F") #norm(object@H[[1]][,i] %*% t(object@W[i,] + object@V[[1]][i,]),"F")
+    pct2[i] = norm(as.matrix(object@V[[2]][i,]+object@W[i,]),"F") #norm(object@H[[2]][,i] %*% t(object@W[i,] + object@V[[2]][i,]),"F")
   }
-  pct1 = pct1/sum(pct1)
-  pct2 = pct2/sum(pct2)
-  barplot(abs(log(pct1/pct2))) # or possibly abs(pct1-pct2)
-  return(list(pct1,pct2,abs(log(pct1/pct2))))
+  #pct1 = pct1/sum(pct1)
+  #pct2 = pct2/sum(pct2)
+  barplot(100*(1-(pct1/pct2)),xlab="Factor",ylab="Percent Specificity") # or possibly abs(pct1-pct2)
+  return(list(pct1,pct2,100*(1-(pct1/pct2))))
 }
 
 #' Plot t-SNE coordinates per dataset, colored by expression of specified gene
@@ -934,14 +1052,24 @@ calc_dataset_specificity=function(object)
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-plot_gene = function(object,gene)
+plot_gene = function(object,gene,log.norm=NULL)
 {
+  
   gene_vals = c()
   for (i in 1:length(object@norm.data))
   {
-    gene_vals = c(gene_vals,object@norm.data[[i]][gene,])
+    
+    if (i != 2)
+    {
+      gene_vals = c(gene_vals,object@norm.data[[i]][gene,])
+      gene_vals = log2(10000*gene_vals+1)
+    }
+    else
+    {
+      gene_vals = c(gene_vals,2*object@norm.data[[i]][,gene])
+    }
   }
-  gene_vals = log(10000*gene_vals+1)
+  
   gene_df = data.frame(object@tsne.coords)
   rownames(gene_df)=names(object@clusters)
   gene_df$Gene = gene_vals[rownames(gene_df)]
@@ -949,8 +1077,445 @@ plot_gene = function(object,gene)
   gene_plots = list()
   for (i in 1:length(object@norm.data))
   {
-    plot_i = (ggplot(gene_df[rownames(object@scale.data[[i]]),],aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point()+scale_color_gradient2(low="yellow",mid="red",high="black",midpoint=(max(gene_vals)-min(gene_vals))/2,limits=c(min(gene_vals),max(gene_vals)))+ggtitle(names(object@scale.data)[i]))
+    plot_i = (ggplot(gene_df[rownames(object@scale.data[[i]]),],aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point()+scale_color_gradient2(low="yellow",mid="red",high="black",midpoint=(max(gene_vals,na.rm=T)-min(gene_vals,na.rm=T))/2,limits=c(min(gene_vals,na.rm=T),max(gene_vals,na.rm=T)))+ggtitle(names(object@scale.data)[i]))
     gene_plots[[i]] = plot_i
   }
   print(plot_grid(plotlist=gene_plots,ncol=2))
+}
+
+#' Plot expression of multiple genes, each on a separate page.
+#'
+#' @param object analogizer object. Should call run_tSNE before calling.
+#' @param genes vector of gene names.
+#' @export
+#' @importFrom cowplot plot_grid
+#' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' }
+plot_genes = function(object,genes)
+{
+  for (i in 1:length(genes))
+  {
+    print(genes[i])
+    plot_gene(object,genes[i])
+  }
+}
+
+#Function takes in a list of DGEs, with gene rownames and cell colnames, and merges them into a single DGE.
+MergeSparseDataAll<-function (datalist,library.names) {
+  
+  #use summary to convert the sparse matrices a and b into three-column indexes where i are the row numbers, j are the column numbers, and x are the nonzero entries
+  a = datalist[[1]]
+  allGenes=rownames(a)
+  allCells=paste0(library.names[1],"_",colnames(a))
+  as = summary(a)
+  for (i in 2:length(datalist)) {
+    b = datalist[[i]]
+    
+    bs= summary(b)
+    
+    # Now, alter the indexes so that the two 3-column matrices can be properly merged.  First, make the a and b column numbers non-overlapping.
+    bs[,2] = bs[,2] + max(as[,2])
+    
+    #Next, change the row (gene) indexes so that they index on the union of the gene sets, so that proper merging can occur.
+    
+    allGenesnew=union(allGenes, rownames(b))
+    cellnames = paste0(library.names[i],"_",colnames(b))
+    allCells=c(allCells,cellnames)
+    idx=match(allGenes,allGenesnew)
+    newgenesa = idx[as[,1]]
+    as[,1] = newgenesa
+    idx=match(rownames(b),allGenesnew)
+    newgenesb = idx[bs[,1]]
+    bs[,1] = newgenesb
+    
+    #Now bind the altered 3-column matrices together, and convert into a single sparse matrix.
+    as = rbind(as,bs)
+    print(paste0("rbind ",i," complete."))
+    allGenes=allGenesnew
+  }
+  M=sparseMatrix(i=as[,1],j=as[,2],x=as[,3],dims=c(length(allGenes),length(allCells)),dimnames=list(allGenes,allCells))
+  return(M)  
+}
+
+#' Create a Seurat object containing the data from an Analogizer object.
+#'
+#' @param object analogizer object.
+#' @export
+#' @importFrom Seurat CreateSeuratObject
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' }
+as.seurat<-function(object)  {
+  
+  nms = names(object@H)
+  raw.data = MergeSparseDataAll(object@raw.data,nms)
+  
+  norm.data = MergeSparseDataAll(object@norm.data,nms)
+  scale.data = do.call(rbind,object@scale.data)
+  rownames(scale.data) = colnames(norm.data)
+  inmf.obj = new(Class="dim.reduction",gene.loadings = t(object@W),cell.embeddings = object@H.norm,key="iNMF")
+  tsne.obj = new(Class="dim.reduction",cell.embeddings=object@tsne.coords,key="tSNE_")
+  rownames(tsne.obj@cell.embeddings) = rownames(scale.data)
+  rownames(inmf.obj@cell.embeddings) = rownames(scale.data)
+  colnames(tsne.obj@cell.embeddings) = paste0("tSNE_",1:2)
+  new.seurat = CreateSeuratObject(raw.data)
+  new.seurat@data = norm.data
+  new.seurat@scale.data = scale.data
+  new.seurat@dr$tsne = tsne.obj
+  new.seurat@dr$inmf = inmf.obj
+  return(new.seurat)
+}
+
+#' Perform fast and memory-efficient normalization operation on sparse matrix data.
+#'
+#' @param A Sparse matrix DGE.
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' }
+Matrix.column_norm <- function(A){
+  if (class(A)[1] == "dgTMatrix") {
+    temp = summary(A)
+    A = sparseMatrix(i=temp[,1],j=temp[,2],x=temp[,3])
+  }
+  A@x <- A@x / rep.int(Matrix::colSums(A), diff(A@p))
+  return(A)
+}
+
+# k is the number of nearest neighbors (for geometry preservation)
+# sigma is the bandwidth parameter for the RBF kernel (geometry preservation)
+# alpha sets the tradeoff between reconstructing geometry and aligning corresponding clusters
+spectral_alignment=function(object,k=30,alpha=1,sigma=NULL,neigen=NULL)
+{
+  print("Building graph")
+  #knn1 = get.knn(scale(object@H[[1]],center=F,scale=T),k=k)
+  #knn2 = get.knn(scale(object@H[[2]],center=F,scale=T),k=k)
+  #knn1 = get.knn(object@H[[1]],k=k)
+  #knn2 = get.knn(object@H[[2]],k=k)
+  obj = CreateSeuratObject(t(analogy@scale.data[[1]]))
+  knn1 = BuildSNN(obj,distance.matrix=as.matrix(dist(analogy@H[[1]])),k.param=30)@snn
+  obj = CreateSeuratObject(t(analogy@scale.data[[2]]))
+  knn2 = BuildSNN(obj,distance.matrix=as.matrix(dist(analogy@H[[2]])),k.param=30)@snn
+  rm(obj)
+  adj_mat = replicate(length(object@clusters),object@clusters)
+  adj_mat = (adj_mat==t(adj_mat))
+  adj_mat = as.matrix(1*adj_mat)
+  colnames(adj_mat)=rownames(adj_mat)
+  adj_mat[rownames(object@scale.data[[1]]),rownames(object@scale.data[[1]])]=0
+  adj_mat[rownames(object@scale.data[[2]]),rownames(object@scale.data[[2]])]=0
+  
+  if (is.null(sigma))
+  {
+    sigma=mean(as.matrix(dist(object@H[[1]])))
+    #sigma=mean(as.matrix(dist(scale(object@H[[1]],center=F,scale=T))))  
+  }
+  
+  adj_mat_dists = matrix(0,nrow = nrow(adj_mat),ncol=ncol(adj_mat))
+  dimnames(adj_mat_dists)=dimnames(adj_mat)
+  for(i in 1:nrow(object@scale.data[[1]]))
+  {
+    adj_mat_dists[rownames(object@scale.data[[1]])[i],rownames(object@scale.data[[1]])[knn1$nn.index[i,]]] = exp(-1*knn1$nn.dist[i,]/sigma)
+  }
+  for(i in 1:nrow(object@scale.data[[2]]))
+  {
+    adj_mat_dists[rownames(object@scale.data[[2]])[i],rownames(object@scale.data[[2]])[knn2$nn.index[i,]]] = exp(-1*knn2$nn.dist[i,]/sigma)
+  }
+  adj_mat = adj_mat/sum(adj_mat)*sum(adj_mat_dists)
+  g = graph_from_adjacency_matrix(adj_mat_dists+alpha*adj_mat,mode="undirected",weighted=T)
+  print("Finding eigenvectors of the Laplacian")
+  if (is.null(neigen))
+  {
+    neigen = length(levels(object@clusters))
+  }
+  res = eigs(laplacian_matrix(g),k=neigen,which="LM",sigma=0)
+  rownames(res$vectors)=names(V(g))
+  object@H.norm = res$vectors[names(object@clusters),]
+  return(object)
+}
+
+#SNN version
+spectral_alignment=function(object,k=30,alpha=1,sigma=NULL,neigen=NULL)
+{
+  print("Building graph")
+  #knn1 = get.knn(scale(object@H[[1]],center=F,scale=T),k=k)
+  #knn2 = get.knn(scale(object@H[[2]],center=F,scale=T),k=k)
+  #knn1 = get.knn(object@H[[1]],k=k)
+  #knn2 = get.knn(object@H[[2]],k=k)
+  obj = CreateSeuratObject(t(object@scale.data[[1]]))
+  knn1 = BuildSNN(obj,distance.matrix=as.matrix(dist(object@H[[1]])),k.param=k)@snn
+  obj = CreateSeuratObject(t(object@scale.data[[2]]))
+  knn2 = BuildSNN(obj,distance.matrix=as.matrix(dist(object@H[[2]])),k.param=k)@snn
+  rm(obj)
+  adj_mat = replicate(length(object@clusters),object@clusters)
+  adj_mat = (adj_mat==t(adj_mat))
+  adj_mat = as.matrix(1*adj_mat)
+  colnames(adj_mat)=rownames(adj_mat)
+  adj_mat[rownames(object@scale.data[[1]]),rownames(object@scale.data[[1]])]=0
+  adj_mat[rownames(object@scale.data[[2]]),rownames(object@scale.data[[2]])]=0
+  
+  if (is.null(sigma))
+  {
+    sigma=mean(as.matrix(dist(object@H[[1]])))
+    #sigma=mean(as.matrix(dist(scale(object@H[[1]],center=F,scale=T))))  
+  }
+  
+  adj_mat_dists = bdiag(knn1,knn2)
+  dimnames(adj_mat_dists)=dimnames(adj_mat)
+  rm(knn1)
+  rm(knn2)
+  
+  adj_mat = adj_mat/sum(adj_mat)*sum(adj_mat_dists)
+  g = graph_from_adjacency_matrix(adj_mat_dists+alpha*adj_mat,mode="undirected",weighted=T)
+  print("Finding eigenvectors of the Laplacian")
+  if (is.null(neigen))
+  {
+    neigen = length(levels(object@clusters))
+  }
+  res = eigs(laplacian_matrix(g),k=neigen,which="LM",sigma=0)
+  rownames(res$vectors)=names(V(g))
+  object@H.norm = res$vectors[names(object@clusters),]
+  return(object)
+}
+
+#' Perform fast and memory-efficient data scaling operation on sparse matrix data.
+#'
+#' @param object Sparse matrix DGE.
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' }
+scaleNotCenter_sparse<-function (object, cells = NULL)
+{
+  if (is.null(cells)) {
+    cells = lapply(1:length(object@raw.data), function(i) {
+      1:ncol(object@raw.data[[i]])
+    })
+  }
+  object@scale.data = lapply(1:length(object@norm.data), function(i) {
+    scale(Sparse_transpose(object@norm.data[[i]][object@var.genes, ]), center = F,
+          scale = T)
+  })
+  names(object@scale.data) = names(object@norm.data)
+  for (i in 1:length(object@scale.data)) {
+    object@scale.data[[i]][is.na(object@scale.data[[i]])] = 0
+    rownames(object@scale.data[[i]]) = colnames(object@raw.data[[i]])
+    colnames(object@scale.data[[i]]) = object@var.genes
+  }
+  return(object)
+}
+
+scalar1 <- function(x) {x / sqrt(sum(x^2))}
+
+Mode <- function(x, na.rm = FALSE) {
+  if(na.rm){
+    x = x[!is.na(x)]
+  }
+  
+  ux <- unique(x)
+  return(ux[which.max(tabulate(match(x, ux)))])
+}
+
+#' Builds a shared nearest factor graph to jointly cluster cells, then quantile normalizes corresponding clusters.
+#'
+#' @param object analogizer object. Should run optimizeALS before calling.
+#' @param knn_k Number of nearest neighbors for within-dataset knn graph
+#' @param k2 Horizon parameter for shared nearest factor graph. Distances to all but the k2 nearest neighbors are set to 0 (cuts down on memory usage for very large graphs).
+#' @param prune.thresh Minimum allowed edge weight. Any edges below this are removed (given weight 0)
+#' @param ref_dataset Name of dataset to use as a "reference" for normalization. By default,
+#' the dataset with the largest number of cells is used.
+#' @param min_cells Minimum number of cells to consider a cluster shared across datasets.
+#' @param nstart Number of times to perform Louvain community detection with different random starts
+#' @param quantiles Number of quantiles to use for quantile normalization
+#' @param resolution Controls the number of communities detected. Higher resolution=more communities.
+#' 
+#' @return analogizer object
+#' @export
+#' @importFrom RANN.L1 nn2
+#' @importFrom FNN get.knnx
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' }
+
+quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset=NULL,min_cells=2,quantiles=50,nstart=10,resolution = 1) {
+  if (is.null(ref_dataset)) {
+    ns = sapply(object@scale.data, nrow)
+    ref_dataset = names(object@scale.data)[which.max(ns)]
+  }
+  snf = SNF(object,knn_k=knn_k,k2=k2)
+  idents = SLMCluster(edge = snf,nstart=nstart,R=resolution,prune.thresh=prune.thresh)
+  names(idents) = unlist(lapply(object@scale.data,rownames))
+  
+  #Especially when datasets are large, SLM generates a fair number of singletons.  To assign these to a cluster, take the mode of the cluster assignments of within-dataset neighbors
+  idents = assign.singletons(object,idents)
+  Hs = object@H
+  cs = cumsum(c(0,unlist(lapply(object@H,nrow))))
+  clusters = lapply(1:length(Hs),function(i){
+    idx = cs[i] + 1:nrow(Hs[[i]])
+    return(idents[idx])
+  })
+  names(clusters) = names(object@H)
+  dims = ncol(object@H[[ref_dataset]])
+  for (k in 1:length(Hs)) {
+    for (i in 1:dims) {
+      for (j in levels(idents)) {
+        if (sum(clusters[[ref_dataset]] == j) < min_cells |
+            sum(clusters[[k]] == j) < min_cells) {
+          print(paste0("cluster ",j, " in dataset ",names(Hs)[k]," is not aligned."))
+          print("Too few cells")
+          next
+        }
+        if (sum(clusters[[k]] == j) == 1) {
+          Hs[[k]][clusters[[k]] == j, i] = mean(Hs[[ref_dataset]][clusters[[ref_dataset]] ==
+                                                                    j, i])
+          print(paste0("cluster ",j, " in dataset ",names(Hs)[k]," is not aligned."))
+          
+          next
+        }
+        q2 = quantile(Hs[[k]][clusters[[k]] == j, i],
+                      seq(0, 1, by = 1/quantiles))
+        q1 = quantile(Hs[[ref_dataset]][clusters[[ref_dataset]] ==
+                                          j, i], seq(0, 1, by = 1/quantiles))
+        if (sum(q1) == 0 | sum(q2) == 0 | length(unique(q1)) <
+            2 | length(unique(q2)) < 2) {
+          new_vals = rep(0, sum(clusters[[k]] == j))
+        }
+        else {
+          warp_func = approxfun(q2, q1)
+          new_vals = warp_func(Hs[[k]][clusters[[k]] ==
+                                         j, i])
+        }
+        Hs[[k]][clusters[[k]] == j, i] = new_vals
+      }
+    }
+  }
+  object@H.norm = Reduce(rbind, Hs)
+  object@clusters = idents
+  return(object)
+}
+
+SNF = function(object,knn_k=15,k2=300) {
+  NN.maxes = do.call(rbind,lapply(1:length(object@H),function(i){
+    sc = scale(object@H[[i]],center=F,scale=T)
+    maxes = factor(apply(sc,1,which.max),levels=1:ncol(sc))
+    norm = t(apply(object@H[[i]],1,scalar1))
+    knn.idx = get.knn(norm,knn_k,algorithm="CR")$nn.index
+    t(apply(knn.idx,1,function(q){
+      table(maxes[q])
+    }))
+  }))
+  rownames(NN.maxes) = unlist(lapply(object@H,rownames))
+  nn.obj <- nn2(NN.maxes,k=k2)
+  out.snn = 1 - (nn.obj$nn.dists/(2*knn_k))
+  out.summary = matrix(ncol=3,nrow = (ncol(out.snn)*nrow(out.snn)))
+  
+  counter = 1
+  for (i in 1:nrow(out.snn)) {
+    for (j in 1:ncol(out.snn)){
+      out.summary[counter,] = c(i,nn.obj$nn.idx[i,j],out.snn[i,j])
+      counter = counter + 1
+      
+    }
+    
+  }
+  out.summary[out.summary[,1]==out.summary[,2],3] = 0
+  out.summary[,1] = out.summary[,1]-1
+  out.summary[,2] = out.summary[,2] - 1
+  return(out.summary)
+  
+}
+
+assign.singletons<-function(object,idents,k.use = 15) {
+  singleton.clusters = names(table(idents))[which(table(idents)==1)]
+  singleton.cells = names(idents)[which(idents %in% singleton.clusters)]
+  singleton.list = lapply(object@H,function(H){
+    return(intersect(rownames(H),singleton.cells))
+  })
+  out = unlist(lapply(1:length(object@H),function(d){
+    H = object@H[[d]]
+    H = t(apply(H,1,scalar1))
+    cells.use = singleton.list[[d]]
+    
+    if (length(cells.use)>0) {
+      knn.idx = get.knnx(H,matrix(H[cells.use,],ncol=ncol(H)),k = k.use,algorithm="CR")$nn.index
+      o= sapply(1:length(cells.use),function(i){
+        ids = idents[knn.idx[i,]]
+        Mode(ids[which(!(ids %in% singleton.clusters))])
+      })
+      
+      return(o)
+    } else {
+      return(NULL)
+    }
+  }))
+  names(out)= unlist(singleton.list)
+  idx = names(idents) %in% names(out)
+  idents[idx]<-out
+  idents = droplevels(idents)
+  return(idents)
+  
+}
+
+SLMCluster<-function(edge,prune.thresh=0.2,nstart=100,iter.max=10,algorithm=1,R=1,ModularityJarFile="",random.seed=1) {
+  
+  #This is code taken from Seurat for preparing data for modularity-based clustering.
+  # diag(SNN) <- 0
+  #SNN <- as(SNN,"dgTMatrix")
+  edge = edge[which(edge[,3]>prune.thresh),]
+  ident=modclust(edge=edge,resolution=R,n.iter= iter.max,n.start=nstart,
+                 random.seed=random.seed,ModularityJarFile=ModularityJarFile)
+  return(ident)
+}
+modclust <- function(edge, modularity=1,resolution,n.start=100,n.iter=25,random.seed=1,algorithm=1,ModularityJarFile){
+  print("making edge file.")
+  edge_file <- paste0("edge", fileext=".txt")
+  # Make sure no scientific notation written to edge file
+  saveScipen=options(scipen=10000)[[1]]
+  write.table(x=edge,file=edge_file,sep="\t",row.names=F,col.names=F)
+  options(scipen=saveScipen)
+  output_file <- tempfile("louvain.out", fileext=".txt")
+  if (is.null(random.seed)) {
+    # NULL random.seed disallowed for this program.
+    random.seed = 0
+  }
+  analogizer.dir <- system.file(package = "Analogizer")
+  print(analogizer.dir)
+  ModularityJarFile <- paste0(analogizer.dir, "/java/ModularityOptimizer.jar")
+  command <- paste("java -jar", ModularityJarFile, edge_file, output_file,modularity, resolution, algorithm, n.start,
+                   n.iter, random.seed, 1, sep = " ")
+  print ("StartingSLM")
+  ret = system(command, wait = TRUE)
+  if (ret != 0) {
+    stop(paste0(ret, " exit status from ", command))
+  }
+  unlink(edge_file)
+  ident.use <- factor(read.table(file = output_file, header = FALSE, sep = "\t")[, 1])
+  
+  return(ident.use)
 }
