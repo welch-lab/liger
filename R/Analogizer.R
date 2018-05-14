@@ -741,7 +741,6 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
     top_genes = top_genes_V1
     gene_df = data.frame(genes=top_genes,loadings=V1[top_genes,i])
     if(length(top_genes)==0){ gene_df = data.frame(genes=c("no genes"),loadings=c(1))}
-    print(head(gene_df))
     V1_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
       geom_text_repel(force = 100,segment.color=NA) +
       scale_size(range = c(min_size, max_size), guide = FALSE) +
@@ -752,7 +751,6 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
     top_genes = top_genes_W
     gene_df = data.frame(genes=top_genes,loadings=W[top_genes,i])
     if(length(top_genes)==0){ gene_df = data.frame(genes=c("no genes"),loadings=c(1))}
-    print(head(gene_df))
     W_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
       geom_text_repel(force = 100,segment.color=NA) +
       scale_size(range = c(min_size, max_size), guide = FALSE) +
@@ -763,7 +761,6 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
     top_genes = top_genes_V2
     gene_df = data.frame(genes=top_genes,loadings=V2[top_genes,i])
     if(length(top_genes)==0){ gene_df = data.frame(genes=c("no genes"),loadings=c(1))}
-    print(head(gene_df))
     V2_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
       geom_text_repel(force = 100,segment.color=NA) +
       scale_size(range = c(min_size, max_size), guide = FALSE) +
