@@ -474,10 +474,11 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,H_ini
     cat("\nConverged in",run_stats[i,1],"seconds,",iters,"iterations. Objective:",obj,"\n")
   }
   cat("\nBest objective:",best_obj,"\n")
-  names(H_m)=names(V_m)=names(object@raw.data)
   object@H = H_m
   object@H=lapply(1:length(object@scale.data),function(i){rownames(object@H[[i]])=rownames(object@scale.data[[i]]);return (object@H[[i]])})
+  names(object@H)=names(object@raw.data)
   object@W = W_m
+  names(V_m)=names(object@raw.data)
   object@V = V_m
   return(object)
 }
@@ -1031,7 +1032,7 @@ calc_dataset_specificity=function(object)
   }
   #pct1 = pct1/sum(pct1)
   #pct2 = pct2/sum(pct2)
-  barplot(100*(1-(pct1/pct2)),xlab="Factor",ylab="Percent Specificity") # or possibly abs(pct1-pct2)
+  barplot(100*(1-(pct1/pct2)),xlab="Factor",ylab="Percent Specificity",main="Dataset Specificity of Factors") # or possibly abs(pct1-pct2)
   return(list(pct1,pct2,100*(1-(pct1/pct2))))
 }
 
@@ -1370,7 +1371,9 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
   names(idents) = unlist(lapply(object@scale.data,rownames))
   
   #Especially when datasets are large, SLM generates a fair number of singletons.  To assign these to a cluster, take the mode of the cluster assignments of within-dataset neighbors
+  if(min(table(idents))==1){
   idents = assign.singletons(object,idents)
+  }
   Hs = object@H
   cs = cumsum(c(0,unlist(lapply(object@H,nrow))))
   clusters = lapply(1:length(Hs),function(i){
@@ -1451,30 +1454,33 @@ SNF = function(object,knn_k=15,k2=300) {
 assign.singletons<-function(object,idents,k.use = 15) {
   singleton.clusters = names(table(idents))[which(table(idents)==1)]
   singleton.cells = names(idents)[which(idents %in% singleton.clusters)]
-  singleton.list = lapply(object@H,function(H){
-    return(intersect(rownames(H),singleton.cells))
-  })
-  out = unlist(lapply(1:length(object@H),function(d){
-    H = object@H[[d]]
-    H = t(apply(H,1,scalar1))
-    cells.use = singleton.list[[d]]
-    
-    if (length(cells.use)>0) {
-      knn.idx = get.knnx(H,matrix(H[cells.use,],ncol=ncol(H)),k = k.use,algorithm="CR")$nn.index
-      o= sapply(1:length(cells.use),function(i){
-        ids = idents[knn.idx[i,]]
-        Mode(ids[which(!(ids %in% singleton.clusters))])
-      })
+  if (length(singleton.cells)>0) {
+    singleton.list = lapply(object@H,function(H){
       
-      return(o)
-    } else {
-      return(NULL)
-    }
-  }))
-  names(out)= unlist(singleton.list)
-  idx = names(idents) %in% names(out)
-  idents[idx]<-out
-  idents = droplevels(idents)
+      return(intersect(rownames(H),singleton.cells))
+    })
+    out = unlist(lapply(1:length(object@H),function(d){
+      H = object@H[[d]]
+      H = t(apply(H,1,scalar1))
+      cells.use = singleton.list[[d]]
+      
+      if (length(cells.use)>0) {
+        knn.idx = get.knnx(H,matrix(H[cells.use,],ncol=ncol(H)),k = k.use,algorithm="CR")$nn.index
+        o= sapply(1:length(cells.use),function(i){
+          ids = idents[knn.idx[i,]]
+          Mode(ids[which(!(ids %in% singleton.clusters))])
+        })
+        
+        return(o)
+      } else {
+        return(NULL)
+      }
+    }))
+    names(out)= unlist(singleton.list)
+    idx = names(idents) %in% names(out)
+    idents[idx]<-out
+    idents = droplevels(idents)
+  }
   return(idents)
   
 }
