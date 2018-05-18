@@ -333,13 +333,17 @@ run_umap<-function (object, rand.seed = 42,use.raw = F,k=2,distance = 'euclidean
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,do.shuffle = T){
+plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,do.shuffle = T,clusters=NULL){
   tsne_df = data.frame(object@tsne.coords)
   colnames(tsne_df) = c("tsne1", "tsne2")
   tsne_df$Dataset = unlist(lapply(1:length(object@H), function(x) {
     rep(names(object@H)[x], nrow(object@H[[x]]))
   }))
-  tsne_df$Cluster = object@clusters
+  if (is.null(clusters))
+  {
+    clusters = object@clusters
+  }
+  tsne_df$Cluster = clusters
   if (do.shuffle) {
     idx = sample(1:nrow(tsne_df))
     tsne_df = tsne_df[idx,]
@@ -445,6 +449,7 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,H_ini
     {
       H = lapply(1:N,function(i){t(solve_nnls(rbind(t(W)+t(V[[i]]),sqrt_lambda*t(V[[i]])),rbind(t(E[[i]]),matrix(0,nrow=g,ncol=ns[i]))))})
       tmp = gc()
+      
       V = lapply(1:N,function(i){solve_nnls(rbind(H[[i]],sqrt_lambda*H[[i]]),rbind(E[[i]]-H[[i]]%*%W,matrix(0,nrow=ns[[i]],ncol=g)))})
       tmp = gc()
       W = solve_nnls(rbind.fill.matrix(H),rbind.fill.matrix(lapply(1:N,function(i){E[[i]]-H[[i]]%*%V[[i]]})))
@@ -1081,6 +1086,37 @@ plot_gene = function(object,gene,log.norm=NULL)
   print(plot_grid(plotlist=gene_plots,ncol=2))
 }
 
+plot_gene = function(object,gene,log.norm=NULL)
+{
+  
+  gene_vals = c()
+  for (i in 1:length(object@norm.data))
+  {
+    if (gene %in% rownames(object@norm.data[[i]]))
+    {
+      gene_vals = c(gene_vals,object@norm.data[[i]][gene,])
+      gene_vals = log2(10000*gene_vals+1)
+    }
+    else
+    {
+      gene_vals = c(gene_vals,rep(0,nrow(object@norm.data[[i]])))
+    }
+    
+  }
+  
+  gene_df = data.frame(object@tsne.coords)
+  rownames(gene_df)=names(object@clusters)
+  gene_df$Gene = gene_vals[rownames(gene_df)]
+  colnames(gene_df)=c("tSNE1","tSNE2",gene)
+  gene_plots = list()
+  for (i in 1:length(object@norm.data))
+  {
+    plot_i = (ggplot(gene_df[rownames(object@scale.data[[i]]),],aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point()+scale_color_gradient2(low="yellow",mid="red",high="black",midpoint=(max(gene_vals,na.rm=T)-min(gene_vals,na.rm=T))/2,limits=c(min(gene_vals,na.rm=T),max(gene_vals,na.rm=T)))+ggtitle(names(object@scale.data)[i]))
+    gene_plots[[i]] = plot_i
+  }
+  print(plot_grid(plotlist=gene_plots,ncol=2))
+}
+
 #' Plot expression of multiple genes, each on a separate page.
 #'
 #' @param object analogizer object. Should call run_tSNE before calling.
@@ -1521,4 +1557,82 @@ modclust <- function(edge, modularity=1,resolution,n.start=100,n.iter=25,random.
   ident.use <- factor(read.table(file = output_file, header = FALSE, sep = "\t")[, 1])
   
   return(ident.use)
+}
+
+#' Makes a riverplot to show how separate cluster assignments from two datasets map onto a joint clustering.
+#'
+#' @param object analogizer object. Should run quantile_align_SNF before calling.
+#' @param cluster1 Cluster assignments for dataset 1. Note that cluster names should be distinct across datasets.
+#' @param cluster1 Cluster assignments for dataset 2. Note that cluster names should be distinct across datasets.
+#' 
+#' @export
+#' @importFrom riverplot makeRiver
+#' @importFrom riverplot plot.riverplot
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' }
+
+riverplot_clusters = function(object,cluster1,cluster2)
+{
+  cluster1 = cluster1[rownames(object@scale.data[[1]])]
+  cluster2 = cluster2[rownames(object@scale.data[[2]])]
+  nodes1 = levels(cluster1)[table(cluster1)>0]
+  nodes2 = levels(cluster2)[table(cluster2)>0]
+  nodes_middle = levels(object@clusters)
+  node_Xs = c(rep(1,length(nodes1)),rep(2,length(nodes_middle)),rep(3,length(nodes2)))
+  edge_list = list()
+  for (i in 1:length(nodes1))
+  {
+    temp = list()
+    i_cells = names(cluster1)[cluster1==nodes1[i]]
+    for (j in 1:length(nodes_middle))
+    {
+      temp[[nodes_middle[j]]] = sum(object@clusters[i_cells]==nodes_middle[j])/length(cluster1)
+    }
+    edge_list[[nodes1[i]]] = temp
+  }
+  cluster3 = object@clusters[rownames(analogy@scale.data[[2]])]
+  for (i in 1:length(nodes_middle))
+  {
+    temp = list()
+    i_cells = names(cluster3)[cluster3==nodes_middle[i]]
+    for (j in 1:length(nodes2))
+    {
+      if (!is.na(sum(cluster2[i_cells]==nodes2[j])))
+      {
+        temp[[nodes2[j]]] = sum(cluster2[i_cells]==nodes2[j])/length(cluster2)
+      }
+    }
+    edge_list[[nodes_middle[i]]] = temp
+  }
+  node_cols = list()
+  
+  ggplotColors <- function(g){
+    d <- 360/g
+    h <- cumsum(c(15, rep(d,g - 1)))
+    hcl(h = h, c = 100, l = 65)
+  }
+  
+  pal = ggplotColors(length(nodes1))
+  for (i in 1:length(nodes1))
+  {
+    node_cols[[nodes1[i]]] = list(col=pal[i])
+  }
+  pal = ggplotColors(length(nodes_middle))
+  for (i in 1:length(nodes_middle))
+  {
+    node_cols[[nodes_middle[i]]] = list(col=pal[i])
+  }
+  pal = ggplotColors(length(nodes2))
+  for (i in 1:length(nodes2))
+  {
+    node_cols[[nodes2[i]]] = list(col=pal[i])
+  }
+  rp = makeRiver(c(nodes1,nodes_middle,nodes2),edge_list,node_xpos=node_Xs,node_styles=node_cols)
+  invisible(capture.output(plot(rp,default_style=list(srt=0))))
 }
