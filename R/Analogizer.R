@@ -1596,7 +1596,7 @@ riverplot_clusters = function(object,cluster1,cluster2)
     }
     edge_list[[nodes1[i]]] = temp
   }
-  cluster3 = object@clusters[rownames(analogy@scale.data[[2]])]
+  cluster3 = object@clusters[rownames(object@scale.data[[2]])]
   for (i in 1:length(nodes_middle))
   {
     temp = list()
