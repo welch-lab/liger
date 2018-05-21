@@ -343,7 +343,7 @@ plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,
   {
     clusters = object@clusters
   }
-  tsne_df$Cluster = clusters
+  tsne_df$Cluster = clusters[names(object@clusters)]
   if (do.shuffle) {
     idx = sample(1:nrow(tsne_df))
     tsne_df = tsne_df[idx,]
@@ -641,8 +641,17 @@ optimizeNewData = function(object,new.data,which.datasets,add.to.existing=T,lamb
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-optimizeSubset = function(object,cell.subset=NULL,lambda=5.0,thresh=1e-4,max_iters=25,datasets.scale=NULL)
+optimizeSubset = function(object,cell.subset=NULL,cluster.subset=NULL,lambda=5.0,thresh=1e-4,max_iters=25,datasets.scale=NULL)
 {
+  if (is.null(cell.subset) & is.null(cluster.subset))
+  {
+    print("Please specify a cell subset or cluster subset.")
+    return(object)
+  }
+  else if (is.null(cell.subset) & !is.null(cluster.subset))
+  {
+    cell.subset = lapply(1:length(object@scale.data),function(i){which(object@clusters[rownames(object@scale.data[[i]])] %in% cluster.subset)})
+  }
   old_names = names(object@raw.data)
   H = object@H
   H = lapply(1:length(object@H),function(i){object@H[[i]][cell.subset[[i]],]})
@@ -652,11 +661,12 @@ optimizeSubset = function(object,cell.subset=NULL,lambda=5.0,thresh=1e-4,max_ite
     object@norm.data[[i]] = object@norm.data[[i]][,cell.subset[[i]]]   
     if (names(object@norm.data)[i] %in% datasets.scale)
     {
-      object@scale.data[[i]] = scale(t(object@norm.data[[i]]),scale=T,center=F)
+      object@scale.data[[i]] = scale(t(object@norm.data[[i]][object@var.genes,]),scale=T,center=F)
+      object@scale.data[[i]][is.na(object@scale.data[[i]])] = 0
     }
     else
     {
-      object@scale.data[[i]] = t(object@norm.data[[i]])
+      object@scale.data[[i]] = t(object@norm.data[[i]][object@var.genes,])
     }
     print(dim(object@scale.data[[i]]))
   }
