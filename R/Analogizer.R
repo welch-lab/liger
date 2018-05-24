@@ -1090,7 +1090,7 @@ plot_gene = function(object,gene,log.norm=NULL)
   gene_plots = list()
   for (i in 1:length(object@norm.data))
   {
-    plot_i = (ggplot(gene_df[rownames(object@scale.data[[i]]),],aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point()+scale_color_gradient2(low="yellow",mid="red",high="black",midpoint=(max(gene_vals,na.rm=T)-min(gene_vals,na.rm=T))/2,limits=c(min(gene_vals,na.rm=T),max(gene_vals,na.rm=T)))+ggtitle(names(object@scale.data)[i]))
+    plot_i = (ggplot(gene_df[rownames(object@scale.data[[i]]),],aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point(size=0.1)+scale_color_gradient2(low="yellow",mid="red",high="black",midpoint=(max(gene_vals,na.rm=T)-min(gene_vals,na.rm=T))/2,limits=c(min(gene_vals,na.rm=T),max(gene_vals,na.rm=T)))+ggtitle(names(object@scale.data)[i]))
     gene_plots[[i]] = plot_i
   }
   print(plot_grid(plotlist=gene_plots,ncol=2))
@@ -1528,8 +1528,8 @@ assign.singletons<-function(object,idents,k.use = 15) {
     idents = droplevels(idents)
   }
   return(idents)
-  
 }
+
 
 SLMCluster<-function(edge,prune.thresh=0.2,nstart=100,iter.max=10,algorithm=1,R=1,ModularityJarFile="",random.seed=1) {
   
@@ -1645,4 +1645,90 @@ riverplot_clusters = function(object,cluster1,cluster2)
   }
   rp = makeRiver(c(nodes1,nodes_middle,nodes2),edge_list,node_xpos=node_Xs,node_styles=node_cols)
   invisible(capture.output(plot(rp,default_style=list(srt=0))))
+}
+
+make_river<-function(cluster1,cluster2,cluster_consensus,min.frac = 0.01,river.yscale = 1,river.lty=0,river.node_margin = 0.1,label.cex = 1,label.col='black',lab.srt = 0,node.order = "auto") {
+  cluster1 = droplevels(cluster1)
+  cluster2 = droplevels(cluster2)
+  cluster_consensus=droplevels(cluster_consensus)
+  if (node.order == "auto") {
+    tab.1 = table(cluster1,cluster_consensus[names(cluster1)])
+    tab.1 = sweep(tab.1,1,rowSums(tab.1),"/")
+    tab.2 = table(cluster2,cluster_consensus[names(cluster2)])
+    tab.2 = sweep(tab.2, 1, rowSums(tab.2),"/")
+    whichmax.1 = apply(tab.1,1,which.max)
+    whichmax.2 = apply(tab.2,1,which.max)
+    ord.1 = order(whichmax.1)
+    ord.2 = order(whichmax.2)
+    cluster1 = factor(cluster1,levels=levels(cluster1)[ord.1])
+    cluster2 = factor(cluster2,levels=levels(cluster2)[ord.2])
+  } else {
+    if (is.list(node.order)) {
+      cluster1 = factor(cluster1,levels=levels(cluster1)[node.order[[1]]])
+      cluster2 = factor(cluster2,levels=levels(cluster2)[node.order[[2]]])
+    } 
+  }
+  cluster1 = cluster1[!is.na(cluster1)]
+  cluster2 = cluster2[!is.na(cluster2)]
+  nodes1 = levels(cluster1)[table(cluster1) > 0]
+  nodes2 = levels(cluster2)[table(cluster2) > 0]
+  nodes_middle = levels(cluster_consensus)[table(cluster_consensus) > 0]
+  node_Xs = c(rep(1, length(nodes1)), rep(2, length(nodes_middle)), 
+              rep(3, length(nodes2)))
+  edge_list = list()
+  for (i in 1:length(nodes1)) {
+    temp = list()
+    i_cells = names(cluster1)[cluster1 == nodes1[i]]
+    for (j in 1:length(nodes_middle)) {
+      if(length(which(cluster_consensus[i_cells] == nodes_middle[j]))/length(i_cells) > min.frac) {
+        temp[[nodes_middle[j]]] = sum(cluster_consensus[i_cells] == 
+                                        nodes_middle[j])/length(cluster1)
+      } 
+    }
+    edge_list[[nodes1[i]]] = temp
+  }
+  cluster3 = cluster_consensus[names(cluster2)]
+  for (i in 1:length(nodes_middle)) {
+    temp = list()
+    i_cells = names(cluster3)[cluster3 == nodes_middle[i]]
+    for (j in 1:length(nodes2)) {
+      j_cells = names(cluster2)[cluster2 == nodes2[j]]
+      if (length(which(cluster_consensus[j_cells] == nodes_middle[i]))/length(j_cells) > min.frac) {
+        if (!is.na(sum(cluster2[i_cells] == nodes2[j]))) {
+          temp[[nodes2[j]]] = sum(cluster2[i_cells] == 
+                                    nodes2[j])/length(cluster2)
+        }
+      }
+    } 
+    edge_list[[nodes_middle[i]]] = temp
+  }
+  node_cols = list()
+  ggplotColors <- function(g) {
+    d <- 360/g
+    h <- cumsum(c(15, rep(d, g - 1)))
+    hcl(h = h, c = 100, l = 65)
+  }
+  pal = ggplotColors(length(nodes1))
+  for (i in 1:length(nodes1)) {
+    node_cols[[nodes1[i]]] = list(col = pal[i],textcex=label.cex,textcol=label.col,srt= lab.srt)
+  }
+  pal = ggplotColors(length(nodes_middle))
+  for (i in 1:length(nodes_middle)) {
+    node_cols[[nodes_middle[i]]] = list(col = pal[i],textcex=label.cex,textcol=label.col,srt= lab.srt)
+  }
+  pal = ggplotColors(length(nodes2))
+  for (i in 1:length(nodes2)) {
+    node_cols[[nodes2[i]]] = list(col = pal[i],textcex=label.cex,textcol=label.col,srt= lab.srt)
+  }
+  nodes = list(nodes1,nodes_middle,nodes2)
+  node.limit= max(unlist(lapply(nodes,length)))
+  
+  node_Ys = lapply(1:length(nodes),function(i){
+    seq(1,node.limit,by = node.limit/length(nodes[[i]]))  
+    
+  })
+  rp = makeRiver(c(nodes1, nodes_middle, nodes2), edge_list, 
+                 node_xpos = node_Xs, node_ypos = unlist(node_Ys),node_styles = node_cols)
+  invisible(capture.output(riverplot(rp,yscale = river.yscale,lty= river.lty,node_margin = river.node_margin)))
+  
 }
