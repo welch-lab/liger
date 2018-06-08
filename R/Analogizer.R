@@ -790,7 +790,8 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
 #' @return alignment statistic
 #' @importFrom FNN get.knn
 #' @importFrom NNLM nnmf
-#' @importFrom ICA icafast
+#' @importFrom ica icafast
+#' @importFrom irlba prcomp_irlba
 #' @export
 #' @examples
 #' \dontrun{
@@ -801,7 +802,7 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-distortion_metric = function(object,dr_method="PCA",ndims=40,k=10)
+distortion_metric = function(object,dr_method="PCA",ndims=40,k=10, use_aligned=TRUE, return_breakdown=FALSE)
 {
   print(paste("Reducing dimensionality using",dr_method))
   dr = list()
@@ -815,24 +816,44 @@ distortion_metric = function(object,dr_method="PCA",ndims=40,k=10)
   }
   else #PCA
   {
-    dr = lapply(object@scale.data,function(x){suppressWarnings(prcomp(t(x),rank. = ndims,scale. = (colSums(x)>0),center=F)$rotation)})
+    dr = lapply(object@scale.data,function(x){suppressWarnings(prcomp_irlba(t(x),n = ndims,
+                                                                            scale. = (colSums(x)>0),center=F)$rotation)})
+    for (i in 1:length(dr)) 
+    {
+      rownames(dr[[i]]) = rownames(object@scale.data[[i]])
+    }
   }
   ns = sapply(object@scale.data,nrow)
   n = sum(ns)
   jaccard_inds = c()
+  distorts = c()
+  
   for (i in 1:length(dr))
   {
-    
+    jaccard_inds_i = c()
+    if (use_aligned)
+    {
+      original = object@H.norm[rownames(dr[[i]]),]
+    } else 
+    {
+      original = object@H[[i]]
+    }
     fnn.1 = get.knn(dr[[i]],k=k)
-    fnn.2 = get.knn(object@H[[i]],k=k)
-    jaccard_inds = c(jaccard_inds,sapply(1:ns[i],function(i){
+    fnn.2 = get.knn(original,k=k)
+    jaccard_inds_i = c(jaccard_inds_i,sapply(1:ns[i],function(i){
       intersect = intersect(fnn.1$nn.index[i,],fnn.2$nn.index[i,])
       union = union(fnn.1$nn.index[i,],fnn.2$nn.index[i,])
       length(intersect)/length(union)
     }))
-    jaccard_inds = jaccard_inds[is.finite(jaccard_inds)]
+    jaccard_inds_i = jaccard_inds_i[is.finite(jaccard_inds_i)]
+    jaccard_inds = c(jaccard_inds,jaccard_inds_i)
+    
+    distorts = c(distorts, mean(jaccard_inds_i))
   }
-  
+  if (return_breakdown) 
+  {
+    return(distorts)
+  }
   return(mean(jaccard_inds))
 }
 
@@ -1397,7 +1418,8 @@ Mode <- function(x, na.rm = FALSE) {
 #' analogy = scaleNotCenter(analogy)
 #' }
 
-quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset=NULL,min_cells=2,quantiles=50,nstart=10,resolution = 1) {
+quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset=NULL,min_cells=2,
+                             quantiles=50,nstart=10,resolution = 1, print_align_summary=TRUE) {
   if (is.null(ref_dataset)) {
     ns = sapply(object@scale.data, nrow)
     ref_dataset = names(object@scale.data)[which.max(ns)]
@@ -1418,26 +1440,29 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
   })
   names(clusters) = names(object@H)
   dims = ncol(object@H[[ref_dataset]])
+  
+  too.few = rep(list(c(), length(Hs)))
+  names(too.few) = names(Hs)
+  unaligned = rep(list(c(), length(Hs)))
+  names(unaligned) = names(Hs)
   for (k in 1:length(Hs)) {
     for (i in 1:dims) {
       for (j in levels(idents)) {
-        if (sum(clusters[[ref_dataset]] == j) < min_cells |
-            sum(clusters[[k]] == j) < min_cells) {
-          print(paste0("cluster ",j, " in dataset ",names(Hs)[k]," is not aligned."))
-          print("Too few cells")
+        if (sum(clusters[[ref_dataset]] == j, na.rm = T) < min_cells |
+            sum(clusters[[k]] == j, na.rm = T) < min_cells) {
+          too.few[[names(Hs)[k]]] = c(too.few[[names(Hs)[k]]], j)
           next
         }
-        if (sum(clusters[[k]] == j) == 1) {
+        if (sum(clusters[[k]] == j, na.rm = T) == 1) {
           Hs[[k]][clusters[[k]] == j, i] = mean(Hs[[ref_dataset]][clusters[[ref_dataset]] ==
                                                                     j, i])
-          print(paste0("cluster ",j, " in dataset ",names(Hs)[k]," is not aligned."))
-          
+          unaligned[[names(Hs)[k]]] = c(unaligned[[names(Hs)[k]]], j)
           next
         }
         q2 = quantile(Hs[[k]][clusters[[k]] == j, i],
-                      seq(0, 1, by = 1/quantiles))
+                      seq(0, 1, by = 1/quantiles), na.rm = T)
         q1 = quantile(Hs[[ref_dataset]][clusters[[ref_dataset]] ==
-                                          j, i], seq(0, 1, by = 1/quantiles))
+                                          j, i], seq(0, 1, by = 1/quantiles), na.rm = T)
         if (sum(q1) == 0 | sum(q2) == 0 | length(unique(q1)) <
             2 | length(unique(q2)) < 2) {
           new_vals = rep(0, sum(clusters[[k]] == j))
@@ -1447,8 +1472,20 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
           new_vals = warp_func(Hs[[k]][clusters[[k]] ==
                                          j, i])
         }
+        if (anyNA(new_vals)) {
+          stop('Select lower resolution; too many communities detected.')
+        }
         Hs[[k]][clusters[[k]] == j, i] = new_vals
       }
+    }
+  }
+  if (print_align_summary) {
+    print('Summary:')
+    for (i in 1:length(Hs)) {
+      print(paste('In dataset', names(Hs)[i], 'these clusters did not align (too few cells):'))
+      print(unique(too.few[[names(Hs)[i]]]))
+      print(paste('In dataset', names(Hs)[i], 'these clusters did not align:'))
+      print(unique(unaligned[[names(Hs)[i]]]))
     }
   }
   object@H.norm = Reduce(rbind, Hs)
