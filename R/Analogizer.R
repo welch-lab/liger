@@ -300,10 +300,12 @@ run_tSNE<-function (object, rand.seed = 42,use.raw = F,factors.use = 1:ncol(obje
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-run_umap<-function (object, rand.seed = 42,use.raw = F,k=2,distance = 'euclidean')
+run_umap<-function (object, rand.seed = 42, use.raw = F, k=2, distance = 'euclidean', 
+                    n_neighbors = 10, min_dist = 0.1)
 {
   UMAP<-import("umap")
-  umapper = UMAP$UMAP(n_components=as.integer(k),metric = distance)
+  umapper = UMAP$UMAP(n_components=as.integer(k),metric = distance, n_neighbors = as.integer(n_neighbors),
+                      min_dist = min_dist)
   Rumap = umapper$fit_transform
   if (use.raw) {
     raw.data = do.call(rbind,object@H)
@@ -365,6 +367,68 @@ plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,
     print(p1)
     print(p2)
   }
+  
+}
+
+#' Plot comparison scatter plots of unaligned and aligned factor loadings 
+#'
+#' @param object analogizer object. Should call quantile_align_SNF before calling.
+#' @param num_genes Number of genes to display for each factor
+#' @param cells.highlight Names of specific cells to highlight in plot (black)
+#' @param plot.tsne Plot t-SNE coordinates for each factor 
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' }
+factor_plots = function (object, num_genes = 10,cells.highlight = NULL, plot.tsne = F)
+{
+  k = ncol(object@H.norm)
+  pb = txtProgressBar(min = 0, max = k, style = 3)
+  
+  W = t(object@W)
+  rownames(W)= colnames(object@scale.data[[1]])
+  Hs_norm = object@H.norm
+  for (i in 1:k) {
+    par(mfrow=c(2,1))
+    top_genes.W = rownames(W)[order(W[,i],decreasing=T)[1:num_genes]]
+    top_genes.W.string = paste0(top_genes.W,collapse=", ")
+    factor_textstring = paste0("Factor",i)
+
+    plot_title1 = paste(factor_textstring,'\n',top_genes.W.string,'\n')
+    cols = rep("gray",times=nrow(Hs_norm))
+    names(cols) = rownames(Hs_norm)
+    cols.use = rainbow(length(object@H))
+    
+    for (cl in 1:length(object@H)) {
+      cols[rownames(object@H[[cl]])] = rep(cols.use[cl],times=nrow(object@H[[cl]]))
+    }
+    if(!is.null(cells.highlight)) {
+      cols[cells.highlight] = rep('black',times = length(cells.highlight))
+      
+    }
+    plot(1:nrow(Hs_norm),do.call(rbind,object@H)[,i],cex=0.2,pch=20,
+         col=cols,main=plot_title1,xlab="Cell",ylab="Raw H Score")
+    legend("top",names(object@H),pch=20,col=cols.use,horiz=T,cex=0.75)
+    plot(1:nrow(Hs_norm),object@H.norm[,i],pch=20,cex=0.2,
+         col=cols,xlab="Cell",ylab = "Quantile_norm Score")
+    if (plot.tsne) {
+      par(mfrow = c(1,1))
+      fplot(object@tsne.coords,object@H.norm[,i],title=paste0('Factor ',i))
+    }
+    setTxtProgressBar(pb, i)
+  }
+}
+
+# Helper function for factor_plot
+fplot = function(tsne,NMFfactor,title,cols.use=heat.colors(10),pt.size=0.7,pch.use=20) {
+  data.cut=as.numeric(as.factor(cut(as.numeric(NMFfactor),breaks=length(cols.use))))
+  data.col=rev(cols.use)[data.cut]
+  plot(tsne[,1],tsne[,2],col=data.col,cex=pt.size,pch=pch.use,main=title)
   
 }
 
