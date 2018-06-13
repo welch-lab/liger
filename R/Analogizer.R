@@ -321,6 +321,7 @@ run_umap<-function (object, rand.seed = 42,use.raw = F,k=2,distance = 'euclidean
 #' @param pt.size Controls size of points representing cells
 #' @param text.size Controls size of plot text
 #' @param do.shuffle Randomly shuffle points so that points from same dataset are not plotted one after the other.
+#' @param return.plots Return ggplot objects instead of printing directly
 #' @export
 #' @importFrom cowplot plot_grid
 #' @importFrom ggplot2 ggplot geom_point aes
@@ -333,7 +334,8 @@ run_umap<-function (object, rand.seed = 42,use.raw = F,k=2,distance = 'euclidean
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,do.shuffle = T,clusters=NULL){
+plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,do.shuffle = T,clusters=NULL,
+                                  return.plots=F){
   tsne_df = data.frame(object@tsne.coords)
   colnames(tsne_df) = c("tsne1", "tsne2")
   tsne_df$Dataset = unlist(lapply(1:length(object@H), function(x) {
@@ -349,11 +351,20 @@ plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,
     tsne_df = tsne_df[idx,]
   }
   
-  print((ggplot(tsne_df, aes(x = tsne1, y = tsne2,
-                             color = Dataset)) + geom_point(size=pt.size)+ ggtitle(paste0(title,", dataset alignment"))))
+  p1 = ggplot(tsne_df, aes(x = tsne1, y = tsne2,
+                           color = Dataset)) + geom_point(size=pt.size)+ ggtitle(paste0(title,", dataset alignment"))
   centers <- tsne_df %>% dplyr::group_by(Cluster) %>% dplyr::summarize(tsne1 = median(x = tsne1),
                                                                 tsne2 = median(x = tsne2))
-  print(ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(alpha=0.5,size=pt.size) + geom_point(data = centers, mapping = aes(x = tsne1,y = tsne1), size = 0, alpha = 0) + geom_text(data=centers,mapping = aes(label = Cluster),colour='black',size=text.size) + ggtitle(paste0(title,", published clustering")))
+  p2 = ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(alpha=0.5,size=pt.size) + 
+          geom_point(data = centers, mapping = aes(x = tsne1,y = tsne1), size = 0, alpha = 0) + 
+          geom_text(data=centers,mapping = aes(label = Cluster),colour='black',size=text.size) + 
+          ggtitle(paste0(title,", published clustering"))
+  if (return.plots) {
+    return(list(p1, p2))
+  } else {
+    print(p1)
+    print(p2)
+  }
   
 }
 
@@ -870,6 +881,8 @@ distortion_metric = function(object,dr_method="PCA",ndims=40,k=10, use_aligned=T
 #' Calculate alignment statistic to quantify how well-aligned two or more datasets are.
 #'
 #' @param object analogizer object. Should call quantile_norm before calling.
+#' @param k Number of nearest neighbors to use in calculating alignment.
+#' @param rand.seed Random seed for reproducibility
 #' @return alignment statistic
 #' @importFrom FNN get.knn
 #' @export
@@ -882,7 +895,7 @@ distortion_metric = function(object,dr_method="PCA",ndims=40,k=10, use_aligned=T
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-alignment_metric<-function(object)
+alignment_metric<-function(object, k=NULL, rand.seed=1)
 {
   num_cells = nrow(object@H.norm)
   num_factors = ncol(object@H.norm)
@@ -890,13 +903,16 @@ alignment_metric<-function(object)
   N = length(object@H)
   rownames(nmf_factors)=names(object@clusters)
   
+  set.seed(rand.seed)
   sampled_cells = c()
   min_cells = min(sapply(object@H, function(x){nrow(x)}))
   for (i in 1:N)
   {
     sampled_cells = c(sampled_cells,sample(rownames(object@scale.data[[i]]),min_cells))
   }
-  k = floor(0.01 * num_cells)
+  if (is.null(k)) {
+    k = floor(0.01 * num_cells)
+  }
   knn_graph = get.knn(nmf_factors[sampled_cells, 1:num_factors], k)
   dataset = unlist(sapply(1:N, function(x) {
     rep(names(object@H)[x], nrow(object@H[[x]]))
