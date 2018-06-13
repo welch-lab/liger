@@ -300,10 +300,12 @@ run_tSNE<-function (object, rand.seed = 42,use.raw = F,factors.use = 1:ncol(obje
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-run_umap<-function (object, rand.seed = 42,use.raw = F,k=2,distance = 'euclidean')
+run_umap<-function (object, rand.seed = 42, use.raw = F, k=2, distance = 'euclidean', 
+                    n_neighbors = 10, min_dist = 0.1)
 {
   UMAP<-import("umap")
-  umapper = UMAP$UMAP(n_components=as.integer(k),metric = distance)
+  umapper = UMAP$UMAP(n_components=as.integer(k),metric = distance, n_neighbors = as.integer(n_neighbors),
+                      min_dist = min_dist)
   Rumap = umapper$fit_transform
   if (use.raw) {
     raw.data = do.call(rbind,object@H)
@@ -321,6 +323,7 @@ run_umap<-function (object, rand.seed = 42,use.raw = F,k=2,distance = 'euclidean
 #' @param pt.size Controls size of points representing cells
 #' @param text.size Controls size of plot text
 #' @param do.shuffle Randomly shuffle points so that points from same dataset are not plotted one after the other.
+#' @param return.plots Return ggplot objects instead of printing directly
 #' @export
 #' @importFrom cowplot plot_grid
 #' @importFrom ggplot2 ggplot geom_point aes
@@ -333,7 +336,8 @@ run_umap<-function (object, rand.seed = 42,use.raw = F,k=2,distance = 'euclidean
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,do.shuffle = T,clusters=NULL){
+plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,do.shuffle = T,clusters=NULL,
+                                  return.plots=F){
   tsne_df = data.frame(object@tsne.coords)
   colnames(tsne_df) = c("tsne1", "tsne2")
   tsne_df$Dataset = unlist(lapply(1:length(object@H), function(x) {
@@ -349,11 +353,82 @@ plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,
     tsne_df = tsne_df[idx,]
   }
   
-  print((ggplot(tsne_df, aes(x = tsne1, y = tsne2,
-                             color = Dataset)) + geom_point(size=pt.size)+ ggtitle(paste0(title,", dataset alignment"))))
+  p1 = ggplot(tsne_df, aes(x = tsne1, y = tsne2,
+                           color = Dataset)) + geom_point(size=pt.size)+ ggtitle(paste0(title,", dataset alignment"))
   centers <- tsne_df %>% dplyr::group_by(Cluster) %>% dplyr::summarize(tsne1 = median(x = tsne1),
                                                                 tsne2 = median(x = tsne2))
-  print(ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(alpha=0.5,size=pt.size) + geom_point(data = centers, mapping = aes(x = tsne1,y = tsne1), size = 0, alpha = 0) + geom_text(data=centers,mapping = aes(label = Cluster),colour='black',size=text.size) + ggtitle(paste0(title,", published clustering")))
+  p2 = ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(alpha=0.5,size=pt.size) + 
+          geom_point(data = centers, mapping = aes(x = tsne1,y = tsne1), size = 0, alpha = 0) + 
+          geom_text(data=centers,mapping = aes(label = Cluster),colour='black',size=text.size) + 
+          ggtitle(paste0(title,", published clustering"))
+  if (return.plots) {
+    return(list(p1, p2))
+  } else {
+    print(p1)
+    print(p2)
+  }
+  
+}
+
+#' Plot comparison scatter plots of unaligned and aligned factor loadings 
+#'
+#' @param object analogizer object. Should call quantile_align_SNF before calling.
+#' @param num_genes Number of genes to display for each factor
+#' @param cells.highlight Names of specific cells to highlight in plot (black)
+#' @param plot.tsne Plot t-SNE coordinates for each factor 
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' }
+factor_plots = function (object, num_genes = 10,cells.highlight = NULL, plot.tsne = F)
+{
+  k = ncol(object@H.norm)
+  pb = txtProgressBar(min = 0, max = k, style = 3)
+  
+  W = t(object@W)
+  rownames(W)= colnames(object@scale.data[[1]])
+  Hs_norm = object@H.norm
+  for (i in 1:k) {
+    par(mfrow=c(2,1))
+    top_genes.W = rownames(W)[order(W[,i],decreasing=T)[1:num_genes]]
+    top_genes.W.string = paste0(top_genes.W,collapse=", ")
+    factor_textstring = paste0("Factor",i)
+
+    plot_title1 = paste(factor_textstring,'\n',top_genes.W.string,'\n')
+    cols = rep("gray",times=nrow(Hs_norm))
+    names(cols) = rownames(Hs_norm)
+    cols.use = rainbow(length(object@H))
+    
+    for (cl in 1:length(object@H)) {
+      cols[rownames(object@H[[cl]])] = rep(cols.use[cl],times=nrow(object@H[[cl]]))
+    }
+    if(!is.null(cells.highlight)) {
+      cols[cells.highlight] = rep('black',times = length(cells.highlight))
+      
+    }
+    plot(1:nrow(Hs_norm),do.call(rbind,object@H)[,i],cex=0.2,pch=20,
+         col=cols,main=plot_title1,xlab="Cell",ylab="Raw H Score")
+    legend("top",names(object@H),pch=20,col=cols.use,horiz=T,cex=0.75)
+    plot(1:nrow(Hs_norm),object@H.norm[,i],pch=20,cex=0.2,
+         col=cols,xlab="Cell",ylab = "Quantile_norm Score")
+    if (plot.tsne) {
+      par(mfrow = c(1,1))
+      fplot(object@tsne.coords,object@H.norm[,i],title=paste0('Factor ',i))
+    }
+    setTxtProgressBar(pb, i)
+  }
+}
+
+# Helper function for factor_plot
+fplot = function(tsne,NMFfactor,title,cols.use=heat.colors(10),pt.size=0.7,pch.use=20) {
+  data.cut=as.numeric(as.factor(cut(as.numeric(NMFfactor),breaks=length(cols.use))))
+  data.col=rev(cols.use)[data.cut]
+  plot(tsne[,1],tsne[,2],col=data.col,cex=pt.size,pch=pch.use,main=title)
   
 }
 
@@ -870,6 +945,8 @@ distortion_metric = function(object,dr_method="PCA",ndims=40,k=10, use_aligned=T
 #' Calculate alignment statistic to quantify how well-aligned two or more datasets are.
 #'
 #' @param object analogizer object. Should call quantile_norm before calling.
+#' @param k Number of nearest neighbors to use in calculating alignment.
+#' @param rand.seed Random seed for reproducibility
 #' @return alignment statistic
 #' @importFrom FNN get.knn
 #' @export
@@ -882,7 +959,7 @@ distortion_metric = function(object,dr_method="PCA",ndims=40,k=10, use_aligned=T
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-alignment_metric<-function(object)
+alignment_metric<-function(object, k=NULL, rand.seed=1)
 {
   num_cells = nrow(object@H.norm)
   num_factors = ncol(object@H.norm)
@@ -890,13 +967,16 @@ alignment_metric<-function(object)
   N = length(object@H)
   rownames(nmf_factors)=names(object@clusters)
   
+  set.seed(rand.seed)
   sampled_cells = c()
   min_cells = min(sapply(object@H, function(x){nrow(x)}))
   for (i in 1:N)
   {
     sampled_cells = c(sampled_cells,sample(rownames(object@scale.data[[i]]),min_cells))
   }
-  k = floor(0.01 * num_cells)
+  if (is.null(k)) {
+    k = floor(0.01 * num_cells)
+  }
   knn_graph = get.knn(nmf_factors[sampled_cells, 1:num_factors], k)
   dataset = unlist(sapply(1:N, function(x) {
     rep(names(object@H)[x], nrow(object@H[[x]]))
