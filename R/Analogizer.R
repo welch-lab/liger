@@ -1175,7 +1175,9 @@ calc_dataset_specificity=function(object)
 #' Plot t-SNE coordinates per dataset, colored by expression of specified gene
 #'
 #' @param object analogizer object. Should call run_tSNE before calling.
+#' @param gene Gene for which to plot relative expression. 
 #' @param methylation_indices Indices of datasets in object with methylation data. 
+#' @param return.plots Return ggplot objects instead of printing directly
 #' @export
 #' @importFrom cowplot plot_grid
 #' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
@@ -1218,7 +1220,8 @@ calc_dataset_specificity=function(object)
 #   print(plot_grid(plotlist=gene_plots,ncol=2))
 # }
 
-plot_gene = function(object,gene,log.norm=NULL, methylation_indices=NULL)
+plot_gene = function(object, gene, methylation_indices=NULL, 
+                     return.plots=F)
 {
   gene_vals = c()
   for (i in 1:length(object@norm.data))
@@ -1255,7 +1258,13 @@ plot_gene = function(object,gene,log.norm=NULL, methylation_indices=NULL)
                 ggtitle(names(object@scale.data)[i]))
     gene_plots[[i]] = plot_i
   }
-  print(plot_grid(plotlist=gene_plots,ncol=2))
+  if (return.plots) {
+    return(gene_plots)
+  } else {
+    for (i in 1:length(gene_plots)) {
+      print(gene_plots[[i]])
+    }
+  }
 }
 
 #' Plot expression of multiple genes, each on a separate page.
