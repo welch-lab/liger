@@ -323,6 +323,7 @@ run_umap<-function (object, rand.seed = 42, use.raw = F, k=2, distance = 'euclid
 #' @param pt.size Controls size of points representing cells
 #' @param text.size Controls size of plot text
 #' @param do.shuffle Randomly shuffle points so that points from same dataset are not plotted one after the other.
+#' @param axis.labels Vector of two strings to use as x and y labels respectively
 #' @param return.plots Return ggplot objects instead of printing directly
 #' @export
 #' @importFrom cowplot plot_grid
@@ -337,7 +338,7 @@ run_umap<-function (object, rand.seed = 42, use.raw = F, k=2, distance = 'euclid
 #' analogy = scaleNotCenter(analogy)
 #' }
 plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,do.shuffle = T,clusters=NULL,
-                                  return.plots=F){
+                                  axis.labels = NULL, return.plots=F){
   tsne_df = data.frame(object@tsne.coords)
   colnames(tsne_df) = c("tsne1", "tsne2")
   tsne_df$Dataset = unlist(lapply(1:length(object@H), function(x) {
@@ -354,13 +355,22 @@ plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,
   }
   
   p1 = ggplot(tsne_df, aes(x = tsne1, y = tsne2,
-                           color = Dataset)) + geom_point(size=pt.size)+ ggtitle(paste0(title,", dataset alignment"))
+                           color = Dataset)) + geom_point(size=pt.size)
+  
   centers <- tsne_df %>% dplyr::group_by(Cluster) %>% dplyr::summarize(tsne1 = median(x = tsne1),
                                                                 tsne2 = median(x = tsne2))
   p2 = ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(alpha=0.5,size=pt.size) + 
           geom_point(data = centers, mapping = aes(x = tsne1,y = tsne1), size = 0, alpha = 0) + 
-          geom_text(data=centers,mapping = aes(label = Cluster),colour='black',size=text.size) + 
-          ggtitle(paste0(title,", published clustering"))
+          geom_text(data=centers,mapping = aes(label = Cluster),colour='black',size=text.size) 
+          
+  if (!is.null(title)) {
+    p1 = p1 + ggtitle(paste0(title,", dataset alignment"))
+    p2 = p2 + ggtitle(paste0(title,", published clustering"))
+  }
+  if (!is.null(axis.labels)) {
+    p1 = p1 + xlab(axis.labels[1]) + ylab(axis.labels[2])
+    p2 = p2 + xlab(axis.labels[1]) + ylab(axis.labels[2])
+  }
   if (return.plots) {
     return(list(p1, p2))
   } else {
@@ -959,7 +969,7 @@ distortion_metric = function(object,dr_method="PCA",ndims=40,k=10, use_aligned=T
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-alignment_metric<-function(object, k=NULL, rand.seed=1)
+alignment_metric<-function(object, k=NULL, rand.seed=1, by_dataset=F)
 {
   num_cells = nrow(object@H.norm)
   num_factors = ncol(object@H.norm)
@@ -985,10 +995,20 @@ alignment_metric<-function(object, k=NULL, rand.seed=1)
   dataset = dataset[sampled_cells]
   num_sampled = N*min_cells
   num_same_dataset = rep(k, num_sampled)
-
+  
   for (i in 1:num_sampled) {
     inds = knn_graph$nn.index[i, ]
     num_same_dataset[i] = sum(dataset[inds] == dataset[i])
+  }
+  if (by_dataset) {
+    alignments = c()
+    for (i in 1:N) {
+      start = 1+ (i-1)*min_cells
+      end = i*min_cells
+      alignment = 1 - ((mean(num_same_dataset[start:end]) - (k/N))/(k-k/N))
+      alignments = c(alignments, alignment)
+    }
+    return(alignments)
   }
   return(1 - ((mean(num_same_dataset) - (k/N))/(k-k/N)))
 }
@@ -1155,6 +1175,7 @@ calc_dataset_specificity=function(object)
 #' Plot t-SNE coordinates per dataset, colored by expression of specified gene
 #'
 #' @param object analogizer object. Should call run_tSNE before calling.
+#' @param methylation_indices Indices of datasets in object with methylation data. 
 #' @export
 #' @importFrom cowplot plot_grid
 #' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
@@ -1166,63 +1187,72 @@ calc_dataset_specificity=function(object)
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-plot_gene = function(object,gene,log.norm=NULL)
-{
-  
-  gene_vals = c()
-  for (i in 1:length(object@norm.data))
-  {
-    
-    if (i != 2)
-    {
-      gene_vals = c(gene_vals,object@norm.data[[i]][gene,])
-      gene_vals = log2(10000*gene_vals+1)
-    }
-    else
-    {
-      gene_vals = c(gene_vals,2*object@norm.data[[i]][,gene])
-    }
-  }
-  
-  gene_df = data.frame(object@tsne.coords)
-  rownames(gene_df)=names(object@clusters)
-  gene_df$Gene = gene_vals[rownames(gene_df)]
-  colnames(gene_df)=c("tSNE1","tSNE2",gene)
-  gene_plots = list()
-  for (i in 1:length(object@norm.data))
-  {
-    plot_i = (ggplot(gene_df[rownames(object@scale.data[[i]]),],aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point(size=0.1)+scale_color_gradient2(low="yellow",mid="red",high="black",midpoint=(max(gene_vals,na.rm=T)-min(gene_vals,na.rm=T))/2,limits=c(min(gene_vals,na.rm=T),max(gene_vals,na.rm=T)))+ggtitle(names(object@scale.data)[i]))
-    gene_plots[[i]] = plot_i
-  }
-  print(plot_grid(plotlist=gene_plots,ncol=2))
-}
+# plot_gene = function(object,gene,log.norm=NULL)
+# {
+#   
+#   gene_vals = c()
+#   for (i in 1:length(object@norm.data))
+#   {
+#     
+#     if (i != 2)
+#     {
+#       gene_vals = c(gene_vals,object@norm.data[[i]][gene,])
+#       gene_vals = log2(10000*as.numeric(gene_vals)+1)
+#     }
+#     else
+#     {
+#       gene_vals = c(gene_vals,2*object@norm.data[[i]][,gene])
+#     }
+#   }
+#   
+#   gene_df = data.frame(object@tsne.coords)
+#   rownames(gene_df)=names(object@clusters)
+#   gene_df$Gene = gene_vals[rownames(gene_df)]
+#   colnames(gene_df)=c("tSNE1","tSNE2",gene)
+#   gene_plots = list()
+#   for (i in 1:length(object@norm.data))
+#   {
+#     plot_i = (ggplot(gene_df[rownames(object@scale.data[[i]]),],aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point(size=0.1)+scale_color_gradient2(low="yellow",mid="red",high="black",midpoint=(max(gene_vals,na.rm=T)-min(gene_vals,na.rm=T))/2,limits=c(min(gene_vals,na.rm=T),max(gene_vals,na.rm=T)))+ggtitle(names(object@scale.data)[i]))
+#     gene_plots[[i]] = plot_i
+#   }
+#   print(plot_grid(plotlist=gene_plots,ncol=2))
+# }
 
-plot_gene = function(object,gene,log.norm=NULL)
+plot_gene = function(object,gene,log.norm=NULL, methylation_indices=NULL)
 {
-  
   gene_vals = c()
   for (i in 1:length(object@norm.data))
   {
-    if (gene %in% rownames(object@norm.data[[i]]))
-    {
-      gene_vals = c(gene_vals,object@norm.data[[i]][gene,])
-      gene_vals = log2(10000*gene_vals+1)
+    if (i %in% methylation_indices) {
+      gene_vals = c(gene_vals,2*object@norm.data[[i]][,gene])
+    } else {
+      if (gene %in% rownames(object@norm.data[[i]]))
+      {
+        gene_vals = c(gene_vals,object@norm.data[[i]][gene,])
+        gene_vals = lapply(gene_vals, function(x) {log2(10000*x + 1)})
+      }
+      else
+      {
+        gene_vals = c(gene_vals,rep(0,nrow(object@norm.data[[i]])))
+      }
     }
-    else
-    {
-      gene_vals = c(gene_vals,rep(0,nrow(object@norm.data[[i]])))
-    }
-    
   }
   
   gene_df = data.frame(object@tsne.coords)
   rownames(gene_df)=names(object@clusters)
-  gene_df$Gene = gene_vals[rownames(gene_df)]
+  gene_df$Gene = as.numeric(gene_vals[rownames(gene_df)])
   colnames(gene_df)=c("tSNE1","tSNE2",gene)
   gene_plots = list()
   for (i in 1:length(object@norm.data))
   {
-    plot_i = (ggplot(gene_df[rownames(object@scale.data[[i]]),],aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point()+scale_color_gradient2(low="yellow",mid="red",high="black",midpoint=(max(gene_vals,na.rm=T)-min(gene_vals,na.rm=T))/2,limits=c(min(gene_vals,na.rm=T),max(gene_vals,na.rm=T)))+ggtitle(names(object@scale.data)[i]))
+    gene_df.sub = gene_df[rownames(object@scale.data[[i]]),]
+    max_v = max(gene_df.sub[gene], na.rm = T)
+    min_v = min(gene_df.sub[gene], na.rm = T)
+    midpoint = (max_v - min_v) / 2
+    plot_i = (ggplot(gene_df.sub,aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point()+
+                scale_color_gradient(low="yellow",high="black",
+                                     limits=c(min_v, max_v)) +
+                ggtitle(names(object@scale.data)[i]))
     gene_plots[[i]] = plot_i
   }
   print(plot_grid(plotlist=gene_plots,ncol=2))
