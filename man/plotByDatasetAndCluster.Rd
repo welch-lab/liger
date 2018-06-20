@@ -5,7 +5,8 @@
 \title{Plot t-SNE coordinates of aligned datasets, colored by dataset and by cluster}
 \usage{
 plotByDatasetAndCluster(object, title = NULL, pt.size = 0.3,
-  text.size = 3, do.shuffle = T, clusters = NULL)
+  text.size = 3, do.shuffle = T, clusters = NULL, axis.labels = NULL,
+  return.plots = F)
 }
 \arguments{
 \item{object}{analogizer object. Should call run_tSNE before calling.}
@@ -17,6 +18,10 @@ plotByDatasetAndCluster(object, title = NULL, pt.size = 0.3,
 \item{text.size}{Controls size of plot text}
 
 \item{do.shuffle}{Randomly shuffle points so that points from same dataset are not plotted one after the other.}
+
+\item{axis.labels}{Vector of two strings to use as x and y labels respectively}
+
+\item{return.plots}{Return ggplot objects instead of printing directly}
 }
 \description{
 Plot t-SNE coordinates of aligned datasets, colored by dataset and by cluster

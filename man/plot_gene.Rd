@@ -4,10 +4,16 @@
 \alias{plot_gene}
 \title{Plot t-SNE coordinates per dataset, colored by expression of specified gene}
 \usage{
-plot_gene(object, gene, log.norm = NULL)
+plot_gene(object, gene, methylation_indices = NULL, return.plots = F)
 }
 \arguments{
 \item{object}{analogizer object. Should call run_tSNE before calling.}
+
+\item{gene}{Gene for which to plot relative expression.}
+
+\item{methylation_indices}{Indices of datasets in object with methylation data.}
+
+\item{return.plots}{Return ggplot objects instead of printing directly}
 }
 \description{
 Plot t-SNE coordinates per dataset, colored by expression of specified gene

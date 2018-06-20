@@ -16,7 +16,8 @@ Imports: Rcpp (>= 0.12.10),
 	 RANN.L1, 
 	 grid, 
 	 ggrepel, 
-	 irlba
+	 irlba,
+	 ica
 LinkingTo: Rcpp, RcppArmadillo
 Depends: cowplot, Matrix
 RoxygenNote: 6.0.1

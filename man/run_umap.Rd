@@ -5,7 +5,7 @@
 \title{Run UMAP on the normalized cell factors to generate a 2D embedding for visualization}
 \usage{
 run_umap(object, rand.seed = 42, use.raw = F, k = 2,
-  distance = "euclidean")
+  distance = "euclidean", n_neighbors = 10, min_dist = 0.1)
 }
 \arguments{
 \item{object}{analogizer object. Should run quantile_norm before calling.}
