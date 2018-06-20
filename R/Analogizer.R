@@ -1341,24 +1341,31 @@ MergeSparseDataAll<-function (datalist,library.names) {
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-as.seurat<-function(object)  {
+AnalogizerToSeurat<-function(object, need.sparse=F)  {
   
   nms = names(object@H)
+  if (need.sparse) {
+    object@raw.data = lapply(object@raw.data, function(x){Matrix(as.matrix(x), sparse=T)})
+    object@norm.data = lapply(object@norm.data, function(x){Matrix(as.matrix(x), sparse=T)})
+  }
   raw.data = MergeSparseDataAll(object@raw.data,nms)
+  norm.data = MergeSparseDataAll(object@norm.data, nms)
   
-  norm.data = MergeSparseDataAll(object@norm.data,nms)
-  scale.data = do.call(rbind,object@scale.data)
+  scale.data = do.call(rbind, object@scale.data)
   rownames(scale.data) = colnames(norm.data)
-  inmf.obj = new(Class="dim.reduction",gene.loadings = t(object@W),cell.embeddings = object@H.norm,key="iNMF")
-  tsne.obj = new(Class="dim.reduction",cell.embeddings=object@tsne.coords,key="tSNE_")
+  inmf.obj = new(Class = "dim.reduction", gene.loadings = t(object@W),
+                 cell.embeddings = object@H.norm, key = "iNMF")
+  tsne.obj = new(Class = "dim.reduction", cell.embeddings = object@tsne.coords,
+                 key = "tSNE_")
   rownames(tsne.obj@cell.embeddings) = rownames(scale.data)
   rownames(inmf.obj@cell.embeddings) = rownames(scale.data)
-  colnames(tsne.obj@cell.embeddings) = paste0("tSNE_",1:2)
+  colnames(tsne.obj@cell.embeddings) = paste0("tSNE_", 1:2)
   new.seurat = CreateSeuratObject(raw.data)
-  new.seurat@data = norm.data
+  new.seurat = NormalizeData(new.seurat)
   new.seurat@scale.data = scale.data
   new.seurat@dr$tsne = tsne.obj
   new.seurat@dr$inmf = inmf.obj
+  new.seurat= SetIdent(new.seurat,ident.use = as.character(object@clusters))
   return(new.seurat)
 }
 
@@ -1548,18 +1555,19 @@ Mode <- function(x, na.rm = FALSE) {
 #' }
 
 quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset=NULL,min_cells=2,
-                             quantiles=50,nstart=10,resolution = 1, print_align_summary=TRUE) {
+                             quantiles=50,nstart=10,resolution = 1, dist.use='CR',
+                             print_align_summary=TRUE) {
   if (is.null(ref_dataset)) {
     ns = sapply(object@scale.data, nrow)
     ref_dataset = names(object@scale.data)[which.max(ns)]
   }
-  snf = SNF(object,knn_k=knn_k,k2=k2)
+  snf = SNF(object,knn_k=knn_k,k2=k2, dist.use=dist.use)
   idents = SLMCluster(edge = snf,nstart=nstart,R=resolution,prune.thresh=prune.thresh)
   names(idents) = unlist(lapply(object@scale.data,rownames))
   
   #Especially when datasets are large, SLM generates a fair number of singletons.  To assign these to a cluster, take the mode of the cluster assignments of within-dataset neighbors
   if(min(table(idents))==1){
-  idents = assign.singletons(object,idents)
+    idents = assign.singletons(object,idents)
   }
   Hs = object@H
   cs = cumsum(c(0,unlist(lapply(object@H,nrow))))
@@ -1570,9 +1578,9 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
   names(clusters) = names(object@H)
   dims = ncol(object@H[[ref_dataset]])
   
-  too.few = rep(list(c(), length(Hs)))
+  too.few = rep(list(c()), length(Hs))
   names(too.few) = names(Hs)
-  unaligned = rep(list(c(), length(Hs)))
+  unaligned = rep(list(c()), length(Hs))
   names(unaligned) = names(Hs)
   for (k in 1:length(Hs)) {
     for (i in 1:dims) {
@@ -1622,12 +1630,16 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
   return(object)
 }
 
-SNF = function(object,knn_k=15,k2=300) {
+SNF = function(object,knn_k=15,k2=300,dist.use="CR") {
   NN.maxes = do.call(rbind,lapply(1:length(object@H),function(i){
     sc = scale(object@H[[i]],center=F,scale=T)
     maxes = factor(apply(sc,1,which.max),levels=1:ncol(sc))
-    norm = t(apply(object@H[[i]],1,scalar1))
-    knn.idx = get.knn(norm,knn_k,algorithm="CR")$nn.index
+    if (dist.use == "CR") {
+      norm = t(apply(object@H[[i]],1,scalar1))
+    } else {
+      norm = object@H[[i]]
+    }
+    knn.idx = get.knn(norm,knn_k,algorithm=dist.use)$nn.index
     t(apply(knn.idx,1,function(q){
       table(maxes[q])
     }))
@@ -1642,9 +1654,7 @@ SNF = function(object,knn_k=15,k2=300) {
     for (j in 1:ncol(out.snn)){
       out.summary[counter,] = c(i,nn.obj$nn.idx[i,j],out.snn[i,j])
       counter = counter + 1
-      
     }
-    
   }
   out.summary[out.summary[,1]==out.summary[,2],3] = 0
   out.summary[,1] = out.summary[,1]-1

@@ -4,10 +4,14 @@
 \alias{alignment_metric}
 \title{Calculate alignment statistic to quantify how well-aligned two or more datasets are.}
 \usage{
-alignment_metric(object)
+alignment_metric(object, k = NULL, rand.seed = 1, by_dataset = F)
 }
 \arguments{
 \item{object}{analogizer object. Should call quantile_norm before calling.}
+
+\item{k}{Number of nearest neighbors to use in calculating alignment.}
+
+\item{rand.seed}{Random seed for reproducibility}
 }
 \value{
 alignment statistic
