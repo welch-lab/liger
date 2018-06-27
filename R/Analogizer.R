@@ -1231,14 +1231,14 @@ plot_gene = function(object, gene, methylation_indices=NULL,
     } else {
       if (gene %in% rownames(object@norm.data[[i]]))
       {
-        gene_vals_int = object@norm.data[[i]][gene,]
+        gene_vals_int = log2(10000*object@norm.data[[i]][gene,] + 1)
       }
       else
       {
         gene_vals_int = rep(list(0), ncol(object@norm.data[[i]]))
         names(gene_vals_int) = colnames(object@norm.data[[i]])
       }
-      gene_vals = c(gene_vals, lapply(gene_vals_int, function(x) {log2(10000*x + 1)}))
+      gene_vals = c(gene_vals, gene_vals_int)
     }
   }
   
