@@ -1231,13 +1231,14 @@ plot_gene = function(object, gene, methylation_indices=NULL,
     } else {
       if (gene %in% rownames(object@norm.data[[i]]))
       {
-        gene_vals = c(gene_vals,object@norm.data[[i]][gene,])
-        gene_vals = lapply(gene_vals, function(x) {log2(10000*x + 1)})
+        gene_vals_int = log2(10000*object@norm.data[[i]][gene,] + 1)
       }
       else
       {
-        gene_vals = c(gene_vals,rep(0,nrow(object@norm.data[[i]])))
+        gene_vals_int = rep(list(0), ncol(object@norm.data[[i]]))
+        names(gene_vals_int) = colnames(object@norm.data[[i]])
       }
+      gene_vals = c(gene_vals, gene_vals_int)
     }
   }
   
@@ -1253,7 +1254,7 @@ plot_gene = function(object, gene, methylation_indices=NULL,
     min_v = min(gene_df.sub[gene], na.rm = T)
     midpoint = (max_v - min_v) / 2
     plot_i = (ggplot(gene_df.sub,aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point()+
-                scale_color_gradient(low="yellow",high="black",
+                scale_color_gradient(low="yellow",high="red",
                                      limits=c(min_v, max_v)) +
                 ggtitle(names(object@scale.data)[i]))
     gene_plots[[i]] = plot_i
