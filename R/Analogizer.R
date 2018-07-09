@@ -1556,14 +1556,18 @@ Mode <- function(x, na.rm = FALSE) {
 #' }
 
 quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset=NULL,min_cells=2,
-                             quantiles=50,nstart=10,resolution = 1, dist.use='CR',
+                             quantiles=50,nstart=10,resolution = 1, dist.use='CR', id.number=NULL,
                              print_align_summary=TRUE) {
   if (is.null(ref_dataset)) {
     ns = sapply(object@scale.data, nrow)
     ref_dataset = names(object@scale.data)[which.max(ns)]
   }
+  if (is.null(id.number)) {
+    id.number = sample(10000:99999, 1)
+  }
   snf = SNF(object,knn_k=knn_k,k2=k2, dist.use=dist.use)
-  idents = SLMCluster(edge = snf,nstart=nstart,R=resolution,prune.thresh=prune.thresh)
+  idents = SLMCluster(edge = snf,nstart=nstart,R=resolution,prune.thresh=prune.thresh,
+                      id.number=id.number)
   names(idents) = unlist(lapply(object@scale.data,rownames))
   
   #Especially when datasets are large, SLM generates a fair number of singletons.  To assign these to a cluster, take the mode of the cluster assignments of within-dataset neighbors
@@ -1698,19 +1702,21 @@ assign.singletons<-function(object,idents,k.use = 15) {
 }
 
 
-SLMCluster<-function(edge,prune.thresh=0.2,nstart=100,iter.max=10,algorithm=1,R=1,ModularityJarFile="",random.seed=1) {
+SLMCluster<-function(edge,prune.thresh=0.2,nstart=100,iter.max=10,algorithm=1,R=1,
+                     ModularityJarFile="",random.seed=1, id.number=NULL) {
   
   #This is code taken from Seurat for preparing data for modularity-based clustering.
   # diag(SNN) <- 0
   #SNN <- as(SNN,"dgTMatrix")
   edge = edge[which(edge[,3]>prune.thresh),]
-  ident=modclust(edge=edge,resolution=R,n.iter= iter.max,n.start=nstart,
+  ident=modclust(edge=edge,resolution=R,n.iter= iter.max,n.start=nstart, id.number = id.number,
                  random.seed=random.seed,ModularityJarFile=ModularityJarFile)
   return(ident)
 }
-modclust <- function(edge, modularity=1,resolution,n.start=100,n.iter=25,random.seed=1,algorithm=1,ModularityJarFile){
+modclust <- function(edge, modularity=1,resolution,n.start=100,n.iter=25,random.seed=1,
+                     id.number=NULL, algorithm=1,ModularityJarFile){
   print("making edge file.")
-  edge_file <- paste0("edge", fileext=".txt")
+  edge_file <- paste0("edge", id.number, fileext=".txt")
   # Make sure no scientific notation written to edge file
   saveScipen=options(scipen=10000)[[1]]
   write.table(x=edge,file=edge_file,sep="\t",row.names=F,col.names=F)
