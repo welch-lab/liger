@@ -6,7 +6,7 @@
 \usage{
 quantile_align_SNF(object, knn_k = 20, k2 = 500, prune.thresh = 0.2,
   ref_dataset = NULL, min_cells = 2, quantiles = 50, nstart = 10,
-  resolution = 1)
+  resolution = 1, dist.use = "CR", print_align_summary = TRUE)
 }
 \arguments{
 \item{object}{analogizer object. Should run optimizeALS before calling.}

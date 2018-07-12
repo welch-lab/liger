@@ -7,10 +7,25 @@ Author: Joshua Welch
 Maintainer: Joshua Welch <jwelch@broadinstitute.org>
 Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors
 License: What license is it under?
-Imports: Rcpp (>= 0.12.10), plyr, Matrix, cowplot, FNN, dplyr, RANN.L1, grid, ggrepel
+Imports: Rcpp (>= 0.12.10), 
+	 plyr, 
+	 Matrix, 
+	 cowplot, 
+	 FNN, 
+	 dplyr, 
+	 RANN.L1, 
+	 grid, 
+	 ggrepel, 
+	 irlba,
+	 ica,
+	 Rtsne,
+	 ggplot2,
+	 NNLM,
+	 Seurat,
+	 riverplot
 LinkingTo: Rcpp, RcppArmadillo
 Depends: cowplot, Matrix
 RoxygenNote: 6.0.1
 Suggests: knitr,
-    rmarkdown
+    	  rmarkdown
 VignetteBuilder: knitr
