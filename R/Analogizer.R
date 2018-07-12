@@ -1568,7 +1568,8 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
     ref_dataset = names(object@scale.data)[which.max(ns)]
   }
   if (is.null(id.number)) {
-    id.number = sample(10000:99999, 1)
+    set.seed(NULL)
+    id.number = sample(1000000:9999999, 1)
   }
   snf = SNF(object,knn_k=knn_k,k2=k2, dist.use=dist.use, center = center)
   idents = SLMCluster(edge = snf,nstart=nstart,R=resolution,prune.thresh=prune.thresh,
