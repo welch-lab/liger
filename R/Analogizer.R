@@ -1518,7 +1518,12 @@ scaleNotCenter_sparse<-function (object, cells = NULL)
   return(object)
 }
 
-scalar1 <- function(x) {x / sqrt(sum(x^2))}
+scalar1 <- function(x, center=F) {
+  if (center) {
+    return(scale(x)) 
+  }
+  return(x / sqrt(sum(x^2)))
+}
 
 Mode <- function(x, na.rm = FALSE) {
   if(na.rm){
@@ -1556,23 +1561,24 @@ Mode <- function(x, na.rm = FALSE) {
 #' }
 
 quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset=NULL,min_cells=2,
-                             quantiles=50,nstart=10,resolution = 1, dist.use='CR', id.number=NULL,
-                             print_align_summary=TRUE) {
+                             quantiles=50,nstart=10,resolution = 1, dist.use='CR', center=F, 
+                             id.number=NULL,print_align_summary=TRUE) {
   if (is.null(ref_dataset)) {
     ns = sapply(object@scale.data, nrow)
     ref_dataset = names(object@scale.data)[which.max(ns)]
   }
   if (is.null(id.number)) {
-    id.number = sample(10000:99999, 1)
+    set.seed(NULL)
+    id.number = sample(1000000:9999999, 1)
   }
-  snf = SNF(object,knn_k=knn_k,k2=k2, dist.use=dist.use)
+  snf = SNF(object,knn_k=knn_k,k2=k2, dist.use=dist.use, center = center)
   idents = SLMCluster(edge = snf,nstart=nstart,R=resolution,prune.thresh=prune.thresh,
                       id.number=id.number)
   names(idents) = unlist(lapply(object@scale.data,rownames))
   
   #Especially when datasets are large, SLM generates a fair number of singletons.  To assign these to a cluster, take the mode of the cluster assignments of within-dataset neighbors
   if(min(table(idents))==1){
-    idents = assign.singletons(object,idents)
+    idents = assign.singletons(object,idents, center=center)
   }
   Hs = object@H
   cs = cumsum(c(0,unlist(lapply(object@H,nrow))))
@@ -1635,9 +1641,9 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
   return(object)
 }
 
-SNF = function(object,knn_k=15,k2=300,dist.use="CR") {
+SNF = function(object,knn_k=15,k2=300,dist.use="CR", center=center) {
   NN.maxes = do.call(rbind,lapply(1:length(object@H),function(i){
-    sc = scale(object@H[[i]],center=F,scale=T)
+    sc = scale(object@H[[i]],center=center,scale=T)
     maxes = factor(apply(sc,1,which.max),levels=1:ncol(sc))
     if (dist.use == "CR") {
       norm = t(apply(object@H[[i]],1,scalar1))
@@ -1668,7 +1674,7 @@ SNF = function(object,knn_k=15,k2=300,dist.use="CR") {
   
 }
 
-assign.singletons<-function(object,idents,k.use = 15) {
+assign.singletons<-function(object,idents,k.use = 15, center=F) {
   singleton.clusters = names(table(idents))[which(table(idents)==1)]
   singleton.cells = names(idents)[which(idents %in% singleton.clusters)]
   if (length(singleton.cells)>0) {
@@ -1678,7 +1684,7 @@ assign.singletons<-function(object,idents,k.use = 15) {
     })
     out = unlist(lapply(1:length(object@H),function(d){
       H = object@H[[d]]
-      H = t(apply(H,1,scalar1))
+      H = t(apply(H,1,scalar1, center=center))
       cells.use = singleton.list[[d]]
       
       if (length(cells.use)>0) {
