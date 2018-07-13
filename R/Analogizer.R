@@ -258,7 +258,7 @@ quantile_norm = function(object,quantiles=50,ref_dataset=NULL,min_cells=2)
 #' @param object analogizer object. Should run quantile_norm before calling.
 #' @param rand.seed Random seed to make results reproducible
 #' @param use.raw Use scaled data or factorization result?
-#' @param factors.use Which factors to use for computing tSNE embedding
+#' @param dims.use Which factors to use for computing tSNE embedding
 #' @return analogizer object
 #' @importFrom Rtsne Rtsne
 #' @export
@@ -270,14 +270,14 @@ quantile_norm = function(object,quantiles=50,ref_dataset=NULL,min_cells=2)
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-run_tSNE<-function (object, rand.seed = 42,use.raw = F,factors.use = 1:ncol(object@H.norm))
+run_tSNE<-function (object, rand.seed = 42,use.raw = F,dims.use = 1:ncol(object@H.norm))
 {
   set.seed(rand.seed)
   if (use.raw) {
     raw.data = do.call(rbind,object@H)
-    object@tsne.coords = Rtsne(raw.data[,factors.use])$Y
+    object@tsne.coords = Rtsne(raw.data[,dims.use])$Y
   } else {
-    object@tsne.coords = Rtsne(object@H.norm[,factors.use], pca = F,check_duplicates = F)$Y
+    object@tsne.coords = Rtsne(object@H.norm[,dims.use], pca = F,check_duplicates = F)$Y
   }
   return(object)
 }
@@ -287,6 +287,7 @@ run_tSNE<-function (object, rand.seed = 42,use.raw = F,factors.use = 1:ncol(obje
 #' @param object analogizer object. Should run quantile_norm before calling.
 #' @param rand.seed Random seed to make results reproducible
 #' @param use.raw Use scaled data or factorization result?
+#' @param dims.use Indices of factors to use 
 #' @param k Number of dimensions to reduce to
 #' @param distance Name of distance metric to use in defining fuzzy simplicial sets
 #' @return analogizer object
@@ -300,8 +301,8 @@ run_tSNE<-function (object, rand.seed = 42,use.raw = F,factors.use = 1:ncol(obje
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-run_umap<-function (object, rand.seed = 42, use.raw = F, k=2, distance = 'euclidean', 
-                    n_neighbors = 10, min_dist = 0.1)
+run_umap<-function (object, rand.seed = 42, use.raw = F, dims.use = 1:ncol(object@H.norm),
+                    k=2, distance = 'euclidean', n_neighbors = 10, min_dist = 0.1)
 {
   UMAP<-import("umap")
   umapper = UMAP$UMAP(n_components=as.integer(k),metric = distance, n_neighbors = as.integer(n_neighbors),
@@ -1557,6 +1558,7 @@ Mode <- function(x, na.rm = FALSE) {
 #' @param nstart Number of times to perform Louvain community detection with different random starts
 #' @param quantiles Number of quantiles to use for quantile normalization
 #' @param resolution Controls the number of communities detected. Higher resolution=more communities.
+#' @param dims.use Indices of factors to use for shared nearest factor determination
 #' 
 #' @return analogizer object
 #' @export
@@ -1572,8 +1574,8 @@ Mode <- function(x, na.rm = FALSE) {
 #' }
 
 quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset=NULL,min_cells=2,
-                             quantiles=50,nstart=10,resolution = 1, dist.use='CR', center=F, 
-                             id.number=NULL,print_align_summary=TRUE) {
+                             quantiles=50,nstart=10, resolution = 1, dims.use = 1:ncol(object@H[[1]]),
+                             dist.use='CR', center=F, id.number=NULL,print_align_summary=TRUE) {
   if (is.null(ref_dataset)) {
     ns = sapply(object@scale.data, nrow)
     ref_dataset = names(object@scale.data)[which.max(ns)]
@@ -1582,7 +1584,7 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
     set.seed(NULL)
     id.number = sample(1000000:9999999, 1)
   }
-  snf = SNF(object,knn_k=knn_k,k2=k2, dist.use=dist.use, center = center)
+  snf = SNF(object,knn_k=knn_k,k2=k2, dist.use=dist.use, center = center, dims.use=dims.use)
   idents = SLMCluster(edge = snf,nstart=nstart,R=resolution,prune.thresh=prune.thresh,
                       id.number=id.number)
   names(idents) = unlist(lapply(object@scale.data,rownames))
@@ -1652,14 +1654,19 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
   return(object)
 }
 
-SNF = function(object,knn_k=15,k2=300,dist.use="CR", center=center) {
+SNF = function(object, dims.use=1:ncol(object@H[[1]]), knn_k=15,k2=300,
+               dist.use="CR", center=F) {
   NN.maxes = do.call(rbind,lapply(1:length(object@H),function(i){
-  sc = scale(object@H[[i]],center=center,scale=T)
-    maxes = factor(apply(sc,1,which.max),levels=1:ncol(sc))
+    sc = scale(object@H[[i]],center=center,scale=T)
+    maxes = factor(apply(sc[,dims.use],1,which.max),levels=1:ncol(sc))
     if (dist.use == "CR") {
-      norm = t(apply(object@H[[i]],1,scalar1))
+      norm = t(apply(object@H[[i]][,dims.use],1,scalar1))
+      if (any(is.na(norm))) {
+        stop('Unable to normalize loadings for all cells; some cells
+             loading on no selected factors.')
+      }
     } else {
-      norm = object@H[[i]]
+      norm = object@H[[i]][,dims.use]
     }
     knn.idx = get.knn(norm,knn_k,algorithm=dist.use)$nn.index
     t(apply(knn.idx,1,function(q){
