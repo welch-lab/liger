@@ -576,6 +576,8 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,H_ini
   object@W = W_m
   names(V_m)=names(object@raw.data)
   object@V = V_m
+  # set parameter values
+  object@parameters$lambda = lambda
   return(object)
 }
 
@@ -1646,6 +1648,10 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
   }
   object@H.norm = Reduce(rbind, Hs)
   object@clusters = idents
+  object@parameters$ref_dataset = ref_dataset
+  object@parameters$knn_k = knn_k
+  object@parameters$k2 = k2
+  object@parameters$resolution = resolution
   return(object)
 }
 
