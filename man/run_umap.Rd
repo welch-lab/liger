@@ -4,8 +4,9 @@
 \alias{run_umap}
 \title{Run UMAP on the normalized cell factors to generate a 2D embedding for visualization}
 \usage{
-run_umap(object, rand.seed = 42, use.raw = F, k = 2,
-  distance = "euclidean", n_neighbors = 10, min_dist = 0.1)
+run_umap(object, rand.seed = 42, use.raw = F,
+  dims.use = 1:ncol(object@H.norm), k = 2, distance = "euclidean",
+  n_neighbors = 10, min_dist = 0.1)
 }
 \arguments{
 \item{object}{analogizer object. Should run quantile_norm before calling.}
@@ -13,6 +14,8 @@ run_umap(object, rand.seed = 42, use.raw = F, k = 2,
 \item{rand.seed}{Random seed to make results reproducible}
 
 \item{use.raw}{Use scaled data or factorization result?}
+
+\item{dims.use}{Indices of factors to use}
 
 \item{k}{Number of dimensions to reduce to}
 
