@@ -1230,6 +1230,54 @@ calc_dataset_specificity=function(object)
 #   print(plot_grid(plotlist=gene_plots,ncol=2))
 # }
 
+plot_gene_violin = function(object, gene, methylation_indices=NULL, 
+                     return.plots=F)
+{
+  gene_vals = c()
+  for (i in 1:length(object@norm.data))
+  {
+    if (i %in% methylation_indices) {
+      gene_vals = c(gene_vals,scale(object@norm.data[[i]][gene,])[,1])
+    } else {
+      if (gene %in% rownames(object@norm.data[[i]]))
+      {
+        gene_vals_int = log2(10000*object@norm.data[[i]][gene,] + 1)
+      }
+      else
+      {
+        gene_vals_int = rep(list(0), ncol(object@norm.data[[i]]))
+        names(gene_vals_int) = colnames(object@norm.data[[i]])
+      }
+      gene_vals = c(gene_vals, gene_vals_int)
+    }
+  }
+  
+  gene_df = data.frame(object@tsne.coords)
+  rownames(gene_df)=names(object@clusters)
+  gene_df$Gene = as.numeric(gene_vals[rownames(gene_df)])
+  colnames(gene_df)=c("tSNE1","tSNE2",gene)
+  gene_plots = list()
+  for (i in 1:length(object@norm.data))
+  {
+    gene_df.sub = gene_df[rownames(object@scale.data[[i]]),]
+    gene_df.sub$Cluster = object@clusters[rownames(object@scale.data[[i]])]
+    max_v = max(gene_df.sub[gene], na.rm = T)
+    min_v = min(gene_df.sub[gene], na.rm = T)
+    midpoint = (max_v - min_v) / 2
+    plot_i = (ggplot(gene_df.sub,aes_string(x="Cluster",y=gene,fill="Cluster"))+geom_violin(position="dodge") +
+                ggtitle(names(object@scale.data)[i]))
+    gene_plots[[i]] = plot_i
+    print(plot_i)
+  }
+  if (return.plots) {
+    return(gene_plots)
+  } else {
+    for (i in 1:length(gene_plots)) {
+      print(gene_plots[[i]])
+    }
+  }
+}
+
 plot_gene = function(object, gene, methylation_indices=NULL, 
                      return.plots=F)
 {
@@ -1237,7 +1285,7 @@ plot_gene = function(object, gene, methylation_indices=NULL,
   for (i in 1:length(object@norm.data))
   {
     if (i %in% methylation_indices) {
-      gene_vals = c(gene_vals,2*object@norm.data[[i]][,gene])
+      gene_vals = c(gene_vals,scale(object@norm.data[[i]][gene,])[,1])
     } else {
       if (gene %in% rownames(object@norm.data[[i]]))
       {
@@ -1353,7 +1401,7 @@ MergeSparseDataAll<-function (datalist,library.names) {
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-AnalogizerToSeurat<-function(object, need.sparse=F)  {
+AnalogizerToSeurat<-function(object, need.sparse=T)  {
   
   nms = names(object@H)
   if (need.sparse) {
@@ -1374,9 +1422,10 @@ AnalogizerToSeurat<-function(object, need.sparse=F)  {
   colnames(tsne.obj@cell.embeddings) = paste0("tSNE_", 1:2)
   new.seurat = CreateSeuratObject(raw.data)
   new.seurat = NormalizeData(new.seurat)
-  new.seurat@scale.data = scale.data
+  new.seurat@scale.data = t(scale.data)
   new.seurat@dr$tsne = tsne.obj
   new.seurat@dr$inmf = inmf.obj
+  
   new.seurat= SetIdent(new.seurat,ident.use = as.character(object@clusters))
   return(new.seurat)
 }
