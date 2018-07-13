@@ -353,10 +353,6 @@ plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,
     idx = sample(1:nrow(tsne_df))
     tsne_df = tsne_df[idx,]
   }
-  if(!is.null(plot.dataset.alone))
-  {
-    tsne_df = tsne_df[tsne_df$Dataset==plot.dataset.alone,]
-  }
   
   p1 = ggplot(tsne_df, aes(x = tsne1, y = tsne2,
                            color = Dataset)) + geom_point(size=pt.size)
