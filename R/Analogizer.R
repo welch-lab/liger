@@ -258,7 +258,7 @@ quantile_norm = function(object,quantiles=50,ref_dataset=NULL,min_cells=2)
 #' @param object analogizer object. Should run quantile_norm before calling.
 #' @param rand.seed Random seed to make results reproducible
 #' @param use.raw Use scaled data or factorization result?
-#' @param factors.use Which factors to use for computing tSNE embedding
+#' @param dims.use Which factors to use for computing tSNE embedding
 #' @return analogizer object
 #' @importFrom Rtsne Rtsne
 #' @export
@@ -270,14 +270,14 @@ quantile_norm = function(object,quantiles=50,ref_dataset=NULL,min_cells=2)
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-run_tSNE<-function (object, rand.seed = 42,use.raw = F,factors.use = 1:ncol(object@H.norm))
+run_tSNE<-function (object, rand.seed = 42,use.raw = F,dims.use = 1:ncol(object@H.norm))
 {
   set.seed(rand.seed)
   if (use.raw) {
     raw.data = do.call(rbind,object@H)
-    object@tsne.coords = Rtsne(raw.data[,factors.use])$Y
+    object@tsne.coords = Rtsne(raw.data[,dims.use])$Y
   } else {
-    object@tsne.coords = Rtsne(object@H.norm[,factors.use], pca = F,check_duplicates = F)$Y
+    object@tsne.coords = Rtsne(object@H.norm[,dims.use], pca = F,check_duplicates = F)$Y
   }
   return(object)
 }
@@ -287,6 +287,7 @@ run_tSNE<-function (object, rand.seed = 42,use.raw = F,factors.use = 1:ncol(obje
 #' @param object analogizer object. Should run quantile_norm before calling.
 #' @param rand.seed Random seed to make results reproducible
 #' @param use.raw Use scaled data or factorization result?
+#' @param dims.use Indices of factors to use 
 #' @param k Number of dimensions to reduce to
 #' @param distance Name of distance metric to use in defining fuzzy simplicial sets
 #' @return analogizer object
@@ -300,8 +301,8 @@ run_tSNE<-function (object, rand.seed = 42,use.raw = F,factors.use = 1:ncol(obje
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-run_umap<-function (object, rand.seed = 42, use.raw = F, k=2, distance = 'euclidean', 
-                    n_neighbors = 10, min_dist = 0.1)
+run_umap<-function (object, rand.seed = 42, use.raw = F, dims.use = 1:ncol(object@H.norm),
+                    k=2, distance = 'euclidean', n_neighbors = 10, min_dist = 0.1)
 {
   UMAP<-import("umap")
   umapper = UMAP$UMAP(n_components=as.integer(k),metric = distance, n_neighbors = as.integer(n_neighbors),
@@ -490,7 +491,8 @@ rbindlist = function(mat_list)
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,H_init=NULL,W_init=NULL,V_init=NULL,rand.seed=1)
+optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,
+                       H_init=NULL,W_init=NULL,V_init=NULL,rand.seed=1)
 {
   E = object@scale.data
   N = length(E)
@@ -575,6 +577,8 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,H_ini
   object@W = W_m
   names(V_m)=names(object@raw.data)
   object@V = V_m
+  # set parameter values
+  object@parameters$lambda = lambda
   return(object)
 }
 
@@ -765,6 +769,119 @@ optimizeSubset = function(object,cell.subset=NULL,cluster.subset=NULL,lambda=5.0
   k = ncol(H[[1]])
   object = optimizeALS(object,k=k,lambda=lambda,thresh=thresh,max_iters=max_iters,H_init=H,W_init=object@W,V_init=object@V,nrep=1)
   return(object)
+}
+
+#' Optimize objective function for new lambda value. Uses an efficient strategy for updating 
+#' that takes advantage of the information in the existing factorization.
+#'
+#' @param object analogizer object. Should call optimizeALS before calling.
+#' @param new_lambda Regularization parameter. Larger values penalize dataset-specific effects more strongly.
+#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
+#' @param max_iters Maximum number of block coordinate descent iterations to perform
+#' @param rand.seed Random seed for reproducibility 
+#' @return Analogizer object with optimized factorization values
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' }
+optimizeNewLambda = function(object, new_lambda, thresh=1e-4, max_iters=25, rand.seed = 1) {
+  k = ncol(object@H[[1]])
+  H = object@H
+  W = object@W
+  if (new_lambda < object@parameters$lambda) {
+    print('New lambda less than current lambda; new factorization may not be optimal.
+          Re-optimization with optimizeAlS recommended instead.')
+  }
+  object = optimizeALS(object, k, lambda = new_lambda, thresh = thresh, max_iters = max_iters,
+                       H_init=H, W_init=W, rand.seed = rand.seed)
+  return(object)
+}
+
+#' Plot alignment and agreement for various test values of lambda. Can be used to select
+#' appropriate value of lambda for factorization of particular dataset. 
+#'
+#' @param object analogizer object. Should normalize, select genes, and scale before calling.
+#' @param k Number of factors for factorizations
+#' @param lambda_test Vector of lambda values to test. If not given, use default set spanning 
+#'                    0.25 to 60
+#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
+#' @param max_iters Maximum number of block coordinate descent iterations to perform
+#' @param rand.seed Random seed for reproducibility 
+#' @param num.cores Number of cores to use for optimizing factorizations in parallel
+#' @param k2 Horizon parameter for SNF quantile alignment
+#' @param ref_dataset Reference dataset for SNF quantile alignment
+#' @param resolution Resolution for SNF quantile alignment
+#' @param agree.method Reference dr.method for calculating distortion_metric
+#' @param gen.new Do not use optimizeNewLambda in factorizations. Recommended to use
+#'                when looking at only a small range of lambdas (ie. 1:7)
+#' @param return_results Return matrix of alignment and agreement values 
+#' @return Matrix of results or plot 
+#' @importFrom doParallel registerDoParallel
+#' @importFrom foreach foreach
+#' @importFrom foreach "%dopar%"
+#' @importFrom Hmisc minor.tick
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' }
+lambdaSuggestion = function(object, k, lambda_test = NULL, rand.seed = 1, num.cores = 1, 
+                            thresh = 1e-4, max_iters = 25, k2 = 500, ref_dataset=NULL, resolution = 1, 
+                            agree.method='PCA', gen.new=F, return_results=F) {
+  if (is.null(lambda_test)){
+    lambda_test = c(seq(0.25, 1, 0.25), seq(2, 10, 1), seq(10, 60, 5))
+  }
+  registerDoParallel(cores = num.cores)
+  print(paste('Optimizing initial factorization with lambda =', lambda_test[1]))
+  object = optimizeALS(object,k=k,thresh = thresh, lambda = lambda_test[1], max_iters=max_iters,
+                       nrep=1, rand.seed = rand.seed)
+  data_matrix <- foreach(i=1:length(lambda_test), .combine = 'rbind') %dopar% {
+    if (i != 1) {
+      if (gen.new) {
+        ob.test = optimizeALS(object, k=k, lambda = lambda_test[i], thresh = thresh, 
+                              max_iters = max_iters, rand.seed = rand.seed)
+      } else {
+        ob.test = optimizeNewLambda(object, new_lambda = lambda_test[i], thresh = thresh, 
+                                    max_iters = max_iters, rand.seed = rand.seed)
+      }
+    } else {
+      ob.test = object
+    }
+    ob.test = quantile_align_SNF(ob.test, k2 = k2, resolution = resolution, ref_dataset = ref_dataset,
+                                 id.number = i) 
+    align = alignment_metric(ob.test)
+    agree_unaligned = distortion_metric(ob.test, ndims = k, k = 15, dr_method = agree.method, 
+                                        use_aligned = F)
+    agree_aligned = distortion_metric(ob.test, ndims = k, k = 15, dr_method = agree.method, 
+                                      use_aligned = T)
+    c(align, agree_unaligned, agree_aligned)
+  }
+  # plot results on same plot 
+  plot(lambda_test, data_matrix[,1], type='p', col='black', ylim=c(0,1), xlab = 'Lambda', 
+       ylab='Value')
+  minor.tick(nx=4, ny=2, tick.ratio=0.5)
+  grid()
+  lines(lambda_test, data_matrix[,1], col='black')
+  lines(lambda_test, data_matrix[,2], col='blue')
+  lines(lambda_test, data_matrix[,3], col='green')
+  legend('bottomright', legend=c('Alignment', paste0('Agreement(',agree.method, ')'), 
+                                 paste0('Agreement(',agree.method, '-aligned)')), 
+         col = c('black', 'blue', 'green'), lty=1, cex=0.8)
+  
+  if (return_results) {
+    return(data_matrix)
+  }
 }
 
 #' Word cloud plots coloring t-SNE points by their loading on specifed factors as well as the
@@ -1316,7 +1433,6 @@ plot_gene = function(object, gene, methylation_indices=NULL,
                                      limits=c(min_v, max_v)) +
                 ggtitle(names(object@scale.data)[i]))
     gene_plots[[i]] = plot_i
-    print(plot_i)
   }
   if (return.plots) {
     return(gene_plots)
@@ -1606,6 +1722,7 @@ Mode <- function(x, na.rm = FALSE) {
 #' @param nstart Number of times to perform Louvain community detection with different random starts
 #' @param quantiles Number of quantiles to use for quantile normalization
 #' @param resolution Controls the number of communities detected. Higher resolution=more communities.
+#' @param dims.use Indices of factors to use for shared nearest factor determination
 #' 
 #' @return analogizer object
 #' @export
@@ -1621,8 +1738,8 @@ Mode <- function(x, na.rm = FALSE) {
 #' }
 
 quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset=NULL,min_cells=2,
-                             quantiles=50,nstart=10,resolution = 1, dist.use='CR', center=F, 
-                             id.number=NULL,print_align_summary=TRUE) {
+                             quantiles=50,nstart=10, resolution = 1, dims.use = 1:ncol(object@H[[1]]),
+                             dist.use='CR', center=F, id.number=NULL,print_align_summary=TRUE) {
   if (is.null(ref_dataset)) {
     ns = sapply(object@scale.data, nrow)
     ref_dataset = names(object@scale.data)[which.max(ns)]
@@ -1631,7 +1748,7 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
     set.seed(NULL)
     id.number = sample(1000000:9999999, 1)
   }
-  snf = SNF(object,knn_k=knn_k,k2=k2, dist.use=dist.use, center = center)
+  snf = SNF(object,knn_k=knn_k,k2=k2, dist.use=dist.use, center = center, dims.use=dims.use)
   idents = SLMCluster(edge = snf,nstart=nstart,R=resolution,prune.thresh=prune.thresh,
                       id.number=id.number)
   names(idents) = unlist(lapply(object@scale.data,rownames))
@@ -1651,8 +1768,6 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
   
   too.few = rep(list(c()), length(Hs))
   names(too.few) = names(Hs)
-  unaligned = rep(list(c()), length(Hs))
-  names(unaligned) = names(Hs)
   for (k in 1:length(Hs)) {
     for (i in 1:dims) {
       for (j in levels(idents)) {
@@ -1664,7 +1779,7 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
         if (sum(clusters[[k]] == j, na.rm = T) == 1) {
           Hs[[k]][clusters[[k]] == j, i] = mean(Hs[[ref_dataset]][clusters[[ref_dataset]] ==
                                                                     j, i])
-          unaligned[[names(Hs)[k]]] = c(unaligned[[names(Hs)[k]]], j)
+          too_few[[names(Hs)[k]]] = c(too_few[[names(Hs)[k]]], j)
           next
         }
         q2 = quantile(Hs[[k]][clusters[[k]] == j, i],
@@ -1690,25 +1805,38 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
   if (print_align_summary) {
     print('Summary:')
     for (i in 1:length(Hs)) {
-      print(paste('In dataset', names(Hs)[i], 'these clusters did not align (too few cells):'))
+      print(paste('In dataset', names(Hs)[i], 'these clusters did not align normally (too few cells):'))
       print(unique(too.few[[names(Hs)[i]]]))
-      print(paste('In dataset', names(Hs)[i], 'these clusters did not align:'))
-      print(unique(unaligned[[names(Hs)[i]]]))
     }
   }
   object@H.norm = Reduce(rbind, Hs)
   object@clusters = idents
+  # set parameters
+  object@parameters$ref_dataset = ref_dataset
+  object@parameters$knn_k = knn_k
+  object@parameters$k2 = k2
+  object@parameters$prune.thresh = prune.thresh
+  object@parameters$min_cells = min_cells
+  object@parameters$dims.use = dims.use
+  object@parameters$dist.use = dist.use
+  object@parameters$SNF_center = center
+  object@parameters$resolution = resolution
   return(object)
 }
 
-SNF = function(object,knn_k=15,k2=300,dist.use="CR", center=center) {
+SNF = function(object, dims.use=1:ncol(object@H[[1]]), knn_k=15,k2=300,
+               dist.use="CR", center=F) {
   NN.maxes = do.call(rbind,lapply(1:length(object@H),function(i){
-  sc = scale(object@H[[i]],center=center,scale=T)
-    maxes = factor(apply(sc,1,which.max),levels=1:ncol(sc))
+    sc = scale(object@H[[i]],center=center,scale=T)
+    maxes = factor(apply(sc[,dims.use],1,which.max),levels=1:ncol(sc))
     if (dist.use == "CR") {
-      norm = t(apply(object@H[[i]],1,scalar1))
+      norm = t(apply(object@H[[i]][,dims.use],1,scalar1))
+      if (any(is.na(norm))) {
+        stop('Unable to normalize loadings for all cells; some cells
+             loading on no selected factors.')
+      }
     } else {
-      norm = object@H[[i]]
+      norm = object@H[[i]][,dims.use]
     }
     knn.idx = get.knn(norm,knn_k,algorithm=dist.use)$nn.index
     t(apply(knn.idx,1,function(q){

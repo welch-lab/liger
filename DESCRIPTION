@@ -22,7 +22,10 @@ Imports: Rcpp (>= 0.12.10),
 	 ggplot2,
 	 NNLM,
 	 Seurat,
-	 riverplot
+	 riverplot,
+	 Hmisc,
+	 doParallel,
+	 foreach
 LinkingTo: Rcpp, RcppArmadillo
 Depends: cowplot, Matrix
 RoxygenNote: 6.0.1
