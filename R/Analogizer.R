@@ -491,7 +491,8 @@ rbindlist = function(mat_list)
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,H_init=NULL,W_init=NULL,V_init=NULL,rand.seed=1)
+optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,
+                       H_init=NULL,W_init=NULL,V_init=NULL,rand.seed=1)
 {
   E = object@scale.data
   N = length(E)
@@ -576,6 +577,8 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,H_ini
   object@W = W_m
   names(V_m)=names(object@raw.data)
   object@V = V_m
+  # set parameter values
+  object@parameters$lambda = lambda
   return(object)
 }
 
@@ -766,6 +769,119 @@ optimizeSubset = function(object,cell.subset=NULL,cluster.subset=NULL,lambda=5.0
   k = ncol(H[[1]])
   object = optimizeALS(object,k=k,lambda=lambda,thresh=thresh,max_iters=max_iters,H_init=H,W_init=object@W,V_init=object@V,nrep=1)
   return(object)
+}
+
+#' Optimize objective function for new lambda value. Uses an efficient strategy for updating 
+#' that takes advantage of the information in the existing factorization.
+#'
+#' @param object analogizer object. Should call optimizeALS before calling.
+#' @param new_lambda Regularization parameter. Larger values penalize dataset-specific effects more strongly.
+#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
+#' @param max_iters Maximum number of block coordinate descent iterations to perform
+#' @param rand.seed Random seed for reproducibility 
+#' @return Analogizer object with optimized factorization values
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' }
+optimizeNewLambda = function(object, new_lambda, thresh=1e-4, max_iters=25, rand.seed = 1) {
+  k = ncol(object@H[[1]])
+  H = object@H
+  W = object@W
+  if (new_lambda < object@parameters$lambda) {
+    print('New lambda less than current lambda; new factorization may not be optimal.
+          Re-optimization with optimizeAlS recommended instead.')
+  }
+  object = optimizeALS(object, k, lambda = new_lambda, thresh = thresh, max_iters = max_iters,
+                       H_init=H, W_init=W, rand.seed = rand.seed)
+  return(object)
+}
+
+#' Plot alignment and agreement for various test values of lambda. Can be used to select
+#' appropriate value of lambda for factorization of particular dataset. 
+#'
+#' @param object analogizer object. Should normalize, select genes, and scale before calling.
+#' @param k Number of factors for factorizations
+#' @param lambda_test Vector of lambda values to test. If not given, use default set spanning 
+#'                    0.25 to 60
+#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
+#' @param max_iters Maximum number of block coordinate descent iterations to perform
+#' @param rand.seed Random seed for reproducibility 
+#' @param num.cores Number of cores to use for optimizing factorizations in parallel
+#' @param k2 Horizon parameter for SNF quantile alignment
+#' @param ref_dataset Reference dataset for SNF quantile alignment
+#' @param resolution Resolution for SNF quantile alignment
+#' @param agree.method Reference dr.method for calculating distortion_metric
+#' @param gen.new Do not use optimizeNewLambda in factorizations. Recommended to use
+#'                when looking at only a small range of lambdas (ie. 1:7)
+#' @param return_results Return matrix of alignment and agreement values 
+#' @return Matrix of results or plot 
+#' @importFrom doParallel registerDoParallel
+#' @importFrom foreach foreach
+#' @importFrom foreach "%dopar%"
+#' @importFrom Hmisc minor.tick
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' }
+lambdaSuggestion = function(object, k, lambda_test = NULL, rand.seed = 1, num.cores = 1, 
+                            thresh = 1e-4, max_iters = 25, k2 = 500, ref_dataset=NULL, resolution = 1, 
+                            agree.method='PCA', gen.new=F, return_results=F) {
+  if (is.null(lambda_test)){
+    lambda_test = c(seq(0.25, 1, 0.25), seq(2, 10, 1), seq(10, 60, 5))
+  }
+  registerDoParallel(cores = num.cores)
+  print(paste('Optimizing initial factorization with lambda =', lambda_test[1]))
+  object = optimizeALS(object,k=k,thresh = thresh, lambda = lambda_test[1], max_iters=max_iters,
+                       nrep=1, rand.seed = rand.seed)
+  data_matrix <- foreach(i=1:length(lambda_test), .combine = 'rbind') %dopar% {
+    if (i != 1) {
+      if (gen.new) {
+        ob.test = optimizeALS(object, k=k, lambda = lambda_test[i], thresh = thresh, 
+                              max_iters = max_iters, rand.seed = rand.seed)
+      } else {
+        ob.test = optimizeNewLambda(object, new_lambda = lambda_test[i], thresh = thresh, 
+                                    max_iters = max_iters, rand.seed = rand.seed)
+      }
+    } else {
+      ob.test = object
+    }
+    ob.test = quantile_align_SNF(ob.test, k2 = k2, resolution = resolution, ref_dataset = ref_dataset,
+                                 id.number = i) 
+    align = alignment_metric(ob.test)
+    agree_unaligned = distortion_metric(ob.test, ndims = k, k = 15, dr_method = agree.method, 
+                                        use_aligned = F)
+    agree_aligned = distortion_metric(ob.test, ndims = k, k = 15, dr_method = agree.method, 
+                                      use_aligned = T)
+    c(align, agree_unaligned, agree_aligned)
+  }
+  # plot results on same plot 
+  plot(lambda_test, data_matrix[,1], type='p', col='black', ylim=c(0,1), xlab = 'Lambda', 
+       ylab='Value')
+  minor.tick(nx=4, ny=2, tick.ratio=0.5)
+  grid()
+  lines(lambda_test, data_matrix[,1], col='black')
+  lines(lambda_test, data_matrix[,2], col='blue')
+  lines(lambda_test, data_matrix[,3], col='green')
+  legend('bottomright', legend=c('Alignment', paste0('Agreement(',agree.method, ')'), 
+                                 paste0('Agreement(',agree.method, '-aligned)')), 
+         col = c('black', 'blue', 'green'), lty=1, cex=0.8)
+  
+  if (return_results) {
+    return(data_matrix)
+  }
 }
 
 #' Word cloud plots coloring t-SNE points by their loading on specifed factors as well as the
@@ -1646,6 +1762,16 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
   }
   object@H.norm = Reduce(rbind, Hs)
   object@clusters = idents
+  # set parameters
+  object@parameters$ref_dataset = ref_dataset
+  object@parameters$knn_k = knn_k
+  object@parameters$k2 = k2
+  object@parameters$prune.thresh = prune.thresh
+  object@parameters$min_cells = min_cells
+  object@parameters$dims.use = dims.use
+  object@parameters$dist.use = dist.use
+  object@parameters$SNF_center = center
+  object@parameters$resolution = resolution
   return(object)
 }
 
