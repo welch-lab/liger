@@ -1269,7 +1269,6 @@ plot_gene = function(object, gene, methylation_indices=NULL,
                                      limits=c(min_v, max_v)) +
                 ggtitle(names(object@scale.data)[i]))
     gene_plots[[i]] = plot_i
-    print(plot_i)
   }
   if (return.plots) {
     return(gene_plots)
