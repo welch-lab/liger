@@ -1603,8 +1603,6 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
   
   too.few = rep(list(c()), length(Hs))
   names(too.few) = names(Hs)
-  unaligned = rep(list(c()), length(Hs))
-  names(unaligned) = names(Hs)
   for (k in 1:length(Hs)) {
     for (i in 1:dims) {
       for (j in levels(idents)) {
@@ -1616,7 +1614,7 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
         if (sum(clusters[[k]] == j, na.rm = T) == 1) {
           Hs[[k]][clusters[[k]] == j, i] = mean(Hs[[ref_dataset]][clusters[[ref_dataset]] ==
                                                                     j, i])
-          unaligned[[names(Hs)[k]]] = c(unaligned[[names(Hs)[k]]], j)
+          too_few[[names(Hs)[k]]] = c(too_few[[names(Hs)[k]]], j)
           next
         }
         q2 = quantile(Hs[[k]][clusters[[k]] == j, i],
@@ -1642,10 +1640,8 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
   if (print_align_summary) {
     print('Summary:')
     for (i in 1:length(Hs)) {
-      print(paste('In dataset', names(Hs)[i], 'these clusters did not align (too few cells):'))
+      print(paste('In dataset', names(Hs)[i], 'these clusters did not align normally (too few cells):'))
       print(unique(too.few[[names(Hs)[i]]]))
-      print(paste('In dataset', names(Hs)[i], 'these clusters did not align:'))
-      print(unique(unaligned[[names(Hs)[i]]]))
     }
   }
   object@H.norm = Reduce(rbind, Hs)
