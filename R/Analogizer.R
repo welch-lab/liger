@@ -639,7 +639,7 @@ optimizeNewK = function(object,k_new,lambda=5.0,thresh=1e-4,max_iters=25,rand.se
     H = lapply(H,function(x){x[,k.use]})
     V = lapply(V,function(x){x[k.use,]})
   }
-  object = optimizeALS(object,k_new,H_init=H,W_init=W,V_init=V,nrep=1)
+  object = optimizeALS(object,k_new,H_init=H,W_init=W,V_init=V,nrep=1, rand.seed = rand.seed)
   return(object)
 }
 
@@ -844,6 +844,7 @@ lambdaSuggestion = function(object, k, lambda_test = NULL, rand.seed = 1, num.co
   }
   registerDoParallel(cores = num.cores)
   print(paste('Optimizing initial factorization with lambda =', lambda_test[1]))
+  print('This may take several minutes depending on number of values tested')
   object = optimizeALS(object,k=k,thresh = thresh, lambda = lambda_test[1], max_iters=max_iters,
                        nrep=1, rand.seed = rand.seed)
   data_matrix <- foreach(i=1:length(lambda_test), .combine = 'rbind') %dopar% {
@@ -882,6 +883,92 @@ lambdaSuggestion = function(object, k, lambda_test = NULL, rand.seed = 1, num.co
   if (return_results) {
     return(data_matrix)
   }
+}
+
+#' Plot alignment and agreement for various test values of lambda. Can be used to select
+#' appropriate value of lambda for factorization of particular dataset. 
+#'
+#' @param object analogizer object. Should normalize, select genes, and scale before calling.
+#' @param k_test Set of factor numbers to test (default seq(5, 50, 5))
+#' @param lambda Lambda for optimization
+#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
+#' @param max_iters Maximum number of block coordinate descent iterations to perform
+#' @param rand.seed Random seed for reproducibility 
+#' @param num.cores Number of cores to use for optimizing factorizations in parallel
+#' @param gen.new Do not use optimizeNewK in factorizations. 
+#' @param return_results Return matrix of alignment and agreement values 
+#' @return Matrix of results or plot 
+#' @importFrom doParallel registerDoParallel
+#' @importFrom foreach foreach
+#' @importFrom foreach "%dopar%"
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' }
+kSuggestion = function(object, k_test=seq(5, 50, 5), lambda=5, thresh=1e-4, max_iters=25, num.cores=1, 
+                       rand.seed = 1, plot.metric='median', gen.new=F, return_results=F) {
+  registerDoParallel(cores = num.cores)
+  
+  # optimize largest k value first to take advantage of efficient updating 
+  object = optimizeALS(object,k=k_test[length(k_test)],thresh = thresh, lambda, max_iters=max_iters,
+                       nrep=1, rand.seed = rand.seed)
+  data_matrix <- foreach(i=length(k_test):1, .combine = 'rbind') %dopar% {
+    if (i != length(k_test)) {
+      if (gen.new) {
+        ob.test = optimizeALS(object, k=k_test[i], lambda = lambda, thresh = thresh, 
+                              max_iters = max_iters, rand.seed = rand.seed)
+      } else {
+        ob.test = optimizeNewK(object, k_new = k_test[i], lambda=lambda, thresh = thresh, 
+                               max_iters = max_iters, rand.seed = rand.seed)
+      }
+    } else {
+      ob.test = object
+    }
+    dataset_split = kl_divergence_uniform(ob.test)
+    unlist(dataset_split)
+  }
+  data_matrix = data_matrix[nrow(data_matrix):1,]
+  medians = apply(data_matrix, 1, median)
+  
+  # plot out results 
+  max_lim = max(log2(k_test)) + 0.05
+  min_lim = min(medians) - 0.05
+  plot(k_test, log2(k_test), type='p', col='green', ylim=c(min_lim, max_lim))
+  points(k_test, medians, type='p', xlab='Number of factors', 
+         ylab='Median KL divergence across combined data', col='black')
+  lines(k_test, medians, col='black')
+  legend('topleft', legend=(c('log2(k) (upper lim)', 'KL div')),
+         col=c('green', 'black'), lty=1, cex=0.8)
+  
+  if (return_results) {
+    return(data_matrix)
+  }
+}
+
+# helper function for calculating KL divergence from uniform distribution
+# (related to Shannon entropy) for factorization
+kl_divergence_uniform = function(object) 
+{
+  n_cells = sum(sapply(object@H, nrow))
+  n_factors = ncol(object@H[[1]])
+  dataset_list = list()
+  for (i in 1:length(object@H)) {
+    scaled = scale(object@H[[i]], center=F, scale=T)
+    
+    inflated = t(apply(scaled, 1, function(x) {
+      replace(x, x == 0, 1e-20)
+    }))
+    inflated = inflated/rowSums(inflated)
+    divs = apply(inflated, 1, function(x) {log2(n_factors) + sum(log2(x) * x)})
+    dataset_list[[i]] = divs
+  }
+  return(dataset_list)
 }
 
 #' Word cloud plots coloring t-SNE points by their loading on specifed factors as well as the
