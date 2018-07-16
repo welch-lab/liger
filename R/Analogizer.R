@@ -339,7 +339,7 @@ run_umap<-function (object, rand.seed = 42, use.raw = F, dims.use = 1:ncol(objec
 #' analogy = scaleNotCenter(analogy)
 #' }
 plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,do.shuffle = T,clusters=NULL,
-                                  axis.labels = NULL, return.plots=F){
+                                  axis.labels = NULL, return.plots=F,legend.size=5){
   tsne_df = data.frame(object@tsne.coords)
   colnames(tsne_df) = c("tsne1", "tsne2")
   tsne_df$Dataset = unlist(lapply(1:length(object@H), function(x) {
@@ -356,13 +356,13 @@ plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,
   }
   
   p1 = ggplot(tsne_df, aes(x = tsne1, y = tsne2,
-                           color = Dataset)) + geom_point(size=pt.size)
+                           color = Dataset)) + geom_point(size=pt.size)+ guides(color = guide_legend(override.aes = list(size=legend.size)))
   
   centers <- tsne_df %>% dplyr::group_by(Cluster) %>% dplyr::summarize(tsne1 = median(x = tsne1),
                                                                 tsne2 = median(x = tsne2))
-  p2 = ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(alpha=0.5,size=pt.size) + 
-          geom_point(data = centers, mapping = aes(x = tsne1,y = tsne1), size = 0, alpha = 0) + 
-          geom_text(data=centers,mapping = aes(label = Cluster),colour='black',size=text.size) 
+  p2 = ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(size=pt.size) + 
+          geom_point(data = centers, mapping = aes(x = tsne1,y = tsne1), size = 0) + 
+          geom_text(data=centers,mapping = aes(label = Cluster),colour='black',size=text.size) + guides(color = guide_legend(override.aes = list(size=legend.size)))
           
   if (!is.null(title)) {
     p1 = p1 + ggtitle(paste0(title,", dataset alignment"))
@@ -1354,7 +1354,7 @@ plot_gene_violin = function(object, gene, methylation_indices=NULL,
   for (i in 1:length(object@norm.data))
   {
     if (i %in% methylation_indices) {
-      gene_vals = c(gene_vals,scale(object@norm.data[[i]][gene,])[,1])
+      gene_vals = c(gene_vals,object@norm.data[[i]][gene,])
     } else {
       if (gene %in% rownames(object@norm.data[[i]]))
       {
@@ -1381,10 +1381,9 @@ plot_gene_violin = function(object, gene, methylation_indices=NULL,
     max_v = max(gene_df.sub[gene], na.rm = T)
     min_v = min(gene_df.sub[gene], na.rm = T)
     midpoint = (max_v - min_v) / 2
-    plot_i = (ggplot(gene_df.sub,aes_string(x="Cluster",y=gene,fill="Cluster"))+geom_violin(position="dodge") +
+    plot_i = (ggplot(gene_df.sub,aes_string(x="Cluster",y=gene,fill="Cluster"))+geom_violin(position="dodge")+geom_boxplot(position="dodge",width=0.5,outlier.shape=NA) +
                 ggtitle(names(object@scale.data)[i]))
     gene_plots[[i]] = plot_i
-    print(plot_i)
   }
   if (return.plots) {
     return(gene_plots)
@@ -1396,13 +1395,19 @@ plot_gene_violin = function(object, gene, methylation_indices=NULL,
 }
 
 plot_gene = function(object, gene, methylation_indices=NULL, 
-                     return.plots=F)
+                     return.plots=F,pt.size=0.1,min.clip=0,max.clip=1)
 {
   gene_vals = c()
   for (i in 1:length(object@norm.data))
   {
     if (i %in% methylation_indices) {
-      gene_vals = c(gene_vals,scale(object@norm.data[[i]][gene,])[,1])
+      tmp = object@norm.data[[i]][gene,]
+      max_v = quantile(tmp,probs=max.clip, na.rm = T)
+      min_v = quantile(tmp,probs=min.clip, na.rm = T)
+      tmp[tmp < min_v & !is.na(tmp)]=min_v
+      tmp[tmp > max_v & !is.na(tmp)]=max_v
+      gene_vals = c(gene_vals,tmp)
+      
     } else {
       if (gene %in% rownames(object@norm.data[[i]]))
       {
@@ -1425,10 +1430,11 @@ plot_gene = function(object, gene, methylation_indices=NULL,
   for (i in 1:length(object@norm.data))
   {
     gene_df.sub = gene_df[rownames(object@scale.data[[i]]),]
-    max_v = max(gene_df.sub[gene], na.rm = T)
-    min_v = min(gene_df.sub[gene], na.rm = T)
+    max_v = max(gene_df.sub[gene],na.rm = T)
+    min_v = min(gene_df.sub[gene],na.rm = T)
+    
     midpoint = (max_v - min_v) / 2
-    plot_i = (ggplot(gene_df.sub,aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point()+
+    plot_i = (ggplot(gene_df.sub,aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point(size=pt.size)+
                 scale_color_gradient(low="yellow",high="red",
                                      limits=c(min_v, max_v)) +
                 ggtitle(names(object@scale.data)[i]))
