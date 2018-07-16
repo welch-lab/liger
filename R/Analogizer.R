@@ -840,11 +840,11 @@ lambdaSuggestion = function(object, k, lambda_test = NULL, rand.seed = 1, num.co
                             thresh = 1e-4, max_iters = 25, k2 = 500, ref_dataset=NULL, resolution = 1, 
                             agree.method='PCA', gen.new=F, return_results=F) {
   if (is.null(lambda_test)){
-    lambda_test = c(seq(0.25, 1, 0.25), seq(2, 10, 1), seq(10, 60, 5))
+    lambda_test = c(seq(0.25, 1, 0.25), seq(2, 10, 1), seq(15, 60, 5))
   }
   registerDoParallel(cores = num.cores)
-  print(paste('Optimizing initial factorization with lambda =', lambda_test[1]))
   print('This may take several minutes depending on number of values tested')
+  print(paste('Optimizing initial factorization with lambda =', lambda_test[1]))
   object = optimizeALS(object,k=k,thresh = thresh, lambda = lambda_test[1], max_iters=max_iters,
                        nrep=1, rand.seed = rand.seed)
   data_matrix <- foreach(i=1:length(lambda_test), .combine = 'rbind') %dopar% {
@@ -881,6 +881,7 @@ lambdaSuggestion = function(object, k, lambda_test = NULL, rand.seed = 1, num.co
          col = c('black', 'blue', 'green'), lty=1, cex=0.8)
   
   if (return_results) {
+    data_matrix = cbind(lambda_test, data_matrix)
     return(data_matrix)
   }
 }
@@ -916,6 +917,8 @@ kSuggestion = function(object, k_test=seq(5, 50, 5), lambda=5, thresh=1e-4, max_
   registerDoParallel(cores = num.cores)
   
   # optimize largest k value first to take advantage of efficient updating 
+  print('This operation may take several minutes depending on number of values being tested')
+  print(paste0('Optimizing initial factorization with largest test k=', k_test[length(k_test)]))
   object = optimizeALS(object,k=k_test[length(k_test)],thresh = thresh, lambda, max_iters=max_iters,
                        nrep=1, rand.seed = rand.seed)
   data_matrix <- foreach(i=length(k_test):1, .combine = 'rbind') %dopar% {
@@ -947,6 +950,7 @@ kSuggestion = function(object, k_test=seq(5, 50, 5), lambda=5, thresh=1e-4, max_
          col=c('green', 'black'), lty=1, cex=0.8)
   
   if (return_results) {
+    data_matrix = cbind(k_test, data_matrix)
     return(data_matrix)
   }
 }
