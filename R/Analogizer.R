@@ -1088,10 +1088,10 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
     print(plot_grid(p1,p2,nrow=2,align="h"))
     setTxtProgressBar(pb,i)
     
-    gene_df = data.frame(gene=top_genes_V1,loading=c(-V1[top_genes_V1,i],V2[top_genes_V1,i]),dataset=c(rep(dataset1,num_genes),rep(dataset2,num_genes)))
-    print(ggplot(gene_df,aes(x=gene,y=loading,fill=dataset)) + geom_bar(stat = "identity") + facet_share(~dataset, dir="h",scales="free",reverse_num=T)+coord_flip())
-    gene_df = data.frame(gene=top_genes_V2,loading=c(-V1[top_genes_V2,i],V2[top_genes_V2,i]),dataset=c(rep(dataset1,num_genes),rep(dataset2,num_genes)))
-    print(ggplot(gene_df,aes(x=gene,y=loading,fill=dataset)) + geom_bar(stat = "identity") + facet_share(~dataset, dir="h",scales="free",reverse_num=T)+coord_flip())
+    #gene_df = data.frame(gene=top_genes_V1,loading=c(-V1[top_genes_V1,i],V2[top_genes_V1,i]),dataset=c(rep(dataset1,num_genes),rep(dataset2,num_genes)))
+    #print(ggplot(gene_df,aes(x=gene,y=loading,fill=dataset)) + geom_bar(stat = "identity") + facet_share(~dataset, dir="h",scales="free",reverse_num=T)+coord_flip())
+    #gene_df = data.frame(gene=top_genes_V2,loading=c(-V1[top_genes_V2,i],V2[top_genes_V2,i]),dataset=c(rep(dataset1,num_genes),rep(dataset2,num_genes)))
+    #print(ggplot(gene_df,aes(x=gene,y=loading,fill=dataset)) + geom_bar(stat = "identity") + facet_share(~dataset, dir="h",scales="free",reverse_num=T)+coord_flip())
   }
 }  
 
@@ -1486,7 +1486,7 @@ plot_gene_violin = function(object, gene, methylation_indices=NULL,
 }
 
 plot_gene = function(object, gene, methylation_indices=NULL, 
-                     return.plots=F,pt.size=0.1,min.clip=0,max.clip=1)
+                     return.plots=F,pt.size=0.1,min.clip=0,max.clip=1,points.only=F)
 {
   gene_vals = c()
   for (i in 1:length(object@norm.data))
@@ -1530,6 +1530,17 @@ plot_gene = function(object, gene, methylation_indices=NULL,
                                      limits=c(min_v, max_v)) +
                 ggtitle(names(object@scale.data)[i]))
     gene_plots[[i]] = plot_i
+  }
+  if (points.only)
+  {
+    for (i in 1:length(gene_plots)) {
+      gene_plots[[i]] = gene_plots[[i]] + theme(axis.line=element_blank(),axis.text.x=element_blank(),
+                                                axis.text.y=element_blank(),axis.ticks=element_blank(),
+                                                axis.title.x=element_blank(),
+                                                axis.title.y=element_blank(),legend.position="none",
+                                                panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+                                                panel.grid.minor=element_blank(),plot.background=element_blank(),plot.title=element_blank())
+    }
   }
   if (return.plots) {
     return(gene_plots)
@@ -2111,7 +2122,7 @@ riverplot_clusters = function(object,cluster1,cluster2)
   invisible(capture.output(plot(rp,default_style=list(srt=0))))
 }
 
-make_river<-function(cluster1,cluster2,cluster_consensus,min.frac = 0.01,river.yscale = 1,river.lty=0,river.node_margin = 0.1,label.cex = 1,label.col='black',lab.srt = 0,node.order = "auto") {
+make_river<-function(cluster1,cluster2,cluster_consensus,min.frac = 0.05,min.cells=10,river.yscale = 1,river.lty=0,river.node_margin = 0.1,label.cex = 1,label.col='black',lab.srt = 0,node.order = "auto") {
   cluster1 = droplevels(cluster1)
   cluster2 = droplevels(cluster2)
   cluster_consensus=droplevels(cluster_consensus)
@@ -2135,7 +2146,8 @@ make_river<-function(cluster1,cluster2,cluster_consensus,min.frac = 0.01,river.y
   } else {
     if (is.list(node.order)) {
       cluster1 = factor(cluster1,levels=levels(cluster1)[node.order[[1]]])
-      cluster2 = factor(cluster2,levels=levels(cluster2)[node.order[[2]]])
+      cluster_consensus = factor(cluster_consensus,levels=levels(cluster_consensus)[node.order[[2]]])
+      cluster2 = factor(cluster2,levels=levels(cluster2)[node.order[[3]]])
     } 
   }
   cluster1 = cluster1[!is.na(cluster1)]
@@ -2150,7 +2162,7 @@ make_river<-function(cluster1,cluster2,cluster_consensus,min.frac = 0.01,river.y
     temp = list()
     i_cells = names(cluster1)[cluster1 == nodes1[i]]
     for (j in 1:length(nodes_middle)) {
-      if(length(which(cluster_consensus[i_cells] == nodes_middle[j]))/length(i_cells) > min.frac) {
+      if(length(which(cluster_consensus[i_cells] == nodes_middle[j]))/length(i_cells) > min.frac & length(which(cluster_consensus[i_cells] == nodes_middle[j])) > min.cells) {
         temp[[nodes_middle[j]]] = sum(cluster_consensus[i_cells] == 
                                         nodes_middle[j])/length(cluster1)
       } 
@@ -2163,7 +2175,7 @@ make_river<-function(cluster1,cluster2,cluster_consensus,min.frac = 0.01,river.y
     i_cells = names(cluster3)[cluster3 == nodes_middle[i]]
     for (j in 1:length(nodes2)) {
       j_cells = names(cluster2)[cluster2 == nodes2[j]]
-      if (length(which(cluster_consensus[j_cells] == nodes_middle[i]))/length(j_cells) > min.frac) {
+      if (length(which(cluster_consensus[j_cells] == nodes_middle[i]))/length(j_cells) > min.frac & length(which(cluster_consensus[j_cells] == nodes_middle[i])) > min.cells) {
         if (!is.na(sum(cluster2[i_cells] == nodes2[j]))) {
           temp[[nodes2[j]]] = sum(cluster2[i_cells] == 
                                     nodes2[j])/length(cluster2)
