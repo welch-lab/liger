@@ -29,8 +29,7 @@ analogy = scaleNotCenter(analogy)
 ## Performing the Factorization
 ```r
 analogy = optimizeALS(analogy,k=10) #nrep=1 is the default and gives a good idea of the results. Recommend more than one initialization (nrep=10) for final analyses
-analogy = quantile_norm(analogy)
-analogy = clusterLouvainJaccard(analogy) #Optional clustering step to refine the clusters from the factorization
+analogy = quantile_align_SNF(analogy) #SNF clustering and quantile alignment
 ```
 
 ## Visualizing the results
