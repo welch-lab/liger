@@ -997,17 +997,21 @@ kl_divergence_uniform = function(object)
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=NULL,dataset2=NULL)
+plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=NULL,dataset2=NULL,factor.share.thresh=10)
 {
   if (is.null(dataset1)|is.null(dataset2))
   {
     dataset1 = names(object@H)[1]
     dataset2 = names(object@H)[2]
   }
+  
+  dataset_specificity = calc_dataset_specificity(object)
+  factors.use = which(abs(dataset_specificity[[3]]) <= factor.share.thresh)
   H_aligned = object@H.norm
   W = t(object@W)
   V1 = t(object@V[[dataset1]])
   V2 = t(object@V[[dataset2]])
+  W = pmin(W+V1,W+V2)
   #for (i in 1:nrow(W))
   #{
   #  for (j in 1:ncol(W))
@@ -1015,22 +1019,14 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
   #    W[i,j] = min(W[i,j]+V1[i,j],W[i,j]+V2[i,j])
   #  }
   #}
-  #for (i in 1:nrow(W))
-  #{
-  #  for (j in 1:ncol(W))
-  #  {
-  #    V1[i,j] = t(object@V[[dataset1]])[i,j]
-  #    V2[i,j] = t(object@V[[dataset2]])[i,j]
-  #  }
-  #}
+  
   rownames(W)=rownames(V1)=rownames(V2)=object@var.genes
   tsne_coords = object@tsne.coords
   name1 = dataset1
   name2 = dataset2
   k = ncol(V1)
-  pb = txtProgressBar(min=0,max=k,style=3)
-  dataset_specificity = calc_dataset_specificity(object)
-  for (i in 1:k)
+  pb = txtProgressBar(min=0,max=length(factors.use),style=3)
+  for (i in factors.use)
   {
     tsne_df = data.frame(H_aligned[,i],tsne_coords)
     factorlab = paste("Factor",i,sep="")
@@ -1046,11 +1042,11 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
     top_genes_V2 = top_genes_V2[which(V2[top_genes_V2,i]>0)]
     
     #Remove dataset-specific genes that occur as top shared genes
-    #top_genes_V1=setdiff(top_genes_V1,top_genes_W)
-    #top_genes_V2=setdiff(top_genes_V2,top_genes_W)
-    #dataset_specific_both = intersect(top_genes_V1,top_genes_V2)
-    #top_genes_V1 = setdiff(top_genes_V1,dataset_specific_both)
-    #top_genes_V2 = setdiff(top_genes_V2,dataset_specific_both)
+    top_genes_V1=setdiff(top_genes_V1,top_genes_W)
+    top_genes_V2=setdiff(top_genes_V2,top_genes_W)
+    dataset_specific_both = intersect(top_genes_V1,top_genes_V2)
+    top_genes_V1 = setdiff(top_genes_V1,dataset_specific_both)
+    top_genes_V2 = setdiff(top_genes_V2,dataset_specific_both)
 
     top_genes = top_genes_V1
     gene_df = data.frame(genes=top_genes,loadings=V1[top_genes,i])
@@ -1086,6 +1082,12 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
           + draw_grob(roundrectGrob(x=0.33,y=0.5,width=0.67,height=0.70,gp = gpar(fill = "khaki1", col = "Black",alpha=0.5,lwd=2))) 
           + draw_grob(roundrectGrob(x=0.67,y=0.5,width=0.67,height=0.70,gp = gpar(fill = "indianred1", col = "Black",alpha=0.5,lwd=2))))
     print(plot_grid(p1,p2,nrow=2,align="h"))
+    top1 = plot_gene_violin(object,top_genes_V1[1],return.plots = T)
+    top_shared = plot_gene_violin(object,top_genes_W[1],return.plots = T)
+    top2 = plot_gene_violin(object,top_genes_V2[1],return.plots = T)
+    print(plot_grid(top1[[1]],top1[[2]],nrow=2))
+    print(plot_grid(top_shared[[1]],top_shared[[2]],nrow=2))
+    print(plot_grid(top2[[1]],top2[[2]],nrow=2))
     setTxtProgressBar(pb,i)
     
     #gene_df = data.frame(gene=top_genes_V1,loading=c(-V1[top_genes_V1,i],V2[top_genes_V1,i]),dataset=c(rep(dataset1,num_genes),rep(dataset2,num_genes)))
@@ -1463,18 +1465,18 @@ plot_gene_violin = function(object, gene, methylation_indices=NULL,
   gene_df = data.frame(object@tsne.coords)
   rownames(gene_df)=names(object@clusters)
   gene_df$Gene = as.numeric(gene_vals[rownames(gene_df)])
-  colnames(gene_df)=c("tSNE1","tSNE2",gene)
+  colnames(gene_df)=c("tSNE1","tSNE2","gene")
   gene_plots = list()
   for (i in 1:length(object@norm.data))
   {
     gene_df.sub = gene_df[rownames(object@scale.data[[i]]),]
     gene_df.sub$Cluster = object@clusters[rownames(object@scale.data[[i]])]
-    max_v = max(gene_df.sub[gene], na.rm = T)
-    min_v = min(gene_df.sub[gene], na.rm = T)
+    max_v = max(gene_df.sub["gene"], na.rm = T)
+    min_v = min(gene_df.sub["gene"], na.rm = T)
     midpoint = (max_v - min_v) / 2
-    plot_i = (ggplot(gene_df.sub,aes_string(x="Cluster",y=gene,fill="Cluster"))+geom_violin(position="dodge")+geom_boxplot(position="dodge",width=0.5,outlier.shape=NA) +
+    plot_i = (ggplot(gene_df.sub,aes_string(x="Cluster",y="gene",fill="Cluster"))+geom_violin(position="dodge")+geom_boxplot(position="dodge",width=0.5,outlier.shape=NA) +
                 ggtitle(names(object@scale.data)[i]))
-    gene_plots[[i]] = plot_i
+    gene_plots[[i]] = plot_i + theme(legend.position="none") + labs(y=gene)
   }
   if (return.plots) {
     return(gene_plots)
