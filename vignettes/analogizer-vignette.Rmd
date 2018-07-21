@@ -18,17 +18,17 @@ knitr::opts_chunk$set(
 
 ## Data Preprocessing
 ```r
-dge1 = readRDS("dge1.RDS") #genes in rows, cells in columns, rownames and colnames included. Sparse matrix format not accepted.
+dge1 = readRDS("dge1.RDS") #genes in rows, cells in columns, rownames and colnames included. Sparse matrix format is accepted.
 dge2 = readRDS("dge2.RDS")
 analogy = Analogizer(list(name1=dge1,name2=dge2)) #Can also pass in more than 2 datasets
 analogy = normalize(analogy)
-analogy = selectGenes(analogy,varthresh = 0.2)
+analogy = selectGenes(analogy,varthresh = 0.1)
 analogy = scaleNotCenter(analogy)
 ```
 
 ## Performing the Factorization
 ```r
-analogy = optimizeALS(analogy,k=10) #nrep=1 is the default and gives a good idea of the results. Recommend more than one initialization (nrep=10) for final analyses
+analogy = optimizeALS(analogy,k=20) 
 analogy = quantile_align_SNF(analogy) #SNF clustering and quantile alignment
 ```
 
