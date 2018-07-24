@@ -1032,6 +1032,10 @@ get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.th
     V1 = t(object@V[[dataset1]])
     V2 = t(object@V[[dataset2]])
     rownames(W)=rownames(V1)=rownames(V2)=object@var.genes
+    if(sum(labels[[dataset1]]==i) <= 1 | sum(labels[[dataset2]]==i) <= 1)
+    {
+      next
+    }
     
     gene_counts1 = rowSums(object@raw.data[[dataset1]][object@var.genes,labels[[dataset1]]==i])
     gene_counts2 = rowSums(object@raw.data[[dataset2]][object@var.genes,labels[[dataset2]]==i])
@@ -1065,6 +1069,11 @@ get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.th
     top_genes_V1 = top_genes_V1[!is.na(top_genes_V1)]
     top_genes_W = top_genes_W[!is.na(top_genes_W)]
     top_genes_V2 = top_genes_V2[!is.na(top_genes_V2)]
+    
+    top_genes_V1 = top_genes_V1[which(V1[top_genes_V1,i]>0)]
+    top_genes_W = top_genes_W[which(W[top_genes_W,i]>0)]
+    top_genes_V2 = top_genes_V2[which(V2[top_genes_V2,i]>0)]
+    
     if(print.genes)
     {
       print(paste("Factor",i))
@@ -1073,13 +1082,9 @@ get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.th
       print(top_genes_V2)
     }
     
-    top_genes_V1 = top_genes_V1[which(V1[top_genes_V1,i]>0)]
-    top_genes_W = top_genes_W[which(W[top_genes_W,i]>0)]
-    top_genes_V2 = top_genes_V2[which(V2[top_genes_V2,i]>0)]
-    
-    pvals_V1 = sapply(top_genes_V1,function(i){wilcox.test(norm_counts1[i,],norm_counts2[i,])$p.value})
-    pvals_W = sapply(top_genes_W,function(i){wilcox.test(norm_counts1[i,],norm_counts2[i,])$p.value})
-    pvals_V2 = sapply(top_genes_V2,function(i){wilcox.test(norm_counts1[i,],norm_counts2[i,])$p.value})
+    pvals_V1 = sapply(top_genes_V1,function(i){suppressWarnings(wilcox.test(norm_counts1[i,],norm_counts2[i,])$p.value)})
+    pvals_W = sapply(top_genes_W,function(i){suppressWarnings(wilcox.test(norm_counts1[i,],norm_counts2[i,])$p.value)})
+    pvals_V2 = sapply(top_genes_V2,function(i){suppressWarnings(wilcox.test(norm_counts1[i,],norm_counts2[i,])$p.value)})
     if (length(top_genes_V1)<num_genes)
     {
       top_genes_V1 = c(top_genes_V1,rep("NA",num_genes-length(top_genes_V1)))
