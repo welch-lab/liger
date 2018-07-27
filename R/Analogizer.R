@@ -270,14 +270,14 @@ quantile_norm = function(object,quantiles=50,ref_dataset=NULL,min_cells=2)
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-run_tSNE<-function (object, rand.seed = 42,use.raw = F,dims.use = 1:ncol(object@H.norm))
+run_tSNE<-function (object, rand.seed = 42,use.raw = F,dims.use = 1:ncol(object@H.norm),perplexity=30)
 {
   set.seed(rand.seed)
   if (use.raw) {
     raw.data = do.call(rbind,object@H)
     object@tsne.coords = Rtsne(raw.data[,dims.use])$Y
   } else {
-    object@tsne.coords = Rtsne(object@H.norm[,dims.use], pca = F,check_duplicates = F)$Y
+    object@tsne.coords = Rtsne(object@H.norm[,dims.use], pca = F,check_duplicates = F,perplexity=perplexity)$Y
   }
   return(object)
 }
