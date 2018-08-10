@@ -16,6 +16,7 @@ NULL
 #' @slot V Dataset-specific gene loading factors
 #' @slot tsne.coords Matrix of 2D coordinates obtained from running t-SNE on H.norm
 #' @slot clusters Joint cluster assignments for cells
+#' @slot snf Shared nearest factor matrix for use in clustering and alignment
 #' @slot agg.data Data aggregated within clusters
 #' @slot parameters List of parameters used in analysis
 #'
@@ -40,7 +41,8 @@ analogizer <- methods::setClass(
     tsne.coords = "matrix",
     clusters= "factor",
     agg.data = "list",
-    parameters = "list"
+    parameters = "list",
+    snf = 'list'
   )
 )
 
@@ -1981,7 +1983,8 @@ Mode <- function(x, na.rm = FALSE) {
 
 quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset=NULL,min_cells=2,
                              quantiles=50,nstart=10, resolution = 1, dims.use = 1:ncol(object@H[[1]]),
-                             dist.use='CR', center=F, id.number=NULL,print_align_summary=TRUE) {
+                             dist.use='CR', center=F, small.clust.thresh=knn_k, 
+                             id.number=NULL, print.mod=F, print_align_summary=T) {
   if (is.null(ref_dataset)) {
     ns = sapply(object@scale.data, nrow)
     ref_dataset = names(object@scale.data)[which.max(ns)]
@@ -1990,15 +1993,35 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
     set.seed(NULL)
     id.number = sample(1000000:9999999, 1)
   }
-  snf = SNF(object,knn_k=knn_k,k2=k2, dist.use=dist.use, center = center, dims.use=dims.use)
-  idents = SLMCluster(edge = snf,nstart=nstart,R=resolution,prune.thresh=prune.thresh,
-                      id.number=id.number)
-  names(idents) = unlist(lapply(object@scale.data,rownames))
-  
-  #Especially when datasets are large, SLM generates a fair number of singletons.  To assign these to a cluster, take the mode of the cluster assignments of within-dataset neighbors
-  if(min(table(idents))==1){
-    idents = assign.singletons(object,idents, center=center)
+  # recompute SNF if parameters have changed
+  if (!isTRUE(object@parameters[['knn_k']] == knn_k) |
+      !isTRUE(object@parameters[['k2']] == k2) |
+      !isTRUE(object@parameters[['dist.use']] == dist.use) |
+      !isTRUE(object@parameters[['SNF_center']] == center) |
+      !isTRUE(all(object@parameters[['dims.use']] == dims.use)) |
+      !isTRUE(object@parameters[['small.clust.thresh']] == small.clust.thresh)) {
+    print('Recomputing shared nearest factor space')
+    snf = SNF(object,knn_k=knn_k,k2=k2, dist.use=dist.use, center = center, 
+              dims.use=dims.use, small.clust.thresh=small.clust.thresh)
+  } else {
+    snf = object@snf
   }
+  cell.names = unlist(lapply(object@scale.data,rownames))
+  idents = snf$idents
+  
+  idents.rest = SLMCluster(edge = snf$out.summary, nstart = nstart, R = resolution, 
+                           prune.thresh = prune.thresh, id.number = id.number,
+                           print.mod=print.mod)
+  names(idents.rest) = setdiff(cell.names,snf$cells.cl)
+  # Especially when datasets are large, SLM generates a fair number of singletons.  
+  # To assign these to a cluster, take the mode of the cluster assignments of within-dataset neighbors
+  if (min(table(idents.rest)) == 1) {
+    idents.rest = assign.singletons(object, idents.rest, center = center)
+  }
+  idents[names(idents.rest)] = as.character(idents.rest)
+  idents = factor(idents)
+  names(idents) = cell.names
+  
   Hs = object@H
   cs = cumsum(c(0,unlist(lapply(object@H,nrow))))
   clusters = lapply(1:length(Hs),function(i){
@@ -2044,7 +2067,7 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
       }
     }
   }
-  if (print_align_summary) {
+  if (print_align_summary & length(unlist(too.few)) > 0) {
     print('Summary:')
     for (i in 1:length(Hs)) {
       print(paste('In dataset', names(Hs)[i], 'these clusters did not align normally (too few cells):'))
@@ -2053,6 +2076,7 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
   }
   object@H.norm = Reduce(rbind, Hs)
   object@clusters = idents
+  object@snf = snf
   # set parameters
   object@parameters$ref_dataset = ref_dataset
   object@parameters$knn_k = knn_k
@@ -2062,47 +2086,65 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
   object@parameters$dims.use = dims.use
   object@parameters$dist.use = dist.use
   object@parameters$SNF_center = center
+  object@parameters$small.clust.thresh = small.clust.thresh
   object@parameters$resolution = resolution
   return(object)
 }
 
-SNF = function(object, dims.use=1:ncol(object@H[[1]]), knn_k=15,k2=300,
-               dist.use="CR", center=F) {
-  NN.maxes = do.call(rbind,lapply(1:length(object@H),function(i){
-    sc = scale(object@H[[i]],center=center,scale=T)
-    maxes = factor(apply(sc[,dims.use],1,which.max),levels=1:ncol(sc))
+SNF<-function (object, dims.use = 1:ncol(object@H[[1]]), knn_k = 20, 
+               k2 = 500, dist.use = "CR", center = F, 
+               small.clust.thresh=knn_k) 
+{
+  NN.maxes = do.call(rbind, lapply(1:length(object@H), function(i) {
+    sc = scale(object@H[[i]], center = center, scale = T)
+    maxes = factor(apply(sc[, dims.use], 1, which.max), levels = 1:ncol(sc))
     if (dist.use == "CR") {
-      norm = t(apply(object@H[[i]][,dims.use],1,scalar1))
+      norm = t(apply(object@H[[i]][, dims.use], 1, scalar1))
       if (any(is.na(norm))) {
-        stop('Unable to normalize loadings for all cells; some cells
-             loading on no selected factors.')
+        stop("Unable to normalize loadings for all cells; some cells\n             
+             loading on no selected factors.")
       }
-    } else {
-      norm = object@H[[i]][,dims.use]
+      }
+    else {
+      norm = object@H[[i]][, dims.use]
     }
-    knn.idx = get.knn(norm,knn_k,algorithm=dist.use)$nn.index
-    t(apply(knn.idx,1,function(q){
+    knn.idx = get.knn(norm, knn_k, algorithm = dist.use)$nn.index
+    t(apply(knn.idx, 1, function(q) {
       table(maxes[q])
     }))
   }))
-  rownames(NN.maxes) = unlist(lapply(object@H,rownames))
-  nn.obj <- nn2(NN.maxes,k=k2)
-  out.snn = 1 - (nn.obj$nn.dists/(2*knn_k))
-  out.summary = matrix(ncol=3,nrow = (ncol(out.snn)*nrow(out.snn)))
+  rownames(NN.maxes) = unlist(lapply(object@H, rownames))
+  # extract small clusters 
+  print(paste0('Isolating small clusters with fewer than ', small.clust.thresh,
+               ' members'))
+  max.val = factor(apply(NN.maxes,1,which.max))
+  names(max.val) = rownames(NN.maxes)
+  idents = rep("NA",nrow(NN.maxes))
+  names(idents) = rownames(NN.maxes)
+  cl = levels(max.val)[which(table(max.val) < small.clust.thresh)]
+  cells.cl = names(max.val)[which(max.val %in% cl)]
+  idents[cells.cl]= paste0("F",as.character(max.val[cells.cl]))
+  
+  nn.obj <- nn2(NN.maxes[setdiff(rownames(NN.maxes),cells.cl),], k = k2)
+  out.snn = 1 - (nn.obj$nn.dists/(2 * knn_k))
+  out.summary = matrix(ncol = 3, nrow = (ncol(out.snn) * nrow(out.snn)))
   
   counter = 1
   for (i in 1:nrow(out.snn)) {
-    for (j in 1:ncol(out.snn)){
-      out.summary[counter,] = c(i,nn.obj$nn.idx[i,j],out.snn[i,j])
+    for (j in 1:ncol(out.snn)) {
+      out.summary[counter, ] = c(i, nn.obj$nn.idx[i, j], 
+                                 out.snn[i, j])
       counter = counter + 1
     }
   }
-  out.summary[out.summary[,1]==out.summary[,2],3] = 0
-  out.summary[,1] = out.summary[,1]-1
-  out.summary[,2] = out.summary[,2] - 1
-  return(out.summary)
+  out.summary[out.summary[, 1] == out.summary[, 2], 3] = 0
+  out.summary[, 1] = out.summary[, 1] - 1
+  out.summary[, 2] = out.summary[, 2] - 1
   
-}
+  # idents returned here only contain values for small clusters
+  return(list(cells.cl=cells.cl, idents=idents, 
+              out.summary=out.summary))
+  }
 
 assign.singletons<-function(object,idents,k.use = 15, center=F) {
   singleton.clusters = names(table(idents))[which(table(idents)==1)]
@@ -2139,18 +2181,16 @@ assign.singletons<-function(object,idents,k.use = 15, center=F) {
 
 
 SLMCluster<-function(edge,prune.thresh=0.2,nstart=100,iter.max=10,algorithm=1,R=1,
-                     ModularityJarFile="",random.seed=1, id.number=NULL) {
+                     ModularityJarFile="",random.seed=1, id.number=NULL, print.mod=F) {
   
   #This is code taken from Seurat for preparing data for modularity-based clustering.
-  # diag(SNN) <- 0
-  #SNN <- as(SNN,"dgTMatrix")
   edge = edge[which(edge[,3]>prune.thresh),]
   ident=modclust(edge=edge,resolution=R,n.iter= iter.max,n.start=nstart, id.number = id.number,
-                 random.seed=random.seed,ModularityJarFile=ModularityJarFile)
+                 random.seed=random.seed,ModularityJarFile=ModularityJarFile, print.mod=print.mod)
   return(ident)
 }
 modclust <- function(edge, modularity=1,resolution,n.start=100,n.iter=25,random.seed=1,
-                     id.number=NULL, algorithm=1,ModularityJarFile){
+                     id.number=NULL, algorithm=1,ModularityJarFile, print.mod=F){
   print("making edge file.")
   edge_file <- paste0("edge", id.number, fileext=".txt")
   # Make sure no scientific notation written to edge file
@@ -2163,11 +2203,10 @@ modclust <- function(edge, modularity=1,resolution,n.start=100,n.iter=25,random.
     random.seed = 0
   }
   analogizer.dir <- system.file(package = "Analogizer")
-  print(analogizer.dir)
   ModularityJarFile <- paste0(analogizer.dir, "/java/ModularityOptimizer.jar")
   command <- paste("java -jar", ModularityJarFile, edge_file, output_file,modularity, resolution, algorithm, n.start,
-                   n.iter, random.seed, 1, sep = " ")
-  print ("StartingSLM")
+                   n.iter, random.seed, as.numeric(print.mod), sep = " ")
+  print ("Starting SLM")
   ret = system(command, wait = TRUE)
   if (ret != 0) {
     stop(paste0(ret, " exit status from ", command))
