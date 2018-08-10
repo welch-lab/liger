@@ -500,7 +500,7 @@ rbindlist = function(mat_list)
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,
+optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=100,nrep=1,
                        H_init=NULL,W_init=NULL,V_init=NULL,rand.seed=1)
 {
   E = object@scale.data
@@ -609,7 +609,7 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=25,nrep=1,
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-optimizeNewK = function(object,k_new,lambda=5.0,thresh=1e-4,max_iters=25,rand.seed=1)
+optimizeNewK = function(object,k_new,lambda=5.0,thresh=1e-4,max_iters=100,rand.seed=1)
 {
   k = ncol(object@H[[1]])
   if (k_new == k)
@@ -672,7 +672,7 @@ optimizeNewK = function(object,k_new,lambda=5.0,thresh=1e-4,max_iters=25,rand.se
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-optimizeNewData = function(object,new.data,which.datasets,add.to.existing=T,lambda=5.0,thresh=1e-4,max_iters=25)
+optimizeNewData = function(object,new.data,which.datasets,add.to.existing=T,lambda=5.0,thresh=1e-4,max_iters=100)
 {
   if (add.to.existing)
   {
@@ -744,7 +744,7 @@ optimizeNewData = function(object,new.data,which.datasets,add.to.existing=T,lamb
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-optimizeSubset = function(object,cell.subset=NULL,cluster.subset=NULL,lambda=5.0,thresh=1e-4,max_iters=25,datasets.scale=NULL)
+optimizeSubset = function(object,cell.subset=NULL,cluster.subset=NULL,lambda=5.0,thresh=1e-4,max_iters=100,datasets.scale=NULL)
 {
   if (is.null(cell.subset) & is.null(cluster.subset))
   {
@@ -799,7 +799,7 @@ optimizeSubset = function(object,cell.subset=NULL,cluster.subset=NULL,lambda=5.0
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-optimizeNewLambda = function(object, new_lambda, thresh=1e-4, max_iters=25, rand.seed = 1) {
+optimizeNewLambda = function(object, new_lambda, thresh=1e-4, max_iters=100, rand.seed = 1) {
   k = ncol(object@H[[1]])
   H = object@H
   W = object@W
@@ -846,7 +846,7 @@ optimizeNewLambda = function(object, new_lambda, thresh=1e-4, max_iters=25, rand
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
 lambdaSuggestion = function(object, k, lambda_test = NULL, rand.seed = 1, num.cores = 1, 
-                            thresh = 1e-4, max_iters = 25, k2 = 500, ref_dataset=NULL, resolution = 1, 
+                            thresh = 1e-4, max_iters = 100, k2 = 500, ref_dataset=NULL, resolution = 1, 
                             agree.method='PCA', gen.new=F, return_results=F) {
   if (is.null(lambda_test)){
     lambda_test = c(seq(0.25, 1, 0.25), seq(2, 10, 1), seq(15, 60, 5))
@@ -921,7 +921,7 @@ lambdaSuggestion = function(object, k, lambda_test = NULL, rand.seed = 1, num.co
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-kSuggestion = function(object, k_test=seq(5, 50, 5), lambda=5, thresh=1e-4, max_iters=25, num.cores=1, 
+kSuggestion = function(object, k_test=seq(5, 50, 5), lambda=5, thresh=1e-4, max_iters=100, num.cores=1, 
                        rand.seed = 1, plot.metric='median', gen.new=F, return_results=F) {
   registerDoParallel(cores = num.cores)
   
@@ -1258,16 +1258,19 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-distortion_metric = function(object,dr_method="PCA",ndims=40,k=10, use_aligned=TRUE, return_breakdown=FALSE)
+distortion_metric = function(object,dr_method="PCA",ndims=40,k=10, use_aligned=TRUE, 
+                             rand.seed=42, return_breakdown=FALSE)
 {
   print(paste("Reducing dimensionality using",dr_method))
   dr = list()
   if (dr_method=="NMF")
   {
+    set.seed(rand.seed)
     dr = lapply(object@scale.data,function(x){nnmf(x,k=ndims)$W})
   }
   else if(dr_method=="ICA")
   {
+    set.seed(rand.seed)
     dr = lapply(object@scale.data,function(x){icafast(x,nc=ndims)$S})
   }
   else #PCA
