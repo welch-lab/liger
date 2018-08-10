@@ -294,7 +294,6 @@ run_tSNE<-function (object, rand.seed = 42,use.raw = F,dims.use = 1:ncol(object@
 #' @param k Number of dimensions to reduce to
 #' @param distance Name of distance metric to use in defining fuzzy simplicial sets
 #' @return analogizer object
-#' @importFrom reticulate import
 #' @export
 #' @examples
 #' \dontrun{
@@ -307,6 +306,12 @@ run_tSNE<-function (object, rand.seed = 42,use.raw = F,dims.use = 1:ncol(object@
 run_umap<-function (object, rand.seed = 42, use.raw = F, dims.use = 1:ncol(object@H.norm),
                     k=2, distance = 'euclidean', n_neighbors = 10, min_dist = 0.1)
 {
+  if (!require("reticulate", quietly = TRUE)) {
+    stop("Package \"reticulate\" needed for this function to work. Please install it.\n
+         Also ensure Python package umap (PyPI name umap-learn) is installed in python \n
+         version accesible to reticulate.",
+         call. = FALSE)
+  }
   UMAP<-import("umap")
   umapper = UMAP$UMAP(n_components=as.integer(k),metric = distance, n_neighbors = as.integer(n_neighbors),
                       min_dist = min_dist)
@@ -1761,8 +1766,6 @@ MergeSparseDataAll<-function (datalist,library.names=NULL) {
 #'
 #' @param object analogizer object.
 #' @export
-#' @importFrom Seurat CreateSeuratObject
-#' @importFrom Seurat NormalizeData
 #' @examples
 #' \dontrun{
 #' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
@@ -1772,7 +1775,10 @@ MergeSparseDataAll<-function (datalist,library.names=NULL) {
 #' analogy = scaleNotCenter(analogy)
 #' }
 AnalogizerToSeurat<-function(object, need.sparse=T)  {
-  
+  if (!require("Seurat", quietly = TRUE)) {
+    stop("Package \"Seurat\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
   nms = names(object@H)
   if (need.sparse) {
     object@raw.data = lapply(object@raw.data, function(x){Matrix(as.matrix(x), sparse=T)})
