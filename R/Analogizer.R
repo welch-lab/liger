@@ -281,6 +281,7 @@ run_tSNE<-function (object, rand.seed = 42,use.raw = F,dims.use = 1:ncol(object@
   } else {
     object@tsne.coords = Rtsne(object@H.norm[,dims.use], pca = F,check_duplicates = F,perplexity=perplexity)$Y
   }
+  rownames(object@tsne.coords) = rownames(object@H.norm)
   return(object)
 }
 
@@ -316,6 +317,7 @@ run_umap<-function (object, rand.seed = 42, use.raw = F, dims.use = 1:ncol(objec
   } else {
     object@tsne.coords = Rumap(object@H.norm)
   }
+  rownames(object@tsne.coords) = rownames(object@H.norm)
   return(object)
 }
 
@@ -1712,12 +1714,16 @@ plot_genes = function(object,genes)
 }
 
 #Function takes in a list of DGEs, with gene rownames and cell colnames, and merges them into a single DGE.
-MergeSparseDataAll<-function (datalist,library.names) {
+MergeSparseDataAll<-function (datalist,library.names=NULL) {
   
   #use summary to convert the sparse matrices a and b into three-column indexes where i are the row numbers, j are the column numbers, and x are the nonzero entries
   a = datalist[[1]]
   allGenes=rownames(a)
-  allCells=paste0(library.names[1],"_",colnames(a))
+  if (!is.null(library.names)) {
+    allCells=paste0(library.names[1],"_",colnames(a))
+  } else {
+    allCells = colnames(a)
+  }
   as = summary(a)
   for (i in 2:length(datalist)) {
     b = datalist[[i]]
@@ -1730,7 +1736,11 @@ MergeSparseDataAll<-function (datalist,library.names) {
     #Next, change the row (gene) indexes so that they index on the union of the gene sets, so that proper merging can occur.
     
     allGenesnew=union(allGenes, rownames(b))
-    cellnames = paste0(library.names[i],"_",colnames(b))
+    if (!is.null(library.names)) {
+      cellnames = paste0(library.names[i],"_",colnames(b))
+    } else {
+      cellnames = colnames(b)
+    }
     allCells=c(allCells,cellnames)
     idx=match(allGenes,allGenesnew)
     newgenesa = idx[as[,1]]
@@ -1741,11 +1751,10 @@ MergeSparseDataAll<-function (datalist,library.names) {
     
     #Now bind the altered 3-column matrices together, and convert into a single sparse matrix.
     as = rbind(as,bs)
-    print(paste0("rbind ",i," complete."))
     allGenes=allGenesnew
   }
   M=sparseMatrix(i=as[,1],j=as[,2],x=as[,3],dims=c(length(allGenes),length(allCells)),dimnames=list(allGenes,allCells))
-  return(M)  
+  return(M)
 }
 
 #' Create a Seurat object containing the data from an Analogizer object.
@@ -1753,6 +1762,7 @@ MergeSparseDataAll<-function (datalist,library.names) {
 #' @param object analogizer object.
 #' @export
 #' @importFrom Seurat CreateSeuratObject
+#' @importFrom Seurat NormalizeData
 #' @examples
 #' \dontrun{
 #' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
@@ -2389,10 +2399,12 @@ make_river<-function(cluster1,cluster2,cluster_consensus,min.frac = 0.05,min.cel
 }
 
 #' Construct an Analogizer object with a specified subset of cells or clusters.
+#' Should only be called after tsne coordinates have been computed and alignment
+#' performed. 
 #'
 #' @param object analogizer object.
-#' @param cell.subset List of names of cells to extract. Names of list elements should match names of datasets.
-#' @param cluster.subset Clusters to extract
+#' @param clusters.use Clusters to extract
+#' @param cells.use Vector of cell names to keep from any dataset
 #' 
 #' @return analogizer object
 #' @export
@@ -2403,14 +2415,34 @@ make_river<-function(cluster1,cluster2,cluster_consensus,min.frac = 0.05,min.cel
 #' analogy = Analogizer(list(Y,Z))
 #' analogy =
 #' }
-extractSubset = function(object,cell.subset=NULL,cluster.subset=NULL)
-{
-  if (!is.null(cluster.subset))
-  {
-    cell.subset = lapply(1:length(object@scale.data),function(i){which(object@clusters[rownames(object@scale.data[[i]])] %in% cluster.subset)})    
+subsetAnalogizer<-function(object, clusters.use = NULL,cells.use = NULL) {
+  if (!is.null(clusters.use)){
+    cells.use = names(object@clusters)[which(object@clusters %in% clusters.use)]
+    
   }
-  old_names = names(object@raw.data)
-  object@raw.data = lapply(1:length(object@raw.data),function(i){object@raw.data[[i]][,cell.subset[[i]]]})  
-  names(object@raw.data) = names(object@norm.data) = names(object@scale.data) = old_names
-  return(object)
+  nms = names(object@scale.data)
+  raw.data = lapply(object@raw.data,function(q){
+    q[,intersect(cells.use,colnames(q))]
+  })
+  a = Analogizer(raw.data)
+  
+  a@norm.data = lapply(1:length(a@raw.data),function(i){
+    object@norm.data[[i]][,colnames(a@raw.data[[i]])]
+    
+  })
+  a@scale.data = lapply(1:length(a@raw.data),function(i){
+    object@scale.data[[i]][colnames(a@raw.data[[i]]),]
+    
+  })
+  a@H = lapply(1:length(a@raw.data),function(i){
+    object@H[[i]][colnames(a@raw.data[[i]]),]
+  })
+  a@clusters = object@clusters[unlist(lapply(a@H,rownames))]
+  a@clusters = droplevels(a@clusters)
+  a@tsne.coords = object@tsne.coords[names(a@clusters),]
+  a@H.norm = object@H.norm[names(a@clusters),]
+  a@W = object@W
+  a@V = object@V
+  names(a@scale.data) = names(a@raw.data) = names(a@norm.data) = names(a@H) = nms
+  return(a)
 }
