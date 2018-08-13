@@ -71,7 +71,7 @@ lambdaSuggestion(analogy,k) # plot alignment metric to find an elbow that can be
 
 ## Updating the Factorization
 If we want to add new data, change k or lambda, or re-analyze a subset of the data, the functions
-below provide an efficient method of updating. This is much faster than a naive approach of 
+below provide an efficient method of updating. This is much faster than the naive approach of 
 simply re-running the optimizeALS algorithm.
 ```r
 analogy = optimizeNewK(analogy,k=15) #Can also decrease K
