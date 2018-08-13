@@ -17,6 +17,10 @@ knitr::opts_chunk$set(
 ```
 
 ## Data Preprocessing
+The algorithm takes a list of two or more digital gene expression (DGE) matrices as input. Genes should be in rows and cells in columns.
+Before running the factorization, we need to normalize the data to account for different numbers of UMIs per cell,
+select variable genes, and scale the data. Note that we do not center the data because nonnegative matrix factorization accepts only
+positive values.
 ```r
 dge1 = readRDS("dge1.RDS") #genes in rows, cells in columns, rownames and colnames included. Sparse matrix format is accepted.
 dge2 = readRDS("dge2.RDS")
@@ -27,6 +31,10 @@ analogy = scaleNotCenter(analogy)
 ```
 
 ## Performing the Factorization
+Next we perform the factorization using an alternating least squares algorithm. After performing the factorization,
+we identify cells that load on corresponding cell factors and quantile normalize their factor loadings across datasets.
+The key parameters here are the number of factors (k), the penalty parameter (lambda), and the clustering resolution.
+In most cases, the default settings of lambda=5.0 and resolution=1.0 provide reasonable results.
 ```r
 analogy = optimizeALS(analogy,k=20) 
 analogy = quantile_align_SNF(analogy) #SNF clustering and quantile alignment
@@ -42,12 +50,18 @@ dev.off()
 ```
 
 ## Selecting k and lambda
+The kSuggestion and lambdaSuggestion functions can aid in selecting k and lambda. We want to find the smallest
+k for which the increase in entropy metric begins to level off (an "elbow" in the plot). Similarly, we want the
+smallest lambda for which the alignment metric stabilizes.
 ```r
 kSuggestion(analogy) # plot entropy metric to find an elbow that can be used to select the number of factors
 lambdaSuggestion(analogy,k) # plot alignment metric to find an elbow that can be used to select the value of lambda
 ```
 
 ## Updating the Factorization
+If we want to add new data, change k or lambda, or re-analyze a subset of the data, the functions
+below provide an efficient method of updating. This is much faster than a naive approach of 
+simply re-running the optimizeALS algorithm.
 ```r
 analogy = optimizeNewK(analogy,k=15) #Can also decrease K
 analogy = optimizeNewData(analogy,newdata=list(name1=dge1.new,name2=dge2.new),which.datasets=list(name1,name2),add.to.existing=T) #Add new batches from the same condition/technology/species/protocol
