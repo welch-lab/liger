@@ -1097,12 +1097,17 @@ get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.th
     if (length(top_genes_V1)<num_genes)
     {
       top_genes_V1 = c(top_genes_V1,rep("NA",num_genes-length(top_genes_V1)))
-      pvals_V1 = c(top_genes_V1,rep("NA",num_genes-length(top_genes_V1)))
+      pvals_V1 = c(pvals_V1,rep("NA",num_genes-length(pvals_V1)))
+    }
+    if (length(top_genes_W)<num_genes)
+    {
+      top_genes_W = c(top_genes_W,rep("NA",num_genes-length(top_genes_W)))
+      pvals_W = c(pvals_W,rep("NA",num_genes-length(pvals_W)))
     }
     if (length(top_genes_V2)<num_genes)
     {
       top_genes_V2 = c(top_genes_V2,rep("NA",num_genes-length(top_genes_V2)))
-      pvals_V2 = c(top_genes_V2,rep("NA",num_genes-length(top_genes_V2)))
+      pvals_V2 = c(pvals_V2,rep("NA",num_genes-length(pvals_V2)))
     }
 
     V1_genes[(num_genes*(j-1)+1):(num_genes*j),1]=i
@@ -1130,7 +1135,13 @@ get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.th
     W_genes[(num_genes*(j-1)+1):(num_genes*j),8]=pvals_W
     V2_genes[(num_genes*(j-1)+1):(num_genes*j),8]=pvals_V2
   }
-  return(list(V1_genes,W_genes,V2_genes))
+  use_these_V1 = which(V1_genes[,"gene"]!="NA" & V1_genes[,"counts1"]!="NA" & V1_genes[,"counts2"]!="NA")
+  use_these_W = which(W_genes[,"gene"]!="NA" & W_genes[,"counts1"]!="NA" & W_genes[,"counts2",]!="NA")
+  use_these_V2 = which(V2_genes[,"gene"]!="NA" & V2_genes[,"counts1"]!="NA" & V2_genes[,"counts2"]!="NA")
+  V1_genes = V1_genes[use_these_V1,]
+  W_genes = W_genes[use_these_W,]
+  V2_genes = V2_genes[use_these_V2,]
+  return(list(dataset1=V1_genes,shared=W_genes,dataset2=V2_genes,num_factors_V1=table(V1_genes$gene),num_factors_V2=table(V2_genes$gene)))
 }
 
 #' Word cloud plots coloring t-SNE points by their loading on specifed factors as well as the
