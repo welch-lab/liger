@@ -1673,18 +1673,18 @@ plot_gene = function(object, gene, methylation_indices=NULL,
   gene_df = data.frame(object@tsne.coords)
   rownames(gene_df)=names(object@clusters)
   gene_df$Gene = as.numeric(gene_vals[rownames(gene_df)])
-  colnames(gene_df)=c("tSNE1","tSNE2",gene)
+  colnames(gene_df)=c("tSNE1","tSNE2","gene")
   gene_plots = list()
   for (i in 1:length(object@norm.data))
   {
     gene_df.sub = gene_df[rownames(object@scale.data[[i]]),]
-    max_v = max(gene_df.sub[gene],na.rm = T)
-    min_v = min(gene_df.sub[gene],na.rm = T)
+    max_v = max(gene_df.sub["gene"],na.rm = T)
+    min_v = min(gene_df.sub["gene"],na.rm = T)
     
     midpoint = (max_v - min_v) / 2
-    plot_i = (ggplot(gene_df.sub,aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point(size=pt.size)+
+    plot_i = (ggplot(gene_df.sub,aes_string(x="tSNE1",y="tSNE2",color="gene"))+geom_point(size=pt.size)+
                 scale_color_gradient(low="yellow",high="red",
-                                     limits=c(min_v, max_v)) +
+                                     limits=c(min_v, max_v)) + labs(y=gene) +
                 ggtitle(names(object@scale.data)[i]))
     gene_plots[[i]] = plot_i
   }
