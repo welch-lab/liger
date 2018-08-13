@@ -49,6 +49,17 @@ plot_word_clouds(analogy)
 dev.off()
 ```
 
+## Finding marker genes
+We can use the factorization to identify shared and dataset-specific markers. The function below returns a list,
+where the first element contains dataset-specific markers for dataset 1, the second element contains shared
+markers, the third element contains dataset-specific markers for dataset 2, and the last 2 elements indicate 
+the number of factors in which each marker is found to be significant. This information allows the identification
+of ubiquitous vs. cell-type-specific dataset differences.
+```r
+markers = get_factor_markers(analogy,num_genes=10)
+```
+
+
 ## Selecting k and lambda
 The kSuggestion and lambdaSuggestion functions can aid in selecting k and lambda. We want to find the smallest
 k for which the increase in entropy metric begins to level off (an "elbow" in the plot). Similarly, we want the
