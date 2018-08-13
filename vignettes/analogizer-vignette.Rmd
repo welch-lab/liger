@@ -53,7 +53,7 @@ dev.off()
 We can use the factorization to identify shared and dataset-specific markers. The function below returns a list,
 where the first element contains dataset-specific markers for dataset 1, the second element contains shared
 markers, the third element contains dataset-specific markers for dataset 2, and the last 2 elements indicate 
-the number of factors in which each marker is found to be significant. This information allows the identification
+the number of factors in which each marker is found. This information allows the identification
 of ubiquitous vs. cell-type-specific dataset differences.
 ```r
 markers = get_factor_markers(analogy,num_genes=10)
