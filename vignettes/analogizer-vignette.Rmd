@@ -41,6 +41,12 @@ plot_word_clouds(analogy)
 dev.off()
 ```
 
+## Selecting k and lambda
+```r
+kSuggestion(analogy) # plot entropy metric to find an elbow that can be used to select the number of factors
+lambdaSuggestion(analogy,k) # plot alignment metric to find an elbow that can be used to select the value of lambda
+```
+
 ## Updating the Factorization
 ```r
 analogy = optimizeNewK(analogy,k=15) #Can also decrease K
