@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 The algorithm takes a list of two or more digital gene expression (DGE) matrices as input. Genes should be in rows and cells in columns.
 Before running the factorization, we need to normalize the data to account for different numbers of UMIs per cell,
 select variable genes, and scale the data. Note that we do not center the data because nonnegative matrix factorization accepts only
-positive values.
+positive values. The selectGenes function performs variable gene selection on each of the datasets separately, then takes the union. Note that coresponding genes in each dataset need to have the same names (though the genes do not need to be in the same order in each dataset). For cross-species analysis, it may be convenient to convert all gene names to uppercase; you can do this using the capitalize=T option of the selectGenes function.
 ```r
 dge1 = readRDS("dge1.RDS") #genes in rows, cells in columns, rownames and colnames included. Sparse matrix format is accepted.
 dge2 = readRDS("dge2.RDS")
