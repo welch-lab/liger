@@ -1001,14 +1001,17 @@ kl_divergence_uniform = function(object)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
 
-get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.thresh=10,log_fc_thresh=1,umi_thresh=30,frac_thresh=0,num_genes=5,print.genes=F)
+get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.thresh=10,log_fc_thresh=1,umi_thresh=30,frac_thresh=0,pval_thresh=0.05,num_genes=NULL,print.genes=F)
 {
   if (is.null(dataset1) | is.null(dataset2))
   {
     dataset1 = names(object@H)[1]
     dataset2 = names(object@H)[2]
   }
-  
+  if (is.null(num_genes))
+  {
+    num_genes = object@var.genes
+  }
   dataset_specificity = calc_dataset_specificity(object)
   factors.use = which(abs(dataset_specificity[[3]]) <= factor.share.thresh)
   
@@ -1135,9 +1138,9 @@ get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.th
     W_genes[(num_genes*(j-1)+1):(num_genes*j),8]=pvals_W
     V2_genes[(num_genes*(j-1)+1):(num_genes*j),8]=pvals_V2
   }
-  use_these_V1 = which(V1_genes[,"gene"]!="NA" & V1_genes[,"counts1"]!="NA" & V1_genes[,"counts2"]!="NA")
-  use_these_W = which(W_genes[,"gene"]!="NA" & W_genes[,"counts1"]!="NA" & W_genes[,"counts2",]!="NA")
-  use_these_V2 = which(V2_genes[,"gene"]!="NA" & V2_genes[,"counts1"]!="NA" & V2_genes[,"counts2"]!="NA")
+  use_these_V1 = which(V1_genes[,"gene"]!="NA" & V1_genes[,"counts1"]!="NA" & V1_genes[,"counts2"]!="NA" & V1_genes[,"p_value"] < pval_thresh)
+  use_these_W = which(W_genes[,"gene"]!="NA" & W_genes[,"counts1"]!="NA" & W_genes[,"counts2",]!="NA" & W_genes[,"p_value"] < pval_thresh)
+  use_these_V2 = which(V2_genes[,"gene"]!="NA" & V2_genes[,"counts1"]!="NA" & V2_genes[,"counts2"]!="NA" & V2_genes[,"p_value"] < pval_thresh)
   V1_genes = V1_genes[use_these_V1,]
   W_genes = W_genes[use_these_W,]
   V2_genes = V2_genes[use_these_V2,]
