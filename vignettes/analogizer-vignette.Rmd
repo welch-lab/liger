@@ -57,6 +57,8 @@ the number of factors in which each marker is found. This information allows the
 of ubiquitous vs. cell-type-specific dataset differences.
 ```r
 markers = get_factor_markers(analogy,num_genes=10)
+plot_gene(analogy,gene="Malat1")
+plot_gene_violin(analogy,gene="Malat1")
 ```
 
 

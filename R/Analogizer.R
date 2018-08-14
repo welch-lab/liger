@@ -46,11 +46,22 @@ analogizer <- methods::setClass(
   )
 )
 
-Analogizer <- function(raw.data) {
+Analogizer <- function(raw.data, sparse_dcg=T) {
   object <- methods::new(
     Class = "analogizer",
     raw.data = raw.data
   )
+  if (sparse_dcg) {
+    raw.data = lapply(raw.data, function(x) {
+      if (class(x)[1] == "dgTMatrix") {
+        temp = summary(x)
+        sparseMatrix(i=temp[,1],j=temp[,2],x=temp[,3])
+      } else {
+        Matrix(as.matrix(x), sparse = T)
+      }
+    })
+    object@raw.data = raw.data
+  } 
   return(object)
 }
 
@@ -131,7 +142,11 @@ selectGenes = function(object,alphathresh=0.99,varthresh=0.1,cex.use=0.3,combine
 
 normalize = function(object)
 {
-  object@norm.data = lapply(object@raw.data,function(x){sweep(x,2,colSums(x),"/")})
+  if (class(object@raw.data[[1]])[1] == 'dgTMatrix' | class(object@raw.data[[1]])[1] == 'dgCMatrix') {
+    object@norm.data = lapply(object@raw.data, Matrix.column_norm)
+  } else {
+    object@norm.data = lapply(object@raw.data,function(x){sweep(x,2,colSums(x),"/")})
+  }
   return(object)
 }
 
