@@ -1350,6 +1350,8 @@ distortion_metric = function(object,dr_method="PCA",ndims=40,k=10, use_aligned=T
 #' @param object analogizer object. Should call quantile_norm before calling.
 #' @param k Number of nearest neighbors to use in calculating alignment.
 #' @param rand.seed Random seed for reproducibility
+#' @param cells.use Vector of cells across all datasets to use in calculating score
+#' @param clusters.use Names of clusters to use in calculating score 
 #' @return alignment statistic
 #' @importFrom FNN get.knn
 #' @export
@@ -1362,29 +1364,39 @@ distortion_metric = function(object,dr_method="PCA",ndims=40,k=10, use_aligned=T
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-alignment_metric<-function(object, k=NULL, rand.seed=1, by_dataset=F)
+alignment_metric<-function(object, k=NULL, rand.seed=1, cells.use = NULL, 
+                           clusters.use = NULL, by_dataset=F)
 {
-  num_cells = nrow(object@H.norm)
+  if (is.null(cells.use)) {
+    cells.use = rownames(object@H.norm)
+  } 
+  if (!is.null(clusters.use)){
+    cells.use = names(object@clusters)[which(object@clusters %in% clusters.use)]
+  } 
+  
+  nmf_factors = object@H.norm[cells.use,]
+  num_cells = length(cells.use)
+  func_H = lapply(object@H, function(x){
+    x[intersect(cells.use, rownames(x)),]
+  })
   num_factors = ncol(object@H.norm)
-  nmf_factors = object@H.norm
   N = length(object@H)
-  rownames(nmf_factors)=names(object@clusters)
   
   set.seed(rand.seed)
   sampled_cells = c()
-  min_cells = min(sapply(object@H, function(x){nrow(x)}))
+  min_cells = min(sapply(func_H, function(x){nrow(x)}))
   for (i in 1:N)
   {
-    sampled_cells = c(sampled_cells,sample(rownames(object@scale.data[[i]]),min_cells))
+    sampled_cells = c(sampled_cells,sample(rownames(func_H[[i]]),min_cells))
   }
   if (is.null(k)) {
     k = floor(0.01 * num_cells)
   }
   knn_graph = get.knn(nmf_factors[sampled_cells, 1:num_factors], k)
   dataset = unlist(sapply(1:N, function(x) {
-    rep(names(object@H)[x], nrow(object@H[[x]]))
+    rep(names(object@H)[x], nrow(func_H[[x]]))
   }))
-  names(dataset)=names(object@clusters)
+  names(dataset)=cells.use
   dataset = dataset[sampled_cells]
   num_sampled = N*min_cells
   num_same_dataset = rep(k, num_sampled)
@@ -1418,7 +1430,6 @@ alignment_metric_per_factor<-function(object,k=NULL)
   rownames(nmf_factors)=names(object@clusters)
   num_clusters = length(levels(object@clusters))
   
-  knn_graph = get.knn(nmf_factors[, 1:num_factors], k)
   dataset = unlist(sapply(1:N, function(x) {
     rep(names(object@H)[x], nrow(object@H[[x]]))
   }))
@@ -1427,12 +1438,14 @@ alignment_metric_per_factor<-function(object,k=NULL)
   for (i in 1:num_clusters)
   {
     cells_i = which(object@clusters==levels(object@clusters)[i])
+    cell_names = names(object@clusters)[cells_i]
     num_cells = length(cells_i)
     if(is.null(k))
     {
-      k = max(floor(0.1 * num_cells),10)
+      k = max(floor(0.05 * num_cells),10)
       print(k)    
     }
+    knn_graph = get.knn(nmf_factors[, 1:num_factors], k)
     
     num_same_dataset = rep(0, num_cells)
     num_diff_dataset = rep(0, num_cells)
@@ -1443,6 +1456,64 @@ alignment_metric_per_factor<-function(object,k=NULL)
     }
     align_metrics[i] = sum(num_diff_dataset/(num_same_dataset+num_diff_dataset))
   }
+  return(align_metrics)
+}
+
+#' Calculate alignment statistic for each cluster in aligned datasets. 
+#'
+#' @param object analogizer object. Should call quantile_norm before calling.
+#' @param rand.seed Random seed for reproducibility
+#' @return Vector of alignment statistics (with names of clusters)
+#' @importFrom FNN get.knn
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' }
+alignment_metric_per_cluster<-function(object, rand.seed=1)
+{
+  num_factors = ncol(object@H.norm)
+  nmf_factors = object@H.norm
+  N = length(object@H)
+  num_clusters = length(levels(object@clusters))
+  
+  dataset = unlist(sapply(1:N, function(x) {
+    rep(names(object@H)[x], nrow(object@H[[x]]))
+  }))
+  names(dataset)=names(object@clusters)
+  align_metrics = rep(0,num_clusters)
+  for (i in 1:num_clusters)
+  {
+    cells_i = which(object@clusters==levels(object@clusters)[i])
+    cell_names = names(object@clusters)[cells_i]
+    num_cells = length(cells_i)
+    dataset_cells = lapply(object@H, function(x) {
+      intersect(rownames(x), cell_names)
+    })
+    min_cells = min(sapply(dataset_cells, length))
+    set.seed(1)
+    sampled_cells= c()
+    for (m in 1:N) {
+      sampled_cells = c(sampled_cells, sample(dataset_cells[[m]],min_cells))
+    }
+    
+    k = min(max(floor(0.01 * num_cells),10), (length(sampled_cells)-1))
+      
+    knn_graph = get.knn(nmf_factors[sampled_cells, 1:num_factors], k)
+    
+    num_same_dataset = rep(0, length(sampled_cells))
+    for (j in 1:length(sampled_cells)) {
+      inds = knn_graph$nn.index[j, ]
+      num_same_dataset[j] = sum(dataset[sampled_cells[inds]] == dataset[sampled_cells[j]])
+    }
+    align_metrics[i] = 1 - ((mean(num_same_dataset) - (k/N))/(k-k/N))
+  }
+  names(align_metrics) = levels(object@clusters)
   return(align_metrics)
 }
 
