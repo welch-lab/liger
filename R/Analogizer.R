@@ -2518,10 +2518,17 @@ subsetAnalogizer<-function(object, clusters.use = NULL,cells.use = NULL) {
     cells.use = names(object@clusters)[which(object@clusters %in% clusters.use)]
     
   }
-  nms = names(object@scale.data)
-  raw.data = lapply(object@raw.data,function(q){
-    q[,intersect(cells.use,colnames(q))]
+  raw.data = lapply(seq_along(object@raw.data),function(q){
+    cells = intersect(cells.use,colnames(object@raw.data[[q]]))
+    if (length(cells) > 0) {
+      object@raw.data[[q]][,cells]
+    } else {
+      warning(paste0('Selected subset eliminates dataset ', names(object@raw.data)[q]))
+      return(NULL)
+    }
   })
+  raw.data = raw.data[!sapply(raw.data,is.null)]
+  nms = names(raw.data)
   a = Analogizer(raw.data)
   
   a@norm.data = lapply(1:length(a@raw.data),function(i){
