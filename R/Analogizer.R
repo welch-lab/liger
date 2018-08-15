@@ -363,7 +363,7 @@ run_umap<-function (object, rand.seed = 42, use.raw = F, dims.use = 1:ncol(objec
 #' analogy = scaleNotCenter(analogy)
 #' }
 plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,do.shuffle = T,clusters=NULL,
-                                  axis.labels = NULL, return.plots=F,legend.size=5){
+                                  axis.labels = NULL, return.plots=F, do.legend=T,legend.size=5){
   tsne_df = data.frame(object@tsne.coords)
   colnames(tsne_df) = c("tsne1", "tsne2")
   tsne_df$Dataset = unlist(lapply(1:length(object@H), function(x) {
@@ -380,13 +380,15 @@ plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,
   }
   
   p1 = ggplot(tsne_df, aes(x = tsne1, y = tsne2,
-                           color = Dataset)) + geom_point(size=pt.size)+ guides(color = guide_legend(override.aes = list(size=legend.size)))
+                           color = Dataset)) + geom_point(size=pt.size)+ 
+    guides(color = guide_legend(override.aes = list(size=legend.size)))
   
   centers <- tsne_df %>% dplyr::group_by(Cluster) %>% dplyr::summarize(tsne1 = median(x = tsne1),
                                                                 tsne2 = median(x = tsne2))
   p2 = ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(size=pt.size) + 
           geom_point(data = centers, mapping = aes(x = tsne1,y = tsne1), size = 0) + 
-          geom_text(data=centers,mapping = aes(label = Cluster),colour='black',size=text.size) + guides(color = guide_legend(override.aes = list(size=legend.size)))
+          geom_text(data=centers,mapping = aes(label = Cluster),colour='black',size=text.size) + 
+      guides(color = guide_legend(override.aes = list(size=legend.size)))
           
   if (!is.null(title)) {
     p1 = p1 + ggtitle(paste0(title,", dataset alignment"))
@@ -395,6 +397,10 @@ plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,
   if (!is.null(axis.labels)) {
     p1 = p1 + xlab(axis.labels[1]) + ylab(axis.labels[2])
     p2 = p2 + xlab(axis.labels[1]) + ylab(axis.labels[2])
+  }
+  if (!do.legend) {
+    p1 = p1 + theme(legend.position = 'none')
+    p2 = p2 + theme(legend.position = 'none')
   }
   if (return.plots) {
     return(list(p1, p2))
