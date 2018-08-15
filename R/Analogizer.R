@@ -1373,24 +1373,34 @@ alignment_metric<-function(object, k=NULL, rand.seed=1, cells.use = NULL,
   if (!is.null(clusters.use)){
     cells.use = names(object@clusters)[which(object@clusters %in% clusters.use)]
   } 
-  
   nmf_factors = object@H.norm[cells.use,]
   num_cells = length(cells.use)
-  func_H = lapply(object@H, function(x){
-    x[intersect(cells.use, rownames(x)),]
+  func_H = lapply(seq_along(object@H), function(x){
+    cells.overlap = intersect(cells.use, rownames(object@H[[x]]))
+    if (length(cells.overlap) > 0) {
+      object@H[[x]][cells.overlap,]
+    } else {
+      warning(paste0('Selected subset eliminates dataset ', names(object@H)[x]), 
+              immediate.=T)
+      return(NULL)
+    }
   })
+  func_H = func_H[!sapply(func_H, is.null)]
   num_factors = ncol(object@H.norm)
-  N = length(object@H)
-  
-  set.seed(rand.seed)
-  sampled_cells = c()
-  min_cells = min(sapply(func_H, function(x){nrow(x)}))
-  for (i in 1:N)
-  {
-    sampled_cells = c(sampled_cells,sample(rownames(func_H[[i]]),min_cells))
+  N = length(func_H)
+  if (N == 1) {
+    warning('Alignment null for single dataset', immediate. = T)
   }
+  set.seed(rand.seed)
+  min_cells = min(sapply(func_H, function(x){nrow(x)}))
+  sampled_cells = unlist(lapply(1:N, function(x) {
+    sample(rownames(func_H[[x]]), min_cells)
+  }))
+  max_k = length(sampled_cells)-1
   if (is.null(k)) {
-    k = floor(0.01 * num_cells)
+    k = min(max(floor(0.01 * num_cells),10), max_k)
+  } else if (k > max_k) {
+    stop(paste0('Please select k <=', max_k))
   }
   knn_graph = get.knn(nmf_factors[sampled_cells, 1:num_factors], k)
   dataset = unlist(sapply(1:N, function(x) {
@@ -1463,6 +1473,8 @@ alignment_metric_per_factor<-function(object,k=NULL)
 #'
 #' @param object analogizer object. Should call quantile_norm before calling.
 #' @param rand.seed Random seed for reproducibility
+#' @param k Number of nearest neighbors in calculating alignment
+#'          Can pass in single value or vector with same length as clusters
 #' @return Vector of alignment statistics (with names of clusters)
 #' @importFrom FNN get.knn
 #' @export
@@ -1475,44 +1487,21 @@ alignment_metric_per_factor<-function(object,k=NULL)
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-alignment_metric_per_cluster<-function(object, rand.seed=1)
+alignment_metric_per_cluster<-function(object, rand.seed=1, k=NULL, by_dataset=F)
 {
-  num_factors = ncol(object@H.norm)
-  nmf_factors = object@H.norm
-  N = length(object@H)
-  num_clusters = length(levels(object@clusters))
-  
-  dataset = unlist(sapply(1:N, function(x) {
-    rep(names(object@H)[x], nrow(object@H[[x]]))
-  }))
-  names(dataset)=names(object@clusters)
-  align_metrics = rep(0,num_clusters)
-  for (i in 1:num_clusters)
-  {
-    cells_i = which(object@clusters==levels(object@clusters)[i])
-    cell_names = names(object@clusters)[cells_i]
-    num_cells = length(cells_i)
-    dataset_cells = lapply(object@H, function(x) {
-      intersect(rownames(x), cell_names)
-    })
-    min_cells = min(sapply(dataset_cells, length))
-    set.seed(1)
-    sampled_cells= c()
-    for (m in 1:N) {
-      sampled_cells = c(sampled_cells, sample(dataset_cells[[m]],min_cells))
+  clusters = levels(object@clusters)
+  if (typeof(k) == 'double') {
+    if (length(k) == 1) {
+      k = rep(k, length(clusters))
+    } else if (length(k) != length(clusters)) {
+      print('Length of k does not match length of clusters')
     }
-    
-    k = min(max(floor(0.01 * num_cells),10), (length(sampled_cells)-1))
-      
-    knn_graph = get.knn(nmf_factors[sampled_cells, 1:num_factors], k)
-    
-    num_same_dataset = rep(0, length(sampled_cells))
-    for (j in 1:length(sampled_cells)) {
-      inds = knn_graph$nn.index[j, ]
-      num_same_dataset[j] = sum(dataset[sampled_cells[inds]] == dataset[sampled_cells[j]])
-    }
-    align_metrics[i] = 1 - ((mean(num_same_dataset) - (k/N))/(k-k/N))
-  }
+  } 
+  align_metrics = sapply(seq_along(clusters), function(x) {
+    alignment_metric(object, k=k[x], rand.seed = rand.seed, 
+                     clusters.use = clusters[x], 
+                     by_dataset = by_dataset)
+  })
   names(align_metrics) = levels(object@clusters)
   return(align_metrics)
 }
