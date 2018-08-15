@@ -2501,6 +2501,52 @@ make_river<-function(cluster1,cluster2,cluster_consensus,min.frac = 0.05,min.cel
   invisible(capture.output(riverplot(rp,yscale = river.yscale,lty= river.lty,node_margin = river.node_margin)))
   
 }
+#' Calculate adjusted Rand index for Analogizer clustering and external clustering.
+#' Should run quantile_align_SNF first. 
+#'
+#' @param object analogizer object.
+#' @param clusters.compare Clustering with which to compare (named vector)
+#' @importFrom mclust adjustedRandIndex
+#' @return Adjusted Rand index value
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy =
+#' }
+calcARI = function(object, clusters.compare) {
+  if (length(clusters.compare) < length(object@clusters)) {
+    print('Calculating ARI for subset of full cells')
+  }
+  return(adjustedRandIndex(object@clusters[names(clusters.compare)],
+                           clusters.compare))
+}
+
+#' Calculate purity for Analogizer clustering and external clustering (base truth).
+#' Should run quantile_align_SNF first. 
+#'
+#' @param object analogizer object.
+#' @param classes.compare Clustering with which to compare (named vector)
+#' @return Purity value
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy =
+#' }
+calcPurity = function(object, classes.compare) {
+  if (length(classes.compare) < length(object@clusters)) {
+    print('Calculating purity for subset of full cells')
+  }
+  clusters = object@clusters[names(classes.compare)]
+  purity = sum(apply(table(classes.compare, clusters), 2, max)) / length(clusters)
+
+  return(purity)
+}
 
 #' Construct an Analogizer object with a specified subset of cells or clusters.
 #' Should only be called after tsne coordinates have been computed and alignment
@@ -2554,6 +2600,7 @@ subsetAnalogizer<-function(object, clusters.use = NULL,cells.use = NULL) {
   a@H.norm = object@H.norm[names(a@clusters),]
   a@W = object@W
   a@V = object@V
+  a@var.genes = object@var.genes
   names(a@scale.data) = names(a@raw.data) = names(a@norm.data) = names(a@H) = nms
   return(a)
 }
