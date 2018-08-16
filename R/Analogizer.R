@@ -386,8 +386,9 @@ plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,
   centers <- tsne_df %>% dplyr::group_by(Cluster) %>% dplyr::summarize(tsne1 = median(x = tsne1),
                                                                 tsne2 = median(x = tsne2))
   p2 = ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(size=pt.size) + 
-          geom_text(data=centers,mapping = aes(label = Cluster),colour='black',size=text.size) + guides(color = guide_legend(override.aes = list(size=legend.size)))
-
+          geom_text(data=centers,mapping = aes(label = Cluster),colour='black',size=text.size) + 
+      guides(color = guide_legend(override.aes = list(size=legend.size)))
+          
   if (!is.null(title)) {
     p1 = p1 + ggtitle(paste0(title,", dataset alignment"))
     p2 = p2 + ggtitle(paste0(title,", published clustering"))
@@ -2338,8 +2339,17 @@ modclust <- function(edge, modularity=1,resolution,n.start=100,n.iter=25,random.
 #'
 #' @param object analogizer object. Should run quantile_align_SNF before calling.
 #' @param cluster1 Cluster assignments for dataset 1. Note that cluster names should be distinct across datasets.
-#' @param cluster1 Cluster assignments for dataset 2. Note that cluster names should be distinct across datasets.
-#' 
+#' @param cluster2 Cluster assignments for dataset 2. Note that cluster names should be distinct across datasets.
+#' @param cluster_consensus Optional external consensus clustering (to use instead of object clusters)
+#' @param min.frac Minimum fraction of cluster for edge to be shown
+#' @param min.cells Minumum number of cells for edge to be shown 
+#' @param river.yscale y-scale to pass to riverplot
+#' @param river.lty lty to pass to riverplot
+#' @param river.node_margin node_margin to pass to riverplot
+#' @param label.cex Size of text labels
+#' @param label.col Color of text labels
+#' @param lab.srt Angle of text labels
+#' @param node.order Order of clusters in each set (list with three vectors of ordinal numbers)
 #' @export
 #' @importFrom riverplot makeRiver
 #' @importFrom riverplot plot.riverplot
@@ -2351,77 +2361,24 @@ modclust <- function(edge, modularity=1,resolution,n.start=100,n.iter=25,random.
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-
-riverplot_clusters = function(object,cluster1,cluster2)
-{
-  cluster1 = cluster1[rownames(object@scale.data[[1]])]
-  cluster2 = cluster2[rownames(object@scale.data[[2]])]
-  nodes1 = levels(cluster1)[table(cluster1)>0]
-  nodes2 = levels(cluster2)[table(cluster2)>0]
-  nodes_middle = levels(object@clusters)
-  node_Xs = c(rep(1,length(nodes1)),rep(2,length(nodes_middle)),rep(3,length(nodes2)))
-  edge_list = list()
-  for (i in 1:length(nodes1))
-  {
-    temp = list()
-    i_cells = names(cluster1)[cluster1==nodes1[i]]
-    for (j in 1:length(nodes_middle))
-    {
-      temp[[nodes_middle[j]]] = sum(object@clusters[i_cells]==nodes_middle[j])/length(cluster1)
-    }
-    edge_list[[nodes1[i]]] = temp
-  }
-  cluster3 = object@clusters[rownames(object@scale.data[[2]])]
-  for (i in 1:length(nodes_middle))
-  {
-    temp = list()
-    i_cells = names(cluster3)[cluster3==nodes_middle[i]]
-    for (j in 1:length(nodes2))
-    {
-      if (!is.na(sum(cluster2[i_cells]==nodes2[j])))
-      {
-        temp[[nodes2[j]]] = sum(cluster2[i_cells]==nodes2[j])/length(cluster2)
-      }
-    }
-    edge_list[[nodes_middle[i]]] = temp
-  }
-  node_cols = list()
-  
-  ggplotColors <- function(g){
-    d <- 360/g
-    h <- cumsum(c(15, rep(d,g - 1)))
-    hcl(h = h, c = 100, l = 65)
-  }
-  
-  pal = ggplotColors(length(nodes1))
-  for (i in 1:length(nodes1))
-  {
-    node_cols[[nodes1[i]]] = list(col=pal[i])
-  }
-  pal = ggplotColors(length(nodes_middle))
-  for (i in 1:length(nodes_middle))
-  {
-    node_cols[[nodes_middle[i]]] = list(col=pal[i])
-  }
-  pal = ggplotColors(length(nodes2))
-  for (i in 1:length(nodes2))
-  {
-    node_cols[[nodes2[i]]] = list(col=pal[i])
-  }
-  rp = makeRiver(c(nodes1,nodes_middle,nodes2),edge_list,node_xpos=node_Xs,node_styles=node_cols)
-  invisible(capture.output(plot(rp,default_style=list(srt=0))))
-}
-
-make_river<-function(cluster1,cluster2,cluster_consensus,min.frac = 0.05,min.cells=10,river.yscale = 1,river.lty=0,river.node_margin = 0.1,label.cex = 1,label.col='black',lab.srt = 0,node.order = "auto") {
+make_riverplot<-function(object, cluster1,cluster2, cluster_consensus=NULL,min.frac = 0.05,min.cells=10,
+                         river.yscale = 1,river.lty=0,river.node_margin = 0.1,label.cex = 1,
+                         label.col='black',lab.srt = 0,node.order = "auto") {
   cluster1 = droplevels(cluster1)
   cluster2 = droplevels(cluster2)
-  cluster_consensus=droplevels(cluster_consensus)
-  if(length(intersect(levels(cluster1),levels(cluster2))) > 0 | length(intersect(levels(cluster1),levels(cluster_consensus)))>0 | length(intersect(levels(cluster2),levels(cluster_consensus)))>0)
+  if (is.null(cluster_consensus)) {
+    cluster_consensus=droplevels(object@clusters)
+  }
+  # Make cluster names unique if necessary
+  if(length(intersect(levels(cluster1),levels(cluster2))) > 0 | 
+     length(intersect(levels(cluster1),levels(cluster_consensus)))>0 | 
+     length(intersect(levels(cluster2),levels(cluster_consensus)))>0)
   {
     print("Duplicate cluster names detected. Adding 1- and 2- to make unique names.")
     cluster1 = mapvalues(cluster1,from=levels(cluster1),to=paste("1",levels(cluster1),sep="-"))
     cluster2 = mapvalues(cluster2,from=levels(cluster2),to=paste("2",levels(cluster2),sep="-"))
   }
+  # set node order 
   if (node.order == "auto") {
     tab.1 = table(cluster1,cluster_consensus[names(cluster1)])
     tab.1 = sweep(tab.1,1,rowSums(tab.1),"/")
@@ -2447,25 +2404,30 @@ make_river<-function(cluster1,cluster2,cluster_consensus,min.frac = 0.05,min.cel
   nodes_middle = levels(cluster_consensus)[table(cluster_consensus) > 0]
   node_Xs = c(rep(1, length(nodes1)), rep(2, length(nodes_middle)), 
               rep(3, length(nodes2)))
+  
+  # first set of edges
   edge_list = list()
   for (i in 1:length(nodes1)) {
     temp = list()
     i_cells = names(cluster1)[cluster1 == nodes1[i]]
     for (j in 1:length(nodes_middle)) {
-      if(length(which(cluster_consensus[i_cells] == nodes_middle[j]))/length(i_cells) > min.frac & length(which(cluster_consensus[i_cells] == nodes_middle[j])) > min.cells) {
+      if(length(which(cluster_consensus[i_cells] == nodes_middle[j]))/length(i_cells) > min.frac & 
+         length(which(cluster_consensus[i_cells] == nodes_middle[j])) > min.cells) {
         temp[[nodes_middle[j]]] = sum(cluster_consensus[i_cells] == 
                                         nodes_middle[j])/length(cluster1)
       } 
     }
     edge_list[[nodes1[i]]] = temp
   }
+  # second set of edges
   cluster3 = cluster_consensus[names(cluster2)]
   for (i in 1:length(nodes_middle)) {
     temp = list()
     i_cells = names(cluster3)[cluster3 == nodes_middle[i]]
     for (j in 1:length(nodes2)) {
       j_cells = names(cluster2)[cluster2 == nodes2[j]]
-      if (length(which(cluster_consensus[j_cells] == nodes_middle[i]))/length(j_cells) > min.frac & length(which(cluster_consensus[j_cells] == nodes_middle[i])) > min.cells) {
+      if (length(which(cluster_consensus[j_cells] == nodes_middle[i]))/length(j_cells) > min.frac & 
+          length(which(cluster_consensus[j_cells] == nodes_middle[i])) > min.cells) {
         if (!is.na(sum(cluster2[i_cells] == nodes2[j]))) {
           temp[[nodes2[j]]] = sum(cluster2[i_cells] == 
                                     nodes2[j])/length(cluster2)
@@ -2474,6 +2436,7 @@ make_river<-function(cluster1,cluster2,cluster_consensus,min.frac = 0.05,min.cel
     } 
     edge_list[[nodes_middle[i]]] = temp
   }
+  # set cluster colors 
   node_cols = list()
   ggplotColors <- function(g) {
     d <- 360/g
@@ -2492,6 +2455,7 @@ make_river<-function(cluster1,cluster2,cluster_consensus,min.frac = 0.05,min.cel
   for (i in 1:length(nodes2)) {
     node_cols[[nodes2[i]]] = list(col = pal[i],textcex=label.cex,textcol=label.col,srt= lab.srt)
   }
+  # create nodes and riverplot object
   nodes = list(nodes1,nodes_middle,nodes2)
   node.limit= max(unlist(lapply(nodes,length)))
   
@@ -2501,7 +2465,9 @@ make_river<-function(cluster1,cluster2,cluster_consensus,min.frac = 0.05,min.cel
   })
   rp = makeRiver(c(nodes1, nodes_middle, nodes2), edge_list, 
                  node_xpos = node_Xs, node_ypos = unlist(node_Ys),node_styles = node_cols)
-  invisible(capture.output(riverplot(rp,yscale = river.yscale,lty= river.lty,node_margin = river.node_margin)))
+  # prevent normal riverplot output being printed to console
+  invisible(capture.output(riverplot(rp,yscale = river.yscale,lty= river.lty,
+                                     node_margin = river.node_margin)))
   
 }
 #' Calculate adjusted Rand index for Analogizer clustering and external clustering.
