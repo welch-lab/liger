@@ -385,7 +385,6 @@ plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,
   centers <- tsne_df %>% dplyr::group_by(Cluster) %>% dplyr::summarize(tsne1 = median(x = tsne1),
                                                                 tsne2 = median(x = tsne2))
   p2 = ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(size=pt.size) + 
-          geom_point(data = centers, mapping = aes(x = tsne1,y = tsne1), size = 0) + 
           geom_text(data=centers,mapping = aes(label = Cluster),colour='black',size=text.size) + guides(color = guide_legend(override.aes = list(size=legend.size)))
           
   if (!is.null(title)) {
@@ -1029,6 +1028,11 @@ get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.th
   }
   dataset_specificity = calc_dataset_specificity(object)
   factors.use = which(abs(dataset_specificity[[3]]) <= factor.share.thresh)
+  
+  if (length(factors.use)<2)
+  {
+    print(paste("Warning: only",length(factors.use),"factors passed the dataset specificity threshold."))
+  }
   
   Hs_scaled = object@H
   for (i in 1:ncol(Hs_scaled[[1]]))
