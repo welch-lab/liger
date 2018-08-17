@@ -363,7 +363,7 @@ run_umap<-function (object, rand.seed = 42, use.raw = F, dims.use = 1:ncol(objec
 #' analogy = scaleNotCenter(analogy)
 #' }
 plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,do.shuffle = T,clusters=NULL,
-                                  axis.labels = NULL, return.plots=F,legend.size=5){
+                                  axis.labels = NULL, return.plots=F, do.legend=T,legend.size=5){
   tsne_df = data.frame(object@tsne.coords)
   colnames(tsne_df) = c("tsne1", "tsne2")
   tsne_df$Dataset = unlist(lapply(1:length(object@H), function(x) {
@@ -380,13 +380,14 @@ plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,
   }
   
   p1 = ggplot(tsne_df, aes(x = tsne1, y = tsne2,
-                           color = Dataset)) + geom_point(size=pt.size)+ guides(color = guide_legend(override.aes = list(size=legend.size)))
+                           color = Dataset)) + geom_point(size=pt.size)+ 
+    guides(color = guide_legend(override.aes = list(size=legend.size)))
   
   centers <- tsne_df %>% dplyr::group_by(Cluster) %>% dplyr::summarize(tsne1 = median(x = tsne1),
                                                                 tsne2 = median(x = tsne2))
   p2 = ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(size=pt.size) + 
           geom_text(data=centers,mapping = aes(label = Cluster),colour='black',size=text.size) + guides(color = guide_legend(override.aes = list(size=legend.size)))
-          
+
   if (!is.null(title)) {
     p1 = p1 + ggtitle(paste0(title,", dataset alignment"))
     p2 = p2 + ggtitle(paste0(title,", published clustering"))
@@ -394,6 +395,10 @@ plotByDatasetAndCluster<-function(object,title=NULL,pt.size = 0.3,text.size = 3,
   if (!is.null(axis.labels)) {
     p1 = p1 + xlab(axis.labels[1]) + ylab(axis.labels[2])
     p2 = p2 + xlab(axis.labels[1]) + ylab(axis.labels[2])
+  }
+  if (!do.legend) {
+    p1 = p1 + theme(legend.position = 'none')
+    p2 = p2 + theme(legend.position = 'none')
   }
   if (return.plots) {
     return(list(p1, p2))
@@ -1354,6 +1359,8 @@ distortion_metric = function(object,dr_method="PCA",ndims=40,k=10, use_aligned=T
 #' @param object analogizer object. Should call quantile_norm before calling.
 #' @param k Number of nearest neighbors to use in calculating alignment.
 #' @param rand.seed Random seed for reproducibility
+#' @param cells.use Vector of cells across all datasets to use in calculating score
+#' @param clusters.use Names of clusters to use in calculating score 
 #' @return alignment statistic
 #' @importFrom FNN get.knn
 #' @export
@@ -1366,29 +1373,49 @@ distortion_metric = function(object,dr_method="PCA",ndims=40,k=10, use_aligned=T
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-alignment_metric<-function(object, k=NULL, rand.seed=1, by_dataset=F)
+alignment_metric<-function(object, k=NULL, rand.seed=1, cells.use = NULL, 
+                           clusters.use = NULL, by_dataset=F)
 {
-  num_cells = nrow(object@H.norm)
+  if (is.null(cells.use)) {
+    cells.use = rownames(object@H.norm)
+  } 
+  if (!is.null(clusters.use)){
+    cells.use = names(object@clusters)[which(object@clusters %in% clusters.use)]
+  } 
+  nmf_factors = object@H.norm[cells.use,]
+  num_cells = length(cells.use)
+  func_H = lapply(seq_along(object@H), function(x){
+    cells.overlap = intersect(cells.use, rownames(object@H[[x]]))
+    if (length(cells.overlap) > 0) {
+      object@H[[x]][cells.overlap,]
+    } else {
+      warning(paste0('Selected subset eliminates dataset ', names(object@H)[x]), 
+              immediate.=T)
+      return(NULL)
+    }
+  })
+  func_H = func_H[!sapply(func_H, is.null)]
   num_factors = ncol(object@H.norm)
-  nmf_factors = object@H.norm
-  N = length(object@H)
-  rownames(nmf_factors)=names(object@clusters)
-  
-  set.seed(rand.seed)
-  sampled_cells = c()
-  min_cells = min(sapply(object@H, function(x){nrow(x)}))
-  for (i in 1:N)
-  {
-    sampled_cells = c(sampled_cells,sample(rownames(object@scale.data[[i]]),min_cells))
+  N = length(func_H)
+  if (N == 1) {
+    warning('Alignment null for single dataset', immediate. = T)
   }
+  set.seed(rand.seed)
+  min_cells = min(sapply(func_H, function(x){nrow(x)}))
+  sampled_cells = unlist(lapply(1:N, function(x) {
+    sample(rownames(func_H[[x]]), min_cells)
+  }))
+  max_k = length(sampled_cells)-1
   if (is.null(k)) {
-    k = floor(0.01 * num_cells)
+    k = min(max(floor(0.01 * num_cells),10), max_k)
+  } else if (k > max_k) {
+    stop(paste0('Please select k <=', max_k))
   }
   knn_graph = get.knn(nmf_factors[sampled_cells, 1:num_factors], k)
   dataset = unlist(sapply(1:N, function(x) {
-    rep(names(object@H)[x], nrow(object@H[[x]]))
+    rep(names(object@H)[x], nrow(func_H[[x]]))
   }))
-  names(dataset)=names(object@clusters)
+  names(dataset)=cells.use
   dataset = dataset[sampled_cells]
   num_sampled = N*min_cells
   num_same_dataset = rep(k, num_sampled)
@@ -1422,7 +1449,6 @@ alignment_metric_per_factor<-function(object,k=NULL)
   rownames(nmf_factors)=names(object@clusters)
   num_clusters = length(levels(object@clusters))
   
-  knn_graph = get.knn(nmf_factors[, 1:num_factors], k)
   dataset = unlist(sapply(1:N, function(x) {
     rep(names(object@H)[x], nrow(object@H[[x]]))
   }))
@@ -1431,12 +1457,14 @@ alignment_metric_per_factor<-function(object,k=NULL)
   for (i in 1:num_clusters)
   {
     cells_i = which(object@clusters==levels(object@clusters)[i])
+    cell_names = names(object@clusters)[cells_i]
     num_cells = length(cells_i)
     if(is.null(k))
     {
-      k = max(floor(0.1 * num_cells),10)
+      k = max(floor(0.05 * num_cells),10)
       print(k)    
     }
+    knn_graph = get.knn(nmf_factors[, 1:num_factors], k)
     
     num_same_dataset = rep(0, num_cells)
     num_diff_dataset = rep(0, num_cells)
@@ -1447,6 +1475,43 @@ alignment_metric_per_factor<-function(object,k=NULL)
     }
     align_metrics[i] = sum(num_diff_dataset/(num_same_dataset+num_diff_dataset))
   }
+  return(align_metrics)
+}
+
+#' Calculate alignment statistic for each cluster in aligned datasets. 
+#'
+#' @param object analogizer object. Should call quantile_norm before calling.
+#' @param rand.seed Random seed for reproducibility
+#' @param k Number of nearest neighbors in calculating alignment
+#'          Can pass in single value or vector with same length as clusters
+#' @return Vector of alignment statistics (with names of clusters)
+#' @importFrom FNN get.knn
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(Y,Z)
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' analogy = optimize_als(analogy,k=2,nrep=1)
+#' }
+alignment_metric_per_cluster<-function(object, rand.seed=1, k=NULL, by_dataset=F)
+{
+  clusters = levels(object@clusters)
+  if (typeof(k) == 'double') {
+    if (length(k) == 1) {
+      k = rep(k, length(clusters))
+    } else if (length(k) != length(clusters)) {
+      print('Length of k does not match length of clusters')
+    }
+  } 
+  align_metrics = sapply(seq_along(clusters), function(x) {
+    alignment_metric(object, k=k[x], rand.seed = rand.seed, 
+                     clusters.use = clusters[x], 
+                     by_dataset = by_dataset)
+  })
+  names(align_metrics) = levels(object@clusters)
   return(align_metrics)
 }
 
@@ -2439,6 +2504,52 @@ make_river<-function(cluster1,cluster2,cluster_consensus,min.frac = 0.05,min.cel
   invisible(capture.output(riverplot(rp,yscale = river.yscale,lty= river.lty,node_margin = river.node_margin)))
   
 }
+#' Calculate adjusted Rand index for Analogizer clustering and external clustering.
+#' Should run quantile_align_SNF first. 
+#'
+#' @param object analogizer object.
+#' @param clusters.compare Clustering with which to compare (named vector)
+#' @importFrom mclust adjustedRandIndex
+#' @return Adjusted Rand index value
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy =
+#' }
+calcARI = function(object, clusters.compare) {
+  if (length(clusters.compare) < length(object@clusters)) {
+    print('Calculating ARI for subset of full cells')
+  }
+  return(adjustedRandIndex(object@clusters[names(clusters.compare)],
+                           clusters.compare))
+}
+
+#' Calculate purity for Analogizer clustering and external clustering (base truth).
+#' Should run quantile_align_SNF first. 
+#'
+#' @param object analogizer object.
+#' @param classes.compare Clustering with which to compare (named vector)
+#' @return Purity value
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy =
+#' }
+calcPurity = function(object, classes.compare) {
+  if (length(classes.compare) < length(object@clusters)) {
+    print('Calculating purity for subset of full cells')
+  }
+  clusters = object@clusters[names(classes.compare)]
+  purity = sum(apply(table(classes.compare, clusters), 2, max)) / length(clusters)
+
+  return(purity)
+}
 
 #' Construct an Analogizer object with a specified subset of cells or clusters.
 #' Should only be called after tsne coordinates have been computed and alignment
@@ -2462,10 +2573,17 @@ subsetAnalogizer<-function(object, clusters.use = NULL,cells.use = NULL) {
     cells.use = names(object@clusters)[which(object@clusters %in% clusters.use)]
     
   }
-  nms = names(object@scale.data)
-  raw.data = lapply(object@raw.data,function(q){
-    q[,intersect(cells.use,colnames(q))]
+  raw.data = lapply(seq_along(object@raw.data),function(q){
+    cells = intersect(cells.use,colnames(object@raw.data[[q]]))
+    if (length(cells) > 0) {
+      object@raw.data[[q]][,cells]
+    } else {
+      warning(paste0('Selected subset eliminates dataset ', names(object@raw.data)[q]))
+      return(NULL)
+    }
   })
+  raw.data = raw.data[!sapply(raw.data,is.null)]
+  nms = names(raw.data)
   a = Analogizer(raw.data)
   
   a@norm.data = lapply(1:length(a@raw.data),function(i){
@@ -2485,6 +2603,7 @@ subsetAnalogizer<-function(object, clusters.use = NULL,cells.use = NULL) {
   a@H.norm = object@H.norm[names(a@clusters),]
   a@W = object@W
   a@V = object@V
+  a@var.genes = object@var.genes
   names(a@scale.data) = names(a@raw.data) = names(a@norm.data) = names(a@H) = nms
   return(a)
 }

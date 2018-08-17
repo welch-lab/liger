@@ -24,7 +24,8 @@ Imports: Rcpp (>= 0.12.10),
 	 riverplot,
 	 Hmisc,
 	 doParallel,
-	 foreach
+	 foreach,
+	 mclust
 LinkingTo: Rcpp, RcppArmadillo
 Depends: cowplot, Matrix
 RoxygenNote: 6.0.1
