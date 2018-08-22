@@ -1622,9 +1622,9 @@ calc_dataset_specificity=function(object)
   return(list(pct1,pct2,100*(1-(pct1/pct2))))
 }
 
-#' Plot t-SNE coordinates per dataset, colored by expression of specified gene
+#' Plot violin plots for expression of specified gene for each dataset
 #'
-#' @param object analogizer object. Should call run_tSNE before calling.
+#' @param object analogizer object. 
 #' @param gene Gene for which to plot relative expression. 
 #' @param methylation_indices Indices of datasets in object with methylation data. 
 #' @param return.plots Return ggplot objects instead of printing directly
@@ -1639,36 +1639,6 @@ calc_dataset_specificity=function(object)
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-# plot_gene = function(object,gene,log.norm=NULL)
-# {
-#   
-#   gene_vals = c()
-#   for (i in 1:length(object@norm.data))
-#   {
-#     
-#     if (i != 2)
-#     {
-#       gene_vals = c(gene_vals,object@norm.data[[i]][gene,])
-#       gene_vals = log2(10000*as.numeric(gene_vals)+1)
-#     }
-#     else
-#     {
-#       gene_vals = c(gene_vals,2*object@norm.data[[i]][,gene])
-#     }
-#   }
-#   
-#   gene_df = data.frame(object@tsne.coords)
-#   rownames(gene_df)=names(object@clusters)
-#   gene_df$Gene = gene_vals[rownames(gene_df)]
-#   colnames(gene_df)=c("tSNE1","tSNE2",gene)
-#   gene_plots = list()
-#   for (i in 1:length(object@norm.data))
-#   {
-#     plot_i = (ggplot(gene_df[rownames(object@scale.data[[i]]),],aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point(size=0.1)+scale_color_gradient2(low="yellow",mid="red",high="black",midpoint=(max(gene_vals,na.rm=T)-min(gene_vals,na.rm=T))/2,limits=c(min(gene_vals,na.rm=T),max(gene_vals,na.rm=T)))+ggtitle(names(object@scale.data)[i]))
-#     gene_plots[[i]] = plot_i
-#   }
-#   print(plot_grid(plotlist=gene_plots,ncol=2))
-# }
 
 plot_gene_violin = function(object, gene, methylation_indices=NULL, 
                      return.plots=F)
@@ -1704,7 +1674,9 @@ plot_gene_violin = function(object, gene, methylation_indices=NULL,
     max_v = max(gene_df.sub["gene"], na.rm = T)
     min_v = min(gene_df.sub["gene"], na.rm = T)
     midpoint = (max_v - min_v) / 2
-    plot_i = (ggplot(gene_df.sub,aes_string(x="Cluster",y="gene",fill="Cluster"))+geom_violin(position="dodge")+geom_boxplot(position="dodge",width=0.5,outlier.shape=NA) +
+    plot_i = (ggplot(gene_df.sub,aes_string(x="Cluster",y="gene",fill="Cluster"))+
+                geom_boxplot(position="dodge",width=0.4,outlier.shape=NA, alpha=0.7) +
+                geom_violin(position="dodge", alpha=0.7)+
                 ggtitle(names(object@scale.data)[i]))
     gene_plots[[i]] = plot_i + theme(legend.position="none") + labs(y=gene)
   }
@@ -1717,8 +1689,28 @@ plot_gene_violin = function(object, gene, methylation_indices=NULL,
   }
 }
 
+#' Plot t-SNE coordinates per dataset, colored by expression of specified gene
+#'
+#' @param object analogizer object. Should call run_tSNE before calling.
+#' @param gene Gene for which to plot relative expression. 
+#' @param methylation_indices Indices of datasets in object with methylation data. 
+#' @param return.plots Return ggplot objects instead of printing directly
+#' @param pt.size Point size for plots
+#' @param points.only Remove axes when plotting t-sne coordinates
+#' @export
+#' @importFrom cowplot plot_grid
+#' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' }
 plot_gene = function(object, gene, methylation_indices=NULL, 
-                     return.plots=F,pt.size=0.1,min.clip=0,max.clip=1,points.only=F)
+                     return.plots=F,pt.size=0.1,min.clip=0,
+                     max.clip=1,points.only=F)
 {
   gene_vals = c()
   for (i in 1:length(object@norm.data))
