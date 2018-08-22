@@ -4,7 +4,7 @@
 \alias{AnalogizerToSeurat}
 \title{Create a Seurat object containing the data from an Analogizer object.}
 \usage{
-AnalogizerToSeurat(object, need.sparse = F)
+AnalogizerToSeurat(object, need.sparse = T)
 }
 \arguments{
 \item{object}{analogizer object.}

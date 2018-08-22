@@ -5,7 +5,7 @@
 \title{Perform t-SNE on the normalized cell factors to generate a 2D embedding for visualization}
 \usage{
 run_tSNE(object, rand.seed = 42, use.raw = F,
-  dims.use = 1:ncol(object@H.norm))
+  dims.use = 1:ncol(object@H.norm), perplexity = 30)
 }
 \arguments{
 \item{object}{analogizer object. Should run quantile_norm before calling.}

@@ -32,6 +32,8 @@ The class provides functions for data preprocessing, integrative analysis, and v
 
 \item{\code{clusters}}{Joint cluster assignments for cells}
 
+\item{\code{snf}}{Shared nearest factor matrix for use in clustering and alignment}
+
 \item{\code{agg.data}}{Data aggregated within clusters}
 
 \item{\code{parameters}}{List of parameters used in analysis}

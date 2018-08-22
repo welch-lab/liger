@@ -10,7 +10,8 @@ calc_dataset_specificity(object)
 \item{object}{analogizer object. Should run optimizeALS before calling.}
 }
 \value{
-List containing three elements. First two elements are the norm of each metagene factor for each dataset. Last element is the vector of dataset specificity scores.
+List containing three elements. First two elements are the norm of each metagene factor for each dataset. 
+Last element is the vector of dataset specificity scores.
 }
 \description{
 Uses the factorization information to calculate a dataset-specificity score for each factor

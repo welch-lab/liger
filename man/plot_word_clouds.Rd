@@ -6,7 +6,9 @@
 most highly loading shared and dataset-specific genes}
 \usage{
 plot_word_clouds(object, num_genes = 30, min_size = 1, max_size = 4,
-  dataset1 = NULL, dataset2 = NULL)
+  dataset1 = NULL, dataset2 = NULL, factor.share.thresh = 10,
+  log_fc_thresh = 1, umi_thresh = 30, frac_thresh = 0,
+  pval_thresh = 0.05)
 }
 \arguments{
 \item{object}{analogizer object. Should call run_tSNE before calling.}

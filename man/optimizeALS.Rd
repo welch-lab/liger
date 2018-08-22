@@ -4,7 +4,7 @@
 \alias{optimizeALS}
 \title{Optimize objective function using block coordinate descent (alternating nonnegative least squares)}
 \usage{
-optimizeALS(object, k, lambda = 5, thresh = 1e-04, max_iters = 25,
+optimizeALS(object, k, lambda = 5, thresh = 1e-04, max_iters = 100,
   nrep = 1, H_init = NULL, W_init = NULL, V_init = NULL,
   rand.seed = 1)
 }

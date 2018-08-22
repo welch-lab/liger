@@ -5,7 +5,7 @@
 \title{Optimize objective function for new lambda value. Uses an efficient strategy for updating 
 that takes advantage of the information in the existing factorization.}
 \usage{
-optimizeNewLambda(object, new_lambda, thresh = 1e-04, max_iters = 25,
+optimizeNewLambda(object, new_lambda, thresh = 1e-04, max_iters = 100,
   rand.seed = 1)
 }
 \arguments{

@@ -1010,6 +1010,13 @@ kl_divergence_uniform = function(object)
 #' @param dataset1 Name of first dataset
 #' @param dataset2 Name of second dataset
 #' @param factor.share.thresh Use only factors with a dataset specificity less than threshold
+#' @param dataset_specificity Pre-calculated dataset specificity if available
+#' @param log_fc_thresh Lower log-fold change threshold for differential expression in markers
+#' @param umi_thresh Lower UMI threshold for markers
+#' @param frac_thresh Lower threshold for fraction of cells expressing marker
+#' @param pval_thresh Upper p-value threshold for Wilcoxon rank test for gene expression 
+#' @param num_genes Max number of genes to report for each dataset
+#' @param print.genes Print ordered markers passing logfc, umi and frac thresholds
 #' @export
 #' @examples
 #' \dontrun{
@@ -1020,8 +1027,9 @@ kl_divergence_uniform = function(object)
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-
-get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.thresh=10,log_fc_thresh=1,umi_thresh=30,frac_thresh=0,pval_thresh=0.05,num_genes=NULL,print.genes=F)
+get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.thresh=10,
+                              dataset_specificity=NULL,log_fc_thresh=1,umi_thresh=30,frac_thresh=0,
+                              pval_thresh=0.05,num_genes=30,print.genes=F)
 {
   if (is.null(dataset1) | is.null(dataset2))
   {
@@ -1030,9 +1038,11 @@ get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.th
   }
   if (is.null(num_genes))
   {
-    num_genes = object@var.genes
+    num_genes = length(object@var.genes)
   }
-  dataset_specificity = calc_dataset_specificity(object)
+  if (is.null(dataset_specificity)){
+    dataset_specificity = calc_dataset_specificity(object)
+  }
   factors.use = which(abs(dataset_specificity[[3]]) <= factor.share.thresh)
   
   if (length(factors.use)<2)
@@ -1040,27 +1050,16 @@ get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.th
     print(paste("Warning: only",length(factors.use),"factors passed the dataset specificity threshold."))
   }
   
-  Hs_scaled = object@H
-  for (i in 1:ncol(Hs_scaled[[1]]))
-  {
-    for (j in 1:length(Hs_scaled)){
-      #Hs_scaled[[j]][,i] = object@H[[j]][,i]/sqrt(sum(object@H[[j]][,i]^2))
-      Hs_scaled[[j]] = scale(Hs_scaled[[j]],scale=T,center=T)
-    }
-  }
+  Hs_scaled = lapply(object@H, function(x) {scale(x, scale=T, center=T)})
   labels = list()
   for(i in 1:length(Hs_scaled)){
     labels[[i]] = factors.use[as.factor(apply(Hs_scaled[[i]][,factors.use],1,which.max))]
   }
   names(labels)=names(object@H)
-  all_zeros = rep(0,length(factors.use)*num_genes)
-  V1_genes = data.frame(factor_num=rep(1,length(factors.use)*num_genes),gene=rep("None",length(factors.use)*num_genes),counts1=all_zeros,counts2=all_zeros,fracs1=all_zeros,fracs2=all_zeros,log2fc=all_zeros,p_value=all_zeros)
-  W_genes = data.frame(factor_num=rep(1,length(factors.use)*num_genes),gene=rep("None",length(factors.use)*num_genes),counts1=all_zeros,counts2=all_zeros,fracs1=all_zeros,fracs2=all_zeros,log2fc=all_zeros,p_value=all_zeros)
-  V2_genes = data.frame(factor_num=rep(1,length(factors.use)*num_genes),gene=rep("None",length(factors.use)*num_genes),counts1=all_zeros,counts2=all_zeros,fracs1=all_zeros,fracs2=all_zeros,log2fc=all_zeros,p_value=all_zeros)
-  V1_genes$gene=as.character(V1_genes$gene)
-  W_genes$gene=as.character(W_genes$gene)
-  V2_genes$gene=as.character(V2_genes$gene)
   
+  V1_matrices = list()
+  V2_matrices = list()
+  W_matrices = list()
   for (j in 1:length(factors.use))
   {
     i=factors.use[j]
@@ -1069,24 +1068,31 @@ get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.th
     V1 = t(object@V[[dataset1]])
     V2 = t(object@V[[dataset2]])
     rownames(W)=rownames(V1)=rownames(V2)=object@var.genes
+    # if not max factor for any cell in either dataset
     if(sum(labels[[dataset1]]==i) <= 1 | sum(labels[[dataset2]]==i) <= 1)
     {
+      print(paste('Warning: factor', i,'did not appear as max in any cell in either dataset'))
       next
     }
+    # filter genes by gene_count and cell_frac thresholds
+    gene_info = list()
+    for (dset in c(dataset1, dataset2)) {
+      gene_info[[dset]]$gene_counts = rowSums(object@raw.data[[dset]][object@var.genes,labels[[dset]]==i])
+      gene_info[[dset]]$cell_fracs = rowSums(object@raw.data[[dset]][object@var.genes,
+                                                                     labels[[dset]]==i]>0)/sum(labels[[dset]]==i)
+      gene_info[[dset]]$norm_counts = object@norm.data[[dset]][object@var.genes,labels[[dset]]==i]
+      gene_info[[dset]]$mean = rowMeans(object@norm.data[[dset]][object@var.genes,labels[[dset]]==i])
+      names(gene_info[[dset]]$gene_counts) = names(gene_info[[dset]]$mean) = object@var.genes
+      rownames(gene_info[[dset]]$norm_counts) = object@var.genes
+    }
+    log2fc = log2(gene_info[[dataset1]]$mean / gene_info[[dataset2]]$mean)
+    initial_filtered = object@var.genes[(gene_info[[dataset1]]$gene_counts > umi_thresh | 
+                                           gene_info[[dataset2]]$gene_counts > umi_thresh) & 
+                                          (gene_info[[dataset1]]$cell_fracs > frac_thresh | 
+                                             gene_info[[dataset2]]$cell_fracs > frac_thresh)]
+    filtered_genes_V1 = initial_filtered[log2fc[initial_filtered] > log_fc_thresh]
+    filtered_genes_V2 = initial_filtered[(-1 * log2fc)[initial_filtered] > log_fc_thresh]
     
-    gene_counts1 = rowSums(object@raw.data[[dataset1]][object@var.genes,labels[[dataset1]]==i])
-    gene_counts2 = rowSums(object@raw.data[[dataset2]][object@var.genes,labels[[dataset2]]==i])
-    cell_fracs1 = rowSums(object@raw.data[[dataset1]][object@var.genes,labels[[dataset1]]==i]>0)/sum(labels[[dataset1]]==i)
-    cell_fracs2 = rowSums(object@raw.data[[dataset2]][object@var.genes,labels[[dataset2]]==i]>0)/sum(labels[[dataset2]]==i)
-    norm_counts1 = object@norm.data[[dataset1]][object@var.genes,labels[[dataset1]]==i]
-    norm_counts2 = object@norm.data[[dataset2]][object@var.genes,labels[[dataset2]]==i]
-    mean1 = rowMeans(object@norm.data[[dataset1]][object@var.genes,labels[[dataset1]]==i])
-    mean2 = rowMeans(object@norm.data[[dataset2]][object@var.genes,labels[[dataset2]]==i])
-    log2fc = log2(mean1/mean2)
-    names(gene_counts1)=names(gene_counts2)=names(mean1)=names(mean2)=names(log2fc)=rownames(norm_counts1)=rownames(norm_counts2)=object@var.genes
-    filtered_genes_V1 = object@var.genes[(gene_counts1 > umi_thresh | gene_counts2 > umi_thresh) & (cell_fracs1 > frac_thresh | cell_fracs2 > frac_thresh) & (log2(mean1/mean2) > log_fc_thresh)]
-    filtered_genes_V2 = object@var.genes[(gene_counts1 > umi_thresh | gene_counts2 > umi_thresh) & (cell_fracs1 > frac_thresh | cell_fracs2 > frac_thresh) & (log2(mean2/mean1) > log_fc_thresh)]
-        
     W = pmin(W+V1,W+V2)
     V1 = V1[filtered_genes_V1,]
     V2 = V2[filtered_genes_V2,]
@@ -1094,22 +1100,22 @@ get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.th
     if(length(filtered_genes_V1)==0)
     {
       top_genes_V1 = ""
+    } else {
+      top_genes_V1 = row.names(V1)[ order(V1[,i], decreasing=T )[1:num_genes] ]
+      top_genes_V1 = top_genes_V1[!is.na(top_genes_V1)]
+      top_genes_V1 = top_genes_V1[which(V1[top_genes_V1,i]>0)]
     }
     if(length(filtered_genes_V2)==0)
     {
       top_genes_V2 = ""
+    } else {
+      top_genes_V2 = row.names( V2 )[ order(V2[,i], decreasing=T )[1:num_genes] ]
+      top_genes_V2 = top_genes_V2[!is.na(top_genes_V2)]
+      top_genes_V2 = top_genes_V2[which(V2[top_genes_V2,i]>0)]
     }
-    
-    top_genes_V1 = row.names( V1 )[ order(V1[,i], decreasing=T )[1:num_genes] ]
     top_genes_W = row.names( W )[ order(W[,i], decreasing=T )[1:num_genes] ]
-    top_genes_V2 = row.names( V2 )[ order(V2[,i], decreasing=T )[1:num_genes] ]
-    top_genes_V1 = top_genes_V1[!is.na(top_genes_V1)]
     top_genes_W = top_genes_W[!is.na(top_genes_W)]
-    top_genes_V2 = top_genes_V2[!is.na(top_genes_V2)]
-    
-    top_genes_V1 = top_genes_V1[which(V1[top_genes_V1,i]>0)]
     top_genes_W = top_genes_W[which(W[top_genes_W,i]>0)]
-    top_genes_V2 = top_genes_V2[which(V2[top_genes_V2,i]>0)]
     
     if(print.genes)
     {
@@ -1119,57 +1125,50 @@ get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.th
       print(top_genes_V2)
     }
     
-    pvals_V1 = sapply(top_genes_V1,function(i){suppressWarnings(wilcox.test(norm_counts1[i,],norm_counts2[i,])$p.value)})
-    pvals_W = sapply(top_genes_W,function(i){suppressWarnings(wilcox.test(norm_counts1[i,],norm_counts2[i,])$p.value)})
-    pvals_V2 = sapply(top_genes_V2,function(i){suppressWarnings(wilcox.test(norm_counts1[i,],norm_counts2[i,])$p.value)})
-    if (length(top_genes_V1)<num_genes)
-    {
-      top_genes_V1 = c(top_genes_V1,rep("NA",num_genes-length(top_genes_V1)))
-      pvals_V1 = c(pvals_V1,rep("NA",num_genes-length(pvals_V1)))
+    pvals = list() # order is V1, V2, W
+    top_genes = list(top_genes_V1, top_genes_V2, top_genes_W)
+    for (k in 1:length(top_genes)) {
+      pvals[[k]] = sapply(top_genes[[k]],function(x){
+        suppressWarnings(wilcox.test(as.numeric(gene_info[[dataset1]]$norm_counts[x,]),
+                                     as.numeric(gene_info[[dataset2]]$norm_counts[x,]))$p.value)
+      })
     }
-    if (length(top_genes_W)<num_genes)
-    {
-      top_genes_W = c(top_genes_W,rep("NA",num_genes-length(top_genes_W)))
-      pvals_W = c(pvals_W,rep("NA",num_genes-length(pvals_W)))
-    }
-    if (length(top_genes_V2)<num_genes)
-    {
-      top_genes_V2 = c(top_genes_V2,rep("NA",num_genes-length(top_genes_V2)))
-      pvals_V2 = c(pvals_V2,rep("NA",num_genes-length(pvals_V2)))
-    }
-
-    V1_genes[(num_genes*(j-1)+1):(num_genes*j),1]=i
-    W_genes[(num_genes*(j-1)+1):(num_genes*j),1]=i
-    V2_genes[(num_genes*(j-1)+1):(num_genes*j),1]=i
-    V1_genes[(num_genes*(j-1)+1):(num_genes*j),2]=top_genes_V1
-    W_genes[(num_genes*(j-1)+1):(num_genes*j),2]=top_genes_W
-    V2_genes[(num_genes*(j-1)+1):(num_genes*j),2]=top_genes_V2
-    V1_genes[(num_genes*(j-1)+1):(num_genes*j),3]=gene_counts1[top_genes_V1]
-    W_genes[(num_genes*(j-1)+1):(num_genes*j),3]=gene_counts1[top_genes_W]
-    V2_genes[(num_genes*(j-1)+1):(num_genes*j),3]=gene_counts1[top_genes_V2]
-    V1_genes[(num_genes*(j-1)+1):(num_genes*j),4]=gene_counts2[top_genes_V1]
-    W_genes[(num_genes*(j-1)+1):(num_genes*j),4]=gene_counts2[top_genes_W]
-    V2_genes[(num_genes*(j-1)+1):(num_genes*j),4]=gene_counts2[top_genes_V2]
-    V1_genes[(num_genes*(j-1)+1):(num_genes*j),5]=cell_fracs1[top_genes_V1]
-    W_genes[(num_genes*(j-1)+1):(num_genes*j),5]=cell_fracs1[top_genes_W]
-    V2_genes[(num_genes*(j-1)+1):(num_genes*j),5]=cell_fracs1[top_genes_V2]
-    V1_genes[(num_genes*(j-1)+1):(num_genes*j),6]=cell_fracs2[top_genes_V1]
-    W_genes[(num_genes*(j-1)+1):(num_genes*j),6]=cell_fracs2[top_genes_W]
-    V2_genes[(num_genes*(j-1)+1):(num_genes*j),6]=cell_fracs2[top_genes_V2]
-    V1_genes[(num_genes*(j-1)+1):(num_genes*j),7]=log2fc[top_genes_V1]
-    W_genes[(num_genes*(j-1)+1):(num_genes*j),7]=log2fc[top_genes_W]
-    V2_genes[(num_genes*(j-1)+1):(num_genes*j),7]=log2fc[top_genes_V2]
-    V1_genes[(num_genes*(j-1)+1):(num_genes*j),8]=pvals_V1
-    W_genes[(num_genes*(j-1)+1):(num_genes*j),8]=pvals_W
-    V2_genes[(num_genes*(j-1)+1):(num_genes*j),8]=pvals_V2
+    # bind values in matrices
+    V1_matrices[[j]] = Reduce(cbind, list(rep(i, length(top_genes_V1)), top_genes_V1, 
+                                          gene_info[[dataset1]]$gene_counts[top_genes_V1],
+                                          gene_info[[dataset2]]$gene_counts[top_genes_V1],
+                                          gene_info[[dataset1]]$cell_fracs[top_genes_V1],
+                                          gene_info[[dataset2]]$cell_fracs[top_genes_V1],
+                                          log2fc[top_genes_V1], pvals[[1]]))
+    V2_matrices[[j]] = Reduce(cbind, list(rep(i, length(top_genes_V2)), top_genes_V2, 
+                                          gene_info[[dataset1]]$gene_counts[top_genes_V2],
+                                          gene_info[[dataset2]]$gene_counts[top_genes_V2],
+                                          gene_info[[dataset1]]$cell_fracs[top_genes_V2],
+                                          gene_info[[dataset2]]$cell_fracs[top_genes_V2],
+                                          log2fc[top_genes_V2], pvals[[2]]))
+    W_matrices[[j]] = Reduce(cbind, list(rep(i, length(top_genes_W)), top_genes_W, 
+                                         gene_info[[dataset1]]$gene_counts[top_genes_W],
+                                         gene_info[[dataset2]]$gene_counts[top_genes_W],
+                                         gene_info[[dataset1]]$cell_fracs[top_genes_W],
+                                         gene_info[[dataset2]]$cell_fracs[top_genes_W],
+                                         log2fc[top_genes_W], pvals[[3]]))
   }
-  use_these_V1 = which(V1_genes[,"gene"]!="NA" & V1_genes[,"counts1"]!="NA" & V1_genes[,"counts2"]!="NA" & V1_genes[,"p_value"] < pval_thresh)
-  use_these_W = which(W_genes[,"gene"]!="NA" & W_genes[,"counts1"]!="NA" & W_genes[,"counts2",]!="NA" & W_genes[,"p_value"] < pval_thresh)
-  use_these_V2 = which(V2_genes[,"gene"]!="NA" & V2_genes[,"counts1"]!="NA" & V2_genes[,"counts2"]!="NA" & V2_genes[,"p_value"] < pval_thresh)
-  V1_genes = V1_genes[use_these_V1,]
-  W_genes = W_genes[use_these_W,]
-  V2_genes = V2_genes[use_these_V2,]
-  return(list(dataset1=V1_genes,shared=W_genes,dataset2=V2_genes,num_factors_V1=table(V1_genes$gene),num_factors_V2=table(V2_genes$gene)))
+  V1_genes = data.frame(Reduce(rbind, V1_matrices), stringsAsFactors = F)
+  V2_genes = data.frame(Reduce(rbind, V2_matrices), stringsAsFactors = F)
+  W_genes = data.frame(Reduce(rbind, W_matrices), stringsAsFactors = F)
+  df_cols = c('factor_num', 'gene', 'counts1', 'counts2', 'fracs1', 'fracs2', 'log2fc', 'p_value')
+  output_list = list(V1_genes, W_genes, V2_genes)
+  output_list = lapply(output_list, function(df) {
+    colnames(df) = df_cols
+    df = transform(df, factor_num = as.numeric(factor_num), counts1 = as.numeric(counts1), 
+                   counts2 = as.numeric(counts2), fracs1 = as.numeric(fracs1), fracs2 = as.numeric(fracs2),
+                   log2fc = as.numeric(log2fc), p_value = as.numeric(p_value))
+    df[which(df$p_value < pval_thresh),]
+  })
+  names(output_list) = c(dataset1, 'shared', dataset2)
+  output_list[['num_factors_V1']] = table(output_list[[dataset1]]$gene)
+  output_list[['num_factors_V2']] = table(output_list[[dataset2]]$gene)
+  return(output_list)
 }
 
 #' Word cloud plots coloring t-SNE points by their loading on specifed factors as well as the
@@ -1194,7 +1193,9 @@ get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.th
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=NULL,dataset2=NULL,factor.share.thresh=10)
+plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=NULL,
+                            dataset2=NULL,factor.share.thresh=10, log_fc_thresh=1,
+                            umi_thresh=30,frac_thresh=0,pval_thresh=0.05)
 {
   if (is.null(dataset1)|is.null(dataset2))
   {
@@ -1202,21 +1203,25 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
     dataset2 = names(object@H)[2]
   }
   
-  dataset_specificity = calc_dataset_specificity(object)
-  factors.use = which(abs(dataset_specificity[[3]]) <= factor.share.thresh)
   H_aligned = object@H.norm
   W = t(object@W)
   V1 = t(object@V[[dataset1]])
   V2 = t(object@V[[dataset2]])
   W = pmin(W+V1,W+V2)
   
-  markers = get_factor_markers(object,factor.share.thresh=factor.share.thresh,num_genes=num_genes)
-
+  dataset_specificity = calc_dataset_specificity(object)
+  factors.use = which(abs(dataset_specificity[[3]]) <= factor.share.thresh)
+  
+  markers = get_factor_markers(object,factor.share.thresh=factor.share.thresh,
+                               num_genes=num_genes, log_fc_thresh = log_fc_thresh,
+                               umi_thresh = umi_thresh, frac_thresh = frac_thresh,
+                               pval_thresh = pval_thresh, 
+                               dataset_specificity = dataset_specificity)
+  
   rownames(W)=rownames(V1)=rownames(V2)=object@var.genes
+  loadings_list = list(V1, W, V2)
+  names_list = list(dataset1, 'Shared', dataset2)
   tsne_coords = object@tsne.coords
-  name1 = dataset1
-  name2 = dataset2
-  k = ncol(V1)
   pb = txtProgressBar(min=0,max=length(factors.use),style=3)
   for (i in factors.use)
   {
@@ -1224,58 +1229,37 @@ plot_word_clouds = function(object,num_genes=30,min_size=1,max_size=4,dataset1=N
     factorlab = paste("Factor",i,sep="")
     colnames(tsne_df)=c(factorlab,"tSNE1","tSNE2")
     factor_ds = paste("Factor",i,"Dataset Specificity:",dataset_specificity[[3]][i])
-    p1 = ggplot(tsne_df,aes_string(x="tSNE1",y="tSNE2",color=factorlab))+geom_point()+scale_color_gradient(low="yellow",high="red")+ggtitle(label=factor_ds)
-  
+    p1 = ggplot(tsne_df,aes_string(x="tSNE1",y="tSNE2",color=factorlab))+geom_point()+
+      scale_color_gradient(low="yellow",high="red")+ggtitle(label=factor_ds)
+    
     top_genes_V1 = markers[[1]]$gene[markers[[1]]$factor_num==i]
     top_genes_W = markers[[2]]$gene[markers[[2]]$factor_num==i]
     top_genes_V2 = markers[[3]]$gene[markers[[3]]$factor_num==i]
-    top_genes_V1 = top_genes_V1[top_genes_V1 != "NA"]
-    top_genes_V2 = top_genes_V2[top_genes_V2 != "NA"]
-
-    top_genes = top_genes_V1
-    gene_df = data.frame(genes=top_genes,loadings=V1[top_genes,i])
-    if(length(top_genes)==0){ gene_df = data.frame(genes=c("no genes"),loadings=c(1))}
-    V1_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
-      geom_text_repel(force = 100,segment.color=NA) +
-      scale_size(range = c(min_size, max_size), guide = FALSE) +
-      scale_y_continuous(breaks = NULL) +
-      scale_x_continuous(breaks = NULL) +
-      labs(x = '', y = '')+ggtitle(label=name1)+coord_fixed()
     
-    top_genes = top_genes_W
-    gene_df = data.frame(genes=top_genes,loadings=W[top_genes,i])
-    if(length(top_genes)==0){ gene_df = data.frame(genes=c("no genes"),loadings=c(1))}
-    W_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
-      geom_text_repel(force = 100,segment.color=NA) +
-      scale_size(range = c(min_size, max_size), guide = FALSE) +
-      scale_y_continuous(breaks = NULL) +
-      scale_x_continuous(breaks = NULL) +
-      labs(x = '', y = '')+ggtitle(label="Shared")+coord_fixed()
+    top_genes_list = list(top_genes_V1, top_genes_W, top_genes_V2)
+    plot_list = lapply(seq_along(top_genes_list), function(x) {
+      top_genes = top_genes_list[[x]]
+      gene_df = data.frame(genes=top_genes,
+                           loadings=loadings_list[[x]][top_genes,i])
+      if(length(top_genes)==0){gene_df = data.frame(genes=c("no genes"),loadings=c(1))}
+      out_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
+        geom_text_repel(force = 100,segment.color=NA) +
+        scale_size(range = c(min_size, max_size), guide = FALSE) +
+        scale_y_continuous(breaks = NULL) +
+        scale_x_continuous(breaks = NULL) +
+        labs(x = '', y = '')+ggtitle(label=names_list[[x]])+coord_fixed()
+      return(out_plot)
+    })
     
-    top_genes = top_genes_V2
-    gene_df = data.frame(genes=top_genes,loadings=V2[top_genes,i])
-    if(length(top_genes)==0){ gene_df = data.frame(genes=c("no genes"),loadings=c(1))}
-    V2_plot = ggplot(gene_df,aes(x = 1, y = 1, size = loadings, label = genes)) +
-      geom_text_repel(force = 100,segment.color=NA) +
-      scale_size(range = c(min_size, max_size), guide = FALSE) +
-      scale_y_continuous(breaks = NULL) +
-      scale_x_continuous(breaks = NULL) +
-      labs(x = '', y = '')+ggtitle(label=name2)+coord_fixed()
-    
-    p2 = (plot_grid(V1_plot,W_plot,V2_plot,align="hv",nrow = 1)
-          + draw_grob(roundrectGrob(x=0.33,y=0.5,width=0.67,height=0.70,gp = gpar(fill = "khaki1", col = "Black",alpha=0.5,lwd=2))) 
-          + draw_grob(roundrectGrob(x=0.67,y=0.5,width=0.67,height=0.70,gp = gpar(fill = "indianred1", col = "Black",alpha=0.5,lwd=2))))
+    p2 = (plot_grid(plotlist = plot_list,align="hv",nrow = 1)
+          + draw_grob(roundrectGrob(x=0.33,y=0.5,width=0.67,height=0.70,
+                                    gp = gpar(fill = "khaki1", col = "Black",alpha=0.5,lwd=2))) 
+          + draw_grob(roundrectGrob(x=0.67,y=0.5,width=0.67,height=0.70,
+                                    gp = gpar(fill = "indianred1", col = "Black",alpha=0.5,lwd=2))))
     print(plot_grid(p1,p2,nrow=2,align="h"))
-    #top1 = plot_gene_violin(object,top_genes_V1[1],return.plots = T)
-    #top_shared = plot_gene_violin(object,top_genes_W[1],return.plots = T)
-    #top2 = plot_gene_violin(object,top_genes_V2[1],return.plots = T)
-    #print(plot_grid(top1[[1]],top1[[2]],nrow=2))
-    #print(plot_grid(top_shared[[1]],top_shared[[2]],nrow=2))
-    #print(plot_grid(top2[[1]],top2[[2]],nrow=2))
     setTxtProgressBar(pb,i)
-    
   }
-}  
+} 
 
 #' Calculate distortion statistic to quantify how much alignment distorts
 #' the geometry of the original datasets.
@@ -1606,7 +1590,8 @@ plot_violin_summary = function(object,cluster,genes.use)
 #' Uses the factorization information to calculate a dataset-specificity score for each factor
 #'
 #' @param object analogizer object. Should run optimizeALS before calling.
-#' @return List containing three elements. First two elements are the norm of each metagene factor for each dataset. Last element is the vector of dataset specificity scores.
+#' @return List containing three elements. First two elements are the norm of each metagene factor for each dataset. 
+#' Last element is the vector of dataset specificity scores.
 #' @export
 #' @examples
 #' \dontrun{
@@ -1631,13 +1616,15 @@ calc_dataset_specificity=function(object)
   }
   #pct1 = pct1/sum(pct1)
   #pct2 = pct2/sum(pct2)
-  barplot(100*(1-(pct1/pct2)),xlab="Factor",ylab="Percent Specificity",main="Dataset Specificity of Factors") # or possibly abs(pct1-pct2)
+  barplot(100*(1-(pct1/pct2)),xlab="Factor",
+          ylab="Percent Specificity",main="Dataset Specificity of Factors",
+          names.arg = 1:k, cex.names = 0.75, mgp = c(2, 0.5, 0)) # or possibly abs(pct1-pct2)
   return(list(pct1,pct2,100*(1-(pct1/pct2))))
 }
 
-#' Plot t-SNE coordinates per dataset, colored by expression of specified gene
+#' Plot violin plots for expression of specified gene for each dataset
 #'
-#' @param object analogizer object. Should call run_tSNE before calling.
+#' @param object analogizer object. 
 #' @param gene Gene for which to plot relative expression. 
 #' @param methylation_indices Indices of datasets in object with methylation data. 
 #' @param return.plots Return ggplot objects instead of printing directly
@@ -1652,36 +1639,6 @@ calc_dataset_specificity=function(object)
 #' analogy@var.genes = c(1,2,3,4)
 #' analogy = scaleNotCenter(analogy)
 #' }
-# plot_gene = function(object,gene,log.norm=NULL)
-# {
-#   
-#   gene_vals = c()
-#   for (i in 1:length(object@norm.data))
-#   {
-#     
-#     if (i != 2)
-#     {
-#       gene_vals = c(gene_vals,object@norm.data[[i]][gene,])
-#       gene_vals = log2(10000*as.numeric(gene_vals)+1)
-#     }
-#     else
-#     {
-#       gene_vals = c(gene_vals,2*object@norm.data[[i]][,gene])
-#     }
-#   }
-#   
-#   gene_df = data.frame(object@tsne.coords)
-#   rownames(gene_df)=names(object@clusters)
-#   gene_df$Gene = gene_vals[rownames(gene_df)]
-#   colnames(gene_df)=c("tSNE1","tSNE2",gene)
-#   gene_plots = list()
-#   for (i in 1:length(object@norm.data))
-#   {
-#     plot_i = (ggplot(gene_df[rownames(object@scale.data[[i]]),],aes_string(x="tSNE1",y="tSNE2",color=gene))+geom_point(size=0.1)+scale_color_gradient2(low="yellow",mid="red",high="black",midpoint=(max(gene_vals,na.rm=T)-min(gene_vals,na.rm=T))/2,limits=c(min(gene_vals,na.rm=T),max(gene_vals,na.rm=T)))+ggtitle(names(object@scale.data)[i]))
-#     gene_plots[[i]] = plot_i
-#   }
-#   print(plot_grid(plotlist=gene_plots,ncol=2))
-# }
 
 plot_gene_violin = function(object, gene, methylation_indices=NULL, 
                      return.plots=F)
@@ -1717,7 +1674,9 @@ plot_gene_violin = function(object, gene, methylation_indices=NULL,
     max_v = max(gene_df.sub["gene"], na.rm = T)
     min_v = min(gene_df.sub["gene"], na.rm = T)
     midpoint = (max_v - min_v) / 2
-    plot_i = (ggplot(gene_df.sub,aes_string(x="Cluster",y="gene",fill="Cluster"))+geom_violin(position="dodge")+geom_boxplot(position="dodge",width=0.5,outlier.shape=NA) +
+    plot_i = (ggplot(gene_df.sub,aes_string(x="Cluster",y="gene",fill="Cluster"))+
+                geom_boxplot(position="dodge",width=0.4,outlier.shape=NA, alpha=0.7) +
+                geom_violin(position="dodge", alpha=0.7)+
                 ggtitle(names(object@scale.data)[i]))
     gene_plots[[i]] = plot_i + theme(legend.position="none") + labs(y=gene)
   }
@@ -1730,8 +1689,28 @@ plot_gene_violin = function(object, gene, methylation_indices=NULL,
   }
 }
 
+#' Plot t-SNE coordinates per dataset, colored by expression of specified gene
+#'
+#' @param object analogizer object. Should call run_tSNE before calling.
+#' @param gene Gene for which to plot relative expression. 
+#' @param methylation_indices Indices of datasets in object with methylation data. 
+#' @param return.plots Return ggplot objects instead of printing directly
+#' @param pt.size Point size for plots
+#' @param points.only Remove axes when plotting t-sne coordinates
+#' @export
+#' @importFrom cowplot plot_grid
+#' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' }
 plot_gene = function(object, gene, methylation_indices=NULL, 
-                     return.plots=F,pt.size=0.1,min.clip=0,max.clip=1,points.only=F)
+                     return.plots=F,pt.size=0.1,min.clip=0,
+                     max.clip=1,points.only=F)
 {
   gene_vals = c()
   for (i in 1:length(object@norm.data))
@@ -2085,6 +2064,12 @@ Mode <- function(x, na.rm = FALSE) {
 #' @param quantiles Number of quantiles to use for quantile normalization
 #' @param resolution Controls the number of communities detected. Higher resolution=more communities.
 #' @param dims.use Indices of factors to use for shared nearest factor determination
+#' @param dist.use Distance metric to use in calculating nearest neighbors
+#' @param center Centers the data when scaling factors (useful for less sparse modalities like methylation data)
+#' @param small.clust.thresh Extracts small clusters smaller than this threshold before regularr alignment
+#' @param id.number Number to use for identifying edge file (when running in parallel)
+#' @param print.mod Print modularity output from clustering algorithm
+#' @param print_align_summary Print summary of clusters which did not align normally
 #' 
 #' @return analogizer object
 #' @export
@@ -2101,7 +2086,7 @@ Mode <- function(x, na.rm = FALSE) {
 
 quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset=NULL,min_cells=2,
                              quantiles=50,nstart=10, resolution = 1, dims.use = 1:ncol(object@H[[1]]),
-                             dist.use='CR', center=F, small.clust.thresh=knn_k, 
+                             dist.use='CR', center=F, small.clust.thresh=0, 
                              id.number=NULL, print.mod=F, print_align_summary=T) {
   if (is.null(ref_dataset)) {
     ns = sapply(object@scale.data, nrow)
@@ -2116,7 +2101,7 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
       !isTRUE(object@parameters[['k2']] == k2) |
       !isTRUE(object@parameters[['dist.use']] == dist.use) |
       !isTRUE(object@parameters[['SNF_center']] == center) |
-      !isTRUE(all(object@parameters[['dims.use']] == dims.use)) |
+      !isTRUE(identical(object@parameters[['dims.use']], dims.use)) |
       !isTRUE(object@parameters[['small.clust.thresh']] == small.clust.thresh)) {
     print('Recomputing shared nearest factor space')
     snf = SNF(object,knn_k=knn_k,k2=k2, dist.use=dist.use, center = center, 
@@ -2233,8 +2218,10 @@ SNF<-function (object, dims.use = 1:ncol(object@H[[1]]), knn_k = 20,
   }))
   rownames(NN.maxes) = unlist(lapply(object@H, rownames))
   # extract small clusters 
-  print(paste0('Isolating small clusters with fewer than ', small.clust.thresh,
-               ' members'))
+  if (small.clust.thresh > 0) {
+    print(paste0('Isolating small clusters with fewer than ', small.clust.thresh,
+                 ' members'))
+  }
   max.val = factor(apply(NN.maxes,1,which.max))
   names(max.val) = rownames(NN.maxes)
   idents = rep("NA",nrow(NN.maxes))
