@@ -7,7 +7,8 @@
 quantile_align_SNF(object, knn_k = 20, k2 = 500, prune.thresh = 0.2,
   ref_dataset = NULL, min_cells = 2, quantiles = 50, nstart = 10,
   resolution = 1, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR",
-  center = F, id.number = NULL, print_align_summary = TRUE)
+  center = F, small.clust.thresh = 0, id.number = NULL, print.mod = F,
+  print_align_summary = T)
 }
 \arguments{
 \item{object}{analogizer object. Should run optimizeALS before calling.}
@@ -30,6 +31,18 @@ the dataset with the largest number of cells is used.}
 \item{resolution}{Controls the number of communities detected. Higher resolution=more communities.}
 
 \item{dims.use}{Indices of factors to use for shared nearest factor determination}
+
+\item{dist.use}{Distance metric to use in calculating nearest neighbors}
+
+\item{center}{Centers the data when scaling factors (useful for less sparse modalities like methylation data)}
+
+\item{small.clust.thresh}{Extracts small clusters smaller than this threshold before regularr alignment}
+
+\item{id.number}{Number to use for identifying edge file (when running in parallel)}
+
+\item{print.mod}{Print modularity output from clustering algorithm}
+
+\item{print_align_summary}{Print summary of clusters which did not align normally}
 }
 \value{
 analogizer object

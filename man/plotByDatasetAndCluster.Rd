@@ -6,7 +6,7 @@
 \usage{
 plotByDatasetAndCluster(object, title = NULL, pt.size = 0.3,
   text.size = 3, do.shuffle = T, clusters = NULL, axis.labels = NULL,
-  return.plots = F)
+  return.plots = F, do.legend = T, legend.size = 5)
 }
 \arguments{
 \item{object}{analogizer object. Should call run_tSNE before calling.}

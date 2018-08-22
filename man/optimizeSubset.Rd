@@ -5,7 +5,7 @@
 \title{Optimize objective function for a subset of the data. Uses an efficient strategy for updating that takes advantage of the information in the existing factorization.}
 \usage{
 optimizeSubset(object, cell.subset = NULL, cluster.subset = NULL,
-  lambda = 5, thresh = 1e-04, max_iters = 25, datasets.scale = NULL)
+  lambda = 5, thresh = 1e-04, max_iters = 100, datasets.scale = NULL)
 }
 \arguments{
 \item{object}{analogizer object. Should normalize, select genes, and scale before calling.}

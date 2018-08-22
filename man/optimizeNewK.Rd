@@ -4,7 +4,7 @@
 \alias{optimizeNewK}
 \title{Optimize objective function for new value of k. Uses an efficient strategy for updating that takes advantage of the information in the existing factorization.}
 \usage{
-optimizeNewK(object, k_new, lambda = 5, thresh = 1e-04, max_iters = 25,
+optimizeNewK(object, k_new, lambda = 5, thresh = 1e-04, max_iters = 100,
   rand.seed = 1)
 }
 \arguments{

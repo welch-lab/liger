@@ -6,7 +6,7 @@
 the geometry of the original datasets.}
 \usage{
 distortion_metric(object, dr_method = "PCA", ndims = 40, k = 10,
-  use_aligned = TRUE, return_breakdown = FALSE)
+  use_aligned = TRUE, rand.seed = 42, return_breakdown = FALSE)
 }
 \arguments{
 \item{object}{analogizer object. Should call quantile_norm before calling.}

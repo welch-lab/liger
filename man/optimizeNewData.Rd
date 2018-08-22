@@ -5,7 +5,7 @@
 \title{Optimize objective function for new data. Uses an efficient strategy for updating that takes advantage of the information in the existing factorization.}
 \usage{
 optimizeNewData(object, new.data, which.datasets, add.to.existing = T,
-  lambda = 5, thresh = 1e-04, max_iters = 25)
+  lambda = 5, thresh = 1e-04, max_iters = 100)
 }
 \arguments{
 \item{object}{analogizer object. Should normalize, select genes, and scale before calling.}
