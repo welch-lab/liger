@@ -2072,6 +2072,12 @@ Mode <- function(x, na.rm = FALSE) {
 #' @param quantiles Number of quantiles to use for quantile normalization
 #' @param resolution Controls the number of communities detected. Higher resolution=more communities.
 #' @param dims.use Indices of factors to use for shared nearest factor determination
+#' @param dist.use Distance metric to use in calculating nearest neighbors
+#' @param center Centers the data when scaling factors (useful for less sparse modalities like methylation data)
+#' @param small.clust.thresh Extracts small clusters smaller than this threshold before regularr alignment
+#' @param id.number Number to use for identifying edge file (when running in parallel)
+#' @param print.mod Print modularity output from clustering algorithm
+#' @param print_align_summary Print summary of clusters which did not align normally
 #' 
 #' @return analogizer object
 #' @export
@@ -2088,7 +2094,7 @@ Mode <- function(x, na.rm = FALSE) {
 
 quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset=NULL,min_cells=2,
                              quantiles=50,nstart=10, resolution = 1, dims.use = 1:ncol(object@H[[1]]),
-                             dist.use='CR', center=F, small.clust.thresh=knn_k, 
+                             dist.use='CR', center=F, small.clust.thresh=0, 
                              id.number=NULL, print.mod=F, print_align_summary=T) {
   if (is.null(ref_dataset)) {
     ns = sapply(object@scale.data, nrow)
@@ -2103,7 +2109,7 @@ quantile_align_SNF<-function(object,knn_k=20,k2=500,prune.thresh=0.2,ref_dataset
       !isTRUE(object@parameters[['k2']] == k2) |
       !isTRUE(object@parameters[['dist.use']] == dist.use) |
       !isTRUE(object@parameters[['SNF_center']] == center) |
-      !isTRUE(all(object@parameters[['dims.use']] == dims.use)) |
+      !isTRUE(identical(object@parameters[['dims.use']], dims.use)) |
       !isTRUE(object@parameters[['small.clust.thresh']] == small.clust.thresh)) {
     print('Recomputing shared nearest factor space')
     snf = SNF(object,knn_k=knn_k,k2=k2, dist.use=dist.use, center = center, 
@@ -2220,8 +2226,10 @@ SNF<-function (object, dims.use = 1:ncol(object@H[[1]]), knn_k = 20,
   }))
   rownames(NN.maxes) = unlist(lapply(object@H, rownames))
   # extract small clusters 
-  print(paste0('Isolating small clusters with fewer than ', small.clust.thresh,
-               ' members'))
+  if (small.clust.thresh > 0) {
+    print(paste0('Isolating small clusters with fewer than ', small.clust.thresh,
+                 ' members'))
+  }
   max.val = factor(apply(NN.maxes,1,which.max))
   names(max.val) = rownames(NN.maxes)
   idents = rep("NA",nrow(NN.maxes))
