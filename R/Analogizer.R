@@ -1642,7 +1642,7 @@ calc_dataset_specificity=function(object)
 #' }
 
 plot_gene_violin = function(object, gene, methylation_indices=NULL, 
-                     return.plots=F)
+                            by.dataset=T, return.plots=F)
 {
   gene_vals = c()
   for (i in 1:length(object@norm.data))
@@ -1668,18 +1668,26 @@ plot_gene_violin = function(object, gene, methylation_indices=NULL,
   gene_df$Gene = as.numeric(gene_vals[rownames(gene_df)])
   colnames(gene_df)=c("tSNE1","tSNE2","gene")
   gene_plots = list()
-  for (i in 1:length(object@norm.data))
+  for (i in 1:length(object@scale.data))
   {
-    gene_df.sub = gene_df[rownames(object@scale.data[[i]]),]
-    gene_df.sub$Cluster = object@clusters[rownames(object@scale.data[[i]])]
+    if (by.dataset) {
+      gene_df.sub = gene_df[rownames(object@scale.data[[i]]),]
+      gene_df.sub$Cluster = object@clusters[rownames(object@scale.data[[i]])]
+      title = names(object@scale.data)[i]
+    } else {
+      gene_df.sub = gene_df
+      gene_df.sub$Cluster = object@clusters
+      title = 'All Datasets'
+    }
     max_v = max(gene_df.sub["gene"], na.rm = T)
     min_v = min(gene_df.sub["gene"], na.rm = T)
     midpoint = (max_v - min_v) / 2
     plot_i = (ggplot(gene_df.sub,aes_string(x="Cluster",y="gene",fill="Cluster"))+
                 geom_boxplot(position="dodge",width=0.4,outlier.shape=NA, alpha=0.7) +
                 geom_violin(position="dodge", alpha=0.7)+
-                ggtitle(names(object@scale.data)[i]))
+                ggtitle(title))
     gene_plots[[i]] = plot_i + theme(legend.position="none") + labs(y=gene)
+    if (i == 1 & !by.dataset) {break}
   }
   if (return.plots) {
     return(gene_plots)
