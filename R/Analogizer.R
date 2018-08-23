@@ -1160,8 +1160,9 @@ get_factor_markers = function(object,dataset1=NULL,dataset2=NULL,factor.share.th
   output_list = list(V1_genes, W_genes, V2_genes)
   output_list = lapply(output_list, function(df) {
     colnames(df) = df_cols
-    df = transform(df, factor_num = as.numeric(factor_num), counts1 = as.numeric(counts1), 
-                   counts2 = as.numeric(counts2), fracs1 = as.numeric(fracs1), fracs2 = as.numeric(fracs2),
+    df = transform(df, factor_num = as.numeric(factor_num), gene=as.character(gene),
+                   counts1 = as.numeric(counts1), counts2 = as.numeric(counts2), 
+                   fracs1 = as.numeric(fracs1), fracs2 = as.numeric(fracs2), 
                    log2fc = as.numeric(log2fc), p_value = as.numeric(p_value))
     df[which(df$p_value < pval_thresh),]
   })
