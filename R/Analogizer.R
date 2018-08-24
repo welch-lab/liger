@@ -170,12 +170,32 @@ scaleNotCenter = function(object,cells=NULL)
   {
     cells = lapply(1:length(object@raw.data),function(i){1:ncol(object@raw.data[[i]])})
   }
-  object@scale.data = lapply(1:length(object@norm.data),function(i){scale(t(object@norm.data[[i]][object@var.genes,]),center=F,scale=T)})
-  names(object@scale.data)=names(object@norm.data)
+  object@scale.data = lapply(1:length(object@norm.data),function(i){
+    scale(t(object@norm.data[[i]][object@var.genes,]),center=F,scale=T)
+  })
   for (i in 1:length(object@scale.data))
   {
     object@scale.data[[i]][is.na(object@scale.data[[i]])]=0
   }
+  object = removeMissingCells(object)
+  return(object)
+}
+
+# helper function to remove cells not expressing any selected genes
+# must have set scale.data first
+removeMissingCells = function(object) {
+  object@scale.data = lapply(seq_along(object@scale.data), function(x) {
+    missing = which(rowSums(object@scale.data[[x]]) == 0)
+    if (length(missing) > 0) {
+      print(paste0('Removing cells not expressing selected genes in ', 
+                   names(object@scale.data)[[x]],':'))
+      print(rownames(object@scale.data[[x]])[missing])
+      object@scale.data[[x]][-missing,]
+    } else {
+      object@scale.data[[x]]
+    }
+  })
+  names(object@scale.data) = names(object@raw.data)
   return(object)
 }
 
@@ -523,6 +543,8 @@ rbindlist = function(mat_list)
 optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=100,nrep=1,
                        H_init=NULL,W_init=NULL,V_init=NULL,rand.seed=1)
 {
+  # remove cells with no selected gene expression 
+  object = removeMissingCells(object)
   E = object@scale.data
   N = length(E)
   ns = sapply(E,nrow)
@@ -1642,7 +1664,7 @@ calc_dataset_specificity=function(object)
 #' }
 
 plot_gene_violin = function(object, gene, methylation_indices=NULL, 
-                     return.plots=F)
+                            by.dataset=T, return.plots=F)
 {
   gene_vals = c()
   for (i in 1:length(object@norm.data))
@@ -1668,18 +1690,26 @@ plot_gene_violin = function(object, gene, methylation_indices=NULL,
   gene_df$Gene = as.numeric(gene_vals[rownames(gene_df)])
   colnames(gene_df)=c("tSNE1","tSNE2","gene")
   gene_plots = list()
-  for (i in 1:length(object@norm.data))
+  for (i in 1:length(object@scale.data))
   {
-    gene_df.sub = gene_df[rownames(object@scale.data[[i]]),]
-    gene_df.sub$Cluster = object@clusters[rownames(object@scale.data[[i]])]
+    if (by.dataset) {
+      gene_df.sub = gene_df[rownames(object@scale.data[[i]]),]
+      gene_df.sub$Cluster = object@clusters[rownames(object@scale.data[[i]])]
+      title = names(object@scale.data)[i]
+    } else {
+      gene_df.sub = gene_df
+      gene_df.sub$Cluster = object@clusters
+      title = 'All Datasets'
+    }
     max_v = max(gene_df.sub["gene"], na.rm = T)
     min_v = min(gene_df.sub["gene"], na.rm = T)
     midpoint = (max_v - min_v) / 2
     plot_i = (ggplot(gene_df.sub,aes_string(x="Cluster",y="gene",fill="Cluster"))+
                 geom_boxplot(position="dodge",width=0.4,outlier.shape=NA, alpha=0.7) +
                 geom_violin(position="dodge", alpha=0.7)+
-                ggtitle(names(object@scale.data)[i]))
+                ggtitle(title))
     gene_plots[[i]] = plot_i + theme(legend.position="none") + labs(y=gene)
+    if (i == 1 & !by.dataset) {break}
   }
   if (return.plots) {
     return(gene_plots)
@@ -2537,7 +2567,7 @@ subsetAnalogizer<-function(object, clusters.use = NULL,cells.use = NULL) {
     }
   })
   raw.data = raw.data[!sapply(raw.data,is.null)]
-  nms = names(raw.data)
+  nms = names(object@raw.data)[!sapply(raw.data, is.null)]
   a = Analogizer(raw.data)
   
   a@norm.data = lapply(1:length(a@raw.data),function(i){
