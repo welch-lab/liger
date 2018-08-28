@@ -964,7 +964,7 @@ lambdaSuggestion = function(object, k, lambda_test = NULL, rand.seed = 1, num.co
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
 kSuggestion = function(object, k_test=seq(5, 50, 5), lambda=5, thresh=1e-4, max_iters=100, num.cores=1, 
-                       rand.seed = 1, plot.metric='median', gen.new=F, return_results=F) {
+                       rand.seed = 1, plot.metric='median', gen.new=F, plot.log2=T, return_results=F) {
   registerDoParallel(cores = num.cores)
   
   # optimize largest k value first to take advantage of efficient updating 
@@ -993,12 +993,17 @@ kSuggestion = function(object, k_test=seq(5, 50, 5), lambda=5, thresh=1e-4, max_
   # plot out results 
   max_lim = max(log2(k_test)) + 0.05
   min_lim = min(medians) - 0.05
-  plot(k_test, log2(k_test), type='p', col='green', ylim=c(min_lim, max_lim))
-  points(k_test, medians, type='p', xlab='Number of factors', 
+  if (plot.log2) {
+    plot(k_test, log2(k_test), type='p', col='green', ylim=c(min_lim, max_lim))
+    points(k_test, medians, type='p', xlab='Number of factors', 
+           ylab='Median KL divergence across combined data', col='black')
+    legend('topleft', legend=(c('log2(k) (upper lim)', 'KL div')),
+           col=c('green', 'black'), lty=1, cex=0.8)
+  } else {
+    plot(k_test, medians, type='p', xlab='Number of factors', 
          ylab='Median KL divergence across combined data', col='black')
+  }
   lines(k_test, medians, col='black')
-  legend('topleft', legend=(c('log2(k) (upper lim)', 'KL div')),
-         col=c('green', 'black'), lty=1, cex=0.8)
   
   if (return_results) {
     data_matrix = cbind(k_test, data_matrix)
