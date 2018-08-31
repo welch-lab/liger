@@ -1,0 +1,138 @@
+---
+title: "Walkthrough -- Aligning PBMC Data"
+author: "Velina Kozareva"
+date: "8/24/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+This walkthrough steps through a basic analysis and alignment of two datasets of peripheral blood mononuclear cells (PBMCs), and provides a simple comparison of the results achieved with Analogizer to those achieved with Seurat. Both tools discover similar clusters and trends in the data, although Analogizer can be used to identify more dataset-specific differences. 
+
+First load the combined Seurat object which is created with the guided tutorial published online [here](https://satijalab.org/seurat/Seurat_AlignmentTutorial.html). The object and accompanying data can be downloaded here (or from `vignettes/pbmc_alignment.zip` -- Seurat object not yet available). We can use the raw data from this object to set up our Analogizer object as well. Note that we could also set up the Analogizer object independently using the 10X and Seqwell datasets provided in the same directory.
+
+```{r load, results='hide', message=F, warning=F}
+library(Analogizer)
+# loading Seurat can be skipped for Analogizer-only analysis
+library(Seurat)
+library(cowplot)
+
+s.pbmc <- readRDS('~/Downloads/pbmc_alignment/seurat_pbmc.RDS')
+pbmc.10x <- read.table('~/Downloads/pbmc_alignment/pbmc_10X.expressionMatrix.txt',
+                       sep="\t",stringsAsFactors=F,header=T,row.names = 1)
+pbmc.seqwell <- read.table('~/Downloads/pbmc_alignment/pbmc_SeqWell.expressionMatrix.txt',
+                           sep="\t",stringsAsFactors=F,header=T,row.names = 1)
+pbmc_data = list(tenx=pbmc.10x, seqwell=pbmc.seqwell)
+
+# create Analogizer object
+a.pbmc <- Analogizer(pbmc_data)
+```
+
+###Data Preprocessing
+Before running the factorization, we need to normalize the data to account for different numbers of UMIs per cell, select variable genes, and scale the data. Note that we do not center the data when scaling because nonnegative matrix factorization accepts only positive values. 
+
+The `selectGenes` function performs variable gene selection on each of the datasets separately, then takes the union of the result. The most variable genes are selected by comparing the variance of each gene's expression to its mean expression and keeping those with var/mean ratio above a certain threshold. 
+
+In this case, we want the total number of variable genes to be similar across the Analogizer and Seurat analyses, ideally with a large overlap in the variable gene sets. We can raise the variance threshold to have approximately the same number of variable genes, but we see that the overlap between gene sets is not as high as we would like -- we'll proceed instead by setting the variable genes to match those selected in the Seurat analysis for a cleaner comparison. 
+
+```{r preprocess}
+a.pbmc <- normalize(a.pbmc)
+# Raise default varthresh to find about 2800 variable genes
+a.pbmc <- selectGenes(a.pbmc, varthresh = 0.85, do.plot = F)
+print(paste('A genes:', length(a.pbmc@var.genes), 'S genes:', length(s.pbmc@var.genes)))
+# want greater than ~90% of genes to match (>2550 genes)
+length(intersect(a.pbmc@var.genes, s.pbmc@var.genes))
+
+a.pbmc@var.genes <- s.pbmc@var.genes
+a.pbmc <- scaleNotCenter(a.pbmc)
+```
+
+###Factorization
+Next we perform integrative non-negative matrix factorization in order to identify shared and distinct metagenes across the datasets and the corresponding factor/metagene loadings for each cell. The most important parameters in the factorization are `k` (the number of factors) and `lambda` (the penalty parameter which limits the dataset-specific component of the factorization). The default value of `lambda=5.0` usually provides reasonable results for most analyses, although the `lambdaSuggestion` function can be used to determine a more appropriate `lambda` value for the desired level of dataset alignment. 
+
+To determine the appropriate number of factors to use, we can use the `kSuggestion` function which plots median K-L divergence from the uniform distribution in the factor loadings as a function of `k`. We want to look for the section of the plot where this metric stops increasing as sharply (the "elbow" of the plot). In general, we should expect a positive correlation between the number of subgroups we expect to find in the analysis and the appropriate number of factors to use. Since the `kSuggestion` function can take more than 10 minutes to run, it can sometimes be useful to run a quick preliminary analysis with `k=20` to get an idea of whether a much higher number of factors is needed. 
+
+``` {r kselection, eval=F}
+# running kSuggestion on multiple cores can greatly decrease the runtime
+k.suggest <- kSuggestion(a.pbmc, num.cores = 5, gen.new = T, return_results = T, plot.log2 = F)
+```
+
+For this analysis, we select a `k` of 22, though you can try various values in that range for similar results. We also select the default `lambda=5.0`. 
+```{r factorization, results='hide'}
+# take the lowest objective of three factorizations with different initializations
+# this is recommended since iNMF is non-deterministic
+a.pbmc <- optimizeALS(a.pbmc, k=22, thresh = 5e-5, nrep = 3)
+```
+
+After the factorization, we still need to quantile align the factor loadings across the datasets. Notice that if we plot a t-SNE representation of the factor loadings, the data still cluster mainly by dataset. 
+```{r unaligned}
+a.pbmc <- run_tSNE(a.pbmc, use.raw = T)
+p1 <- plotByDatasetAndCluster(a.pbmc, return.plots = T)
+# plot by dataset
+p1[[1]]
+```
+
+To better integrate the datasets, we perform a quantile alignment step. This process first identifies similarly loading cells across datasets by building a similarity graph based on shared factor neighborhoods. Using Louvain community detection, we then identify clusters shared across datasets, and align quantiles within each cluster and factor. The key parameters in this step are the `resolution` (increasing this increases the number of communities detected) and `knn_k` (the number of dataset neighbors used in generating the shared factor neighborhood). In general, lowering `knn_k` will allow for more fine-grained identification of smaller groups with shared factor neighborhoods. 
+
+We can also try to extract even smaller clusters by setting the `small_clust_thresh` parameter equal to the current `knn_k`; we do this here since we expect a small group of megakaryocytes in the 10X dataset. We set the `resolution` to 0.4 to identify larger clusters, and use the default settings for the other parameters. 
+
+```{r aligned, results='hide'}
+a.pbmc <- quantile_align_SNF(a.pbmc, resolution = 0.4, small.clust.thresh = 20)
+
+```
+
+Now we can visualize the integrated data, and determine identities of the detected clusters. We can also compare the alignment visually between the Analogizer and Seurat analyses.  
+```{r visualize, fig.width=9, fig.height=4.5}
+a.pbmc <- run_tSNE(a.pbmc)
+p_a <- plotByDatasetAndCluster(a.pbmc, return.plots = T) 
+# modify plot output slightly
+p_a[[1]] <- p_a[[1]] + theme_classic() + theme(legend.position = c(0.85, 0.15)) + 
+  guides(col=guide_legend(title = '', override.aes = list(size = 4)))
+# plot by dataset in Seurat -- switch colors to match dataset labels in Analogizer
+p_s <- TSNEPlot(object = s.pbmc, group.by = "protocol", do.return = TRUE, pt.size = 0.3, 
+                colors.use = c('#00BFC4', '#F8766D')) + theme_classic() + theme(legend.position = 'none')
+plot_grid(p_s, (p_a[[1]]), labels=c('Seurat', 'Analogizer'), 
+          label_x = c(0.45, 0.35), label_y = 0.99, label_size = 10)
+
+```
+
+Since we have cluster information from the original publication/analysis for each of these two datasets, we 
+can easily take a look at how our clustering compares using a river (i.e. Sankey) plot. 
+
+```{r clustering, message=F, warning=F}
+# load cluster labels from Seurat 10X analysis and seqwell publication
+clusters_prior <- readRDS('~/Downloads/pbmc_alignment/tenx_seqwell_clusters.RDS')
+tenx_c <- droplevels(clusters_prior[rownames(a.pbmc@H[[1]])])
+seqwell_c <- droplevels(clusters_prior[rownames(a.pbmc@H[[2]])])
+
+set_node_order = list(rev(c(7, 5, 1, 8, 4, 3, 6, 2)), c(1, 6, 2, 3, 4, 5, 7, 8, 9), rev(c(4, 1, 6, 3, 2, 5)))
+make_riverplot(a.pbmc, tenx_c, seqwell_c, min.frac = 0.05, node.order = set_node_order,
+               river.usr = c(0, 1, -0.6, 1.6))
+
+# plot t-SNE plot colored by clusters 
+p_a[[2]] 
+
+```
+
+We see a good correspondance between analogous cluster labels from the two datasets and have successfully identified the small group of megakaryocytes!
+
+We can also identify some shared and dataset-specific markers and plot them to help in cluster annotation. This information can aid in finding cell-type specific dataset differences as well. Looking at factor 3 markers, we see that PPBP, pro-platelet basic protein, is one of the top shared genes for this factor. 
+```{r markers}
+markers <- get_factor_markers(a.pbmc, dataset1='tenx', dataset2='seqwell', num_genes = 10)
+# the first three elements in this list are the dataset1-specific, shared, and dataset2-specific markers respectively
+# since factor 3 (F3) corresponds to megakaryocytes, let's take a look there
+head(markers[[1]][markers[[1]]$factor_num == 3,])
+head(markers[[2]][markers[[2]]$factor_num == 3,])
+head(markers[[3]][markers[[3]]$factor_num == 3,])
+```
+
+We can plot this gene, along with some other useful markers in a dataset specific manner to better observe dataset specific differences. 
+```{r plot_gene, fig.width=9, fig.height=4.5}
+p_g1 <- plot_gene(a.pbmc, 'PPBP', return.plots = T)
+plot_grid(plotlist = p_g1)
+p_g2 <- plot_gene(a.pbmc, 'FCGR3A', return.plots = T)
+plot_grid(plotlist = p_g2)
+```
+
+Note that with these plots, we can see the small cluster of 10X cells very highly expressing PPBP (though expression is more diffuse in the seqwell dataset), and also notice that the NK cluster in the seqwell dataset does not seem to express CD16 as highly as that from the 10X dataset. This might suggest some additional cytokine activation in the 10X patient. 
