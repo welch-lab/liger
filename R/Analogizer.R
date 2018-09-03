@@ -1,5 +1,3 @@
-#' @importFrom plyr rbind.fill.matrix
-NULL
 
 #' The Analogizer Class
 #'
@@ -654,6 +652,7 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=100,nrep=1,
 #' @param max_iters Maximum number of block coordinate descent iterations to perform
 #' @return list of length N+2 containing Hs, W, Vs, and run statistics
 #' @export
+#' @importFrom plyr rbind.fill.matrix
 #' @examples
 #' \dontrun{
 #' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
@@ -663,8 +662,11 @@ optimizeALS = function(object,k,lambda=5.0,thresh=1e-4,max_iters=100,nrep=1,
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-optimizeNewK = function(object,k_new,lambda=5.0,thresh=1e-4,max_iters=100,rand.seed=1)
+optimizeNewK = function(object,k_new,lambda=NULL,thresh=1e-4,max_iters=100,rand.seed=1)
 {
+  if (is.null(lambda)) {
+    lambda = object@parameters$lambda
+  }
   k = ncol(object@H[[1]])
   if (k_new == k)
   {
@@ -702,7 +704,8 @@ optimizeNewK = function(object,k_new,lambda=5.0,thresh=1e-4,max_iters=100,rand.s
     H = lapply(H,function(x){x[,k.use]})
     V = lapply(V,function(x){x[k.use,]})
   }
-  object = optimizeALS(object,k_new,H_init=H,W_init=W,V_init=V,nrep=1, rand.seed = rand.seed)
+  object = optimizeALS(object,k_new, lambda = lambda, thresh = thresh, max_iters = max_iters, 
+                       H_init=H,W_init=W,V_init=V, rand.seed = rand.seed)
   return(object)
 }
 
@@ -726,8 +729,11 @@ optimizeNewK = function(object,k_new,lambda=5.0,thresh=1e-4,max_iters=100,rand.s
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-optimizeNewData = function(object,new.data,which.datasets,add.to.existing=T,lambda=5.0,thresh=1e-4,max_iters=100)
+optimizeNewData = function(object,new.data,which.datasets,add.to.existing=T,lambda=NULL,thresh=1e-4,max_iters=100)
 {
+  if (is.null(lambda)) {
+    lambda = object@parameters$lambda
+  }
   if (add.to.existing)
   {
     for (i in 1:length(new.data))
@@ -798,8 +804,11 @@ optimizeNewData = function(object,new.data,which.datasets,add.to.existing=T,lamb
 #' analogy = scaleNotCenter(analogy)
 #' analogy = optimize_als(analogy,k=2,nrep=1)
 #' }
-optimizeSubset = function(object,cell.subset=NULL,cluster.subset=NULL,lambda=5.0,thresh=1e-4,max_iters=100,datasets.scale=NULL)
+optimizeSubset = function(object,cell.subset=NULL,cluster.subset=NULL,lambda=NULL,thresh=1e-4,max_iters=100,datasets.scale=NULL)
 {
+  if (is.null(lambda)) {
+    lambda = object@parameters$lambda
+  }
   if (is.null(cell.subset) & is.null(cluster.subset))
   {
     print("Please specify a cell subset or cluster subset.")
