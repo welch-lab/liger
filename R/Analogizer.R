@@ -63,6 +63,29 @@ Analogizer <- function(raw.data, sparse_dcg=T) {
   return(object)
 }
 
+#' show method for analogizer
+#'
+#' @param object analogizer object
+#' @name show
+#' @aliases show,analogizer-method
+#' @docType methods
+#' @rdname show-methods
+#'
+setMethod(
+  f = "show",
+  signature = "analogizer",
+  definition = function(object) {
+    cat(
+      "An object of class",
+      class(object),
+      "\n",
+      length(object@norm.data),
+      "datasets.\n"
+    )
+    invisible(x = NULL)
+  }
+)
+
 #' Select a subset of informative genes from each dataset and combine them.
 #'
 #' @param object analogizer object. Should have already called normalize.
@@ -182,8 +205,19 @@ scaleNotCenter = function(object,cells=NULL)
   return(object)
 }
 
-# helper function to remove cells not expressing any selected genes
-# must have set scale.data first
+#' Remove cells with no gene data
+#'
+#' Removes cells from scale.data with no expression in any selected genes.  
+#'
+#' @param object analogizer object. Should call scaleNotCenter first.
+#' @value Returns analogizer object with modified scale.data (dataset names preserved)
+#' @export
+#' @examples 
+#' \dontrun{
+#' # analogizer object
+#' analogy
+#' analogy = removeMissingCells(analogy)
+#' }
 removeMissingCells = function(object) {
   object@scale.data = lapply(seq_along(object@scale.data), function(x) {
     missing = which(rowSums(object@scale.data[[x]]) == 0)
@@ -401,42 +435,6 @@ factor_plots = function (object, num_genes = 10,cells.highlight = NULL, plot.tsn
     }
     setTxtProgressBar(pb, i)
   }
-}
-
-# Helper function for factor_plot
-fplot = function(tsne,NMFfactor,title,cols.use=heat.colors(10),pt.size=0.7,pch.use=20) {
-  data.cut=as.numeric(as.factor(cut(as.numeric(NMFfactor),breaks=length(cols.use))))
-  data.col=rev(cols.use)[data.cut]
-  plot(tsne[,1],tsne[,2],col=data.col,cex=pt.size,pch=pch.use,main=title)
-
-}
-
-#' show method for analogizer
-#'
-#' @param object analogizer object
-#' @name show
-#' @aliases show,analogizer-method
-#' @docType methods
-#' @rdname show-methods
-#'
-setMethod(
-  f = "show",
-  signature = "analogizer",
-  definition = function(object) {
-    cat(
-      "An object of class",
-      class(object),
-      "\n",
-      length(object@norm.data),
-      "datasets.\n"
-    )
-    invisible(x = NULL)
-  }
-)
-
-rbindlist = function(mat_list)
-{
-  return(do.call(rbind,mat_list))
 }
 
 #' Optimize objective function using block coordinate descent (alternating nonnegative least squares)
@@ -939,27 +937,6 @@ kSuggestion = function(object, k_test=seq(5, 50, 5), lambda=5, thresh=1e-4, max_
     data_matrix = cbind(k_test, data_matrix)
     return(data_matrix)
   }
-}
-
-# helper function for calculating KL divergence from uniform distribution
-# (related to Shannon entropy) for factorization
-kl_divergence_uniform = function(object, Hs=NULL)
-{
-  if (is.null(Hs)) {Hs = object@H}
-  n_cells = sum(sapply(Hs, nrow))
-  n_factors = ncol(Hs[[1]])
-  dataset_list = list()
-  for (i in 1:length(Hs)) {
-    scaled = scale(Hs[[i]], center=F, scale=T)
-
-    inflated = t(apply(scaled, 1, function(x) {
-      replace(x, x == 0, 1e-20)
-    }))
-    inflated = inflated/rowSums(inflated)
-    divs = apply(inflated, 1, function(x) {log2(n_factors) + sum(log2(x) * x)})
-    dataset_list[[i]] = divs
-  }
-  return(dataset_list)
 }
 
 #' Find shared and dataset-specific markers using the factorization.
@@ -1640,50 +1617,6 @@ plot_genes = function(object,genes)
   }
 }
 
-#Function takes in a list of DGEs, with gene rownames and cell colnames, and merges them into a single DGE.
-MergeSparseDataAll<-function (datalist,library.names=NULL) {
-
-  #use summary to convert the sparse matrices a and b into three-column indexes where i are the row numbers, j are the column numbers, and x are the nonzero entries
-  a = datalist[[1]]
-  allGenes=rownames(a)
-  if (!is.null(library.names)) {
-    allCells=paste0(library.names[1],"_",colnames(a))
-  } else {
-    allCells = colnames(a)
-  }
-  as = summary(a)
-  for (i in 2:length(datalist)) {
-    b = datalist[[i]]
-
-    bs= summary(b)
-
-    # Now, alter the indexes so that the two 3-column matrices can be properly merged.  First, make the a and b column numbers non-overlapping.
-    bs[,2] = bs[,2] + max(as[,2])
-
-    #Next, change the row (gene) indexes so that they index on the union of the gene sets, so that proper merging can occur.
-
-    allGenesnew=union(allGenes, rownames(b))
-    if (!is.null(library.names)) {
-      cellnames = paste0(library.names[i],"_",colnames(b))
-    } else {
-      cellnames = colnames(b)
-    }
-    allCells=c(allCells,cellnames)
-    idx=match(allGenes,allGenesnew)
-    newgenesa = idx[as[,1]]
-    as[,1] = newgenesa
-    idx=match(rownames(b),allGenesnew)
-    newgenesb = idx[bs[,1]]
-    bs[,1] = newgenesb
-
-    #Now bind the altered 3-column matrices together, and convert into a single sparse matrix.
-    as = rbind(as,bs)
-    allGenes=allGenesnew
-  }
-  M=sparseMatrix(i=as[,1],j=as[,2],x=as[,3],dims=c(length(allGenes),length(allCells)),dimnames=list(allGenes,allCells))
-  return(M)
-}
-
 #' Create a Seurat object containing the data from an Analogizer object.
 #'
 #' @param object analogizer object.
@@ -1779,22 +1712,6 @@ scaleNotCenter_sparse<-function (object, cells = NULL)
     colnames(object@scale.data[[i]]) = object@var.genes
   }
   return(object)
-}
-
-scalar1 <- function(x, center=F) {
-  if (center) {
-    return(scale(x))
-  }
-  return(x / sqrt(sum(x^2)))
-}
-
-Mode <- function(x, na.rm = FALSE) {
-  if(na.rm){
-    x = x[!is.na(x)]
-  }
-
-  ux <- unique(x)
-  return(ux[which.max(tabulate(match(x, ux)))])
 }
 
 #' Builds a shared nearest factor graph to jointly cluster cells, then quantile normalizes corresponding clusters.
@@ -1948,7 +1865,7 @@ SNF<-function (object, dims.use = 1:ncol(object@H[[1]]), knn_k = 20,
     sc = scale(object@H[[i]], center = center, scale = T)
     maxes = factor(apply(sc[, dims.use], 1, which.max), levels = 1:ncol(sc))
     if (dist.use == "CR") {
-      norm = t(apply(object@H[[i]][, dims.use], 1, scalar1))
+      norm = t(apply(object@H[[i]][, dims.use], 1, scaleL2norm))
       if (any(is.na(norm))) {
         stop("Unable to normalize loadings for all cells; some cells\n
              loading on no selected factors.")
@@ -1996,77 +1913,6 @@ SNF<-function (object, dims.use = 1:ncol(object@H[[1]]), knn_k = 20,
   return(list(cells.cl=cells.cl, idents=idents,
               out.summary=out.summary))
   }
-
-assign.singletons<-function(object,idents,k.use = 15, center=F) {
-  singleton.clusters = names(table(idents))[which(table(idents)==1)]
-  singleton.cells = names(idents)[which(idents %in% singleton.clusters)]
-  if (length(singleton.cells)>0) {
-    singleton.list = lapply(object@H,function(H){
-
-      return(intersect(rownames(H),singleton.cells))
-    })
-    out = unlist(lapply(1:length(object@H),function(d){
-      H = object@H[[d]]
-      H = t(apply(H,1,scalar1, center=center))
-      cells.use = singleton.list[[d]]
-
-      if (length(cells.use)>0) {
-        knn.idx = get.knnx(H,matrix(H[cells.use,],ncol=ncol(H)),k = k.use,algorithm="CR")$nn.index
-        o= sapply(1:length(cells.use),function(i){
-          ids = idents[knn.idx[i,]]
-          Mode(ids[which(!(ids %in% singleton.clusters))])
-        })
-
-        return(o)
-      } else {
-        return(NULL)
-      }
-    }))
-    names(out)= unlist(singleton.list)
-    idx = names(idents) %in% names(out)
-    idents[idx]<-out
-    idents = droplevels(idents)
-  }
-  return(idents)
-}
-
-
-SLMCluster<-function(edge,prune.thresh=0.2,nstart=100,iter.max=10,algorithm=1,R=1,
-                     ModularityJarFile="",random.seed=1, id.number=NULL, print.mod=F) {
-
-  #This is code taken from Seurat for preparing data for modularity-based clustering.
-  edge = edge[which(edge[,3]>prune.thresh),]
-  ident=modclust(edge=edge,resolution=R,n.iter= iter.max,n.start=nstart, id.number = id.number,
-                 random.seed=random.seed,ModularityJarFile=ModularityJarFile, print.mod=print.mod)
-  return(ident)
-}
-modclust <- function(edge, modularity=1,resolution,n.start=100,n.iter=25,random.seed=1,
-                     id.number=NULL, algorithm=1,ModularityJarFile, print.mod=F){
-  print("making edge file.")
-  edge_file <- paste0("edge", id.number, fileext=".txt")
-  # Make sure no scientific notation written to edge file
-  saveScipen=options(scipen=10000)[[1]]
-  write.table(x=edge,file=edge_file,sep="\t",row.names=F,col.names=F)
-  options(scipen=saveScipen)
-  output_file <- tempfile("louvain.out", fileext=".txt")
-  if (is.null(random.seed)) {
-    # NULL random.seed disallowed for this program.
-    random.seed = 0
-  }
-  analogizer.dir <- system.file(package = "Analogizer")
-  ModularityJarFile <- paste0(analogizer.dir, "/java/ModularityOptimizer.jar")
-  command <- paste("java -jar", ModularityJarFile, edge_file, output_file,modularity, resolution, algorithm, n.start,
-                   n.iter, random.seed, as.numeric(print.mod), sep = " ")
-  print ("Starting SLM")
-  ret = system(command, wait = TRUE)
-  if (ret != 0) {
-    stop(paste0(ret, " exit status from ", command))
-  }
-  unlink(edge_file)
-  ident.use <- factor(read.table(file = output_file, header = FALSE, sep = "\t")[, 1])
-
-  return(ident.use)
-}
 
 #' Makes a riverplot to show how separate cluster assignments from two datasets map onto a joint clustering.
 #'
