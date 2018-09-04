@@ -2,35 +2,50 @@
 % Please edit documentation in R/Analogizer.R
 \name{optimizeSubset}
 \alias{optimizeSubset}
-\title{Optimize objective function for a subset of the data. Uses an efficient strategy for updating that takes advantage of the information in the existing factorization.}
+\title{Perform factorization for subset of data}
 \usage{
 optimizeSubset(object, cell.subset = NULL, cluster.subset = NULL,
-  lambda = 5, thresh = 1e-04, max_iters = 100, datasets.scale = NULL)
+  lambda = NULL, thresh = 1e-04, max.iters = 100, datasets.scale = NULL)
 }
 \arguments{
-\item{object}{analogizer object. Should normalize, select genes, and scale before calling.}
+\item{object}{Analogizer object. Should call optimizeALS before calling.}
 
-\item{cell.subset}{list of cell names to retain from each dataset.}
+\item{cell.subset}{List of cell names to retain from each dataset (same length as number of 
+datasets).}
 
-\item{lambda}{Regularization parameter. Larger values penalize dataset-specific effects more strongly.}
+\item{cluster.subset}{Clusters for which to keep cells (ie. c(1, 5, 6)). Should pass in either 
+cell.subset or cluster.subset but not both.}
 
-\item{thresh}{Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh}
+\item{lambda}{Regularization parameter. By default, uses last used lambda.}
 
-\item{max_iters}{Maximum number of block coordinate descent iterations to perform}
+\item{thresh}{Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
+(default 1e-4).}
+
+\item{max.iters}{Maximum number of block coordinate descent iterations to perform (default 100).}
+
+\item{datasets.scale}{Names of datasets to rescale after subsetting (default NULL).}
 }
 \value{
-list of length N+2 containing Hs, W, Vs, and run statistics
+Analogizer object with H, W, and V slots reset. Scale.data 
+  (if desired) will also be updated to reflect the subset.
 }
 \description{
-Optimize objective function for a subset of the data. Uses an efficient strategy for updating that takes advantage of the information in the existing factorization.
+Uses an efficient strategy for updating that takes advantage of the information in the existing 
+factorization. Can use either cell names or cluster names to subset.
 }
 \examples{
 \dontrun{
-Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-analogy = Analogizer(Y,Z)
-analogy@var.genes = c(1,2,3,4)
-analogy = scaleNotCenter(analogy)
-analogy = optimize_als(analogy,k=2,nrep=1)
+Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+colnames(Y) <- c('a', 'b', 'c')
+colnames(Z) <- c('p', 'q', 'r')
+analogy <- Analogizer(list(y_set = Y, z_set = Z))
+analogy <- normalize(analogy)
+analogy <- selectGenes(analogy)
+analogy <- scaleNotCenter(analogy)
+# get factorization using three restarts and 20 factors
+analogy <- optimizeALS(analogy, k = 20, lambda = 5, nrep = 3)
+# now want to look at only subset of data
+analogy2 <- optimizeSubset(analogy, cell.subset = list(c('a', 'b'), c('q')))
 }
 }

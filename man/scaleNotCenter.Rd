@@ -2,25 +2,33 @@
 % Please edit documentation in R/Analogizer.R
 \name{scaleNotCenter}
 \alias{scaleNotCenter}
-\title{Scale genes to unit variance (but no mean centering).}
+\title{Scale genes by root-mean-square across cells}
 \usage{
-scaleNotCenter(object, cells = NULL)
+scaleNotCenter(object, remove.missing = T)
 }
 \arguments{
-\item{object}{analogizer object. Should normalize and select genes before calling.}
+\item{object}{Analogizer object. Should call normalize and selectGenes before calling.}
+
+\item{remove.missing}{Whether to remove cells from scale.data with no gene expression 
+(default TRUE).}
 }
 \value{
-analogizer object
+Analogizer object with scale.data slot set.
 }
 \description{
-Scale genes to unit variance (but no mean centering).
+This function scales normalized gene expression data after variable genes have been selected.
+Note that the data is not mean-centered before scaling because expression values must remain 
+positive (NMF only accepts positive values). It also removes cells which do not have any 
+expression across the genes selected, by default.
 }
 \examples{
 \dontrun{
-Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-analogy = Analogizer(list(Y,Z))
-analogy@var.genes = c(1,2,3,4)
-analogy = scaleNotCenter(analogy)
+Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+analogy <- Analogizer(list(y_set = Y, z_set = Z))
+analogy <- normalize(analogy)
+# select genes
+analogy <- selectGenes(analogy)
+analogy <- scaleNotCenter(analogy)
 }
 }

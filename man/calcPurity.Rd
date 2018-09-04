@@ -3,7 +3,7 @@
 \name{calcPurity}
 \alias{calcPurity}
 \title{Calculate purity for Analogizer clustering and external clustering (base truth).
-Should run quantile_align_SNF first.}
+Should run quantileAlignSNF first.}
 \usage{
 calcPurity(object, classes.compare)
 }
@@ -17,7 +17,7 @@ Purity value
 }
 \description{
 Calculate purity for Analogizer clustering and external clustering (base truth).
-Should run quantile_align_SNF first.
+Should run quantileAlignSNF first.
 }
 \examples{
 \dontrun{

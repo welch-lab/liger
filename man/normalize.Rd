@@ -7,19 +7,19 @@
 normalize(object)
 }
 \arguments{
-\item{object}{analogizer object.}
+\item{object}{Analogizer object.}
 }
 \value{
-analogizer object
+Analogizer object with norm.data slot set.
 }
 \description{
-Normalize raw datasets to column sums
+This function normalizes data to account for total gene expression across a cell.
 }
 \examples{
 \dontrun{
-Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-analogy = Analogizer(list(Y,Z))
-analogy = normalize(analogy)
+Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+analogy <- Analogizer(list(y_set = Y, z_set = Z))
+analogy <- normalize(analogy)
 }
 }

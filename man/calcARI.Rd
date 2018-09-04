@@ -3,7 +3,7 @@
 \name{calcARI}
 \alias{calcARI}
 \title{Calculate adjusted Rand index for Analogizer clustering and external clustering.
-Should run quantile_align_SNF first.}
+Should run quantileAlignSNF first.}
 \usage{
 calcARI(object, clusters.compare)
 }
@@ -17,7 +17,7 @@ Adjusted Rand index value
 }
 \description{
 Calculate adjusted Rand index for Analogizer clustering and external clustering.
-Should run quantile_align_SNF first.
+Should run quantileAlignSNF first.
 }
 \examples{
 \dontrun{

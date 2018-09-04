@@ -2,39 +2,35 @@
 % Please edit documentation in R/Analogizer.R
 \name{optimizeNewData}
 \alias{optimizeNewData}
-\title{Optimize objective function for new data. Uses an efficient strategy for updating that takes advantage of the information in the existing factorization.}
+\title{Perform factorization for new data}
 \usage{
 optimizeNewData(object, new.data, which.datasets, add.to.existing = T,
-  lambda = 5, thresh = 1e-04, max_iters = 100)
+  lambda = NULL, thresh = 1e-04, max.iters = 100)
 }
 \arguments{
-\item{object}{analogizer object. Should normalize, select genes, and scale before calling.}
+\item{object}{Analogizer object. Should call optimizeALS before calling.}
 
-\item{new.data}{list of raw data matrices (one or more). Each list entry should be named.}
+\item{new.data}{List of raw data matrices (one or more). Each list entry should be named.}
 
-\item{which.datasets}{list of datasets to append new.data to if add.to.existing is true. Otherwise, the most similar existing datasets for each entry in new.data.}
+\item{which.datasets}{List of datasets to append new.data to if add.to.existing is true. 
+Otherwise, the most similar existing datasets for each entry in new.data.}
 
-\item{add.to.existing}{add the new data to existing datasets or treat as totally new datasets (new Vs)?}
+\item{add.to.existing}{Add the new data to existing datasets or treat as totally new datasets 
+(calculate new Vs?) (default TRUE)}
 
-\item{lambda}{Regularization parameter. Larger values penalize dataset-specific effects more strongly.}
+\item{lambda}{Regularization parameter. By default, this will use the lambda last used with
+optimizeALS.}
 
-\item{thresh}{Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh}
+\item{thresh}{Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
+(default 1e-4).}
 
-\item{max_iters}{Maximum number of block coordinate descent iterations to perform}
+\item{max.iters}{Maximum number of block coordinate descent iterations to perform (default 100).}
 }
 \value{
-list of length N+2 containing Hs, W, Vs, and run statistics
+Analogizer object with H, W, and V slots reset. Raw.data, norm.data, and scale.data will
+  also be updated to include the new data.
 }
 \description{
-Optimize objective function for new data. Uses an efficient strategy for updating that takes advantage of the information in the existing factorization.
-}
-\examples{
-\dontrun{
-Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-analogy = Analogizer(Y,Z)
-analogy@var.genes = c(1,2,3,4)
-analogy = scaleNotCenter(analogy)
-analogy = optimize_als(analogy,k=2,nrep=1)
-}
+Uses an efficient strategy for updating that takes advantage of the information in the existing 
+factorization. Assumes that selected genes (var.genes) are represented in the new datasets.
 }

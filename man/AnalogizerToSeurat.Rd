@@ -7,17 +7,18 @@
 AnalogizerToSeurat(object, need.sparse = T)
 }
 \arguments{
-\item{object}{analogizer object.}
+\item{object}{Analogizer object.}
+
+\item{need.sparse}{Whether data needs to be converted to sparse format first; most relevant for 
+older Analogizer objects (default TRUE).}
 }
 \description{
 Create a Seurat object containing the data from an Analogizer object.
 }
 \examples{
 \dontrun{
-Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-analogy = Analogizer(list(Y,Z))
-analogy@var.genes = c(1,2,3,4)
-analogy = scaleNotCenter(analogy)
+# Analogizer object
+analogy
+s.object <- AnalogizerToSeurat(analogy)
 }
 }

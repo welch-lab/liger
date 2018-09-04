@@ -2,36 +2,55 @@
 % Please edit documentation in R/Analogizer.R
 \name{plotByDatasetAndCluster}
 \alias{plotByDatasetAndCluster}
-\title{Plot t-SNE coordinates of aligned datasets, colored by dataset and by cluster}
+\title{Plot t-SNE coordinates of cells across datasets}
 \usage{
-plotByDatasetAndCluster(object, title = NULL, pt.size = 0.3,
-  text.size = 3, do.shuffle = T, clusters = NULL, axis.labels = NULL,
-  return.plots = F, do.legend = T, legend.size = 5)
+plotByDatasetAndCluster(object, clusters = NULL, title = NULL,
+  pt.size = 0.3, text.size = 3, do.shuffle = T, axis.labels = NULL,
+  do.legend = T, legend.size = 5, return.plots = F)
 }
 \arguments{
-\item{object}{analogizer object. Should call run_tSNE before calling.}
+\item{object}{Analogizer object. Should call runTSNE or runUMAP before calling.}
 
-\item{title}{Plot title}
+\item{clusters}{Another clustering to use for coloring second plot (must have same names as 
+clusters slot) (default NULL).}
 
-\item{pt.size}{Controls size of points representing cells}
+\item{title}{Plot titles (list or vector of length 2) (default NULL).}
 
-\item{text.size}{Controls size of plot text}
+\item{pt.size}{Controls size of points representing cells (default 0.3).}
 
-\item{do.shuffle}{Randomly shuffle points so that points from same dataset are not plotted one after the other.}
+\item{text.size}{Controls size of plot text (cluster center labels) (default 3).}
 
-\item{axis.labels}{Vector of two strings to use as x and y labels respectively}
+\item{do.shuffle}{Randomly shuffle points so that points from same dataset are not plotted 
+one after the other (default TRUE).}
 
-\item{return.plots}{Return ggplot objects instead of printing directly}
+\item{axis.labels}{Vector of two strings to use as x and y labels respectively.}
+
+\item{do.legend}{Display legend on plots (default TRUE).}
+
+\item{legend.size}{Size of legend on plots (default 5).}
+
+\item{return.plots}{Return ggplot plot objects instead of printing directly (default FALSE).}
+}
+\value{
+List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to 
+  console).
 }
 \description{
-Plot t-SNE coordinates of aligned datasets, colored by dataset and by cluster
+Generates two plots of all cells across datasets, one colored by dataset and one colored by 
+cluster. These are useful for visually examining the alignment and cluster distributions,
+respectively. If clusters have not been set yet (quantileAlignSNF not called), will plot by
+single color for second plot. It is also possible to pass in another clustering (as long as 
+names match those of cells).
 }
 \examples{
 \dontrun{
-Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-analogy = Analogizer(list(Y,Z))
-analogy@var.genes = c(1,2,3,4)
-analogy = scaleNotCenter(analogy)
+ # analogizer object with aligned factor loadings
+analogy
+# get tsne.coords for normalized data
+analogy <- runTSNE(analogy)
+# plot to console
+plotByDatasetAndCluster(analogy)
+# return list of plots 
+plots <- plotByDatasetAndCluster(analogy, return.plots = T)
 }
 }
