@@ -41,8 +41,7 @@ Run UMAP on the normalized cell factors (or raw cell factors) to generate a 2D e
 visualization (or general dimensionality reduction). Has option to run on subset of factors. 
 Note that running multiple times will overwrite tsne.coords values. It is generally 
 recommended to use this method for dimensionality reduction with extremely large datasets.
-}
-\details{
+
 Note that this method requires that the package reticulate is installed, along with the Python 
 package umap-learn.
 }

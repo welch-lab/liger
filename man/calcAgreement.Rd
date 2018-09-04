@@ -35,8 +35,7 @@ calculated by performing dimensionality reduction on the original and quantile a
 factorized) datasets, and measuring similarity between the k nearest neighbors for each cell in 
 original and aligned datasets. The Jaccard index is used to quantify similarity, and is the final
 metric averages across all cells.
-}
-\details{
+
 Note that for most datasets, the greater the chosen k, the greater the agreement in general. 
 There are several options for dimensionality reduction, with the default being 'NMF' as it is 
 expected to be most similar to iNMF. Although agreement can theoretically approach 1, in practice

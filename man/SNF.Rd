@@ -33,12 +33,11 @@ List of three values. First is names of cells identified in small cluster extrac
 Builds shared factor neighborhood graph representation of all cells in analysis. The first step 
 is to scale factor loadings across each cell for each factor. This corresponds to scaling (by L2 
 norm or similar) the columns of the H matrices, and allows us for subsequent comparison across 
-factors in a cell's loadings. The max factor for each cell is computed.
-}
-\details{
+factors in a cell's loadings. The max factor for each cell is computed. 
+
 The next step is to determine the knn_k nearest neighbors (within the same dataset) for each cell
 based on the cells' factor loadings. For each cell, we count the number of neighbors with max
-factor loadings for each factor.
+factor loadings for each factor. 
 
 This creates a shared space across datasets based on the max factor neighborhoods -- we now find 
 the nearest k2 neighbors and their corresponding distances across all datasets. We rescale these 

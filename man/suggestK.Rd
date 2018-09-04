@@ -41,9 +41,8 @@ This can be used to select appropriate value of k for factorization of particula
 Plots median (across cells in all datasets) K-L divergence from uniform for cell factor loadings
 as a function of k. This should increase as k increases but is expected to level off above 
 sufficiently high number of factors (k). This is because cells should have factor loadings which
-are not uniformly distributed when an appropriate number of factors is reached.
-}
-\details{
+are not uniformly distributed when an appropriate number of factors is reached. 
+
 Depending on number of cores used, this process can take 10-20 minutes.
 }
 \examples{

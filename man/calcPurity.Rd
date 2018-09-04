@@ -2,28 +2,37 @@
 % Please edit documentation in R/Analogizer.R
 \name{calcPurity}
 \alias{calcPurity}
-\title{Calculate purity for Analogizer clustering and external clustering (base truth).
-Should run quantileAlignSNF first.}
+\title{Calculate purity}
 \usage{
 calcPurity(object, classes.compare)
 }
 \arguments{
-\item{object}{analogizer object.}
+\item{object}{Analogizer object. Should run quantileAlignSNF before calling.}
 
-\item{classes.compare}{Clustering with which to compare (named vector)}
+\item{classes.compare}{Clustering with which to compare (named vector).}
 }
 \value{
-Purity value
+Purity value.
 }
 \description{
-Calculate purity for Analogizer clustering and external clustering (base truth).
-Should run quantileAlignSNF first.
+Calculates purity for Analogizer clustering and external clustering (true clusters/classes). 
+Purity can sometimes be a more useful metric when the clustering to be tested contains more 
+subgroups or clusters than the true clusters (or classes). Purity also ranges from 0 to 1,
+with a score of 1 representing a pure, or accurate, clustering.
 }
 \examples{
 \dontrun{
-Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-analogy = Analogizer(list(Y,Z))
-analogy =
+# analogizer object, factorization done
+analogy
+analogy <- quantileAlignSNF(analogy)
+# toy clusters 
+cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(analogy@raw.data[[1]]), replace = T)
+names(cluster1) <- colnames(analogy@raw.data[[1]])
+cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(analogy@raw.data[[2]]), replace = T)
+names(cluster2) <- colnames(analogy@raw.data[[2]])
+# get ARI for first clustering
+ari1 <- calcARI(analogy, cluster1)
+# get ARI for second clustering
+ari2 <- calcARI(analogy, cluster2)
 }
 }

@@ -45,8 +45,7 @@ Perform integrative non-negative matrix factorization to return factorized H, W,
 It optimizes the iNMF objective function using block coordinate descent (alternating non-negative 
 least squares), where the number of factors is set by k. TODO: include objective function 
 equation here in documentation (using deqn)
-}
-\details{
+
 For each dataset, this factorization produces an H matrix (cells by k), a V matrix (k by genes), 
 and a shared W matrix (k by genes). The H matrices represent the cell factor loadings.
 W is held consistent among all datasets, as it represents the shared components of the metagenes 

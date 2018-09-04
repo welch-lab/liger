@@ -41,9 +41,8 @@ available.}
 \description{
 Plots t-SNE coordinates of all cells by their loadings on each factor. Underneath it displays the
 most highly loading shared and dataset-specific genes, with the size of the marker indicating 
-the magnitude of the loading.
-}
-\details{
+the magnitude of the loading. 
+
 It is recommended to call this function into a PDF due to the large number of 
 plots produced.
 }

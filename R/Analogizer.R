@@ -74,6 +74,9 @@ setMethod(
   }
 )
 
+#######################################################################################
+#### Data Preprocessing
+
 #' Create an Analogizer object.
 #' 
 #' This function initializes an Analogizer object with the raw data passed in. It requires a list of 
@@ -82,6 +85,7 @@ setMethod(
 #'
 #' @param raw.data List of expression matrices (gene by cell). Should be named by dataset. 
 #' @param sparse.dcg Whether to convert raw data into sparse matrices (default: T).
+#' 
 #' @return Analogizer object with raw.data slot set.
 #' @export
 #' @examples
@@ -115,6 +119,7 @@ Analogizer <- function(raw.data, sparse.dcg = T) {
 #' This function normalizes data to account for total gene expression across a cell. 
 #'
 #' @param object Analogizer object. 
+#' 
 #' @return Analogizer object with norm.data slot set.
 #' @export
 #' @examples
@@ -126,7 +131,8 @@ Analogizer <- function(raw.data, sparse.dcg = T) {
 #' }
 
 normalize <- function(object) {
-  if (class(object@raw.data[[1]])[1] == "dgTMatrix" | class(object@raw.data[[1]])[1] == "dgCMatrix") {
+  if (class(object@raw.data[[1]])[1] == "dgTMatrix" | 
+      class(object@raw.data[[1]])[1] == "dgCMatrix") {
     object@norm.data <- lapply(object@raw.data, Matrix.column_norm)
   } else {
     object@norm.data <- lapply(object@raw.data, function(x) {
@@ -220,7 +226,6 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
   return(object)
 }
 
-
 #' Scale genes by root-mean-square across cells
 #' 
 #' This function scales normalized gene expression data after variable genes have been selected.
@@ -231,6 +236,7 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
 #' @param object Analogizer object. Should call normalize and selectGenes before calling.
 #' @param remove.missing Whether to remove cells from scale.data with no gene expression 
 #'   (default TRUE). 
+#'   
 #' @return Analogizer object with scale.data slot set.
 #' @export
 #' @examples
@@ -263,6 +269,7 @@ scaleNotCenter <- function(object, remove.missing = T) {
 #' Removes cells from scale.data with no expression in any selected genes.  
 #'
 #' @param object Analogizer object (scale.data must be set).
+#' 
 #' @return Analogizer object with modified scale.data (dataset names preserved).
 #' @export
 #' @examples 
@@ -290,288 +297,45 @@ removeMissingCells <- function(object) {
   return(object)
 }
 
-#' Perform t-SNE dimensionality reduction
-#' 
-#' Runs t-SNE on the normalized cell factors (or raw cell factors) to generate a 2D embedding for 
-#' visualization. Has option to run on subset of factors. Note that running multiple times will
-#' reset tsne.coords values. 
+#' Perform fast and memory-efficient data scaling operation on sparse matrix data.
 #'
-#' @param object Analogizer object. Should run quantileAlignSNF before calling with defaults.
-#' @param use.raw Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).
-#' @param dims.use Factors to use for computing tSNE embedding (default 1:ncol(H.norm)).
-#' @param perplexity Parameter to pass to Rtsne (expected number of neighbors) (default 30).
-#' @param rand.seed Random seed for reproducibility (default 42).
-#' @return Analogizer object with tsne.coords slot set. 
-#' @importFrom Rtsne Rtsne
+#' @param object Sparse matrix DGE.
+#' 
 #' @export
 #' @examples
 #' \dontrun{
-#'  # analogizer object
-#' analogy
-#' # generate H.norm by quantile aligning factor loadings
-#' analogy <- quantileAlignSNF(analogy)
-#' # get tsne.coords for normalized data
-#' analogy <- runTSNE(analogy)
-#' # get tsne.coords for raw factor loadings
-#' analogy <- runTSNE(analogy, use.raw = T)
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
 #' }
- 
-runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm),
-                    perplexity = 30, rand.seed = 42) {
-  set.seed(rand.seed)
-  if (use.raw) {
-    raw.data <- do.call(rbind, object@H)
-    # if H.norm not set yet
-    if (identical(dims.use, 1:0)) {
-      dims.use <- 1:ncol(raw.data)
-    }
-    object@tsne.coords <- Rtsne(raw.data[, dims.use], pca = F, check_duplicates = F, 
-                                perplexity = perplexity)$Y
-    rownames(object@tsne.coords) <- rownames(raw.data)
-  } else {
-    object@tsne.coords <- Rtsne(object@H.norm[, dims.use], pca = F, check_duplicates = F, 
-                                perplexity = perplexity)$Y
-    rownames(object@tsne.coords) <- rownames(object@H.norm)
+scaleNotCenter_sparse<-function (object, cells = NULL)
+{
+  if (is.null(cells)) {
+    cells = lapply(1:length(object@raw.data), function(i) {
+      1:ncol(object@raw.data[[i]])
+    })
+  }
+  object@scale.data = lapply(1:length(object@norm.data), function(i) {
+    scale(Sparse_transpose(object@norm.data[[i]][object@var.genes, ]), center = F,
+          scale = T)
+  })
+  names(object@scale.data) = names(object@norm.data)
+  for (i in 1:length(object@scale.data)) {
+    object@scale.data[[i]][is.na(object@scale.data[[i]])] = 0
+    rownames(object@scale.data[[i]]) = colnames(object@raw.data[[i]])
+    colnames(object@scale.data[[i]]) = object@var.genes
   }
   return(object)
 }
 
-#' Perform UMAP dimensionality reduction
-#' 
-#' Run UMAP on the normalized cell factors (or raw cell factors) to generate a 2D embedding for 
-#' visualization (or general dimensionality reduction). Has option to run on subset of factors. 
-#' Note that running multiple times will overwrite tsne.coords values. It is generally 
-#' recommended to use this method for dimensionality reduction with extremely large datasets.
-#' 
-#' Note that this method requires that the package reticulate is installed, along with the Python 
-#' package umap-learn. 
-#'
-#' @param object Analogizer object. Should run quantileAlignSNF before calling with defaults.
-#' @param use.raw Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).
-#' @param dims.use Factors to use for computing tSNE embedding (default 1:ncol(H.norm)).
-#' @param k Number of dimensions to reduce to (default 2).
-#' @param distance Mtric used to measure distance in the input space. A wide variety of metrics are 
-#'   already coded, and a user defined function can be passed as long as it has been JITd by numba.
-#'   (default "euclidean")
-#' @param n_neighbors Number of neighboring points used in local approximations of manifold 
-#'   structure. Larger values will result in more global structure being preserved at the loss of 
-#'   detailed local structure. In general this parameter should often be in the range 5 to 50, with 
-#'   a choice of 10 to 15 being a sensible default. (default 10)
-#' @param min_dist Controls how tightly the embedding is allowed compress points together. Larger 
-#'   values ensure embedded points are more evenly distributed, while smaller values allow the 
-#'   algorithm to optimise more accurately with regard to local structure. Sensible values are in 
-#'   the range 0.001 to 0.5, with 0.1 being a reasonable default. (default 0.1)
-#' @param rand.seed Random seed for reproducibility (default 42).
-#' @return Analogizer object with tsne.coords slot set. 
-#' @export
-#' @examples
-#' \dontrun{
-#'  # analogizer object with factorization complete
-#' analogy
-#' # generate H.norm by quantile aligning factor loadings
-#' analogy <- quantileAlignSNF(analogy)
-#' # get tsne.coords for normalized data
-#' analogy <- runUMAP(analogy)
-#' # get tsne.coords for raw factor loadings
-#' analogy <- runUMAP(analogy, use.raw = T)
-#' }
-
-runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2, 
-                    distance = "euclidean", n_neighbors = 10, min_dist = 0.1, rand.seed = 42) {
-  if (!require("reticulate", quietly = TRUE)) {
-    stop(paste("Package \"reticulate\" needed for this function to work. Please install it.\n",
-               "Also ensure Python package umap (PyPI name umap-learn) is installed in python",
-               "version accesible to reticulate."),
-         call. = FALSE)
-  }
-  set.seed(rand.seed)
-  reticulate::py_set_seed(rand.seed)
-  UMAP <- reticulate::import("umap")
-  umapper <- UMAP$UMAP(
-    n_components = as.integer(k), metric = distance,
-    n_neighbors = as.integer(n_neighbors), min_dist = min_dist
-  )
-  Rumap <- umapper$fit_transform
-  if (use.raw) {
-    raw.data <- do.call(rbind, object@H)
-    # if H.norm not set yet
-    if (identical(dims.use, 1:0)) {
-      dims.use <- 1:ncol(raw.data)
-    }
-    object@tsne.coords <- Rumap(raw.data[, dims.use])
-    rownames(object@tsne.coords) <- rownames(raw.data)
-  } else {
-    object@tsne.coords <- Rumap(object@H.norm[, dims.use])
-    rownames(object@tsne.coords) <- rownames(object@H.norm)
-  }
-  return(object)
-}
-
-#' Plot t-SNE coordinates of cells across datasets
-#' 
-#' Generates two plots of all cells across datasets, one colored by dataset and one colored by 
-#' cluster. These are useful for visually examining the alignment and cluster distributions,
-#' respectively. If clusters have not been set yet (quantileAlignSNF not called), will plot by
-#' single color for second plot. It is also possible to pass in another clustering (as long as 
-#' names match those of cells). 
-#'
-#' @param object Analogizer object. Should call runTSNE or runUMAP before calling. 
-#' @param clusters Another clustering to use for coloring second plot (must have same names as 
-#'   clusters slot) (default NULL).
-#' @param title Plot titles (list or vector of length 2) (default NULL).
-#' @param pt.size Controls size of points representing cells (default 0.3).
-#' @param text.size Controls size of plot text (cluster center labels) (default 3).
-#' @param do.shuffle Randomly shuffle points so that points from same dataset are not plotted 
-#'   one after the other (default TRUE).
-#' @param axis.labels Vector of two strings to use as x and y labels respectively.
-#' @param do.legend Display legend on plots (default TRUE).
-#' @param legend.size Size of legend on plots (default 5).
-#' @param return.plots Return ggplot plot objects instead of printing directly (default FALSE).
-#' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to 
-#'   console).
-#' @export
-#' @importFrom ggplot2 ggplot geom_point aes
-#' @importFrom dplyr %>%
-#' @examples
-#' \dontrun{
-#'  # analogizer object with aligned factor loadings
-#' analogy
-#' # get tsne.coords for normalized data
-#' analogy <- runTSNE(analogy)
-#' # plot to console
-#' plotByDatasetAndCluster(analogy)
-#' # return list of plots 
-#' plots <- plotByDatasetAndCluster(analogy, return.plots = T)
-#' }
-
-plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
-                                    text.size = 3, do.shuffle = T, axis.labels = NULL,
-                                    do.legend = T, legend.size = 5, return.plots = F) {
-  tsne_df <- data.frame(object@tsne.coords)
-  colnames(tsne_df) <- c("tsne1", "tsne2")
-  tsne_df$Dataset <- unlist(lapply(1:length(object@H), function(x) {
-    rep(names(object@H)[x], nrow(object@H[[x]]))
-  }))
-  if (is.null(clusters)) {
-    # if clusters have not been set yet
-    if (length(object@clusters) == 0) {
-      clusters <- rep(1, nrow(object@tsne.coords))
-      names(clusters) <- c_names <- rownames(object@tsne.coords)
-    } else {
-      clusters <- object@clusters
-      c_names <- names(object@clusters)
-    }
-  }
-  tsne_df$Cluster <- clusters[c_names]
-  if (do.shuffle) {
-    idx <- sample(1:nrow(tsne_df))
-    tsne_df <- tsne_df[idx, ]
-  }
-  
-  p1 <- ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Dataset)) + 
-    geom_point(size = pt.size) +
-    guides(color = guide_legend(override.aes = list(size = legend.size)))
-  
-  centers <- tsne_df %>% dplyr::group_by(Cluster) %>% dplyr::summarize(
-    tsne1 = median(x = tsne1),
-    tsne2 = median(x = tsne2)
-  )
-  p2 <- ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(size = pt.size) +
-    geom_text(data = centers, mapping = aes(label = Cluster), colour = "black", size = text.size) +
-    guides(color = guide_legend(override.aes = list(size = legend.size)))
-  
-  if (!is.null(title)) {
-    p1 <- p1 + ggtitle(title[1])
-    p2 <- p2 + ggtitle(title[2])
-  }
-  if (!is.null(axis.labels)) {
-    p1 <- p1 + xlab(axis.labels[1]) + ylab(axis.labels[2])
-    p2 <- p2 + xlab(axis.labels[1]) + ylab(axis.labels[2])
-  }
-  if (!do.legend) {
-    p1 <- p1 + theme(legend.position = "none")
-    p2 <- p2 + theme(legend.position = "none")
-  }
-  if (return.plots) {
-    return(list(p1, p2))
-  } else {
-    print(p1)
-    print(p2)
-  }
-}
-
-#' Plot scatter plots of unaligned and aligned factor loadings
-#'
-#' Generates scatter plots of factor loadings vs cells for both unaligned and aligned 
-#' (normalized) factor loadings. This allows for easier visualization of the changes made to the 
-#' factor loadings during the alignment step. Lists a subset of highly loading genes for each factor.
-#' Also provides an option to plot t-SNE coordinates of the cells colored by aligned factor loadings. 
-#' 
-#' It is recommended to call this function into a PDF due to the large number of 
-#' plots produced.
-#' 
-#' @param object Analogizer object. Should call quantileAlignSNF before calling.
-#' @param num.genes Number of genes to display for each factor (default 10).
-#' @param cells.highlight Names of specific cells to highlight in plot (black) (default NULL).
-#' @param plot.tsne Plot t-SNE coordinates for each factor (default FALSE).
-#' @return Plots to console (1-2 pages per factor)
-#' @export
-#' @examples
-#' \dontrun{
-#'  # analogizer object with factorization complete 
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
-#' # get tsne.coords for normalized data
-#' analogy <- runTSNE(analogy)
-#' # factor plots into pdf file
-#' pdf("plot_factors.pdf")
-#' plotFactors(analogy)
-#' dev.off()
-#' }
-
-plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsne = F) {
-  k <- ncol(object@H.norm)
-  pb <- txtProgressBar(min = 0, max = k, style = 3)
-  
-  W <- t(object@W)
-  rownames(W) <- colnames(object@scale.data[[1]])
-  Hs_norm <- object@H.norm
-  for (i in 1:k) {
-    par(mfrow = c(2, 1))
-    top_genes.W <- rownames(W)[order(W[, i], decreasing = T)[1:num.genes]]
-    top_genes.W.string <- paste0(top_genes.W, collapse = ", ")
-    factor_textstring <- paste0("Factor", i)
-    
-    plot_title1 <- paste(factor_textstring, "\n", top_genes.W.string, "\n")
-    cols <- rep("gray", times = nrow(Hs_norm))
-    names(cols) <- rownames(Hs_norm)
-    cols.use <- rainbow(length(object@H))
-    
-    for (cl in 1:length(object@H)) {
-      cols[rownames(object@H[[cl]])] <- rep(cols.use[cl], times = nrow(object@H[[cl]]))
-    }
-    if (!is.null(cells.highlight)) {
-      cols[cells.highlight] <- rep("black", times = length(cells.highlight))
-    }
-    plot(1:nrow(Hs_norm), do.call(rbind, object@H)[, i],
-         cex = 0.2, pch = 20,
-         col = cols, main = plot_title1, xlab = "Cell", ylab = "Raw H Score"
-    )
-    legend("top", names(object@H), pch = 20, col = cols.use, horiz = T, cex = 0.75)
-    plot(1:nrow(Hs_norm), object@H.norm[, i],
-         pch = 20, cex = 0.2,
-         col = cols, xlab = "Cell", ylab = "H_norm Score"
-    )
-    if (plot.tsne) {
-      par(mfrow = c(1, 1))
-      fplot(object@tsne.coords, object@H.norm[, i], title = paste0("Factor ", i))
-    }
-    setTxtProgressBar(pb, i)
-  }
-}
+#######################################################################################
+#### Factorization
 
 #' Perform iNMF on scaled datasets
 #' 
+#' @description
 #' Perform integrative non-negative matrix factorization to return factorized H, W, and V matrices.
 #' It optimizes the iNMF objective function using block coordinate descent (alternating non-negative 
 #' least squares), where the number of factors is set by k. TODO: include objective function 
@@ -600,6 +364,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' @param W.init Initial values to use for W matrix (default NULL)
 #' @param V.init Initial values to use for V matrices (default NULL)
 #' @param rand.seed Random seed to allow reproducible results (default 1).
+#' 
 #' @return Analogizer object with H, W, and V slots set. 
 #' @export
 #' @examples
@@ -720,7 +485,7 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
     run_stats[i, 1] <- as.double(difftime(end_time, start_time, units = "secs"))
     run_stats[i, 2] <- iters
     cat("\nConverged in", run_stats[i, 1], "seconds,", iters, "iterations. Objective:", obj, "\n")
-  }
+    }
   cat("\nBest objective:", best_obj, "\n")
   object@H <- H_m
   object@H <- lapply(1:length(object@scale.data), function(i) {
@@ -750,6 +515,7 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
 #'   (default 1e-4).
 #' @param max.iters Maximum number of block coordinate descent iterations to perform (default 100).
 #' @param rand.seed Random seed to set. Only relevant if k.new > k. (default 1)
+#' 
 #' @return Analogizer object with H, W, and V slots reset.
 #' @export
 #' @importFrom plyr rbind.fill.matrix
@@ -864,6 +630,7 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
 #' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
 #'   (default 1e-4).
 #' @param max.iters Maximum number of block coordinate descent iterations to perform (default 100).
+#' 
 #' @return Analogizer object with H, W, and V slots reset. Raw.data, norm.data, and scale.data will
 #'   also be updated to include the new data.
 #' @export
@@ -977,6 +744,7 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
 #'   (default 1e-4).
 #' @param max.iters Maximum number of block coordinate descent iterations to perform (default 100).
 #' @param datasets.scale Names of datasets to rescale after subsetting (default NULL).
+#' 
 #' @return Analogizer object with H, W, and V slots reset. Scale.data 
 #'   (if desired) will also be updated to reflect the subset.
 #' @export
@@ -1048,6 +816,7 @@ optimizeSubset <- function(object, cell.subset = NULL, cluster.subset = NULL, la
 #' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
 #' @param max.iters Maximum number of block coordinate descent iterations to perform (default 100).
 #' @param rand.seed Random seed for reproducibility (default 1).
+#' 
 #' @return Analogizer object with optimized factorization values
 #' @export
 #' @examples
@@ -1100,6 +869,7 @@ optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100
 #' @param gen.new Do not use optimizeNewLambda in factorizations. Recommended to set TRUE 
 #'                when looking at only a small range of lambdas (ie. 1:7) (default FALSE)
 #' @param return.results Return matrix of alignment and agreement values (default FALSE)
+#' 
 #' @return Matrix of results if desired (first column is test lambda values; second column
 #'   is alignment; third and fourth columns are agreement before and after quantile alignment).
 #'   Plots alignment vs. lambda and agreement vs. lambda to console. 
@@ -1187,6 +957,7 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 
 #' Visually suggest appropiate k value
 #' 
+#' @description 
 #' This can be used to select appropriate value of k for factorization of particular dataset.
 #' Plots median (across cells in all datasets) K-L divergence from uniform for cell factor loadings
 #' as a function of k. This should increase as k increases but is expected to level off above 
@@ -1209,6 +980,7 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 #' @param return.results Return matrix of K-L divergences (length(k.test) by n_cells + 1)
 #'   The first column is the k.test values. All subsequent columns contain K-L divergence for a 
 #'   cell across different k values. 
+#'   
 #' @return Matrix of results if desired. Plots K-L divergence vs. k to console.
 #' @importFrom doParallel registerDoParallel
 #' @importFrom foreach foreach
@@ -1284,869 +1056,9 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
   }
 }
 
-#' Find shared and dataset-specific markers 
-#' 
-#' Applies various filters to genes on the shared (W) and dataset-specific (V) components of the 
-#' factorization, before selecting those which load most significantly on each factor (in a shared 
-#' or dataset-specific way).
-#'
-#' @param object Analogizer object. Should call optimizeALS before calling.
-#' @param dataset1 Name of first dataset (default first dataset by order)
-#' @param dataset2 Name of second dataset (default second dataset by order)
-#' @param factor.share.thresh Use only factors with a dataset specificity less than or equalt to 
-#'   threshold (default 10).
-#' @param dataset.specificity Pre-calculated dataset specificity if available. Will calculate if not
-#'   available.
-#' @param log.fc.thresh Lower log-fold change threshold for differential expression in markers
-#'   (default 1).
-#' @param umi.thresh Lower UMI threshold for markers (default 30).
-#' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
-#' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
-#'   (default 0.05).
-#' @param num.genes Max number of genes to report for each dataset (default 30).
-#' @param print.genes Print ordered markers passing logfc, umi and frac thresholds (default FALSE).
-#' @return List of shared and specific factors. First three elements are dataframes of dataset1-
-#'   specific, shared, and dataset2-specific markers. Last two elements are tables indicating the 
-#'   number of factors in which marker appears. 
-#' @export
-#' @examples
-#' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' markers <- getFactorMarkers(analogy, num.genes = 10)
-#' # look at shared markers 
-#' head(markers[[2]])
-#' }
 
-getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.share.thresh = 10,
-                             dataset.specificity = NULL, log.fc.thresh = 1, umi.thresh = 30,
-                             frac.thresh = 0, pval.thresh = 0.05, num.genes = 30, print.genes = F) {
-  if (is.null(dataset1) | is.null(dataset2)) {
-    dataset1 <- names(object@H)[1]
-    dataset2 <- names(object@H)[2]
-  }
-  if (is.null(num.genes)) {
-    num.genes <- length(object@var.genes)
-  }
-  if (is.null(dataset.specificity)) {
-    dataset.specificity <- calcDatasetSpecificity(object, dataset1 = dataset1, 
-                                                  dataset2 = dataset2, do.plot = F)
-  }
-  factors.use <- which(abs(dataset.specificity[[3]]) <= factor.share.thresh)
-  
-  if (length(factors.use) < 2) {
-    print(paste(
-      "Warning: only", length(factors.use),
-      "factors passed the dataset specificity threshold."
-    ))
-  }
-  
-  Hs_scaled <- lapply(object@H, function(x) {
-    scale(x, scale = T, center = T)
-  })
-  labels <- list()
-  for (i in 1:length(Hs_scaled)) {
-    labels[[i]] <- factors.use[as.factor(apply(Hs_scaled[[i]][, factors.use], 1, which.max))]
-  }
-  names(labels) <- names(object@H)
-  
-  V1_matrices <- list()
-  V2_matrices <- list()
-  W_matrices <- list()
-  for (j in 1:length(factors.use)) {
-    i <- factors.use[j]
-    
-    W <- t(object@W)
-    V1 <- t(object@V[[dataset1]])
-    V2 <- t(object@V[[dataset2]])
-    rownames(W) <- rownames(V1) <- rownames(V2) <- object@var.genes
-    # if not max factor for any cell in either dataset
-    if (sum(labels[[dataset1]] == i) <= 1 | sum(labels[[dataset2]] == i) <= 1) {
-      print(paste("Warning: factor", i, "did not appear as max in any cell in either dataset"))
-      next
-    }
-    # filter genes by gene_count and cell_frac thresholds
-    gene_info <- list()
-    for (dset in c(dataset1, dataset2)) {
-      gene_info[[dset]]$gene_counts <- rowSums(object@raw.data[[dset]][
-        object@var.genes,
-        labels[[dset]] == i
-        ])
-      gene_info[[dset]]$cell_fracs <- rowSums(object@raw.data[[dset]][object@var.genes,
-                                                                      labels[[dset]] == i] > 0) / 
-        sum(labels[[dset]] == i)
-      gene_info[[dset]]$norm_counts <- object@norm.data[[dset]][object@var.genes, 
-                                                                labels[[dset]] == i]
-      gene_info[[dset]]$mean <- rowMeans(object@norm.data[[dset]][
-        object@var.genes,
-        labels[[dset]] == i
-        ])
-      names(gene_info[[dset]]$gene_counts) <- names(gene_info[[dset]]$mean) <- object@var.genes
-      rownames(gene_info[[dset]]$norm_counts) <- object@var.genes
-    }
-    log2fc <- log2(gene_info[[dataset1]]$mean / gene_info[[dataset2]]$mean)
-    initial_filtered <- object@var.genes[(gene_info[[dataset1]]$gene_counts > umi.thresh |
-                                            gene_info[[dataset2]]$gene_counts > umi.thresh) &
-                                           (gene_info[[dataset1]]$cell_fracs > frac.thresh |
-                                              gene_info[[dataset2]]$cell_fracs > frac.thresh)]
-    filtered_genes_V1 <- initial_filtered[log2fc[initial_filtered] > log.fc.thresh]
-    filtered_genes_V2 <- initial_filtered[(-1 * log2fc)[initial_filtered] > log.fc.thresh]
-    
-    W <- pmin(W + V1, W + V2)
-    V1 <- V1[filtered_genes_V1, ]
-    V2 <- V2[filtered_genes_V2, ]
-    
-    if (length(filtered_genes_V1) == 0) {
-      top_genes_V1 <- ""
-    } else {
-      top_genes_V1 <- row.names(V1)[ order(V1[, i], decreasing = T)[1:num.genes] ]
-      top_genes_V1 <- top_genes_V1[!is.na(top_genes_V1)]
-      top_genes_V1 <- top_genes_V1[which(V1[top_genes_V1, i] > 0)]
-    }
-    if (length(filtered_genes_V2) == 0) {
-      top_genes_V2 <- ""
-    } else {
-      top_genes_V2 <- row.names(V2)[ order(V2[, i], decreasing = T)[1:num.genes] ]
-      top_genes_V2 <- top_genes_V2[!is.na(top_genes_V2)]
-      top_genes_V2 <- top_genes_V2[which(V2[top_genes_V2, i] > 0)]
-    }
-    top_genes_W <- row.names(W)[ order(W[, i], decreasing = T)[1:num.genes] ]
-    top_genes_W <- top_genes_W[!is.na(top_genes_W)]
-    top_genes_W <- top_genes_W[which(W[top_genes_W, i] > 0)]
-    
-    if (print.genes) {
-      print(paste("Factor", i))
-      print(top_genes_V1)
-      print(top_genes_W)
-      print(top_genes_V2)
-    }
-    
-    pvals <- list() # order is V1, V2, W
-    top_genes <- list(top_genes_V1, top_genes_V2, top_genes_W)
-    for (k in 1:length(top_genes)) {
-      pvals[[k]] <- sapply(top_genes[[k]], function(x) {
-        suppressWarnings(wilcox.test(
-          as.numeric(gene_info[[dataset1]]$norm_counts[x, ]),
-          as.numeric(gene_info[[dataset2]]$norm_counts[x, ])
-        )$p.value)
-      })
-    }
-    # bind values in matrices
-    V1_matrices[[j]] <- Reduce(cbind, list(
-      rep(i, length(top_genes_V1)), top_genes_V1,
-      gene_info[[dataset1]]$gene_counts[top_genes_V1],
-      gene_info[[dataset2]]$gene_counts[top_genes_V1],
-      gene_info[[dataset1]]$cell_fracs[top_genes_V1],
-      gene_info[[dataset2]]$cell_fracs[top_genes_V1],
-      log2fc[top_genes_V1], pvals[[1]]
-    ))
-    V2_matrices[[j]] <- Reduce(cbind, list(
-      rep(i, length(top_genes_V2)), top_genes_V2,
-      gene_info[[dataset1]]$gene_counts[top_genes_V2],
-      gene_info[[dataset2]]$gene_counts[top_genes_V2],
-      gene_info[[dataset1]]$cell_fracs[top_genes_V2],
-      gene_info[[dataset2]]$cell_fracs[top_genes_V2],
-      log2fc[top_genes_V2], pvals[[2]]
-    ))
-    W_matrices[[j]] <- Reduce(cbind, list(
-      rep(i, length(top_genes_W)), top_genes_W,
-      gene_info[[dataset1]]$gene_counts[top_genes_W],
-      gene_info[[dataset2]]$gene_counts[top_genes_W],
-      gene_info[[dataset1]]$cell_fracs[top_genes_W],
-      gene_info[[dataset2]]$cell_fracs[top_genes_W],
-      log2fc[top_genes_W], pvals[[3]]
-    ))
-  }
-  V1_genes <- data.frame(Reduce(rbind, V1_matrices), stringsAsFactors = F)
-  V2_genes <- data.frame(Reduce(rbind, V2_matrices), stringsAsFactors = F)
-  W_genes <- data.frame(Reduce(rbind, W_matrices), stringsAsFactors = F)
-  df_cols <- c("factor_num", "gene", "counts1", "counts2", "fracs1", "fracs2", "log2fc", "p_value")
-  output_list <- list(V1_genes, W_genes, V2_genes)
-  output_list <- lapply(output_list, function(df) {
-    colnames(df) <- df_cols
-    df <- transform(df,
-                    factor_num = as.numeric(factor_num), gene = as.character(gene),
-                    counts1 = as.numeric(counts1), counts2 = as.numeric(counts2),
-                    fracs1 = as.numeric(fracs1), fracs2 = as.numeric(fracs2),
-                    log2fc = as.numeric(log2fc), p_value = as.numeric(p_value)
-    )
-    df[which(df$p_value < pval.thresh), ]
-  })
-  names(output_list) <- c(dataset1, "shared", dataset2)
-  output_list[["num_factors_V1"]] <- table(output_list[[dataset1]]$gene)
-  output_list[["num_factors_V2"]] <- table(output_list[[dataset2]]$gene)
-  return(output_list)
-}
-
-#' Generate word clouds and t-SNE plots
-#' 
-#' Plots t-SNE coordinates of all cells by their loadings on each factor. Underneath it displays the
-#' most highly loading shared and dataset-specific genes, with the size of the marker indicating 
-#' the magnitude of the loading. 
-#' 
-#' It is recommended to call this function into a PDF due to the large number of 
-#' plots produced.
-#'
-#' @param object Analogizer object. Should call runTSNE before calling.
-#' @param dataset1 Name of first dataset (by default takes first two datasets for dataset1 and 2)
-#' @param dataset2 Name of second dataset
-#' @param num.genes Number of genes to show in word clouds (default 30).
-#' @param min.size Size of smallest gene symbol in word cloud (default 1).
-#' @param max.size Size of largest gene symbol in word cloud (default 4).
-#' @param factor.share.thresh Use only factors with a dataset specificity less than or equalt to 
-#'   threshold (default 10).
-#' @param dataset.specificity Pre-calculated dataset specificity if available. Will calculate if not
-#'   available.
-#' @param log.fc.thresh Lower log-fold change threshold for differential expression in markers
-#'   (default 1).
-#' @param umi.thresh Lower UMI threshold for markers (default 30).
-#' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
-#' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
-#'   (default 0.05).
-#' @importFrom ggrepel geom_text_repel
-#' @importFrom grid roundrectGrob
-#' @importFrom grid gpar
-#' @export
-#' @examples
-#' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
-#' analogy <- runTSNE(analogy)
-#' pdf('word_clouds.pdf')
-#' plotWordClouds(analogy, num.genes = 20)
-#' dev.off()
-#' }
-
-plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1, 
-                           max.size = 4, factor.share.thresh = 10, log.fc.thresh = 1,
-                           umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05) {
-  if (is.null(dataset1) | is.null(dataset2)) {
-    dataset1 <- names(object@H)[1]
-    dataset2 <- names(object@H)[2]
-  }
-  
-  H_aligned <- object@H.norm
-  W <- t(object@W)
-  V1 <- t(object@V[[dataset1]])
-  V2 <- t(object@V[[dataset2]])
-  W <- pmin(W + V1, W + V2)
-  
-  dataset.specificity <- calcDatasetSpecificity(object, dataset1 = dataset1, dataset2 = dataset2)
-  factors.use <- which(abs(dataset.specificity[[3]]) <= factor.share.thresh)
-  
-  markers <- getFactorMarkers(object,
-                              factor.share.thresh = factor.share.thresh,
-                              num.genes = num.genes, log.fc.thresh = log.fc.thresh,
-                              umi.thresh = umi.thresh, frac.thresh = frac.thresh,
-                              pval.thresh = pval.thresh,
-                              dataset.specificity = dataset.specificity
-  )
-  
-  rownames(W) <- rownames(V1) <- rownames(V2) <- object@var.genes
-  loadings_list <- list(V1, W, V2)
-  names_list <- list(dataset1, "Shared", dataset2)
-  tsne_coords <- object@tsne.coords
-  pb <- txtProgressBar(min = 0, max = length(factors.use), style = 3)
-  for (i in factors.use) {
-    tsne_df <- data.frame(H_aligned[, i], tsne_coords)
-    factorlab <- paste("Factor", i, sep = "")
-    colnames(tsne_df) <- c(factorlab, "tSNE1", "tSNE2")
-    factor_ds <- paste("Factor", i, "Dataset Specificity:", dataset.specificity[[3]][i])
-    p1 <- ggplot(tsne_df, aes_string(x = "tSNE1", y = "tSNE2", color = factorlab)) + geom_point() +
-      scale_color_gradient(low = "yellow", high = "red") + ggtitle(label = factor_ds)
-    
-    top_genes_V1 <- markers[[1]]$gene[markers[[1]]$factor_num == i]
-    top_genes_W <- markers[[2]]$gene[markers[[2]]$factor_num == i]
-    top_genes_V2 <- markers[[3]]$gene[markers[[3]]$factor_num == i]
-    
-    top_genes_list <- list(top_genes_V1, top_genes_W, top_genes_V2)
-    plot_list <- lapply(seq_along(top_genes_list), function(x) {
-      top_genes <- top_genes_list[[x]]
-      gene_df <- data.frame(
-        genes = top_genes,
-        loadings = loadings_list[[x]][top_genes, i]
-      )
-      if (length(top_genes) == 0) {
-        gene_df <- data.frame(genes = c("no genes"), loadings = c(1))
-      }
-      out_plot <- ggplot(gene_df, aes(x = 1, y = 1, size = loadings, label = genes)) +
-        geom_text_repel(force = 100, segment.color = NA) +
-        scale_size(range = c(min.size, max.size), guide = FALSE) +
-        scale_y_continuous(breaks = NULL) +
-        scale_x_continuous(breaks = NULL) +
-        labs(x = "", y = "") + ggtitle(label = names_list[[x]]) + coord_fixed()
-      return(out_plot)
-    })
-    
-    p2 <- (plot_grid(plotlist = plot_list, align = "hv", nrow = 1)
-           + draw_grob(roundrectGrob(
-             x = 0.33, y = 0.5, width = 0.67, height = 0.70,
-             gp = gpar(fill = "khaki1", col = "Black", alpha = 0.5, lwd = 2)
-           ))
-           + draw_grob(roundrectGrob(
-             x = 0.67, y = 0.5, width = 0.67, height = 0.70,
-             gp = gpar(fill = "indianred1", col = "Black", alpha = 0.5, lwd = 2)
-           )))
-    print(plot_grid(p1, p2, nrow = 2, align = "h"))
-    setTxtProgressBar(pb, i)
-  }
-}
-
-#' Calculate a dataset-specificity score for each factor 
-#'
-#' This score represents the relative magnitude of the dataset-specific components of each factor's
-#' gene loadings compared to the shared components for two datasets. First, for each dataset we 
-#' calculate the norm of the sum of each factor's shared loadings (W) and dataset-specific loadings 
-#' (V). We then determine the ratio of these two values and subtract from 1... TODO: finish 
-#' description.
-#'
-#' @param object Analogizer object. Should run optimizeALS before calling.
-#' @param dataset1 Name of first dataset (by default takes first two datasets for dataset1 and 2)
-#' @param dataset2 Name of second dataset
-#' @param do.plot Display barplot of dataset specificity scores (by factor) (default TRUE).
-#' @return List containing three elements. First two elements are the norm of each metagene factor 
-#' for each dataset. Last element is the vector of dataset specificity scores.
-#' @export
-#' @examples
-#' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
-#' dataset_spec <- calcDatasetSpecificity(analogy, do.plot = F)
-#' }
-
-calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.plot = T) {
-  if (is.null(dataset1) | is.null(dataset2)) {
-    dataset1 <- names(object@H)[1]
-    dataset2 <- names(object@H)[2]
-  }
-  k <- ncol(object@H[[1]])
-  pct1 <- rep(0, k)
-  pct2 <- rep(0, k)
-  for (i in 1:k) {
-    pct1[i] <- norm(as.matrix(object@V[[dataset1]][i, ] + object@W[i, ]), "F")
-    # norm(object@H[[1]][,i] %*% t(object@W[i,] + object@V[[1]][i,]),"F")
-    pct2[i] <- norm(as.matrix(object@V[[dataset2]][i, ] + object@W[i, ]), "F")
-    # norm(object@H[[2]][,i] %*% t(object@W[i,] + object@V[[2]][i,]),"F")
-  }
-  # pct1 = pct1/sum(pct1)
-  # pct2 = pct2/sum(pct2)
-  if (do.plot) {
-    barplot(100 * (1 - (pct1 / pct2)),
-            xlab = "Factor",
-            ylab = "Percent Specificity", main = "Dataset Specificity of Factors",
-            names.arg = 1:k, cex.names = 0.75, mgp = c(2, 0.5, 0)
-    ) # or possibly abs(pct1-pct2)
-  }
-  return(list(pct1, pct2, 100 * (1 - (pct1 / pct2))))
-}
-
-#' Calculate agreement metric
-#' 
-#' This metric quantifies how much the factorization and alignment distorts the geometry of the 
-#' original datasets. The greater the agreement, the less distortion of geometry there is. This is
-#' calculated by performing dimensionality reduction on the original and quantile aligned (or just
-#' factorized) datasets, and measuring similarity between the k nearest neighbors for each cell in 
-#' original and aligned datasets. The Jaccard index is used to quantify similarity, and is the final
-#' metric averages across all cells.
-#' 
-#' Note that for most datasets, the greater the chosen k, the greater the agreement in general. 
-#' There are several options for dimensionality reduction, with the default being 'NMF' as it is 
-#' expected to be most similar to iNMF. Although agreement can theoretically approach 1, in practice
-#' it is usually no higher than 0.2-0.3 (particularly for non-deterministic approaches like NMF).
-#'
-#' @param object Analogizer object. Should call quantileAlignSNF before calling.
-#' @param dr.method Dimensionality reduction method to use for assessing pre-alignment geometry 
-#'   (either "PCA", "NMF", or "ICA"). (default "NMF")
-#' @param ndims Number of dimensions to use in dimensionality reduction (recommended to use the 
-#'   same as number of factors) (default 40).
-#' @param k Number of nearest neighbors to use in calculating Jaccard index (default 15). 
-#' @param use.aligned Whether to use quantile aligned or unaligned cell factor loadings (default 
-#'   TRUE).
-#' @param rand.seed Random seed for reproducibility (default 42).
-#' @param by.dataset Return agreement calculated for each dataset (default FALSE).
-#' @return Agreement metric (or vector of agreement per dataset).
-#' @importFrom FNN get.knn
-#' @importFrom NNLM nnmf
-#' @importFrom ica icafast
-#' @importFrom irlba prcomp_irlba
-#' @export
-#' @examples
-#' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
-#' agreement <- calcAgreement(analogy, dr.method = "NMF")
-#' }
-
-calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.aligned = TRUE,
-                          rand.seed = 42, by.dataset = FALSE) {
-  print(paste("Reducing dimensionality using", dr.method))
-  set.seed(rand.seed)
-  dr <- list()
-  if (dr.method == "NMF") {
-    dr <- lapply(object@scale.data, function(x) {
-      nnmf(x, k = ndims)$W
-    })
-  }
-  else if (dr.method == "ICA") {
-    dr <- lapply(object@scale.data, function(x) {
-      icafast(x, nc = ndims)$S
-    })
-  } else {
-    dr <- lapply(object@scale.data, function(x) {
-      suppressWarnings(prcomp_irlba(t(x),
-                                    n = ndims,
-                                    scale. = (colSums(x) > 0), center = F
-      )$rotation)
-    })
-    for (i in 1:length(dr)) {
-      rownames(dr[[i]]) <- rownames(object@scale.data[[i]])
-    }
-  }
-  ns <- sapply(object@scale.data, nrow)
-  n <- sum(ns)
-  jaccard_inds <- c()
-  distorts <- c()
-  
-  for (i in 1:length(dr)) {
-    jaccard_inds_i <- c()
-    if (use.aligned) {
-      original <- object@H.norm[rownames(dr[[i]]), ]
-    } else {
-      original <- object@H[[i]]
-    }
-    fnn.1 <- get.knn(dr[[i]], k = k)
-    fnn.2 <- get.knn(original, k = k)
-    jaccard_inds_i <- c(jaccard_inds_i, sapply(1:ns[i], function(i) {
-      intersect <- intersect(fnn.1$nn.index[i, ], fnn.2$nn.index[i, ])
-      union <- union(fnn.1$nn.index[i, ], fnn.2$nn.index[i, ])
-      length(intersect) / length(union)
-    }))
-    jaccard_inds_i <- jaccard_inds_i[is.finite(jaccard_inds_i)]
-    jaccard_inds <- c(jaccard_inds, jaccard_inds_i)
-    
-    distorts <- c(distorts, mean(jaccard_inds_i))
-  }
-  if (by.dataset) {
-    return(distorts)
-  }
-  return(mean(jaccard_inds))
-}
-
-#' Calculate alignment metric 
-#' 
-#' This metric quantifies how well-aligned two or more datasets are. Alignment is defined as in the 
-#' documentation for Seurat. We randomly downsample all datasets to have as many cells as the
-#' smallest one. We construct a nearest-neighbor graph and calculate for each cell how many of its
-#' neighbors are from the same dataset. We average across all cells and compare to the expected 
-#' value for perfectly mixed datasets, and scale the value from 0 to 1. Note that in practice, 
-#' alignment can be greater than 1 occasionally. 
-#'
-#' @param object Analogizer object. Should call quantileAlignSNF before calling.
-#' @param k Number of nearest neighbors to use in calculating alignment. By default, this will be 
-#'   floor(0.01 * total number of cells), with a lower bound of 10 in all cases except where the 
-#'   total number of sampled cells is less than 10. 
-#' @param rand.seed Random seed for reproducibility (default 1).
-#' @param cells.use Vector of cells across all datasets to use in calculating alignment
-#' @param clusters.use Names of clusters to use in calculating alignment
-#' @param by.dataset Return alignment calculated for each dataset (default FALSE).
-#' @return Alignment metric.
-#' @importFrom FNN get.knn
-#' @export
-#' @examples
-#' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
-#' alignment <- calcAlignment(analogy)
-#' }
-
-calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL,
-                          clusters.use = NULL, by.dataset = F) {
-  if (is.null(cells.use)) {
-    cells.use <- rownames(object@H.norm)
-  }
-  if (!is.null(clusters.use)) {
-    cells.use <- names(object@clusters)[which(object@clusters %in% clusters.use)]
-  }
-  nmf_factors <- object@H.norm[cells.use, ]
-  num_cells <- length(cells.use)
-  func_H <- lapply(seq_along(object@H), function(x) {
-    cells.overlap <- intersect(cells.use, rownames(object@H[[x]]))
-    if (length(cells.overlap) > 0) {
-      object@H[[x]][cells.overlap, ]
-    } else {
-      warning(paste0("Selected subset eliminates dataset ", names(object@H)[x]),
-              immediate. = T
-      )
-      return(NULL)
-    }
-  })
-  func_H <- func_H[!sapply(func_H, is.null)]
-  num_factors <- ncol(object@H.norm)
-  N <- length(func_H)
-  if (N == 1) {
-    warning("Alignment null for single dataset", immediate. = T)
-  }
-  set.seed(rand.seed)
-  min_cells <- min(sapply(func_H, function(x) {
-    nrow(x)
-  }))
-  sampled_cells <- unlist(lapply(1:N, function(x) {
-    sample(rownames(func_H[[x]]), min_cells)
-  }))
-  max_k <- length(sampled_cells) - 1
-  if (is.null(k)) {
-    k <- min(max(floor(0.01 * num_cells), 10), max_k)
-  } else if (k > max_k) {
-    stop(paste0("Please select k <=", max_k))
-  }
-  knn_graph <- get.knn(nmf_factors[sampled_cells, 1:num_factors], k)
-  dataset <- unlist(sapply(1:N, function(x) {
-    rep(names(object@H)[x], nrow(func_H[[x]]))
-  }))
-  names(dataset) <- cells.use
-  dataset <- dataset[sampled_cells]
-  num_sampled <- N * min_cells
-  num_same_dataset <- rep(k, num_sampled)
-  
-  for (i in 1:num_sampled) {
-    inds <- knn_graph$nn.index[i, ]
-    num_same_dataset[i] <- sum(dataset[inds] == dataset[i])
-  }
-  if (by.dataset) {
-    alignments <- c()
-    for (i in 1:N) {
-      start <- 1 + (i - 1) * min_cells
-      end <- i * min_cells
-      alignment <- 1 - ((mean(num_same_dataset[start:end]) - (k / N)) / (k - k / N))
-      alignments <- c(alignments, alignment)
-    }
-    return(alignments)
-  }
-  return(1 - ((mean(num_same_dataset) - (k / N)) / (k - k / N)))
-}
-
-#' Calculate alignment for each cluster
-#' 
-#' Returns alignment for each cluster in analysiss (see documentation for calcAlignment).
-#'
-#' @param object Analogizer object. Should call quantileAlignSNF before calling.
-#' @param rand.seed Random seed for reproducibility (default 1).
-#' @param k Number of nearest neighbors in calculating alignment (see calcAlignment for default).
-#'   Can pass in single value or vector with same length as number of clusters.
-#' @param by.dataset Return alignment calculated for each dataset in cluster (default FALSE).
-#' @return Vector of alignment statistics (with names of clusters).
-#' @importFrom FNN get.knn
-#' @export
-#' @examples
-#' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
-#' # get alignment for each cluster
-#' alignment_per_cluster <- calcAlignmentPerCluster(analogy)
-#' }
-
-calcAlignmentPerCluster <- function(object, rand.seed = 1, k = NULL, by.dataset = F) {
-  clusters <- levels(object@clusters)
-  if (typeof(k) == "double") {
-    if (length(k) == 1) {
-      k <- rep(k, length(clusters))
-    } else if (length(k) != length(clusters)) {
-      print("Length of k does not match length of clusters")
-    }
-  }
-  align_metrics <- sapply(seq_along(clusters), function(x) {
-    calcAlignment(object,
-                  k = k[x], rand.seed = rand.seed,
-                  clusters.use = clusters[x],
-                  by.dataset = by.dataset
-    )
-  })
-  if (by.dataset) {
-    colnames(align_metrics) <- levels(object@clusters)
-    rownames(align_metrics) <- names(object@H)
-  } else {
-    names(align_metrics) <- levels(object@clusters)
-  }
-  return(align_metrics)
-}
-
-#' Plot violin plots for gene expression
-#' 
-#' Generates violin plots of expression of specified gene for each dataset.
-#'
-#' @param object Analogizer object.
-#' @param gene Gene for which to plot relative expression.
-#' @param methylation.indices Indices of datasets in object with methylation data (this data is not
-#'   magnified and put on log scale).
-#' @param by.dataset Plots gene expression for each dataset separately (default TRUE).
-#' @param return.plots Return ggplot objects instead of printing directly to console (default
-#'   FALSE).
-#' @export
-#' @importFrom cowplot plot_grid
-#' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
-#' @examples
-#' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' # plot expression for CD4 and return plots
-#' violin_plots <- plotGeneViolin(analogy, "CD4", return.plots = T)
-#' }
-
-plotGeneViolin <- function(object, gene, methylation.indices = NULL,
-                           by.dataset = T, return.plots = F) {
-  gene_vals <- c()
-  for (i in 1:length(object@norm.data)) {
-    if (i %in% methylation.indices) {
-      gene_vals <- c(gene_vals, object@norm.data[[i]][gene, ])
-    } else {
-      if (gene %in% rownames(object@norm.data[[i]])) {
-        gene_vals_int <- log2(10000 * object@norm.data[[i]][gene, ] + 1)
-      }
-      else {
-        gene_vals_int <- rep(list(0), ncol(object@norm.data[[i]]))
-        names(gene_vals_int) <- colnames(object@norm.data[[i]])
-      }
-      gene_vals <- c(gene_vals, gene_vals_int)
-    }
-  }
-  
-  gene_df <- data.frame(object@tsne.coords)
-  rownames(gene_df) <- names(object@clusters)
-  gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])
-  colnames(gene_df) <- c("tSNE1", "tSNE2", "gene")
-  gene_plots <- list()
-  for (i in 1:length(object@scale.data)) {
-    if (by.dataset) {
-      gene_df.sub <- gene_df[rownames(object@scale.data[[i]]), ]
-      gene_df.sub$Cluster <- object@clusters[rownames(object@scale.data[[i]])]
-      title <- names(object@scale.data)[i]
-    } else {
-      gene_df.sub <- gene_df
-      gene_df.sub$Cluster <- object@clusters
-      title <- "All Datasets"
-    }
-    max_v <- max(gene_df.sub["gene"], na.rm = T)
-    min_v <- min(gene_df.sub["gene"], na.rm = T)
-    midpoint <- (max_v - min_v) / 2
-    plot_i <- (ggplot(gene_df.sub, aes_string(x = "Cluster", y = "gene", fill = "Cluster")) +
-                 geom_boxplot(position = "dodge", width = 0.4, outlier.shape = NA, alpha = 0.7) +
-                 geom_violin(position = "dodge", alpha = 0.7) +
-                 ggtitle(title))
-    gene_plots[[i]] <- plot_i + theme(legend.position = "none") + labs(y = gene)
-    if (i == 1 & !by.dataset) {
-      break
-    }
-  }
-  if (return.plots) {
-    return(gene_plots)
-  } else {
-    for (i in 1:length(gene_plots)) {
-      print(gene_plots[[i]])
-    }
-  }
-}
-
-#' Plot t-SNE coordinates by expression of specified gene
-#' 
-#' Generates plot of t-SNE coordinates colored by expression of specified gene, for each dataset.
-#' Color scale can be modified. 
-#'
-#' @param object Analogizer object. Should call runTSNE before calling.
-#' @param gene Gene for which to plot relative expression.
-#' @param methylation.indices Indices of datasets in object with methylation data (this data is not
-#'   magnified and put on log scale).
-#' @param pt.size Point size for plots (default 0.1)
-#' @param min.clip Quantile probability for lower bound of methylation data (everything lower set 
-#'   to this quantile value) (default 0)
-#' @param max.clip Quantile probability for upper bound of methylation data (everything greater set 
-#'   to this quantile value) (default 1)
-#' @param points.only Remove axes when plotting t-sne coordinates (default FALSE).
-#' @param low.col Color to plot for lowest gene expression (default "yellow").
-#' @param high.col Color to plot for highest gene expression (default "red").
-#' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
-#' @export
-#' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
-#' @examples
-#' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' analogy <- runTSNE(analogy)
-#' # plot expression for CD4 and return plots
-#' gene_plots <- plotGene(analogy, "CD4", return.plots = T)
-#' }
-
-plotGene <- function(object, gene, methylation.indices = NULL, pt.size = 0.1, min.clip = 0,
-                     max.clip = 1, points.only = F, low.col = "yellow", high.col = "red",
-                     return.plots = F) {
-  gene_vals <- c()
-  for (i in 1:length(object@norm.data)) {
-    if (i %in% methylation.indices) {
-      tmp <- object@norm.data[[i]][gene, ]
-      max_v <- quantile(tmp, probs = max.clip, na.rm = T)
-      min_v <- quantile(tmp, probs = min.clip, na.rm = T)
-      tmp[tmp < min_v & !is.na(tmp)] <- min_v
-      tmp[tmp > max_v & !is.na(tmp)] <- max_v
-      gene_vals <- c(gene_vals, tmp)
-    } else {
-      if (gene %in% rownames(object@norm.data[[i]])) {
-        gene_vals_int <- log2(10000 * object@norm.data[[i]][gene, ] + 1)
-      } else {
-        gene_vals_int <- rep(list(0), ncol(object@norm.data[[i]]))
-        names(gene_vals_int) <- colnames(object@norm.data[[i]])
-      }
-      gene_vals <- c(gene_vals, gene_vals_int)
-    }
-  }
-  
-  gene_df <- data.frame(object@tsne.coords)
-  rownames(gene_df) <- names(object@clusters)
-  gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])
-  colnames(gene_df) <- c("tSNE1", "tSNE2", "gene")
-  gene_plots <- list()
-  for (i in 1:length(object@norm.data)) {
-    gene_df.sub <- gene_df[rownames(object@scale.data[[i]]), ]
-    max_v <- max(gene_df.sub["gene"], na.rm = T)
-    min_v <- min(gene_df.sub["gene"], na.rm = T)
-    
-    midpoint <- (max_v - min_v) / 2
-    plot_i <- (ggplot(gene_df.sub, aes_string(x = "tSNE1", y = "tSNE2", color = "gene")) + 
-                 geom_point(size = pt.size) +
-                 scale_color_gradient(
-                   low = low.col, high = high.col,
-                   limits = c(min_v, max_v)
-                 ) + labs(col = gene) +
-                 ggtitle(names(object@scale.data)[i]))
-    gene_plots[[i]] <- plot_i
-  }
-  if (points.only) {
-    for (i in 1:length(gene_plots)) {
-      gene_plots[[i]] <- gene_plots[[i]] + theme(
-        axis.line = element_blank(), axis.text.x = element_blank(),
-        axis.text.y = element_blank(), axis.ticks = element_blank(),
-        axis.title.x = element_blank(),
-        axis.title.y = element_blank(), legend.position = "none",
-        panel.background = element_blank(), panel.border = element_blank(), 
-        panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-        plot.background = element_blank(), plot.title = element_blank()
-      )
-    }
-  }
-  if (return.plots) {
-    return(gene_plots)
-  } else {
-    for (i in 1:length(gene_plots)) {
-      print(gene_plots[[i]])
-    }
-  }
-}
-
-#' Plot expression of multiple genes
-#' 
-#' Uses plotGene to plot each gene (and dataset) on a separate page. It is recommended to call this
-#' function into a PDF due to the large number of plots produced. 
-#'
-#' @param object Analogizer object. Should call runTSNE before calling.
-#' @param genes Vector of gene names.
-#' @export
-#' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
-#' @examples
-#' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' analogy <- runTSNE(analogy)
-#' # plot expression for CD4 and FCGR3A
-#' pdf("gene_plots.pdf")
-#' plotGenes(analogy, c("CD4", "FCGR3A"))
-#' dev.off()
-#' }
-
-plotGenes <- function(object, genes) {
-  for (i in 1:length(genes)) {
-    print(genes[i])
-    plotGene(object, genes[i])
-  }
-}
-
-#' Create a Seurat object containing the data from an Analogizer object.
-#'
-#' @param object Analogizer object.
-#' @param need.sparse Whether data needs to be converted to sparse format first; most relevant for 
-#'   older Analogizer objects (default TRUE).
-#' @export
-#' @examples
-#' \dontrun{
-#' # Analogizer object
-#' analogy
-#' s.object <- AnalogizerToSeurat(analogy)
-#' }
-AnalogizerToSeurat<-function(object, need.sparse=T)  {
-  if (!require("Seurat", quietly = TRUE)) {
-    stop("Package \"Seurat\" needed for this function to work. Please install it.",
-         call. = FALSE)
-  }
-  nms = names(object@H)
-  if (need.sparse) {
-    object@raw.data = lapply(object@raw.data, function(x){Matrix(as.matrix(x), sparse=T)})
-    object@norm.data = lapply(object@norm.data, function(x){Matrix(as.matrix(x), sparse=T)})
-  }
-  raw.data = MergeSparseDataAll(object@raw.data,nms)
-  norm.data = MergeSparseDataAll(object@norm.data, nms)
-
-  scale.data = do.call(rbind, object@scale.data)
-  rownames(scale.data) = colnames(norm.data)
-  inmf.obj = new(Class = "dim.reduction", gene.loadings = t(object@W),
-                 cell.embeddings = object@H.norm, key = "iNMF")
-  tsne.obj = new(Class = "dim.reduction", cell.embeddings = object@tsne.coords,
-                 key = "tSNE_")
-  rownames(tsne.obj@cell.embeddings) = rownames(scale.data)
-  rownames(inmf.obj@cell.embeddings) = rownames(scale.data)
-  colnames(tsne.obj@cell.embeddings) = paste0("tSNE_", 1:2)
-  new.seurat = CreateSeuratObject(raw.data)
-  new.seurat = NormalizeData(new.seurat)
-  new.seurat@scale.data = t(scale.data)
-  new.seurat@dr$tsne = tsne.obj
-  new.seurat@dr$inmf = inmf.obj
-
-  new.seurat= SetIdent(new.seurat,ident.use = as.character(object@clusters))
-  return(new.seurat)
-}
-
-#' Perform fast and memory-efficient data scaling operation on sparse matrix data.
-#'
-#' @param object Sparse matrix DGE.
-#' @export
-#' @examples
-#' \dontrun{
-#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-#' analogy = Analogizer(list(Y,Z))
-#' analogy@var.genes = c(1,2,3,4)
-#' analogy = scaleNotCenter(analogy)
-#' }
-scaleNotCenter_sparse<-function (object, cells = NULL)
-{
-  if (is.null(cells)) {
-    cells = lapply(1:length(object@raw.data), function(i) {
-      1:ncol(object@raw.data[[i]])
-    })
-  }
-  object@scale.data = lapply(1:length(object@norm.data), function(i) {
-    scale(Sparse_transpose(object@norm.data[[i]][object@var.genes, ]), center = F,
-          scale = T)
-  })
-  names(object@scale.data) = names(object@norm.data)
-  for (i in 1:length(object@scale.data)) {
-    object@scale.data[[i]][is.na(object@scale.data[[i]])] = 0
-    rownames(object@scale.data[[i]]) = colnames(object@raw.data[[i]])
-    colnames(object@scale.data[[i]]) = object@var.genes
-  }
-  return(object)
-}
+#######################################################################################
+#### Quantile Alignment/Normalization
 
 #' Quantile align (normalize) factor loadings 
 #' 
@@ -2325,6 +1237,7 @@ quantileAlignSNF <- function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, r
 
 #' Generate shared factor neighborhood graph
 #' 
+#' @description
 #' Builds shared factor neighborhood graph representation of all cells in analysis. The first step 
 #' is to scale factor loadings across each cell for each factor. This corresponds to scaling (by L2 
 #' norm or similar) the columns of the H matrices, and allows us for subsequent comparison across 
@@ -2426,6 +1339,980 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
   ))
 }
 
+#######################################################################################
+#### Dimensionality Reduction 
+
+#' Perform t-SNE dimensionality reduction
+#' 
+#' Runs t-SNE on the normalized cell factors (or raw cell factors) to generate a 2D embedding for 
+#' visualization. Has option to run on subset of factors. Note that running multiple times will
+#' reset tsne.coords values. 
+#'
+#' @param object Analogizer object. Should run quantileAlignSNF before calling with defaults.
+#' @param use.raw Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).
+#' @param dims.use Factors to use for computing tSNE embedding (default 1:ncol(H.norm)).
+#' @param perplexity Parameter to pass to Rtsne (expected number of neighbors) (default 30).
+#' @param rand.seed Random seed for reproducibility (default 42).
+#' 
+#' @return Analogizer object with tsne.coords slot set. 
+#' @importFrom Rtsne Rtsne
+#' @export
+#' @examples
+#' \dontrun{
+#'  # analogizer object
+#' analogy
+#' # generate H.norm by quantile aligning factor loadings
+#' analogy <- quantileAlignSNF(analogy)
+#' # get tsne.coords for normalized data
+#' analogy <- runTSNE(analogy)
+#' # get tsne.coords for raw factor loadings
+#' analogy <- runTSNE(analogy, use.raw = T)
+#' }
+
+runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm),
+                    perplexity = 30, rand.seed = 42) {
+  set.seed(rand.seed)
+  if (use.raw) {
+    raw.data <- do.call(rbind, object@H)
+    # if H.norm not set yet
+    if (identical(dims.use, 1:0)) {
+      dims.use <- 1:ncol(raw.data)
+    }
+    object@tsne.coords <- Rtsne(raw.data[, dims.use], pca = F, check_duplicates = F, 
+                                perplexity = perplexity)$Y
+    rownames(object@tsne.coords) <- rownames(raw.data)
+  } else {
+    object@tsne.coords <- Rtsne(object@H.norm[, dims.use], pca = F, check_duplicates = F, 
+                                perplexity = perplexity)$Y
+    rownames(object@tsne.coords) <- rownames(object@H.norm)
+  }
+  return(object)
+}
+
+#' Perform UMAP dimensionality reduction
+#' 
+#' @description
+#' Run UMAP on the normalized cell factors (or raw cell factors) to generate a 2D embedding for 
+#' visualization (or general dimensionality reduction). Has option to run on subset of factors. 
+#' Note that running multiple times will overwrite tsne.coords values. It is generally 
+#' recommended to use this method for dimensionality reduction with extremely large datasets.
+#' 
+#' Note that this method requires that the package reticulate is installed, along with the Python 
+#' package umap-learn. 
+#'
+#' @param object Analogizer object. Should run quantileAlignSNF before calling with defaults.
+#' @param use.raw Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).
+#' @param dims.use Factors to use for computing tSNE embedding (default 1:ncol(H.norm)).
+#' @param k Number of dimensions to reduce to (default 2).
+#' @param distance Mtric used to measure distance in the input space. A wide variety of metrics are 
+#'   already coded, and a user defined function can be passed as long as it has been JITd by numba.
+#'   (default "euclidean")
+#' @param n_neighbors Number of neighboring points used in local approximations of manifold 
+#'   structure. Larger values will result in more global structure being preserved at the loss of 
+#'   detailed local structure. In general this parameter should often be in the range 5 to 50, with 
+#'   a choice of 10 to 15 being a sensible default. (default 10)
+#' @param min_dist Controls how tightly the embedding is allowed compress points together. Larger 
+#'   values ensure embedded points are more evenly distributed, while smaller values allow the 
+#'   algorithm to optimise more accurately with regard to local structure. Sensible values are in 
+#'   the range 0.001 to 0.5, with 0.1 being a reasonable default. (default 0.1)
+#' @param rand.seed Random seed for reproducibility (default 42).
+#' 
+#' @return Analogizer object with tsne.coords slot set. 
+#' @export
+#' @examples
+#' \dontrun{
+#'  # analogizer object with factorization complete
+#' analogy
+#' # generate H.norm by quantile aligning factor loadings
+#' analogy <- quantileAlignSNF(analogy)
+#' # get tsne.coords for normalized data
+#' analogy <- runUMAP(analogy)
+#' # get tsne.coords for raw factor loadings
+#' analogy <- runUMAP(analogy, use.raw = T)
+#' }
+
+runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2, 
+                    distance = "euclidean", n_neighbors = 10, min_dist = 0.1, rand.seed = 42) {
+  if (!require("reticulate", quietly = TRUE)) {
+    stop(paste("Package \"reticulate\" needed for this function to work. Please install it.\n",
+               "Also ensure Python package umap (PyPI name umap-learn) is installed in python",
+               "version accesible to reticulate."),
+         call. = FALSE)
+  }
+  set.seed(rand.seed)
+  reticulate::py_set_seed(rand.seed)
+  UMAP <- reticulate::import("umap")
+  umapper <- UMAP$UMAP(
+    n_components = as.integer(k), metric = distance,
+    n_neighbors = as.integer(n_neighbors), min_dist = min_dist
+  )
+  Rumap <- umapper$fit_transform
+  if (use.raw) {
+    raw.data <- do.call(rbind, object@H)
+    # if H.norm not set yet
+    if (identical(dims.use, 1:0)) {
+      dims.use <- 1:ncol(raw.data)
+    }
+    object@tsne.coords <- Rumap(raw.data[, dims.use])
+    rownames(object@tsne.coords) <- rownames(raw.data)
+  } else {
+    object@tsne.coords <- Rumap(object@H.norm[, dims.use])
+    rownames(object@tsne.coords) <- rownames(object@H.norm)
+  }
+  return(object)
+}
+
+#######################################################################################
+#### Metrics
+
+#' Calculate a dataset-specificity score for each factor 
+#'
+#' This score represents the relative magnitude of the dataset-specific components of each factor's
+#' gene loadings compared to the shared components for two datasets. First, for each dataset we 
+#' calculate the norm of the sum of each factor's shared loadings (W) and dataset-specific loadings 
+#' (V). We then determine the ratio of these two values and subtract from 1... TODO: finish 
+#' description.
+#'
+#' @param object Analogizer object. Should run optimizeALS before calling.
+#' @param dataset1 Name of first dataset (by default takes first two datasets for dataset1 and 2)
+#' @param dataset2 Name of second dataset
+#' @param do.plot Display barplot of dataset specificity scores (by factor) (default TRUE).
+#' 
+#' @return List containing three elements. First two elements are the norm of each metagene factor 
+#' for each dataset. Last element is the vector of dataset specificity scores.
+#' @export
+#' @examples
+#' \dontrun{
+#' # analogizer object, factorization complete 
+#' analogy
+#' analogy <- quantileAlignSNF(analogy)
+#' dataset_spec <- calcDatasetSpecificity(analogy, do.plot = F)
+#' }
+
+calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.plot = T) {
+  if (is.null(dataset1) | is.null(dataset2)) {
+    dataset1 <- names(object@H)[1]
+    dataset2 <- names(object@H)[2]
+  }
+  k <- ncol(object@H[[1]])
+  pct1 <- rep(0, k)
+  pct2 <- rep(0, k)
+  for (i in 1:k) {
+    pct1[i] <- norm(as.matrix(object@V[[dataset1]][i, ] + object@W[i, ]), "F")
+    # norm(object@H[[1]][,i] %*% t(object@W[i,] + object@V[[1]][i,]),"F")
+    pct2[i] <- norm(as.matrix(object@V[[dataset2]][i, ] + object@W[i, ]), "F")
+    # norm(object@H[[2]][,i] %*% t(object@W[i,] + object@V[[2]][i,]),"F")
+  }
+  # pct1 = pct1/sum(pct1)
+  # pct2 = pct2/sum(pct2)
+  if (do.plot) {
+    barplot(100 * (1 - (pct1 / pct2)),
+            xlab = "Factor",
+            ylab = "Percent Specificity", main = "Dataset Specificity of Factors",
+            names.arg = 1:k, cex.names = 0.75, mgp = c(2, 0.5, 0)
+    ) # or possibly abs(pct1-pct2)
+  }
+  return(list(pct1, pct2, 100 * (1 - (pct1 / pct2))))
+}
+
+#' Calculate agreement metric
+#' 
+#' @description
+#' This metric quantifies how much the factorization and alignment distorts the geometry of the 
+#' original datasets. The greater the agreement, the less distortion of geometry there is. This is
+#' calculated by performing dimensionality reduction on the original and quantile aligned (or just
+#' factorized) datasets, and measuring similarity between the k nearest neighbors for each cell in 
+#' original and aligned datasets. The Jaccard index is used to quantify similarity, and is the final
+#' metric averages across all cells.
+#' 
+#' Note that for most datasets, the greater the chosen k, the greater the agreement in general. 
+#' There are several options for dimensionality reduction, with the default being 'NMF' as it is 
+#' expected to be most similar to iNMF. Although agreement can theoretically approach 1, in practice
+#' it is usually no higher than 0.2-0.3 (particularly for non-deterministic approaches like NMF).
+#'
+#' @param object Analogizer object. Should call quantileAlignSNF before calling.
+#' @param dr.method Dimensionality reduction method to use for assessing pre-alignment geometry 
+#'   (either "PCA", "NMF", or "ICA"). (default "NMF")
+#' @param ndims Number of dimensions to use in dimensionality reduction (recommended to use the 
+#'   same as number of factors) (default 40).
+#' @param k Number of nearest neighbors to use in calculating Jaccard index (default 15). 
+#' @param use.aligned Whether to use quantile aligned or unaligned cell factor loadings (default 
+#'   TRUE).
+#' @param rand.seed Random seed for reproducibility (default 42).
+#' @param by.dataset Return agreement calculated for each dataset (default FALSE).
+#' 
+#' @return Agreement metric (or vector of agreement per dataset).
+#' @importFrom FNN get.knn
+#' @importFrom NNLM nnmf
+#' @importFrom ica icafast
+#' @importFrom irlba prcomp_irlba
+#' @export
+#' @examples
+#' \dontrun{
+#' # analogizer object, factorization complete 
+#' analogy
+#' analogy <- quantileAlignSNF(analogy)
+#' agreement <- calcAgreement(analogy, dr.method = "NMF")
+#' }
+
+calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.aligned = TRUE,
+                          rand.seed = 42, by.dataset = FALSE) {
+  print(paste("Reducing dimensionality using", dr.method))
+  set.seed(rand.seed)
+  dr <- list()
+  if (dr.method == "NMF") {
+    dr <- lapply(object@scale.data, function(x) {
+      nnmf(x, k = ndims)$W
+    })
+  }
+  else if (dr.method == "ICA") {
+    dr <- lapply(object@scale.data, function(x) {
+      icafast(x, nc = ndims)$S
+    })
+  } else {
+    dr <- lapply(object@scale.data, function(x) {
+      suppressWarnings(prcomp_irlba(t(x),
+                                    n = ndims,
+                                    scale. = (colSums(x) > 0), center = F
+      )$rotation)
+    })
+    for (i in 1:length(dr)) {
+      rownames(dr[[i]]) <- rownames(object@scale.data[[i]])
+    }
+  }
+  ns <- sapply(object@scale.data, nrow)
+  n <- sum(ns)
+  jaccard_inds <- c()
+  distorts <- c()
+  
+  for (i in 1:length(dr)) {
+    jaccard_inds_i <- c()
+    if (use.aligned) {
+      original <- object@H.norm[rownames(dr[[i]]), ]
+    } else {
+      original <- object@H[[i]]
+    }
+    fnn.1 <- get.knn(dr[[i]], k = k)
+    fnn.2 <- get.knn(original, k = k)
+    jaccard_inds_i <- c(jaccard_inds_i, sapply(1:ns[i], function(i) {
+      intersect <- intersect(fnn.1$nn.index[i, ], fnn.2$nn.index[i, ])
+      union <- union(fnn.1$nn.index[i, ], fnn.2$nn.index[i, ])
+      length(intersect) / length(union)
+    }))
+    jaccard_inds_i <- jaccard_inds_i[is.finite(jaccard_inds_i)]
+    jaccard_inds <- c(jaccard_inds, jaccard_inds_i)
+    
+    distorts <- c(distorts, mean(jaccard_inds_i))
+  }
+  if (by.dataset) {
+    return(distorts)
+  }
+  return(mean(jaccard_inds))
+}
+
+#' Calculate alignment metric 
+#' 
+#' This metric quantifies how well-aligned two or more datasets are. Alignment is defined as in the 
+#' documentation for Seurat. We randomly downsample all datasets to have as many cells as the
+#' smallest one. We construct a nearest-neighbor graph and calculate for each cell how many of its
+#' neighbors are from the same dataset. We average across all cells and compare to the expected 
+#' value for perfectly mixed datasets, and scale the value from 0 to 1. Note that in practice, 
+#' alignment can be greater than 1 occasionally. 
+#'
+#' @param object Analogizer object. Should call quantileAlignSNF before calling.
+#' @param k Number of nearest neighbors to use in calculating alignment. By default, this will be 
+#'   floor(0.01 * total number of cells), with a lower bound of 10 in all cases except where the 
+#'   total number of sampled cells is less than 10. 
+#' @param rand.seed Random seed for reproducibility (default 1).
+#' @param cells.use Vector of cells across all datasets to use in calculating alignment
+#' @param clusters.use Names of clusters to use in calculating alignment
+#' @param by.dataset Return alignment calculated for each dataset (default FALSE).
+#' 
+#' @return Alignment metric.
+#' @importFrom FNN get.knn
+#' @export
+#' @examples
+#' \dontrun{
+#' # analogizer object, factorization complete 
+#' analogy
+#' analogy <- quantileAlignSNF(analogy)
+#' alignment <- calcAlignment(analogy)
+#' }
+
+calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL,
+                          clusters.use = NULL, by.dataset = F) {
+  if (is.null(cells.use)) {
+    cells.use <- rownames(object@H.norm)
+  }
+  if (!is.null(clusters.use)) {
+    cells.use <- names(object@clusters)[which(object@clusters %in% clusters.use)]
+  }
+  nmf_factors <- object@H.norm[cells.use, ]
+  num_cells <- length(cells.use)
+  func_H <- lapply(seq_along(object@H), function(x) {
+    cells.overlap <- intersect(cells.use, rownames(object@H[[x]]))
+    if (length(cells.overlap) > 0) {
+      object@H[[x]][cells.overlap, ]
+    } else {
+      warning(paste0("Selected subset eliminates dataset ", names(object@H)[x]),
+              immediate. = T
+      )
+      return(NULL)
+    }
+  })
+  func_H <- func_H[!sapply(func_H, is.null)]
+  num_factors <- ncol(object@H.norm)
+  N <- length(func_H)
+  if (N == 1) {
+    warning("Alignment null for single dataset", immediate. = T)
+  }
+  set.seed(rand.seed)
+  min_cells <- min(sapply(func_H, function(x) {
+    nrow(x)
+  }))
+  sampled_cells <- unlist(lapply(1:N, function(x) {
+    sample(rownames(func_H[[x]]), min_cells)
+  }))
+  max_k <- length(sampled_cells) - 1
+  if (is.null(k)) {
+    k <- min(max(floor(0.01 * num_cells), 10), max_k)
+  } else if (k > max_k) {
+    stop(paste0("Please select k <=", max_k))
+  }
+  knn_graph <- get.knn(nmf_factors[sampled_cells, 1:num_factors], k)
+  dataset <- unlist(sapply(1:N, function(x) {
+    rep(names(object@H)[x], nrow(func_H[[x]]))
+  }))
+  names(dataset) <- cells.use
+  dataset <- dataset[sampled_cells]
+  num_sampled <- N * min_cells
+  num_same_dataset <- rep(k, num_sampled)
+  
+  for (i in 1:num_sampled) {
+    inds <- knn_graph$nn.index[i, ]
+    num_same_dataset[i] <- sum(dataset[inds] == dataset[i])
+  }
+  if (by.dataset) {
+    alignments <- c()
+    for (i in 1:N) {
+      start <- 1 + (i - 1) * min_cells
+      end <- i * min_cells
+      alignment <- 1 - ((mean(num_same_dataset[start:end]) - (k / N)) / (k - k / N))
+      alignments <- c(alignments, alignment)
+    }
+    return(alignments)
+  }
+  return(1 - ((mean(num_same_dataset) - (k / N)) / (k - k / N)))
+}
+
+#' Calculate alignment for each cluster
+#' 
+#' Returns alignment for each cluster in analysiss (see documentation for calcAlignment).
+#'
+#' @param object Analogizer object. Should call quantileAlignSNF before calling.
+#' @param rand.seed Random seed for reproducibility (default 1).
+#' @param k Number of nearest neighbors in calculating alignment (see calcAlignment for default).
+#'   Can pass in single value or vector with same length as number of clusters.
+#' @param by.dataset Return alignment calculated for each dataset in cluster (default FALSE).
+#' 
+#' @return Vector of alignment statistics (with names of clusters).
+#' @importFrom FNN get.knn
+#' @export
+#' @examples
+#' \dontrun{
+#' # analogizer object, factorization complete 
+#' analogy
+#' analogy <- quantileAlignSNF(analogy)
+#' # get alignment for each cluster
+#' alignment_per_cluster <- calcAlignmentPerCluster(analogy)
+#' }
+
+calcAlignmentPerCluster <- function(object, rand.seed = 1, k = NULL, by.dataset = F) {
+  clusters <- levels(object@clusters)
+  if (typeof(k) == "double") {
+    if (length(k) == 1) {
+      k <- rep(k, length(clusters))
+    } else if (length(k) != length(clusters)) {
+      print("Length of k does not match length of clusters")
+    }
+  }
+  align_metrics <- sapply(seq_along(clusters), function(x) {
+    calcAlignment(object,
+                  k = k[x], rand.seed = rand.seed,
+                  clusters.use = clusters[x],
+                  by.dataset = by.dataset
+    )
+  })
+  if (by.dataset) {
+    colnames(align_metrics) <- levels(object@clusters)
+    rownames(align_metrics) <- names(object@H)
+  } else {
+    names(align_metrics) <- levels(object@clusters)
+  }
+  return(align_metrics)
+}
+
+#' Calculate adjusted Rand index 
+#' 
+#' Computes adjusted Rand index for Analogizer clustering and external clustering.
+#' The Rand index ranges from 0 to 1, with 0 indicating no agreement between clusterings and 1 
+#' indicating perfect agreement. 
+#'
+#' @param object Analogizer object. Should run quantileAlignSNF before calling.
+#' @param clusters.compare Clustering with which to compare (named vector).
+#' @return Value of ARI
+#' @importFrom mclust adjustedRandIndex
+#' 
+#' @return Adjusted Rand index value.
+#' @export
+#' @examples
+#' \dontrun{
+#' # analogizer object, factorization done
+#' analogy
+#' analogy <- quantileAlignSNF(analogy)
+#' # toy clusters 
+#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(analogy@raw.data[[1]]), replace = T)
+#' names(cluster1) <- colnames(analogy@raw.data[[1]])
+#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(analogy@raw.data[[2]]), replace = T)
+#' names(cluster2) <- colnames(analogy@raw.data[[2]])
+#' # get ARI for first clustering
+#' ari1 <- calcARI(analogy, cluster1)
+#' # get ARI for second clustering
+#' ari2 <- calcARI(analogy, cluster2)
+#' }
+
+calcARI <- function(object, clusters.compare) {
+  if (length(clusters.compare) < length(object@clusters)) {
+    print("Calculating ARI for subset of full cells")
+  }
+  return(adjustedRandIndex(object@clusters[names(clusters.compare)], 
+                           clusters.compare))
+}
+
+#' Calculate purity 
+#' 
+#' Calculates purity for Analogizer clustering and external clustering (true clusters/classes). 
+#' Purity can sometimes be a more useful metric when the clustering to be tested contains more 
+#' subgroups or clusters than the true clusters (or classes). Purity also ranges from 0 to 1,
+#' with a score of 1 representing a pure, or accurate, clustering. 
+#'
+#' @param object Analogizer object. Should run quantileAlignSNF before calling.
+#' @param classes.compare Clustering with which to compare (named vector).
+#' 
+#' @return Purity value.
+#' @export
+#' @examples
+#' \dontrun{
+#' # analogizer object, factorization done
+#' analogy
+#' analogy <- quantileAlignSNF(analogy)
+#' # toy clusters 
+#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(analogy@raw.data[[1]]), replace = T)
+#' names(cluster1) <- colnames(analogy@raw.data[[1]])
+#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(analogy@raw.data[[2]]), replace = T)
+#' names(cluster2) <- colnames(analogy@raw.data[[2]])
+#' # get ARI for first clustering
+#' ari1 <- calcARI(analogy, cluster1)
+#' # get ARI for second clustering
+#' ari2 <- calcARI(analogy, cluster2)
+#' }
+
+calcPurity <- function(object, classes.compare) {
+  if (length(classes.compare) < length(object@clusters)) {
+    print("Calculating purity for subset of full cells")
+  }
+  clusters <- object@clusters[names(classes.compare)]
+  purity <- sum(apply(table(classes.compare, clusters), 2, max)) / length(clusters)
+  
+  return(purity)
+}
+
+#######################################################################################
+#### Visualization
+
+#' Plot t-SNE coordinates of cells across datasets
+#' 
+#' Generates two plots of all cells across datasets, one colored by dataset and one colored by 
+#' cluster. These are useful for visually examining the alignment and cluster distributions,
+#' respectively. If clusters have not been set yet (quantileAlignSNF not called), will plot by
+#' single color for second plot. It is also possible to pass in another clustering (as long as 
+#' names match those of cells). 
+#'
+#' @param object Analogizer object. Should call runTSNE or runUMAP before calling. 
+#' @param clusters Another clustering to use for coloring second plot (must have same names as 
+#'   clusters slot) (default NULL).
+#' @param title Plot titles (list or vector of length 2) (default NULL).
+#' @param pt.size Controls size of points representing cells (default 0.3).
+#' @param text.size Controls size of plot text (cluster center labels) (default 3).
+#' @param do.shuffle Randomly shuffle points so that points from same dataset are not plotted 
+#'   one after the other (default TRUE).
+#' @param axis.labels Vector of two strings to use as x and y labels respectively.
+#' @param do.legend Display legend on plots (default TRUE).
+#' @param legend.size Size of legend on plots (default 5).
+#' @param return.plots Return ggplot plot objects instead of printing directly (default FALSE).
+#' 
+#' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to 
+#'   console).
+#' @export
+#' @importFrom ggplot2 ggplot geom_point aes
+#' @importFrom dplyr %>%
+#' @examples
+#' \dontrun{
+#'  # analogizer object with aligned factor loadings
+#' analogy
+#' # get tsne.coords for normalized data
+#' analogy <- runTSNE(analogy)
+#' # plot to console
+#' plotByDatasetAndCluster(analogy)
+#' # return list of plots 
+#' plots <- plotByDatasetAndCluster(analogy, return.plots = T)
+#' }
+
+plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
+                                    text.size = 3, do.shuffle = T, axis.labels = NULL,
+                                    do.legend = T, legend.size = 5, return.plots = F) {
+  tsne_df <- data.frame(object@tsne.coords)
+  colnames(tsne_df) <- c("tsne1", "tsne2")
+  tsne_df$Dataset <- unlist(lapply(1:length(object@H), function(x) {
+    rep(names(object@H)[x], nrow(object@H[[x]]))
+  }))
+  if (is.null(clusters)) {
+    # if clusters have not been set yet
+    if (length(object@clusters) == 0) {
+      clusters <- rep(1, nrow(object@tsne.coords))
+      names(clusters) <- c_names <- rownames(object@tsne.coords)
+    } else {
+      clusters <- object@clusters
+      c_names <- names(object@clusters)
+    }
+  }
+  tsne_df$Cluster <- clusters[c_names]
+  if (do.shuffle) {
+    idx <- sample(1:nrow(tsne_df))
+    tsne_df <- tsne_df[idx, ]
+  }
+  
+  p1 <- ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Dataset)) + 
+    geom_point(size = pt.size) +
+    guides(color = guide_legend(override.aes = list(size = legend.size)))
+  
+  centers <- tsne_df %>% dplyr::group_by(Cluster) %>% dplyr::summarize(
+    tsne1 = median(x = tsne1),
+    tsne2 = median(x = tsne2)
+  )
+  p2 <- ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(size = pt.size) +
+    geom_text(data = centers, mapping = aes(label = Cluster), colour = "black", size = text.size) +
+    guides(color = guide_legend(override.aes = list(size = legend.size)))
+  
+  if (!is.null(title)) {
+    p1 <- p1 + ggtitle(title[1])
+    p2 <- p2 + ggtitle(title[2])
+  }
+  if (!is.null(axis.labels)) {
+    p1 <- p1 + xlab(axis.labels[1]) + ylab(axis.labels[2])
+    p2 <- p2 + xlab(axis.labels[1]) + ylab(axis.labels[2])
+  }
+  if (!do.legend) {
+    p1 <- p1 + theme(legend.position = "none")
+    p2 <- p2 + theme(legend.position = "none")
+  }
+  if (return.plots) {
+    return(list(p1, p2))
+  } else {
+    print(p1)
+    print(p2)
+  }
+}
+
+#' Plot scatter plots of unaligned and aligned factor loadings
+#'
+#' @description
+#' Generates scatter plots of factor loadings vs cells for both unaligned and aligned 
+#' (normalized) factor loadings. This allows for easier visualization of the changes made to the 
+#' factor loadings during the alignment step. Lists a subset of highly loading genes for each factor.
+#' Also provides an option to plot t-SNE coordinates of the cells colored by aligned factor loadings. 
+#' 
+#' It is recommended to call this function into a PDF due to the large number of 
+#' plots produced.
+#' 
+#' @param object Analogizer object. Should call quantileAlignSNF before calling.
+#' @param num.genes Number of genes to display for each factor (default 10).
+#' @param cells.highlight Names of specific cells to highlight in plot (black) (default NULL).
+#' @param plot.tsne Plot t-SNE coordinates for each factor (default FALSE).
+#' 
+#' @return Plots to console (1-2 pages per factor)
+#' @export
+#' @examples
+#' \dontrun{
+#'  # analogizer object with factorization complete 
+#' analogy
+#' analogy <- quantileAlignSNF(analogy)
+#' # get tsne.coords for normalized data
+#' analogy <- runTSNE(analogy)
+#' # factor plots into pdf file
+#' pdf("plot_factors.pdf")
+#' plotFactors(analogy)
+#' dev.off()
+#' }
+
+plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsne = F) {
+  k <- ncol(object@H.norm)
+  pb <- txtProgressBar(min = 0, max = k, style = 3)
+  
+  W <- t(object@W)
+  rownames(W) <- colnames(object@scale.data[[1]])
+  Hs_norm <- object@H.norm
+  for (i in 1:k) {
+    par(mfrow = c(2, 1))
+    top_genes.W <- rownames(W)[order(W[, i], decreasing = T)[1:num.genes]]
+    top_genes.W.string <- paste0(top_genes.W, collapse = ", ")
+    factor_textstring <- paste0("Factor", i)
+    
+    plot_title1 <- paste(factor_textstring, "\n", top_genes.W.string, "\n")
+    cols <- rep("gray", times = nrow(Hs_norm))
+    names(cols) <- rownames(Hs_norm)
+    cols.use <- rainbow(length(object@H))
+    
+    for (cl in 1:length(object@H)) {
+      cols[rownames(object@H[[cl]])] <- rep(cols.use[cl], times = nrow(object@H[[cl]]))
+    }
+    if (!is.null(cells.highlight)) {
+      cols[cells.highlight] <- rep("black", times = length(cells.highlight))
+    }
+    plot(1:nrow(Hs_norm), do.call(rbind, object@H)[, i],
+         cex = 0.2, pch = 20,
+         col = cols, main = plot_title1, xlab = "Cell", ylab = "Raw H Score"
+    )
+    legend("top", names(object@H), pch = 20, col = cols.use, horiz = T, cex = 0.75)
+    plot(1:nrow(Hs_norm), object@H.norm[, i],
+         pch = 20, cex = 0.2,
+         col = cols, xlab = "Cell", ylab = "H_norm Score"
+    )
+    if (plot.tsne) {
+      par(mfrow = c(1, 1))
+      fplot(object@tsne.coords, object@H.norm[, i], title = paste0("Factor ", i))
+    }
+    setTxtProgressBar(pb, i)
+  }
+}
+
+#' Generate word clouds and t-SNE plots
+#' 
+#' @description 
+#' Plots t-SNE coordinates of all cells by their loadings on each factor. Underneath it displays the
+#' most highly loading shared and dataset-specific genes, with the size of the marker indicating 
+#' the magnitude of the loading. 
+#' 
+#' It is recommended to call this function into a PDF due to the large number of 
+#' plots produced.
+#'
+#' @param object Analogizer object. Should call runTSNE before calling.
+#' @param dataset1 Name of first dataset (by default takes first two datasets for dataset1 and 2)
+#' @param dataset2 Name of second dataset
+#' @param num.genes Number of genes to show in word clouds (default 30).
+#' @param min.size Size of smallest gene symbol in word cloud (default 1).
+#' @param max.size Size of largest gene symbol in word cloud (default 4).
+#' @param factor.share.thresh Use only factors with a dataset specificity less than or equalt to 
+#'   threshold (default 10).
+#' @param dataset.specificity Pre-calculated dataset specificity if available. Will calculate if not
+#'   available.
+#' @param log.fc.thresh Lower log-fold change threshold for differential expression in markers
+#'   (default 1).
+#' @param umi.thresh Lower UMI threshold for markers (default 30).
+#' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
+#' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
+#'   (default 0.05).
+#'   
+#' @importFrom ggrepel geom_text_repel
+#' @importFrom grid roundrectGrob
+#' @importFrom grid gpar
+#' @export
+#' @examples
+#' \dontrun{
+#' # analogizer object, factorization complete 
+#' analogy
+#' analogy <- quantileAlignSNF(analogy)
+#' analogy <- runTSNE(analogy)
+#' pdf('word_clouds.pdf')
+#' plotWordClouds(analogy, num.genes = 20)
+#' dev.off()
+#' }
+
+plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1, 
+                           max.size = 4, factor.share.thresh = 10, log.fc.thresh = 1,
+                           umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05) {
+  if (is.null(dataset1) | is.null(dataset2)) {
+    dataset1 <- names(object@H)[1]
+    dataset2 <- names(object@H)[2]
+  }
+  
+  H_aligned <- object@H.norm
+  W <- t(object@W)
+  V1 <- t(object@V[[dataset1]])
+  V2 <- t(object@V[[dataset2]])
+  W <- pmin(W + V1, W + V2)
+  
+  dataset.specificity <- calcDatasetSpecificity(object, dataset1 = dataset1, dataset2 = dataset2)
+  factors.use <- which(abs(dataset.specificity[[3]]) <= factor.share.thresh)
+  
+  markers <- getFactorMarkers(object,
+                              factor.share.thresh = factor.share.thresh,
+                              num.genes = num.genes, log.fc.thresh = log.fc.thresh,
+                              umi.thresh = umi.thresh, frac.thresh = frac.thresh,
+                              pval.thresh = pval.thresh,
+                              dataset.specificity = dataset.specificity
+  )
+  
+  rownames(W) <- rownames(V1) <- rownames(V2) <- object@var.genes
+  loadings_list <- list(V1, W, V2)
+  names_list <- list(dataset1, "Shared", dataset2)
+  tsne_coords <- object@tsne.coords
+  pb <- txtProgressBar(min = 0, max = length(factors.use), style = 3)
+  for (i in factors.use) {
+    tsne_df <- data.frame(H_aligned[, i], tsne_coords)
+    factorlab <- paste("Factor", i, sep = "")
+    colnames(tsne_df) <- c(factorlab, "tSNE1", "tSNE2")
+    factor_ds <- paste("Factor", i, "Dataset Specificity:", dataset.specificity[[3]][i])
+    p1 <- ggplot(tsne_df, aes_string(x = "tSNE1", y = "tSNE2", color = factorlab)) + geom_point() +
+      scale_color_gradient(low = "yellow", high = "red") + ggtitle(label = factor_ds)
+    
+    top_genes_V1 <- markers[[1]]$gene[markers[[1]]$factor_num == i]
+    top_genes_W <- markers[[2]]$gene[markers[[2]]$factor_num == i]
+    top_genes_V2 <- markers[[3]]$gene[markers[[3]]$factor_num == i]
+    
+    top_genes_list <- list(top_genes_V1, top_genes_W, top_genes_V2)
+    plot_list <- lapply(seq_along(top_genes_list), function(x) {
+      top_genes <- top_genes_list[[x]]
+      gene_df <- data.frame(
+        genes = top_genes,
+        loadings = loadings_list[[x]][top_genes, i]
+      )
+      if (length(top_genes) == 0) {
+        gene_df <- data.frame(genes = c("no genes"), loadings = c(1))
+      }
+      out_plot <- ggplot(gene_df, aes(x = 1, y = 1, size = loadings, label = genes)) +
+        geom_text_repel(force = 100, segment.color = NA) +
+        scale_size(range = c(min.size, max.size), guide = FALSE) +
+        scale_y_continuous(breaks = NULL) +
+        scale_x_continuous(breaks = NULL) +
+        labs(x = "", y = "") + ggtitle(label = names_list[[x]]) + coord_fixed()
+      return(out_plot)
+    })
+    
+    p2 <- (plot_grid(plotlist = plot_list, align = "hv", nrow = 1)
+           + draw_grob(roundrectGrob(
+             x = 0.33, y = 0.5, width = 0.67, height = 0.70,
+             gp = gpar(fill = "khaki1", col = "Black", alpha = 0.5, lwd = 2)
+           ))
+           + draw_grob(roundrectGrob(
+             x = 0.67, y = 0.5, width = 0.67, height = 0.70,
+             gp = gpar(fill = "indianred1", col = "Black", alpha = 0.5, lwd = 2)
+           )))
+    print(plot_grid(p1, p2, nrow = 2, align = "h"))
+    setTxtProgressBar(pb, i)
+  }
+}
+
+#' Plot violin plots for gene expression
+#' 
+#' Generates violin plots of expression of specified gene for each dataset.
+#'
+#' @param object Analogizer object.
+#' @param gene Gene for which to plot relative expression.
+#' @param methylation.indices Indices of datasets in object with methylation data (this data is not
+#'   magnified and put on log scale).
+#' @param by.dataset Plots gene expression for each dataset separately (default TRUE).
+#' @param return.plots Return ggplot objects instead of printing directly to console (default
+#'   FALSE).
+#'   
+#' @export
+#' @importFrom cowplot plot_grid
+#' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
+#' @examples
+#' \dontrun{
+#' # analogizer object, factorization complete 
+#' analogy
+#' # plot expression for CD4 and return plots
+#' violin_plots <- plotGeneViolin(analogy, "CD4", return.plots = T)
+#' }
+
+plotGeneViolin <- function(object, gene, methylation.indices = NULL,
+                           by.dataset = T, return.plots = F) {
+  gene_vals <- c()
+  for (i in 1:length(object@norm.data)) {
+    if (i %in% methylation.indices) {
+      gene_vals <- c(gene_vals, object@norm.data[[i]][gene, ])
+    } else {
+      if (gene %in% rownames(object@norm.data[[i]])) {
+        gene_vals_int <- log2(10000 * object@norm.data[[i]][gene, ] + 1)
+      }
+      else {
+        gene_vals_int <- rep(list(0), ncol(object@norm.data[[i]]))
+        names(gene_vals_int) <- colnames(object@norm.data[[i]])
+      }
+      gene_vals <- c(gene_vals, gene_vals_int)
+    }
+  }
+  
+  gene_df <- data.frame(object@tsne.coords)
+  rownames(gene_df) <- names(object@clusters)
+  gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])
+  colnames(gene_df) <- c("tSNE1", "tSNE2", "gene")
+  gene_plots <- list()
+  for (i in 1:length(object@scale.data)) {
+    if (by.dataset) {
+      gene_df.sub <- gene_df[rownames(object@scale.data[[i]]), ]
+      gene_df.sub$Cluster <- object@clusters[rownames(object@scale.data[[i]])]
+      title <- names(object@scale.data)[i]
+    } else {
+      gene_df.sub <- gene_df
+      gene_df.sub$Cluster <- object@clusters
+      title <- "All Datasets"
+    }
+    max_v <- max(gene_df.sub["gene"], na.rm = T)
+    min_v <- min(gene_df.sub["gene"], na.rm = T)
+    midpoint <- (max_v - min_v) / 2
+    plot_i <- (ggplot(gene_df.sub, aes_string(x = "Cluster", y = "gene", fill = "Cluster")) +
+                 geom_boxplot(position = "dodge", width = 0.4, outlier.shape = NA, alpha = 0.7) +
+                 geom_violin(position = "dodge", alpha = 0.7) +
+                 ggtitle(title))
+    gene_plots[[i]] <- plot_i + theme(legend.position = "none") + labs(y = gene)
+    if (i == 1 & !by.dataset) {
+      break
+    }
+  }
+  if (return.plots) {
+    return(gene_plots)
+  } else {
+    for (i in 1:length(gene_plots)) {
+      print(gene_plots[[i]])
+    }
+  }
+}
+
+#' Plot t-SNE coordinates by expression of specified gene
+#' 
+#' Generates plot of t-SNE coordinates colored by expression of specified gene, for each dataset.
+#' Color scale can be modified. 
+#'
+#' @param object Analogizer object. Should call runTSNE before calling.
+#' @param gene Gene for which to plot relative expression.
+#' @param methylation.indices Indices of datasets in object with methylation data (this data is not
+#'   magnified and put on log scale).
+#' @param pt.size Point size for plots (default 0.1)
+#' @param min.clip Quantile probability for lower bound of methylation data (everything lower set 
+#'   to this quantile value) (default 0)
+#' @param max.clip Quantile probability for upper bound of methylation data (everything greater set 
+#'   to this quantile value) (default 1)
+#' @param points.only Remove axes when plotting t-sne coordinates (default FALSE).
+#' @param low.col Color to plot for lowest gene expression (default "yellow").
+#' @param high.col Color to plot for highest gene expression (default "red").
+#' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
+#' 
+#' @export
+#' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
+#' @examples
+#' \dontrun{
+#' # analogizer object, factorization complete 
+#' analogy
+#' analogy <- runTSNE(analogy)
+#' # plot expression for CD4 and return plots
+#' gene_plots <- plotGene(analogy, "CD4", return.plots = T)
+#' }
+
+plotGene <- function(object, gene, methylation.indices = NULL, pt.size = 0.1, min.clip = 0,
+                     max.clip = 1, points.only = F, low.col = "yellow", high.col = "red",
+                     return.plots = F) {
+  gene_vals <- c()
+  for (i in 1:length(object@norm.data)) {
+    if (i %in% methylation.indices) {
+      tmp <- object@norm.data[[i]][gene, ]
+      max_v <- quantile(tmp, probs = max.clip, na.rm = T)
+      min_v <- quantile(tmp, probs = min.clip, na.rm = T)
+      tmp[tmp < min_v & !is.na(tmp)] <- min_v
+      tmp[tmp > max_v & !is.na(tmp)] <- max_v
+      gene_vals <- c(gene_vals, tmp)
+    } else {
+      if (gene %in% rownames(object@norm.data[[i]])) {
+        gene_vals_int <- log2(10000 * object@norm.data[[i]][gene, ] + 1)
+      } else {
+        gene_vals_int <- rep(list(0), ncol(object@norm.data[[i]]))
+        names(gene_vals_int) <- colnames(object@norm.data[[i]])
+      }
+      gene_vals <- c(gene_vals, gene_vals_int)
+    }
+  }
+  
+  gene_df <- data.frame(object@tsne.coords)
+  rownames(gene_df) <- names(object@clusters)
+  gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])
+  colnames(gene_df) <- c("tSNE1", "tSNE2", "gene")
+  gene_plots <- list()
+  for (i in 1:length(object@norm.data)) {
+    gene_df.sub <- gene_df[rownames(object@scale.data[[i]]), ]
+    max_v <- max(gene_df.sub["gene"], na.rm = T)
+    min_v <- min(gene_df.sub["gene"], na.rm = T)
+    
+    midpoint <- (max_v - min_v) / 2
+    plot_i <- (ggplot(gene_df.sub, aes_string(x = "tSNE1", y = "tSNE2", color = "gene")) + 
+                 geom_point(size = pt.size) +
+                 scale_color_gradient(
+                   low = low.col, high = high.col,
+                   limits = c(min_v, max_v)
+                 ) + labs(col = gene) +
+                 ggtitle(names(object@scale.data)[i]))
+    gene_plots[[i]] <- plot_i
+  }
+  if (points.only) {
+    for (i in 1:length(gene_plots)) {
+      gene_plots[[i]] <- gene_plots[[i]] + theme(
+        axis.line = element_blank(), axis.text.x = element_blank(),
+        axis.text.y = element_blank(), axis.ticks = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(), legend.position = "none",
+        panel.background = element_blank(), panel.border = element_blank(), 
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        plot.background = element_blank(), plot.title = element_blank()
+      )
+    }
+  }
+  if (return.plots) {
+    return(gene_plots)
+  } else {
+    for (i in 1:length(gene_plots)) {
+      print(gene_plots[[i]])
+    }
+  }
+}
+
+#' Plot expression of multiple genes
+#' 
+#' Uses plotGene to plot each gene (and dataset) on a separate page. It is recommended to call this
+#' function into a PDF due to the large number of plots produced. 
+#'
+#' @param object Analogizer object. Should call runTSNE before calling.
+#' @param genes Vector of gene names.
+#' 
+#' @export
+#' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
+#' @examples
+#' \dontrun{
+#' # analogizer object, factorization complete 
+#' analogy
+#' analogy <- runTSNE(analogy)
+#' # plot expression for CD4 and FCGR3A
+#' pdf("gene_plots.pdf")
+#' plotGenes(analogy, c("CD4", "FCGR3A"))
+#' dev.off()
+#' }
+
+plotGenes <- function(object, genes) {
+  for (i in 1:length(genes)) {
+    print(genes[i])
+    plotGene(object, genes[i])
+  }
+}
+
 #' Generate a river (Sankey) plot
 #' 
 #' Creates a riverplot to show how separate cluster assignments from two datasets map onto a 
@@ -2452,6 +2339,7 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
 #' @param river.usr Coordinates at which to draw the plot in form (x0, x1, y0, y1).
 #' @param node.order Order of clusters in each set (list with three vectors of ordinal numbers).
 #'   By default will try to automatically order them appropriately.
+#'   
 #' @export
 #' @importFrom riverplot makeRiver
 #' @importFrom riverplot plot.riverplot
@@ -2588,106 +2476,321 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
   )))
 }
 
-#' Calculate adjusted Rand index for Analogizer clustering and external clustering.
-#' Should run quantileAlignSNF first.
+#######################################################################################
+#### Marker/Cell Analysis
+
+#' Find shared and dataset-specific markers 
+#' 
+#' Applies various filters to genes on the shared (W) and dataset-specific (V) components of the 
+#' factorization, before selecting those which load most significantly on each factor (in a shared 
+#' or dataset-specific way).
 #'
-#' @param object analogizer object.
-#' @param clusters.compare Clustering with which to compare (named vector)
-#' @importFrom mclust adjustedRandIndex
-#' @return Adjusted Rand index value
+#' @param object Analogizer object. Should call optimizeALS before calling.
+#' @param dataset1 Name of first dataset (default first dataset by order)
+#' @param dataset2 Name of second dataset (default second dataset by order)
+#' @param factor.share.thresh Use only factors with a dataset specificity less than or equalt to 
+#'   threshold (default 10).
+#' @param dataset.specificity Pre-calculated dataset specificity if available. Will calculate if not
+#'   available.
+#' @param log.fc.thresh Lower log-fold change threshold for differential expression in markers
+#'   (default 1).
+#' @param umi.thresh Lower UMI threshold for markers (default 30).
+#' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
+#' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
+#'   (default 0.05).
+#' @param num.genes Max number of genes to report for each dataset (default 30).
+#' @param print.genes Print ordered markers passing logfc, umi and frac thresholds (default FALSE).
+#' 
+#' @return List of shared and specific factors. First three elements are dataframes of dataset1-
+#'   specific, shared, and dataset2-specific markers. Last two elements are tables indicating the 
+#'   number of factors in which marker appears. 
 #' @export
 #' @examples
 #' \dontrun{
-#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-#' analogy = Analogizer(list(Y,Z))
-#' analogy =
+#' # analogizer object, factorization complete 
+#' analogy
+#' markers <- getFactorMarkers(analogy, num.genes = 10)
+#' # look at shared markers 
+#' head(markers[[2]])
 #' }
-calcARI = function(object, clusters.compare) {
-  if (length(clusters.compare) < length(object@clusters)) {
-    print('Calculating ARI for subset of full cells')
+
+getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.share.thresh = 10,
+                             dataset.specificity = NULL, log.fc.thresh = 1, umi.thresh = 30,
+                             frac.thresh = 0, pval.thresh = 0.05, num.genes = 30, print.genes = F) {
+  if (is.null(dataset1) | is.null(dataset2)) {
+    dataset1 <- names(object@H)[1]
+    dataset2 <- names(object@H)[2]
   }
-  return(adjustedRandIndex(object@clusters[names(clusters.compare)],
-                           clusters.compare))
-}
-
-#' Calculate purity for Analogizer clustering and external clustering (base truth).
-#' Should run quantileAlignSNF first.
-#'
-#' @param object analogizer object.
-#' @param classes.compare Clustering with which to compare (named vector)
-#' @return Purity value
-#' @export
-#' @examples
-#' \dontrun{
-#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-#' analogy = Analogizer(list(Y,Z))
-#' analogy =
-#' }
-calcPurity = function(object, classes.compare) {
-  if (length(classes.compare) < length(object@clusters)) {
-    print('Calculating purity for subset of full cells')
+  if (is.null(num.genes)) {
+    num.genes <- length(object@var.genes)
   }
-  clusters = object@clusters[names(classes.compare)]
-  purity = sum(apply(table(classes.compare, clusters), 2, max)) / length(clusters)
-
-  return(purity)
-}
-
-#' Construct an Analogizer object with a specified subset of cells or clusters.
-#' Should only be called after tsne coordinates have been computed and alignment
-#' performed.
-#'
-#' @param object analogizer object.
-#' @param clusters.use Clusters to extract
-#' @param cells.use Vector of cell names to keep from any dataset
-#'
-#' @return analogizer object
-#' @export
-#' @examples
-#' \dontrun{
-#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-#' analogy = Analogizer(list(Y,Z))
-#' analogy =
-#' }
-subsetAnalogizer<-function(object, clusters.use = NULL,cells.use = NULL) {
-  if (!is.null(clusters.use)){
-    cells.use = names(object@clusters)[which(object@clusters %in% clusters.use)]
-
+  if (is.null(dataset.specificity)) {
+    dataset.specificity <- calcDatasetSpecificity(object, dataset1 = dataset1, 
+                                                  dataset2 = dataset2, do.plot = F)
   }
-  raw.data = lapply(seq_along(object@raw.data),function(q){
-    cells = intersect(cells.use,colnames(object@raw.data[[q]]))
-    if (length(cells) > 0) {
-      object@raw.data[[q]][,cells]
+  factors.use <- which(abs(dataset.specificity[[3]]) <= factor.share.thresh)
+  
+  if (length(factors.use) < 2) {
+    print(paste(
+      "Warning: only", length(factors.use),
+      "factors passed the dataset specificity threshold."
+    ))
+  }
+  
+  Hs_scaled <- lapply(object@H, function(x) {
+    scale(x, scale = T, center = T)
+  })
+  labels <- list()
+  for (i in 1:length(Hs_scaled)) {
+    labels[[i]] <- factors.use[as.factor(apply(Hs_scaled[[i]][, factors.use], 1, which.max))]
+  }
+  names(labels) <- names(object@H)
+  
+  V1_matrices <- list()
+  V2_matrices <- list()
+  W_matrices <- list()
+  for (j in 1:length(factors.use)) {
+    i <- factors.use[j]
+    
+    W <- t(object@W)
+    V1 <- t(object@V[[dataset1]])
+    V2 <- t(object@V[[dataset2]])
+    rownames(W) <- rownames(V1) <- rownames(V2) <- object@var.genes
+    # if not max factor for any cell in either dataset
+    if (sum(labels[[dataset1]] == i) <= 1 | sum(labels[[dataset2]] == i) <= 1) {
+      print(paste("Warning: factor", i, "did not appear as max in any cell in either dataset"))
+      next
+    }
+    # filter genes by gene_count and cell_frac thresholds
+    gene_info <- list()
+    for (dset in c(dataset1, dataset2)) {
+      gene_info[[dset]]$gene_counts <- rowSums(object@raw.data[[dset]][
+        object@var.genes,
+        labels[[dset]] == i
+        ])
+      gene_info[[dset]]$cell_fracs <- rowSums(object@raw.data[[dset]][object@var.genes,
+                                                                      labels[[dset]] == i] > 0) / 
+        sum(labels[[dset]] == i)
+      gene_info[[dset]]$norm_counts <- object@norm.data[[dset]][object@var.genes, 
+                                                                labels[[dset]] == i]
+      gene_info[[dset]]$mean <- rowMeans(object@norm.data[[dset]][
+        object@var.genes,
+        labels[[dset]] == i
+        ])
+      names(gene_info[[dset]]$gene_counts) <- names(gene_info[[dset]]$mean) <- object@var.genes
+      rownames(gene_info[[dset]]$norm_counts) <- object@var.genes
+    }
+    log2fc <- log2(gene_info[[dataset1]]$mean / gene_info[[dataset2]]$mean)
+    initial_filtered <- object@var.genes[(gene_info[[dataset1]]$gene_counts > umi.thresh |
+                                            gene_info[[dataset2]]$gene_counts > umi.thresh) &
+                                           (gene_info[[dataset1]]$cell_fracs > frac.thresh |
+                                              gene_info[[dataset2]]$cell_fracs > frac.thresh)]
+    filtered_genes_V1 <- initial_filtered[log2fc[initial_filtered] > log.fc.thresh]
+    filtered_genes_V2 <- initial_filtered[(-1 * log2fc)[initial_filtered] > log.fc.thresh]
+    
+    W <- pmin(W + V1, W + V2)
+    V1 <- V1[filtered_genes_V1, ]
+    V2 <- V2[filtered_genes_V2, ]
+    
+    if (length(filtered_genes_V1) == 0) {
+      top_genes_V1 <- ""
     } else {
-      warning(paste0('Selected subset eliminates dataset ', names(object@raw.data)[q]))
+      top_genes_V1 <- row.names(V1)[ order(V1[, i], decreasing = T)[1:num.genes] ]
+      top_genes_V1 <- top_genes_V1[!is.na(top_genes_V1)]
+      top_genes_V1 <- top_genes_V1[which(V1[top_genes_V1, i] > 0)]
+    }
+    if (length(filtered_genes_V2) == 0) {
+      top_genes_V2 <- ""
+    } else {
+      top_genes_V2 <- row.names(V2)[ order(V2[, i], decreasing = T)[1:num.genes] ]
+      top_genes_V2 <- top_genes_V2[!is.na(top_genes_V2)]
+      top_genes_V2 <- top_genes_V2[which(V2[top_genes_V2, i] > 0)]
+    }
+    top_genes_W <- row.names(W)[ order(W[, i], decreasing = T)[1:num.genes] ]
+    top_genes_W <- top_genes_W[!is.na(top_genes_W)]
+    top_genes_W <- top_genes_W[which(W[top_genes_W, i] > 0)]
+    
+    if (print.genes) {
+      print(paste("Factor", i))
+      print(top_genes_V1)
+      print(top_genes_W)
+      print(top_genes_V2)
+    }
+    
+    pvals <- list() # order is V1, V2, W
+    top_genes <- list(top_genes_V1, top_genes_V2, top_genes_W)
+    for (k in 1:length(top_genes)) {
+      pvals[[k]] <- sapply(top_genes[[k]], function(x) {
+        suppressWarnings(wilcox.test(
+          as.numeric(gene_info[[dataset1]]$norm_counts[x, ]),
+          as.numeric(gene_info[[dataset2]]$norm_counts[x, ])
+        )$p.value)
+      })
+    }
+    # bind values in matrices
+    V1_matrices[[j]] <- Reduce(cbind, list(
+      rep(i, length(top_genes_V1)), top_genes_V1,
+      gene_info[[dataset1]]$gene_counts[top_genes_V1],
+      gene_info[[dataset2]]$gene_counts[top_genes_V1],
+      gene_info[[dataset1]]$cell_fracs[top_genes_V1],
+      gene_info[[dataset2]]$cell_fracs[top_genes_V1],
+      log2fc[top_genes_V1], pvals[[1]]
+    ))
+    V2_matrices[[j]] <- Reduce(cbind, list(
+      rep(i, length(top_genes_V2)), top_genes_V2,
+      gene_info[[dataset1]]$gene_counts[top_genes_V2],
+      gene_info[[dataset2]]$gene_counts[top_genes_V2],
+      gene_info[[dataset1]]$cell_fracs[top_genes_V2],
+      gene_info[[dataset2]]$cell_fracs[top_genes_V2],
+      log2fc[top_genes_V2], pvals[[2]]
+    ))
+    W_matrices[[j]] <- Reduce(cbind, list(
+      rep(i, length(top_genes_W)), top_genes_W,
+      gene_info[[dataset1]]$gene_counts[top_genes_W],
+      gene_info[[dataset2]]$gene_counts[top_genes_W],
+      gene_info[[dataset1]]$cell_fracs[top_genes_W],
+      gene_info[[dataset2]]$cell_fracs[top_genes_W],
+      log2fc[top_genes_W], pvals[[3]]
+    ))
+  }
+  V1_genes <- data.frame(Reduce(rbind, V1_matrices), stringsAsFactors = F)
+  V2_genes <- data.frame(Reduce(rbind, V2_matrices), stringsAsFactors = F)
+  W_genes <- data.frame(Reduce(rbind, W_matrices), stringsAsFactors = F)
+  df_cols <- c("factor_num", "gene", "counts1", "counts2", "fracs1", "fracs2", "log2fc", "p_value")
+  output_list <- list(V1_genes, W_genes, V2_genes)
+  output_list <- lapply(output_list, function(df) {
+    colnames(df) <- df_cols
+    df <- transform(df,
+                    factor_num = as.numeric(factor_num), gene = as.character(gene),
+                    counts1 = as.numeric(counts1), counts2 = as.numeric(counts2),
+                    fracs1 = as.numeric(fracs1), fracs2 = as.numeric(fracs2),
+                    log2fc = as.numeric(log2fc), p_value = as.numeric(p_value)
+    )
+    df[which(df$p_value < pval.thresh), ]
+  })
+  names(output_list) <- c(dataset1, "shared", dataset2)
+  output_list[["num_factors_V1"]] <- table(output_list[[dataset1]]$gene)
+  output_list[["num_factors_V2"]] <- table(output_list[[dataset2]]$gene)
+  return(output_list)
+}
+
+#######################################################################################
+#### Conversion/Transformation 
+
+#' Create a Seurat object containing the data from an Analogizer object
+#' 
+#' Carries over raw.data, scale.data, tsne.coords and the iNMF factorization, plus cluster 
+#' assignment.s
+#'
+#' @param object Analogizer object.
+#' @param need.sparse Whether data needs to be converted to sparse format first; most relevant for 
+#'   older Analogizer objects (default TRUE).
+#'   
+#' @return Seurat object with raw.data, scale.data, dr$tsne, dr$inmf, and ident slots set.
+#' @export
+#' @examples
+#' \dontrun{
+#' # Analogizer object
+#' analogy
+#' s.object <- AnalogizerToSeurat(analogy)
+#' }
+
+AnalogizerToSeurat <- function(object, need.sparse = T) {
+  if (!require("Seurat", quietly = TRUE)) {
+    stop("Package \"Seurat\" needed for this function to work. Please install it.",
+         call. = FALSE
+    )
+  }
+  nms <- names(object@H)
+  if (need.sparse) {
+    object@raw.data <- lapply(object@raw.data, function(x) {
+      Matrix(as.matrix(x), sparse = T)
+    })
+    object@norm.data <- lapply(object@norm.data, function(x) {
+      Matrix(as.matrix(x), sparse = T)
+    })
+  }
+  raw.data <- MergeSparseDataAll(object@raw.data, nms)
+  norm.data <- MergeSparseDataAll(object@norm.data, nms)
+  
+  scale.data <- do.call(rbind, object@scale.data)
+  rownames(scale.data) <- colnames(norm.data)
+  inmf.obj <- new(
+    Class = "dim.reduction", gene.loadings = t(object@W),
+    cell.embeddings = object@H.norm, key = "iNMF"
+  )
+  tsne.obj <- new(
+    Class = "dim.reduction", cell.embeddings = object@tsne.coords,
+    key = "tSNE_"
+  )
+  rownames(tsne.obj@cell.embeddings) <- rownames(scale.data)
+  rownames(inmf.obj@cell.embeddings) <- rownames(scale.data)
+  colnames(tsne.obj@cell.embeddings) <- paste0("tSNE_", 1:2)
+  new.seurat <- CreateSeuratObject(raw.data)
+  new.seurat <- NormalizeData(new.seurat)
+  new.seurat@scale.data <- t(scale.data)
+  new.seurat@dr$tsne <- tsne.obj
+  new.seurat@dr$inmf <- inmf.obj
+  
+  new.seurat <- SetIdent(new.seurat, ident.use = as.character(object@clusters))
+  return(new.seurat)
+}
+
+#' Construct an Analogizer object with a specified subset 
+#' 
+#' The subset can be based on cell names or clusters. This function applies the subsetting to 
+#' raw.data, norm.data, scale.data, H, W, V, H.norm, tsne.coords, and clusters. Note that it does
+#' NOT reoptimize the factorization. See optimizeSubset for this functionality. 
+#'
+#' @param object Analogizer object. Should run quantileAlignSNF and runTSNE before calling. 
+#' @param clusters.use Clusters to use for subset.
+#' @param cells.use Vector of cell names to keep from any dataset.
+#'
+#' @return Analogizer object with subsetting applied to raw.data, norm.data, scale.data, H, W, V,
+#'   H.norm, tsne.coords, and clusters.
+#' @export
+#' @examples
+#' \dontrun{
+#' # analogizer object, with clusters 0:10
+#' # factorization, alignment, and t-SNE calculation have been performed
+#' analogy 
+#' # subset by clusters
+#' analogy_subset <- subsetAnalogizer(analogy, clusters.use = c(1, 4, 5))
+#' }
+
+subsetAnalogizer <- function(object, clusters.use = NULL, cells.use = NULL) {
+  if (!is.null(clusters.use)) {
+    cells.use <- names(object@clusters)[which(object@clusters %in% clusters.use)]
+  }
+  raw.data <- lapply(seq_along(object@raw.data), function(q) {
+    cells <- intersect(cells.use, colnames(object@raw.data[[q]]))
+    if (length(cells) > 0) {
+      object@raw.data[[q]][, cells]
+    } else {
+      warning(paste0("Selected subset eliminates dataset ", names(object@raw.data)[q]))
       return(NULL)
     }
   })
-  raw.data = raw.data[!sapply(raw.data,is.null)]
-  nms = names(object@raw.data)[!sapply(raw.data, is.null)]
-  a = Analogizer(raw.data)
-
-  a@norm.data = lapply(1:length(a@raw.data),function(i){
-    object@norm.data[[i]][,colnames(a@raw.data[[i]])]
-
+  raw.data <- raw.data[!sapply(raw.data, is.null)]
+  nms <- names(object@raw.data)[!sapply(raw.data, is.null)]
+  a <- Analogizer(raw.data)
+  
+  a@norm.data <- lapply(1:length(a@raw.data), function(i) {
+    object@norm.data[[i]][, colnames(a@raw.data[[i]])]
   })
-  a@scale.data = lapply(1:length(a@raw.data),function(i){
-    object@scale.data[[i]][colnames(a@raw.data[[i]]),]
-
+  a@scale.data <- lapply(1:length(a@raw.data), function(i) {
+    object@scale.data[[i]][colnames(a@raw.data[[i]]), ]
   })
-  a@H = lapply(1:length(a@raw.data),function(i){
-    object@H[[i]][colnames(a@raw.data[[i]]),]
+  a@H <- lapply(1:length(a@raw.data), function(i) {
+    object@H[[i]][colnames(a@raw.data[[i]]), ]
   })
-  a@clusters = object@clusters[unlist(lapply(a@H,rownames))]
-  a@clusters = droplevels(a@clusters)
-  a@tsne.coords = object@tsne.coords[names(a@clusters),]
-  a@H.norm = object@H.norm[names(a@clusters),]
-  a@W = object@W
-  a@V = object@V
-  a@var.genes = object@var.genes
-  names(a@scale.data) = names(a@raw.data) = names(a@norm.data) = names(a@H) = nms
+  a@clusters <- object@clusters[unlist(lapply(a@H, rownames))]
+  a@clusters <- droplevels(a@clusters)
+  a@tsne.coords <- object@tsne.coords[names(a@clusters), ]
+  a@H.norm <- object@H.norm[names(a@clusters), ]
+  a@W <- object@W
+  a@V <- object@V
+  a@var.genes <- object@var.genes
+  names(a@scale.data) <- names(a@raw.data) <- names(a@norm.data) <- names(a@H) <- nms
   return(a)
 }

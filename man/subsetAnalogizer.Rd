@@ -2,32 +2,32 @@
 % Please edit documentation in R/Analogizer.R
 \name{subsetAnalogizer}
 \alias{subsetAnalogizer}
-\title{Construct an Analogizer object with a specified subset of cells or clusters.
-Should only be called after tsne coordinates have been computed and alignment
-performed.}
+\title{Construct an Analogizer object with a specified subset}
 \usage{
 subsetAnalogizer(object, clusters.use = NULL, cells.use = NULL)
 }
 \arguments{
-\item{object}{analogizer object.}
+\item{object}{Analogizer object. Should run quantileAlignSNF and runTSNE before calling.}
 
-\item{clusters.use}{Clusters to extract}
+\item{clusters.use}{Clusters to use for subset.}
 
-\item{cells.use}{Vector of cell names to keep from any dataset}
+\item{cells.use}{Vector of cell names to keep from any dataset.}
 }
 \value{
-analogizer object
+Analogizer object with subsetting applied to raw.data, norm.data, scale.data, H, W, V,
+  H.norm, tsne.coords, and clusters.
 }
 \description{
-Construct an Analogizer object with a specified subset of cells or clusters.
-Should only be called after tsne coordinates have been computed and alignment
-performed.
+The subset can be based on cell names or clusters. This function applies the subsetting to 
+raw.data, norm.data, scale.data, H, W, V, H.norm, tsne.coords, and clusters. Note that it does
+NOT reoptimize the factorization. See optimizeSubset for this functionality.
 }
 \examples{
 \dontrun{
-Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-analogy = Analogizer(list(Y,Z))
-analogy =
+# analogizer object, with clusters 0:10
+# factorization, alignment, and t-SNE calculation have been performed
+analogy 
+# subset by clusters
+analogy_subset <- subsetAnalogizer(analogy, clusters.use = c(1, 4, 5))
 }
 }
