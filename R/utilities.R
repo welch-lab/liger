@@ -85,6 +85,27 @@ MergeSparseDataAll<-function (datalist,library.names=NULL) {
   return(M)
 }
 
+#' Perform fast and memory-efficient normalization operation on sparse matrix data.
+#'
+#' @param A Sparse matrix DGE.
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' analogy = Analogizer(list(Y,Z))
+#' analogy@var.genes = c(1,2,3,4)
+#' analogy = scaleNotCenter(analogy)
+#' }
+Matrix.column_norm <- function(A){
+  if (class(A)[1] == "dgTMatrix") {
+    temp = summary(A)
+    A = sparseMatrix(i=temp[,1],j=temp[,2],x=temp[,3])
+  }
+  A@x <- A@x / rep.int(Matrix::colSums(A), diff(A@p))
+  return(A)
+}
+
 # After running modularity clustering, assign singleton communities to the mode of the cluster
 # assignments of the within-dataset neighbors
 assign.singletons<-function(object,idents,k.use = 15, center=F) {
