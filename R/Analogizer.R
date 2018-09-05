@@ -1846,6 +1846,7 @@ calcPurity <- function(object, classes.compare) {
 #' @param text.size Controls size of plot text (cluster center labels) (default 3).
 #' @param do.shuffle Randomly shuffle points so that points from same dataset are not plotted 
 #'   one after the other (default TRUE).
+#' @param rand.seed Random seed for reproducibility of point shuffling (default 1).
 #' @param axis.labels Vector of two strings to use as x and y labels respectively.
 #' @param do.legend Display legend on plots (default TRUE).
 #' @param legend.size Size of legend on plots (default 5).
@@ -1869,13 +1870,15 @@ calcPurity <- function(object, classes.compare) {
 #' }
 
 plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
-                                    text.size = 3, do.shuffle = T, axis.labels = NULL,
-                                    do.legend = T, legend.size = 5, return.plots = F) {
+                                    text.size = 3, do.shuffle = T, rand.seed = 1, 
+                                    axis.labels = NULL, do.legend = T, legend.size = 5, 
+                                    return.plots = F) {
   tsne_df <- data.frame(object@tsne.coords)
   colnames(tsne_df) <- c("tsne1", "tsne2")
   tsne_df$Dataset <- unlist(lapply(1:length(object@H), function(x) {
     rep(names(object@H)[x], nrow(object@H[[x]]))
   }))
+  c_names <- names(object@clusters)
   if (is.null(clusters)) {
     # if clusters have not been set yet
     if (length(object@clusters) == 0) {
@@ -1888,6 +1891,7 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
   }
   tsne_df$Cluster <- clusters[c_names]
   if (do.shuffle) {
+    set.seed(rand.seed)
     idx <- sample(1:nrow(tsne_df))
     tsne_df <- tsne_df[idx, ]
   }

@@ -5,8 +5,8 @@
 \title{Plot t-SNE coordinates of cells across datasets}
 \usage{
 plotByDatasetAndCluster(object, clusters = NULL, title = NULL,
-  pt.size = 0.3, text.size = 3, do.shuffle = T, axis.labels = NULL,
-  do.legend = T, legend.size = 5, return.plots = F)
+  pt.size = 0.3, text.size = 3, do.shuffle = T, rand.seed = 1,
+  axis.labels = NULL, do.legend = T, legend.size = 5, return.plots = F)
 }
 \arguments{
 \item{object}{Analogizer object. Should call runTSNE or runUMAP before calling.}
@@ -22,6 +22,8 @@ clusters slot) (default NULL).}
 
 \item{do.shuffle}{Randomly shuffle points so that points from same dataset are not plotted 
 one after the other (default TRUE).}
+
+\item{rand.seed}{Random seed for reproducibility of point shuffling (default 1).}
 
 \item{axis.labels}{Vector of two strings to use as x and y labels respectively.}
 
