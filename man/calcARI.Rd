@@ -2,28 +2,38 @@
 % Please edit documentation in R/Analogizer.R
 \name{calcARI}
 \alias{calcARI}
-\title{Calculate adjusted Rand index for Analogizer clustering and external clustering.
-Should run quantile_align_SNF first.}
+\title{Calculate adjusted Rand index}
 \usage{
 calcARI(object, clusters.compare)
 }
 \arguments{
-\item{object}{analogizer object.}
+\item{object}{Analogizer object. Should run quantileAlignSNF before calling.}
 
-\item{clusters.compare}{Clustering with which to compare (named vector)}
+\item{clusters.compare}{Clustering with which to compare (named vector).}
 }
 \value{
-Adjusted Rand index value
+Value of ARI
+
+Adjusted Rand index value.
 }
 \description{
-Calculate adjusted Rand index for Analogizer clustering and external clustering.
-Should run quantile_align_SNF first.
+Computes adjusted Rand index for Analogizer clustering and external clustering.
+The Rand index ranges from 0 to 1, with 0 indicating no agreement between clusterings and 1 
+indicating perfect agreement.
 }
 \examples{
 \dontrun{
-Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-analogy = Analogizer(list(Y,Z))
-analogy =
+# analogizer object, factorization done
+analogy
+analogy <- quantileAlignSNF(analogy)
+# toy clusters 
+cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(analogy@raw.data[[1]]), replace = T)
+names(cluster1) <- colnames(analogy@raw.data[[1]])
+cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(analogy@raw.data[[2]]), replace = T)
+names(cluster2) <- colnames(analogy@raw.data[[2]])
+# get ARI for first clustering
+ari1 <- calcARI(analogy, cluster1)
+# get ARI for second clustering
+ari2 <- calcARI(analogy, cluster2)
 }
 }

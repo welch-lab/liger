@@ -2,38 +2,56 @@
 % Please edit documentation in R/Analogizer.R
 \name{selectGenes}
 \alias{selectGenes}
-\title{Select a subset of informative genes from each dataset and combine them.}
+\title{Select a subset of informative genes}
 \usage{
-selectGenes(object, alphathresh = 0.99, varthresh = 0.1, cex.use = 0.3,
-  combine = "union", keep.unique = F, capitalize = F)
+selectGenes(object, alpha.thresh = 0.99, var.thresh = 0.1,
+  combine = "union", keep.unique = F, capitalize = F, do.plot = T,
+  cex.use = 0.3)
 }
 \arguments{
-\item{object}{analogizer object. Should have already called normalize.}
+\item{object}{Analogizer object. Should have already called normalize.}
 
-\item{alphathresh}{alpha threshold}
+\item{alpha.thresh}{Alpha threshold. Controls upper bound for expected mean gene expression 
+(lower threshold -> higher upper bound). (default 0.99)}
 
-\item{varthresh}{variance threshold}
+\item{var.thresh}{Variance threshold. Main threshold used to identify variable genes. Genes with
+expression variance greater than threshold (relative to mean) are selected. 
+(higher threshold -> fewer selected genes). (default 0.1)}
 
-\item{cex.use}{point size for plot}
+\item{combine}{How to combine variable genes across experiments. Either "union" or "intersect".
+(default "union")}
 
-\item{combine}{How to combine variable genes across experiments. Either "union" or "intersect"}
+\item{keep.unique}{Keep genes that occur (i.e., there is a corresponding column in raw.data) only
+in one dataset (default FALSE)}
 
-\item{keep.unique}{Keep genes that occur (i.e., there is a corresponding column in raw.data) only in one dataset?}
+\item{capitalize}{Capitalize gene names to match homologous genes (ie. across species) 
+(default FALSE)}
 
-\item{capitalize}{Capitalize gene names to match homologous genes?}
+\item{do.plot}{Display log plot of gene variance vs. gene expression for each dataset. 
+Selected genes are plotted in green. (default TRUE)}
+
+\item{cex.use}{Point size for plot.}
 }
 \value{
-analogizer object
+Analogizer object with var.genes slot set.
 }
 \description{
-Select a subset of informative genes from each dataset and combine them.
+This function identifies highly variable genes from each dataset and combines these gene sets 
+(either by union or intersection) for use in downstream analysis. Assuming that gene 
+expression approximately follows a Poisson distribution, this function identifies genes with 
+gene expression variance above a given variance threshold (relative to mean gene expression).
+It also provides a log plot of gene variance vs gene expression (with a line indicating expected
+expression across genes and cells). Selected genes are plotted in green.
 }
 \examples{
 \dontrun{
-Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-analogy = Analogizer(list(Y,Z))
-analogy = normalize(analogy)
-analogy = selectGenes(analogy)
+Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+analogy <- Analogizer(list(y_set = Y, z_set = Z))
+analogy <- normalize(analogy)
+# use default selectGenes settings
+analogy <- selectGenes(analogy)
+# select a smaller subset of genes
+analogy <- selectGenes(analogy, var.thresh=0.8)
 }
 }

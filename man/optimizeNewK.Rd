@@ -2,35 +2,45 @@
 % Please edit documentation in R/Analogizer.R
 \name{optimizeNewK}
 \alias{optimizeNewK}
-\title{Optimize objective function for new value of k. Uses an efficient strategy for updating that takes advantage of the information in the existing factorization.}
+\title{Perform factorization for new value of k}
 \usage{
-optimizeNewK(object, k_new, lambda = 5, thresh = 1e-04, max_iters = 100,
-  rand.seed = 1)
+optimizeNewK(object, k.new, lambda = NULL, thresh = 1e-04,
+  max.iters = 100, rand.seed = 1)
 }
 \arguments{
-\item{object}{analogizer object. Should normalize, select genes, and scale before calling.}
+\item{object}{Analogizer object. Should call optimizeALS before calling.}
 
-\item{k_new}{Inner dimension of factorization (number of factors)}
+\item{k.new}{Inner dimension of factorization (number of factors)}
 
-\item{lambda}{Regularization parameter. Larger values penalize dataset-specific effects more strongly.}
+\item{lambda}{Regularization parameter. By default, this will use the lambda last used with
+optimizeALS.}
 
-\item{thresh}{Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh}
+\item{thresh}{Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
+(default 1e-4).}
 
-\item{max_iters}{Maximum number of block coordinate descent iterations to perform}
+\item{max.iters}{Maximum number of block coordinate descent iterations to perform (default 100).}
+
+\item{rand.seed}{Random seed to set. Only relevant if k.new > k. (default 1)}
 }
 \value{
-list of length N+2 containing Hs, W, Vs, and run statistics
+Analogizer object with H, W, and V slots reset.
 }
 \description{
-Optimize objective function for new value of k. Uses an efficient strategy for updating that takes advantage of the information in the existing factorization.
+This uses an efficient strategy for updating that takes advantage of the information in the 
+existing factorization. It is most recommended for values of k smaller than current value,
+where it is more likely to speed up the factorization.
 }
 \examples{
 \dontrun{
-Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-analogy = Analogizer(Y,Z)
-analogy@var.genes = c(1,2,3,4)
-analogy = scaleNotCenter(analogy)
-analogy = optimize_als(analogy,k=2,nrep=1)
+Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+analogy <- Analogizer(list(y_set = Y, z_set = Z))
+analogy <- normalize(analogy)
+analogy <- selectGenes(analogy)
+analogy <- scaleNotCenter(analogy)
+# get factorization using three restarts and 20 factors
+analogy <- optimizeALS(analogy, k = 20, lambda = 5, nrep = 3)
+# decide to run with k = 15 instead (keeping old lambda the same)
+analogy <- optimizeNewK(analogy, k.new = 15)
 }
 }

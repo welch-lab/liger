@@ -2,37 +2,42 @@
 % Please edit documentation in R/Analogizer.R
 \name{optimizeNewLambda}
 \alias{optimizeNewLambda}
-\title{Optimize objective function for new lambda value. Uses an efficient strategy for updating 
-that takes advantage of the information in the existing factorization.}
+\title{Perform factorization for new lambda value}
 \usage{
-optimizeNewLambda(object, new_lambda, thresh = 1e-04, max_iters = 100,
+optimizeNewLambda(object, new.lambda, thresh = 1e-04, max.iters = 100,
   rand.seed = 1)
 }
 \arguments{
-\item{object}{analogizer object. Should call optimizeALS before calling.}
+\item{object}{Analogizer object. Should call optimizeALS before calling.}
 
-\item{new_lambda}{Regularization parameter. Larger values penalize dataset-specific effects more strongly.}
+\item{new.lambda}{Regularization parameter. Larger values penalize dataset-specific effects more 
+strongly.}
 
 \item{thresh}{Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh}
 
-\item{max_iters}{Maximum number of block coordinate descent iterations to perform}
+\item{max.iters}{Maximum number of block coordinate descent iterations to perform (default 100).}
 
-\item{rand.seed}{Random seed for reproducibility}
+\item{rand.seed}{Random seed for reproducibility (default 1).}
 }
 \value{
 Analogizer object with optimized factorization values
 }
 \description{
-Optimize objective function for new lambda value. Uses an efficient strategy for updating 
-that takes advantage of the information in the existing factorization.
+Uses an efficient strategy for updating that takes advantage of the information in the existing 
+factorization; uses previous k. Recommended mainly when re-optimizing for higher lambda and when 
+new lambda value is significantly different; otherwise may not return optimal results.
 }
 \examples{
 \dontrun{
-Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-analogy = Analogizer(Y,Z)
-analogy@var.genes = c(1,2,3,4)
-analogy = scaleNotCenter(analogy)
-analogy = optimize_als(analogy,k=2,nrep=1)
+Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+analogy <- Analogizer(list(y_set = Y, z_set = Z))
+analogy <- normalize(analogy)
+analogy <- selectGenes(analogy)
+analogy <- scaleNotCenter(analogy)
+# get factorization using three restarts and 20 factors
+analogy <- optimizeALS(analogy, k = 20, lambda = 5, nrep = 3)
+# decide to run with lambda = 15 instead (keeping k the same)
+analogy <- optimizeNewLambda(analogy, new.lambda = 15)
 }
 }

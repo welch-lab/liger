@@ -2,22 +2,27 @@
 % Please edit documentation in R/Analogizer.R
 \name{AnalogizerToSeurat}
 \alias{AnalogizerToSeurat}
-\title{Create a Seurat object containing the data from an Analogizer object.}
+\title{Create a Seurat object containing the data from an Analogizer object}
 \usage{
 AnalogizerToSeurat(object, need.sparse = T)
 }
 \arguments{
-\item{object}{analogizer object.}
+\item{object}{Analogizer object.}
+
+\item{need.sparse}{Whether data needs to be converted to sparse format first; most relevant for 
+older Analogizer objects (default TRUE).}
+}
+\value{
+Seurat object with raw.data, scale.data, dr$tsne, dr$inmf, and ident slots set.
 }
 \description{
-Create a Seurat object containing the data from an Analogizer object.
+Carries over raw.data, scale.data, tsne.coords and the iNMF factorization, plus cluster 
+assignment.s
 }
 \examples{
 \dontrun{
-Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-analogy = Analogizer(list(Y,Z))
-analogy@var.genes = c(1,2,3,4)
-analogy = scaleNotCenter(analogy)
+# Analogizer object
+analogy
+s.object <- AnalogizerToSeurat(analogy)
 }
 }
