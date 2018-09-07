@@ -382,7 +382,8 @@ scaleNotCenter_sparse<-function (object, cells = NULL)
 #' }
 
 optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100, nrep = 1,
-                        H.init = NULL, W.init = NULL, V.init = NULL, rand.seed = 1) {
+                        H.init = NULL, W.init = NULL, V.init = NULL, rand.seed = 1,
+                        print.obj = F) {
   # remove cells with no selected gene expression
   object <- removeMissingCells(object)
   E <- object@scale.data
@@ -481,13 +482,17 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
       H_m <- H
       V_m <- V
       best_obj <- obj
+      best_seed <- rand.seed + i - 1
     }
     end_time <- Sys.time()
     run_stats[i, 1] <- as.double(difftime(end_time, start_time, units = "secs"))
     run_stats[i, 2] <- iters
-    cat("\nConverged in", run_stats[i, 1], "seconds,", iters, "iterations. Objective:", obj, "\n")
+    cat("\nConverged in", run_stats[i, 1], "seconds,", iters, "iterations.\n")
+    if (print.obj) {
+      cat("Objective:", obj, "\n")
     }
-  cat("\nBest objective:", best_obj, "\n")
+  }
+  cat("Best results with seed", best_seed, ".\n")
   object@H <- H_m
   object@H <- lapply(1:length(object@scale.data), function(i) {
     rownames(object@H[[i]]) <- rownames(object@scale.data[[i]])
@@ -1122,7 +1127,7 @@ quantileAlignSNF <- function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, r
                              min_cells = 2, quantiles = 50, nstart = 10, resolution = 1, 
                              dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", center = F, 
                              small.clust.thresh = 0, id.number = NULL, print.mod = F, 
-                             print.align.summary = T) {
+                             print.align.summary = F) {
   if (is.null(ref_dataset)) {
     ns <- sapply(object@scale.data, nrow)
     ref_dataset <- names(object@scale.data)[which.max(ns)]
