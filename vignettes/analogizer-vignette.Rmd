@@ -26,7 +26,7 @@ dge1 = readRDS("dge1.RDS") #genes in rows, cells in columns, rownames and colnam
 dge2 = readRDS("dge2.RDS")
 analogy = Analogizer(list(name1=dge1,name2=dge2)) #Can also pass in more than 2 datasets
 analogy = normalize(analogy)
-analogy = selectGenes(analogy,varthresh = 0.1)
+analogy = selectGenes(analogy,var.thresh = 0.1)
 analogy = scaleNotCenter(analogy)
 ```
 
@@ -37,15 +37,15 @@ The key parameters here are the number of factors (k), the penalty parameter (la
 In most cases, the default settings of lambda=5.0 and resolution=1.0 provide reasonable results.
 ```r
 analogy = optimizeALS(analogy,k=20) 
-analogy = quantile_align_SNF(analogy) #SNF clustering and quantile alignment
+analogy = quantileAlignSNF(analogy) #SNF clustering and quantile alignment
 ```
 
 ## Visualizing the results
 ```r
-analogy = run_tSNE(analogy)
+analogy = runTSNE(analogy)
 plotByDatasetAndCluster(analogy) #Can also pass in different set of cluster labels to plot
 pdf("word_clouds.pdf")
-plot_word_clouds(analogy)
+plotWordClouds(analogy)
 dev.off()
 ```
 
@@ -56,19 +56,19 @@ markers, the third element contains dataset-specific markers for dataset 2, and 
 the number of factors in which each marker is found. This information allows the identification
 of ubiquitous vs. cell-type-specific dataset differences.
 ```r
-markers = get_factor_markers(analogy,num_genes=10)
-plot_gene(analogy,gene="Malat1")
-plot_gene_violin(analogy,gene="Malat1")
+markers = getFactorMarkers(analogy, num.genes=10)
+plotGene(analogy,gene="Malat1")
+plotGeneViolin(analogy,gene="Malat1")
 ```
 
 
 ## Selecting k and lambda
-The kSuggestion and lambdaSuggestion functions can aid in selecting k and lambda. We want to find the smallest
+The suggestK and suggestLambda functions can aid in selecting k and lambda. We want to find the smallest
 k for which the increase in entropy metric begins to level off (an "elbow" in the plot). Similarly, we want the
 smallest lambda for which the alignment metric stabilizes.
 ```r
-kSuggestion(analogy) # plot entropy metric to find an elbow that can be used to select the number of factors
-lambdaSuggestion(analogy,k) # plot alignment metric to find an elbow that can be used to select the value of lambda
+suggestK(analogy) # plot entropy metric to find an elbow that can be used to select the number of factors
+suggestLambda(analogy,k) # plot alignment metric to find an elbow that can be used to select the value of lambda
 ```
 
 ## Updating the Factorization
