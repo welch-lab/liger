@@ -2032,6 +2032,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
 #' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
 #'   (default 0.05).
+#' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
 #'   
 #' @importFrom ggrepel geom_text_repel
 #' @importFrom grid roundrectGrob
@@ -2050,7 +2051,8 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 
 plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1, 
                            max.size = 4, factor.share.thresh = 10, log.fc.thresh = 1,
-                           umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05) {
+                           umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05, 
+                           return.plots = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
@@ -2078,6 +2080,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
   names_list <- list(dataset1, "Shared", dataset2)
   tsne_coords <- object@tsne.coords
   pb <- txtProgressBar(min = 0, max = length(factors.use), style = 3)
+  return_plots <- list()
   for (i in factors.use) {
     tsne_df <- data.frame(H_aligned[, i], tsne_coords)
     factorlab <- paste("Factor", i, sep = "")
@@ -2118,8 +2121,14 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
              x = 0.67, y = 0.5, width = 0.67, height = 0.70,
              gp = gpar(fill = "indianred1", col = "Black", alpha = 0.5, lwd = 2)
            )))
-    print(plot_grid(p1, p2, nrow = 2, align = "h"))
+    return_plots[[i]] <- plot_grid(p1, p2, nrow = 2, align = "h")
+    if (!return.plots) {
+      print(return_plots[[i]])
+    }
     setTxtProgressBar(pb, i)
+  }
+  if (return.plots) {
+    return(return_plots)
   }
 }
 
