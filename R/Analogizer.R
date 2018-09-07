@@ -104,7 +104,8 @@ Analogizer <- function(raw.data, sparse.dcg = T) {
     raw.data <- lapply(raw.data, function(x) {
       if (class(x)[1] == "dgTMatrix") {
         temp <- summary(x)
-        sparseMatrix(i = temp[, 1], j = temp[, 2], x = temp[, 3])
+        sparseMatrix(i = temp[, 1], j = temp[, 2], x = temp[, 3],
+                     dimnames = list(rownames(x),colnames(x)))
       } else {
         Matrix(as.matrix(x), sparse = T)
       }
