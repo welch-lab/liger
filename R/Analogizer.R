@@ -2032,6 +2032,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
 #' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
 #'   (default 0.05).
+#' @param do.spec.plot Include dataset specificity plot in printout (default TRUE).
 #' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
 #'   
 #' @importFrom ggrepel geom_text_repel
@@ -2052,7 +2053,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1, 
                            max.size = 4, factor.share.thresh = 10, log.fc.thresh = 1,
                            umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05, 
-                           return.plots = F) {
+                           do.spec.plot = T, return.plots = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
@@ -2064,7 +2065,8 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
   V2 <- t(object@V[[dataset2]])
   W <- pmin(W + V1, W + V2)
   
-  dataset.specificity <- calcDatasetSpecificity(object, dataset1 = dataset1, dataset2 = dataset2)
+  dataset.specificity <- calcDatasetSpecificity(object, dataset1 = dataset1, 
+                                                dataset2 = dataset2, do.plot = do.spec.plot)
   factors.use <- which(abs(dataset.specificity[[3]]) <= factor.share.thresh)
   
   markers <- getFactorMarkers(object,
