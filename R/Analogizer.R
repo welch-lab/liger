@@ -132,6 +132,7 @@ Analogizer <- function(raw.data, sparse.dcg = T) {
 #' }
 
 normalize <- function(object) {
+  object <- removeMissingCells(object, slot.use = "raw.data")
   if (class(object@raw.data[[1]])[1] == "dgTMatrix" | 
       class(object@raw.data[[1]])[1] == "dgCMatrix") {
     object@norm.data <- lapply(object@raw.data, Matrix.column_norm)
@@ -269,9 +270,10 @@ scaleNotCenter <- function(object, remove.missing = T) {
 #'
 #' Removes cells from scale.data with no expression in any selected genes.  
 #'
-#' @param object Analogizer object (scale.data must be set).
+#' @param object Analogizer object (scale.data or norm.data must be set).
+#' @param slot.use The data slot to filter (takes "raw.data" and "scale.data") (default "scale.data")
 #' 
-#' @return Analogizer object with modified scale.data (dataset names preserved).
+#' @return Analogizer object with modified scale.data (or norm.data) (dataset names preserved).
 #' @export
 #' @examples 
 #' \dontrun{
@@ -280,21 +282,33 @@ scaleNotCenter <- function(object, remove.missing = T) {
 #' analogy <- removeMissingCells(analogy)
 #' }
 
-removeMissingCells <- function(object) {
-  object@scale.data <- lapply(seq_along(object@scale.data), function(x) {
-    missing <- which(rowSums(object@scale.data[[x]]) == 0)
+removeMissingCells <- function(object, slot.use = "scale.data") {
+  filter.data <- slot(object, slot.use)
+  filter.data <- lapply(seq_along(filter.data), function(x) {
+    if (slot.use == "scale.data") {
+      matrix.use = t(filter.data[[x]])
+    } else {
+      matrix.use = filter.data[[x]]
+    }
+    missing <- which(colSums(matrix.use) == 0)
     if (length(missing) > 0) {
       print(paste0(
-        "Removing cells not expressing selected genes in ",
-        names(object@scale.data)[[x]], ":"
+        "Removing cells not expressing any genes in ",
+        names(object@raw.data)[x], ":"
       ))
-      print(rownames(object@scale.data[[x]])[missing])
-      object@scale.data[[x]][-missing, ]
+      print(colnames(matrix.use)[missing])
+      subset <- matrix.use[, -missing]
     } else {
-      object@scale.data[[x]]
+      subset <- matrix.use
+    }
+    if (slot.use == "scale.data") {
+      t(subset)
+    } else {
+      subset
     }
   })
-  names(object@scale.data) <- names(object@raw.data)
+  names(filter.data) <- names(object@raw.data)
+  slot(object, slot.use) <- filter.data
   return(object)
 }
 
