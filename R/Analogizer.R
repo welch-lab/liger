@@ -104,7 +104,8 @@ Analogizer <- function(raw.data, sparse.dcg = T) {
     raw.data <- lapply(raw.data, function(x) {
       if (class(x)[1] == "dgTMatrix") {
         temp <- summary(x)
-        sparseMatrix(i = temp[, 1], j = temp[, 2], x = temp[, 3])
+        sparseMatrix(i = temp[, 1], j = temp[, 2], x = temp[, 3],
+                     dimnames = list(rownames(x),colnames(x)))
       } else {
         Matrix(as.matrix(x), sparse = T)
       }
@@ -131,6 +132,7 @@ Analogizer <- function(raw.data, sparse.dcg = T) {
 #' }
 
 normalize <- function(object) {
+  object <- removeMissingCells(object, slot.use = "raw.data")
   if (class(object@raw.data[[1]])[1] == "dgTMatrix" | 
       class(object@raw.data[[1]])[1] == "dgCMatrix") {
     object@norm.data <- lapply(object@raw.data, Matrix.column_norm)
@@ -268,9 +270,10 @@ scaleNotCenter <- function(object, remove.missing = T) {
 #'
 #' Removes cells from scale.data with no expression in any selected genes.  
 #'
-#' @param object Analogizer object (scale.data must be set).
+#' @param object Analogizer object (scale.data or norm.data must be set).
+#' @param slot.use The data slot to filter (takes "raw.data" and "scale.data") (default "scale.data")
 #' 
-#' @return Analogizer object with modified scale.data (dataset names preserved).
+#' @return Analogizer object with modified scale.data (or norm.data) (dataset names preserved).
 #' @export
 #' @examples 
 #' \dontrun{
@@ -279,21 +282,33 @@ scaleNotCenter <- function(object, remove.missing = T) {
 #' analogy <- removeMissingCells(analogy)
 #' }
 
-removeMissingCells <- function(object) {
-  object@scale.data <- lapply(seq_along(object@scale.data), function(x) {
-    missing <- which(rowSums(object@scale.data[[x]]) == 0)
+removeMissingCells <- function(object, slot.use = "scale.data") {
+  filter.data <- slot(object, slot.use)
+  filter.data <- lapply(seq_along(filter.data), function(x) {
+    if (slot.use == "scale.data") {
+      matrix.use = t(filter.data[[x]])
+    } else {
+      matrix.use = filter.data[[x]]
+    }
+    missing <- which(colSums(matrix.use) == 0)
     if (length(missing) > 0) {
       print(paste0(
-        "Removing cells not expressing selected genes in ",
-        names(object@scale.data)[[x]], ":"
+        "Removing cells not expressing any genes in ",
+        names(object@raw.data)[x], ":"
       ))
-      print(rownames(object@scale.data[[x]])[missing])
-      object@scale.data[[x]][-missing, ]
+      print(colnames(matrix.use)[missing])
+      subset <- matrix.use[, -missing]
     } else {
-      object@scale.data[[x]]
+      subset <- matrix.use
+    }
+    if (slot.use == "scale.data") {
+      t(subset)
+    } else {
+      subset
     }
   })
-  names(object@scale.data) <- names(object@raw.data)
+  names(filter.data) <- names(object@raw.data)
+  slot(object, slot.use) <- filter.data
   return(object)
 }
 
@@ -381,7 +396,8 @@ scaleNotCenter_sparse<-function (object, cells = NULL)
 #' }
 
 optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100, nrep = 1,
-                        H.init = NULL, W.init = NULL, V.init = NULL, rand.seed = 1) {
+                        H.init = NULL, W.init = NULL, V.init = NULL, rand.seed = 1,
+                        print.obj = F) {
   # remove cells with no selected gene expression
   object <- removeMissingCells(object)
   E <- object@scale.data
@@ -480,13 +496,17 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
       H_m <- H
       V_m <- V
       best_obj <- obj
+      best_seed <- rand.seed + i - 1
     }
     end_time <- Sys.time()
     run_stats[i, 1] <- as.double(difftime(end_time, start_time, units = "secs"))
     run_stats[i, 2] <- iters
-    cat("\nConverged in", run_stats[i, 1], "seconds,", iters, "iterations. Objective:", obj, "\n")
+    cat("\nConverged in", run_stats[i, 1], "seconds,", iters, "iterations.\n")
+    if (print.obj) {
+      cat("Objective:", obj, "\n")
     }
-  cat("\nBest objective:", best_obj, "\n")
+  }
+  cat("Best results with seed", best_seed, ".\n")
   object@H <- H_m
   object@H <- lapply(1:length(object@scale.data), function(i) {
     rownames(object@H[[i]]) <- rownames(object@scale.data[[i]])
@@ -1121,7 +1141,7 @@ quantileAlignSNF <- function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, r
                              min_cells = 2, quantiles = 50, nstart = 10, resolution = 1, 
                              dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", center = F, 
                              small.clust.thresh = 0, id.number = NULL, print.mod = F, 
-                             print.align.summary = T) {
+                             print.align.summary = F) {
   if (is.null(ref_dataset)) {
     ns <- sapply(object@scale.data, nrow)
     ref_dataset <- names(object@scale.data)[which.max(ns)]
@@ -2026,6 +2046,8 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
 #' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
 #'   (default 0.05).
+#' @param do.spec.plot Include dataset specificity plot in printout (default TRUE).
+#' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
 #'   
 #' @importFrom ggrepel geom_text_repel
 #' @importFrom grid roundrectGrob
@@ -2044,7 +2066,8 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 
 plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1, 
                            max.size = 4, factor.share.thresh = 10, log.fc.thresh = 1,
-                           umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05) {
+                           umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05, 
+                           do.spec.plot = T, return.plots = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
@@ -2056,7 +2079,8 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
   V2 <- t(object@V[[dataset2]])
   W <- pmin(W + V1, W + V2)
   
-  dataset.specificity <- calcDatasetSpecificity(object, dataset1 = dataset1, dataset2 = dataset2)
+  dataset.specificity <- calcDatasetSpecificity(object, dataset1 = dataset1, 
+                                                dataset2 = dataset2, do.plot = do.spec.plot)
   factors.use <- which(abs(dataset.specificity[[3]]) <= factor.share.thresh)
   
   markers <- getFactorMarkers(object,
@@ -2072,6 +2096,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
   names_list <- list(dataset1, "Shared", dataset2)
   tsne_coords <- object@tsne.coords
   pb <- txtProgressBar(min = 0, max = length(factors.use), style = 3)
+  return_plots <- list()
   for (i in factors.use) {
     tsne_df <- data.frame(H_aligned[, i], tsne_coords)
     factorlab <- paste("Factor", i, sep = "")
@@ -2112,8 +2137,14 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
              x = 0.67, y = 0.5, width = 0.67, height = 0.70,
              gp = gpar(fill = "indianred1", col = "Black", alpha = 0.5, lwd = 2)
            )))
-    print(plot_grid(p1, p2, nrow = 2, align = "h"))
+    return_plots[[i]] <- plot_grid(p1, p2, nrow = 2, align = "h")
+    if (!return.plots) {
+      print(return_plots[[i]])
+    }
     setTxtProgressBar(pb, i)
+  }
+  if (return.plots) {
+    return(return_plots)
   }
 }
 
