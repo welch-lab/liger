@@ -81,7 +81,7 @@ setMethod(
 #' 
 #' This function initializes an Analogizer object with the raw data passed in. It requires a list of 
 #' expression (or another single-cell modality) matrices (gene by cell) for at least two datasets. 
-#' By default, it converts all passed data into sparse matrices to reduce object size. 
+#' By default, it converts all passed data into sparse matrices (dgCMatrix) to reduce object size. 
 #'
 #' @param raw.data List of expression matrices (gene by cell). Should be named by dataset. 
 #' @param sparse.dcg Whether to convert raw data into sparse matrices (default: T).
@@ -102,12 +102,10 @@ Analogizer <- function(raw.data, sparse.dcg = T) {
   )
   if (sparse.dcg) {
     raw.data <- lapply(raw.data, function(x) {
-      if (class(x)[1] == "dgTMatrix") {
-        temp <- summary(x)
-        sparseMatrix(i = temp[, 1], j = temp[, 2], x = temp[, 3],
-                     dimnames = list(rownames(x),colnames(x)))
+      if (class(x)[1] == "dgTMatrix" | class(x)[1] == 'dgCMatrix') {
+        as(x, 'CsparseMatrix')
       } else {
-        Matrix(as.matrix(x), sparse = T)
+        as(as.matrix(x), 'CsparseMatrix')
       }
     })
     object@raw.data <- raw.data
