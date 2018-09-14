@@ -6,7 +6,7 @@
 \usage{
 optimizeALS(object, k, lambda = 5, thresh = 1e-04, max.iters = 100,
   nrep = 1, H.init = NULL, W.init = NULL, V.init = NULL,
-  rand.seed = 1)
+  rand.seed = 1, print.obj = F)
 }
 \arguments{
 \item{object}{Analogizer object. Should normalize, select genes, and scale before calling.}
@@ -36,6 +36,8 @@ factorizations of the same dataset can be run with one rep if necessary. (defaul
 \item{V.init}{Initial values to use for V matrices (default NULL)}
 
 \item{rand.seed}{Random seed to allow reproducible results (default 1).}
+
+\item{print.obj}{Print objective function values after convergence (default FALSE).}
 }
 \value{
 Analogizer object with H, W, and V slots set.

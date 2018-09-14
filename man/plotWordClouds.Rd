@@ -7,7 +7,7 @@
 plotWordClouds(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30,
   min.size = 1, max.size = 4, factor.share.thresh = 10,
   log.fc.thresh = 1, umi.thresh = 30, frac.thresh = 0,
-  pval.thresh = 0.05)
+  pval.thresh = 0.05, do.spec.plot = T, return.plots = F)
 }
 \arguments{
 \item{object}{Analogizer object. Should call runTSNE before calling.}
@@ -34,6 +34,10 @@ threshold (default 10).}
 
 \item{pval.thresh}{Upper p-value threshold for Wilcoxon rank test for gene expression
 (default 0.05).}
+
+\item{do.spec.plot}{Include dataset specificity plot in printout (default TRUE).}
+
+\item{return.plots}{Return ggplot objects instead of printing directly (default FALSE).}
 
 \item{dataset.specificity}{Pre-calculated dataset specificity if available. Will calculate if not
 available.}

@@ -4,20 +4,26 @@
 \alias{AnalogizerToSeurat}
 \title{Create a Seurat object containing the data from an Analogizer object}
 \usage{
-AnalogizerToSeurat(object, need.sparse = T)
+AnalogizerToSeurat(object, need.sparse = T, by.dataset = F,
+  nms = names(object@H))
 }
 \arguments{
 \item{object}{Analogizer object.}
 
 \item{need.sparse}{Whether data needs to be converted to sparse format first; most relevant for 
 older Analogizer objects (default TRUE).}
+
+\item{by.dataset}{Include dataset of origin in cluster identity in Seurat object (default FALSE).}
+
+\item{nms}{Names to use in additional labeling of colnames and rownames in Seurat object
+(default names(H)).}
 }
 \value{
 Seurat object with raw.data, scale.data, dr$tsne, dr$inmf, and ident slots set.
 }
 \description{
 Carries over raw.data, scale.data, tsne.coords and the iNMF factorization, plus cluster 
-assignment.s
+assignments. Should have filled these slots before calling.
 }
 \examples{
 \dontrun{

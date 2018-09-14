@@ -4,13 +4,15 @@
 \alias{removeMissingCells}
 \title{Remove cells with no gene data}
 \usage{
-removeMissingCells(object)
+removeMissingCells(object, slot.use = "scale.data")
 }
 \arguments{
-\item{object}{Analogizer object (scale.data must be set).}
+\item{object}{Analogizer object (scale.data or norm.data must be set).}
+
+\item{slot.use}{The data slot to filter (takes "raw.data" and "scale.data") (default "scale.data")}
 }
 \value{
-Analogizer object with modified scale.data (dataset names preserved).
+Analogizer object with modified scale.data (or norm.data) (dataset names preserved).
 }
 \description{
 Removes cells from scale.data with no expression in any selected genes.

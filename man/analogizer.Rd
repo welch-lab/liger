@@ -17,7 +17,7 @@ Analogizer object with raw.data slot set.
 \description{
 This function initializes an Analogizer object with the raw data passed in. It requires a list of 
 expression (or another single-cell modality) matrices (gene by cell) for at least two datasets. 
-By default, it converts all passed data into sparse matrices to reduce object size.
+By default, it converts all passed data into sparse matrices (dgCMatrix) to reduce object size.
 }
 \examples{
 \dontrun{

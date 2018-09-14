@@ -377,6 +377,7 @@ scaleNotCenter_sparse<-function (object, cells = NULL)
 #' @param W.init Initial values to use for W matrix (default NULL)
 #' @param V.init Initial values to use for V matrices (default NULL)
 #' @param rand.seed Random seed to allow reproducible results (default 1).
+#' @param print.obj Print objective function values after convergence (default FALSE).
 #' 
 #' @return Analogizer object with H, W, and V slots set. 
 #' @export
@@ -1119,7 +1120,7 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #' @param id.number Number to use for identifying edge file (when running in parallel) 
 #'   (generates random value by default).
 #' @param print.mod Print modularity output from clustering algorithm (default FALSE).
-#' @param print.align.summary Print summary of clusters which did not align normally (default TRUE).
+#' @param print.align.summary Print summary of clusters which did not align normally (default FALSE).
 #'
 #' @return Analogizer object with H.norm slot set. 
 #' @export
