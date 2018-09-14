@@ -81,7 +81,7 @@ setMethod(
 #' 
 #' This function initializes an Analogizer object with the raw data passed in. It requires a list of 
 #' expression (or another single-cell modality) matrices (gene by cell) for at least two datasets. 
-#' By default, it converts all passed data into sparse matrices to reduce object size. 
+#' By default, it converts all passed data into sparse matrices (dgCMatrix) to reduce object size. 
 #'
 #' @param raw.data List of expression matrices (gene by cell). Should be named by dataset. 
 #' @param sparse.dcg Whether to convert raw data into sparse matrices (default: T).
@@ -102,12 +102,10 @@ Analogizer <- function(raw.data, sparse.dcg = T) {
   )
   if (sparse.dcg) {
     raw.data <- lapply(raw.data, function(x) {
-      if (class(x)[1] == "dgTMatrix") {
-        temp <- summary(x)
-        sparseMatrix(i = temp[, 1], j = temp[, 2], x = temp[, 3],
-                     dimnames = list(rownames(x),colnames(x)))
+      if (class(x)[1] == "dgTMatrix" | class(x)[1] == 'dgCMatrix') {
+        as(x, 'CsparseMatrix')
       } else {
-        Matrix(as.matrix(x), sparse = T)
+        as(as.matrix(x), 'CsparseMatrix')
       }
     })
     object@raw.data <- raw.data
@@ -379,6 +377,7 @@ scaleNotCenter_sparse<-function (object, cells = NULL)
 #' @param W.init Initial values to use for W matrix (default NULL)
 #' @param V.init Initial values to use for V matrices (default NULL)
 #' @param rand.seed Random seed to allow reproducible results (default 1).
+#' @param print.obj Print objective function values after convergence (default FALSE).
 #' 
 #' @return Analogizer object with H, W, and V slots set. 
 #' @export
@@ -1121,7 +1120,7 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #' @param id.number Number to use for identifying edge file (when running in parallel) 
 #'   (generates random value by default).
 #' @param print.mod Print modularity output from clustering algorithm (default FALSE).
-#' @param print.align.summary Print summary of clusters which did not align normally (default TRUE).
+#' @param print.align.summary Print summary of clusters which did not align normally (default FALSE).
 #'
 #' @return Analogizer object with H.norm slot set. 
 #' @export
@@ -2715,11 +2714,14 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #' Create a Seurat object containing the data from an Analogizer object
 #' 
 #' Carries over raw.data, scale.data, tsne.coords and the iNMF factorization, plus cluster 
-#' assignment.s
+#' assignments. Should have filled these slots before calling. 
 #'
 #' @param object Analogizer object.
 #' @param need.sparse Whether data needs to be converted to sparse format first; most relevant for 
 #'   older Analogizer objects (default TRUE).
+#' @param by.dataset Include dataset of origin in cluster identity in Seurat object (default FALSE).
+#' @param nms Names to use in additional labeling of colnames and rownames in Seurat object
+#'   (default names(H)).
 #'   
 #' @return Seurat object with raw.data, scale.data, dr$tsne, dr$inmf, and ident slots set.
 #' @export
@@ -2730,13 +2732,12 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #' s.object <- AnalogizerToSeurat(analogy)
 #' }
 
-AnalogizerToSeurat <- function(object, need.sparse = T) {
+AnalogizerToSeurat <- function(object, need.sparse = T, by.dataset = F, nms = names(object@H)) {
   if (!require("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" needed for this function to work. Please install it.",
          call. = FALSE
     )
   }
-  nms <- names(object@H)
   if (need.sparse) {
     object@raw.data <- lapply(object@raw.data, function(x) {
       Matrix(as.matrix(x), sparse = T)
@@ -2767,7 +2768,16 @@ AnalogizerToSeurat <- function(object, need.sparse = T) {
   new.seurat@dr$tsne <- tsne.obj
   new.seurat@dr$inmf <- inmf.obj
   
-  new.seurat <- SetIdent(new.seurat, ident.use = as.character(object@clusters))
+  if (by.dataset) {
+    ident.use <- as.character(unlist(lapply(1:length(object@raw.data), function(i) {
+      dataset.name <- names(object@raw.data)[i]
+      paste0(dataset.name, as.character(object@clusters[colnames(object@raw.data[[i]])]))
+    })))
+  } else {
+    ident.use <- as.character(object@clusters)
+  }
+  
+  new.seurat <- SetIdent(new.seurat, ident.use = ident.use)
   return(new.seurat)
 }
 

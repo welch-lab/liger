@@ -8,7 +8,7 @@ quantileAlignSNF(object, knn_k = 20, k2 = 500, prune.thresh = 0.2,
   ref_dataset = NULL, min_cells = 2, quantiles = 50, nstart = 10,
   resolution = 1, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR",
   center = F, small.clust.thresh = 0, id.number = NULL, print.mod = F,
-  print.align.summary = T)
+  print.align.summary = F)
 }
 \arguments{
 \item{object}{Analogizer object. Should run optimizeALS before calling.}
@@ -50,7 +50,7 @@ cells than this before regular alignment (default 0 -- no small cluster extracti
 
 \item{print.mod}{Print modularity output from clustering algorithm (default FALSE).}
 
-\item{print.align.summary}{Print summary of clusters which did not align normally (default TRUE).}
+\item{print.align.summary}{Print summary of clusters which did not align normally (default FALSE).}
 }
 \value{
 Analogizer object with H.norm slot set.
