@@ -2692,7 +2692,8 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
   W_genes <- data.frame(Reduce(rbind, W_matrices), stringsAsFactors = F)
   df_cols <- c("factor_num", "gene", "counts1", "counts2", "fracs1", "fracs2", "log2fc", "p_value")
   output_list <- list(V1_genes, W_genes, V2_genes)
-  output_list <- lapply(output_list, function(df) {
+  output_list <- lapply(seq_along(output_list), function(x) {
+    df <- output_list[[x]]
     colnames(df) <- df_cols
     df <- transform(df,
                     factor_num = as.numeric(factor_num), gene = as.character(gene),
@@ -2700,7 +2701,12 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
                     fracs1 = as.numeric(fracs1), fracs2 = as.numeric(fracs2),
                     log2fc = as.numeric(log2fc), p_value = as.numeric(p_value)
     )
-    df[which(df$p_value < pval.thresh), ]
+    # Cutoff only applies to dataset-specific dfs
+    if (x != 2) {
+      df[which(df$p_value < pval.thresh), ]
+    } else {
+      df
+    }
   })
   names(output_list) <- c(dataset1, "shared", dataset2)
   output_list[["num_factors_V1"]] <- table(output_list[[dataset1]]$gene)
