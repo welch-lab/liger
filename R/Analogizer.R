@@ -2623,18 +2623,18 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
     filtered_genes_V2 <- initial_filtered[(-1 * log2fc)[initial_filtered] > log.fc.thresh]
     
     W <- pmin(W + V1, W + V2)
-    V1 <- V1[filtered_genes_V1, ]
-    V2 <- V2[filtered_genes_V2, ]
+    V1 <- V1[filtered_genes_V1, , drop = F]
+    V2 <- V2[filtered_genes_V2, , drop = F]
     
     if (length(filtered_genes_V1) == 0) {
-      top_genes_V1 <- ""
+      top_genes_V1 <- character(0)
     } else {
       top_genes_V1 <- row.names(V1)[ order(V1[, i], decreasing = T)[1:num.genes] ]
       top_genes_V1 <- top_genes_V1[!is.na(top_genes_V1)]
       top_genes_V1 <- top_genes_V1[which(V1[top_genes_V1, i] > 0)]
     }
     if (length(filtered_genes_V2) == 0) {
-      top_genes_V2 <- ""
+      top_genes_V2 <- character(0)
     } else {
       top_genes_V2 <- row.names(V2)[ order(V2[, i], decreasing = T)[1:num.genes] ]
       top_genes_V2 <- top_genes_V2[!is.na(top_genes_V2)]
@@ -2646,8 +2646,11 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
     
     if (print.genes) {
       print(paste("Factor", i))
+      print('Dataset 1')
       print(top_genes_V1)
+      print('Shared')
       print(top_genes_W)
+      print('Dataset 2')
       print(top_genes_V2)
     }
     
