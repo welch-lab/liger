@@ -67,7 +67,7 @@ setMethod(
       "An object of class",
       class(object),
       "\n",
-      length(object@norm.data),
+      length(object@raw.data),
       "datasets.\n"
     )
     invisible(x = NULL)
@@ -1388,7 +1388,7 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
 #' analogy <- runTSNE(analogy, use.raw = T)
 #' }
 
-runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm),
+runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.pca = F,
                     perplexity = 30, rand.seed = 42) {
   set.seed(rand.seed)
   if (use.raw) {
@@ -1397,11 +1397,11 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm),
     if (identical(dims.use, 1:0)) {
       dims.use <- 1:ncol(raw.data)
     }
-    object@tsne.coords <- Rtsne(raw.data[, dims.use], pca = F, check_duplicates = F, 
+    object@tsne.coords <- Rtsne(raw.data[, dims.use], pca = use.pca, check_duplicates = F, 
                                 perplexity = perplexity)$Y
     rownames(object@tsne.coords) <- rownames(raw.data)
   } else {
-    object@tsne.coords <- Rtsne(object@H.norm[, dims.use], pca = F, check_duplicates = F, 
+    object@tsne.coords <- Rtsne(object@H.norm[, dims.use], pca = use.pca, check_duplicates = F, 
                                 perplexity = perplexity)$Y
     rownames(object@tsne.coords) <- rownames(object@H.norm)
   }
