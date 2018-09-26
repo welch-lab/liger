@@ -19,6 +19,7 @@
 #' @slot W Shared gene loading factors (k by genes)
 #' @slot V Dataset-specific gene loading factors (one matrix per dataset, dimensions k by genes)
 #' @slot tsne.coords Matrix of 2D coordinates obtained from running t-SNE on H.norm or H matrices
+#' @slot alignment.clusters Initial joint cluster assignments from shared factor alignment 
 #' @slot clusters Joint cluster assignments for cells
 #' @slot snf List of values associated with shared nearest factor matrix for use in clustering and 
 #'   alignment (out.summary contains edge weight information between cell combinations)
@@ -44,6 +45,7 @@ analogizer <- methods::setClass(
     W = "matrix",
     V = "list",
     tsne.coords = "matrix",
+    alignment.clusters = 'factor',
     clusters= "factor",
     agg.data = "list",
     parameters = "list",
@@ -1238,6 +1240,7 @@ quantileAlignSNF <- function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, r
     }
   }
   object@H.norm <- Reduce(rbind, Hs)
+  object@alignment.clusters <- idents
   object@clusters <- idents
   object@snf <- snf
   # set parameters
