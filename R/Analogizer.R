@@ -19,6 +19,7 @@
 #' @slot W Shared gene loading factors (k by genes)
 #' @slot V Dataset-specific gene loading factors (one matrix per dataset, dimensions k by genes)
 #' @slot tsne.coords Matrix of 2D coordinates obtained from running t-SNE on H.norm or H matrices
+#' @slot alignment.clusters Initial joint cluster assignments from shared factor alignment 
 #' @slot clusters Joint cluster assignments for cells
 #' @slot snf List of values associated with shared nearest factor matrix for use in clustering and 
 #'   alignment (out.summary contains edge weight information between cell combinations)
@@ -44,6 +45,7 @@ analogizer <- methods::setClass(
     W = "matrix",
     V = "list",
     tsne.coords = "matrix",
+    alignment.clusters = 'factor',
     clusters= "factor",
     agg.data = "list",
     parameters = "list",
@@ -67,7 +69,7 @@ setMethod(
       "An object of class",
       class(object),
       "\n",
-      length(object@norm.data),
+      length(object@raw.data),
       "datasets.\n"
     )
     invisible(x = NULL)
@@ -402,8 +404,14 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
   E <- object@scale.data
   N <- length(E)
   ns <- sapply(E, nrow)
+  if (k >= min(ns)) {
+    stop(paste0('Select k lower than the number of cells in smallest dataset: ', min(ns)))
+  }
   tmp <- gc()
   g <- ncol(E[[1]])
+  if (k >= g) {
+    stop(paste0('Select k lower than the number of variable genes:', g))
+  } 
   W_m <- matrix(0, k, g)
   V_m <- lapply(1:N, function(i) {
     matrix(0, k, g)
@@ -1238,6 +1246,7 @@ quantileAlignSNF <- function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, r
     }
   }
   object@H.norm <- Reduce(rbind, Hs)
+  object@alignment.clusters <- idents
   object@clusters <- idents
   object@snf <- snf
   # set parameters
@@ -1388,7 +1397,7 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
 #' analogy <- runTSNE(analogy, use.raw = T)
 #' }
 
-runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm),
+runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.pca = F,
                     perplexity = 30, rand.seed = 42) {
   set.seed(rand.seed)
   if (use.raw) {
@@ -1397,11 +1406,11 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm),
     if (identical(dims.use, 1:0)) {
       dims.use <- 1:ncol(raw.data)
     }
-    object@tsne.coords <- Rtsne(raw.data[, dims.use], pca = F, check_duplicates = F, 
+    object@tsne.coords <- Rtsne(raw.data[, dims.use], pca = use.pca, check_duplicates = F, 
                                 perplexity = perplexity)$Y
     rownames(object@tsne.coords) <- rownames(raw.data)
   } else {
-    object@tsne.coords <- Rtsne(object@H.norm[, dims.use], pca = F, check_duplicates = F, 
+    object@tsne.coords <- Rtsne(object@H.norm[, dims.use], pca = use.pca, check_duplicates = F, 
                                 perplexity = perplexity)$Y
     rownames(object@tsne.coords) <- rownames(object@H.norm)
   }
