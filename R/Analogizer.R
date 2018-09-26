@@ -404,8 +404,14 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
   E <- object@scale.data
   N <- length(E)
   ns <- sapply(E, nrow)
+  if (k >= min(ns)) {
+    stop(paste0('Select k lower than the number of cells in smallest dataset: ', min(ns)))
+  }
   tmp <- gc()
   g <- ncol(E[[1]])
+  if (k >= g) {
+    stop(paste0('Select k lower than the number of variable genes:', g))
+  } 
   W_m <- matrix(0, k, g)
   V_m <- lapply(1:N, function(i) {
     matrix(0, k, g)
