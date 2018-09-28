@@ -5,7 +5,7 @@
 \title{Perform t-SNE dimensionality reduction}
 \usage{
 runTSNE(object, use.raw = F, dims.use = 1:ncol(object@H.norm),
-  perplexity = 30, rand.seed = 42)
+  use.pca = F, perplexity = 30, rand.seed = 42)
 }
 \arguments{
 \item{object}{Analogizer object. Should run quantileAlignSNF before calling with defaults.}

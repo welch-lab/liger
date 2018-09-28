@@ -2519,6 +2519,59 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
   )))
 }
 
+#' Plot cluster proportions by dataset
+#' 
+#' Generates plot of clusters sized by the proportion of total cells 
+#'
+#' @param object Analogizer object. Should call quantileAlignSNF before calling.
+#' @param return.plot Return ggplot object (default FALSE)
+#' 
+#' @export
+#' @importFrom ggplot2 ggplot 
+#' @examples
+#' \dontrun{
+#' # analogizer object, factorization complete 
+#' analogy
+#' analogy <- quantileAlignSNF(analogy)
+#' # plot cluster proportions
+#' plotClusterProportions(analogy)
+#' }
+
+plotClusterProportions <- function(object, return.plot = F) {
+  sample_names <- unlist(lapply(seq_along(object@scale.data), function(i) {
+    rep(names(object@scale.data)[i], nrow(object@scale.data[[i]]))
+  }))
+  freq_table <- data.frame(Cluster = rep(object@clusters, length(object@scale.data)), 
+                           Sample = sample_names)
+  freq_table <- table(freq_table$Cluster, freq_table$Sample)
+  for (i in 1:ncol(freq_table)) {
+    freq_table[, i] <- freq_table[, i] / sum(freq_table[, i])
+  }
+  freq_table <- data.frame(freq_table)
+  colnames(freq_table) <- c("Cluster", "Sample", "Proportion")
+  p1 <- ggplot(freq_table, aes(x = Cluster, y = Sample)) + 
+    geom_point(aes(size = Proportion, fill = Cluster, color = Cluster)) +
+    scale_size(guide = "none") + theme(
+      axis.line = element_blank(),
+      axis.text.x = element_blank(),
+      axis.title.y = element_blank(),
+      axis.ticks = element_blank(),
+      axis.title.x = element_blank(),
+      legend.title = element_blank(),
+      legend.position = 'bottom',
+      plot.margin = unit(c(0, 0, 0, 0), "cm"),
+      legend.justification = "center"
+    ) + scale_y_discrete(position = "right") +
+    guides(fill = guide_legend(ncol = 6, override.aes = list(size = 4))) + 
+    coord_fixed(ratio = 0.5)
+  if (return.plot) {
+    return(p1)
+  }
+  else {
+    print(p1)
+  }
+}
+
 #######################################################################################
 #### Marker/Cell Analysis
 
