@@ -1,20 +1,20 @@
-# Analogizer
+# LIGER
 
-Analogizer is a package for integrating and analyzing multiple single-cell datasets, developed and maintained by the Macosko lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors. 
+LIGER (`liger`) is a package for integrating and analyzing multiple single-cell datasets, developed and maintained by the Macosko lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors. 
 
 ## Installation
 
-Analogizer is written in R and has a few other system requirements (Java) and recommended packages (umap in Python). To install the most recent development version, follow these instructions:
+`liger` is written in R and has a few other system requirements (Java) and recommended packages (umap in Python). To install the most recent development version, follow these instructions:
 
 1. Install [R](https://www.r-project.org/)  (>= 3.4)
 2. Install [Rstudio](https://www.rstudio.com/products/rstudio/download/) (recommended)
 3. Make sure you have Java installed in your machine. Check by typing `java -version` into Terminal or CommandPrompt. 
-4. Generate an auth [token](https://github.com/settings/tokens) for the Analogizer repo, making sure to include all repo permissions. 
+4. Generate an auth [token](https://github.com/settings/tokens) for the liger repo, making sure to include all repo permissions. 
 5. Use the following R commands.
 ```
 install.packages('devtools')
 library(devtools)
-install_github('MacoskoLab/Analogizer', auth_token = '<token>')
+install_github('MacoskoLab/Analogizer', auth_token = '<token>', ref = 'name-change')
 ```
 
 ### Additional Installation Steps for MacOS -- recommended before step 5
