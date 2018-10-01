@@ -1,24 +1,24 @@
-\name{Analogizer-package}
-\alias{Analogizer-package}
-\alias{Analogizer}
+\name{liger-package}
+\alias{liger-package}
+\alias{liger}
 \docType{package}
 \title{
-\packageTitle{Analogizer}
+\packageTitle{liger}
 }
 \description{
-\packageDescription{Analogizer}
+\packageDescription{liger}
 }
 \details{
 
 The DESCRIPTION file:
-\packageDESCRIPTION{Analogizer}
-\packageIndices{Analogizer}
+\packageDESCRIPTION{liger}
+\packageIndices{liger}
 ~~ An overview of how to use the package, including the most important functions ~~
 }
 \author{
-\packageAuthor{Analogizer}
+\packageAuthor{liger}
 
-Maintainer: \packageMaintainer{Analogizer}
+Maintainer: \packageMaintainer{liger}
 }
 \references{
 ~~ Literature or other references for background information ~~
