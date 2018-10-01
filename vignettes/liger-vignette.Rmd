@@ -1,10 +1,10 @@
 ---
-title: "Comparing and contrasting heterogeneous single cell profiles using Analogizer"
+title: "Comparing and contrasting heterogeneous single cell profiles using liger"
 author: "Joshua D. Welch"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Comparing and contrasting heterogeneous single cell profiles using Analogizer}
+  %\VignetteIndexEntry{Comparing and contrasting heterogeneous single cell profiles using liger}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -24,10 +24,10 @@ positive values. The selectGenes function performs variable gene selection on ea
 ```r
 dge1 = readRDS("dge1.RDS") #genes in rows, cells in columns, rownames and colnames included. Sparse matrix format is accepted.
 dge2 = readRDS("dge2.RDS")
-analogy = Analogizer(list(name1=dge1,name2=dge2)) #Can also pass in more than 2 datasets
-analogy = normalize(analogy)
-analogy = selectGenes(analogy,var.thresh = 0.1)
-analogy = scaleNotCenter(analogy)
+ligerex = newLiger(list(name1 = dge1, name2 = dge2)) #Can also pass in more than 2 datasets
+ligerex = normalize(ligerex)
+ligerex = selectGenes(ligerex, var.thresh = 0.1)
+ligerex = scaleNotCenter(ligerex)
 ```
 
 ## Performing the Factorization
@@ -36,16 +36,16 @@ we identify cells that load on corresponding cell factors and quantile normalize
 The key parameters here are the number of factors (k), the penalty parameter (lambda), and the clustering resolution.
 In most cases, the default settings of lambda=5.0 and resolution=1.0 provide reasonable results.
 ```r
-analogy = optimizeALS(analogy,k=20) 
-analogy = quantileAlignSNF(analogy) #SNF clustering and quantile alignment
+ligerex = optimizeALS(ligerex, k = 20) 
+ligerex = quantileAlignSNF(ligerex) #SNF clustering and quantile alignment
 ```
 
 ## Visualizing the results
 ```r
-analogy = runTSNE(analogy)
-plotByDatasetAndCluster(analogy) #Can also pass in different set of cluster labels to plot
+ligerex = runTSNE(ligerex)
+plotByDatasetAndCluster(ligerex) #Can also pass in different set of cluster labels to plot
 pdf("word_clouds.pdf")
-plotWordClouds(analogy)
+plotWordClouds(ligerex)
 dev.off()
 ```
 
@@ -56,9 +56,9 @@ markers, the third element contains dataset-specific markers for dataset 2, and 
 the number of factors in which each marker is found. This information allows the identification
 of ubiquitous vs. cell-type-specific dataset differences.
 ```r
-markers = getFactorMarkers(analogy, num.genes=10)
-plotGene(analogy,gene="Malat1")
-plotGeneViolin(analogy,gene="Malat1")
+markers = getFactorMarkers(ligerex, num.genes = 10)
+plotGene(ligerex, gene = "Malat1")
+plotGeneViolin(ligerex, gene = "Malat1")
 ```
 
 
@@ -67,8 +67,8 @@ The suggestK and suggestLambda functions can aid in selecting k and lambda. We w
 k for which the increase in entropy metric begins to level off (an "elbow" in the plot). Similarly, we want the
 smallest lambda for which the alignment metric stabilizes.
 ```r
-suggestK(analogy) # plot entropy metric to find an elbow that can be used to select the number of factors
-suggestLambda(analogy,k) # plot alignment metric to find an elbow that can be used to select the value of lambda
+suggestK(ligerex) # plot entropy metric to find an elbow that can be used to select the number of factors
+suggestLambda(ligerex, k) # plot alignment metric to find an elbow that can be used to select the value of lambda
 ```
 
 ## Updating the Factorization
@@ -76,8 +76,13 @@ If we want to add new data, change k or lambda, or re-analyze a subset of the da
 below provide an efficient method of updating. This is much faster than the naive approach of 
 simply re-running the optimizeALS algorithm.
 ```r
-analogy = optimizeNewK(analogy,k=15) #Can also decrease K
-analogy = optimizeNewData(analogy,newdata=list(name1=dge1.new,name2=dge2.new),which.datasets=list(name1,name2),add.to.existing=T) #Add new batches from the same condition/technology/species/protocol
-analogy = optimizeNewData(analogy,newdata=list(name3=dge3,name4=dge4),which.datasets=list(name1,name2),add.to.existing=F) #Add completely new datasets. Specify which existing datasets are most similar.
-analogy = optimizeSubset(analogy,cell.subset) #cell.subset is a list of cells to retain from each dataset
+ligerex = optimizeNewK(ligerex, k = 15) #Can also decrease K
+#Add new batches from the same condition/technology/species/protocol
+ligerex = optimizeNewData(ligerex, newdata = list(name1 = dge1.new, name2 = dge2.new),
+                          which.datasets = list(name1, name2), add.to.existing = T) 
+#Add completely new datasets. Specify which existing datasets are most similar.
+ligerex = optimizeNewData(ligerex, newdata = list(name3 = dge3, name4 = dge4),
+                          which.datasets = list(name1, name2), add.to.existing = F) 
+#cell.subset is a list of cells to retain from each dataset
+ligerex = optimizeSubset(ligerex, cell.subset) 
 ```
