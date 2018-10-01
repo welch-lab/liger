@@ -8,7 +8,7 @@ using namespace Rcpp;
 
 // solve_nnls
 arma::mat solve_nnls(const arma::mat& C, const arma::mat& B);
-RcppExport SEXP _Analogizer_solve_nnls(SEXP CSEXP, SEXP BSEXP) {
+RcppExport SEXP _liger_solve_nnls(SEXP CSEXP, SEXP BSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -20,11 +20,11 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_Analogizer_solve_nnls", (DL_FUNC) &_Analogizer_solve_nnls, 2},
+    {"_liger_solve_nnls", (DL_FUNC) &_liger_solve_nnls, 2},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_Analogizer(DllInfo *dll) {
+RcppExport void R_init_liger(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

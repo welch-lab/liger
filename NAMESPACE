@@ -1,4 +1,4 @@
-useDynLib(Analogizer, .registration=TRUE)
+useDynLib(liger, .registration=TRUE)
 importFrom(Rcpp, evalCpp)
 importFrom(plyr, rbind.fill.matrix)
 importFrom(Rtsne,Rtsne)
