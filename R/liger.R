@@ -1,12 +1,12 @@
 
-#' The Analogizer Class
+#' The LIGER Class
 #'
-#' The analogizer object is created from two or more single cell datasets. To construct an 
-#' analogizer object, the user needs to provide at least two expression (or another 
+#' The liger object is created from two or more single cell datasets. To construct a 
+#' liger object, the user needs to provide at least two expression (or another 
 #' single-cell modality) matrices. The class provides functions for data 
 #' preprocessing, integrative analysis, and visualization.
 #' 
-#' The key slots used in the analogizer object are described below.
+#' The key slots used in the liger object are described below.
 #'
 #' @slot raw.data List of raw data matrices, one per experiment/dataset (genes by cells)
 #' @slot norm.data List of normalized matrices (genes by cells)
@@ -26,15 +26,15 @@
 #' @slot agg.data Data aggregated within clusters
 #' @slot parameters List of parameters used throughout analysis
 #'
-#' @name analogizer
-#' @rdname analogizer
-#' @aliases analogizer-class
-#' @exportClass analogizer
+#' @name liger
+#' @rdname liger
+#' @aliases liger-class
+#' @exportClass liger
 #' @importFrom Rcpp evalCpp
-#' @useDynLib Analogizer
+#' @useDynLib liger
 
-analogizer <- methods::setClass(
-  "analogizer",
+liger <- methods::setClass(
+  "liger",
   slots = c(
     raw.data = "list",
     norm.data = "list",
@@ -53,17 +53,17 @@ analogizer <- methods::setClass(
   )
 )
 
-#' show method for analogizer
+#' show method for liger
 #'
-#' @param object analogizer object
+#' @param object liger object
 #' @name show
-#' @aliases show,analogizer-method
+#' @aliases show,liger-method
 #' @docType methods
 #' @rdname show-methods
 
 setMethod(
   f = "show",
-  signature = "analogizer",
+  signature = "liger",
   definition = function(object) {
     cat(
       "An object of class",
@@ -79,27 +79,27 @@ setMethod(
 #######################################################################################
 #### Data Preprocessing
 
-#' Create an Analogizer object.
+#' Create a liger object.
 #' 
-#' This function initializes an Analogizer object with the raw data passed in. It requires a list of 
+#' This function initializes a liger object with the raw data passed in. It requires a list of 
 #' expression (or another single-cell modality) matrices (gene by cell) for at least two datasets. 
 #' By default, it converts all passed data into sparse matrices (dgCMatrix) to reduce object size. 
 #'
 #' @param raw.data List of expression matrices (gene by cell). Should be named by dataset. 
 #' @param sparse.dcg Whether to convert raw data into sparse matrices (default: T).
 #' 
-#' @return Analogizer object with raw.data slot set.
+#' @return \code{liger} object with raw.data slot set.
 #' @export
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' analogy <- Analogizer(list(y_set = Y, z_set = Z))
+#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
 #' }
 
-Analogizer <- function(raw.data, sparse.dcg = T) {
+newLiger <- function(raw.data, sparse.dcg = T) {
   object <- methods::new(
-    Class = "analogizer",
+    Class = "liger",
     raw.data = raw.data
   )
   if (sparse.dcg) {
@@ -119,16 +119,16 @@ Analogizer <- function(raw.data, sparse.dcg = T) {
 #' 
 #' This function normalizes data to account for total gene expression across a cell. 
 #'
-#' @param object Analogizer object. 
+#' @param object \code{liger} object. 
 #' 
-#' @return Analogizer object with norm.data slot set.
+#' @return \code{liger} object with norm.data slot set.
 #' @export
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' analogy <- Analogizer(list(y_set = Y, z_set = Z))
-#' analogy <- normalize(analogy)
+#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
 #' }
 
 normalize <- function(object) {
@@ -153,7 +153,7 @@ normalize <- function(object) {
 #' It also provides a log plot of gene variance vs gene expression (with a line indicating expected
 #' expression across genes and cells). Selected genes are plotted in green. 
 #'
-#' @param object Analogizer object. Should have already called normalize.
+#' @param object \code{liger} object. Should have already called normalize.
 #' @param alpha.thresh Alpha threshold. Controls upper bound for expected mean gene expression 
 #'   (lower threshold -> higher upper bound). (default 0.99)
 #' @param var.thresh Variance threshold. Main threshold used to identify variable genes. Genes with
@@ -169,18 +169,18 @@ normalize <- function(object) {
 #'   Selected genes are plotted in green. (default TRUE)
 #' @param cex.use Point size for plot. 
 
-#' @return Analogizer object with var.genes slot set.
+#' @return \code{liger} object with var.genes slot set.
 #' @export
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' analogy <- Analogizer(list(y_set = Y, z_set = Z))
-#' analogy <- normalize(analogy)
+#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
 #' # use default selectGenes settings
-#' analogy <- selectGenes(analogy)
+#' ligerex <- selectGenes(ligerex)
 #' # select a smaller subset of genes
-#' analogy <- selectGenes(analogy, var.thresh=0.8)
+#' ligerex <- selectGenes(ligerex, var.thresh=0.8)
 #' }
 
 selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine = "union",
@@ -235,21 +235,21 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
 #' positive (NMF only accepts positive values). It also removes cells which do not have any 
 #' expression across the genes selected, by default.
 #'
-#' @param object Analogizer object. Should call normalize and selectGenes before calling.
+#' @param object \code{liger} object. Should call normalize and selectGenes before calling.
 #' @param remove.missing Whether to remove cells from scale.data with no gene expression 
 #'   (default TRUE). 
 #'   
-#' @return Analogizer object with scale.data slot set.
+#' @return \code{liger} object with scale.data slot set.
 #' @export
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' analogy <- Analogizer(list(y_set = Y, z_set = Z))
-#' analogy <- normalize(analogy)
+#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
 #' # select genes
-#' analogy <- selectGenes(analogy)
-#' analogy <- scaleNotCenter(analogy)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
 #' }
 
 scaleNotCenter <- function(object, remove.missing = T) {
@@ -270,16 +270,16 @@ scaleNotCenter <- function(object, remove.missing = T) {
 #'
 #' Removes cells from scale.data with no expression in any selected genes.  
 #'
-#' @param object Analogizer object (scale.data or norm.data must be set).
+#' @param object \code{liger} object (scale.data or norm.data must be set).
 #' @param slot.use The data slot to filter (takes "raw.data" and "scale.data") (default "scale.data")
 #' 
-#' @return Analogizer object with modified scale.data (or norm.data) (dataset names preserved).
+#' @return \code{liger} object with modified scale.data (or norm.data) (dataset names preserved).
 #' @export
 #' @examples 
 #' \dontrun{
-#' # analogizer object
-#' analogy
-#' analogy <- removeMissingCells(analogy)
+#' # liger object
+#' ligerex
+#' ligerex <- removeMissingCells(ligerex)
 #' }
 
 removeMissingCells <- function(object, slot.use = "scale.data") {
@@ -321,9 +321,9 @@ removeMissingCells <- function(object, slot.use = "scale.data") {
 #' \dontrun{
 #' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
 #' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-#' analogy = Analogizer(list(Y,Z))
-#' analogy@var.genes = c(1,2,3,4)
-#' analogy = scaleNotCenter(analogy)
+#' ligerex = newLiger(list(Y,Z))
+#' ligerex@var.genes = c(1,2,3,4)
+#' ligerex = scaleNotCenter(ligerex)
 #' }
 scaleNotCenter_sparse<-function (object, cells = NULL)
 {
@@ -361,7 +361,7 @@ scaleNotCenter_sparse<-function (object, cells = NULL)
 #' W is held consistent among all datasets, as it represents the shared components of the metagenes 
 #' across datasets. The V matrices represent the dataset-specific components of the metagenes. 
 #'
-#' @param object Analogizer object. Should normalize, select genes, and scale before calling.
+#' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
 #' @param k Inner dimension of factorization (number of factors). Run suggestK to determine 
 #'   appropriate value; a general rule of thumb is that a higher k will be needed for datasets with 
 #'   more sub-structure.
@@ -381,19 +381,19 @@ scaleNotCenter_sparse<-function (object, cells = NULL)
 #' @param rand.seed Random seed to allow reproducible results (default 1).
 #' @param print.obj Print objective function values after convergence (default FALSE).
 #' 
-#' @return Analogizer object with H, W, and V slots set. 
+#' @return \code{liger} object with H, W, and V slots set. 
 #' @export
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' analogy <- Analogizer(list(y_set = Y, z_set = Z))
-#' analogy <- normalize(analogy)
+#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
 #' # select genes
-#' analogy <- selectGenes(analogy)
-#' analogy <- scaleNotCenter(analogy)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
 #' # get factorization using three restarts and 20 factors
-#' analogy <- optimizeALS(analogy, k = 20, lambda = 5, nrep = 3)
+#' ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
 #' }
 
 optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100, nrep = 1,
@@ -534,7 +534,7 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
 #' existing factorization. It is most recommended for values of k smaller than current value,
 #' where it is more likely to speed up the factorization.
 #'
-#' @param object Analogizer object. Should call optimizeALS before calling.
+#' @param object \code{liger} object. Should call optimizeALS before calling.
 #' @param k.new Inner dimension of factorization (number of factors)
 #' @param lambda Regularization parameter. By default, this will use the lambda last used with
 #'   optimizeALS.
@@ -543,21 +543,21 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
 #' @param max.iters Maximum number of block coordinate descent iterations to perform (default 100).
 #' @param rand.seed Random seed to set. Only relevant if k.new > k. (default 1)
 #' 
-#' @return Analogizer object with H, W, and V slots reset.
+#' @return \code{liger} object with H, W, and V slots reset.
 #' @export
 #' @importFrom plyr rbind.fill.matrix
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' analogy <- Analogizer(list(y_set = Y, z_set = Z))
-#' analogy <- normalize(analogy)
-#' analogy <- selectGenes(analogy)
-#' analogy <- scaleNotCenter(analogy)
+#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
 #' # get factorization using three restarts and 20 factors
-#' analogy <- optimizeALS(analogy, k = 20, lambda = 5, nrep = 3)
+#' ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
 #' # decide to run with k = 15 instead (keeping old lambda the same)
-#' analogy <- optimizeNewK(analogy, k.new = 15)
+#' ligerex <- optimizeNewK(ligerex, k.new = 15)
 #' }
 
 optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters = 100, 
@@ -646,7 +646,7 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
 #' Uses an efficient strategy for updating that takes advantage of the information in the existing 
 #' factorization. Assumes that selected genes (var.genes) are represented in the new datasets. 
 #'
-#' @param object Analogizer object. Should call optimizeALS before calling.
+#' @param object \code{liger} object. Should call optimizeALS before calling.
 #' @param new.data List of raw data matrices (one or more). Each list entry should be named.
 #' @param which.datasets List of datasets to append new.data to if add.to.existing is true. 
 #'   Otherwise, the most similar existing datasets for each entry in new.data.
@@ -658,28 +658,28 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
 #'   (default 1e-4).
 #' @param max.iters Maximum number of block coordinate descent iterations to perform (default 100).
 #' 
-#' @return Analogizer object with H, W, and V slots reset. Raw.data, norm.data, and scale.data will
+#' @return \code{liger} object with H, W, and V slots reset. Raw.data, norm.data, and scale.data will
 #'   also be updated to include the new data.
 #' @export
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' analogy <- Analogizer(list(y_set = Y, z_set = Z))
-#' analogy <- normalize(analogy)
-#' analogy <- selectGenes(analogy)
-#' analogy <- scaleNotCenter(analogy)
+#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
 #' # get factorization using three restarts and 20 factors
-#' analogy <- optimizeALS(analogy, k = 20, lambda = 5, nrep = 3)
+#' ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
 #' # acquire new data from the same cell type, let's add it to existing datasets
 #' Y_new <- matrix(41:52, nrow = 4, byrow = T)
 #' Z_new <- matrix(c(51:57, 56:52), nrow = 4, byrow = T)
 #' new_data <- list(Y_set = Y_new, Z_set = Z_new)
-#' analogy2 <- optimizeNewData(analogy, new.data = new_data, which.datasets = list('y_set', 'z_set'))
+#' ligerex2 <- optimizeNewData(ligerex, new.data = new_data, which.datasets = list('y_set', 'z_set'))
 #' # acquire new data from different cell type, we'll just add another dataset
 #' X <- matrix(35:46, nrow = 4, byrow = T)
 #' # it's probably most similar to y_set
-#' analogy <- optimizeNewData(analogy, new.data = list(x_set = X), which.datasets = list('y_set),
+#' ligerex <- optimizeNewData(ligerex, new.data = list(x_set = X), which.datasets = list('y_set),
 #'                            add.to.existing = F)
 #' }
 
@@ -761,7 +761,7 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
 #' Uses an efficient strategy for updating that takes advantage of the information in the existing 
 #' factorization. Can use either cell names or cluster names to subset. 
 #'
-#' @param object Analogizer object. Should call optimizeALS before calling.
+#' @param object \code{liger} object. Should call optimizeALS before calling.
 #' @param cell.subset List of cell names to retain from each dataset (same length as number of 
 #'   datasets).
 #' @param cluster.subset Clusters for which to keep cells (ie. c(1, 5, 6)). Should pass in either 
@@ -772,7 +772,7 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
 #' @param max.iters Maximum number of block coordinate descent iterations to perform (default 100).
 #' @param datasets.scale Names of datasets to rescale after subsetting (default NULL).
 #' 
-#' @return Analogizer object with H, W, and V slots reset. Scale.data 
+#' @return \code{liger} object with H, W, and V slots reset. Scale.data 
 #'   (if desired) will also be updated to reflect the subset.
 #' @export
 #' @examples
@@ -781,14 +781,14 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
 #' colnames(Y) <- c('a', 'b', 'c')
 #' colnames(Z) <- c('p', 'q', 'r')
-#' analogy <- Analogizer(list(y_set = Y, z_set = Z))
-#' analogy <- normalize(analogy)
-#' analogy <- selectGenes(analogy)
-#' analogy <- scaleNotCenter(analogy)
+#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
 #' # get factorization using three restarts and 20 factors
-#' analogy <- optimizeALS(analogy, k = 20, lambda = 5, nrep = 3)
+#' ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
 #' # now want to look at only subset of data
-#' analogy2 <- optimizeSubset(analogy, cell.subset = list(c('a', 'b'), c('q')))
+#' ligerex2 <- optimizeSubset(ligerex, cell.subset = list(c('a', 'b'), c('q')))
 #' }
 
 optimizeSubset <- function(object, cell.subset = NULL, cluster.subset = NULL, lambda = NULL,
@@ -837,27 +837,27 @@ optimizeSubset <- function(object, cell.subset = NULL, cluster.subset = NULL, la
 #' factorization; uses previous k. Recommended mainly when re-optimizing for higher lambda and when 
 #' new lambda value is significantly different; otherwise may not return optimal results. 
 #'
-#' @param object Analogizer object. Should call optimizeALS before calling.
+#' @param object \code{liger} object. Should call optimizeALS before calling.
 #' @param new.lambda Regularization parameter. Larger values penalize dataset-specific effects more 
 #' strongly.
 #' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
 #' @param max.iters Maximum number of block coordinate descent iterations to perform (default 100).
 #' @param rand.seed Random seed for reproducibility (default 1).
 #' 
-#' @return Analogizer object with optimized factorization values
+#' @return \code{liger} object with optimized factorization values
 #' @export
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' analogy <- Analogizer(list(y_set = Y, z_set = Z))
-#' analogy <- normalize(analogy)
-#' analogy <- selectGenes(analogy)
-#' analogy <- scaleNotCenter(analogy)
+#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
 #' # get factorization using three restarts and 20 factors
-#' analogy <- optimizeALS(analogy, k = 20, lambda = 5, nrep = 3)
+#' ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
 #' # decide to run with lambda = 15 instead (keeping k the same)
-#' analogy <- optimizeNewLambda(analogy, new.lambda = 15)
+#' ligerex <- optimizeNewLambda(ligerex, new.lambda = 15)
 #' }
 
 optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100, rand.seed = 1) {
@@ -881,7 +881,7 @@ optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100
 #' likely also correspond to slower decrease in agreement. Depending on number of cores used,
 #' this process can take 10-20 minutes. 
 #'
-#' @param object Analogizer object. Should normalize, select genes, and scale before calling.
+#' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
 #' @param k Number of factors to use in test factorizations. See optimizeALS documentation. 
 #' @param lambda.test Vector of lambda values to test. If not given, use default set spanning
 #'   0.25 to 60
@@ -909,12 +909,12 @@ optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' analogy <- Analogizer(list(y_set = Y, z_set = Z))
-#' analogy <- normalize(analogy)
-#' analogy <- selectGenes(analogy)
-#' analogy <- scaleNotCenter(analogy)
+#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
 #' # examine plot for most appropriate lambda, use multiple cores for faster results
-#' suggestLambda(analogy, k = 20, num.cores = 4)
+#' suggestLambda(ligerex, k = 20, num.cores = 4)
 #' }
 
 suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.cores = 1,
@@ -993,7 +993,7 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 #' 
 #' Depending on number of cores used, this process can take 10-20 minutes. 
 #'
-#' @param object Analogizer object. Should normalize, select genes, and scale before calling.
+#' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
 #' @param k.test Set of factor numbers to test (default seq(5, 50, 5)).
 #' @param lambda Lambda to use for all foctorizations (default 5).
 #' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
@@ -1017,12 +1017,12 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' analogy <- Analogizer(list(y_set = Y, z_set = Z))
-#' analogy <- normalize(analogy)
-#' analogy <- selectGenes(analogy)
-#' analogy <- scaleNotCenter(analogy)
+#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
 #' # examine plot for most appropriate k, use multiple cores for faster results
-#' suggestK(analogy, num.cores = 4)
+#' suggestK(ligerex, num.cores = 4)
 #' }
 
 suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, max.iters = 100,
@@ -1104,7 +1104,7 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #' stretching/compressing datasets' quantiles to better match those of the reference dataset). These
 #' aligned factor loadings are combined into a single matrix and returned as H.norm.
 #'
-#' @param object Analogizer object. Should run optimizeALS before calling.
+#' @param object \code{liger} object. Should run optimizeALS before calling.
 #' @param knn_k Number of nearest neighbors for within-dataset knn graph (default 20).
 #' @param k2 Horizon parameter for shared nearest factor graph. Distances to all but the k2 nearest 
 #'   neighbors are set to 0 (cuts down on memory usage for very large graphs). (default 500)
@@ -1130,18 +1130,18 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #' @param print.mod Print modularity output from clustering algorithm (default FALSE).
 #' @param print.align.summary Print summary of clusters which did not align normally (default FALSE).
 #'
-#' @return Analogizer object with H.norm slot set. 
+#' @return \code{liger} object with H.norm slot set. 
 #' @export
 #' @examples
 #' \dontrun{
-#' # Analogizer object, factorization complete
-#' analogy
+#' # liger object, factorization complete
+#' ligerex
 #' # do basic quantile alignment
-#' analogy <- quantileAlignSNF(analogy)
+#' ligerex <- quantileAlignSNF(ligerex)
 #' # higher resolution for more clusters (note that SNF is conserved)
-#' analogy <- quantileAlignSNF(analogy, resolution = 1.2)
+#' ligerex <- quantileAlignSNF(ligerex, resolution = 1.2)
 #' # change knn_k for more fine-grained local clustering
-#' analogy <- quantileAlignSNF(analogy, knn_k = 15, resolution = 1.2)
+#' ligerex <- quantileAlignSNF(ligerex, knn_k = 15, resolution = 1.2)
 #' }
 
 quantileAlignSNF <- function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, ref_dataset = NULL, 
@@ -1299,10 +1299,10 @@ quantileAlignSNF <- function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, r
 #' @importFrom FNN get.knn
 #' @examples
 #' \dontrun{
-#' # Analogizer object, factorization complete
-#' analogy
+#' # liger object, factorization complete
+#' ligerex
 #' # get SNF graph (third element)
-#' SNF_graph <- SNF(analogy, knn_k = 15)[[3]]
+#' SNF_graph <- SNF(ligerex, knn_k = 15)[[3]]
 #' }
 
 SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", center = F,
@@ -1376,25 +1376,25 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
 #' visualization. Has option to run on subset of factors. Note that running multiple times will
 #' reset tsne.coords values. 
 #'
-#' @param object Analogizer object. Should run quantileAlignSNF before calling with defaults.
+#' @param object \code{liger} object. Should run quantileAlignSNF before calling with defaults.
 #' @param use.raw Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).
 #' @param dims.use Factors to use for computing tSNE embedding (default 1:ncol(H.norm)).
 #' @param perplexity Parameter to pass to Rtsne (expected number of neighbors) (default 30).
 #' @param rand.seed Random seed for reproducibility (default 42).
 #' 
-#' @return Analogizer object with tsne.coords slot set. 
+#' @return \code{liger} object with tsne.coords slot set. 
 #' @importFrom Rtsne Rtsne
 #' @export
 #' @examples
 #' \dontrun{
-#'  # analogizer object
-#' analogy
+#'  # liger object
+#' ligerex
 #' # generate H.norm by quantile aligning factor loadings
-#' analogy <- quantileAlignSNF(analogy)
+#' ligerex <- quantileAlignSNF(ligerex)
 #' # get tsne.coords for normalized data
-#' analogy <- runTSNE(analogy)
+#' ligerex <- runTSNE(ligerex)
 #' # get tsne.coords for raw factor loadings
-#' analogy <- runTSNE(analogy, use.raw = T)
+#' ligerex <- runTSNE(ligerex, use.raw = T)
 #' }
 
 runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.pca = F,
@@ -1428,7 +1428,7 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 #' Note that this method requires that the package reticulate is installed, along with the Python 
 #' package umap-learn. 
 #'
-#' @param object Analogizer object. Should run quantileAlignSNF before calling with defaults.
+#' @param object \code{liger} object. Should run quantileAlignSNF before calling with defaults.
 #' @param use.raw Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).
 #' @param dims.use Factors to use for computing tSNE embedding (default 1:ncol(H.norm)).
 #' @param k Number of dimensions to reduce to (default 2).
@@ -1445,18 +1445,18 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 #'   the range 0.001 to 0.5, with 0.1 being a reasonable default. (default 0.1)
 #' @param rand.seed Random seed for reproducibility (default 42).
 #' 
-#' @return Analogizer object with tsne.coords slot set. 
+#' @return \code{liger} object with tsne.coords slot set. 
 #' @export
 #' @examples
 #' \dontrun{
-#'  # analogizer object with factorization complete
-#' analogy
+#'  # liger object with factorization complete
+#' ligerex
 #' # generate H.norm by quantile aligning factor loadings
-#' analogy <- quantileAlignSNF(analogy)
+#' ligerex <- quantileAlignSNF(ligerex)
 #' # get tsne.coords for normalized data
-#' analogy <- runUMAP(analogy)
+#' ligerex <- runUMAP(ligerex)
 #' # get tsne.coords for raw factor loadings
-#' analogy <- runUMAP(analogy, use.raw = T)
+#' ligerex <- runUMAP(ligerex, use.raw = T)
 #' }
 
 runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2, 
@@ -1501,7 +1501,7 @@ runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2,
 #' (V). We then determine the ratio of these two values and subtract from 1... TODO: finish 
 #' description.
 #'
-#' @param object Analogizer object. Should run optimizeALS before calling.
+#' @param object \code{liger} object. Should run optimizeALS before calling.
 #' @param dataset1 Name of first dataset (by default takes first two datasets for dataset1 and 2)
 #' @param dataset2 Name of second dataset
 #' @param do.plot Display barplot of dataset specificity scores (by factor) (default TRUE).
@@ -1511,10 +1511,10 @@ runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2,
 #' @export
 #' @examples
 #' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
-#' dataset_spec <- calcDatasetSpecificity(analogy, do.plot = F)
+#' # liger object, factorization complete 
+#' ligerex
+#' ligerex <- quantileAlignSNF(ligerex)
+#' dataset_spec <- calcDatasetSpecificity(ligerex, do.plot = F)
 #' }
 
 calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.plot = T) {
@@ -1558,7 +1558,7 @@ calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.
 #' expected to be most similar to iNMF. Although agreement can theoretically approach 1, in practice
 #' it is usually no higher than 0.2-0.3 (particularly for non-deterministic approaches like NMF).
 #'
-#' @param object Analogizer object. Should call quantileAlignSNF before calling.
+#' @param object \code{liger} object. Should call quantileAlignSNF before calling.
 #' @param dr.method Dimensionality reduction method to use for assessing pre-alignment geometry 
 #'   (either "PCA", "NMF", or "ICA"). (default "NMF")
 #' @param ndims Number of dimensions to use in dimensionality reduction (recommended to use the 
@@ -1577,10 +1577,10 @@ calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.
 #' @export
 #' @examples
 #' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
-#' agreement <- calcAgreement(analogy, dr.method = "NMF")
+#' # liger object, factorization complete 
+#' ligerex
+#' ligerex <- quantileAlignSNF(ligerex)
+#' agreement <- calcAgreement(ligerex, dr.method = "NMF")
 #' }
 
 calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.aligned = TRUE,
@@ -1647,7 +1647,7 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #' value for perfectly mixed datasets, and scale the value from 0 to 1. Note that in practice, 
 #' alignment can be greater than 1 occasionally. 
 #'
-#' @param object Analogizer object. Should call quantileAlignSNF before calling.
+#' @param object \code{liger} object. Should call quantileAlignSNF before calling.
 #' @param k Number of nearest neighbors to use in calculating alignment. By default, this will be 
 #'   floor(0.01 * total number of cells), with a lower bound of 10 in all cases except where the 
 #'   total number of sampled cells is less than 10. 
@@ -1661,10 +1661,10 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #' @export
 #' @examples
 #' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
-#' alignment <- calcAlignment(analogy)
+#' # liger object, factorization complete 
+#' ligerex
+#' ligerex <- quantileAlignSNF(ligerex)
+#' alignment <- calcAlignment(ligerex)
 #' }
 
 calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL,
@@ -1737,7 +1737,7 @@ calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL,
 #' 
 #' Returns alignment for each cluster in analysiss (see documentation for calcAlignment).
 #'
-#' @param object Analogizer object. Should call quantileAlignSNF before calling.
+#' @param object \code{liger} object. Should call quantileAlignSNF before calling.
 #' @param rand.seed Random seed for reproducibility (default 1).
 #' @param k Number of nearest neighbors in calculating alignment (see calcAlignment for default).
 #'   Can pass in single value or vector with same length as number of clusters.
@@ -1748,11 +1748,11 @@ calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL,
 #' @export
 #' @examples
 #' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
+#' # liger object, factorization complete 
+#' ligerex
+#' ligerex <- quantileAlignSNF(ligerex)
 #' # get alignment for each cluster
-#' alignment_per_cluster <- calcAlignmentPerCluster(analogy)
+#' alignment_per_cluster <- calcAlignmentPerCluster(ligerex)
 #' }
 
 calcAlignmentPerCluster <- function(object, rand.seed = 1, k = NULL, by.dataset = F) {
@@ -1782,11 +1782,11 @@ calcAlignmentPerCluster <- function(object, rand.seed = 1, k = NULL, by.dataset 
 
 #' Calculate adjusted Rand index 
 #' 
-#' Computes adjusted Rand index for Analogizer clustering and external clustering.
+#' Computes adjusted Rand index for \code{liger} clustering and external clustering.
 #' The Rand index ranges from 0 to 1, with 0 indicating no agreement between clusterings and 1 
 #' indicating perfect agreement. 
 #'
-#' @param object Analogizer object. Should run quantileAlignSNF before calling.
+#' @param object \code{liger} object. Should run quantileAlignSNF before calling.
 #' @param clusters.compare Clustering with which to compare (named vector).
 #' @return Value of ARI
 #' @importFrom mclust adjustedRandIndex
@@ -1795,18 +1795,18 @@ calcAlignmentPerCluster <- function(object, rand.seed = 1, k = NULL, by.dataset 
 #' @export
 #' @examples
 #' \dontrun{
-#' # analogizer object, factorization done
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
+#' # liger object, factorization done
+#' ligerex
+#' ligerex <- quantileAlignSNF(ligerex)
 #' # toy clusters 
-#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(analogy@raw.data[[1]]), replace = T)
-#' names(cluster1) <- colnames(analogy@raw.data[[1]])
-#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(analogy@raw.data[[2]]), replace = T)
-#' names(cluster2) <- colnames(analogy@raw.data[[2]])
+#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = T)
+#' names(cluster1) <- colnames(ligerex@raw.data[[1]])
+#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = T)
+#' names(cluster2) <- colnames(ligerex@raw.data[[2]])
 #' # get ARI for first clustering
-#' ari1 <- calcARI(analogy, cluster1)
+#' ari1 <- calcARI(ligerex, cluster1)
 #' # get ARI for second clustering
-#' ari2 <- calcARI(analogy, cluster2)
+#' ari2 <- calcARI(ligerex, cluster2)
 #' }
 
 calcARI <- function(object, clusters.compare) {
@@ -1819,30 +1819,30 @@ calcARI <- function(object, clusters.compare) {
 
 #' Calculate purity 
 #' 
-#' Calculates purity for Analogizer clustering and external clustering (true clusters/classes). 
+#' Calculates purity for \code{liger} clustering and external clustering (true clusters/classes). 
 #' Purity can sometimes be a more useful metric when the clustering to be tested contains more 
 #' subgroups or clusters than the true clusters (or classes). Purity also ranges from 0 to 1,
 #' with a score of 1 representing a pure, or accurate, clustering. 
 #'
-#' @param object Analogizer object. Should run quantileAlignSNF before calling.
+#' @param object \code{liger} object. Should run quantileAlignSNF before calling.
 #' @param classes.compare Clustering with which to compare (named vector).
 #' 
 #' @return Purity value.
 #' @export
 #' @examples
 #' \dontrun{
-#' # analogizer object, factorization done
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
+#' # liger object, factorization done
+#' ligerex
+#' ligerex <- quantileAlignSNF(ligerex)
 #' # toy clusters 
-#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(analogy@raw.data[[1]]), replace = T)
-#' names(cluster1) <- colnames(analogy@raw.data[[1]])
-#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(analogy@raw.data[[2]]), replace = T)
-#' names(cluster2) <- colnames(analogy@raw.data[[2]])
+#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = T)
+#' names(cluster1) <- colnames(ligerex@raw.data[[1]])
+#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = T)
+#' names(cluster2) <- colnames(ligerex@raw.data[[2]])
 #' # get ARI for first clustering
-#' ari1 <- calcARI(analogy, cluster1)
+#' ari1 <- calcARI(ligerex, cluster1)
 #' # get ARI for second clustering
-#' ari2 <- calcARI(analogy, cluster2)
+#' ari2 <- calcARI(ligerex, cluster2)
 #' }
 
 calcPurity <- function(object, classes.compare) {
@@ -1866,7 +1866,7 @@ calcPurity <- function(object, classes.compare) {
 #' single color for second plot. It is also possible to pass in another clustering (as long as 
 #' names match those of cells). 
 #'
-#' @param object Analogizer object. Should call runTSNE or runUMAP before calling. 
+#' @param object \code{liger} object. Should call runTSNE or runUMAP before calling. 
 #' @param clusters Another clustering to use for coloring second plot (must have same names as 
 #'   clusters slot) (default NULL).
 #' @param title Plot titles (list or vector of length 2) (default NULL).
@@ -1887,14 +1887,14 @@ calcPurity <- function(object, classes.compare) {
 #' @importFrom dplyr %>%
 #' @examples
 #' \dontrun{
-#'  # analogizer object with aligned factor loadings
-#' analogy
+#'  # liger object with aligned factor loadings
+#' ligerex
 #' # get tsne.coords for normalized data
-#' analogy <- runTSNE(analogy)
+#' ligerex <- runTSNE(ligerex)
 #' # plot to console
-#' plotByDatasetAndCluster(analogy)
+#' plotByDatasetAndCluster(ligerex)
 #' # return list of plots 
-#' plots <- plotByDatasetAndCluster(analogy, return.plots = T)
+#' plots <- plotByDatasetAndCluster(ligerex, return.plots = T)
 #' }
 
 plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
@@ -1967,7 +1967,7 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #' It is recommended to call this function into a PDF due to the large number of 
 #' plots produced.
 #' 
-#' @param object Analogizer object. Should call quantileAlignSNF before calling.
+#' @param object \code{liger} object. Should call quantileAlignSNF before calling.
 #' @param num.genes Number of genes to display for each factor (default 10).
 #' @param cells.highlight Names of specific cells to highlight in plot (black) (default NULL).
 #' @param plot.tsne Plot t-SNE coordinates for each factor (default FALSE).
@@ -1976,14 +1976,14 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #' @export
 #' @examples
 #' \dontrun{
-#'  # analogizer object with factorization complete 
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
+#'  # liger object with factorization complete 
+#' ligerex
+#' ligerex <- quantileAlignSNF(ligerex)
 #' # get tsne.coords for normalized data
-#' analogy <- runTSNE(analogy)
+#' ligerex <- runTSNE(ligerex)
 #' # factor plots into pdf file
 #' pdf("plot_factors.pdf")
-#' plotFactors(analogy)
+#' plotFactors(ligerex)
 #' dev.off()
 #' }
 
@@ -2038,7 +2038,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' It is recommended to call this function into a PDF due to the large number of 
 #' plots produced.
 #'
-#' @param object Analogizer object. Should call runTSNE before calling.
+#' @param object \code{liger} object. Should call runTSNE before calling.
 #' @param dataset1 Name of first dataset (by default takes first two datasets for dataset1 and 2)
 #' @param dataset2 Name of second dataset
 #' @param num.genes Number of genes to show in word clouds (default 30).
@@ -2063,12 +2063,12 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' @export
 #' @examples
 #' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
-#' analogy <- runTSNE(analogy)
+#' # liger object, factorization complete 
+#' ligerex
+#' ligerex <- quantileAlignSNF(ligerex)
+#' ligerex <- runTSNE(ligerex)
 #' pdf('word_clouds.pdf')
-#' plotWordClouds(analogy, num.genes = 20)
+#' plotWordClouds(ligerex, num.genes = 20)
 #' dev.off()
 #' }
 
@@ -2160,7 +2160,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' 
 #' Generates violin plots of expression of specified gene for each dataset.
 #'
-#' @param object Analogizer object.
+#' @param object \code{liger} object.
 #' @param gene Gene for which to plot relative expression.
 #' @param methylation.indices Indices of datasets in object with methylation data (this data is not
 #'   magnified and put on log scale).
@@ -2173,10 +2173,10 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
 #' @examples
 #' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
+#' # liger object, factorization complete 
+#' ligerex
 #' # plot expression for CD4 and return plots
-#' violin_plots <- plotGeneViolin(analogy, "CD4", return.plots = T)
+#' violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = T)
 #' }
 
 plotGeneViolin <- function(object, gene, methylation.indices = NULL,
@@ -2238,7 +2238,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' Generates plot of t-SNE coordinates colored by expression of specified gene, for each dataset.
 #' Color scale can be modified. 
 #'
-#' @param object Analogizer object. Should call runTSNE before calling.
+#' @param object \code{liger} object. Should call runTSNE before calling.
 #' @param gene Gene for which to plot relative expression.
 #' @param methylation.indices Indices of datasets in object with methylation data (this data is not
 #'   magnified and put on log scale).
@@ -2256,11 +2256,11 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
 #' @examples
 #' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' analogy <- runTSNE(analogy)
+#' # liger object, factorization complete 
+#' ligerex
+#' ligerex <- runTSNE(ligerex)
 #' # plot expression for CD4 and return plots
-#' gene_plots <- plotGene(analogy, "CD4", return.plots = T)
+#' gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
 #' }
 
 plotGene <- function(object, gene, methylation.indices = NULL, pt.size = 0.1, min.clip = 0,
@@ -2333,19 +2333,19 @@ plotGene <- function(object, gene, methylation.indices = NULL, pt.size = 0.1, mi
 #' Uses plotGene to plot each gene (and dataset) on a separate page. It is recommended to call this
 #' function into a PDF due to the large number of plots produced. 
 #'
-#' @param object Analogizer object. Should call runTSNE before calling.
+#' @param object \code{liger} object. Should call runTSNE before calling.
 #' @param genes Vector of gene names.
 #' 
 #' @export
 #' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
 #' @examples
 #' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' analogy <- runTSNE(analogy)
+#' # liger object, factorization complete 
+#' ligerex
+#' ligerex <- runTSNE(ligerex)
 #' # plot expression for CD4 and FCGR3A
 #' pdf("gene_plots.pdf")
-#' plotGenes(analogy, c("CD4", "FCGR3A"))
+#' plotGenes(ligerex, c("CD4", "FCGR3A"))
 #' dev.off()
 #' }
 
@@ -2362,7 +2362,7 @@ plotGenes <- function(object, genes) {
 #' joint clustering. The joint clustering is by default the object clustering, but an external one
 #' can also be passed in. Uses the riverplot package to construct riverplot object and then plot.
 #'
-#' @param object Analogizer object. Should run quantileAlignSNF before calling.
+#' @param object \code{liger} object. Should run quantileAlignSNF before calling.
 #' @param cluster1 Cluster assignments for dataset 1. Note that cluster names should be distinct 
 #'   across datasets.
 #' @param cluster2 Cluster assignments for dataset 2. Note that cluster names should be distinct 
@@ -2388,16 +2388,16 @@ plotGenes <- function(object, genes) {
 #' @importFrom riverplot plot.riverplot
 #' @examples
 #' \dontrun{
-#' # analogizer object, factorization done
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
+#' # liger object, factorization done
+#' ligerex
+#' ligerex <- quantileAlignSNF(ligerex)
 #' # toy clusters 
-#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(analogy@raw.data[[1]]), replace = T)
-#' names(cluster1) <- colnames(analogy@raw.data[[1]])
-#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(analogy@raw.data[[2]]), replace = T)
-#' names(cluster2) <- colnames(analogy@raw.data[[2]])
+#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = T)
+#' names(cluster1) <- colnames(ligerex@raw.data[[1]])
+#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = T)
+#' names(cluster2) <- colnames(ligerex@raw.data[[2]])
 #' # create riverplot 
-#' makeRiverplot(analogy, cluster1, cluster2)
+#' makeRiverplot(ligerex, cluster1, cluster2)
 #' }
 
 makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, min.frac = 0.05, 
@@ -2523,18 +2523,18 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
 #' 
 #' Generates plot of clusters sized by the proportion of total cells 
 #'
-#' @param object Analogizer object. Should call quantileAlignSNF before calling.
+#' @param object \code{liger} object. Should call quantileAlignSNF before calling.
 #' @param return.plot Return ggplot object (default FALSE)
 #' 
 #' @export
 #' @importFrom ggplot2 ggplot 
 #' @examples
 #' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' analogy <- quantileAlignSNF(analogy)
+#' # liger object, factorization complete 
+#' ligerex
+#' ligerex <- quantileAlignSNF(ligerex)
 #' # plot cluster proportions
-#' plotClusterProportions(analogy)
+#' plotClusterProportions(ligerex)
 #' }
 
 plotClusterProportions <- function(object, return.plot = F) {
@@ -2581,7 +2581,7 @@ plotClusterProportions <- function(object, return.plot = F) {
 #' factorization, before selecting those which load most significantly on each factor (in a shared 
 #' or dataset-specific way).
 #'
-#' @param object Analogizer object. Should call optimizeALS before calling.
+#' @param object \code{liger} object. Should call optimizeALS before calling.
 #' @param dataset1 Name of first dataset (default first dataset by order)
 #' @param dataset2 Name of second dataset (default second dataset by order)
 #' @param factor.share.thresh Use only factors with a dataset specificity less than or equalt to 
@@ -2603,9 +2603,9 @@ plotClusterProportions <- function(object, return.plot = F) {
 #' @export
 #' @examples
 #' \dontrun{
-#' # analogizer object, factorization complete 
-#' analogy
-#' markers <- getFactorMarkers(analogy, num.genes = 10)
+#' # liger object, factorization complete 
+#' ligerex
+#' markers <- getFactorMarkers(ligerex, num.genes = 10)
 #' # look at shared markers 
 #' head(markers[[2]])
 #' }
@@ -2782,14 +2782,14 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #######################################################################################
 #### Conversion/Transformation 
 
-#' Create a Seurat object containing the data from an Analogizer object
+#' Create a Seurat object containing the data from a liger object
 #' 
 #' Carries over raw.data, scale.data, tsne.coords and the iNMF factorization, plus cluster 
 #' assignments. Should have filled these slots before calling. 
 #'
-#' @param object Analogizer object.
+#' @param object \code{liger} object.
 #' @param need.sparse Whether data needs to be converted to sparse format first; most relevant for 
-#'   older Analogizer objects (default TRUE).
+#'   older liger objects (default TRUE).
 #' @param by.dataset Include dataset of origin in cluster identity in Seurat object (default FALSE).
 #' @param nms Names to use in additional labeling of colnames and rownames in Seurat object
 #'   (default names(H)).
@@ -2798,12 +2798,12 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #' @export
 #' @examples
 #' \dontrun{
-#' # Analogizer object
-#' analogy
-#' s.object <- AnalogizerToSeurat(analogy)
+#' # liger object
+#' ligerex
+#' s.object <- ligerToSeurat(ligerex)
 #' }
 
-AnalogizerToSeurat <- function(object, need.sparse = T, by.dataset = F, nms = names(object@H)) {
+ligerToSeurat <- function(object, need.sparse = T, by.dataset = F, nms = names(object@H)) {
   if (!require("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" needed for this function to work. Please install it.",
          call. = FALSE
@@ -2852,29 +2852,29 @@ AnalogizerToSeurat <- function(object, need.sparse = T, by.dataset = F, nms = na
   return(new.seurat)
 }
 
-#' Construct an Analogizer object with a specified subset 
+#' Construct a liger object with a specified subset 
 #' 
 #' The subset can be based on cell names or clusters. This function applies the subsetting to 
 #' raw.data, norm.data, scale.data, H, W, V, H.norm, tsne.coords, and clusters. Note that it does
 #' NOT reoptimize the factorization. See optimizeSubset for this functionality. 
 #'
-#' @param object Analogizer object. Should run quantileAlignSNF and runTSNE before calling. 
+#' @param object \code{liger} object. Should run quantileAlignSNF and runTSNE before calling. 
 #' @param clusters.use Clusters to use for subset.
 #' @param cells.use Vector of cell names to keep from any dataset.
 #'
-#' @return Analogizer object with subsetting applied to raw.data, norm.data, scale.data, H, W, V,
+#' @return \code{liger} object with subsetting applied to raw.data, norm.data, scale.data, H, W, V,
 #'   H.norm, tsne.coords, and clusters.
 #' @export
 #' @examples
 #' \dontrun{
-#' # analogizer object, with clusters 0:10
+#' # liger object, with clusters 0:10
 #' # factorization, alignment, and t-SNE calculation have been performed
-#' analogy 
+#' ligerex 
 #' # subset by clusters
-#' analogy_subset <- subsetAnalogizer(analogy, clusters.use = c(1, 4, 5))
+#' ligerex_subset <- subsetLiger(ligerex, clusters.use = c(1, 4, 5))
 #' }
 
-subsetAnalogizer <- function(object, clusters.use = NULL, cells.use = NULL) {
+subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL) {
   if (!is.null(clusters.use)) {
     cells.use <- names(object@clusters)[which(object@clusters %in% clusters.use)]
   }
@@ -2889,7 +2889,7 @@ subsetAnalogizer <- function(object, clusters.use = NULL, cells.use = NULL) {
   })
   raw.data <- raw.data[!sapply(raw.data, is.null)]
   nms <- names(object@raw.data)[!sapply(raw.data, is.null)]
-  a <- Analogizer(raw.data)
+  a <- newLiger(raw.data)
   
   a@norm.data <- lapply(1:length(a@raw.data), function(i) {
     object@norm.data[[i]][, colnames(a@raw.data[[i]])]
