@@ -14,7 +14,7 @@ LIGER (`liger`) is a package for integrating and analyzing multiple single-cell 
 ```
 install.packages('devtools')
 library(devtools)
-install_github('MacoskoLab/Analogizer', auth_token = '<token>', ref = 'name-change')
+install_github('MacoskoLab/liger', auth_token = '<token>')
 ```
 
 ### Additional Installation Steps for MacOS -- recommended before step 5
