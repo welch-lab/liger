@@ -1,4 +1,4 @@
-# Utility functions for Analogizer methods. Some published, some not.
+# Utility functions for iiger methods. Some published, some not.
 
 # Helper function for plotFactors
 fplot = function(tsne,NMFfactor,title,cols.use=heat.colors(10),pt.size=0.7,pch.use=20) {
@@ -93,9 +93,9 @@ MergeSparseDataAll<-function (datalist,library.names=NULL) {
 #' \dontrun{
 #' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
 #' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-#' analogy = Analogizer(list(Y,Z))
-#' analogy@var.genes = c(1,2,3,4)
-#' analogy = scaleNotCenter(analogy)
+#' ligerex = newLiger(list(Y,Z))
+#' ligerex@var.genes = c(1,2,3,4)
+#' ligerex = scaleNotCenter(ligerex)
 #' }
 Matrix.column_norm <- function(A){
   if (class(A)[1] == "dgTMatrix") {
@@ -160,8 +160,8 @@ SLMCluster<-function(edge,prune.thresh=0.2,nstart=100,iter.max=10,algorithm=1,R=
     # NULL random.seed disallowed for this program.
     random.seed = 0
   }
-  analogizer.dir <- system.file(package = "Analogizer")
-  ModularityJarFile <- paste0(analogizer.dir, "/java/ModularityOptimizer.jar")
+  liger.dir <- system.file(package = "liger")
+  ModularityJarFile <- paste0(liger.dir, "/java/ModularityOptimizer.jar")
   command <- paste("java -jar", ModularityJarFile, edge_file, output_file, modularity, R, 
                    algorithm, nstart,
                    iter.max, random.seed, as.numeric(print.mod), sep = " ")
