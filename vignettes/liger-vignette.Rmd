@@ -24,7 +24,7 @@ positive values. The selectGenes function performs variable gene selection on ea
 ```r
 dge1 = readRDS("dge1.RDS") #genes in rows, cells in columns, rownames and colnames included. Sparse matrix format is accepted.
 dge2 = readRDS("dge2.RDS")
-ligerex = newLiger(list(name1 = dge1, name2 = dge2)) #Can also pass in more than 2 datasets
+ligerex = createLiger(list(name1 = dge1, name2 = dge2)) #Can also pass in more than 2 datasets
 ligerex = normalize(ligerex)
 ligerex = selectGenes(ligerex, var.thresh = 0.1)
 ligerex = scaleNotCenter(ligerex)

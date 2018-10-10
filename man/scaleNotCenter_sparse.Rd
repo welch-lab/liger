@@ -16,7 +16,7 @@ Perform fast and memory-efficient data scaling operation on sparse matrix data.
 \dontrun{
 Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
 Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-ligerex = newLiger(list(Y,Z))
+ligerex = createLiger(list(Y,Z))
 ligerex@var.genes = c(1,2,3,4)
 ligerex = scaleNotCenter(ligerex)
 }

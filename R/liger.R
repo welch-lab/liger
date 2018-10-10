@@ -94,10 +94,10 @@ setMethod(
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' }
 
-newLiger <- function(raw.data, sparse.dcg = T) {
+createLiger <- function(raw.data, sparse.dcg = T) {
   object <- methods::new(
     Class = "liger",
     raw.data = raw.data
@@ -127,7 +127,7 @@ newLiger <- function(raw.data, sparse.dcg = T) {
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' }
 
@@ -175,7 +175,7 @@ normalize <- function(object) {
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' # use default selectGenes settings
 #' ligerex <- selectGenes(ligerex)
@@ -245,7 +245,7 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' # select genes
 #' ligerex <- selectGenes(ligerex)
@@ -321,7 +321,7 @@ removeMissingCells <- function(object, slot.use = "scale.data") {
 #' \dontrun{
 #' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
 #' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-#' ligerex = newLiger(list(Y,Z))
+#' ligerex = createLiger(list(Y,Z))
 #' ligerex@var.genes = c(1,2,3,4)
 #' ligerex = scaleNotCenter(ligerex)
 #' }
@@ -387,7 +387,7 @@ scaleNotCenter_sparse<-function (object, cells = NULL)
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' # select genes
 #' ligerex <- selectGenes(ligerex)
@@ -550,7 +550,7 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
@@ -665,7 +665,7 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
@@ -781,7 +781,7 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
 #' colnames(Y) <- c('a', 'b', 'c')
 #' colnames(Z) <- c('p', 'q', 'r')
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
@@ -850,7 +850,7 @@ optimizeSubset <- function(object, cell.subset = NULL, cluster.subset = NULL, la
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
@@ -909,7 +909,7 @@ optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
@@ -1017,7 +1017,7 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
@@ -2889,7 +2889,7 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL) {
   })
   raw.data <- raw.data[!sapply(raw.data, is.null)]
   nms <- names(object@raw.data)[!sapply(raw.data, is.null)]
-  a <- newLiger(raw.data)
+  a <- createLiger(raw.data)
   
   a@norm.data <- lapply(1:length(a@raw.data), function(i) {
     object@norm.data[[i]][, colnames(a@raw.data[[i]])]
