@@ -2852,6 +2852,128 @@ ligerToSeurat <- function(object, need.sparse = T, by.dataset = F, nms = names(o
   return(new.seurat)
 }
 
+#' Create liger object from one or more Seurat objects 
+#' 
+#' This function creates a \code{liger} object from multiple (disjoint) Seurat objects or a single (combined-
+#' analysis) Seurat object. It includes options for keeping the variable genes and cluster identities
+#' from the original Seurat objects. It renormalizes the raw.data by default. 
+#'
+#' @param objects One or more Seurat objects. If passing multiple objects, should be in list.
+#' @param combined.seurat Whether Seurat object (single) already contains multiple datasets (default
+#'   FALSE).
+#' @param names Names to use for datasets in new liger object. If use-projects, takes project names 
+#'   from individual Seurat objects; if use-meta.var, takes value of object meta.data in meta.var
+#'   column for each dataset (becomes default if passing combined Seurat object). Otherwise, user can
+#'   pass in vector of names with same length as number of datasets (default use-projects).
+#' @param meta.var Seurat meta.data column name to use in naming datasets. Required if 
+#'   combined.seurat is TRUE (default NULL).
+#' @param renormalize Whether to automatically normalize raw.data once \code{liger} object is created 
+#'   (default TRUE).
+#' @param use.seurat.genes Carry over variable genes from Seurat objects. If num.hvg.info is set, uses
+#'   that value to get top most highly variable genes from hvg.info slot in Seurat objects. Otherwise 
+#'   uses var.genes slot in Seurat objects. For multiple datasets, takes the union of the variable 
+#'   genes. (default TRUE)
+#' @param num.hvg.info Number of highly variable genes to include from each object's hvg.info slot.
+#'   If set, recommended value is 2000 (default NULL).
+#' @param use.idents Carry over cluster identities from Seurat objects. If multiple objects with 
+#'   overlapping cluster names, will preface cluster names by dataset names to distinguish. (default
+#'   TRUE). 
+
+#' @return \code{liger} object.
+#' @export
+#' @examples
+#' \dontrun{
+#' # Seurat objects for two pbmc datasets
+#' tenx <- readRDS('tenx.RDS')
+#' seqwell <- readRDS('seqwell.RDS')
+#' # create liger object, using project names
+#' ligerex <- seuratToLiger(list(tenx, seqwell))
+#' # create liger object, passing in names explicitly, using hvg.info genes
+#' ligerex2 <- seuratToLiger(list(tenx, seqwell), names = c('tenx', 'seqwell'), num.hvg.info = 2000)
+#' # Seurat object for joint analysis
+#' pbmc <- readRDS('pbmc.RDS')
+#' # create liger object, using 'protocol' for dataset names
+#' ligerex3 <- seuratToLiger(pbmc, meta.var = 'protocol', num.hvg.info = 2000)
+#' }
+
+seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", meta.var = NULL,
+                          renormalize = T, use.seurat.genes = T, num.hvg.info = NULL,
+                          use.idents = T) {
+  # Only a single seurat object expected
+  if (combined.seurat) {
+    raw.data <- lapply(unique(objects@meta.data[[meta.var]]), function(x) {
+      cells <- rownames(objects@meta.data[objects@meta.data[[meta.var]] == x, ])
+      objects@raw.data[, cells]
+    })
+    if (is.null(meta.var)) {
+      stop("Please provide meta.var to use in naming individual datasets.")
+    }
+    names(raw.data) <- unique(objects@meta.data[[meta.var]])
+    var.genes <- objects@var.genes
+    if (ncol(objects@raw.data) != length(objects@ident)) {
+      idents <- rep("NA", ncol(objects@raw.data))
+      names(idents) <- colnames(objects@raw.data)
+      idents[names(objects@ident)] <- as.character(objects@ident)
+      idents <- factor(idents)
+    } else {
+      idents <- objects@ident
+    }
+  } else {
+    if (typeof(objects) != 'list') {
+      objects <- list(objects)
+    }
+    raw.data <- lapply(objects, function(x) {
+      x@raw.data
+    })
+    names(raw.data) <- lapply(seq_along(objects), function(x) {
+      if (names == "use-projects") {
+        objects[[x]]@project.name
+      } else if (names == "use-meta.var") {
+        if (is.null(meta.var)) {
+          stop("Please provide meta.var to use in naming individual datasets.")
+        }
+        objects[[x]]@meta.data[[meta.var]][1]
+      } else {
+        names[x]
+      }
+    })
+    var.genes <- Reduce(union, lapply(objects, function(x) {
+      if (!is.null(num.hvg.info)) {
+        rownames(head(x@hvg.info, num.hvg.info))
+      } else {
+        x@var.genes
+      }
+    }))
+    idents <- unlist(lapply(seq_along(objects), function(x) {
+      idents <- rep("NA", ncol(objects[[x]]@raw.data))
+      names(idents) <- colnames(objects[[x]]@raw.data)
+      idents[names(objects[[x]]@ident)] <- as.character(objects[[x]]@ident)
+      idents <- paste0(names(raw.data)[x], idents)
+    }))
+    idents <- factor(idents)
+  }
+  new.liger <- createLiger(raw.data = raw.data)
+  if (renormalize) {
+    new.liger <- normalize(new.liger)
+  }
+  if (use.seurat.genes) {
+    # Include only genes which appear in all datasets
+    for (i in 1:length(new.liger@raw.data)) {
+      var.genes <- intersect(var.genes, rownames(new.liger@raw.data[[i]]))
+      # Seurat has an extra CheckGenes step which we can include here
+      # Remove genes with no expression anywhere
+      var.genes <- var.genes[rowSums(new.liger@raw.data[[i]][var.genes, ]) > 0]
+      var.genes <- var.genes[!is.na(var.genes)]
+    }
+    
+    new.liger@var.genes <- var.genes
+  }
+  if (use.idents) {
+    new.liger@clusters <- idents
+  }
+  return(new.liger)
+}
+
 #' Construct a liger object with a specified subset 
 #' 
 #' The subset can be based on cell names or clusters. This function applies the subsetting to 
