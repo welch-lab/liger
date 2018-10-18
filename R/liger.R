@@ -1375,11 +1375,24 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
 #' Runs t-SNE on the normalized cell factors (or raw cell factors) to generate a 2D embedding for 
 #' visualization. Has option to run on subset of factors. Note that running multiple times will
 #' reset tsne.coords values. 
+#' 
+#' In order to run fftRtsne (recommended for large datasets), you must first install FIt-SNE as 
+#' detailed \href{https://github.com/KlugerLab/FIt-SNE}{here}. Include the path to the cloned 
+#' FIt-SNE directory as the fitsne.path parameter, though this is only necessary for the first call
+#' to runTSNE. For more detailed FIt-SNE installation instructions, see the liger repo README.
 #'
 #' @param object \code{liger} object. Should run quantileAlignSNF before calling with defaults.
 #' @param use.raw Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).
 #' @param dims.use Factors to use for computing tSNE embedding (default 1:ncol(H.norm)).
+#' @param use.pca Whether to perform initial PCA step for Rtsne (default FALSE).
 #' @param perplexity Parameter to pass to Rtsne (expected number of neighbors) (default 30).
+#' @param theta Speed/accuracy trade-off (increase for less accuracy), set to 0.0 for exact TSNE
+#'   (default 0.5).
+#' @param method Supports two methods for estimating tSNE values: Rtsne (Barnes-Hut implementation 
+#'   of t-SNE) and fftRtsne (FFT-accelerated Interpolation-based t-SNE) (using Kluger Lab 
+#'   implementation). (default Rtsne)
+#' @param fitsne.path Path to the cloned FIt-SNE directory (ie. '/path/to/dir/FIt-SNE') (required
+#'   for using fftRtsne -- only first time runTSNE is called) (default NULL).
 #' @param rand.seed Random seed for reproducibility (default 42).
 #' 
 #' @return \code{liger} object with tsne.coords slot set. 
@@ -1398,22 +1411,33 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
 #' }
 
 runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.pca = F,
-                    perplexity = 30, rand.seed = 42) {
-  set.seed(rand.seed)
+                    perplexity = 30, theta = 0.5, method = 'Rtsne', fitsne.path = NULL,
+                    rand.seed = 42) {
   if (use.raw) {
-    raw.data <- do.call(rbind, object@H)
-    # if H.norm not set yet
+    data.use <- do.call(rbind, object@H)
     if (identical(dims.use, 1:0)) {
       dims.use <- 1:ncol(raw.data)
     }
-    object@tsne.coords <- Rtsne(raw.data[, dims.use], pca = use.pca, check_duplicates = F, 
-                                perplexity = perplexity)$Y
-    rownames(object@tsne.coords) <- rownames(raw.data)
   } else {
-    object@tsne.coords <- Rtsne(object@H.norm[, dims.use], pca = use.pca, check_duplicates = F, 
-                                perplexity = perplexity)$Y
-    rownames(object@tsne.coords) <- rownames(object@H.norm)
+    data.use <- object@H.norm
   }
+  if (method == 'Rtsne') {
+    set.seed(rand.seed)
+    object@tsne.coords <- Rtsne(data.use[, dims.use], pca = use.pca, check_duplicates = F, 
+                                theta = theta, perplexity = perplexity)$Y
+  } else if (method == 'fftRtsne') {
+    if (!exists('fftRtsne')) {
+      if (is.null(fitsne.path)) {
+        stop('Please pass in path to FIt-SNE directory as fitsne.path.')
+      }
+      source(paste0(fitsne.path, '/fast_tsne.R'), chdir = T)
+    }
+    object@tsne.coords <- fftRtsne(data.use[, dims.use], check_duplicates = F, 
+                                   rand_seed = rand.seed, theta = theta, perplexity = perplexity)
+  } else {
+    stop('Invalid method: Please choose Rtsne or fftRtsne')
+  }
+  rownames(object@tsne.coords) <- rownames(data.use)
   return(object)
 }
 
