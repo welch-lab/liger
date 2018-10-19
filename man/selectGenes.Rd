@@ -47,7 +47,7 @@ expression across genes and cells). Selected genes are plotted in green.
 \dontrun{
 Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-ligerex <- newLiger(list(y_set = Y, z_set = Z))
+ligerex <- createLiger(list(y_set = Y, z_set = Z))
 ligerex <- normalize(ligerex)
 # use default selectGenes settings
 ligerex <- selectGenes(ligerex)

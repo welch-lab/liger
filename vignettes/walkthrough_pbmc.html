@@ -143,7 +143,7 @@ pbmc.seqwell &lt;- read.table('~/Downloads/pbmc_alignment/pbmc_SeqWell.expressio
 pbmc.data = list(tenx=pbmc.10x, seqwell=pbmc.seqwell)
 
 # Create liger object
-a.pbmc &lt;- newLiger(pbmc.data)</code></pre>
+a.pbmc &lt;- createLiger(pbmc.data)</code></pre>
 <div id="data-preprocessing" class="section level3">
 <h3>Data Preprocessing</h3>
 <p>Before running the factorization, we need to normalize the data to account for different numbers of UMIs per cell, select variable genes, and scale the data. Note that we do not center the data when scaling because nonnegative matrix factorization accepts only positive values.</p>

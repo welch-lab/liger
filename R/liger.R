@@ -86,7 +86,9 @@ setMethod(
 #' By default, it converts all passed data into sparse matrices (dgCMatrix) to reduce object size. 
 #'
 #' @param raw.data List of expression matrices (gene by cell). Should be named by dataset. 
-#' @param sparse.dcg Whether to convert raw data into sparse matrices (default: T).
+#' @param make.sparse Whether to convert raw data into sparse matrices (default TRUE).
+#' @param take.gene.union Whether to fill out raw.data matrices with union of genes across all 
+#'   datasets (filling in 0 for missing data) (requires make.sparse=T) (default FALSE).
 #' 
 #' @return \code{liger} object with raw.data slot set.
 #' @export
@@ -94,15 +96,15 @@ setMethod(
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' }
 
-newLiger <- function(raw.data, sparse.dcg = T) {
+createLiger <- function(raw.data, make.sparse = T, take.gene.union = F) {
   object <- methods::new(
     Class = "liger",
     raw.data = raw.data
   )
-  if (sparse.dcg) {
+  if (make.sparse) {
     raw.data <- lapply(raw.data, function(x) {
       if (class(x)[1] == "dgTMatrix" | class(x)[1] == 'dgCMatrix') {
         as(x, 'CsparseMatrix')
@@ -110,8 +112,14 @@ newLiger <- function(raw.data, sparse.dcg = T) {
         as(as.matrix(x), 'CsparseMatrix')
       }
     })
-    object@raw.data <- raw.data
   }
+  if (take.gene.union) {
+    merged.data <- MergeSparseDataAll(raw.data)
+    raw.data <- lapply(raw.data, function(x) {
+      merged.data[, colnames(x)]
+    })
+  }
+  object@raw.data <- raw.data
   return(object)
 }
 
@@ -127,7 +135,7 @@ newLiger <- function(raw.data, sparse.dcg = T) {
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' }
 
@@ -175,7 +183,7 @@ normalize <- function(object) {
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' # use default selectGenes settings
 #' ligerex <- selectGenes(ligerex)
@@ -195,7 +203,7 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
     # Each gene's mean expression level (across all cells)
     gene_expr_mean <- rowMeans(object@norm.data[[i]])
     # Each gene's expression variance (across all cells)
-    gene_expr_var <- apply(object@norm.data[[i]], 1, var)
+    gene_expr_var <- sparse.var(object@norm.data[[i]])
     nolan_constant <- mean((1 / trx_per_cell))
     alphathresh.corrected <- alpha.thresh / nrow(object@raw.data[[i]])
     genemeanupper <- gene_expr_mean + qnorm(1 - alphathresh.corrected / 2) *
@@ -245,7 +253,7 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' # select genes
 #' ligerex <- selectGenes(ligerex)
@@ -253,11 +261,23 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
 #' }
 
 scaleNotCenter <- function(object, remove.missing = T) {
-  object@scale.data <- lapply(1:length(object@norm.data), function(i) {
-    scale(t(object@norm.data[[i]][object@var.genes, ]), center = F, scale = T)
-  })
+  if (class(object@raw.data[[1]])[1] == "dgTMatrix" | 
+      class(object@raw.data[[1]])[1] == "dgCMatrix") {
+    object@scale.data <- lapply(1:length(object@norm.data), function(i) {
+      scale(sparse.transpose(object@norm.data[[i]][object@var.genes, ]), center = F,
+            scale = T)
+    })
+    names(object@scale.data) <- names(object@norm.data)
+  } else {
+    object@scale.data <- lapply(1:length(object@norm.data), function(i) {
+      scale(t(object@norm.data[[i]][object@var.genes, ]), center = F, scale = T)
+    })
+  }
+  
   for (i in 1:length(object@scale.data)) {
     object@scale.data[[i]][is.na(object@scale.data[[i]])] <- 0
+    rownames(object@scale.data[[i]]) <- colnames(object@raw.data[[i]])
+    colnames(object@scale.data[[i]]) <- object@var.genes
   }
   # may want to remove such cells before scaling -- should not matter for large datasets?
   if (remove.missing) {
@@ -312,39 +332,6 @@ removeMissingCells <- function(object, slot.use = "scale.data") {
   return(object)
 }
 
-#' Perform fast and memory-efficient data scaling operation on sparse matrix data.
-#'
-#' @param object Sparse matrix DGE.
-#' 
-#' @export
-#' @examples
-#' \dontrun{
-#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-#' ligerex = newLiger(list(Y,Z))
-#' ligerex@var.genes = c(1,2,3,4)
-#' ligerex = scaleNotCenter(ligerex)
-#' }
-scaleNotCenter_sparse<-function (object, cells = NULL)
-{
-  if (is.null(cells)) {
-    cells = lapply(1:length(object@raw.data), function(i) {
-      1:ncol(object@raw.data[[i]])
-    })
-  }
-  object@scale.data = lapply(1:length(object@norm.data), function(i) {
-    scale(Sparse_transpose(object@norm.data[[i]][object@var.genes, ]), center = F,
-          scale = T)
-  })
-  names(object@scale.data) = names(object@norm.data)
-  for (i in 1:length(object@scale.data)) {
-    object@scale.data[[i]][is.na(object@scale.data[[i]])] = 0
-    rownames(object@scale.data[[i]]) = colnames(object@raw.data[[i]])
-    colnames(object@scale.data[[i]]) = object@var.genes
-  }
-  return(object)
-}
-
 #######################################################################################
 #### Factorization
 
@@ -387,7 +374,7 @@ scaleNotCenter_sparse<-function (object, cells = NULL)
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' # select genes
 #' ligerex <- selectGenes(ligerex)
@@ -550,7 +537,7 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
@@ -665,7 +652,7 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
@@ -781,7 +768,7 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
 #' colnames(Y) <- c('a', 'b', 'c')
 #' colnames(Z) <- c('p', 'q', 'r')
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
@@ -850,7 +837,7 @@ optimizeSubset <- function(object, cell.subset = NULL, cluster.subset = NULL, la
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
@@ -909,7 +896,7 @@ optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
@@ -1017,7 +1004,7 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- newLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
@@ -1375,11 +1362,24 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
 #' Runs t-SNE on the normalized cell factors (or raw cell factors) to generate a 2D embedding for 
 #' visualization. Has option to run on subset of factors. Note that running multiple times will
 #' reset tsne.coords values. 
+#' 
+#' In order to run fftRtsne (recommended for large datasets), you must first install FIt-SNE as 
+#' detailed \href{https://github.com/KlugerLab/FIt-SNE}{here}. Include the path to the cloned 
+#' FIt-SNE directory as the fitsne.path parameter, though this is only necessary for the first call
+#' to runTSNE. For more detailed FIt-SNE installation instructions, see the liger repo README.
 #'
 #' @param object \code{liger} object. Should run quantileAlignSNF before calling with defaults.
 #' @param use.raw Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).
 #' @param dims.use Factors to use for computing tSNE embedding (default 1:ncol(H.norm)).
+#' @param use.pca Whether to perform initial PCA step for Rtsne (default FALSE).
 #' @param perplexity Parameter to pass to Rtsne (expected number of neighbors) (default 30).
+#' @param theta Speed/accuracy trade-off (increase for less accuracy), set to 0.0 for exact TSNE
+#'   (default 0.5).
+#' @param method Supports two methods for estimating tSNE values: Rtsne (Barnes-Hut implementation 
+#'   of t-SNE) and fftRtsne (FFT-accelerated Interpolation-based t-SNE) (using Kluger Lab 
+#'   implementation). (default Rtsne)
+#' @param fitsne.path Path to the cloned FIt-SNE directory (ie. '/path/to/dir/FIt-SNE') (required
+#'   for using fftRtsne -- only first time runTSNE is called) (default NULL).
 #' @param rand.seed Random seed for reproducibility (default 42).
 #' 
 #' @return \code{liger} object with tsne.coords slot set. 
@@ -1398,22 +1398,33 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
 #' }
 
 runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.pca = F,
-                    perplexity = 30, rand.seed = 42) {
-  set.seed(rand.seed)
+                    perplexity = 30, theta = 0.5, method = 'Rtsne', fitsne.path = NULL,
+                    rand.seed = 42) {
   if (use.raw) {
-    raw.data <- do.call(rbind, object@H)
-    # if H.norm not set yet
+    data.use <- do.call(rbind, object@H)
     if (identical(dims.use, 1:0)) {
       dims.use <- 1:ncol(raw.data)
     }
-    object@tsne.coords <- Rtsne(raw.data[, dims.use], pca = use.pca, check_duplicates = F, 
-                                perplexity = perplexity)$Y
-    rownames(object@tsne.coords) <- rownames(raw.data)
   } else {
-    object@tsne.coords <- Rtsne(object@H.norm[, dims.use], pca = use.pca, check_duplicates = F, 
-                                perplexity = perplexity)$Y
-    rownames(object@tsne.coords) <- rownames(object@H.norm)
+    data.use <- object@H.norm
   }
+  if (method == 'Rtsne') {
+    set.seed(rand.seed)
+    object@tsne.coords <- Rtsne(data.use[, dims.use], pca = use.pca, check_duplicates = F, 
+                                theta = theta, perplexity = perplexity)$Y
+  } else if (method == 'fftRtsne') {
+    if (!exists('fftRtsne')) {
+      if (is.null(fitsne.path)) {
+        stop('Please pass in path to FIt-SNE directory as fitsne.path.')
+      }
+      source(paste0(fitsne.path, '/fast_tsne.R'), chdir = T)
+    }
+    object@tsne.coords <- fftRtsne(data.use[, dims.use], check_duplicates = F, 
+                                   rand_seed = rand.seed, theta = theta, perplexity = perplexity)
+  } else {
+    stop('Invalid method: Please choose Rtsne or fftRtsne')
+  }
+  rownames(object@tsne.coords) <- rownames(data.use)
   return(object)
 }
 
@@ -2852,6 +2863,128 @@ ligerToSeurat <- function(object, need.sparse = T, by.dataset = F, nms = names(o
   return(new.seurat)
 }
 
+#' Create liger object from one or more Seurat objects 
+#' 
+#' This function creates a \code{liger} object from multiple (disjoint) Seurat objects or a single (combined-
+#' analysis) Seurat object. It includes options for keeping the variable genes and cluster identities
+#' from the original Seurat objects. It renormalizes the raw.data by default. 
+#'
+#' @param objects One or more Seurat objects. If passing multiple objects, should be in list.
+#' @param combined.seurat Whether Seurat object (single) already contains multiple datasets (default
+#'   FALSE).
+#' @param names Names to use for datasets in new liger object. If use-projects, takes project names 
+#'   from individual Seurat objects; if use-meta.var, takes value of object meta.data in meta.var
+#'   column for each dataset (becomes default if passing combined Seurat object). Otherwise, user can
+#'   pass in vector of names with same length as number of datasets (default use-projects).
+#' @param meta.var Seurat meta.data column name to use in naming datasets. Required if 
+#'   combined.seurat is TRUE (default NULL).
+#' @param renormalize Whether to automatically normalize raw.data once \code{liger} object is created 
+#'   (default TRUE).
+#' @param use.seurat.genes Carry over variable genes from Seurat objects. If num.hvg.info is set, uses
+#'   that value to get top most highly variable genes from hvg.info slot in Seurat objects. Otherwise 
+#'   uses var.genes slot in Seurat objects. For multiple datasets, takes the union of the variable 
+#'   genes. (default TRUE)
+#' @param num.hvg.info Number of highly variable genes to include from each object's hvg.info slot.
+#'   If set, recommended value is 2000 (default NULL).
+#' @param use.idents Carry over cluster identities from Seurat objects. If multiple objects with 
+#'   overlapping cluster names, will preface cluster names by dataset names to distinguish. (default
+#'   TRUE). 
+
+#' @return \code{liger} object.
+#' @export
+#' @examples
+#' \dontrun{
+#' # Seurat objects for two pbmc datasets
+#' tenx <- readRDS('tenx.RDS')
+#' seqwell <- readRDS('seqwell.RDS')
+#' # create liger object, using project names
+#' ligerex <- seuratToLiger(list(tenx, seqwell))
+#' # create liger object, passing in names explicitly, using hvg.info genes
+#' ligerex2 <- seuratToLiger(list(tenx, seqwell), names = c('tenx', 'seqwell'), num.hvg.info = 2000)
+#' # Seurat object for joint analysis
+#' pbmc <- readRDS('pbmc.RDS')
+#' # create liger object, using 'protocol' for dataset names
+#' ligerex3 <- seuratToLiger(pbmc, meta.var = 'protocol', num.hvg.info = 2000)
+#' }
+
+seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", meta.var = NULL,
+                          renormalize = T, use.seurat.genes = T, num.hvg.info = NULL,
+                          use.idents = T) {
+  # Only a single seurat object expected
+  if (combined.seurat) {
+    raw.data <- lapply(unique(objects@meta.data[[meta.var]]), function(x) {
+      cells <- rownames(objects@meta.data[objects@meta.data[[meta.var]] == x, ])
+      objects@raw.data[, cells]
+    })
+    if (is.null(meta.var)) {
+      stop("Please provide meta.var to use in naming individual datasets.")
+    }
+    names(raw.data) <- unique(objects@meta.data[[meta.var]])
+    var.genes <- objects@var.genes
+    if (ncol(objects@raw.data) != length(objects@ident)) {
+      idents <- rep("NA", ncol(objects@raw.data))
+      names(idents) <- colnames(objects@raw.data)
+      idents[names(objects@ident)] <- as.character(objects@ident)
+      idents <- factor(idents)
+    } else {
+      idents <- objects@ident
+    }
+  } else {
+    if (typeof(objects) != 'list') {
+      objects <- list(objects)
+    }
+    raw.data <- lapply(objects, function(x) {
+      x@raw.data
+    })
+    names(raw.data) <- lapply(seq_along(objects), function(x) {
+      if (names == "use-projects") {
+        objects[[x]]@project.name
+      } else if (names == "use-meta.var") {
+        if (is.null(meta.var)) {
+          stop("Please provide meta.var to use in naming individual datasets.")
+        }
+        objects[[x]]@meta.data[[meta.var]][1]
+      } else {
+        names[x]
+      }
+    })
+    var.genes <- Reduce(union, lapply(objects, function(x) {
+      if (!is.null(num.hvg.info)) {
+        rownames(head(x@hvg.info, num.hvg.info))
+      } else {
+        x@var.genes
+      }
+    }))
+    idents <- unlist(lapply(seq_along(objects), function(x) {
+      idents <- rep("NA", ncol(objects[[x]]@raw.data))
+      names(idents) <- colnames(objects[[x]]@raw.data)
+      idents[names(objects[[x]]@ident)] <- as.character(objects[[x]]@ident)
+      idents <- paste0(names(raw.data)[x], idents)
+    }))
+    idents <- factor(idents)
+  }
+  new.liger <- createLiger(raw.data = raw.data)
+  if (renormalize) {
+    new.liger <- normalize(new.liger)
+  }
+  if (use.seurat.genes) {
+    # Include only genes which appear in all datasets
+    for (i in 1:length(new.liger@raw.data)) {
+      var.genes <- intersect(var.genes, rownames(new.liger@raw.data[[i]]))
+      # Seurat has an extra CheckGenes step which we can include here
+      # Remove genes with no expression anywhere
+      var.genes <- var.genes[rowSums(new.liger@raw.data[[i]][var.genes, ]) > 0]
+      var.genes <- var.genes[!is.na(var.genes)]
+    }
+    
+    new.liger@var.genes <- var.genes
+  }
+  if (use.idents) {
+    new.liger@clusters <- idents
+  }
+  return(new.liger)
+}
+
 #' Construct a liger object with a specified subset 
 #' 
 #' The subset can be based on cell names or clusters. This function applies the subsetting to 
@@ -2889,7 +3022,7 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL) {
   })
   raw.data <- raw.data[!sapply(raw.data, is.null)]
   nms <- names(object@raw.data)[!sapply(raw.data, is.null)]
-  a <- newLiger(raw.data)
+  a <- createLiger(raw.data)
   
   a@norm.data <- lapply(1:length(a@raw.data), function(i) {
     object@norm.data[[i]][, colnames(a@raw.data[[i]])]

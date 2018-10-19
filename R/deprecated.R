@@ -157,13 +157,17 @@ alignment_metric_per_factor<-function(object,k=NULL)
 #' analogy = quantile_norm(analogy)
 #' analogy = clusterLouvainJaccard(object)
 #' }
-clusterLouvainJaccard = function(object,res.param=0.1,k.param=30)
+clusterLouvainJaccard = function(object, resolution = 0.1, k.param=30, n.iter = 10, n.start = 10,
+                                 print.output = F, ...)
 {
   temp.seurat = CreateSeuratObject(t(Reduce(rbind,object@scale.data)))
   temp.seurat@scale.data = t(Reduce(rbind,object@scale.data))
   rownames(object@H.norm)=colnames(temp.seurat@scale.data)
   temp.seurat@dr$NMF=new(Class="dim.reduction",cell.embeddings=object@H.norm,key="NMF")
-  temp.seurat <- FindClusters(object = temp.seurat, reduction.type = "NMF", dims.use = 1:ncol(object@H.norm),force.recalc=T,save.SNN = T,resolution=res.param,k.param=k.param)
+  temp.seurat <- FindClusters(object = temp.seurat, reduction.type = "NMF", 
+                              dims.use = 1:ncol(object@H.norm),force.recalc=T,
+                              save.SNN = T,resolution=resolution,k.param=k.param,
+                              n.iter = n.iter, n.start = n.start, print.output = print.output, ...)
   object@clusters = temp.seurat@ident
   return(object)
 }
@@ -315,5 +319,40 @@ spectral_alignment=function(object,k=30,alpha=1,sigma=NULL,neigen=NULL)
   res = eigs(laplacian_matrix(g),k=neigen,which="LM",sigma=0)
   rownames(res$vectors)=names(V(g))
   object@H.norm = res$vectors[names(object@clusters),]
+  return(object)
+}
+
+#' Perform fast and memory-efficient data scaling operation on sparse matrix data.
+#'
+#' @param object Sparse matrix DGE.
+#' 
+#' @export
+#' @examples
+#' \dontrun{
+#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
+#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
+#' ligerex = createLiger(list(Y,Z))
+#' ligerex@var.genes = c(1,2,3,4)
+#' ligerex = scaleNotCenter(ligerex)
+#' }
+scaleNotCenter_sparse<-function (object, cells = NULL)
+{
+  print('This function has been deprecated and will soon be removed. Its functionality has been
+         added to scaleNotCenter.')
+  if (is.null(cells)) {
+    cells = lapply(1:length(object@raw.data), function(i) {
+      1:ncol(object@raw.data[[i]])
+    })
+  }
+  object@scale.data = lapply(1:length(object@norm.data), function(i) {
+    scale(sparse.transpose(object@norm.data[[i]][object@var.genes, ]), center = F,
+          scale = T)
+  })
+  names(object@scale.data) = names(object@norm.data)
+  for (i in 1:length(object@scale.data)) {
+    object@scale.data[[i]][is.na(object@scale.data[[i]])] = 0
+    rownames(object@scale.data[[i]]) = colnames(object@raw.data[[i]])
+    colnames(object@scale.data[[i]]) = object@var.genes
+  }
   return(object)
 }

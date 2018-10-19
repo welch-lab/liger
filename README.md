@@ -17,7 +17,7 @@ library(devtools)
 install_github('MacoskoLab/liger', auth_token = '<token>')
 ```
 
-### Additional Installation Steps for MacOS -- recommended before step 5
+### Additional Installation Steps for MacOS (recommended before step 5)
 Installing RcppArmadillo on R>=3.4 requires Clang >= 4 and gfortran-6.1. Follow the instructions below if you have R version 3.4.0-3.4.4. These instructions (using clang4) may also be sufficient for R>=3.5 but for newer versions of R, it's recommended to follow the instructions in this [post](https://thecoatlessprofessor.com/programming/r-compiler-tools-for-rcpp-on-macos/). 
 
 1. Install gfortran as suggested [here](https://gcc.gnu.org/wiki/GFortranBinaries)
@@ -45,6 +45,28 @@ cd .R
 nano Makevars
 ``` 
 Paste in the required text above and save with `Ctrl-X`.
+
+### Detailed Instructions for FIt-SNE Installation for use in runTSNE (recommended for large datasets)
+Using FIt-SNE is recommended for computational efficiency when using runTSNE on very large datasets.
+Installing and compiling the necessary software requires the use of git, FIt-SNE, and FFTW. For a 
+basic overview of installation, visit this [page](https://github.com/KlugerLab/FIt-SNE).
+
+Basic installation for most Unix machines can be achieved with the following commands after downloading 
+the latest version of FFTW from [here](http://www.fftw.org/). In the fftw directory, run:
+```
+./configure
+make
+make install
+```
+(Additional [instructions](http://www.fftw.org/fftw3_doc/Installation-and-Customization.html)).
+Then in desired directory:
+```
+git clone https://github.com/KlugerLab/FIt-SNE.git
+cd FIt-SNE
+g++ -std=c++11 -O3  src/sptree.cpp src/tsne.cpp src/nbodyfft.cpp  -o bin/fast_tsne -pthread -lfftw3 -lm
+pwd
+```
+Use the output of `pwd` as the `fitsne.path` parameter in runTSNE. 
 
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 

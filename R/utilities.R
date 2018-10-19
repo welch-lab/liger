@@ -93,7 +93,7 @@ MergeSparseDataAll<-function (datalist,library.names=NULL) {
 #' \dontrun{
 #' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
 #' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-#' ligerex = newLiger(list(Y,Z))
+#' ligerex = createLiger(list(Y,Z))
 #' ligerex@var.genes = c(1,2,3,4)
 #' ligerex = scaleNotCenter(ligerex)
 #' }
@@ -104,6 +104,19 @@ Matrix.column_norm <- function(A){
   }
   A@x <- A@x / rep.int(Matrix::colSums(A), diff(A@p))
   return(A)
+}
+
+# Variance for sparse matrices
+sparse.var = function(x){
+  rms <- rowMeans(x)
+  rowSums((x-rms)^2)/(dim(x)[2]-1)
+}
+
+# Transposition for sparse matrices
+sparse.transpose = function(x){
+  h = summary(x)
+  sparseMatrix(i = h[,2],j=h[,1],x=h[,3])
+  
 }
 
 # After running modularity clustering, assign singleton communities to the mode of the cluster

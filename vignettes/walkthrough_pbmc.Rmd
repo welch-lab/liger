@@ -26,7 +26,7 @@ pbmc.seqwell <- read.table('~/Downloads/pbmc_alignment/pbmc_SeqWell.expressionMa
 pbmc.data = list(tenx=pbmc.10x, seqwell=pbmc.seqwell)
 
 # Create liger object
-a.pbmc <- newLiger(pbmc.data)
+a.pbmc <- createLiger(pbmc.data)
 ```
 
 ###Data Preprocessing
