@@ -356,3 +356,8 @@ scaleNotCenter_sparse<-function (object, cells = NULL)
   }
   return(object)
 }
+
+newLiger <- function(raw.data, make.sparse = T, take.gene.union = F) {
+  print('This function has been deprecated and will soon be removed. Please use createLiger instead.')
+  return(createLiger(raw.data, make.sparse = make.sparse, take.gene.union = take.gene.union))
+}
