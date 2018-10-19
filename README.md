@@ -6,21 +6,22 @@ LIGER (`liger`) is a package for integrating and analyzing multiple single-cell 
 
 LIGER can be used to compare and contrast experimental datasets in a variety of contexts, for instance:
 
-* Across batches
+* Across experimental batches
 * Across individuals
 * Across sex
 * Across species (ie. mouse and human)
 * Across modalities (ie. scRNAseq and spatial transcriptomics data)
 
 Once multiple datasets are integrated, the package provides functionality for further data exploration, 
-analysis, and visualization. Users can easily:
+analysis, and visualization. Users can:
 
 * Identify clusters 
 * Find significant shared (and dataset-specific) gene markers
 * Compare clusters with previously identified cell types
 * Visualize clusters and gene expression using t-SNE and UMAP
 
-We have also designed LIGER to interface with existing single-cell analysis packages, including Seurat.
+We have also designed LIGER to interface with existing single-cell analysis packages, including 
+[Seurat](https://satijalab.org/seurat/).
 
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
