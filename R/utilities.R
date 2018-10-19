@@ -106,6 +106,19 @@ Matrix.column_norm <- function(A){
   return(A)
 }
 
+# Variance for sparse matrices
+sparse.var = function(x){
+  rms <- rowMeans(x)
+  rowSums((x-rms)^2)/(dim(x)[2]-1)
+}
+
+# Transposition for sparse matrices
+sparse.transpose = function(x){
+  h = summary(x)
+  sparseMatrix(i = h[,2],j=h[,1],x=h[,3])
+  
+}
+
 # After running modularity clustering, assign singleton communities to the mode of the cluster
 # assignments of the within-dataset neighbors
 assign.singletons<-function(object,idents,k.use = 15, center=F) {

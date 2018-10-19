@@ -195,7 +195,7 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
     # Each gene's mean expression level (across all cells)
     gene_expr_mean <- rowMeans(object@norm.data[[i]])
     # Each gene's expression variance (across all cells)
-    gene_expr_var <- apply(object@norm.data[[i]], 1, var)
+    gene_expr_var <- sparse.var(object@norm.data[[i]])
     nolan_constant <- mean((1 / trx_per_cell))
     alphathresh.corrected <- alpha.thresh / nrow(object@raw.data[[i]])
     genemeanupper <- gene_expr_mean + qnorm(1 - alphathresh.corrected / 2) *
@@ -253,11 +253,23 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
 #' }
 
 scaleNotCenter <- function(object, remove.missing = T) {
-  object@scale.data <- lapply(1:length(object@norm.data), function(i) {
-    scale(t(object@norm.data[[i]][object@var.genes, ]), center = F, scale = T)
-  })
+  if (class(object@raw.data[[1]])[1] == "dgTMatrix" | 
+      class(object@raw.data[[1]])[1] == "dgCMatrix") {
+    object@scale.data <- lapply(1:length(object@norm.data), function(i) {
+      scale(sparse.transpose(object@norm.data[[i]][object@var.genes, ]), center = F,
+            scale = T)
+    })
+    names(object@scale.data) <- names(object@norm.data)
+  } else {
+    object@scale.data <- lapply(1:length(object@norm.data), function(i) {
+      scale(t(object@norm.data[[i]][object@var.genes, ]), center = F, scale = T)
+    })
+  }
+  
   for (i in 1:length(object@scale.data)) {
     object@scale.data[[i]][is.na(object@scale.data[[i]])] <- 0
+    rownames(object@scale.data[[i]]) <- colnames(object@raw.data[[i]])
+    colnames(object@scale.data[[i]]) <- object@var.genes
   }
   # may want to remove such cells before scaling -- should not matter for large datasets?
   if (remove.missing) {
@@ -309,39 +321,6 @@ removeMissingCells <- function(object, slot.use = "scale.data") {
   })
   names(filter.data) <- names(object@raw.data)
   slot(object, slot.use) <- filter.data
-  return(object)
-}
-
-#' Perform fast and memory-efficient data scaling operation on sparse matrix data.
-#'
-#' @param object Sparse matrix DGE.
-#' 
-#' @export
-#' @examples
-#' \dontrun{
-#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-#' ligerex = createLiger(list(Y,Z))
-#' ligerex@var.genes = c(1,2,3,4)
-#' ligerex = scaleNotCenter(ligerex)
-#' }
-scaleNotCenter_sparse<-function (object, cells = NULL)
-{
-  if (is.null(cells)) {
-    cells = lapply(1:length(object@raw.data), function(i) {
-      1:ncol(object@raw.data[[i]])
-    })
-  }
-  object@scale.data = lapply(1:length(object@norm.data), function(i) {
-    scale(Sparse_transpose(object@norm.data[[i]][object@var.genes, ]), center = F,
-          scale = T)
-  })
-  names(object@scale.data) = names(object@norm.data)
-  for (i in 1:length(object@scale.data)) {
-    object@scale.data[[i]][is.na(object@scale.data[[i]])] = 0
-    rownames(object@scale.data[[i]]) = colnames(object@raw.data[[i]])
-    colnames(object@scale.data[[i]]) = object@var.genes
-  }
   return(object)
 }
 
