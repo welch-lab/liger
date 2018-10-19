@@ -1,4 +1,4 @@
-<img src="vignettes/img/cropped_liger.png" width="150">
+<img src="../vignettes/img/cropped_liger.png" width="150">
 
 # LIGER (Linked Inference of Genomic Experimental Relationships)
 
@@ -24,6 +24,9 @@ We have also designed LIGER to interface with existing single-cell analysis pack
 
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
+
+* [Basic command tutorial](../vignettes/liger-vignette.html)
+* testing
 
 ## Installation
 
