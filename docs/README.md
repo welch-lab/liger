@@ -25,7 +25,7 @@ We have also designed LIGER to interface with existing single-cell analysis pack
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
-* [Basic command tutorial](../vignettes/liger-vignette.html)
+<a href="../vignettes/liger-vignette.html"> Basic command tutorial</a>
 * testing
 
 ## Installation
