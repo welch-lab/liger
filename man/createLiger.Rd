@@ -4,12 +4,15 @@
 \alias{createLiger}
 \title{Create a liger object.}
 \usage{
-createLiger(raw.data, sparse.dcg = T)
+createLiger(raw.data, make.sparse = T, take.gene.union = F)
 }
 \arguments{
 \item{raw.data}{List of expression matrices (gene by cell). Should be named by dataset.}
 
-\item{sparse.dcg}{Whether to convert raw data into sparse matrices (default: T).}
+\item{make.sparse}{Whether to convert raw data into sparse matrices (default TRUE).}
+
+\item{take.gene.union}{Whether to fill out raw.data matrices with union of genes across all 
+datasets (filling in 0 for missing data) (requires make.sparse=T) (default FALSE).}
 }
 \value{
 \code{liger} object with raw.data slot set.

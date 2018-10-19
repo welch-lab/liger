@@ -86,7 +86,9 @@ setMethod(
 #' By default, it converts all passed data into sparse matrices (dgCMatrix) to reduce object size. 
 #'
 #' @param raw.data List of expression matrices (gene by cell). Should be named by dataset. 
-#' @param sparse.dcg Whether to convert raw data into sparse matrices (default: T).
+#' @param make.sparse Whether to convert raw data into sparse matrices (default TRUE).
+#' @param take.gene.union Whether to fill out raw.data matrices with union of genes across all 
+#'   datasets (filling in 0 for missing data) (requires make.sparse=T) (default FALSE).
 #' 
 #' @return \code{liger} object with raw.data slot set.
 #' @export
@@ -97,12 +99,12 @@ setMethod(
 #' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' }
 
-createLiger <- function(raw.data, sparse.dcg = T) {
+createLiger <- function(raw.data, make.sparse = T, take.gene.union = F) {
   object <- methods::new(
     Class = "liger",
     raw.data = raw.data
   )
-  if (sparse.dcg) {
+  if (make.sparse) {
     raw.data <- lapply(raw.data, function(x) {
       if (class(x)[1] == "dgTMatrix" | class(x)[1] == 'dgCMatrix') {
         as(x, 'CsparseMatrix')
@@ -110,8 +112,14 @@ createLiger <- function(raw.data, sparse.dcg = T) {
         as(as.matrix(x), 'CsparseMatrix')
       }
     })
-    object@raw.data <- raw.data
   }
+  if (take.gene.union) {
+    merged.data <- MergeSparseDataAll(raw.data)
+    raw.data <- lapply(raw.data, function(x) {
+      merged.data[, colnames(x)]
+    })
+  }
+  object@raw.data <- raw.data
   return(object)
 }
 

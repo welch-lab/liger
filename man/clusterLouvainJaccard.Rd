@@ -4,14 +4,15 @@
 \alias{clusterLouvainJaccard}
 \title{Perform graph-based clustering (Louvain algorithm) using number of shared nearest neighbors (Jaccard index) as a distance metric.}
 \usage{
-clusterLouvainJaccard(object, res.param = 0.1, k.param = 30)
+clusterLouvainJaccard(object, resolution = 0.1, k.param = 30, n.iter = 10,
+  n.start = 10, print.output = F, ...)
 }
 \arguments{
 \item{object}{analogizer object. Should call quantile_norm before calling.}
 
-\item{res.param}{cluster resolution parameter}
-
 \item{k.param}{nearest neighbor parameter for shared nearest neighbor graph construction}
+
+\item{res.param}{cluster resolution parameter}
 
 \item{k.scale}{scale parameter for shared nearest neighbor graph construction}
 }
