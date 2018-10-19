@@ -157,13 +157,17 @@ alignment_metric_per_factor<-function(object,k=NULL)
 #' analogy = quantile_norm(analogy)
 #' analogy = clusterLouvainJaccard(object)
 #' }
-clusterLouvainJaccard = function(object,res.param=0.1,k.param=30)
+clusterLouvainJaccard = function(object, resolution = 0.1, k.param=30, n.iter = 10, n.start = 10,
+                                 print.output = F, ...)
 {
   temp.seurat = CreateSeuratObject(t(Reduce(rbind,object@scale.data)))
   temp.seurat@scale.data = t(Reduce(rbind,object@scale.data))
   rownames(object@H.norm)=colnames(temp.seurat@scale.data)
   temp.seurat@dr$NMF=new(Class="dim.reduction",cell.embeddings=object@H.norm,key="NMF")
-  temp.seurat <- FindClusters(object = temp.seurat, reduction.type = "NMF", dims.use = 1:ncol(object@H.norm),force.recalc=T,save.SNN = T,resolution=res.param,k.param=k.param)
+  temp.seurat <- FindClusters(object = temp.seurat, reduction.type = "NMF", 
+                              dims.use = 1:ncol(object@H.norm),force.recalc=T,
+                              save.SNN = T,resolution=resolution,k.param=k.param,
+                              n.iter = n.iter, n.start = n.start, print.output = print.output, ...)
   object@clusters = temp.seurat@ident
   return(object)
 }
