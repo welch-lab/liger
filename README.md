@@ -9,8 +9,9 @@ LIGER can be used to compare and contrast experimental datasets in a variety of 
 * Across experimental batches
 * Across individuals
 * Across sex
-* Across species (ie. mouse and human)
-* Across modalities (ie. scRNAseq and spatial transcriptomics data)
+* Across tissues
+* Across species (e.g., mouse and human)
+* Across modalities (e.g., scRNAseq and spatial transcriptomics data, scMethylation, or scATAC-seq)
 
 Once multiple datasets are integrated, the package provides functionality for further data exploration, 
 analysis, and visualization. Users can:
