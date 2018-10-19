@@ -2,7 +2,7 @@
 
 # LIGER (Linked Inference of Genomic Experimental Relationships)
 
-LIGER (`liger`) is a package for integrating and analyzing multiple single-cell datasets, developed and maintained by the Macosko lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors. 
+[LIGER](https://github.com/MacoskoLab/liger) (`liger`) is a package for integrating and analyzing multiple single-cell datasets, developed and maintained by the Macosko lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors. 
 
 LIGER can be used to compare and contrast experimental datasets in a variety of contexts, for instance:
 
@@ -25,8 +25,8 @@ We have also designed LIGER to interface with existing single-cell analysis pack
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
-<a href="../vignettes/liger-vignette.html"> Basic command tutorial</a>
-* testing
+* [Basic commands tutorial](../vignettes/liger-vignette.Rmd)
+* [Walkthrough with PBMC datasets](../vignettes/pbmc_walkthrough.Rmd)
 
 ## Installation
 

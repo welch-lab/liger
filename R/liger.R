@@ -1403,7 +1403,7 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
   if (use.raw) {
     data.use <- do.call(rbind, object@H)
     if (identical(dims.use, 1:0)) {
-      dims.use <- 1:ncol(raw.data)
+      dims.use <- 1:ncol(data.use)
     }
   } else {
     data.use <- object@H.norm

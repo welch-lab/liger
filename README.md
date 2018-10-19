@@ -6,24 +6,30 @@ LIGER (`liger`) is a package for integrating and analyzing multiple single-cell 
 
 LIGER can be used to compare and contrast experimental datasets in a variety of contexts, for instance:
 
-* Across batches
+* Across experimental batches
 * Across individuals
 * Across sex
-* Across species (ie. mouse and human)
-* Across modalities (ie. scRNAseq and spatial transcriptomics data)
+* Across tissues
+* Across species (e.g., mouse and human)
+* Across modalities (e.g., scRNAseq and spatial transcriptomics data, scMethylation, or scATAC-seq)
 
 Once multiple datasets are integrated, the package provides functionality for further data exploration, 
-analysis, and visualization. Users can easily:
+analysis, and visualization. Users can:
 
 * Identify clusters 
 * Find significant shared (and dataset-specific) gene markers
 * Compare clusters with previously identified cell types
 * Visualize clusters and gene expression using t-SNE and UMAP
 
-We have also designed LIGER to interface with existing single-cell analysis packages, including Seurat.
+We have also designed LIGER to interface with existing single-cell analysis packages, including 
+[Seurat](https://satijalab.org/seurat/).
 
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
+
+* [Basic commands tutorial](http://htmlpreview.github.io/?https://github.com/MacoskoLab/liger/blob/master/vignettes/liger-vignette.html)
+
+* [Walkthrough with two PBMC datasets](https://github.com/MacoskoLab/liger/blob/github-page/vignettes/walkthrough_pbmc.pdf)
 
 ## Installation
 
@@ -32,15 +38,14 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 1. Install [R](https://www.r-project.org/)  (>= 3.4)
 2. Install [Rstudio](https://www.rstudio.com/products/rstudio/download/) (recommended)
 3. Make sure you have Java installed in your machine. Check by typing `java -version` into Terminal or CommandPrompt. 
-4. Generate an auth [token](https://github.com/settings/tokens) for the liger repo, making sure to include all repo permissions. 
-5. Use the following R commands.
+4. Use the following R commands.
 ```
 install.packages('devtools')
 library(devtools)
-install_github('MacoskoLab/liger', auth_token = '<token>')
+install_github('MacoskoLab/liger')
 ```
 
-### Additional Installation Steps for MacOS (recommended before step 5)
+### Additional Installation Steps for MacOS (recommended before step 4)
 Installing RcppArmadillo on R>=3.4 requires Clang >= 4 and gfortran-6.1. Follow the instructions below if you have R version 3.4.0-3.4.4. These instructions (using clang4) may also be sufficient for R>=3.5 but for newer versions of R, it's recommended to follow the instructions in this [post](https://thecoatlessprofessor.com/programming/r-compiler-tools-for-rcpp-on-macos/). 
 
 1. Install gfortran as suggested [here](https://gcc.gnu.org/wiki/GFortranBinaries)
