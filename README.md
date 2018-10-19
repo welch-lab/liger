@@ -1,6 +1,29 @@
-# LIGER
+<img src="vignettes/img/cropped_liger.png" width="150">
+
+# LIGER (Linked Inference of Genomic Experimental Relationships)
 
 LIGER (`liger`) is a package for integrating and analyzing multiple single-cell datasets, developed and maintained by the Macosko lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors. 
+
+LIGER can be used to compare and contrast experimental datasets in a variety of contexts, for instance:
+
+* Across batches
+* Across individuals
+* Across sex
+* Across species (ie. mouse and human)
+* Across modalities (ie. scRNAseq and spatial transcriptomics data)
+
+Once multiple datasets are integrated, the package provides functionality for further data exploration, 
+analysis, and visualization. Users can easily:
+
+* Identify clusters 
+* Find significant shared (and dataset-specific) gene markers
+* Compare clusters with previously identified cell types
+* Visualize clusters and gene expression using t-SNE and UMAP
+
+We have also designed LIGER to interface with existing single-cell analysis packages, including Seurat.
+
+## Usage
+For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
 ## Installation
 
@@ -58,7 +81,8 @@ the latest version of FFTW from [here](http://www.fftw.org/). In the fftw direct
 make
 make install
 ```
-(Additional [instructions](http://www.fftw.org/fftw3_doc/Installation-and-Customization.html)).
+(Additional [instructions](http://www.fftw.org/fftw3_doc/Installation-and-Customization.html) if 
+necessary).
 Then in desired directory:
 ```
 git clone https://github.com/KlugerLab/FIt-SNE.git
@@ -67,6 +91,3 @@ g++ -std=c++11 -O3  src/sptree.cpp src/tsne.cpp src/nbodyfft.cpp  -o bin/fast_ts
 pwd
 ```
 Use the output of `pwd` as the `fitsne.path` parameter in runTSNE. 
-
-## Usage
-For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
