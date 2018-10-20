@@ -12,7 +12,7 @@
 
 <meta name="author" content="Joshua D. Welch" />
 
-<meta name="date" content="2018-10-19" />
+<meta name="date" content="2018-10-20" />
 
 <title>Comparing and contrasting heterogeneous single cell profiles using liger</title>
 
@@ -70,13 +70,14 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Comparing and contrasting heterogeneous single cell profiles using liger</h1>
 <h4 class="author"><em>Joshua D. Welch</em></h4>
-<h4 class="date"><em>2018-10-19</em></h4>
+<h4 class="date"><em>2018-10-20</em></h4>
 
 
 
 <div id="data-preprocessing" class="section level2">
 <h2>Data Preprocessing</h2>
 <p>The algorithm takes a list of two or more digital gene expression (DGE) matrices as input. Genes should be in rows and cells in columns. Before running the factorization, we need to normalize the data to account for different numbers of UMIs per cell, select variable genes, and scale the data. Note that we do not center the data because nonnegative matrix factorization accepts only positive values. The selectGenes function performs variable gene selection on each of the datasets separately, then takes the union. Note that coresponding genes in each dataset need to have the same names (though the genes do not need to be in the same order in each dataset). For cross-species analysis, it may be convenient to convert all gene names to uppercase; you can do this using the capitalize=T option of the selectGenes function.</p>
+<p>Testing <a href="pbmc_alignment.zip">link</a></p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">dge1 =<span class="st"> </span><span class="kw">readRDS</span>(<span class="st">&quot;dge1.RDS&quot;</span>) <span class="co">#genes in rows, cells in columns, rownames and colnames included. Sparse matrix format is accepted.</span>
 dge2 =<span class="st"> </span><span class="kw">readRDS</span>(<span class="st">&quot;dge2.RDS&quot;</span>)
 ligerex =<span class="st"> </span><span class="kw">createLiger</span>(<span class="kw">list</span>(<span class="dt">name1 =</span> dge1, <span class="dt">name2 =</span> dge2)) <span class="co">#Can also pass in more than 2 datasets</span>
