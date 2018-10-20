@@ -27,9 +27,9 @@ We have also designed LIGER to interface with existing single-cell analysis pack
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
-* [Basic commands tutorial](http://htmlpreview.github.io/?https://github.com/MacoskoLab/liger/blob/master/vignettes/liger-vignette.html)
+* [Basic commands tutorial](liger-vignette.html)
 
-* [Walkthrough with two PBMC datasets](https://github.com/MacoskoLab/liger/blob/github-page/vignettes/walkthrough_pbmc.pdf)
+* [Walkthrough with two PBMC datasets](walkthrough_pbmc.html)
 
 ## Installation
 
