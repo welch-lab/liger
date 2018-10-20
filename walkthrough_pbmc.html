@@ -129,7 +129,7 @@ $(document).ready(function () {
 
 
 <p>This walkthrough steps through a basic analysis and alignment of two datasets of peripheral blood mononuclear cells (PBMCs), and provides a simple comparison of the results achieved with LIGER to those achieved with Seurat. Both tools discover similar clusters and trends in the data, although LIGER can be used to identify more dataset-specific differences.</p>
-<p>First load the combined Seurat object which is created with the guided tutorial published online <a href="https://satijalab.org/seurat/Seurat_AlignmentTutorial.html">here</a>. The object and accompanying data can be downloaded here (or from <code>vignettes/pbmc_alignment.zip</code> – Seurat object not yet available). We can use the raw data from this object to set up our <code>liger</code> object as well. Note that we could also set up the <code>liger</code> object independently using the 10X and Seqwell datasets provided in the same directory.</p>
+<p>First load the combined Seurat object which is created with the guided tutorial published online <a href="https://satijalab.org/seurat/Seurat_AlignmentTutorial.html">here</a>. The object and accompanying data can be downloaded <a href="pbmc_alignment.zip">here</a> (Seurat object not yet available). We can use the raw data from this object to set up our <code>liger</code> object as well. Note that we could also set up the <code>liger</code> object independently using the 10X and Seqwell datasets provided in the same directory.</p>
 <pre class="r"><code>library(liger)
 # loading Seurat can be skipped for LIGER-only analysis
 library(Seurat)
