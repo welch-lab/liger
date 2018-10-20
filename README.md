@@ -38,14 +38,15 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 1. Install [R](https://www.r-project.org/)  (>= 3.4)
 2. Install [Rstudio](https://www.rstudio.com/products/rstudio/download/) (recommended)
 3. Make sure you have Java installed in your machine. Check by typing `java -version` into Terminal or CommandPrompt. 
+4. Generate an auth [token](https://github.com/settings/tokens) for the liger repo, making sure to include all repo permissions. This can only be done after you've been granted collaborator access to the repo. 
 4. Use the following R commands.
 ```
 install.packages('devtools')
 library(devtools)
-install_github('MacoskoLab/liger')
+install_github('MacoskoLab/liger', auth_token = '<token>')
 ```
 
-### Additional Installation Steps for MacOS (recommended before step 4)
+### Additional Installation Steps for MacOS (recommended before step 5)
 Installing RcppArmadillo on R>=3.4 requires Clang >= 4 and gfortran-6.1. Follow the instructions below if you have R version 3.4.0-3.4.4. These instructions (using clang4) may also be sufficient for R>=3.5 but for newer versions of R, it's recommended to follow the instructions in this [post](https://thecoatlessprofessor.com/programming/r-compiler-tools-for-rcpp-on-macos/). 
 
 1. Install gfortran as suggested [here](https://gcc.gnu.org/wiki/GFortranBinaries)
