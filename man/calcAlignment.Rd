@@ -5,7 +5,7 @@
 \title{Calculate alignment metric}
 \usage{
 calcAlignment(object, k = NULL, rand.seed = 1, cells.use = NULL,
-  cells.comp = NULL, clusters.use = NULL, by.dataset = F)
+  cells.comp = NULL, clusters.use = NULL, by.cell = F, by.dataset = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call quantileAlignSNF before calling.}
@@ -22,7 +22,9 @@ total number of sampled cells is less than 10.}
 alignment (instead of dataset designations). These can be from the same dataset as cells.use.
 (default NULL)}
 
-\item{clusters.use}{Names of clusters to use in calculating alignment}
+\item{clusters.use}{Names of clusters to use in calculating alignment (default NULL).}
+
+\item{by.cell}{Return alignment calculated individually for each cell (default FALSE).}
 
 \item{by.dataset}{Return alignment calculated for each dataset (default FALSE).}
 }

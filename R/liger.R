@@ -1667,7 +1667,8 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #' @param cells.comp Vector of cells across all datasets to compare to cells.use when calculating
 #'   alignment (instead of dataset designations). These can be from the same dataset as cells.use.
 #'   (default NULL)
-#' @param clusters.use Names of clusters to use in calculating alignment
+#' @param clusters.use Names of clusters to use in calculating alignment (default NULL).
+#' @param by.cell Return alignment calculated individually for each cell (default FALSE).
 #' @param by.dataset Return alignment calculated for each dataset (default FALSE).
 #' 
 #' @return Alignment metric.
@@ -1682,7 +1683,7 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #' }
 
 calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL, cells.comp = NULL,
-                          clusters.use = NULL, by.dataset = F) {
+                          clusters.use = NULL, by.cell = F, by.dataset = F) {
   if (is.null(cells.use)) {
     cells.use <- rownames(object@H.norm)
   }
@@ -1745,21 +1746,26 @@ calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL, cel
   num_sampled <- N * min_cells
   num_same_dataset <- rep(k, num_sampled)
   
+  alignment_per_cell <- c()
   for (i in 1:num_sampled) {
     inds <- knn_graph$nn.index[i, ]
     num_same_dataset[i] <- sum(dataset[inds] == dataset[i])
+    alignment_per_cell[i] <- 1 - (num_same_dataset[i] - (k / N)) / (k - k / N)
   }
   if (by.dataset) {
     alignments <- c()
     for (i in 1:N) {
       start <- 1 + (i - 1) * min_cells
       end <- i * min_cells
-      alignment <- 1 - ((mean(num_same_dataset[start:end]) - (k / N)) / (k - k / N))
+      alignment <- mean(alignment_per_cell[start:end])
       alignments <- c(alignments, alignment)
     }
     return(alignments)
+  } else if (by.cell) {
+    names(alignment_per_cell) <- sampled_cells
+    return(alignment_per_cell)
   }
-  return(1 - ((mean(num_same_dataset) - (k / N)) / (k - k / N)))
+  return(mean(alignment_per_cell))
 }
 
 #' Calculate alignment for each cluster
