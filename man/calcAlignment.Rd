@@ -5,7 +5,7 @@
 \title{Calculate alignment metric}
 \usage{
 calcAlignment(object, k = NULL, rand.seed = 1, cells.use = NULL,
-  clusters.use = NULL, by.dataset = F)
+  cells.comp = NULL, clusters.use = NULL, by.dataset = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call quantileAlignSNF before calling.}
@@ -17,6 +17,10 @@ total number of sampled cells is less than 10.}
 \item{rand.seed}{Random seed for reproducibility (default 1).}
 
 \item{cells.use}{Vector of cells across all datasets to use in calculating alignment}
+
+\item{cells.comp}{Vector of cells across all datasets to compare to cells.use when calculating
+alignment (instead of dataset designations). These can be from the same dataset as cells.use.
+(default NULL)}
 
 \item{clusters.use}{Names of clusters to use in calculating alignment}
 

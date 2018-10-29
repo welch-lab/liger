@@ -1664,6 +1664,9 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #'   total number of sampled cells is less than 10. 
 #' @param rand.seed Random seed for reproducibility (default 1).
 #' @param cells.use Vector of cells across all datasets to use in calculating alignment
+#' @param cells.comp Vector of cells across all datasets to compare to cells.use when calculating
+#'   alignment (instead of dataset designations). These can be from the same dataset as cells.use.
+#'   (default NULL)
 #' @param clusters.use Names of clusters to use in calculating alignment
 #' @param by.dataset Return alignment calculated for each dataset (default FALSE).
 #' 
@@ -1678,7 +1681,7 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #' alignment <- calcAlignment(ligerex)
 #' }
 
-calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL,
+calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL, cells.comp = NULL,
                           clusters.use = NULL, by.dataset = F) {
   if (is.null(cells.use)) {
     cells.use <- rownames(object@H.norm)
@@ -1686,20 +1689,28 @@ calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL,
   if (!is.null(clusters.use)) {
     cells.use <- names(object@clusters)[which(object@clusters %in% clusters.use)]
   }
-  nmf_factors <- object@H.norm[cells.use, ]
-  num_cells <- length(cells.use)
-  func_H <- lapply(seq_along(object@H), function(x) {
-    cells.overlap <- intersect(cells.use, rownames(object@H[[x]]))
-    if (length(cells.overlap) > 0) {
-      object@H[[x]][cells.overlap, ]
-    } else {
-      warning(paste0("Selected subset eliminates dataset ", names(object@H)[x]),
-              immediate. = T
-      )
-      return(NULL)
-    }
-  })
-  func_H <- func_H[!sapply(func_H, is.null)]
+  if (!is.null(cells.comp)) {
+    nmf_factors <- object@H.norm[c(cells.use, cells.comp), ]
+    num_cells <- length(c(cells.use, cells.comp))
+    func_H <- list(cells1 = nmf_factors[cells.use, ],
+                   cells2 = nmf_factors[cells.comp, ])
+    print('Using designated sets cells.use and cells.comp as subsets to compare')
+  } else {
+    nmf_factors <- object@H.norm[cells.use, ]
+    num_cells <- length(cells.use)
+    func_H <- lapply(seq_along(object@H), function(x) {
+      cells.overlap <- intersect(cells.use, rownames(object@H[[x]]))
+      if (length(cells.overlap) > 0) {
+        object@H[[x]][cells.overlap, ]
+      } else {
+        warning(paste0("Selected subset eliminates dataset ", names(object@H)[x]),
+                immediate. = T
+        )
+        return(NULL)
+      }
+    })
+    func_H <- func_H[!sapply(func_H, is.null)]
+  }
   num_factors <- ncol(object@H.norm)
   N <- length(func_H)
   if (N == 1) {
@@ -1719,10 +1730,17 @@ calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL,
     stop(paste0("Please select k <=", max_k))
   }
   knn_graph <- get.knn(nmf_factors[sampled_cells, 1:num_factors], k)
-  dataset <- unlist(sapply(1:N, function(x) {
-    rep(names(object@H)[x], nrow(func_H[[x]]))
-  }))
-  names(dataset) <- cells.use
+  # Generate new "datasets" for desired cell groups
+  if (!is.null(cells.comp)) {
+    dataset <- unlist(sapply(1:N, function(x) {
+      rep(paste0('group', x), nrow(func_H[[x]]))
+    }))
+  } else {
+    dataset <- unlist(sapply(1:N, function(x) {
+      rep(names(object@H)[x], nrow(func_H[[x]]))
+    }))
+  }
+  names(dataset) <- rownames(nmf_factors)
   dataset <- dataset[sampled_cells]
   num_sampled <- N * min_cells
   num_same_dataset <- rep(k, num_sampled)
