@@ -7,7 +7,7 @@ Author: Joshua Welch
 Maintainer: Joshua Welch <jwelch@broadinstitute.org>,
 	    Velina Kozareva <vkozarev@broadinstitute.org>
 Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors
-License: What license is it under?
+License: GPL-3
 SystemRequirements: Java (>= 6)
 Imports: Rcpp (>= 0.12.10), 
 	 plyr, 
