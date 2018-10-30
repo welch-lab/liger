@@ -29,7 +29,7 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 * [Basic commands tutorial](http://htmlpreview.github.io/?https://github.com/MacoskoLab/liger/blob/master/vignettes/liger-vignette.html)
 
-* [Walkthrough with two PBMC datasets](https://github.com/MacoskoLab/liger/blob/github-page/vignettes/walkthrough_pbmc.pdf)
+* [Walkthrough with two PBMC datasets](https://github.com/MacoskoLab/liger/blob/master/vignettes/walkthrough_pbmc.pdf)
 
 ## Installation
 
