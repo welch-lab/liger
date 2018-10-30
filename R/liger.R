@@ -1084,8 +1084,9 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #' correspond to their similarity in the shared factor neighborhood space. An important parameter
 #' here is knn_k, the number of neighbors used to build the shared factor space (see SNF()). Afterwards,
 #' modularity-based community detection is performed on this graph (Louvain clustering) in order 
-#' to identify shared clusters across datasets. The most important parameter here is resolution, 
-#' which corresponds to the number of communities detected. 
+#' to identify shared clusters across datasets. The method was first developed by Waltman and van Eck
+#' (2013) and source code is available at http://www.ludowaltman.nl/slm/. The most important parameter 
+#' here is resolution, which corresponds to the number of communities detected. 
 #' 
 #' Next we perform quantile alignment for each dataset, factor, and cluster (by 
 #' stretching/compressing datasets' quantiles to better match those of the reference dataset). These
