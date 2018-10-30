@@ -2126,7 +2126,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
                                                 dataset2 = dataset2, do.plot = do.spec.plot)
   factors.use <- which(abs(dataset.specificity[[3]]) <= factor.share.thresh)
   
-  markers <- getFactorMarkers(object,
+  markers <- getFactorMarkers(object, dataset1 = dataset1, dataset2 = dataset2,
                               factor.share.thresh = factor.share.thresh,
                               num.genes = num.genes, log.fc.thresh = log.fc.thresh,
                               umi.thresh = umi.thresh, frac.thresh = frac.thresh,
