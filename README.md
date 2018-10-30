@@ -1,4 +1,4 @@
-<img src="vignettes/img/cropped_liger.png" width="150">
+<img src="docs/img/liger_cropped.png" width="150">
 
 # LIGER (Linked Inference of Genomic Experimental Relationships)
 
