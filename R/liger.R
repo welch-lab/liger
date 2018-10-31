@@ -166,7 +166,8 @@ normalize <- function(object) {
 #'   (lower threshold -> higher upper bound). (default 0.99)
 #' @param var.thresh Variance threshold. Main threshold used to identify variable genes. Genes with
 #'   expression variance greater than threshold (relative to mean) are selected. 
-#'   (higher threshold -> fewer selected genes). (default 0.1)
+#'   (higher threshold -> fewer selected genes). Accepts single value or vector with separate
+#'   var.thresh for each dataset. (default 0.1)
 #' @param combine How to combine variable genes across experiments. Either "union" or "intersect".
 #'   (default "union")
 #' @param keep.unique Keep genes that occur (i.e., there is a corresponding column in raw.data) only
@@ -193,6 +194,10 @@ normalize <- function(object) {
 
 selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine = "union",
                         keep.unique = F, capitalize = F, do.plot = T, cex.use = 0.3) {
+  # Expand if only single var.thresh passed
+  if (length(var.thresh) == 1) {
+    var.thresh <- rep(var.thresh, length(object@raw.data))
+  }
   genes.use <- c()
   for (i in 1:length(object@raw.data)) {
     if (capitalize) {
@@ -210,15 +215,18 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
                      sqrt(gene_expr_mean * nolan_constant / ncol(object@raw.data[[i]]))
     genes.new <- names(gene_expr_var)[which(gene_expr_var / nolan_constant > genemeanupper &
                                             log10(gene_expr_var) > log10(gene_expr_mean) +
-                                              (log10(nolan_constant) + var.thresh))]
+                                              (log10(nolan_constant) + var.thresh[i]))]
     if (do.plot) {
-      plot(log10(gene_expr_mean), log10(gene_expr_var), cex = cex.use)
+      plot(log10(gene_expr_mean), log10(gene_expr_var), cex = cex.use, 
+           xlab='Gene Expression Mean (log10)',
+           ylab='Gene Expression Variance (log10)')
       
       points(log10(gene_expr_mean[genes.new]), log10(gene_expr_var[genes.new]), 
              cex = cex.use, col = "green")
       abline(log10(nolan_constant), 1, col = "purple")
       
       legend("bottomright", paste0("Selected genes: ", length(genes.new)), pch = 20, col = "green")
+      title(main = names(object@raw.data)[i])
     }
     if (combine == "union") {
       genes.use <- union(genes.use, genes.new)

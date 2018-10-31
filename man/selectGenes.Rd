@@ -16,7 +16,8 @@ selectGenes(object, alpha.thresh = 0.99, var.thresh = 0.1,
 
 \item{var.thresh}{Variance threshold. Main threshold used to identify variable genes. Genes with
 expression variance greater than threshold (relative to mean) are selected. 
-(higher threshold -> fewer selected genes). (default 0.1)}
+(higher threshold -> fewer selected genes). Accepts single value or vector with separate
+var.thresh for each dataset. (default 0.1)}
 
 \item{combine}{How to combine variable genes across experiments. Either "union" or "intersect".
 (default "union")}
