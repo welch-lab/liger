@@ -202,3 +202,18 @@ getMode <- function(x, na.rm = FALSE) {
   ux <- unique(x)
   return(ux[which.max(tabulate(match(x, ux)))])
 }
+
+# utility function for seuratToLiger function
+addMissingCells <- function(matrix1, matrix.subset, transpose = F) {
+  if (transpose) {
+    matrix1 <- t(matrix1)
+  }
+  if (ncol(matrix1) != nrow(matrix.subset)) {
+    extra <- matrix(NA, nrow = ncol(matrix1) - nrow(matrix.subset),
+                    ncol = ncol(matrix.subset))
+    colnames(extra) <- colnames(matrix.subset)
+    rownames(extra) <- setdiff(colnames(matrix1), rownames(matrix.subset))
+    matrix.subset <- rbind(matrix.subset, extra)
+  }
+  return(matrix.subset)
+}
