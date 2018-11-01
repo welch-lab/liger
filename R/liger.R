@@ -107,7 +107,13 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F) {
   if (make.sparse) {
     raw.data <- lapply(raw.data, function(x) {
       if (class(x)[1] == "dgTMatrix" | class(x)[1] == 'dgCMatrix') {
-        as(x, 'CsparseMatrix')
+        mat <- as(x, 'CsparseMatrix')
+        # Check if dimnames exist
+        if (is.null(x@Dimnames[[1]])) {
+          stop('Raw data must have both row (gene) and column (cell) names.')
+        }
+        mat@Dimnames <- x@Dimnames
+        return(mat)
       } else {
         as(as.matrix(x), 'CsparseMatrix')
       }
@@ -2921,6 +2927,11 @@ ligerToSeurat <- function(object, need.sparse = T, by.dataset = F, nms = names(o
 #' @param use.idents Carry over cluster identities from Seurat objects. If multiple objects with 
 #'   overlapping cluster names, will preface cluster names by dataset names to distinguish. (default
 #'   TRUE). 
+#' @param use.tsne Carry over t-SNE coordinates from Seurat object (only meaningful for combined
+#'   analysis Seurat object). Useful for plotting directly afterwards. (default TRUE)
+#' @param cca.to.H Carry over CCA (and aligned) loadings and insert them into H (and H.norm) slot in 
+#'   liger object (only meaningful for combined analysis Seurat object). Useful for plotting directly 
+#'   afterwards. (default FALSE) 
 
 #' @return \code{liger} object.
 #' @export
@@ -2941,25 +2952,32 @@ ligerToSeurat <- function(object, need.sparse = T, by.dataset = F, nms = names(o
 
 seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", meta.var = NULL,
                           renormalize = T, use.seurat.genes = T, num.hvg.info = NULL,
-                          use.idents = T) {
+                          use.idents = T, use.tsne = T, cca.to.H = F) {
   # Only a single seurat object expected
   if (combined.seurat) {
+    if (is.null(meta.var)) {
+      stop("Please provide Seurat meta.var to use in naming individual datasets.")
+    }
+    if (nrow(objects@meta.data) != ncol(objects@raw.data)) {
+      cat("Warning: Mismatch between meta.data and raw.data in this Seurat object. \nSome cells", 
+          "will not be assigned to a raw dataset. \nRepeat Seurat analysis without filters to",
+          "allow all cells to be assigned.")
+    }
     raw.data <- lapply(unique(objects@meta.data[[meta.var]]), function(x) {
       cells <- rownames(objects@meta.data[objects@meta.data[[meta.var]] == x, ])
       objects@raw.data[, cells]
     })
-    if (is.null(meta.var)) {
-      stop("Please provide meta.var to use in naming individual datasets.")
-    }
     names(raw.data) <- unique(objects@meta.data[[meta.var]])
+    # Get var.genes
     var.genes <- objects@var.genes
-    if (ncol(objects@raw.data) != length(objects@ident)) {
-      idents <- rep("NA", ncol(objects@raw.data))
-      names(idents) <- colnames(objects@raw.data)
-      idents[names(objects@ident)] <- as.character(objects@ident)
-      idents <- factor(idents)
+    # Get idents/clusters
+    idents <- objects@ident
+    # Get tsne.coords
+    if (is.null(objects@dr$tsne)) {
+      print('Warning: no t-SNE coordinates available for this Seurat object.')
+      tsne.coords <- NULL
     } else {
-      idents <- objects@ident
+      tsne.coords <- objects@dr$tsne@cell.embeddings
     }
   } else {
     if (typeof(objects) != 'list') {
@@ -2969,9 +2987,9 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
       x@raw.data
     })
     names(raw.data) <- lapply(seq_along(objects), function(x) {
-      if (names == "use-projects") {
+      if (identical(names,"use-projects")) {
         objects[[x]]@project.name
-      } else if (names == "use-meta.var") {
+      } else if (identical(names, "use-meta.var")) {
         if (is.null(meta.var)) {
           stop("Please provide meta.var to use in naming individual datasets.")
         }
@@ -2987,6 +3005,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
         x@var.genes
       }
     }))
+    # Get idents, label by dataset
     idents <- unlist(lapply(seq_along(objects), function(x) {
       idents <- rep("NA", ncol(objects[[x]]@raw.data))
       names(idents) <- colnames(objects[[x]]@raw.data)
@@ -2994,6 +3013,8 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
       idents <- paste0(names(raw.data)[x], idents)
     }))
     idents <- factor(idents)
+    # tsne coords not very meaningful for separate objects 
+    tsne.coords <- matrix()
   }
   new.liger <- createLiger(raw.data = raw.data)
   if (renormalize) {
@@ -3013,6 +3034,31 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
   }
   if (use.idents) {
     new.liger@clusters <- idents
+  }
+  if (use.tsne) {
+    new.liger@tsne.coords <- tsne.coords
+  }
+  # Get CCA loadings if requested 
+  if (cca.to.H & combined.seurat) {
+    if (is.null(objects@dr$cca)) {
+      print('Warning: no CCA loadings available for this Seurat object.')
+    } else {
+      new.liger@H <- lapply(unique(objects@meta.data[[meta.var]]), function(x) {
+        cells <- rownames(objects@meta.data[objects@meta.data[[meta.var]] == x, ])
+        objects@dr$cca@cell.embeddings[cells, ]
+      })
+      new.liger@H <- lapply(seq_along(new.liger@H), function(x) {
+        addMissingCells(new.liger@raw.data[[x]], new.liger@H[[x]])
+      })
+      names(new.liger@H) <- names(new.liger@raw.data)
+    }
+    if (is.null(objects@dr$cca.aligned)) {
+      print('Warning: no aligned CCA loadings available for this Seurat object.')
+    } else {
+      new.liger@H.norm <- objects@dr$cca.aligned@cell.embeddings
+      new.liger@H.norm <- addMissingCells(Reduce(rbind, new.liger@H), new.liger@H.norm,
+                                          transpose = T)
+    }
   }
   return(new.liger)
 }

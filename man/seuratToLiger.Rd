@@ -6,7 +6,7 @@
 \usage{
 seuratToLiger(objects, combined.seurat = F, names = "use-projects",
   meta.var = NULL, renormalize = T, use.seurat.genes = T,
-  num.hvg.info = NULL, use.idents = T)
+  num.hvg.info = NULL, use.idents = T, use.tsne = T, cca.to.H = F)
 }
 \arguments{
 \item{objects}{One or more Seurat objects. If passing multiple objects, should be in list.}
@@ -36,6 +36,13 @@ If set, recommended value is 2000 (default NULL).}
 \item{use.idents}{Carry over cluster identities from Seurat objects. If multiple objects with 
 overlapping cluster names, will preface cluster names by dataset names to distinguish. (default
 TRUE).}
+
+\item{use.tsne}{Carry over t-SNE coordinates from Seurat object (only meaningful for combined
+analysis Seurat object). Useful for plotting directly afterwards. (default TRUE)}
+
+\item{cca.to.H}{Carry over CCA (and aligned) loadings and insert them into H (and H.norm) slot in 
+liger object (only meaningful for combined analysis Seurat object). Useful for plotting directly 
+afterwards. (default FALSE)}
 }
 \value{
 \code{liger} object.
