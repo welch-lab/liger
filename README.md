@@ -24,6 +24,9 @@ analysis, and visualization. Users can:
 We have also designed LIGER to interface with existing single-cell analysis packages, including 
 [Seurat](https://satijalab.org/seurat/).
 
+Read our [preprint](https://www.biorxiv.org/content/early/2018/11/02/459891) for a more complete 
+description of the methods and to see examples of other analyses.
+
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
