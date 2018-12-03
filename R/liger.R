@@ -277,8 +277,9 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
 scaleNotCenter <- function(object, remove.missing = T) {
   if (class(object@raw.data[[1]])[1] == "dgTMatrix" | 
       class(object@raw.data[[1]])[1] == "dgCMatrix") {
+    # TODO: Preserve sparseness 
     object@scale.data <- lapply(1:length(object@norm.data), function(i) {
-      scale(sparse.transpose(object@norm.data[[i]][object@var.genes, ]), center = F,
+      scale(t(object@norm.data[[i]][object@var.genes, ]), center = F,
             scale = T)
     })
     names(object@scale.data) <- names(object@norm.data)
