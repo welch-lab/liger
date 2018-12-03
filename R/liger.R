@@ -506,15 +506,16 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
       best_obj <- obj
       best_seed <- rand.seed + i - 1
     }
-    end_time <- Sys.time()
-    run_stats[i, 1] <- as.double(difftime(end_time, start_time, units = "secs"))
+    end_time <- difftime(Sys.time(), start_time, units = "auto")
+    run_stats[i, 1] <- as.double(end_time)
     run_stats[i, 2] <- iters
-    cat("\nConverged in", run_stats[i, 1], "seconds,", iters, "iterations.\n")
+    cat("\nConverged in ", run_stats[i, 1], " ", units(end_time), ", ", iters, " iterations.\n", 
+        sep = "")
     if (print.obj) {
       cat("Objective:", obj, "\n")
     }
   }
-  cat("Best results with seed", best_seed, ".\n")
+  cat("Best results with seed ", best_seed, ".\n", sep = "")
   object@H <- H_m
   object@H <- lapply(1:length(object@scale.data), function(i) {
     rownames(object@H[[i]]) <- rownames(object@scale.data[[i]])
@@ -886,25 +887,28 @@ optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100
 #' @param k Number of factors to use in test factorizations. See optimizeALS documentation. 
 #' @param lambda.test Vector of lambda values to test. If not given, use default set spanning
 #'   0.25 to 60
-#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
-#' @param max.iters Maximum number of block coordinate descent iterations to perform 
 #' @param rand.seed Random seed for reproducibility (default 1).
 #' @param num.cores Number of cores to use for optimizing factorizations in parallel (default 1).
-#' @param k2 Horizon parameter for quantileAlignSNF (default 500)
-#' @param ref_dataset Reference dataset for quantileAlignSNF  
-#' @param resolution Resolution for quantileAlignSNF (default 1)
-#' @param agree.method Reference dr.method for calculating agreement (default 'NMF')
+#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
+#' @param max.iters Maximum number of block coordinate descent iterations to perform 
+#' @param knn_k Number of nearest neighbors for within-dataset knn in quantileAlignSNF (default 20).
+#' @param k2 Horizon parameter for quantileAlignSNF (default 500).
+#' @param ref_dataset Reference dataset for quantileAlignSNF (defaults to larger dataset).
+#' @param resolution Resolution for quantileAlignSNF (default 1).
 #' @param gen.new Do not use optimizeNewLambda in factorizations. Recommended to set TRUE 
-#'                when looking at only a small range of lambdas (ie. 1:7) (default FALSE)
-#' @param return.results Return matrix of alignment and agreement values (default FALSE)
+#'   when looking at only a small range of lambdas (ie. 1:7) (default FALSE)
+#' @param nrep Number restarts to perform at each lambda value tested (increase to produce 
+#'   smoother curve if results unclear) (default 1).
+#' @param return.data Whether to return list of data matrices (raw) or dataframe (processed) 
+#'   instead of ggplot object (default FALSE).
+#' @param return.raw If return.results TRUE, whether to return raw data (in format described below),
+#'   or dataframe used to produce ggplot object. Raw data is matrix of alignment values for each 
+#'   lambda value tested (each column represents a different rep for nrep).(default FALSE)
 #' 
-#' @return Matrix of results if desired (first column is test lambda values; second column
-#'   is alignment; third and fourth columns are agreement before and after quantile alignment).
-#'   Plots alignment vs. lambda and agreement vs. lambda to console. 
-#' @importFrom doParallel registerDoParallel
+#' @return Matrix of results if indicated or ggplot object. Plots alignment vs. lambda to console. 
+#' @import doSNOW
 #' @importFrom foreach foreach
 #' @importFrom foreach "%dopar%"
-#' @importFrom Hmisc minor.tick
 #' @export
 #' @examples
 #' \dontrun{
@@ -919,68 +923,83 @@ optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100
 #' }
 
 suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.cores = 1,
-                          thresh = 1e-4, max.iters = 100, k2 = 500, ref_dataset = NULL,
-                          resolution = 1, agree.method = "NMF", gen.new = F, return.results = F) {
+                          thresh = 1e-4, max.iters = 100, knn_k = 20, k2 = 500, ref_dataset = NULL,
+                          resolution = 1, gen.new = F, nrep = 1, return.data = F, return.raw = F) {
   if (is.null(lambda.test)) {
     lambda.test <- c(seq(0.25, 1, 0.25), seq(2, 10, 1), seq(15, 60, 5))
   }
-  registerDoParallel(cores = num.cores)
-  print("This may take several minutes depending on number of values tested")
-  print(paste("Optimizing initial factorization with lambda =", lambda.test[1]))
-  object <- optimizeALS(object, k = k, thresh = thresh, lambda = lambda.test[1], 
-                        max.iters = max.iters, nrep = 1, rand.seed = rand.seed)
-  data_matrix <- foreach(i = 1:length(lambda.test), .combine = "rbind") %dopar% {
-    if (i != 1) {
-      if (gen.new) {
-        ob.test <- optimizeALS(object,
-                               k = k, lambda = lambda.test[i], thresh = thresh,
-                               max.iters = max.iters, rand.seed = rand.seed
-        )
-      } else {
-        ob.test <- optimizeNewLambda(object,
-                                     new.lambda = lambda.test[i], thresh = thresh,
-                                     max.iters = max.iters, rand.seed = rand.seed
-        )
-      }
-    } else {
-      ob.test <- object
+  time_start <- Sys.time()
+  # optimize smallest lambda value first to take advantage of efficient updating
+  print("This operation may take several minutes depending on number of values being tested")
+  rep_data <- list()
+  for (r in 1:nrep) {
+    print(paste0("Preprocessing for rep ", r,
+                 ": optimizing initial factorization with smallest test lambda=", 
+                 lambda.test[1]))
+    object <- optimizeALS(object, k = k, thresh = thresh, lambda = lambda.test[1], 
+                          max.iters = max.iters, nrep = 1, rand.seed = (rand.seed + r - 1))
+    print('Progress now represents completed factorizations (out of total number of lambda values)')
+    cl <- makeCluster(num.cores)
+    registerDoSNOW(cl)
+    pb <- txtProgressBar(min = 0, max = length(lambda.test), style = 3, initial = 1, file = "")
+    # define progress bar function
+    progress <- function(n) setTxtProgressBar(pb, n)
+    opts <- list(progress = progress)
+    data_matrix <- foreach(i = 1:length(lambda.test), .combine = "rbind", .options.snow = opts,
+                           .packages = 'liger') %dopar% {
+       if (i != 1) {
+         if (gen.new) {
+           ob.test <- optimizeALS(object,
+                                  k = k, lambda = lambda.test[i], thresh = thresh,
+                                  max.iters = max.iters, rand.seed = (rand.seed + r - 1)
+           )
+         } else {
+           ob.test <- optimizeNewLambda(object,
+                                        new.lambda = lambda.test[i], thresh = thresh,
+                                        max.iters = max.iters, rand.seed = (rand.seed + r - 1)
+           )
+         }
+       } else {
+         ob.test <- object
+       }
+       ob.test <- quantileAlignSNF(ob.test, knn_k = knn_k,
+                                   k2 = k2, resolution = resolution,
+                                   ref_dataset = ref_dataset,
+                                   id.number = i
+       )
+       calcAlignment(ob.test)
     }
-    ob.test <- quantileAlignSNF(ob.test,
-                                k2 = k2, resolution = resolution,
-                                ref_dataset = ref_dataset,
-                                id.number = i
-    )
-    align <- calcAlignment(ob.test)
-    agree_unaligned <- calcAgreement(ob.test,
-                                     ndims = k, k = 15, dr.method = agree.method,
-                                     use.aligned = F
-    )
-    agree_aligned <- calcAgreement(ob.test,
-                                   ndims = k, k = 15, dr.method = agree.method,
-                                   use.aligned = T
-    )
-    c(align, agree_unaligned, agree_aligned)
+    close(pb)
+    stopCluster(cl)
+    rep_data[[r]] <- data_matrix
   }
-  # plot results on same plot
-  plot(lambda.test, data_matrix[, 1], type = "p", col = "black", ylim = c(0, 1), 
-       xlab = "Lambda", ylab = "Value")
-  minor.tick(nx = 4, ny = 2, tick.ratio = 0.5)
-  grid()
-  lines(lambda.test, data_matrix[, 1], col = "black")
-  lines(lambda.test, data_matrix[, 2], col = "blue")
-  lines(lambda.test, data_matrix[, 3], col = "green")
-  legend("bottomright",
-         legend = c(
-           "Alignment", paste0("Agreement(", agree.method, ")"),
-           paste0("Agreement(", agree.method, "-aligned)")
-         ),
-         col = c("black", "blue", "green"), lty = 1, cex = 0.8
-  )
   
-  if (return.results) {
-    data_matrix <- cbind(lambda.test, data_matrix)
-    return(data_matrix)
+  aligns <- Reduce(cbind, rep_data)
+  if (is.null(dim(aligns))) {
+    aligns <- matrix(aligns, ncol = 1)
   }
+  mean_aligns <- apply(aligns, 1, mean)
+  
+  time_elapsed <- difftime(Sys.time(), time_start, units = "auto")
+  cat(paste("\nCompleted in:", as.double(time_elapsed), units(time_elapsed)))
+  # make dataframe
+  df_al <- data.frame(align = mean_aligns, lambda = lambda.test)
+  
+  p1 <- ggplot(df_al, aes(x = lambda, y = mean_aligns)) + geom_line(size=1) + 
+    geom_point() + 
+    theme_classic() + labs(y='Alignment', x = 'Lambda') +
+    guides(col=guide_legend(title="", override.aes = list(size = 2))) +
+    theme(legend.position = 'top')
+  
+  if (return.data) {
+    print(p1)
+    if (return.raw) {
+      rownames(aligns) <- lambda.test
+      return(aligns)
+    }
+    return(df_al)
+  }
+  return(p1)
 }
 
 #' Visually suggest appropiate k value
@@ -1001,16 +1020,20 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 #' @param max.iters Maximum number of block coordinate descent iterations to perform
 #' @param num.cores Number of cores to use for optimizing factorizations in parallel (default 1)
 #' @param rand.seed Random seed for reproducibility (default 1).
-#' @param gen.new Do not use optimizeNewK in factorizations. Will slow down factorizations 
+#' @param gen.new Do not use optimizeNewK in factorizations. Results in slower factorizations. 
 #'   (default FALSE).
+#' @param nrep Number restarts to perform at each k value tested (increase to produce 
+#'   smoother curve if results unclear) (default 1).
 #' @param plot.log2 Plot log2 curve for reference on K-L plot (log2 is upper bound and con 
 #'   sometimes help in identifying "elbow" of plot). (default TRUE)
-#' @param return.results Return matrix of K-L divergences (length(k.test) by n_cells + 1)
-#'   The first column is the k.test values. All subsequent columns contain K-L divergence for a 
-#'   cell across different k values. 
+#' @param return.data Whether to return list of data matrices (raw) or dataframe (processed) 
+#'   instead of ggplot object (default FALSE).
+#' @param return.raw If return.results TRUE, whether to return raw data (in format described below),
+#'   or dataframe used to produce ggplot object. Raw data is list of matrices of K-L divergences 
+#'   (length(k.test) by n_cells). Length of list corresponds to nrep. (default FALSE)
 #'   
-#' @return Matrix of results if desired. Plots K-L divergence vs. k to console.
-#' @importFrom doParallel registerDoParallel
+#' @return Matrix of results if indicated or ggplot object. Plots K-L divergence vs. k to console.
+#' @import doSNOW
 #' @importFrom foreach foreach
 #' @importFrom foreach "%dopar%"
 #' @export
@@ -1027,61 +1050,84 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 #' }
 
 suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, max.iters = 100,
-                     num.cores = 1, rand.seed = 1, gen.new = F, plot.log2 = T, return.results = F) {
-  registerDoParallel(cores = num.cores)
-  
+                     num.cores = 1, rand.seed = 1, gen.new = F, nrep = 1, plot.log2 = T, 
+                     return.data = F, return.raw = F) {
+  time_start <- Sys.time()
   # optimize largest k value first to take advantage of efficient updating
   print("This operation may take several minutes depending on number of values being tested")
-  print(paste0("Optimizing initial factorization with largest test k=", k.test[length(k.test)]))
-  object <- optimizeALS(object, k = k.test[length(k.test)], lambda = lambda, thresh = thresh, 
-                        max.iters = max.iters, nrep = 1, rand.seed = rand.seed)
-  data_matrix <- foreach(i = length(k.test):1, .combine = "rbind") %dopar% {
-    if (i != length(k.test)) {
-      if (gen.new) {
-        ob.test <- optimizeALS(object,
-                               k = k.test[i], lambda = lambda, thresh = thresh,
-                               max.iters = max.iters, rand.seed = rand.seed
-        )
-      } else {
-        ob.test <- optimizeNewK(object,
-                                k.new = k.test[i], lambda = lambda, thresh = thresh,
-                                max.iters = max.iters, rand.seed = rand.seed
-        )
-      }
-    } else {
-      ob.test <- object
+  rep_data <- list()
+  for (r in 1:nrep) {
+    print(paste0("Preprocessing for rep ", r,
+                 ": optimizing initial factorization with largest test k=", 
+                 k.test[length(k.test)]))
+    object <- optimizeALS(object, k = k.test[length(k.test)], lambda = lambda, thresh = thresh, 
+                          max.iters = max.iters, nrep = 1, rand.seed = (rand.seed + r - 1))
+    print('Progress now represents completed factorizations (out of total number of k values)')
+    cl <- makeCluster(num.cores)
+    registerDoSNOW(cl)
+    pb <- txtProgressBar(min = 0, max = length(k.test), style = 3, initial = 1, file = "")
+    # define progress bar function
+    progress <- function(n) setTxtProgressBar(pb, n)
+    opts <- list(progress = progress)
+    data_matrix <- foreach(i = length(k.test):1, .combine = "rbind", .options.snow = opts,
+                           .packages = 'liger') %dopar% {
+       if (i != length(k.test)) {
+         if (gen.new) {
+           ob.test <- optimizeALS(object,
+                                  k = k.test[i], lambda = lambda, thresh = thresh,
+                                  max.iters = max.iters, rand.seed = (rand.seed + r - 1)
+           )
+         } else {
+           ob.test <- optimizeNewK(object,
+                                   k.new = k.test[i], lambda = lambda, thresh = thresh,
+                                   max.iters = max.iters, rand.seed = (rand.seed + r - 1)
+           )
+         }
+       } else {
+         ob.test <- object
+       }
+       dataset_split <- kl_divergence_uniform(ob.test)
+       unlist(dataset_split)
     }
-    dataset_split <- kl_divergence_uniform(ob.test)
-    unlist(dataset_split)
+    close(pb)
+    stopCluster(cl)
+    data_matrix <- data_matrix[nrow(data_matrix):1, ]
+    rep_data[[r]] <- data_matrix
   }
-  data_matrix <- data_matrix[nrow(data_matrix):1, ]
-  medians <- apply(data_matrix, 1, median)
+
+  medians <- Reduce(cbind, lapply(rep_data, function(x) {apply(x, 1, median)}))
+  if (is.null(dim(medians))) {
+    medians <- matrix(medians, ncol = 1)
+  }
+  mean_kls <- apply(medians, 1, mean)
   
-  # plot out results
-  max_lim <- max(log2(k.test)) + 0.05
-  min_lim <- min(medians) - 0.05
-  if (plot.log2) {
-    plot(k.test, log2(k.test), type = "p", col = "green", ylim = c(min_lim, max_lim))
-    points(k.test, medians,
-           type = "p", xlab = "Number of factors",
-           ylab = "Median KL divergence across combined data", col = "black"
-    )
-    legend("topleft",
-           legend = (c("log2(k) (upper lim)", "KL div")),
-           col = c("green", "black"), lty = 1, cex = 0.8
-    )
-  } else {
-    plot(k.test, medians,
-         type = "p", xlab = "Number of factors",
-         ylab = "Median KL divergence across all datasets", col = "black"
-    )
+  time_elapsed <- difftime(Sys.time(), time_start, units = "auto")
+  cat(paste("\nCompleted in:", as.double(time_elapsed), units(time_elapsed)))
+  # make dataframe
+  df_kl <- data.frame(median_kl = c(mean_kls, log2(k.test)), k = c(k.test, k.test),
+                      calc = c(rep('KL_div', length(k.test)), rep('log2(k)', length(k.test))))
+  if (!plot.log2) {
+    df_kl <- df_kl[df_kl$calc == 'KL_div', ]
   }
-  lines(k.test, medians, col = "black")
   
-  if (return.results) {
-    data_matrix <- cbind(k.test, data_matrix)
-    return(data_matrix)
+  p1 <- ggplot(df_kl, aes(x = k, y = median_kl, col = calc)) + geom_line(size=1) + 
+    geom_point() + 
+    theme_classic() + labs(y='Median KL divergence (across all cells)', x = 'K') +
+    guides(col=guide_legend(title="", override.aes = list(size = 2))) +
+    theme(legend.position = 'top')
+  
+  if (return.data) {
+    print(p1)
+    if (return.raw) {
+      rep_data <- lapply(rep_data, function(x) {
+        rownames(x) <- k.test
+        return(x)
+      })
+      return(rep_data)
+    }
+    return(df_kl)
   }
+  return(p1)
 }
 
 

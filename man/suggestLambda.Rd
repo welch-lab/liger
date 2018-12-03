@@ -5,8 +5,9 @@
 \title{Visually suggest appropriate lambda value}
 \usage{
 suggestLambda(object, k, lambda.test = NULL, rand.seed = 1, num.cores = 1,
-  thresh = 1e-04, max.iters = 100, k2 = 500, ref_dataset = NULL,
-  resolution = 1, agree.method = "NMF", gen.new = F, return.results = F)
+  thresh = 1e-04, max.iters = 100, knn_k = 20, k2 = 500,
+  ref_dataset = NULL, resolution = 1, gen.new = F, nrep = 1,
+  return.data = F, return.raw = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should normalize, select genes, and scale before calling.}
@@ -24,23 +25,29 @@ suggestLambda(object, k, lambda.test = NULL, rand.seed = 1, num.cores = 1,
 
 \item{max.iters}{Maximum number of block coordinate descent iterations to perform}
 
-\item{k2}{Horizon parameter for quantileAlignSNF (default 500)}
+\item{knn_k}{Number of nearest neighbors for within-dataset knn in quantileAlignSNF (default 20).}
 
-\item{ref_dataset}{Reference dataset for quantileAlignSNF}
+\item{k2}{Horizon parameter for quantileAlignSNF (default 500).}
 
-\item{resolution}{Resolution for quantileAlignSNF (default 1)}
+\item{ref_dataset}{Reference dataset for quantileAlignSNF (defaults to larger dataset).}
 
-\item{agree.method}{Reference dr.method for calculating agreement (default 'NMF')}
+\item{resolution}{Resolution for quantileAlignSNF (default 1).}
 
 \item{gen.new}{Do not use optimizeNewLambda in factorizations. Recommended to set TRUE 
 when looking at only a small range of lambdas (ie. 1:7) (default FALSE)}
 
-\item{return.results}{Return matrix of alignment and agreement values (default FALSE)}
+\item{nrep}{Number restarts to perform at each lambda value tested (increase to produce 
+smoother curve if results unclear) (default 1).}
+
+\item{return.data}{Whether to return list of data matrices (raw) or dataframe (processed) 
+instead of ggplot object (default FALSE).}
+
+\item{return.raw}{If return.results TRUE, whether to return raw data (in format described below),
+or dataframe used to produce ggplot object. Raw data is matrix of alignment values for each 
+lambda value tested (each column represents a different rep for nrep).(default FALSE)}
 }
 \value{
-Matrix of results if desired (first column is test lambda values; second column
-  is alignment; third and fourth columns are agreement before and after quantile alignment).
-  Plots alignment vs. lambda and agreement vs. lambda to console.
+Matrix of results if indicated or ggplot object. Plots alignment vs. lambda to console.
 }
 \description{
 Can be used to select appropriate value of lambda for factorization of particular dataset. Plot 
