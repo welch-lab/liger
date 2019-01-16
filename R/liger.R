@@ -2879,17 +2879,21 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #######################################################################################
 #### Conversion/Transformation 
 
-#' Create a Seurat object containing the data from a liger object
+#' Create a Seurat (v2) object containing the data from a liger object
 #' 
-#' Carries over raw.data, scale.data, tsne.coords and the iNMF factorization, plus cluster 
-#' assignments. Should have filled these slots before calling. 
+#' Merges raw.data and scale.data of object, and creates Seurat object with these values along with 
+#' tsne.coords, iNMF factorization, and cluster assignments. 
+#' 
+#' Stores original dataset identity by default in new object metadata if dataset names are passed 
+#' in nms. iNMF factorization is stored in dim.reduction object with key "iNMF". 
 #'
 #' @param object \code{liger} object.
-#' @param need.sparse Whether data needs to be converted to sparse format first; most relevant for 
-#'   older liger objects (default TRUE).
+#' @param nms By default, labels cell names with dataset of origin (this is to account for cells in
+#'   different datasets which may have same name). Other names can be passed here as vector, must 
+#'   have same length as the number of datasets. (default names(H))
+#' @param renormalize Whether to log-normalize raw data using Seurat defaults (default TRUE).
+#' @param use.liger.genes Whether to carry over variable genes (default TRUE).
 #' @param by.dataset Include dataset of origin in cluster identity in Seurat object (default FALSE).
-#' @param nms Names to use in additional labeling of colnames and rownames in Seurat object
-#'   (default names(H)).
 #'   
 #' @return Seurat object with raw.data, scale.data, dr$tsne, dr$inmf, and ident slots set.
 #' @export
@@ -2900,25 +2904,23 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #' s.object <- ligerToSeurat(ligerex)
 #' }
 
-ligerToSeurat <- function(object, need.sparse = T, by.dataset = F, nms = names(object@H)) {
+ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.liger.genes = T,
+                          by.dataset = F) {
   if (!require("Seurat", quietly = TRUE)) {
-    stop("Package \"Seurat\" needed for this function to work. Please install it.",
+    stop("Package \"Seurat v2\" needed for this function to work. Please install it.",
          call. = FALSE
     )
   }
-  if (need.sparse) {
+  if (class(object@raw.data[[1]])[1] != 'dgCMatrix') {
+    mat <- as(x, 'CsparseMatrix')
     object@raw.data <- lapply(object@raw.data, function(x) {
-      Matrix(as.matrix(x), sparse = T)
-    })
-    object@norm.data <- lapply(object@norm.data, function(x) {
-      Matrix(as.matrix(x), sparse = T)
+      as(x, 'CsparseMatrix')
     })
   }
   raw.data <- MergeSparseDataAll(object@raw.data, nms)
-  norm.data <- MergeSparseDataAll(object@norm.data, nms)
   
   scale.data <- do.call(rbind, object@scale.data)
-  rownames(scale.data) <- colnames(norm.data)
+  rownames(scale.data) <- colnames(raw.data)
   inmf.obj <- new(
     Class = "dim.reduction", gene.loadings = t(object@W),
     cell.embeddings = object@H.norm, key = "iNMF"
@@ -2931,7 +2933,12 @@ ligerToSeurat <- function(object, need.sparse = T, by.dataset = F, nms = names(o
   rownames(inmf.obj@cell.embeddings) <- rownames(scale.data)
   colnames(tsne.obj@cell.embeddings) <- paste0("tSNE_", 1:2)
   new.seurat <- CreateSeuratObject(raw.data)
-  new.seurat <- NormalizeData(new.seurat)
+  if (renormalize) {
+    new.seurat <- NormalizeData(new.seurat)
+  }
+  if (use.liger.genes) {
+    new.seurat@var.genes <- object@var.genes
+  }
   new.seurat@scale.data <- t(scale.data)
   new.seurat@dr$tsne <- tsne.obj
   new.seurat@dr$inmf <- inmf.obj
@@ -2949,13 +2956,13 @@ ligerToSeurat <- function(object, need.sparse = T, by.dataset = F, nms = names(o
   return(new.seurat)
 }
 
-#' Create liger object from one or more Seurat objects 
+#' Create liger object from one or more Seurat v2 objects 
 #' 
 #' This function creates a \code{liger} object from multiple (disjoint) Seurat objects or a single (combined-
 #' analysis) Seurat object. It includes options for keeping the variable genes and cluster identities
 #' from the original Seurat objects. It renormalizes the raw.data by default. 
 #'
-#' @param objects One or more Seurat objects. If passing multiple objects, should be in list.
+#' @param objects One or more Seurat v2 objects. If passing multiple objects, should be in list.
 #' @param combined.seurat Whether Seurat object (single) already contains multiple datasets (default
 #'   FALSE).
 #' @param names Names to use for datasets in new liger object. If use-projects, takes project names 
