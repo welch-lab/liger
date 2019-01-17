@@ -3240,3 +3240,40 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL) {
   names(a@scale.data) <- names(a@raw.data) <- names(a@norm.data) <- names(a@H) <- nms
   return(a)
 }
+
+#' Convert older liger object into most current version (based on class definition) 
+#' 
+#' Also works for Analogizer objects (but must have both liger and Analogizer loaded). Transfers 
+#' data in slots with same names from old class object to new, leaving slots defined only in new 
+#' class NULL.
+#'
+#' @param object \code{liger} object.  
+#'
+#' @return Updated \code{liger} object.
+#' @export
+#' @examples
+#' \dontrun{
+#' # old Analogizer object 
+#' analogy
+#' # convert to latest class definition 
+#' ligerex <- convertOldLiger(analogy)
+#' }
+
+convertOldLiger = function(object) {
+  new.liger <- createLiger(object@raw.data)
+  slots_new <- slotNames(new.liger)
+  slots_old <- slotNames(object)
+  slots_exist <- sapply(slots_new, function(x) {
+    .hasSlot(object, x)
+  })
+  
+  slots <- slots_new[slots_exist]
+  for (slotname in slots) { 
+    slot(new.liger, slotname) <- slot(object, slotname) 
+  } 
+  print(paste0('Old slots not transferred: ', setdiff(slots_old, slots_new)))
+  # compare to slots since it's possible that the analogizer object
+  # class has slots that this particular object does not 
+  print(paste0('New slots not filled: ', setdiff(slots_new, slots)))
+  return(new.liger)
+}
