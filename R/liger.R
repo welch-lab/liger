@@ -2669,6 +2669,70 @@ plotClusterProportions <- function(object, return.plot = F) {
   }
 }
 
+#' Plot heatmap of cluster/factor correspondence 
+#' 
+#' Generates matrix of cluster/factor correspondence, using sum of row-normalized factor loadings 
+#' for every cell in each cluster. Plots heatmap of matrix, with red representing high total 
+#' loadings for a factor, black low. Optionally can also include dendrograms and sorting for 
+#' factors and clusters. 
+#'
+#' @param object \code{liger} object.
+#' @param use.aligned Use quantile normalized factor loadings to generate matrix (default FALSE).
+#' @param Rowv Determines if and how the row dendrogram should be computed and reordered. Either a 
+#'   dendrogram or a vector of values used to reorder the row dendrogram or NA to suppress any row 
+#'   dendrogram (and reordering) (default NA for no dendrogram).
+#' @param Colv Determines if and how the column dendrogram should be reordered. Has the same options
+#'   as the Rowv argument (default 'Rowv' to match Rowv).
+#' @param col Color map to use (defaults to red and black)
+#' @param return.data Return matrix of total factor loadings for each cluster (default FALSE).
+#' @param ... Additional parameters to pass on to heatmap()
+#'   
+#' @export
+#' @return If requested, matrix of size num_cluster x num_factor
+#' @examples
+#' \dontrun{
+#' # liger object, factorization complete 
+#' ligerex
+#' # plot expression for CD4 and return plots
+#' loading.matrix <- plotClusterFactors(ligerex, return.data = T)
+#' }
+
+plotClusterFactors <- function(object, use.aligned = F, Rowv = NA, Colv = "Rowv", col = NULL,
+                               return.data = F, ...) {
+  if (use.aligned) {
+    data.mat <- object@H.norm
+  } else {
+    scaled <- lapply(object@H, function(i) {
+      scale(i, center = F, scale = T)
+    })
+    data.mat <- Reduce(rbind, scaled)
+  }
+  row.scaled <- t(apply(data.mat, 1, function(x) {
+    x / sum(x)
+  }))
+  cluster.bars <- list()
+  for (cluster in levels(object@clusters)) {
+    cluster.bars[[cluster]] <- colSums(row.scaled[names(object@clusters)
+                                                  [which(object@clusters == cluster)], ])
+    
+  }
+  cluster.bars <- Reduce(rbind, cluster.bars)
+  if (is.null(col)) {
+    colfunc <- colorRampPalette(c("black", "red"))
+    col <- colfunc(15)
+  }
+  rownames(cluster.bars) <- levels(object@clusters)
+  colnames(cluster.bars) <- 1:ncol(cluster.bars)
+  title <- ifelse(use.aligned, "H.norm", "raw H")
+  heatmap(cluster.bars,
+          Rowv = Rowv, Colv = Rowv, col = col, xlab = "Factor", ylab = "Cluster",
+          main = title, ...
+  )
+  if (return.data) {
+    return(cluster.bars)
+  }
+}
+
 #######################################################################################
 #### Marker/Cell Analysis
 
