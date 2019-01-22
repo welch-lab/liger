@@ -74,6 +74,26 @@ nano Makevars
 ``` 
 Paste in the required text above and save with `Ctrl-X`.
 
+### Running `liger` with Docker
+If installing natively is difficult, you can run `liger` through our Docker image (available
+publically), which also comes with Rstudio and Seurat (v2) installed.
+
+1. Install [Docker](https://docs.docker.com/install/). 
+2. Run the following in terminal:
+```
+docker run -d -p 8787:8787 docker.io/vkozareva/sc-liger:latest
+```
+3. Type [http://localhost:8787](http://localhost:8787) in any browser and enter "rstudio" as the 
+username and password when prompted. `liger` and all of its dependencies are already installed in 
+this environment.
+
+If you wish to access local files in this container (mounting to `/data`) modify the command as follows:
+```
+docker run -d -v /path/to/local/directory:/data -p 8787:8787 docker.io/vkozareva/sc-liger:latest
+```
+Note that you will have to stop the container if you wish to allocate port 8787 to another application
+later on. Further Docker documentation can be found [here](https://docs.docker.com/get-started/).
+
 ### Detailed Instructions for FIt-SNE Installation for use in runTSNE (recommended for large datasets)
 Using FIt-SNE is recommended for computational efficiency when using runTSNE on very large datasets.
 Installing and compiling the necessary software requires the use of git, FIt-SNE, and FFTW. For a 
