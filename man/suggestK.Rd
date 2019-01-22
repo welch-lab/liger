@@ -6,7 +6,7 @@
 \usage{
 suggestK(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-04,
   max.iters = 100, num.cores = 1, rand.seed = 1, gen.new = F,
-  plot.log2 = T, return.results = F)
+  nrep = 1, plot.log2 = T, return.data = F, return.raw = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should normalize, select genes, and scale before calling.}
@@ -23,18 +23,24 @@ suggestK(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-04,
 
 \item{rand.seed}{Random seed for reproducibility (default 1).}
 
-\item{gen.new}{Do not use optimizeNewK in factorizations. Will slow down factorizations 
+\item{gen.new}{Do not use optimizeNewK in factorizations. Results in slower factorizations. 
 (default FALSE).}
+
+\item{nrep}{Number restarts to perform at each k value tested (increase to produce 
+smoother curve if results unclear) (default 1).}
 
 \item{plot.log2}{Plot log2 curve for reference on K-L plot (log2 is upper bound and con 
 sometimes help in identifying "elbow" of plot). (default TRUE)}
 
-\item{return.results}{Return matrix of K-L divergences (length(k.test) by n_cells + 1)
-The first column is the k.test values. All subsequent columns contain K-L divergence for a 
-cell across different k values.}
+\item{return.data}{Whether to return list of data matrices (raw) or dataframe (processed) 
+instead of ggplot object (default FALSE).}
+
+\item{return.raw}{If return.results TRUE, whether to return raw data (in format described below),
+or dataframe used to produce ggplot object. Raw data is list of matrices of K-L divergences 
+(length(k.test) by n_cells). Length of list corresponds to nrep. (default FALSE)}
 }
 \value{
-Matrix of results if desired. Plots K-L divergence vs. k to console.
+Matrix of results if indicated or ggplot object. Plots K-L divergence vs. k to console.
 }
 \description{
 This can be used to select appropriate value of k for factorization of particular dataset.

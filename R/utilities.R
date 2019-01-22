@@ -37,51 +37,57 @@ kl_divergence_uniform = function(object, Hs=NULL)
 
 # Function takes in a list of DGEs, with gene rownames and cell colnames, 
 # and merges them into a single DGE.
-MergeSparseDataAll<-function (datalist,library.names=NULL) {
+# Also adds library.names to cell.names if expected to be overlap (common with 10X barcodes)
+MergeSparseDataAll <- function(datalist, library.names = NULL) {
   
-  # Use summary to convert the sparse matrices a and b into three-column indexes where i are the 
+  # Use summary to convert the sparse matrices into three-column indexes where i are the
   # row numbers, j are the column numbers, and x are the nonzero entries
-  a = datalist[[1]]
-  allGenes=rownames(a)
-  if (!is.null(library.names)) {
-    allCells=paste0(library.names[1],"_",colnames(a))
-  } else {
-    allCells = colnames(a)
-  }
-  as = summary(a)
-  for (i in 2:length(datalist)) {
-    b = datalist[[i]]
+  col_offset <- 0
+  allGenes <- unique(unlist(lapply(datalist, rownames)))
+  allCells <- c()
+  for (i in 1:length(datalist)) {
+    curr <- datalist[[i]]
+    curr_s <- summary(curr)
     
-    bs= summary(b)
+    # Now, alter the indexes so that the two 3-column matrices can be properly merged.
+    # First, make the current and full column numbers non-overlapping.
+    curr_s[, 2] <- curr_s[, 2] + col_offset
     
-    # Now, alter the indexes so that the two 3-column matrices can be properly merged.  
-    # First, make the a and b column numbers non-overlapping.
-    bs[,2] = bs[,2] + max(as[,2])
-    
-    # Next, change the row (gene) indexes so that they index on the union of the gene sets, 
-    # so that proper merging can occur.
-    
-    allGenesnew=union(allGenes, rownames(b))
+    # Update full cell names
     if (!is.null(library.names)) {
-      cellnames = paste0(library.names[i],"_",colnames(b))
+      cellnames <- paste0(library.names[i], "_", colnames(curr))
     } else {
-      cellnames = colnames(b)
+      cellnames <- colnames(curr)
     }
-    allCells=c(allCells,cellnames)
-    idx=match(allGenes,allGenesnew)
-    newgenesa = idx[as[,1]]
-    as[,1] = newgenesa
-    idx=match(rownames(b),allGenesnew)
-    newgenesb = idx[bs[,1]]
-    bs[,1] = newgenesb
+    allCells <- c(allCells, cellnames)
     
-    #Now bind the altered 3-column matrices together, and convert into a single sparse matrix.
-    as = rbind(as,bs)
-    allGenes=allGenesnew
+    # Next, change the row (gene) indexes so that they index on the union of the gene sets,
+    # so that proper merging can occur.
+    idx <- match(rownames(curr), allGenes)
+    newgenescurr <- idx[curr_s[, 1]]
+    curr_s[, 1] <- newgenescurr
+    
+    # Now bind the altered 3-column matrices together, and convert into a single sparse matrix.
+    if (!exists("full_mat")) {
+      full_mat <- curr_s
+    } else {
+      full_mat <- rbind(full_mat, curr_s)
+    }
+    col_offset <- max(full_mat[, 2])
   }
-  M=sparseMatrix(i=as[,1],j=as[,2],x=as[,3],dims=c(length(allGenes),
-                                                   length(allCells)),
-                 dimnames=list(allGenes,allCells))
+  M <- sparseMatrix(
+    i = full_mat[, 1],
+    j = full_mat[, 2],
+    x = full_mat[, 3],
+    dims = c(
+      length(allGenes),
+      length(allCells)
+    ),
+    dimnames = list(
+      allGenes,
+      allCells
+    )
+  )
   return(M)
 }
 

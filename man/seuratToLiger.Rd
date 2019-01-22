@@ -2,14 +2,14 @@
 % Please edit documentation in R/liger.R
 \name{seuratToLiger}
 \alias{seuratToLiger}
-\title{Create liger object from one or more Seurat objects}
+\title{Create liger object from one or more Seurat v2 objects}
 \usage{
 seuratToLiger(objects, combined.seurat = F, names = "use-projects",
   meta.var = NULL, renormalize = T, use.seurat.genes = T,
   num.hvg.info = NULL, use.idents = T, use.tsne = T, cca.to.H = F)
 }
 \arguments{
-\item{objects}{One or more Seurat objects. If passing multiple objects, should be in list.}
+\item{objects}{One or more Seurat v2 objects. If passing multiple objects, should be in list.}
 
 \item{combined.seurat}{Whether Seurat object (single) already contains multiple datasets (default
 FALSE).}

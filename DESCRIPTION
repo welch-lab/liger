@@ -25,11 +25,13 @@ Imports: Rcpp (>= 0.12.10),
 	 NNLM,
 	 riverplot,
 	 Hmisc,
-	 doParallel,
 	 foreach,
+	 snow,
+	 doSNOW,
 	 mclust
 LinkingTo: Rcpp, RcppArmadillo
-Depends: cowplot, Matrix
+Depends: cowplot,
+         Matrix	 
 RoxygenNote: 6.0.1
 Suggests: Seurat,
 	  knitr,
