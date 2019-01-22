@@ -615,7 +615,6 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
       sum(sapply(1:N, function(i) {
         lambda * norm(H[[i]] %*% V[[i]], "F")^2
       }))
-    start_obj <- obj0
     tmp <- gc()
     
     while (delta > thresh & iters < max.iters) {
