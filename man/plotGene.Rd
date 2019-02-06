@@ -5,8 +5,8 @@
 \title{Plot t-SNE coordinates by expression of specified gene}
 \usage{
 plotGene(object, gene, methylation.indices = NULL, pt.size = 0.1,
-  min.clip = 0, max.clip = 1, points.only = F, low.col = "yellow",
-  high.col = "red", return.plots = F)
+  min.clip = 0, max.clip = 1, points.only = F, option = "plasma",
+  zero.color = "#F5F5F5", return.plots = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call runTSNE before calling.}
@@ -26,22 +26,13 @@ to this quantile value) (default 1)}
 
 \item{points.only}{Remove axes when plotting t-sne coordinates (default FALSE).}
 
-\item{low.col}{Color to plot for lowest gene expression (default "yellow").}
+\item{option}{Colormap option to use for ggplot2's scale_color_viridis (default 'plasma').}
 
-\item{high.col}{Color to plot for highest gene expression (default "red").}
+\item{zero.color}{Color to use for zero values (no expression) (default '#F5F5F5').}
 
 \item{return.plots}{Return ggplot objects instead of printing directly (default FALSE).}
 }
 \description{
 Generates plot of t-SNE coordinates colored by expression of specified gene, for each dataset.
 Color scale can be modified.
-}
-\examples{
-\dontrun{
-# liger object, factorization complete 
-ligerex
-ligerex <- runTSNE(ligerex)
-# plot expression for CD4 and return plots
-gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
-}
 }

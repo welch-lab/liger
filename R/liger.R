@@ -159,26 +159,26 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
     if (class(rawdata)[1] == "dgTMatrix") {
       rawdata <- as(rawdata, "CsparseMatrix")
     }
-    barcodes <- readLines(barcodes.file)
     
+    # filter for UMIs first to increase speed
+    umi.pass <- which(colSums(rawdata) > min.umis)
+    if (length(umi.pass) == 0) {
+      print("No cells pass UMI cutoff. Please lower it.")
+    }
+    rawdata <- rawdata[, umi.pass, drop = F]
+    
+    barcodes <- readLines(barcodes.file)[umi.pass]
     # Remove -1 tag from barcodes
     if (all(grepl(barcodes, pattern = "\\-1$"))) {
       barcodes <- as.vector(sapply(barcodes, function(x) {
         strsplit(x, "-")[[1]][1]
       }))
     }
-    features <- read.delim(features.file, header = F, stringsAsFactors = F)
     
+    features <- read.delim(features.file, header = F, stringsAsFactors = F)
     # since some genes are only differentiated by ENSMBL
     rownames(rawdata) <- make.unique(features[, 2])
     colnames(rawdata) <- barcodes
-    
-    # filter for UMIs
-    umi.pass <- which(colSums(rawdata) > min.umis)
-    if (length(umi.pass) == 0) {
-      print("No cells pass UMI cutoff. Please lower it.")
-    }
-    rawdata <- rawdata[, umi.pass, drop = F]
     
     # split based on 10X datatype -- V3 has Gene Expression, Antibody Capture, CRISPR, CUSTOM
     # V2 has only Gene Expression by default and just two columns
@@ -232,6 +232,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
     }
     return(return_dges)
   } else {
+    names(datalist) <- sample.names
     return(datalist)
   }
 }
@@ -2501,14 +2502,14 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' @param max.clip Quantile probability for upper bound of methylation data (everything greater set 
 #'   to this quantile value) (default 1)
 #' @param points.only Remove axes when plotting t-sne coordinates (default FALSE).
-#' @param low.col Color to plot for lowest gene expression (default "yellow").
-#' @param high.col Color to plot for highest gene expression (default "red").
+#' @param option Colormap option to use for ggplot2's scale_color_viridis (default 'plasma').
+#' @param zero.color Color to use for zero values (no expression) (default '#F5F5F5').
 #' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
 #' 
 #' @export
-#' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
+#' @importFrom ggplot2 ggplot geom_point aes_string scale_color_viridis_c ggtitle
 #' @examples
-#' \dontrun{
+#' \dontrun
 #' # liger object, factorization complete 
 #' ligerex
 #' ligerex <- runTSNE(ligerex)
@@ -2517,7 +2518,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' }
 
 plotGene <- function(object, gene, methylation.indices = NULL, pt.size = 0.1, min.clip = 0,
-                     max.clip = 1, points.only = F, low.col = "yellow", high.col = "red",
+                     max.clip = 1, points.only = F, option = 'plasma', zero.color = '#F5F5F5',
                      return.plots = F) {
   gene_vals <- c()
   for (i in 1:length(object@norm.data)) {
@@ -2531,8 +2532,9 @@ plotGene <- function(object, gene, methylation.indices = NULL, pt.size = 0.1, mi
     } else {
       if (gene %in% rownames(object@norm.data[[i]])) {
         gene_vals_int <- log2(10000 * object@norm.data[[i]][gene, ] + 1)
+        gene_vals_int[gene_vals_int == 0] <- NA
       } else {
-        gene_vals_int <- rep(list(0), ncol(object@norm.data[[i]]))
+        gene_vals_int <- rep(list(NA), ncol(object@norm.data[[i]]))
         names(gene_vals_int) <- colnames(object@norm.data[[i]])
       }
       gene_vals <- c(gene_vals, gene_vals_int)
@@ -2546,16 +2548,12 @@ plotGene <- function(object, gene, methylation.indices = NULL, pt.size = 0.1, mi
   gene_plots <- list()
   for (i in 1:length(object@norm.data)) {
     gene_df.sub <- gene_df[rownames(object@scale.data[[i]]), ]
-    max_v <- max(gene_df.sub["gene"], na.rm = T)
-    min_v <- min(gene_df.sub["gene"], na.rm = T)
-    
-    midpoint <- (max_v - min_v) / 2
     plot_i <- (ggplot(gene_df.sub, aes_string(x = "tSNE1", y = "tSNE2", color = "gene")) + 
                  geom_point(size = pt.size) +
-                 scale_color_gradient(
-                   low = low.col, high = high.col,
-                   limits = c(min_v, max_v)
-                 ) + labs(col = gene) +
+                 scale_color_viridis_c(option = option, 
+                                       direction = -1, 
+                                       na.value = zero.color) + 
+                 labs(col = gene) +
                  ggtitle(names(object@scale.data)[i]))
     gene_plots[[i]] <- plot_i
   }
