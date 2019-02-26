@@ -247,6 +247,9 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
 #' @param make.sparse Whether to convert raw data into sparse matrices (default TRUE).
 #' @param take.gene.union Whether to fill out raw.data matrices with union of genes across all 
 #'   datasets (filling in 0 for missing data) (requires make.sparse=T) (default FALSE).
+#' @param remove.missing Whether to remove cells not expressing any measured genes, and genes not
+#'   expressed in any cells (if take.gene.union = T, removes only genes not expressed in any 
+#'   dataset) (default TRUE).
 #' 
 #' @return \code{liger} object with raw.data slot set.
 #' @export
@@ -257,7 +260,8 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
 #' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' }
 
-createLiger <- function(raw.data, make.sparse = T, take.gene.union = F) {
+createLiger <- function(raw.data, make.sparse = T, take.gene.union = F, 
+                        remove.missing = T) {
   object <- methods::new(
     Class = "liger",
     raw.data = raw.data
@@ -279,11 +283,32 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F) {
   }
   if (take.gene.union) {
     merged.data <- MergeSparseDataAll(raw.data)
+    if (remove.missing) {
+      missing_genes <- which(rowSums(merged.data) == 0)
+      if (length(missing_genes) > 0) {
+        print(
+          paste0("Removing ", length(missing_genes),
+                 " genes not expressed in any cells across merged datasets.")
+        )
+        if (length(missing_genes) < 25) {
+          print(rownames(merged.data)[missing_genes])
+        }
+        merged.data <- merged.data[-missing_genes, ]
+      } 
+    }
     raw.data <- lapply(raw.data, function(x) {
       merged.data[, colnames(x)]
     })
   }
   object@raw.data <- raw.data
+  # remove missing cells
+  if (remove.missing) {
+    object <- removeMissingObs(object, use.cols = T)
+    # remove missing genes if not already merged
+    if (!take.gene.union) {
+      object <- removeMissingObs(object, use.cols = F)
+    }
+  }
   return(object)
 }
 
@@ -304,7 +329,7 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F) {
 #' }
 
 normalize <- function(object) {
-  object <- removeMissingCells(object, slot.use = "raw.data")
+  object <- removeMissingObs(object, slot.use = "raw.data", use.cols = T)
   if (class(object@raw.data[[1]])[1] == "dgTMatrix" | 
       class(object@raw.data[[1]])[1] == "dgCMatrix") {
     object@norm.data <- lapply(object@raw.data, Matrix.column_norm)
@@ -454,51 +479,59 @@ scaleNotCenter <- function(object, remove.missing = T) {
   }
   # may want to remove such cells before scaling -- should not matter for large datasets?
   if (remove.missing) {
-    object <- removeMissingCells(object)
+    object <- removeMissingObs(object, slot.use = "scale.data", use.cols = F)
   }
   return(object)
 }
 
-#' Remove cells with no gene data
+#' Remove cells/genes with no expression across any genes/cells
 #'
-#' Removes cells from scale.data with no expression in any selected genes.  
+#' Removes cells/genes from chosen slot with no expression in any genes or cells respectively.  
 #'
 #' @param object \code{liger} object (scale.data or norm.data must be set).
-#' @param slot.use The data slot to filter (takes "raw.data" and "scale.data") (default "scale.data")
+#' @param slot.use The data slot to filter (takes "raw.data" and "scale.data") (default "raw.data").
+#' @param use.cols Treat each column as a cell (default TRUE).
 #' 
-#' @return \code{liger} object with modified scale.data (or norm.data) (dataset names preserved).
+#' @return \code{liger} object with modified raw.data (or chosen slot) (dataset names preserved).
 #' @export
 #' @examples 
 #' \dontrun{
 #' # liger object
 #' ligerex
-#' ligerex <- removeMissingCells(ligerex)
+#' ligerex <- removeMissingObs(ligerex)
 #' }
 
-removeMissingCells <- function(object, slot.use = "scale.data") {
+removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
   filter.data <- slot(object, slot.use)
+  removed <- ifelse((slot.use %in% c("raw.data", "norm.data")) & (use.cols == T), 
+                    yes = "cells", no = "genes")
+  expressed <- ifelse(removed == "cells", yes = " any genes", no = "")
   filter.data <- lapply(seq_along(filter.data), function(x) {
-    if (slot.use == "scale.data") {
-      matrix.use = t(filter.data[[x]])
+    if (use.cols) {
+      missing <- which(colSums(filter.data[[x]]) == 0)
     } else {
-      matrix.use = filter.data[[x]]
+      missing <- which(rowSums(filter.data[[x]]) == 0)
     }
-    missing <- which(colSums(matrix.use) == 0)
     if (length(missing) > 0) {
       print(paste0(
-        "Removing cells not expressing any genes in ",
-        names(object@raw.data)[x], ":"
+        "Removing ",  length(missing), " ", removed, " not expressing", expressed, " in ",
+        names(object@raw.data)[x], "."
       ))
-      print(colnames(matrix.use)[missing])
-      subset <- matrix.use[, -missing]
+      if (use.cols) {
+        if (length(missing) < 25) {
+          print(colnames(filter.data[[x]])[missing])
+        }
+        subset <- filter.data[[x]][, -missing]
+      } else {
+        if (length(missing) < 25) {
+          print(rownames(filter.data[[x]])[missing])
+        }
+        subset <- filter.data[[x]][-missing, ]
+      }
     } else {
-      subset <- matrix.use
+      subset <- filter.data[[x]]
     }
-    if (slot.use == "scale.data") {
-      t(subset)
-    } else {
-      subset
-    }
+    subset
   })
   names(filter.data) <- names(object@raw.data)
   slot(object, slot.use) <- filter.data
@@ -560,7 +593,7 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
                         H.init = NULL, W.init = NULL, V.init = NULL, rand.seed = 1,
                         print.obj = F) {
   # remove cells with no selected gene expression
-  object <- removeMissingCells(object)
+  object <- removeMissingObs(object, slot.use = "scale.data", use.cols = F)
   E <- object@scale.data
   N <- length(E)
   ns <- sapply(E, nrow)
@@ -1801,7 +1834,7 @@ calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.
 #' 
 #' @return Agreement metric (or vector of agreement per dataset).
 #' @importFrom FNN get.knn
-#' @importFrom NNLM nnmf
+#' @importFrom NNLM nnmf 
 #' @importFrom ica icafast
 #' @importFrom irlba prcomp_irlba
 #' @export

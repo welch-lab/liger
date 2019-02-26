@@ -4,7 +4,8 @@
 \alias{createLiger}
 \title{Create a liger object.}
 \usage{
-createLiger(raw.data, make.sparse = T, take.gene.union = F)
+createLiger(raw.data, make.sparse = T, take.gene.union = F,
+  remove.missing = T)
 }
 \arguments{
 \item{raw.data}{List of expression matrices (gene by cell). Should be named by dataset.}
@@ -13,6 +14,10 @@ createLiger(raw.data, make.sparse = T, take.gene.union = F)
 
 \item{take.gene.union}{Whether to fill out raw.data matrices with union of genes across all 
 datasets (filling in 0 for missing data) (requires make.sparse=T) (default FALSE).}
+
+\item{remove.missing}{Whether to remove cells not expressing any measured genes, and genes not
+expressed in any cells (if take.gene.union = T, removes only genes not expressed in any 
+dataset) (default TRUE).}
 }
 \value{
 \code{liger} object with raw.data slot set.
