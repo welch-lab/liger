@@ -2,10 +2,11 @@
 % Please edit documentation in R/liger.R
 \name{seuratToLiger}
 \alias{seuratToLiger}
-\title{Create liger object from one or more Seurat v2 objects}
+\title{Create liger object from one or more Seurat objects}
 \usage{
 seuratToLiger(objects, combined.seurat = F, names = "use-projects",
-  meta.var = NULL, renormalize = T, use.seurat.genes = T,
+  meta.var = NULL, assays.use = NULL, raw.assay = "RNA",
+  remove.missing = T, renormalize = T, use.seurat.genes = T,
   num.hvg.info = NULL, use.idents = T, use.tsne = T, cca.to.H = F)
 }
 \arguments{
@@ -15,12 +16,22 @@ seuratToLiger(objects, combined.seurat = F, names = "use-projects",
 FALSE).}
 
 \item{names}{Names to use for datasets in new liger object. If use-projects, takes project names 
-from individual Seurat objects; if use-meta.var, takes value of object meta.data in meta.var
-column for each dataset (becomes default if passing combined Seurat object). Otherwise, user can
-pass in vector of names with same length as number of datasets (default use-projects).}
+from individual Seurat objects; if use-meta, takes value of object meta.data in meta.var column 
+for each dataset; otherwise, user can pass in vector of names with same length 
+as number of datasets. If combined.seurat, infers project names based on whether meta.var
+or assays.use is present (at least one required).}
 
-\item{meta.var}{Seurat meta.data column name to use in naming datasets. Required if 
-combined.seurat is TRUE (default NULL).}
+\item{meta.var}{Seurat meta.data column name to use in naming datasets. Either meta.var or 
+assays.use required if combined.seurat is TRUE (default NULL).}
+
+\item{assays.use}{Names of Seurat v3 assays to use as separate datasets in conversion (e.g. RNA, 
+ADT) (default NULL).}
+
+\item{raw.assay}{Name of Seurat v3 assay to use for raw data if meta.var used to split combined
+Seurat object -- in case integrated assay has been set as default (default "RNA").}
+
+\item{remove.missing}{Whether to remove missing genes/cells when converting raw.data to liger object 
+(default TRUE).}
 
 \item{renormalize}{Whether to automatically normalize raw.data once \code{liger} object is created 
 (default TRUE).}
@@ -30,8 +41,8 @@ that value to get top most highly variable genes from hvg.info slot in Seurat ob
 uses var.genes slot in Seurat objects. For multiple datasets, takes the union of the variable 
 genes. (default TRUE)}
 
-\item{num.hvg.info}{Number of highly variable genes to include from each object's hvg.info slot.
-If set, recommended value is 2000 (default NULL).}
+\item{num.hvg.info}{Number of highly variable genes to include from each object's hvg.info slot. 
+Only available for Seurat v2 objects. If set, recommended value is 2000 (default NULL).}
 
 \item{use.idents}{Carry over cluster identities from Seurat objects. If multiple objects with 
 overlapping cluster names, will preface cluster names by dataset names to distinguish. (default
@@ -48,9 +59,10 @@ afterwards. (default FALSE)}
 \code{liger} object.
 }
 \description{
-This function creates a \code{liger} object from multiple (disjoint) Seurat objects or a single (combined-
-analysis) Seurat object. It includes options for keeping the variable genes and cluster identities
-from the original Seurat objects. It renormalizes the raw.data by default.
+This function creates a \code{liger} object from multiple (disjoint) Seurat objects or a single 
+(combined-analysis) Seurat object. It includes options for keeping the variable genes and cluster 
+identities from the original Seurat objects. Seurat V2 and V3 supported (though all objects 
+should share the same major version).
 }
 \examples{
 \dontrun{
@@ -64,6 +76,6 @@ ligerex2 <- seuratToLiger(list(tenx, seqwell), names = c('tenx', 'seqwell'), num
 # Seurat object for joint analysis
 pbmc <- readRDS('pbmc.RDS')
 # create liger object, using 'protocol' for dataset names
-ligerex3 <- seuratToLiger(pbmc, meta.var = 'protocol', num.hvg.info = 2000)
+ligerex3 <- seuratToLiger(pbmc, combined.seurat = T, meta.var = 'protocol', num.hvg.info = 2000)
 }
 }
