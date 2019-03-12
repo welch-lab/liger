@@ -3519,18 +3519,19 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
       return(NULL)
     }
   })
-  raw.data <- raw.data[!sapply(raw.data, is.null)]
-  nms <- names(object@raw.data)[!sapply(raw.data, is.null)]
+  missing <- sapply(raw.data, is.null)
+  raw.data <- raw.data[!missing]
+  nms <- names(object@raw.data)[!missing]
   a <- createLiger(raw.data, remove.missing = remove.missing)
   
   a@norm.data <- lapply(1:length(a@raw.data), function(i) {
-    object@norm.data[[i]][, colnames(a@raw.data[[i]])]
+    object@norm.data[[nms[i]]][, colnames(a@raw.data[[i]])]
   })
   a@scale.data <- lapply(1:length(a@raw.data), function(i) {
-    object@scale.data[[i]][colnames(a@raw.data[[i]]), ]
+    object@scale.data[[nms[i]]][colnames(a@raw.data[[i]]), ]
   })
   a@H <- lapply(1:length(a@raw.data), function(i) {
-    object@H[[i]][colnames(a@raw.data[[i]]), ]
+    object@H[[nms[i]]][colnames(a@raw.data[[i]]), ]
   })
   a@clusters <- object@clusters[unlist(lapply(a@H, rownames))]
   a@clusters <- droplevels(a@clusters)
