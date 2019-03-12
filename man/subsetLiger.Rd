@@ -4,7 +4,8 @@
 \alias{subsetLiger}
 \title{Construct a liger object with a specified subset}
 \usage{
-subsetLiger(object, clusters.use = NULL, cells.use = NULL)
+subsetLiger(object, clusters.use = NULL, cells.use = NULL,
+  remove.missing = T)
 }
 \arguments{
 \item{object}{\code{liger} object. Should run quantileAlignSNF and runTSNE before calling.}
@@ -12,6 +13,9 @@ subsetLiger(object, clusters.use = NULL, cells.use = NULL)
 \item{clusters.use}{Clusters to use for subset.}
 
 \item{cells.use}{Vector of cell names to keep from any dataset.}
+
+\item{remove.missing}{Whether to remove genes/cells with no expression when creating new object
+(default TRUE).}
 }
 \value{
 \code{liger} object with subsetting applied to raw.data, norm.data, scale.data, H, W, V,

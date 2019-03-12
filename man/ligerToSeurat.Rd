@@ -2,7 +2,7 @@
 % Please edit documentation in R/liger.R
 \name{ligerToSeurat}
 \alias{ligerToSeurat}
-\title{Create a Seurat (v2) object containing the data from a liger object}
+\title{Create a Seurat object containing the data from a liger object}
 \usage{
 ligerToSeurat(object, nms = names(object@H), renormalize = T,
   use.liger.genes = T, by.dataset = F)
@@ -25,7 +25,7 @@ Seurat object with raw.data, scale.data, dr$tsne, dr$inmf, and ident slots set.
 }
 \description{
 Merges raw.data and scale.data of object, and creates Seurat object with these values along with 
-tsne.coords, iNMF factorization, and cluster assignments.
+tsne.coords, iNMF factorization, and cluster assignments. Supports Seurat V2 and V3.
 }
 \details{
 Stores original dataset identity by default in new object metadata if dataset names are passed 

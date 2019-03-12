@@ -4,10 +4,13 @@
 \alias{convertOldLiger}
 \title{Convert older liger object into most current version (based on class definition)}
 \usage{
-convertOldLiger(object)
+convertOldLiger(object, override.raw = F)
 }
 \arguments{
 \item{object}{\code{liger} object.}
+
+\item{override.raw}{Keep original raw.data without any modifications (removing missing cells 
+etc.) (defualt FALSE).}
 }
 \value{
 Updated \code{liger} object.
