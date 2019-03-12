@@ -12,7 +12,7 @@
 
 <meta name="author" content="Joshua D. Welch and Velina Kozareva" />
 
-<meta name="date" content="2019-01-22" />
+<meta name="date" content="2019-03-12" />
 
 <title>Comparing and contrasting heterogeneous single cell profiles using liger</title>
 
@@ -70,7 +70,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Comparing and contrasting heterogeneous single cell profiles using liger</h1>
 <h4 class="author"><em>Joshua D. Welch and Velina Kozareva</em></h4>
-<h4 class="date"><em>2019-01-22</em></h4>
+<h4 class="date"><em>2019-03-12</em></h4>
 
 
 
@@ -174,15 +174,18 @@ ligerex =<span class="st"> </span><span class="kw">optimizeSubset</span>(ligerex
 </div>
 <div id="integration-between-liger-and-seurat" class="section level2">
 <h2>Integration between liger and Seurat</h2>
-<p>We can easily create <code>liger</code> objects from Seurat v2 objects (and vice versa), while keeping calculated features from the original objects.</p>
+<p>We can easily create <code>liger</code> objects from Seurat (V2 or V3) objects (and vice versa), while keeping calculated features from the original objects.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Create liger object from two separate Seurat objects, keeping union of top 2000 highly variable </span>
 <span class="co"># genes from each object</span>
 ligerex =<span class="st"> </span><span class="kw">seuratToLiger</span>(<span class="kw">list</span>(seurat1, seurat2), <span class="dt">names =</span> <span class="kw">c</span>(<span class="st">'name1'</span>, <span class="st">'name2'</span>), <span class="dt">num.hvg.info =</span> <span class="dv">2000</span>)
-<span class="co"># Create liger object from single integrated Seurat object, keeping CCA factorization, </span>
+<span class="co"># Create liger object from single integrated Seurat V2 object, keeping CCA factorization, </span>
 <span class="co"># splitting datasets by Seurat meta.var column &quot;original&quot;</span>
-ligerex =<span class="st"> </span><span class="kw">seuratToLiger</span>(seurat_obj, <span class="dt">meta.var =</span> <span class="st">'original'</span>, <span class="dt">cca.to.H =</span> T)
-<span class="co"># Create Seurat object from liger object, each dataset</span>
-seurat_obj =<span class="st"> </span><span class="kw">ligerToSeurat</span>(ligerex)</code></pre></div>
+ligerex =<span class="st"> </span><span class="kw">seuratToLiger</span>(seurat_obj, <span class="dt">combined.seurat =</span> T, <span class="dt">meta.var =</span> <span class="st">'original'</span>, <span class="dt">cca.to.H =</span> T)
+<span class="co"># Create liger object from single integrated Seurat V3 object, splitting datasets by two</span>
+<span class="co"># available assays in Seurat </span>
+ligerex =<span class="st"> </span><span class="kw">seuratToLiger</span>(seurat_obj, <span class="dt">combined.seurat =</span> T, <span class="dt">assays.use =</span> <span class="kw">c</span>(<span class="st">'RNA'</span>, <span class="st">'ADT'</span>))
+<span class="co"># Create Seurat object from liger object, keeping liger highly variable genes</span>
+seurat_obj =<span class="st"> </span><span class="kw">ligerToSeurat</span>(ligerex, <span class="dt">use.liger.genes =</span> T)</code></pre></div>
 </div>
 
 

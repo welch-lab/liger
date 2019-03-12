@@ -153,15 +153,18 @@ ligerex = optimizeSubset(ligerex, cell.subset)
 ```
 
 ## Integration between liger and Seurat
-We can easily create `liger` objects from Seurat v2 objects (and vice versa), while keeping calculated 
-features from the original objects. 
+We can easily create `liger` objects from Seurat (V2 or V3) objects (and vice versa), while keeping 
+calculated features from the original objects. 
 ```r
 # Create liger object from two separate Seurat objects, keeping union of top 2000 highly variable 
 # genes from each object
 ligerex = seuratToLiger(list(seurat1, seurat2), names = c('name1', 'name2'), num.hvg.info = 2000)
-# Create liger object from single integrated Seurat object, keeping CCA factorization, 
+# Create liger object from single integrated Seurat V2 object, keeping CCA factorization, 
 # splitting datasets by Seurat meta.var column "original"
-ligerex = seuratToLiger(seurat_obj, meta.var = 'original', cca.to.H = T)
-# Create Seurat object from liger object, each dataset
-seurat_obj = ligerToSeurat(ligerex)
+ligerex = seuratToLiger(seurat_obj, combined.seurat = T, meta.var = 'original', cca.to.H = T)
+# Create liger object from single integrated Seurat V3 object, splitting datasets by two
+# available assays in Seurat 
+ligerex = seuratToLiger(seurat_obj, combined.seurat = T, assays.use = c('RNA', 'ADT'))
+# Create Seurat object from liger object, keeping liger highly variable genes
+seurat_obj = ligerToSeurat(ligerex, use.liger.genes = T)
 ```
