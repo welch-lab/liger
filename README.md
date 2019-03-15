@@ -1,4 +1,5 @@
 <img src="docs/img/liger_cropped.png" width="150">
+[![Github All Releases](https://img.shields.io/github/downloads/MacoskoLab/liger/total.svg)]()
 
 # LIGER (Linked Inference of Genomic Experimental Relationships)
 
