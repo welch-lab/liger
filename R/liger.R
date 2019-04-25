@@ -1835,7 +1835,6 @@ calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.
 #' 
 #' @return Agreement metric (or vector of agreement per dataset).
 #' @importFrom FNN get.knn
-#' @importFrom NNLM nnmf 
 #' @importFrom ica icafast
 #' @importFrom irlba prcomp_irlba
 #' @export
@@ -1849,6 +1848,12 @@ calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.
 
 calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.aligned = TRUE,
                           rand.seed = 42, by.dataset = FALSE) {
+  if (!require("NNLM", quietly = TRUE) & dr.method == "NMF") {
+    stop("Package \"NNLM\" needed for this function to perform NMF. Please install it.",
+         call. = FALSE
+    )
+  }
+  
   print(paste("Reducing dimensionality using", dr.method))
   set.seed(rand.seed)
   dr <- list()
