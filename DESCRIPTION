@@ -22,7 +22,6 @@ Imports: Rcpp (>= 0.12.10),
 	 ica,
 	 Rtsne,
 	 ggplot2,
-	 NNLM,
 	 riverplot,
 	 Hmisc,
 	 foreach,
@@ -36,5 +35,6 @@ RoxygenNote: 6.0.1
 Suggests: Seurat,
 	  knitr,
           reticulate,
-    	  rmarkdown
+    	  rmarkdown,
+	  NNLM
 VignetteBuilder: knitr
