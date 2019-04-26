@@ -73,7 +73,7 @@ MergeSparseDataAll <- function(datalist, library.names = NULL) {
     } else {
       full_mat <- rbind(full_mat, curr_s)
     }
-    col_offset <- max(full_mat[, 2])
+    col_offset <- length(allCells)
   }
   M <- sparseMatrix(
     i = full_mat[, 1],
