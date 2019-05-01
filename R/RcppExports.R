@@ -2,6 +2,6 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 solve_nnls <- function(C, B) {
-    .Call(`_liger_solve_nnls`, C, B)
+    .Call('_liger_solve_nnls', PACKAGE = 'liger', C, B)
 }
 

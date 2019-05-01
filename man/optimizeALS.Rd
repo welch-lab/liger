@@ -2,11 +2,21 @@
 % Please edit documentation in R/liger.R
 \name{optimizeALS}
 \alias{optimizeALS}
+\alias{optimizeALS.list}
+\alias{optimizeALS.liger}
 \title{Perform iNMF on scaled datasets}
 \usage{
 optimizeALS(object, k, lambda = 5, thresh = 1e-04, max.iters = 100,
   nrep = 1, H.init = NULL, W.init = NULL, V.init = NULL,
-  rand.seed = 1, print.obj = F)
+  rand.seed = 1, print.obj = FALSE)
+
+\method{optimizeALS}{list}(object, k, lambda = 5, thresh = 1e-04,
+  max.iters = 100, nrep = 1, H.init = NULL, W.init = NULL,
+  V.init = NULL, rand.seed = 1, print.obj = FALSE)
+
+\method{optimizeALS}{liger}(object, k, lambda = 5, thresh = 1e-04,
+  max.iters = 100, nrep = 1, H.init = NULL, W.init = NULL,
+  V.init = NULL, rand.seed = 1, print.obj = FALSE)
 }
 \arguments{
 \item{object}{\code{liger} object. Should normalize, select genes, and scale before calling.}
@@ -65,4 +75,5 @@ ligerex <- scaleNotCenter(ligerex)
 # get factorization using three restarts and 20 factors
 ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
 }
+
 }

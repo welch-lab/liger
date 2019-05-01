@@ -2,27 +2,38 @@
 % Please edit documentation in R/liger.R
 \name{quantileAlignSNF}
 \alias{quantileAlignSNF}
+\alias{quantileAlignSNF.list}
+\alias{quantileAlignSNF.liger}
 \title{Quantile align (normalize) factor loadings}
 \usage{
-quantileAlignSNF(object, knn_k = 20, k2 = 500, prune.thresh = 0.2,
-  ref_dataset = NULL, min_cells = 2, quantiles = 50, nstart = 10,
-  resolution = 1, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR",
-  center = F, small.clust.thresh = 0, id.number = NULL, print.mod = F,
-  print.align.summary = F)
+quantileAlignSNF(object, ...)
+
+\method{quantileAlignSNF}{list}(object, snf, cell.names, ref_dataset,
+  prune.thresh = 0.2, min_cells = 2, quantiles = 50, nstart = 10,
+  resolution = 1, center = FALSE, id.number = NULL,
+  print.mod = FALSE, print.align.summary = FALSE, ...)
+
+\method{quantileAlignSNF}{liger}(object, knn_k = 20, k2 = 500,
+  prune.thresh = 0.2, ref_dataset = NULL, min_cells = 2,
+  quantiles = 50, nstart = 10, resolution = 1, dims.use = 1:ncol(x
+  = object@H[[1]]), dist.use = "CR", center = FALSE,
+  small.clust.thresh = 0, id.number = NULL, print.mod = FALSE,
+  print.align.summary = FALSE, ...)
 }
 \arguments{
 \item{object}{\code{liger} object. Should run optimizeALS before calling.}
 
-\item{knn_k}{Number of nearest neighbors for within-dataset knn graph (default 20).}
+\item{...}{Arguments passed to other methods}
 
-\item{k2}{Horizon parameter for shared nearest factor graph. Distances to all but the k2 nearest 
-neighbors are set to 0 (cuts down on memory usage for very large graphs). (default 500)}
+\item{snf}{Output from \code{\link{SNF}}}
 
-\item{prune.thresh}{Minimum allowed edge weight. Any edges below this are removed (given weight
-0) (default 0.2)}
+\item{cell.names}{A vector of cell names}
 
 \item{ref_dataset}{Name of dataset to use as a "reference" for normalization. By default,
 the dataset with the largest number of cells is used.}
+
+\item{prune.thresh}{Minimum allowed edge weight. Any edges below this are removed (given weight
+0) (default 0.2)}
 
 \item{min_cells}{Minimum number of cells to consider a cluster shared across datasets (default 2)}
 
@@ -34,16 +45,8 @@ starts (default 10).}
 \item{resolution}{Controls the number of communities detected. Higher resolution -> more 
 communities. (default 1)}
 
-\item{dims.use}{Indices of factors to use for shared nearest factor determination (default 
-1:ncol(H[[1]])).}
-
-\item{dist.use}{Distance metric to use in calculating nearest neighbors (default "CR").}
-
 \item{center}{Centers the data when scaling factors (useful for less sparse modalities like 
 methylation data). (default FALSE)}
-
-\item{small.clust.thresh}{Extracts small clusters loading highly on single factor with fewer 
-cells than this before regular alignment (default 0 -- no small cluster extraction).}
 
 \item{id.number}{Number to use for identifying edge file (when running in parallel) 
 (generates random value by default).}
@@ -51,6 +54,21 @@ cells than this before regular alignment (default 0 -- no small cluster extracti
 \item{print.mod}{Print modularity output from clustering algorithm (default FALSE).}
 
 \item{print.align.summary}{Print summary of clusters which did not align normally (default FALSE).}
+
+\item{knn_k}{Number of nearest neighbors for within-dataset knn graph (default 20).}
+
+\item{k2}{Horizon parameter for shared nearest factor graph. Distances to all but the k2 nearest 
+neighbors are set to 0 (cuts down on memory usage for very large graphs). (default 500)}
+
+\item{dims.use}{Indices of factors to use for shared nearest factor determination (default 
+1:ncol(H[[1]])).}
+
+\item{dist.use}{Distance metric to use in calculating nearest neighbors (default "CR").}
+
+\item{small.clust.thresh}{Extracts small clusters loading highly on single factor with fewer 
+cells than this before regular alignment (default 0 -- no small cluster extraction).}
+
+\item{ref_dataset}{Name or index of reference dataset}
 }
 \value{
 \code{liger} object with H.norm slot set.
@@ -84,4 +102,5 @@ ligerex <- quantileAlignSNF(ligerex, resolution = 1.2)
 # change knn_k for more fine-grained local clustering
 ligerex <- quantileAlignSNF(ligerex, knn_k = 15, resolution = 1.2)
 }
+
 }

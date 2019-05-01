@@ -542,13 +542,13 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #### Factorization
 
 #' Perform iNMF on scaled datasets
-#' 
+#'
 #' @description
 #' Perform integrative non-negative matrix factorization to return factorized H, W, and V matrices.
 #' It optimizes the iNMF objective function using block coordinate descent (alternating non-negative 
 #' least squares), where the number of factors is set by k. TODO: include objective function 
 #' equation here in documentation (using deqn)
-#' 
+#'
 #' For each dataset, this factorization produces an H matrix (cells by k), a V matrix (k by genes), 
 #' and a shared W matrix (k by genes). The H matrices represent the cell factor loadings.
 #' W is held consistent among all datasets, as it represents the shared components of the metagenes 
@@ -576,6 +576,7 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #' 
 #' @return \code{liger} object with H, W, and V slots set. 
 #' @export
+#'
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -588,104 +589,175 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #' # get factorization using three restarts and 20 factors
 #' ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
 #' }
+#'
+optimizeALS <- function(
+  object,
+  k,
+  lambda = 5.0, 
+  thresh = 1e-4,
+  max.iters = 100,
+  nrep = 1,
+  H.init = NULL, 
+  W.init = NULL, 
+  V.init = NULL, 
+  rand.seed = 1,
+  print.obj = FALSE
+) {
+  UseMethod(generic = 'optimizeALS', object = object)
+}
 
-optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100, nrep = 1,
-                        H.init = NULL, W.init = NULL, V.init = NULL, rand.seed = 1,
-                        print.obj = F) {
-  # remove cells with no selected gene expression
-  object <- removeMissingObs(object, slot.use = "scale.data", use.cols = F)
-  E <- object@scale.data
-  N <- length(E)
-  ns <- sapply(E, nrow)
+#' @rdname optimizeALS
+#' @export
+#' @method optimizeALS list
+#'
+optimizeALS.list  <- function(
+  object,
+  k,
+  lambda = 5.0, 
+  thresh = 1e-4,
+  max.iters = 100,
+  nrep = 1,
+  H.init = NULL, 
+  W.init = NULL, 
+  V.init = NULL, 
+  rand.seed = 1,
+  print.obj = FALSE
+) {
+  if (!all(sapply(X = object, FUN = is.matrix))) {
+    stop("All values in 'object' must be a matrix")
+  }
+  E <- object
+  N <- length(x = E)
+  ns <- sapply(X = E, FUN = nrow)
   if (k >= min(ns)) {
-    stop(paste0('Select k lower than the number of cells in smallest dataset: ', min(ns)))
+    stop('Select k lower than the number of cells in smallest dataset: ', min(ns))
   }
   tmp <- gc()
-  g <- ncol(E[[1]])
+  g <- ncol(x = E[[1]])
   if (k >= g) {
-    stop(paste0('Select k lower than the number of variable genes:', g))
+    stop('Select k lower than the number of variable genes: ', g)
   } 
-  W_m <- matrix(0, k, g)
-  V_m <- lapply(1:N, function(i) {
-    matrix(0, k, g)
-  })
-  H_m <- lapply(ns, function(n) {
-    matrix(0, n, k)
-  })
+  W_m <- matrix(data = 0, nrow = k, ncol = g)
+  V_m <- lapply(
+    X = 1:N, 
+    FUN = function(i) {
+      return(matrix(data = 0, nrow = k, ncol = g))
+    }
+  )
+  H_m <- lapply(
+    X = ns, 
+    FUN = function(n) {
+      return(matrix(data = 0, nrow = n, ncol = k))
+    }
+  )
   tmp <- gc()
-  
   best_obj <- Inf
-  run_stats <- matrix(0, nrow = nrep, ncol = 2)
+  run_stats <- matrix(data = 0, nrow = nrep, ncol = 2)
   for (i in 1:nrep) {
-    set.seed(rand.seed + i - 1)
+    set.seed(seed = rand.seed + i - 1)
     start_time <- Sys.time()
-    
-    W <- matrix(abs(runif(g * k, 0, 2)), k, g)
-    V <- lapply(1:N, function(i) {
-      matrix(abs(runif(g * k, 0, 2)), k, g)
-    })
-    H <- lapply(ns, function(n) {
-      matrix(abs(runif(n * k, 0, 2)), n, k)
-    })
+    W <- matrix(
+      data = abs(x = runif(n = g * k, min = 0, max = 2)),
+      nrow = k, 
+      ncol = g
+    )
+    V <- lapply(
+      X = 1:N, 
+      FUN = function(i) {
+        return(matrix(
+          data = abs(x = runif(n = g * k, min = 0, max = 2)),
+          nrow = k, 
+          ncol = g
+        ))
+      }
+    )
+    H <- lapply(
+      X = ns,
+      FUN = function(n) {
+        return(matrix(
+          data = abs(x = runif(n = n * k, min = 0, max = 2)), 
+          nrow = n,
+          ncol = k
+        ))
+      }
+    )
     tmp <- gc()
-    
-    if (!is.null(W.init)) {
+    if (!is.null(x = W.init)) {
       W <- W.init
     }
-    if (!is.null(V.init)) {
+    if (!is.null(x = V.init)) {
       V <- V.init
     }
-    if (!is.null(H.init)) {
+    if (!is.null(x = H.init)) {
       H <- H.init
     }
-    
     delta <- 1
     iters <- 0
     pb <- txtProgressBar(min = 0, max = max.iters, style = 3)
-    sqrt_lambda <- sqrt(lambda)
-    obj0 <- sum(sapply(1:N, function(i) {
-      norm(E[[i]] - H[[i]] %*% (W + V[[i]]), "F")^2
-    })) +
-      sum(sapply(1:N, function(i) {
-        lambda * norm(H[[i]] %*% V[[i]], "F")^2
-      }))
+    sqrt_lambda <- sqrt(x = lambda)
+    obj0 <- sum(sapply(
+      X = 1:N,
+      FUN = function(i) {
+        return(norm(x = E[[i]] - H[[i]] %*% (W + V[[i]]), type = "F") ^ 2)
+      }
+    )) +
+      sum(sapply(
+        X = 1:N, 
+        FUN = function(i) {
+          return(lambda * norm(x = H[[i]] %*% V[[i]], type = "F") ^ 2)
+        }
+      ))
     tmp <- gc()
-    
     while (delta > thresh & iters < max.iters) {
-      H <- lapply(1:N, function(i) {
-        t(solve_nnls(
-          rbind(t(W) + t(V[[i]]), sqrt_lambda * t(V[[i]])),
-          rbind(t(E[[i]]), matrix(0, nrow = g, ncol = ns[i]))
-        ))
-      })
-      tmp <- gc()
-      V <- lapply(1:N, function(i) {
-        solve_nnls(
-          rbind(H[[i]], sqrt_lambda * H[[i]]),
-          rbind(E[[i]] - H[[i]] %*% W, matrix(0, nrow = ns[[i]], ncol = g))
-        )
-      })
-      tmp <- gc()
-      W <- solve_nnls(
-        rbindlist(H),
-        rbindlist(lapply(1:N, function(i) {
-          E[[i]] - H[[i]] %*% V[[i]]
-        }))
+      H <- lapply(
+        X = 1:N, 
+        FUN = function(i) {
+          return(t(x = solve_nnls(
+            C = rbind(t(x = W) + t(x = V[[i]]), sqrt_lambda * t(x = V[[i]])),
+            B = rbind(t(x = E[[i]]), matrix(data = 0, nrow = g, ncol = ns[i]))
+          )))
+        }
       )
       tmp <- gc()
-      obj <- sum(sapply(1:N, function(i) {
-        norm(E[[i]] - H[[i]] %*% (W + V[[i]]), "F")^2
-      })) +
-        sum(sapply(1:N, function(i) {
-          lambda * norm(H[[i]] %*% V[[i]], "F")^2
-        }))
+      V <- lapply(
+        X = 1:N,
+        FUN = function(i) {
+          return(solve_nnls(
+            C = rbind(H[[i]], sqrt_lambda * H[[i]]),
+            B = rbind(E[[i]] - H[[i]] %*% W, matrix(data = 0, nrow = ns[[i]], ncol = g))
+          ))
+        }
+      )
       tmp <- gc()
-      delta <- abs(obj0 - obj) / (mean(obj0, obj))
+      W <- solve_nnls(
+        C = rbindlist(mat_list = H),
+        B = rbindlist(mat_list = lapply(
+          X = 1:N,
+          FUN = function(i) {
+            return(E[[i]] - H[[i]] %*% V[[i]])
+          }
+        ))
+      )
+      tmp <- gc()
+      obj <- sum(sapply(
+        X = 1:N, 
+        FUN = function(i) {
+          return(norm(x = E[[i]] - H[[i]] %*% (W + V[[i]]), type = "F") ^ 2)
+        }
+      )) +
+        sum(sapply(
+          X = 1:N, 
+          FUN = function(i) {
+            return(lambda * norm(x = H[[i]] %*% V[[i]], type = "F") ^ 2)
+          }
+        ))
+      tmp <- gc()
+      delta <- abs(x = obj0 - obj) / (mean(obj0, obj))
       obj0 <- obj
       iters <- iters + 1
-      setTxtProgressBar(pb, iters)
+      setTxtProgressBar(pb = pb, value = iters)
     }
-    setTxtProgressBar(pb, max.iters)
+    setTxtProgressBar(pb = pb, value = max.iters)
     if (iters == max.iters) {
       print("Warning: failed to converge within the allowed number of iterations. 
             Re-running with a higher max.iters is recommended.")
@@ -697,27 +769,80 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
       best_obj <- obj
       best_seed <- rand.seed + i - 1
     }
-    end_time <- difftime(Sys.time(), start_time, units = "auto")
-    run_stats[i, 1] <- as.double(end_time)
+    end_time <- difftime(time1 = Sys.time(), time2 = start_time, units = "auto")
+    run_stats[i, 1] <- as.double(x = end_time)
     run_stats[i, 2] <- iters
-    cat("\nConverged in ", run_stats[i, 1], " ", units(end_time), ", ", iters, " iterations.\n", 
-        sep = "")
+    cat(
+      "\nConverged in ",
+      run_stats[i, 1],
+      " ", 
+      units(x = end_time),
+      ", ",
+      iters, 
+      " iterations.\n", 
+      sep = ""
+    )
     if (print.obj) {
       cat("Objective:", obj, "\n")
     }
   }
   cat("Best results with seed ", best_seed, ".\n", sep = "")
-  object@H <- H_m
-  object@H <- lapply(1:length(object@scale.data), function(i) {
-    rownames(object@H[[i]]) <- rownames(object@scale.data[[i]])
-    object@H[[i]]
-  })
-  names(object@H) <- names(object@raw.data)
-  object@W <- W_m
-  colnames(object@W) = object@var.genes
-  names(V_m) <- names(object@raw.data)
-  object@V <- V_m
-  # set parameter values
+  out <- list()
+  out$H <- H_m
+  for (i in 1:length(x = object)) {
+    rownames(x = out$H[[i]]) <- rownames(x = object[[i]])
+  }
+  out$V <- V_m
+  names(x = out$V) <- names(x = out$H) <- names(x = object)
+  out$W <- W_m
+  return(out)
+}
+
+#' @importFrom methods slot<-
+#'
+#' @rdname optimizeALS
+#' @export
+#' @method optimizeALS liger
+#' 
+optimizeALS.liger <- function(
+  object,
+  k,
+  lambda = 5.0, 
+  thresh = 1e-4,
+  max.iters = 100,
+  nrep = 1,
+  H.init = NULL, 
+  W.init = NULL, 
+  V.init = NULL, 
+  rand.seed = 1,
+  print.obj = FALSE
+) {
+  object <- removeMissingObs(
+    object = object, 
+    slot.use = 'scale.data',
+    use.cols = FALSE
+  )
+  out <- optimizeALS(
+    object = object@scale.data,
+    k = k,
+    lambda = lambda,
+    thresh = thresh,
+    max.iters = max.iters,
+    nrep = nrep,
+    H.init = H.init,
+    W.init = W.init,
+    V.init = V.init,
+    rand.seed = rand.seed,
+    print.obj = print.obj
+  )
+  names(x = out$H) <- names(x = out$V) <- names(x = object@raw.data)
+  for (i in 1:length(x = object@scale.data)) {
+    rownames(x = out$H[[i]]) <- rownames(x = object@scale.data[[i]])
+  }
+  colnames(x = out$W) <- object@var.genes
+  for (i in names(x = out)) {
+    slot(object = object, name = i) <- out[[i]]
+  }
   object@parameters$lambda <- lambda
   return(object)
 }
@@ -1369,9 +1494,11 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #'   (generates random value by default).
 #' @param print.mod Print modularity output from clustering algorithm (default FALSE).
 #' @param print.align.summary Print summary of clusters which did not align normally (default FALSE).
+#' @param ... Arguments passed to other methods
 #'
 #' @return \code{liger} object with H.norm slot set. 
 #' @export
+#'
 #' @examples
 #' \dontrun{
 #' # liger object, factorization complete
@@ -1383,21 +1510,175 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #' # change knn_k for more fine-grained local clustering
 #' ligerex <- quantileAlignSNF(ligerex, knn_k = 15, resolution = 1.2)
 #' }
+#'
+quantileAlignSNF <- function(
+  object,
+  ...
+) {
+  UseMethod(generic = 'quantileAlignSNF', object = object)
+}
 
-quantileAlignSNF <- function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, ref_dataset = NULL, 
-                             min_cells = 2, quantiles = 50, nstart = 10, resolution = 1, 
-                             dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", center = F, 
-                             small.clust.thresh = 0, id.number = NULL, print.mod = F, 
-                             print.align.summary = F) {
-  if (is.null(ref_dataset)) {
-    ns <- sapply(object@scale.data, nrow)
-    ref_dataset <- names(object@scale.data)[which.max(ns)]
+#' @param snf Output from \code{\link{SNF}}
+#' @param cell.names A vector of cell names
+#' @param ref_dataset Name or index of reference dataset
+#'
+#' @rdname quantileAlignSNF
+#' @export
+#' @method quantileAlignSNF list
+#' 
+quantileAlignSNF.list <- function(
+  object,
+  snf,
+  cell.names,
+  ref_dataset,
+  prune.thresh = 0.2,
+  min_cells = 2,
+  quantiles = 50,
+  nstart = 10,
+  resolution = 1,
+  center = FALSE,
+  id.number = NULL,
+  print.mod = FALSE,
+  print.align.summary = FALSE,
+  ...
+) {
+  if (!all(sapply(X = object, FUN = is.matrix))) {
+    stop("All values in 'object' must be a matrix")
   }
-  if (is.null(id.number)) {
-    set.seed(NULL)
-    id.number <- sample(1000000:9999999, 1)
+  if (is.null(x = names(x = object))) {
+    stop("'objec' must be a named list of matrices")
   }
-  # recompute SNF if parameters have changed
+  if (!(is.list(x = snf) && !is.data.frame(x = snf))) {
+    stop("'snf' must be a list")
+  }
+  snf.names <- c('cells.cl', 'idents', 'out.summary')
+  if (!all(sort(x = names(x = snf)) %in% sort(x = snf.names))) {
+    stop("'snf' must have the following names: ", paste(snf.names, collapse = ','))
+  }
+  if (is.character(x = ref_dataset) && !ref_dataset %in% names(x = object)) {
+    stop("Cannot find reference dataset")
+  } else if (!inherits(x = 'stim', what = c('character', 'numeric'))) {
+    stop("'ref_dataset' must be a character or integer specifying which dataset is the reference")
+  }
+  if (is.null(x = id.number)) {
+    set.seed(seed = NULL)
+    id.number <- sample(x = 1000000:9999999, size = 1)
+  }
+  idents <- snf$idents
+  Hs <- object
+  idents.rest <- SLMCluster(
+    edge = snf$out.summary,
+    nstart = nstart,
+    R = resolution,
+    prune.thresh = prune.thresh,
+    id.number = id.number,
+    print.mod = print.mod
+  )
+  names(x = idents.rest) <- setdiff(x = cell.names, y = snf$cells.cl)
+  # Especially when datasets are large, SLM generates a fair number of singletons.
+  # To assign these to a cluster, take mode of the cluster assignments of within-dataset neighbors
+  if (min(table(idents.rest)) == 1) {
+    idents.rest <- assign.singletons.list(
+      object = object,
+      idents = idents.rest,
+      center = center
+    )
+  }
+  idents[names(x = idents.rest)] <- as.character(x = idents.rest)
+  idents <- factor(x = idents)
+  names(x = idents) <- cell.names
+  cs <- cumsum(x = c(0, sapply(X = Hs, FUN = nrow)))
+  clusters <- lapply(
+    X = 1:length(x = Hs),
+    FUN = function(i) {
+      idx <- cs[i] + 1:nrow(x = Hs[[i]])
+      return(idents[idx])
+    }
+  )
+  names(x = clusters) <- names(x = Hs)
+  dims <- ncol(x = Hs[[ref_dataset]])
+  too.few <- vector(mode = 'list', length = length(x = Hs))
+  names(x = too.few) <- names(x = Hs)
+  for (k in 1:length(x = Hs)) {
+    for (i in 1:dims) {
+      for (j in levels(x = idents)) {
+        if (sum(clusters[[ref_dataset]] == j, na.rm = TRUE) < min_cells || sum(clusters[[k]] == j, na.rm = TRUE) < min_cells) {
+          too.few[[names(x = Hs)[k]]] <- c(too.few[[names(x = Hs)[k]]], j)
+          next
+        } else if (sum(clusters[[k]] == j, na.rm = TRUE) == 1) {
+          Hs[[k]][clusters[[k]] == j, i] <- mean(x = Hs[[ref_dataset]][clusters[[ref_dataset]] == j, i])
+          too.few[[names(x = Hs)[k]]] <- c(too.few[[names(x = Hs)[k]]], j)
+          next
+        }
+        q2 <- quantile(
+          x = Hs[[k]][clusters[[k]] == j, i],
+          probs = seq(0, 1, by = 1 / quantiles),
+          na.rm = T
+        )
+        q1 <- quantile(
+          x = Hs[[ref_dataset]][clusters[[ref_dataset]] == j, i],
+          probs = seq(from = 0, to = 1, by = 1 / quantiles),
+          na.rm = TRUE
+        )
+        if (sum(q1) == 0 | sum(q2) == 0 | length(x = unique(x = q1)) < 2 | length(x = unique(x = q2)) < 2) {
+          new_vals <- rep(0, sum(clusters[[k]] == j))
+        } else {
+          warp_func <- approxfun(x = q2, y = q1)
+          new_vals <- warp_func(Hs[[k]][clusters[[k]] == j, i])
+        }
+        if (anyNA(x = new_vals)) {
+          stop("Select lower resolution; too many communities detected.")
+        }
+        Hs[[k]][clusters[[k]] == j, i] <- new_vals
+      }
+    }
+  }
+  if (print.align.summary && length(x = unlist(x = too.few)) > 0) {
+    print("Summary:")
+    for (i in 1:length(x = Hs)) {
+      print(paste(
+        "In dataset",
+        names(x = Hs)[i],
+        "these clusters did not align normally (too few cells):"
+      ))
+      print(x = unique(x = too.few[[names(x = Hs)[i]]]))
+    }
+  }
+  out <- list(
+    'H.norm' = Reduce(f = rbind, x = Hs),
+    'alignment.clusters' = idents,
+    'clusters' = idents
+  )
+  return(out)
+}
+
+#' @rdname quantileAlignSNF
+#' @export
+#' @method quantileAlignSNF liger
+#'
+quantileAlignSNF.liger <- function(
+  object,
+  knn_k = 20,
+  k2 = 500,
+  prune.thresh = 0.2,
+  ref_dataset = NULL,
+  min_cells = 2,
+  quantiles = 50,
+  nstart = 10,
+  resolution = 1,
+  dims.use = 1:ncol(x = object@H[[1]]),
+  dist.use = 'CR',
+  center = FALSE,
+  small.clust.thresh = 0,
+  id.number = NULL,
+  print.mod = FALSE,
+  print.align.summary = FALSE,
+  ...
+) {
+  if (is.null(x = ref_dataset)) {
+    ns <- sapply(X = object@scale.data, FUN = nrow)
+    ref_dataset <- names(x = object@scale.data)[which.max(x = ns)]
+  }
   if (!isTRUE(object@parameters[["knn_k"]] == knn_k) |
       !isTRUE(object@parameters[["k2"]] == k2) |
       !isTRUE(object@parameters[["dist.use"]] == dist.use) |
@@ -1405,91 +1686,34 @@ quantileAlignSNF <- function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, r
       !isTRUE(identical(object@parameters[["dims.use"]], dims.use)) |
       !isTRUE(object@parameters[["small.clust.thresh"]] == small.clust.thresh)) {
     print("Recomputing shared nearest factor space")
-    snf <- SNF(object,
-               knn_k = knn_k, k2 = k2, dist.use = dist.use, center = center,
-               dims.use = dims.use, small.clust.thresh = small.clust.thresh
+    object <- SNF(
+      object = object,
+      knn_k = knn_k,
+      k2 = k2,
+      dist.use = dist.use,
+      center = center,
+      dims.use = dims.use,
+      small.clust.thresh = small.clust.thresh
     )
-  } else {
-    snf <- object@snf
   }
-  cell.names <- unlist(lapply(object@scale.data, rownames))
-  idents <- snf$idents
-  
-  idents.rest <- SLMCluster(
-    edge = snf$out.summary, nstart = nstart, R = resolution,
-    prune.thresh = prune.thresh, id.number = id.number,
-    print.mod = print.mod
+  out <- quantileAlignSNF.list(
+    object = object@H,
+    snf = object@snf,
+    cell.names = unlist(x = lapply(X = object@scale.data, FUN = rownames)),
+    ref_dataset = ref_dataset,
+    prune.thresh = prune.thresh,
+    min_cells = min_cells,
+    quantiles = quantiles,
+    nstart = nstart,
+    resolution = resolution,
+    center = center,
+    id.number = id.number,
+    print.mod = print.mod,
+    print.align.summary = print.align.summary
   )
-  names(idents.rest) <- setdiff(cell.names, snf$cells.cl)
-  # Especially when datasets are large, SLM generates a fair number of singletons.
-  # To assign these to a cluster, take mode of the cluster assignments of within-dataset neighbors
-  if (min(table(idents.rest)) == 1) {
-    idents.rest <- assign.singletons(object, idents.rest, center = center)
+  for (i in names(x = out)) {
+    slot(object = object, name = i) <- out[[i]]
   }
-  idents[names(idents.rest)] <- as.character(idents.rest)
-  idents <- factor(idents)
-  names(idents) <- cell.names
-  
-  Hs <- object@H
-  cs <- cumsum(c(0, unlist(lapply(object@H, nrow))))
-  clusters <- lapply(1:length(Hs), function(i) {
-    idx <- cs[i] + 1:nrow(Hs[[i]])
-    return(idents[idx])
-  })
-  names(clusters) <- names(object@H)
-  dims <- ncol(object@H[[ref_dataset]])
-  
-  too.few <- rep(list(c()), length(Hs))
-  names(too.few) <- names(Hs)
-  for (k in 1:length(Hs)) {
-    for (i in 1:dims) {
-      for (j in levels(idents)) {
-        if (sum(clusters[[ref_dataset]] == j, na.rm = T) < min_cells |
-            sum(clusters[[k]] == j, na.rm = T) < min_cells) {
-          too.few[[names(Hs)[k]]] <- c(too.few[[names(Hs)[k]]], j)
-          next
-        }
-        if (sum(clusters[[k]] == j, na.rm = T) == 1) {
-          Hs[[k]][clusters[[k]] == j, i] <- mean(Hs[[ref_dataset]][clusters[[ref_dataset]] ==
-                                                                     j, i])
-          too_few[[names(Hs)[k]]] <- c(too_few[[names(Hs)[k]]], j)
-          next
-        }
-        q2 <- quantile(Hs[[k]][clusters[[k]] == j, i],
-                       seq(0, 1, by = 1 / quantiles),
-                       na.rm = T
-        )
-        q1 <- quantile(Hs[[ref_dataset]][clusters[[ref_dataset]] ==
-                                           j, i], seq(0, 1, by = 1 / quantiles), na.rm = T)
-        if (sum(q1) == 0 | sum(q2) == 0 | length(unique(q1)) <
-            2 | length(unique(q2)) < 2) {
-          new_vals <- rep(0, sum(clusters[[k]] == j))
-        }
-        else {
-          warp_func <- approxfun(q2, q1)
-          new_vals <- warp_func(Hs[[k]][clusters[[k]] ==
-                                          j, i])
-        }
-        if (anyNA(new_vals)) {
-          stop("Select lower resolution; too many communities detected.")
-        }
-        Hs[[k]][clusters[[k]] == j, i] <- new_vals
-      }
-    }
-  }
-  if (print.align.summary & length(unlist(too.few)) > 0) {
-    print("Summary:")
-    for (i in 1:length(Hs)) {
-      print(paste("In dataset", names(Hs)[i], 
-                  "these clusters did not align normally (too few cells):"))
-      print(unique(too.few[[names(Hs)[i]]]))
-    }
-  }
-  object@H.norm <- Reduce(rbind, Hs)
-  object@alignment.clusters <- idents
-  object@clusters <- idents
-  object@snf <- snf
-  # set parameters
   object@parameters$ref_dataset <- ref_dataset
   object@parameters$knn_k <- knn_k
   object@parameters$k2 <- k2
@@ -1504,22 +1728,22 @@ quantileAlignSNF <- function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, r
 }
 
 #' Generate shared factor neighborhood graph
-#' 
+#'
 #' @description
 #' Builds shared factor neighborhood graph representation of all cells in analysis. The first step 
 #' is to scale factor loadings across each cell for each factor. This corresponds to scaling (by L2 
 #' norm or similar) the columns of the H matrices, and allows us for subsequent comparison across 
 #' factors in a cell's loadings. The max factor for each cell is computed. 
-#' 
+#'
 #' The next step is to determine the knn_k nearest neighbors (within the same dataset) for each cell
 #' based on the cells' factor loadings. For each cell, we count the number of neighbors with max
 #' factor loadings for each factor. 
-#' 
+#'
 #' This creates a shared space across datasets based on the max factor neighborhoods -- we now find 
 #' the nearest k2 neighbors and their corresponding distances across all datasets. We rescale these 
 #' distances into edge weights where an edge weight of 1 corresponds to minimal distance and 0 
 #' corresponds to the max distance.
-#' 
+#'
 #' @param dims.use Indices of factors to use for shared nearest factor determination (default 
 #'   1:ncol(H[[1]])).
 #' @param dist.use Distance metric to use in calculating nearest neighbors (default "CR").
@@ -1530,13 +1754,16 @@ quantileAlignSNF <- function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, r
 #'   neighbors are set to 0 (cuts down on memory usage for very large graphs). (default 500)
 #' @param small.clust.thresh Extracts small clusters loading highly on single factor with fewer 
 #'   cells than this before regular alignment (default 0 -- no small cluster extraction).
-#'   
+#' @param ... Arguments passed to and from other methods
+#'
 #' @return List of three values. First is names of cells identified in small cluster extraction,
 #'   second is vector of cluster identities where only small cluster identities are not "NA", third
 #'   is the edge weight representation of the shared factor neighborhood graph.
+#'
 #' @export
 #' @importFrom RANN.L1 nn2
 #' @importFrom FNN get.knn
+#'
 #' @examples
 #' \dontrun{
 #' # liger object, factorization complete
@@ -1544,29 +1771,57 @@ quantileAlignSNF <- function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, r
 #' # get SNF graph (third element)
 #' SNF_graph <- SNF(ligerex, knn_k = 15)[[3]]
 #' }
+#'
+SNF <- function(object, ...) {
+  UseMethod(generic = 'SNF', object = object)
+}
 
-SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", center = F,
-                knn_k = 20, k2 = 500, small.clust.thresh = knn_k) {
-  NN.maxes <- do.call(rbind, lapply(1:length(object@H), function(i) {
-    sc <- scale(object@H[[i]], center = center, scale = T)
-    maxes <- factor(apply(sc[, dims.use], 1, which.max), levels = 1:ncol(sc))
-    if (dist.use == "CR") {
-      norm <- t(apply(object@H[[i]][, dims.use], 1, scaleL2norm))
-      if (any(is.na(norm))) {
-        stop(paste(
-          "Unable to normalize loadings for all cells; some cells",
-          "loading on no selected factors."
+#' @rdname SNF
+#' @export
+#' @method SNF list
+#'
+SNF.list <- function(
+  object,
+  dims.use = 1:ncol(x = object[[1]]),
+  dist.use = "CR",
+  center = FALSE,
+  knn_k = 20,
+  k2 = 500,
+  small.clust.thresh = knn_k,
+  ...
+) {
+  NN.maxes <- do.call(
+    what = rbind,
+    args = lapply(
+      X = 1:length(x = object),
+      FUN = function(i) {
+        sc <- scale(x = object[[i]], center = center, scale = TRUE)
+        maxes <- factor(
+          x = apply(X = sc[, dims.use], MARGIN = 1, FUN = which.max),
+          levels = 1:ncol(sc)
+        )
+        if (dist.use == "CR") {
+          norm <- t(x = apply(X = object[[i]][, dims.use], MARGIN = 1, FUN = scaleL2norm))
+          if (any(is.na(x = norm))) {
+            stop(paste(
+              "Unable to normalize loadings for all cells; some cells",
+              "loading on no selected factors."
+            ))
+          }
+        } else {
+          norm <- object[[i]][, dims.use]
+        }
+        knn.idx <- get.knn(data = norm, k = knn_k, algorithm = dist.use)$nn.index
+        t(x = apply(
+          X = knn.idx,
+          MARGIN = 1,
+          FUN = function(q) {
+            return(table(maxes[q]))
+          }
         ))
       }
-    } else {
-      norm <- object@H[[i]][, dims.use]
-    }
-    knn.idx <- get.knn(norm, knn_k, algorithm = dist.use)$nn.index
-    t(apply(knn.idx, 1, function(q) {
-      table(maxes[q])
-    }))
-  }))
-  rownames(NN.maxes) <- unlist(lapply(object@H, rownames))
+    ))
+  rownames(x = NN.maxes) <- unlist(x = lapply(X = object, FUN = rownames))
   # extract small clusters
   if (small.clust.thresh > 0) {
     print(paste0(
@@ -1574,21 +1829,22 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
       " members"
     ))
   }
-  max.val <- factor(apply(NN.maxes, 1, which.max))
-  names(max.val) <- rownames(NN.maxes)
-  idents <- rep("NA", nrow(NN.maxes))
-  names(idents) <- rownames(NN.maxes)
-  cl <- levels(max.val)[which(table(max.val) < small.clust.thresh)]
-  cells.cl <- names(max.val)[which(max.val %in% cl)]
-  idents[cells.cl] <- paste0("F", as.character(max.val[cells.cl]))
-  
-  nn.obj <- nn2(NN.maxes[setdiff(rownames(NN.maxes), cells.cl), ], k = k2)
+  max.val <- factor(x = apply(X = NN.maxes, MARGIN = 1, FUN = which.max))
+  names(x = max.val) <- rownames(x = NN.maxes)
+  idents <- rep.int(x = "NA", times = nrow(x = NN.maxes))
+  names(x = idents) <- rownames(x = NN.maxes)
+  cl <- levels(x = max.val)[which(x = table(max.val) < small.clust.thresh)]
+  cells.cl <- names(x = max.val)[which(x = max.val %in% cl)]
+  idents[cells.cl] <- paste0("F", as.character(x = max.val[cells.cl]))
+  nn.obj <- nn2(
+    data = NN.maxes[setdiff(x = rownames(x = NN.maxes), y = cells.cl), ],
+    k = k2
+  )
   out.snn <- 1 - (nn.obj$nn.dists / (2 * knn_k))
-  out.summary <- matrix(ncol = 3, nrow = (ncol(out.snn) * nrow(out.snn)))
-  
+  out.summary <- matrix(ncol = 3, nrow = (ncol(x = out.snn) * nrow(x = out.snn)))
   counter <- 1
-  for (i in 1:nrow(out.snn)) {
-    for (j in 1:ncol(out.snn)) {
+  for (i in 1:nrow(x = out.snn)) {
+    for (j in 1:ncol(x = out.snn)) {
       out.summary[counter, ] <- c(
         i, nn.obj$nn.idx[i, j],
         out.snn[i, j]
@@ -1599,12 +1855,35 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
   out.summary[out.summary[, 1] == out.summary[, 2], 3] <- 0
   out.summary[, 1] <- out.summary[, 1] - 1
   out.summary[, 2] <- out.summary[, 2] - 1
-  
   # idents returned here only contain values for small clusters
-  return(list(
-    cells.cl = cells.cl, idents = idents,
-    out.summary = out.summary
-  ))
+  return(list(cells.cl = cells.cl, idents = idents, out.summary = out.summary))
+}
+
+#' @rdname SNF
+#' @export
+#' @method SNF liger
+#'
+SNF.liger <- function(
+  object,
+  dims.use = 1:ncol(x = object@H[[1]]),
+  dist.use = "CR",
+  center = FALSE,
+  knn_k = 20,
+  k2 = 500,
+  small.clust.thresh = knn_k,
+  ...
+) {
+  object@snf <- SNF(
+    object = object@H,
+    dims.use = dims.use,
+    dist.use = dist.use,
+    center = center,
+    knn_k = knn_k,
+    k2 = k2,
+    small.clust.thresh = small.clust.thresh,
+    ...
+  )
+  return(object)
 }
 
 #######################################################################################
@@ -2675,7 +2954,7 @@ plotGenes <- function(object, genes) {
 #'   
 #' @export
 #' @importFrom riverplot makeRiver
-#' @importFrom riverplot plot.riverplot
+# @importFrom riverplot plot.riverplot
 #' @examples
 #' \dontrun{
 #' # liger object, factorization done

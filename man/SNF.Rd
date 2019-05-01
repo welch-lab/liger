@@ -2,12 +2,23 @@
 % Please edit documentation in R/liger.R
 \name{SNF}
 \alias{SNF}
+\alias{SNF.list}
+\alias{SNF.liger}
 \title{Generate shared factor neighborhood graph}
 \usage{
-SNF(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", center = F,
-  knn_k = 20, k2 = 500, small.clust.thresh = knn_k)
+SNF(object, ...)
+
+\method{SNF}{list}(object, dims.use = 1:ncol(x = object[[1]]),
+  dist.use = "CR", center = FALSE, knn_k = 20, k2 = 500,
+  small.clust.thresh = knn_k, ...)
+
+\method{SNF}{liger}(object, dims.use = 1:ncol(x = object@H[[1]]),
+  dist.use = "CR", center = FALSE, knn_k = 20, k2 = 500,
+  small.clust.thresh = knn_k, ...)
 }
 \arguments{
+\item{...}{Arguments passed to and from other methods}
+
 \item{dims.use}{Indices of factors to use for shared nearest factor determination (default 
 1:ncol(H[[1]])).}
 
@@ -51,4 +62,5 @@ ligerex
 # get SNF graph (third element)
 SNF_graph <- SNF(ligerex, knn_k = 15)[[3]]
 }
+
 }

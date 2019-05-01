@@ -127,35 +127,64 @@ sparse.transpose = function(x){
 
 # After running modularity clustering, assign singleton communities to the mode of the cluster
 # assignments of the within-dataset neighbors
-assign.singletons<-function(object,idents,k.use = 15, center=F) {
+assign.singletons <- function(object, idents, k.use = 15, center = FALSE) {
+  if (!inherits(x = object, what = 'liger')) {
+    stop("'asign.singletons' expects an object of class 'liger'")
+  }
+  return(assign.singletons.list(
+    object = object@H,
+    idents = idents,
+    k.use = k.use,
+    center = center
+  ))
+}
+
+#' @importFrom FNN get.knnx
+#
+assign.singletons.list <- function(object, idents, k.use = 15, center = FALSE) {
+  if (!is.list(x = object) || !all(sapply(X = object, FUN = is.matrix))) {
+    stop("'assign.singletons.list' expects a list of matrices")
+  }
   print('Assigning singletons')
-  singleton.clusters = names(table(idents))[which(table(idents)==1)]
-  singleton.cells = names(idents)[which(idents %in% singleton.clusters)]
-  if (length(singleton.cells)>0) {
-    singleton.list = lapply(object@H,function(H){
-      
-      return(intersect(rownames(H),singleton.cells))
-    })
-    out = unlist(lapply(1:length(object@H),function(d){
-      H = object@H[[d]]
-      H = t(apply(H,1, ifelse(center, scale, scaleL2norm)))
-      cells.use = singleton.list[[d]]
-      if (length(cells.use)>0) {
-        knn.idx = get.knnx(H,matrix(H[cells.use,],ncol=ncol(H)),k = k.use,algorithm="CR")$nn.index
-        o= sapply(1:length(cells.use),function(i){
-          ids = idents[knn.idx[i,]]
-          getMode(ids[which(!(ids %in% singleton.clusters))])
-        })
-        
-        return(o)
-      } else {
-        return(NULL)
+  singleton.clusters <- names(x = table(idents))[which(x = table(idents) == 1)]
+  singleton.cells <- names(x = idents)[which(x = idents %in% singleton.clusters)]
+  if (length(x = singleton.cells) > 0) {
+    singleton.list <- lapply(
+      X = object,
+      FUN = function(H) {
+        return(intersect(x = rownames(x = H), y = singleton.cells))
       }
-    }))
-    names(out)= unlist(singleton.list)
-    idx = names(idents) %in% names(out)
-    idents[idx]<-out
-    idents = droplevels(idents)
+    )
+    out <- unlist(x = lapply(
+      X = 1:length(x = object),
+      FUN = function(d) {
+        H = object[[d]]
+        H = t(x = apply(X = H, MARGIN = 1, FUN = ifelse(test = center, yes = scale, no = scaleL2norm)))
+        cells.use <- singleton.list[[d]]
+        if (length(x = cells.use) > 0) {
+          knn.idx <-  get.knnx(
+            data = H,
+            query = matrix(H[cells.use, ], ncol = ncol(x = H)),
+            k = k.use,
+            algorithm = "CR"
+          )$nn.index
+          o <- sapply(
+            X = 1:length(x = cells.use),
+            FUN = function(i) {
+              ids <-  idents[knn.idx[i,]]
+              return(getMode(x = ids[which(x = !(ids %in% singleton.clusters))]))
+            }
+          )
+          return(o)
+        } else {
+          return(NULL)
+        }
+      }
+    ))
+    names(x = out) <- unlist(x = singleton.list)
+    idx <- names(x = idents) %in% names(x = out)
+    idents[idx] <- out
+    idents <- droplevels(idents)
   }
   return(idents)
 }

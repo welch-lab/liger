@@ -31,7 +31,7 @@ Imports: Rcpp (>= 0.12.10),
 LinkingTo: Rcpp, RcppArmadillo
 Depends: cowplot,
          Matrix	 
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.1
 Suggests: Seurat,
 	  knitr,
           reticulate,
