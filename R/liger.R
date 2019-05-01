@@ -1696,7 +1696,7 @@ quantileAlignSNF.liger <- function(
       small.clust.thresh = small.clust.thresh
     )
   }
-  out <- quantileAlignSNF.list(
+  out <- quantileAlignSNF(
     object = object@H,
     snf = object@snf,
     cell.names = unlist(x = lapply(X = object@scale.data, FUN = rownames)),
