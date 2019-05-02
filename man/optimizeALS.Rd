@@ -6,20 +6,20 @@
 \alias{optimizeALS.liger}
 \title{Perform iNMF on scaled datasets}
 \usage{
-optimizeALS(object, k, lambda = 5, thresh = 1e-04, max.iters = 100,
-  nrep = 1, H.init = NULL, W.init = NULL, V.init = NULL,
-  rand.seed = 1, print.obj = FALSE)
+optimizeALS(object, ...)
 
 \method{optimizeALS}{list}(object, k, lambda = 5, thresh = 1e-04,
   max.iters = 100, nrep = 1, H.init = NULL, W.init = NULL,
-  V.init = NULL, rand.seed = 1, print.obj = FALSE)
+  V.init = NULL, rand.seed = 1, print.obj = FALSE, ...)
 
 \method{optimizeALS}{liger}(object, k, lambda = 5, thresh = 1e-04,
   max.iters = 100, nrep = 1, H.init = NULL, W.init = NULL,
-  V.init = NULL, rand.seed = 1, print.obj = FALSE)
+  V.init = NULL, rand.seed = 1, print.obj = FALSE, ...)
 }
 \arguments{
 \item{object}{\code{liger} object. Should normalize, select genes, and scale before calling.}
+
+\item{...}{Arguments passed to other methods}
 
 \item{k}{Inner dimension of factorization (number of factors). Run suggestK to determine 
 appropriate value; a general rule of thumb is that a higher k will be needed for datasets with 

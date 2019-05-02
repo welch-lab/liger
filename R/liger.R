@@ -573,6 +573,7 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #' @param V.init Initial values to use for V matrices (default NULL)
 #' @param rand.seed Random seed to allow reproducible results (default 1).
 #' @param print.obj Print objective function values after convergence (default FALSE).
+#' @param ... Arguments passed to other methods
 #' 
 #' @return \code{liger} object with H, W, and V slots set. 
 #' @export
@@ -592,16 +593,7 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #'
 optimizeALS <- function(
   object,
-  k,
-  lambda = 5.0, 
-  thresh = 1e-4,
-  max.iters = 100,
-  nrep = 1,
-  H.init = NULL, 
-  W.init = NULL, 
-  V.init = NULL, 
-  rand.seed = 1,
-  print.obj = FALSE
+  ...
 ) {
   UseMethod(generic = 'optimizeALS', object = object)
 }
@@ -621,7 +613,8 @@ optimizeALS.list  <- function(
   W.init = NULL, 
   V.init = NULL, 
   rand.seed = 1,
-  print.obj = FALSE
+  print.obj = FALSE,
+  ...
 ) {
   if (!all(sapply(X = object, FUN = is.matrix))) {
     stop("All values in 'object' must be a matrix")
@@ -815,7 +808,8 @@ optimizeALS.liger <- function(
   W.init = NULL, 
   V.init = NULL, 
   rand.seed = 1,
-  print.obj = FALSE
+  print.obj = FALSE,
+  ...
 ) {
   object <- removeMissingObs(
     object = object, 
