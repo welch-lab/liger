@@ -27,10 +27,13 @@ Imports: Rcpp (>= 0.12.10),
 	 foreach,
 	 snow,
 	 doSNOW,
-	 mclust
+	 mclust,
+	 patchwork
+Remotes: thomasp85/patchwork
 LinkingTo: Rcpp, RcppArmadillo
 Depends: cowplot,
-         Matrix	 
+         Matrix,
+	 patchwork
 RoxygenNote: 6.0.1
 Suggests: Seurat,
 	  knitr,
