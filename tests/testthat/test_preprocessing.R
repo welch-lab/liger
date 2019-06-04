@@ -90,8 +90,8 @@ test_that("Normalization is correct", {
 ##########################################################################################
 context('Gene selection')
 
-ligex = selectGenes(ligex, var.thresh = c(0.3, 0.9), do.plot = F)
-ligex_higher = selectGenes(ligex, var.thresh = c(0.5, 0.9), do.plot = F)
+ligex <- selectGenes(ligex, var.thresh = c(0.3, 0.9), do.plot = F)
+ligex_higher <- selectGenes(ligex, var.thresh = c(0.5, 0.9), do.plot = F)
 
 # Check for inclusion of significant genes
 test_genes <- c('FCGR3A', 'GNLY', 'CD8A', 'CD3D', 'MS4A1')
@@ -112,7 +112,16 @@ test_that("Number of genes is correct", {
   expect_equal(length(ligex_higher@var.genes), 1794)
 })
 
-# Also include tests for intersection selection (instead of union)
+ligex_intersect <- selectGenes(ligex, var.thresh = c(0.3, 0.9), do.plot = F, combine = "intersection")
+
+test_that("Number of genes is correct for intersection", {
+  expect_equal(length(ligex_intersect@var.genes), 260)
+})
+
+test_that("Gives warning when no genes selected", {
+  expect_warning(selectGenes(ligex, var.thresh = c(2.3, 2.3), do.plot = F, 
+                             combine = "intersection"))
+})
 
 # Tests for gene scaling
 ##########################################################################################

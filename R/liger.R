@@ -395,9 +395,10 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
     }
     trx_per_cell <- colSums(object@raw.data[[i]])
     # Each gene's mean expression level (across all cells)
-    gene_expr_mean <- rowMeans(object@norm.data[[i]])
+    gene_expr_mean <- rowMeansFast(object@norm.data[[i]])
     # Each gene's expression variance (across all cells)
-    gene_expr_var <- sparse.var(object@norm.data[[i]])
+    gene_expr_var <- rowVarsFast(object@norm.data[[i]], gene_expr_mean)
+    names(gene_expr_mean) <- names(gene_expr_var) <- rownames(object@norm.data[[i]])
     nolan_constant <- mean((1 / trx_per_cell))
     alphathresh.corrected <- alpha.thresh / nrow(object@raw.data[[i]])
     genemeanupper <- gene_expr_mean + qnorm(1 - alphathresh.corrected / 2) *
@@ -421,6 +422,9 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
       genes.use <- union(genes.use, genes.new)
     }
     if (combine == "intersection") {
+      if (length(genes.use) == 0) {
+        genes.use <- genes.new
+      }
       genes.use <- intersect(genes.use, genes.new)
     }
   }
@@ -428,6 +432,10 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
     for (i in 1:length(object@raw.data)) {
       genes.use <- genes.use[genes.use %in% rownames(object@raw.data[[i]])]
     }
+  }
+  if (length(genes.use) == 0) {
+    warning("No genes were selected; lower var.thresh values or choose 'union' for combine parameter",
+            immediate. = T)
   }
   object@var.genes <- genes.use
   return(object)
@@ -460,18 +468,19 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
 scaleNotCenter <- function(object, remove.missing = T) {
   if (class(object@raw.data[[1]])[1] == "dgTMatrix" | 
       class(object@raw.data[[1]])[1] == "dgCMatrix") {
-    # TODO: Preserve sparseness 
     object@scale.data <- lapply(1:length(object@norm.data), function(i) {
-      scale(t(object@norm.data[[i]][object@var.genes, ]), center = F,
-            scale = T)
+      scaleNotCenterFast(t(object@norm.data[[i]][object@var.genes, ]))
     })
-    names(object@scale.data) <- names(object@norm.data)
+    # TODO: Preserve sparseness later on (convert inside optimizeALS)
+    object@scale.data <- lapply(object@scale.data, function(x) {
+      as.matrix(x)
+    })
   } else {
     object@scale.data <- lapply(1:length(object@norm.data), function(i) {
       scale(t(object@norm.data[[i]][object@var.genes, ]), center = F, scale = T)
     })
   }
-  
+  names(object@scale.data) <- names(object@norm.data)
   for (i in 1:length(object@scale.data)) {
     object@scale.data[[i]][is.na(object@scale.data[[i]])] <- 0
     rownames(object@scale.data[[i]]) <- colnames(object@raw.data[[i]])
