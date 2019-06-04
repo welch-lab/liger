@@ -5,7 +5,8 @@
 \title{Perform factorization for subset of data}
 \usage{
 optimizeSubset(object, cell.subset = NULL, cluster.subset = NULL,
-  lambda = NULL, thresh = 1e-04, max.iters = 100, datasets.scale = NULL)
+  lambda = NULL, thresh = 1e-04, max.iters = 100,
+  datasets.scale = NULL)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call optimizeALS before calling.}
