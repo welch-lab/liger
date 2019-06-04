@@ -116,3 +116,16 @@ g++ -std=c++11 -O3  src/sptree.cpp src/tsne.cpp src/nbodyfft.cpp  -o bin/fast_ts
 pwd
 ```
 Use the output of `pwd` as the `fitsne.path` parameter in runTSNE. 
+
+Note that the above instructions require root access. To install into a specified folder (such as your home directory) on a server, use the --prefix option:
+```
+./configure --prefix=<install_dir>
+make
+make install
+git clone https://github.com/KlugerLab/FIt-SNE.git
+cd FIt-SNE
+g++ -std=c++11 -O3  src/sptree.cpp src/tsne.cpp src/nbodyfft.cpp  -I<install_dir>/include/ -L<install_dir>/lib/ -o bin/fast_tsne -pthread -lfftw3 -lm
+pwd
+```
+
+

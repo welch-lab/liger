@@ -395,9 +395,10 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
     }
     trx_per_cell <- colSums(object@raw.data[[i]])
     # Each gene's mean expression level (across all cells)
-    gene_expr_mean <- rowMeans(object@norm.data[[i]])
+    gene_expr_mean <- rowMeansFast(object@norm.data[[i]])
     # Each gene's expression variance (across all cells)
-    gene_expr_var <- sparse.var(object@norm.data[[i]])
+    gene_expr_var <- rowVarsFast(object@norm.data[[i]], gene_expr_mean)
+    names(gene_expr_mean) <- names(gene_expr_var) <- rownames(object@norm.data[[i]])
     nolan_constant <- mean((1 / trx_per_cell))
     alphathresh.corrected <- alpha.thresh / nrow(object@raw.data[[i]])
     genemeanupper <- gene_expr_mean + qnorm(1 - alphathresh.corrected / 2) *
@@ -421,6 +422,9 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
       genes.use <- union(genes.use, genes.new)
     }
     if (combine == "intersection") {
+      if (length(genes.use) == 0) {
+        genes.use <- genes.new
+      }
       genes.use <- intersect(genes.use, genes.new)
     }
   }
@@ -428,6 +432,10 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
     for (i in 1:length(object@raw.data)) {
       genes.use <- genes.use[genes.use %in% rownames(object@raw.data[[i]])]
     }
+  }
+  if (length(genes.use) == 0) {
+    warning("No genes were selected; lower var.thresh values or choose 'union' for combine parameter",
+            immediate. = T)
   }
   object@var.genes <- genes.use
   return(object)
@@ -460,18 +468,19 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
 scaleNotCenter <- function(object, remove.missing = T) {
   if (class(object@raw.data[[1]])[1] == "dgTMatrix" | 
       class(object@raw.data[[1]])[1] == "dgCMatrix") {
-    # TODO: Preserve sparseness 
     object@scale.data <- lapply(1:length(object@norm.data), function(i) {
-      scale(t(object@norm.data[[i]][object@var.genes, ]), center = F,
-            scale = T)
+      scaleNotCenterFast(t(object@norm.data[[i]][object@var.genes, ]))
     })
-    names(object@scale.data) <- names(object@norm.data)
+    # TODO: Preserve sparseness later on (convert inside optimizeALS)
+    object@scale.data <- lapply(object@scale.data, function(x) {
+      as.matrix(x)
+    })
   } else {
     object@scale.data <- lapply(1:length(object@norm.data), function(i) {
       scale(t(object@norm.data[[i]][object@var.genes, ]), center = F, scale = T)
     })
   }
-  
+  names(object@scale.data) <- names(object@norm.data)
   for (i in 1:length(object@scale.data)) {
     object@scale.data[[i]][is.na(object@scale.data[[i]])] <- 0
     rownames(object@scale.data[[i]]) <- colnames(object@raw.data[[i]])
@@ -1945,8 +1954,8 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
       }
       source(paste0(fitsne.path, '/fast_tsne.R'), chdir = T)
     }
-    object@tsne.coords <- fftRtsne(data.use[, dims.use], check_duplicates = F, 
-                                   rand_seed = rand.seed, theta = theta, perplexity = perplexity)
+    object@tsne.coords <- fftRtsne(data.use[, dims.use], rand_seed = rand.seed, 
+                                   theta = theta, perplexity = perplexity)
   } else {
     stop('Invalid method: Please choose Rtsne or fftRtsne')
   }
@@ -2712,6 +2721,193 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
              gp = gpar(fill = "indianred1", col = "Black", alpha = 0.5, lwd = 2)
            )))
     return_plots[[i]] <- plot_grid(p1, p2, nrow = 2, align = "h")
+    if (!return.plots) {
+      print(return_plots[[i]])
+    }
+    setTxtProgressBar(pb, i)
+  }
+  if (return.plots) {
+    return(return_plots)
+  }
+}
+
+#' Generate t-SNE plots and gene loading plots
+#' 
+#' @description 
+#' Plots t-SNE coordinates of all cells by their loadings on each factor. Underneath it displays the
+#' most highly loading shared and dataset-specific genes, along with the overall gene loadings 
+#' for each dataset. 
+#' 
+#' It is recommended to call this function into a PDF due to the large number of 
+#' plots produced.
+#'
+#' @param object \code{liger} object. Should call runTSNE before calling.
+#' @param dataset1 Name of first dataset (by default takes first two datasets for dataset1 and 2)
+#' @param dataset2 Name of second dataset
+#' @param num.genes Number of genes to show in word clouds (default 30).
+#' @param mark.top.genes Plot points corresponding to top loading genes in different color (default
+#'   TRUE).
+#' @param factor.share.thresh Use only factors with a dataset specificity less than or equal to 
+#'   threshold (default 10).
+#' @param log.fc.thresh Lower log-fold change threshold for differential expression in markers
+#'   (default 1).
+#' @param umi.thresh Lower UMI threshold for markers (default 30).
+#' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
+#' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
+#'   (default 0.05).
+#' @param do.spec.plot Include dataset specificity plot in printout (default TRUE).
+#' @param max.val Value between 0 and 1 at which color gradient should saturate to max color. Set to
+#'   NULL to revert to default gradient scaling. (default 0.1)
+#' @inheritParams plotGene
+#' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
+#'   
+#' @importFrom grid gpar
+#' @export
+#' @examples
+#' \dontrun{
+#' # liger object, factorization complete 
+#' ligerex
+#' ligerex <- quantileAlignSNF(ligerex)
+#' ligerex <- runTSNE(ligerex)
+#' pdf('gene_loadings.pdf')
+#' plotGeneLoadings(ligerex, num.genes = 20)
+#' dev.off()
+#' }
+
+plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes.show = 12,
+                             num.genes = 30, mark.top.genes = T, factor.share.thresh = 10,
+                             log.fc.thresh = 1, umi.thresh = 30, frac.thresh = 0,
+                             pval.thresh = 0.05, do.spec.plot = T, max.val = 0.1, pt.size = 0.1,
+                             option = "plasma", zero.color = "#F5F5F5", return.plots = F) {
+  if (is.null(dataset1) | is.null(dataset2)) {
+    dataset1 <- names(object@H)[1]
+    dataset2 <- names(object@H)[2]
+  }
+  
+  H_aligned <- object@H.norm
+  W_orig <- t(object@W)
+  V1 <- t(object@V[[dataset1]])
+  V2 <- t(object@V[[dataset2]])
+  W <- pmin(W_orig + V1, W_orig + V2)
+  
+  dataset.specificity <- calcDatasetSpecificity(object,
+                                                dataset1 = dataset1,
+                                                dataset2 = dataset2, do.plot = do.spec.plot
+  )
+  
+  factors.use <- which(abs(dataset.specificity[[3]]) <= factor.share.thresh)
+  
+  
+  markers <- getFactorMarkers(object,
+                              dataset1 = dataset1, dataset2 = dataset2,
+                              factor.share.thresh = factor.share.thresh,
+                              num.genes = num.genes, log.fc.thresh = log.fc.thresh,
+                              umi.thresh = umi.thresh, frac.thresh = frac.thresh,
+                              pval.thresh = pval.thresh,
+                              dataset.specificity = dataset.specificity
+  )
+  
+  rownames(W) <- rownames(V1) <- rownames(V2) <- rownames(W_orig) <- object@var.genes
+  loadings_list <- list(V1, W, V2)
+  names_list <- list(dataset1, "Shared", dataset2)
+  tsne_coords <- object@tsne.coords
+  pb <- txtProgressBar(min = 0, max = length(factors.use), style = 3)
+  return_plots <- list()
+  for (i in factors.use) {
+    tsne_df <- data.frame(H_aligned[, i], tsne_coords)
+    factorlab <- paste("Factor", i, sep = "")
+    colnames(tsne_df) <- c(factorlab, "tSNE1", "tSNE2")
+    tsne_df[[factorlab]][tsne_df[[factorlab]] == 0] <- NA
+    factor_ds <- paste("Factor", i, "Dataset Specificity:", dataset.specificity[[3]][i])
+    data.max <- max(object@H.norm[, i])
+    # plot TSNE
+    if (!is.null(max.val)) {
+      values <- c(0, max.val, 1)
+    } else {
+      values <- NULL
+    }
+    p1 <- ggplot(tsne_df, aes_string(x = "tSNE1", y = "tSNE2", color = factorlab)) +
+      geom_point(size = pt.size) +
+      scale_color_viridis_c(
+        option = option,
+        direction = -1,
+        na.value = zero.color, values = values
+      ) +
+      ggtitle(label = factor_ds)
+    
+    # subset to specific factor and sort by p-value
+    top_genes_V1 <- markers[[1]][markers[[1]]$factor_num == i, ]
+    top_genes_V1 <- top_genes_V1[order(top_genes_V1$p_value), ]$gene
+    # don't sort for W
+    top_genes_W <- markers[[2]][markers[[2]]$factor_num == i, ]$gene
+    top_genes_V2 <- markers[[3]][markers[[3]]$factor_num == i, ]
+    top_genes_V2 <- top_genes_V2[order(top_genes_V2$p_value), ]$gene
+    
+    top_genes_list <- list(top_genes_V1, top_genes_W, top_genes_V2)
+    # subset down to those which will be shown if sorting by p-val
+    
+    top_genes_list <- lapply(top_genes_list, function(x) {
+      if (length(x) > num.genes.show) {
+        # to avoid subset warning
+        x <- x[1:num.genes.show]
+      }
+      x
+    })
+    
+    plot_list <- lapply(seq_along(top_genes_list), function(x) {
+      top_genes <- top_genes_list[[x]]
+      # make dataframe for cum gene loadings plot
+      sorted <- sort(loadings_list[[x]][, i])
+      # sort by loadings instead - still only showing num.genes.show
+      # look through top num.genes in loadings
+      top_loaded <- names(rev(sorted[(length(sorted) - num.genes + 1):length(sorted)]))
+      top_genes <- top_loaded[which(top_loaded %in% top_genes)]
+      if (length(top_genes) == 0) {
+        top_genes <- c("no genes")
+      }
+      
+      gene_df <- data.frame(
+        loadings = sorted,
+        xpos = seq(0, 1, length.out = length(sorted)),
+        top_k = names(sorted) %in% top_genes
+      )
+      y_lim_text <- max(gene_df$loadings)
+      # plot and annotate with top genes
+      out_plot <- ggplot(gene_df, aes(x = xpos, y = loadings)) + geom_point(size = 0.4) +
+        theme_bw() +
+        theme(
+          axis.ticks.x = element_blank(),
+          axis.line.x = element_blank(),
+          axis.title = element_blank(),
+          axis.text.x = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank()
+        ) + ggtitle(label = names_list[[x]]) +
+        annotate("text",
+                 x = 1.1,
+                 y = seq(y_lim_text, 0, length.out = num.genes.show)[1:length(top_genes)],
+                 label = top_genes, hjust = 0, col = "#8227A0"
+        ) +
+        coord_cartesian(
+          xlim = c(0, 1), # This focuses the x-axis on the range of interest
+          clip = "off"
+        ) +
+        theme(plot.margin = unit(c(1, 4, 1, 1), "lines"))
+      if (mark.top.genes) {
+        out_plot <- out_plot + geom_point(
+          data = subset(gene_df, top_k == TRUE),
+          aes(xpos, loadings),
+          col = "#8227A0", size = 0.5
+        )
+      }
+      return(out_plot)
+    })
+    
+    # p2 <- plot_grid(plotlist = plot_list, nrow = 1)
+    
+    return_plots[[i]] <- p1 / (plot_list[[1]] | plot_list[[2]] | plot_list[[3]])
+    # if can figure out how to make cowplot work, might bring this back
+    # return_plots[[i]] <- plot_grid(p1, p2, nrow = 2, align = "h")
     if (!return.plots) {
       print(return_plots[[i]])
     }
