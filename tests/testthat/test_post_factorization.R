@@ -93,6 +93,8 @@ test_that("New alignment and clustering are correct", {
 # Tests for dimensional reduction
 # These are included here because these functions are object dependent,
 # to avoid recalculating factorization for fresh object as it's time-consuming
+# TODO: Add smaller example object (with H, H.norm included) that could be loaded
+# to make tests more modular 
 ####################################################################################
 context("Dimensional reduction")
 
@@ -102,4 +104,17 @@ ligex_rawtsne <- runTSNE(ligex, use.raw = T, rand.seed = 1, method = 'Rtsne')
 test_that("Dimensions are correct", {
   expect_equal(dim(ligex@tsne.coords), c(494, 2))
   expect_equal(dim(ligex_rawtsne@tsne.coords), c(494, 2))
+})
+
+
+# Tests for plotting functions
+# Again, included here because these functions are object dependent (see above)
+####################################################################################
+context("Plotting")
+
+geneloadings_plots <- plotGeneLoadings(ligex, return.plots = T)
+
+test_that("Returns correct number of assembled ggplot objects", {
+  expect_equal(length(geneloadings_plots), ncol(ligex@H[[1]]))
+  expect_is(geneloadings_plots[[1]], class = c("ggassemble", "gg", "ggplot"))
 })
