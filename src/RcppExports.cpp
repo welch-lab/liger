@@ -6,6 +6,40 @@
 
 using namespace Rcpp;
 
+// scaleNotCenterFast
+arma::sp_mat scaleNotCenterFast(arma::sp_mat x);
+RcppExport SEXP _liger_scaleNotCenterFast(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(scaleNotCenterFast(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rowMeansFast
+NumericVector rowMeansFast(arma::sp_mat x);
+RcppExport SEXP _liger_rowMeansFast(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(rowMeansFast(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rowVarsFast
+NumericVector rowVarsFast(arma::sp_mat x, NumericVector means);
+RcppExport SEXP _liger_rowVarsFast(SEXP xSEXP, SEXP meansSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type means(meansSEXP);
+    rcpp_result_gen = Rcpp::wrap(rowVarsFast(x, means));
+    return rcpp_result_gen;
+END_RCPP
+}
 // solve_nnls
 arma::mat solve_nnls(const arma::mat& C, const arma::mat& B);
 RcppExport SEXP _liger_solve_nnls(SEXP CSEXP, SEXP BSEXP) {
@@ -20,6 +54,9 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_liger_scaleNotCenterFast", (DL_FUNC) &_liger_scaleNotCenterFast, 1},
+    {"_liger_rowMeansFast", (DL_FUNC) &_liger_rowMeansFast, 1},
+    {"_liger_rowVarsFast", (DL_FUNC) &_liger_rowVarsFast, 2},
     {"_liger_solve_nnls", (DL_FUNC) &_liger_solve_nnls, 2},
     {NULL, NULL, 0}
 };
