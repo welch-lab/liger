@@ -89,3 +89,17 @@ test_that("New alignment and clustering are correct", {
   expect_equal(as.character(ligex@alignment.clusters[3]), "4")
   expect_equal(as.character(ligex@alignment.clusters[203]), "0")
 })
+
+# Tests for dimensional reduction
+# These are included here because these functions are object dependent,
+# to avoid recalculating factorization for fresh object as it's time-consuming
+####################################################################################
+context("Dimensional reduction")
+
+ligex <- runTSNE(ligex, use.raw = F, rand.seed = 1, method = 'Rtsne')
+ligex_rawtsne <- runTSNE(ligex, use.raw = T, rand.seed = 1, method = 'Rtsne')
+
+test_that("Dimensions are correct", {
+  expect_equal(dim(ligex@tsne.coords), c(494, 2))
+  expect_equal(dim(ligex_rawtsne@tsne.coords), c(494, 2))
+})

@@ -1681,8 +1681,8 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
       }
       source(paste0(fitsne.path, '/fast_tsne.R'), chdir = T)
     }
-    object@tsne.coords <- fftRtsne(data.use[, dims.use], check_duplicates = F, 
-                                   rand_seed = rand.seed, theta = theta, perplexity = perplexity)
+    object@tsne.coords <- fftRtsne(data.use[, dims.use], rand_seed = rand.seed, 
+                                   theta = theta, perplexity = perplexity)
   } else {
     stop('Invalid method: Please choose Rtsne or fftRtsne')
   }
