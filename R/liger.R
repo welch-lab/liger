@@ -2342,17 +2342,17 @@ plotFeature <- function(object, feature, by.dataset = T, title = NULL, pt.size =
   } else {
     discrete <- TRUE
   }
+  if (by.dataset) {
+    dr_df$dataset <- object@cell.data$dataset
+  } else {
+    dr_df$dataset <- factor("single")
+  }
   if (do.shuffle) {
     set.seed(rand.seed)
     idx <- sample(1:nrow(dr_df))
     dr_df <- dr_df[idx, ]
   }
   p_list <- list()
-  if (by.dataset) {
-    dr_df$dataset <- object@cell.data$dataset
-  } else {
-    dr_df$dataset <- factor("single")
-  }
   for (sub_df in split(dr_df, f = dr_df$dataset)) {
     ggp <- ggplot(sub_df, aes(x = dr1, y = dr2, color = feature)) + geom_point(size = pt.size) 
     
@@ -2384,16 +2384,17 @@ plotFeature <- function(object, feature, by.dataset = T, title = NULL, pt.size =
       ggp <- ggp + theme(legend.position = "none")
     }
     p_list[[as.character(sub_df$dataset[1])]] <- ggp
-    
-    if (!return.plots) {
-      print(ggp)
-    }
   }
+  p_list <- p_list[names(object@raw.data)]
   if (return.plots){
     if (length(p_list) == 1) {
       return(p_list[[1]])
     } else {
       return(p_list)
+    }
+  } else {
+    for (plot in p_list) {
+      print(plot)
     }
   }
 }

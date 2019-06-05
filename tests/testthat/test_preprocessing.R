@@ -23,6 +23,7 @@ test_that("Sparse matrices created", {
   expect_is(ligex@raw.data[[1]], "CsparseMatrix")
 })
 
+# note that seqwell data is previously normalized, so nUMI is 10000 for all cells
 test_that("cell.data created correctly", {
   expect_is(ligex@cell.data, "data.frame")
   expect_equal(rownames(ligex@cell.data)[1:10], colnames(ligex@raw.data[[1]])[1:10])
