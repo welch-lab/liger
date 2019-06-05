@@ -27,6 +27,7 @@
 #'   alignment (out.summary contains edge weight information between cell combinations)
 #' @slot agg.data Data aggregated within clusters
 #' @slot parameters List of parameters used throughout analysis
+#' @slot version Version of package used to create object
 #'
 #' @name liger
 #' @rdname liger
@@ -52,7 +53,8 @@ liger <- methods::setClass(
     clusters= "factor",
     agg.data = "list",
     parameters = "list",
-    snf = 'list'
+    snf = 'list',
+    version = 'ANY'
   )
 )
 
@@ -308,7 +310,8 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
   }
   object <- methods::new(
     Class = "liger",
-    raw.data = raw.data
+    raw.data = raw.data,
+    version = packageVersion("liger")
   )
   # remove missing cells
   if (remove.missing) {
@@ -333,6 +336,7 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
   rownames(object@cell.data) <- unlist(lapply(object@raw.data, function(x) {
     colnames(x)
   }), use.names = F)
+  
   return(object)
 }
 
