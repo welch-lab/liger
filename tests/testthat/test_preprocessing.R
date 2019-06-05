@@ -25,6 +25,7 @@ test_that("Sparse matrices created", {
 
 test_that("cell.data created correctly", {
   expect_is(ligex@cell.data, "data.frame")
+  expect_equal(rownames(ligex@cell.data)[1:10], colnames(ligex@raw.data[[1]])[1:10])
   expect_equal(unname(ligex@cell.data[["nUMI"]][3]), 2043)
   expect_equal(unname(ligex@cell.data[["nGene"]][253]), 1534)
   expect_equal(as.character(ligex@cell.data[["dataset"]][3]), "tenx")

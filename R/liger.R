@@ -246,7 +246,8 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
 #' 
 #' This function initializes a liger object with the raw data passed in. It requires a list of 
 #' expression (or another single-cell modality) matrices (gene by cell) for at least two datasets. 
-#' By default, it converts all passed data into sparse matrices (dgCMatrix) to reduce object size. 
+#' By default, it converts all passed data into sparse matrices (dgCMatrix) to reduce object size.
+#' It initializes cell.data with nUMI and nGene calculated for every cell.  
 #'
 #' @param raw.data List of expression matrices (gene by cell). Should be named by dataset. 
 #' @param make.sparse Whether to convert raw data into sparse matrices (default TRUE).
@@ -329,6 +330,9 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
     rep(names(object@raw.data)[i], ncol(object@raw.data[[i]]))
   }), use.names = F)
   object@cell.data <- data.frame(nUMI, nGene, dataset)
+  rownames(object@cell.data) <- unlist(lapply(object@raw.data, function(x) {
+    colnames(x)
+  }), use.names = F)
   return(object)
 }
 
@@ -982,7 +986,8 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
 #' Perform factorization for subset of data 
 #' 
 #' Uses an efficient strategy for updating that takes advantage of the information in the existing 
-#' factorization. Can use either cell names or cluster names to subset. 
+#' factorization. Can use either cell names or cluster names to subset. For more basic subsetting
+#' functionality (without automatic optimization), see subsetLiger. 
 #'
 #' @param object \code{liger} object. Should call optimizeALS before calling.
 #' @param cell.subset List of cell names to retain from each dataset (same length as number of 
@@ -1035,6 +1040,7 @@ optimizeSubset <- function(object, cell.subset = NULL, cluster.subset = NULL, la
   object@raw.data <- lapply(1:length(object@raw.data), function(i) {
     object@raw.data[[i]][, cell.subset[[i]]]
   })
+  object@cell.data <- droplevels(object@cell.data[cell.subset, ])
   for (i in 1:length(object@norm.data)) {
     object@norm.data[[i]] <- object@norm.data[[i]][, cell.subset[[i]]]
     if (names(object@norm.data)[i] %in% datasets.scale) {
@@ -3706,8 +3712,8 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
 #' Construct a liger object with a specified subset 
 #' 
 #' The subset can be based on cell names or clusters. This function applies the subsetting to 
-#' raw.data, norm.data, scale.data, H, W, V, H.norm, tsne.coords, and clusters. Note that it does
-#' NOT reoptimize the factorization. See optimizeSubset for this functionality. 
+#' raw.data, norm.data, scale.data, cell.data, H, W, V, H.norm, tsne.coords, and clusters. 
+#' Note that it does NOT reoptimize the factorization. See optimizeSubset for this functionality. 
 #'
 #' @param object \code{liger} object. Should run quantileAlignSNF and runTSNE before calling. 
 #' @param clusters.use Clusters to use for subset.
@@ -3743,8 +3749,12 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   missing <- sapply(raw.data, is.null)
   raw.data <- raw.data[!missing]
   nms <- names(object@raw.data)[!missing]
+  names(raw.data) <- nms
   a <- createLiger(raw.data, remove.missing = remove.missing)
-  
+  # Add back additional cell.data
+  if (ncol(a@cell.data) < ncol(object@cell.data)) {
+    a@cell.data <- droplevels(data.frame(object@cell.data[cells.use, ]))
+  }
   a@norm.data <- lapply(1:length(a@raw.data), function(i) {
     object@norm.data[[nms[i]]][, colnames(a@raw.data[[i]])]
   })
@@ -3761,7 +3771,7 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   a@W <- object@W
   a@V <- object@V
   a@var.genes <- object@var.genes
-  names(a@scale.data) <- names(a@raw.data) <- names(a@norm.data) <- names(a@H) <- nms
+  names(a@scale.data) <- names(a@norm.data) <- names(a@H) <- nms
   return(a)
 }
 
