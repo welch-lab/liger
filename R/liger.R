@@ -11,6 +11,8 @@
 #' @slot raw.data List of raw data matrices, one per experiment/dataset (genes by cells)
 #' @slot norm.data List of normalized matrices (genes by cells)
 #' @slot scale.data List of scaled matrices (cells by genes)
+#' @slot cell.data Dataframe of cell attributes across all datasets (nrows equal to total number
+#'   cells across all datasets)
 #' @slot var.genes Subset of informative genes shared across datasets to be used in matrix 
 #'   factorization
 #' @slot H Cell loading factors (one matrix per dataset, dimensions cells by k)
@@ -39,6 +41,7 @@ liger <- methods::setClass(
     raw.data = "list",
     norm.data = "list",
     scale.data = "list",
+    cell.data = "data.frame",
     var.genes = "vector",
     H = "list",
     H.norm = "matrix",
@@ -68,9 +71,11 @@ setMethod(
     cat(
       "An object of class",
       class(object),
-      "\n",
+      "\nwith",
       length(object@raw.data),
-      "datasets.\n"
+      "datasets and\n",
+      nrow(object@cell.data),
+      "total cells."
     )
     invisible(x = NULL)
   }
@@ -262,10 +267,6 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
 
 createLiger <- function(raw.data, make.sparse = T, take.gene.union = F, 
                         remove.missing = T) {
-  object <- methods::new(
-    Class = "liger",
-    raw.data = raw.data
-  )
   if (make.sparse) {
     raw.data <- lapply(raw.data, function(x) {
       if (class(x)[1] == "dgTMatrix" | class(x)[1] == 'dgCMatrix') {
@@ -280,6 +281,10 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
         as(as.matrix(x), 'CsparseMatrix')
       }
     })
+  }
+  if (length(Reduce(intersect, lapply(raw.data, colnames))) > 0) {
+    stop('At least one cell name is repeated across datasets; please make sure all cell names
+         are unique.')
   }
   if (take.gene.union) {
     merged.data <- MergeSparseDataAll(raw.data)
@@ -300,7 +305,10 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
       merged.data[, colnames(x)]
     })
   }
-  object@raw.data <- raw.data
+  object <- methods::new(
+    Class = "liger",
+    raw.data = raw.data
+  )
   # remove missing cells
   if (remove.missing) {
     object <- removeMissingObs(object, use.cols = T)
@@ -309,6 +317,18 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
       object <- removeMissingObs(object, use.cols = F)
     }
   }
+  
+  # Initialize cell.data for object with nUMI, nGene, and dataset 
+  nUMI <- unlist(lapply(object@raw.data, function(x) {
+    colSums(x)
+  }), use.names = F)
+  nGene <- unlist(lapply(object@raw.data, function(x) {
+    colSums(x > 0)
+  }), use.names = F)
+  dataset <- unlist(lapply(seq_along(object@raw.data), function(i) {
+    rep(names(object@raw.data)[i], ncol(object@raw.data[[i]]))
+  }), use.names = F)
+  object@cell.data <- data.frame(nUMI, nGene, dataset)
   return(object)
 }
 
@@ -3775,13 +3795,13 @@ convertOldLiger = function(object, override.raw = F) {
   
   slots <- slots_new[slots_exist]
   for (slotname in slots) { 
-    if ((slotname != 'raw.data') | (override.raw)) {
+    if (!(slotname %in% c('raw.data')) | (override.raw)) {
       slot(new.liger, slotname) <- slot(object, slotname) 
     }
   } 
   print(paste0('Old slots not transferred: ', setdiff(slots_old, slots_new)))
   # compare to slots since it's possible that the analogizer object
   # class has slots that this particular object does not 
-  print(paste0('New slots not filled: ', setdiff(slots_new, slots)))
+  print(paste0('New slots not filled: ', setdiff(slots_new[slots_new != "cell.data"], slots)))
   return(new.liger)
 }
