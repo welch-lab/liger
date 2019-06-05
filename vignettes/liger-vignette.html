@@ -12,7 +12,7 @@
 
 <meta name="author" content="Joshua D. Welch and Velina Kozareva" />
 
-<meta name="date" content="2019-06-04" />
+<meta name="date" content="2019-06-05" />
 
 <title>Comparing and contrasting heterogeneous single cell profiles using liger</title>
 
@@ -95,7 +95,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Comparing and contrasting heterogeneous single cell profiles using liger</h1>
 <h4 class="author">Joshua D. Welch and Velina Kozareva</h4>
-<h4 class="date">2019-06-04</h4>
+<h4 class="date">2019-06-05</h4>
 
 
 
@@ -134,11 +134,13 @@ ligerex =<span class="st"> </span><span class="kw">quantileAlignSNF</span>(liger
 </div>
 <div id="visualizing-the-results" class="section level2">
 <h2>Visualizing the results</h2>
-<p>We can visualize the results by using dimensionality reduction techniques like t-SNE or UMAP (recommended for larger datasets). Visualizations can be colored by dataset of origin or cluster assignment. <code>plotWordClouds</code> and <code>plotGeneLoadings</code> are useful ways to visualize the most highly loading genes (both shared and dataset specific) for each factor, in conjunction with the factor loadings across cells.</p>
+<p>We can visualize the results by using dimensionality reduction techniques like t-SNE or UMAP (recommended for larger datasets). Visualizations can be colored by dataset of origin, cluster assignment, or any feature included in or added to the cell metadata (<code>cell.data</code>).</p>
+<p><code>plotWordClouds</code> and <code>plotGeneLoadings</code> are useful ways to visualize the most highly loading genes (both shared and dataset specific) for each factor, in conjunction with the factor loadings across cells. These functions are very similar, but <code>plotGeneLoadings</code> displays the top loading genes in ordered scatter plots instead of word clouds.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">ligerex =<span class="st"> </span><span class="kw">runTSNE</span>(ligerex)
 <span class="co"># for larger datasets, may want to use UMAP instead</span>
 ligerex =<span class="st"> </span><span class="kw">runUMAP</span>(ligerex)
 <span class="kw">plotByDatasetAndCluster</span>(ligerex) <span class="co">#Can also pass in different set of cluster labels to plot</span>
+<span class="kw">plotFeature</span>(ligerex, <span class="st">&quot;nUMI&quot;</span>)
 
 <span class="kw">pdf</span>(<span class="st">&quot;word_clouds.pdf&quot;</span>)
 <span class="kw">plotWordClouds</span>(ligerex)
