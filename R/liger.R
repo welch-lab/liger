@@ -2755,6 +2755,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #'
 #' @param object \code{liger} object. Should call runTSNE before calling.
 #' @param gene Gene for which to plot relative expression.
+#' @param use.raw Plot raw values instead of normalized and log-transformed data (default FALSE). 
 #' @param methylation.indices Indices of datasets in object with methylation data (this data is not
 #'   magnified and put on log scale).
 #' @param pt.size Point size for plots (default 0.1)
@@ -2778,30 +2779,41 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
 #' }
 
-plotGene <- function(object, gene, methylation.indices = NULL, pt.size = 0.1, min.clip = 0,
-                     max.clip = 1, points.only = F, option = 'plasma', zero.color = '#F5F5F5',
-                     return.plots = F) {
+plotGene <- function(object, gene, use.raw = F, methylation.indices = NULL, pt.size = 0.1, 
+                     min.clip = 0, max.clip = 1, points.only = F, option = 'plasma', 
+                     zero.color = '#F5F5F5', return.plots = F) {
   gene_vals <- c()
-  for (i in 1:length(object@norm.data)) {
-    if (i %in% methylation.indices) {
-      tmp <- object@norm.data[[i]][gene, ]
-      max_v <- quantile(tmp, probs = max.clip, na.rm = T)
-      min_v <- quantile(tmp, probs = min.clip, na.rm = T)
-      tmp[tmp < min_v & !is.na(tmp)] <- min_v
-      tmp[tmp > max_v & !is.na(tmp)] <- max_v
-      gene_vals <- c(gene_vals, tmp)
-    } else {
-      if (gene %in% rownames(object@norm.data[[i]])) {
-        gene_vals_int <- log2(10000 * object@norm.data[[i]][gene, ] + 1)
-        gene_vals_int[gene_vals_int == 0] <- NA
+  if (use.raw) {
+    for (i in 1:length(object@raw.data)) {
+      if (gene %in% rownames(object@raw.data[[i]])) {
+        gene_vals_int <- object@raw.data[[i]][gene, ]
       } else {
-        gene_vals_int <- rep(list(NA), ncol(object@norm.data[[i]]))
-        names(gene_vals_int) <- colnames(object@norm.data[[i]])
+        gene_vals_int <- rep(list(NA), ncol(object@raw.data[[i]]))
+        names(gene_vals_int) <- colnames(object@raw.data[[i]])
       }
       gene_vals <- c(gene_vals, gene_vals_int)
     }
+  } else {
+    for (i in 1:length(object@norm.data)) {
+      if (i %in% methylation.indices) {
+        tmp <- object@norm.data[[i]][gene, ]
+        max_v <- quantile(tmp, probs = max.clip, na.rm = T)
+        min_v <- quantile(tmp, probs = min.clip, na.rm = T)
+        tmp[tmp < min_v & !is.na(tmp)] <- min_v
+        tmp[tmp > max_v & !is.na(tmp)] <- max_v
+        gene_vals <- c(gene_vals, tmp)
+      } else {
+        if (gene %in% rownames(object@norm.data[[i]])) {
+          gene_vals_int <- log2(10000 * object@norm.data[[i]][gene, ] + 1)
+        } else {
+          gene_vals_int <- rep(list(NA), ncol(object@norm.data[[i]]))
+          names(gene_vals_int) <- colnames(object@norm.data[[i]])
+        }
+        gene_vals <- c(gene_vals, gene_vals_int)
+      }
+    }
   }
-  
+  gene_vals[gene_vals == 0] <- NA
   gene_df <- data.frame(object@tsne.coords)
   rownames(gene_df) <- names(object@clusters)
   gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])

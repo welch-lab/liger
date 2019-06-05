@@ -114,12 +114,20 @@ context("Plotting")
 
 geneloadings_plots <- plotGeneLoadings(ligex, return.plots = T)
 
-test_that("Returns correct number of assembled ggplot objects", {
+test_that("plotGeneLoadings returns correct number of assembled ggplot objects", {
   expect_equal(length(geneloadings_plots), ncol(ligex@H[[1]]))
   expect_is(geneloadings_plots[[1]], class = c("ggassemble", "gg", "ggplot"))
 })
 
-# Tests for plotting functions
+plotgenes_plots <- plotGene(ligex, gene = 'CD8A', use.raw = T, return.plots = T)
+test_that("plotGene returns correct ggplot objects", {
+  expect_equal(length(plotgenes_plots), length(ligex@raw.data))
+  expect_is(plotgenes_plots[[1]], class = c("ggplot"))
+  expect_equal(unname(plotgenes_plots[[1]]$data$gene[45:50]), 
+               c(NA, NA, 2, 2, NA, NA))
+})
+
+# Tests for subsetting, object conversion
 # Again, included here because these functions are object dependent (see above)
 ####################################################################################
 context("Object subsetting and conversion")
@@ -141,3 +149,6 @@ test_that("Returns correct subsetted object", {
   expect_equal(nrow(ligex_subset@cell.data), 257)
   expect_equal(rownames(ligex_subset@cell.data), rownames(ligex_subset@tsne.coords))
 })
+
+# TODO: Add tests for ligerToSeurat and seuratToLiger functions 
+# after including functionality related to new cell.data slot 
