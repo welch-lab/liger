@@ -4,8 +4,8 @@
 \alias{SNF}
 \title{Generate shared factor neighborhood graph}
 \usage{
-SNF(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", center = F,
-  knn_k = 20, k2 = 500, small.clust.thresh = knn_k)
+SNF(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR",
+  center = F, knn_k = 20, k2 = 500, small.clust.thresh = knn_k)
 }
 \arguments{
 \item{dims.use}{Indices of factors to use for shared nearest factor determination (default 

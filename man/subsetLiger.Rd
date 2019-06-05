@@ -23,8 +23,8 @@ subsetLiger(object, clusters.use = NULL, cells.use = NULL,
 }
 \description{
 The subset can be based on cell names or clusters. This function applies the subsetting to 
-raw.data, norm.data, scale.data, H, W, V, H.norm, tsne.coords, and clusters. Note that it does
-NOT reoptimize the factorization. See optimizeSubset for this functionality.
+raw.data, norm.data, scale.data, cell.data, H, W, V, H.norm, tsne.coords, and clusters. 
+Note that it does NOT reoptimize the factorization. See optimizeSubset for this functionality.
 }
 \examples{
 \dontrun{

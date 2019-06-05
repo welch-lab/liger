@@ -2908,6 +2908,7 @@ plotGenes <- function(object, genes) {
 #'   By default will try to automatically order them appropriately.
 #'   
 #' @export
+#' @importFrom plyr mapvalues
 #' @importFrom riverplot makeRiver
 #' @importFrom riverplot plot.riverplot
 #' @examples

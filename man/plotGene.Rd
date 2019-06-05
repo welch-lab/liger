@@ -4,14 +4,16 @@
 \alias{plotGene}
 \title{Plot t-SNE coordinates by expression of specified gene}
 \usage{
-plotGene(object, gene, methylation.indices = NULL, pt.size = 0.1,
-  min.clip = 0, max.clip = 1, points.only = F, option = "plasma",
-  zero.color = "#F5F5F5", return.plots = F)
+plotGene(object, gene, use.raw = F, methylation.indices = NULL,
+  pt.size = 0.1, min.clip = 0, max.clip = 1, points.only = F,
+  option = "plasma", zero.color = "#F5F5F5", return.plots = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call runTSNE before calling.}
 
 \item{gene}{Gene for which to plot relative expression.}
+
+\item{use.raw}{Plot raw values instead of normalized and log-transformed data (default FALSE).}
 
 \item{methylation.indices}{Indices of datasets in object with methylation data (this data is not
 magnified and put on log scale).}
