@@ -26,6 +26,7 @@ dataset) (default TRUE).}
 This function initializes a liger object with the raw data passed in. It requires a list of 
 expression (or another single-cell modality) matrices (gene by cell) for at least two datasets. 
 By default, it converts all passed data into sparse matrices (dgCMatrix) to reduce object size.
+It initializes cell.data with nUMI and nGene calculated for every cell.
 }
 \examples{
 \dontrun{

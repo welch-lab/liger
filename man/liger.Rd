@@ -23,6 +23,9 @@ The key slots used in the liger object are described below.
 
 \item{\code{scale.data}}{List of scaled matrices (cells by genes)}
 
+\item{\code{cell.data}}{Dataframe of cell attributes across all datasets (nrows equal to total number
+cells across all datasets)}
+
 \item{\code{var.genes}}{Subset of informative genes shared across datasets to be used in matrix 
 factorization}
 

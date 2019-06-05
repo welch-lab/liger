@@ -11,6 +11,8 @@
 #' @slot raw.data List of raw data matrices, one per experiment/dataset (genes by cells)
 #' @slot norm.data List of normalized matrices (genes by cells)
 #' @slot scale.data List of scaled matrices (cells by genes)
+#' @slot cell.data Dataframe of cell attributes across all datasets (nrows equal to total number
+#'   cells across all datasets)
 #' @slot var.genes Subset of informative genes shared across datasets to be used in matrix 
 #'   factorization
 #' @slot H Cell loading factors (one matrix per dataset, dimensions cells by k)
@@ -25,6 +27,7 @@
 #'   alignment (out.summary contains edge weight information between cell combinations)
 #' @slot agg.data Data aggregated within clusters
 #' @slot parameters List of parameters used throughout analysis
+#' @slot version Version of package used to create object
 #'
 #' @name liger
 #' @rdname liger
@@ -39,6 +42,7 @@ liger <- methods::setClass(
     raw.data = "list",
     norm.data = "list",
     scale.data = "list",
+    cell.data = "data.frame",
     var.genes = "vector",
     H = "list",
     H.norm = "matrix",
@@ -49,7 +53,8 @@ liger <- methods::setClass(
     clusters= "factor",
     agg.data = "list",
     parameters = "list",
-    snf = 'list'
+    snf = 'list',
+    version = 'ANY'
   )
 )
 
@@ -68,9 +73,11 @@ setMethod(
     cat(
       "An object of class",
       class(object),
-      "\n",
+      "\nwith",
       length(object@raw.data),
-      "datasets.\n"
+      "datasets and\n",
+      nrow(object@cell.data),
+      "total cells."
     )
     invisible(x = NULL)
   }
@@ -241,7 +248,8 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
 #' 
 #' This function initializes a liger object with the raw data passed in. It requires a list of 
 #' expression (or another single-cell modality) matrices (gene by cell) for at least two datasets. 
-#' By default, it converts all passed data into sparse matrices (dgCMatrix) to reduce object size. 
+#' By default, it converts all passed data into sparse matrices (dgCMatrix) to reduce object size.
+#' It initializes cell.data with nUMI and nGene calculated for every cell.  
 #'
 #' @param raw.data List of expression matrices (gene by cell). Should be named by dataset. 
 #' @param make.sparse Whether to convert raw data into sparse matrices (default TRUE).
@@ -262,10 +270,6 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
 
 createLiger <- function(raw.data, make.sparse = T, take.gene.union = F, 
                         remove.missing = T) {
-  object <- methods::new(
-    Class = "liger",
-    raw.data = raw.data
-  )
   if (make.sparse) {
     raw.data <- lapply(raw.data, function(x) {
       if (class(x)[1] == "dgTMatrix" | class(x)[1] == 'dgCMatrix') {
@@ -280,6 +284,10 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
         as(as.matrix(x), 'CsparseMatrix')
       }
     })
+  }
+  if (length(Reduce(intersect, lapply(raw.data, colnames))) > 0) {
+    stop('At least one cell name is repeated across datasets; please make sure all cell names
+         are unique.')
   }
   if (take.gene.union) {
     merged.data <- MergeSparseDataAll(raw.data)
@@ -300,7 +308,11 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
       merged.data[, colnames(x)]
     })
   }
-  object@raw.data <- raw.data
+  object <- methods::new(
+    Class = "liger",
+    raw.data = raw.data,
+    version = packageVersion("liger")
+  )
   # remove missing cells
   if (remove.missing) {
     object <- removeMissingObs(object, use.cols = T)
@@ -309,6 +321,22 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
       object <- removeMissingObs(object, use.cols = F)
     }
   }
+  
+  # Initialize cell.data for object with nUMI, nGene, and dataset 
+  nUMI <- unlist(lapply(object@raw.data, function(x) {
+    colSums(x)
+  }), use.names = F)
+  nGene <- unlist(lapply(object@raw.data, function(x) {
+    colSums(x > 0)
+  }), use.names = F)
+  dataset <- unlist(lapply(seq_along(object@raw.data), function(i) {
+    rep(names(object@raw.data)[i], ncol(object@raw.data[[i]]))
+  }), use.names = F)
+  object@cell.data <- data.frame(nUMI, nGene, dataset)
+  rownames(object@cell.data) <- unlist(lapply(object@raw.data, function(x) {
+    colnames(x)
+  }), use.names = F)
+  
   return(object)
 }
 
@@ -662,20 +690,20 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
     
     while (delta > thresh & iters < max.iters) {
       H <- lapply(1:N, function(i) {
-        t(solve_nnls(
+        t(solveNNLS(
           rbind(t(W) + t(V[[i]]), sqrt_lambda * t(V[[i]])),
           rbind(t(E[[i]]), matrix(0, nrow = g, ncol = ns[i]))
         ))
       })
       tmp <- gc()
       V <- lapply(1:N, function(i) {
-        solve_nnls(
+        solveNNLS(
           rbind(H[[i]], sqrt_lambda * H[[i]]),
           rbind(E[[i]] - H[[i]] %*% W, matrix(0, nrow = ns[[i]], ncol = g))
         )
       })
       tmp <- gc()
-      W <- solve_nnls(
+      W <- solveNNLS(
         rbindlist(H),
         rbindlist(lapply(1:N, function(i) {
           E[[i]] - H[[i]] %*% V[[i]]
@@ -790,7 +818,7 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
       matrix(abs(runif(n * (k.new - k), 0, 2)), n, k.new - k)
     })
     H_new <- lapply(1:N, function(i) {
-      t(solve_nnls(
+      t(solveNNLS(
         rbind(t(W_new) + t(V_new[[i]]), sqrt_lambda * t(V_new[[i]])),
         rbind(
           t(object@scale.data[[i]] - H[[i]] %*% (W + V[[i]])),
@@ -799,7 +827,7 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
       ))
     })
     V_new <- lapply(1:N, function(i) {
-      solve_nnls(
+      solveNNLS(
         rbind(H_new[[i]], sqrt_lambda * H_new[[i]]),
         rbind(
           object@scale.data[[i]] - H[[i]] %*% (W + V[[i]]) - H_new[[i]] %*% W_new,
@@ -807,7 +835,7 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
         )
       )
     })
-    W_new <- solve_nnls(
+    W_new <- solveNNLS(
       rbind.fill.matrix(H_new),
       rbind.fill.matrix(lapply(1:N, function(i) {
         object@scale.data[[i]] - H[[i]] %*% (W + V[[i]]) - H_new[[i]] %*% V_new[[i]]
@@ -905,7 +933,7 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
     sqrt_lambda <- sqrt(lambda)
     g <- ncol(object@W)
     H_new <- lapply(1:length(new.data), function(i) {
-      t(solve_nnls(
+      t(solveNNLS(
         rbind(
           t(object@W) + t(object@V[[which.datasets[[i]]]]),
           sqrt_lambda * t(object@V[[which.datasets[[i]]]])
@@ -942,7 +970,7 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
       print(dim(object@V[[i]]))
     }
     H_new <- lapply(1:length(new.data), function(i) {
-      t(solve_nnls(rbind(t(object@W) + t(object@V[[new.names[i]]]), 
+      t(solveNNLS(rbind(t(object@W) + t(object@V[[new.names[i]]]), 
                          sqrt_lambda * t(object@V[[new.names[i]]])), 
                    rbind(t(object@scale.data[[new.names[i]]]), 
                          matrix(0, nrow = g, ncol = ncol(new.data[[i]])))
@@ -962,7 +990,8 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
 #' Perform factorization for subset of data 
 #' 
 #' Uses an efficient strategy for updating that takes advantage of the information in the existing 
-#' factorization. Can use either cell names or cluster names to subset. 
+#' factorization. Can use either cell names or cluster names to subset. For more basic subsetting
+#' functionality (without automatic optimization), see subsetLiger. 
 #'
 #' @param object \code{liger} object. Should call optimizeALS before calling.
 #' @param cell.subset List of cell names to retain from each dataset (same length as number of 
@@ -1015,6 +1044,7 @@ optimizeSubset <- function(object, cell.subset = NULL, cluster.subset = NULL, la
   object@raw.data <- lapply(1:length(object@raw.data), function(i) {
     object@raw.data[[i]][, cell.subset[[i]]]
   })
+  object@cell.data <- droplevels(object@cell.data[cell.subset, ])
   for (i in 1:length(object@norm.data)) {
     object@norm.data[[i]] <- object@norm.data[[i]][, cell.subset[[i]]]
     if (names(object@norm.data)[i] %in% datasets.scale) {
@@ -2258,6 +2288,116 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
   }
 }
 
+#' Plot specific feature on t-SNE coordinates 
+#' 
+#' Generates one plot for each dataset, colored by chosen feature (column) from cell.data slot.
+#' Feature can be categorical (factor) or continuous. 
+#' Can also plot all datasets combined with by.dataset = F.    
+#'
+#' @param object \code{liger} object. Should call runTSNE or runUMAP before calling. 
+#' @param feature Feature to plot (should be column from cell.data slot).
+#' @param by.dataset Whether to generate separate plot for each dataset (default TRUE).
+#' @param title Plot title (default NULL).
+#' @param pt.size Controls size of points representing cells (default 0.3).
+#' @param text.size Controls size of plot text (cluster center labels) (default 3).
+#' @param do.shuffle Randomly shuffle points so that points from same dataset are not plotted 
+#'   one after the other (default TRUE).
+#' @param rand.seed Random seed for reproducibility of point shuffling (default 1).
+#' @param do.labels Print centroid labels for categorical features (default FALSE).
+#' @param axis.labels Vector of two strings to use as x and y labels respectively.
+#' @param do.legend Display legend on plots (default TRUE).
+#' @param legend.size Size of legend spots for discrete data (default 5).
+#' @param option Colormap option to use for ggplot2's scale_color_viridis (default 'plasma').
+#' @param zero.color Color to use for zero values (no expression) (default '#F5F5F5').
+#' @param return.plots Return ggplot plot objects instead of printing directly (default FALSE).
+#' 
+#' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to 
+#'   console).
+#' @export
+#' @importFrom ggplot2 ggplot geom_point aes scale_color_viridis_c
+#' @importFrom dplyr %>% group_by summarize
+#' @examples
+#' \dontrun{
+#'  # liger object with aligned factor loadings
+#' ligerex
+#' # get tsne.coords for normalized data
+#' ligerex <- runTSNE(ligerex)
+#' # plot nUMI to console
+#' plotFeature(ligerex, feature = 'nUMI')
+#' }
+
+plotFeature <- function(object, feature, by.dataset = T, title = NULL, pt.size = 0.3,
+                        text.size = 3, do.shuffle = T, rand.seed = 1, do.labels = F,
+                        axis.labels = NULL, do.legend = T, legend.size = 5, option = 'plasma', 
+                        zero.color = '#F5F5F5', return.plots = F) {
+  dr_df <- data.frame(object@tsne.coords)
+  colnames(dr_df) <- c("dr1", "dr2")
+  if (!(feature %in% colnames(object@cell.data))) {
+    stop('Please select existing feature in cell.data, or add it before calling.')
+  }
+  dr_df$feature <- object@cell.data[, feature]
+  if (class(dr_df$feature) != "factor") {
+    dr_df$feature[dr_df$feature == 0] <- NA
+    discrete <- FALSE
+  } else {
+    discrete <- TRUE
+  }
+  if (do.shuffle) {
+    set.seed(rand.seed)
+    idx <- sample(1:nrow(dr_df))
+    dr_df <- dr_df[idx, ]
+  }
+  p_list <- list()
+  if (by.dataset) {
+    dr_df$dataset <- object@cell.data$dataset
+  } else {
+    dr_df$dataset <- factor("single")
+  }
+  for (sub_df in split(dr_df, f = dr_df$dataset)) {
+    ggp <- ggplot(sub_df, aes(x = dr1, y = dr2, color = feature)) + geom_point(size = pt.size) 
+    
+    # if data is not discrete
+    if (discrete) {
+      ggp <- ggp + guides(color = guide_legend(override.aes = list(size = legend.size))) +
+        labs(col = feature)
+      if (do.labels) {
+        centers <- sub_df %>% group_by(feature) %>% summarize(
+          dr1 = median(x = dr1),
+          dr2 = median(x = dr2)
+        )
+        ggp <- ggp + geom_text(data = centers, mapping = aes(label = feature), 
+                               colour = "black", size = text.size)
+      }
+    } else {
+      ggp <- ggp + scale_color_viridis_c(option = option, 
+                                         direction = -1, 
+                                         na.value = zero.color) + labs(col = feature)
+    }
+   
+    if (!is.null(title)) {
+      ggp <- ggp + ggtitle(title)
+    }
+    if (!is.null(axis.labels)) {
+      ggp <- ggp + xlab(axis.labels[1]) + ylab(axis.labels[2])
+    }
+    if (!do.legend) {
+      ggp <- ggp + theme(legend.position = "none")
+    }
+    p_list[[as.character(sub_df$dataset[1])]] <- ggp
+    
+    if (!return.plots) {
+      print(ggp)
+    }
+  }
+  if (return.plots){
+    if (length(p_list) == 1) {
+      return(p_list[[1]])
+    } else {
+      return(p_list)
+    }
+  }
+}
+
 #' Plot scatter plots of unaligned and aligned factor loadings
 #'
 #' @description
@@ -2729,6 +2869,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #'
 #' @param object \code{liger} object. Should call runTSNE before calling.
 #' @param gene Gene for which to plot relative expression.
+#' @param use.raw Plot raw values instead of normalized and log-transformed data (default FALSE). 
 #' @param methylation.indices Indices of datasets in object with methylation data (this data is not
 #'   magnified and put on log scale).
 #' @param pt.size Point size for plots (default 0.1)
@@ -2752,30 +2893,41 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
 #' }
 
-plotGene <- function(object, gene, methylation.indices = NULL, pt.size = 0.1, min.clip = 0,
-                     max.clip = 1, points.only = F, option = 'plasma', zero.color = '#F5F5F5',
-                     return.plots = F) {
+plotGene <- function(object, gene, use.raw = F, methylation.indices = NULL, pt.size = 0.1, 
+                     min.clip = 0, max.clip = 1, points.only = F, option = 'plasma', 
+                     zero.color = '#F5F5F5', return.plots = F) {
   gene_vals <- c()
-  for (i in 1:length(object@norm.data)) {
-    if (i %in% methylation.indices) {
-      tmp <- object@norm.data[[i]][gene, ]
-      max_v <- quantile(tmp, probs = max.clip, na.rm = T)
-      min_v <- quantile(tmp, probs = min.clip, na.rm = T)
-      tmp[tmp < min_v & !is.na(tmp)] <- min_v
-      tmp[tmp > max_v & !is.na(tmp)] <- max_v
-      gene_vals <- c(gene_vals, tmp)
-    } else {
-      if (gene %in% rownames(object@norm.data[[i]])) {
-        gene_vals_int <- log2(10000 * object@norm.data[[i]][gene, ] + 1)
-        gene_vals_int[gene_vals_int == 0] <- NA
+  if (use.raw) {
+    for (i in 1:length(object@raw.data)) {
+      if (gene %in% rownames(object@raw.data[[i]])) {
+        gene_vals_int <- object@raw.data[[i]][gene, ]
       } else {
-        gene_vals_int <- rep(list(NA), ncol(object@norm.data[[i]]))
-        names(gene_vals_int) <- colnames(object@norm.data[[i]])
+        gene_vals_int <- rep(list(NA), ncol(object@raw.data[[i]]))
+        names(gene_vals_int) <- colnames(object@raw.data[[i]])
       }
       gene_vals <- c(gene_vals, gene_vals_int)
     }
+  } else {
+    for (i in 1:length(object@norm.data)) {
+      if (i %in% methylation.indices) {
+        tmp <- object@norm.data[[i]][gene, ]
+        max_v <- quantile(tmp, probs = max.clip, na.rm = T)
+        min_v <- quantile(tmp, probs = min.clip, na.rm = T)
+        tmp[tmp < min_v & !is.na(tmp)] <- min_v
+        tmp[tmp > max_v & !is.na(tmp)] <- max_v
+        gene_vals <- c(gene_vals, tmp)
+      } else {
+        if (gene %in% rownames(object@norm.data[[i]])) {
+          gene_vals_int <- log2(10000 * object@norm.data[[i]][gene, ] + 1)
+        } else {
+          gene_vals_int <- rep(list(NA), ncol(object@norm.data[[i]]))
+          names(gene_vals_int) <- colnames(object@norm.data[[i]])
+        }
+        gene_vals <- c(gene_vals, gene_vals_int)
+      }
+    }
   }
-  
+  gene_vals[gene_vals == 0] <- NA
   gene_df <- data.frame(object@tsne.coords)
   rownames(gene_df) <- names(object@clusters)
   gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])
@@ -2870,6 +3022,7 @@ plotGenes <- function(object, genes) {
 #'   By default will try to automatically order them appropriately.
 #'   
 #' @export
+#' @importFrom plyr mapvalues
 #' @importFrom riverplot makeRiver
 #' @importFrom riverplot plot.riverplot
 #' @examples
@@ -3686,8 +3839,8 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
 #' Construct a liger object with a specified subset 
 #' 
 #' The subset can be based on cell names or clusters. This function applies the subsetting to 
-#' raw.data, norm.data, scale.data, H, W, V, H.norm, tsne.coords, and clusters. Note that it does
-#' NOT reoptimize the factorization. See optimizeSubset for this functionality. 
+#' raw.data, norm.data, scale.data, cell.data, H, W, V, H.norm, tsne.coords, and clusters. 
+#' Note that it does NOT reoptimize the factorization. See optimizeSubset for this functionality. 
 #'
 #' @param object \code{liger} object. Should run quantileAlignSNF and runTSNE before calling. 
 #' @param clusters.use Clusters to use for subset.
@@ -3723,8 +3876,12 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   missing <- sapply(raw.data, is.null)
   raw.data <- raw.data[!missing]
   nms <- names(object@raw.data)[!missing]
+  names(raw.data) <- nms
   a <- createLiger(raw.data, remove.missing = remove.missing)
-  
+  # Add back additional cell.data
+  if (ncol(a@cell.data) < ncol(object@cell.data)) {
+    a@cell.data <- droplevels(data.frame(object@cell.data[cells.use, ]))
+  }
   a@norm.data <- lapply(1:length(a@raw.data), function(i) {
     object@norm.data[[nms[i]]][, colnames(a@raw.data[[i]])]
   })
@@ -3741,7 +3898,7 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   a@W <- object@W
   a@V <- object@V
   a@var.genes <- object@var.genes
-  names(a@scale.data) <- names(a@raw.data) <- names(a@norm.data) <- names(a@H) <- nms
+  names(a@scale.data) <- names(a@norm.data) <- names(a@H) <- nms
   return(a)
 }
 
@@ -3775,13 +3932,13 @@ convertOldLiger = function(object, override.raw = F) {
   
   slots <- slots_new[slots_exist]
   for (slotname in slots) { 
-    if ((slotname != 'raw.data') | (override.raw)) {
+    if (!(slotname %in% c('raw.data')) | (override.raw)) {
       slot(new.liger, slotname) <- slot(object, slotname) 
     }
   } 
   print(paste0('Old slots not transferred: ', setdiff(slots_old, slots_new)))
   # compare to slots since it's possible that the analogizer object
   # class has slots that this particular object does not 
-  print(paste0('New slots not filled: ', setdiff(slots_new, slots)))
+  print(paste0('New slots not filled: ', setdiff(slots_new[slots_new != "cell.data"], slots)))
   return(new.liger)
 }

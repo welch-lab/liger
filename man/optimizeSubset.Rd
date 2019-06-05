@@ -5,7 +5,8 @@
 \title{Perform factorization for subset of data}
 \usage{
 optimizeSubset(object, cell.subset = NULL, cluster.subset = NULL,
-  lambda = NULL, thresh = 1e-04, max.iters = 100, datasets.scale = NULL)
+  lambda = NULL, thresh = 1e-04, max.iters = 100,
+  datasets.scale = NULL)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call optimizeALS before calling.}
@@ -31,7 +32,8 @@ cell.subset or cluster.subset but not both.}
 }
 \description{
 Uses an efficient strategy for updating that takes advantage of the information in the existing 
-factorization. Can use either cell names or cluster names to subset.
+factorization. Can use either cell names or cluster names to subset. For more basic subsetting
+functionality (without automatic optimization), see subsetLiger.
 }
 \examples{
 \dontrun{

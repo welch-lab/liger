@@ -4,7 +4,8 @@
 \alias{calcAlignmentPerCluster}
 \title{Calculate alignment for each cluster}
 \usage{
-calcAlignmentPerCluster(object, rand.seed = 1, k = NULL, by.dataset = F)
+calcAlignmentPerCluster(object, rand.seed = 1, k = NULL,
+  by.dataset = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call quantileAlignSNF before calling.}
