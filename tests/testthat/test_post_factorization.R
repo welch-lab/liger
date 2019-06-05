@@ -131,6 +131,9 @@ plotfeatures_plots <- plotFeature(ligex, feature = 'nUMI', by.dataset = T, retur
 test_that("plotFeature returns correct ggplot objects", {
   expect_equal(length(plotfeatures_plots), length(ligex@raw.data))
   expect_is(plotfeatures_plots[[1]], class = c("ggplot"))
+  expect_equal(rownames(plotfeatures_plots[[1]]$data)[1:5], 
+               c("AATGCGTGGCTATG", "GAAAGATGATTTCC", "TTCCAAACTCCCAC", "CACTGAGACAGTCA",
+                 "GACGGCACACGGGA"))
 })
 
 # Tests for subsetting, object conversion
