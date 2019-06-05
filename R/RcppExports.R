@@ -13,7 +13,7 @@ rowVarsFast <- function(x, means) {
     .Call(`_liger_rowVarsFast`, x, means)
 }
 
-solve_nnls <- function(C, B) {
-    .Call(`_liger_solve_nnls`, C, B)
+solveNNLS <- function(C, B) {
+    .Call(`_liger_solveNNLS`, C, B)
 }
 

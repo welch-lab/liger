@@ -686,20 +686,20 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
     
     while (delta > thresh & iters < max.iters) {
       H <- lapply(1:N, function(i) {
-        t(solve_nnls(
+        t(solveNNLS(
           rbind(t(W) + t(V[[i]]), sqrt_lambda * t(V[[i]])),
           rbind(t(E[[i]]), matrix(0, nrow = g, ncol = ns[i]))
         ))
       })
       tmp <- gc()
       V <- lapply(1:N, function(i) {
-        solve_nnls(
+        solveNNLS(
           rbind(H[[i]], sqrt_lambda * H[[i]]),
           rbind(E[[i]] - H[[i]] %*% W, matrix(0, nrow = ns[[i]], ncol = g))
         )
       })
       tmp <- gc()
-      W <- solve_nnls(
+      W <- solveNNLS(
         rbindlist(H),
         rbindlist(lapply(1:N, function(i) {
           E[[i]] - H[[i]] %*% V[[i]]
@@ -814,7 +814,7 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
       matrix(abs(runif(n * (k.new - k), 0, 2)), n, k.new - k)
     })
     H_new <- lapply(1:N, function(i) {
-      t(solve_nnls(
+      t(solveNNLS(
         rbind(t(W_new) + t(V_new[[i]]), sqrt_lambda * t(V_new[[i]])),
         rbind(
           t(object@scale.data[[i]] - H[[i]] %*% (W + V[[i]])),
@@ -823,7 +823,7 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
       ))
     })
     V_new <- lapply(1:N, function(i) {
-      solve_nnls(
+      solveNNLS(
         rbind(H_new[[i]], sqrt_lambda * H_new[[i]]),
         rbind(
           object@scale.data[[i]] - H[[i]] %*% (W + V[[i]]) - H_new[[i]] %*% W_new,
@@ -831,7 +831,7 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
         )
       )
     })
-    W_new <- solve_nnls(
+    W_new <- solveNNLS(
       rbind.fill.matrix(H_new),
       rbind.fill.matrix(lapply(1:N, function(i) {
         object@scale.data[[i]] - H[[i]] %*% (W + V[[i]]) - H_new[[i]] %*% V_new[[i]]
@@ -929,7 +929,7 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
     sqrt_lambda <- sqrt(lambda)
     g <- ncol(object@W)
     H_new <- lapply(1:length(new.data), function(i) {
-      t(solve_nnls(
+      t(solveNNLS(
         rbind(
           t(object@W) + t(object@V[[which.datasets[[i]]]]),
           sqrt_lambda * t(object@V[[which.datasets[[i]]]])
@@ -966,7 +966,7 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
       print(dim(object@V[[i]]))
     }
     H_new <- lapply(1:length(new.data), function(i) {
-      t(solve_nnls(rbind(t(object@W) + t(object@V[[new.names[i]]]), 
+      t(solveNNLS(rbind(t(object@W) + t(object@V[[new.names[i]]]), 
                          sqrt_lambda * t(object@V[[new.names[i]]])), 
                    rbind(t(object@scale.data[[new.names[i]]]), 
                          matrix(0, nrow = g, ncol = ncol(new.data[[i]])))
