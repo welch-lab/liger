@@ -127,6 +127,12 @@ test_that("plotGene returns correct ggplot objects", {
                c(NA, NA, 2, 2, NA, NA))
 })
 
+plotfeatures_plots <- plotFeature(ligex, feature = 'nUMI', by.dataset = T, return.plots = T)
+test_that("plotFeature returns correct ggplot objects", {
+  expect_equal(length(plotfeatures_plots), length(ligex@raw.data))
+  expect_is(plotfeatures_plots[[1]], class = c("ggplot"))
+})
+
 # Tests for subsetting, object conversion
 # Again, included here because these functions are object dependent (see above)
 ####################################################################################

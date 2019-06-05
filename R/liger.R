@@ -2284,6 +2284,116 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
   }
 }
 
+#' Plot specific feature on t-SNE coordinates 
+#' 
+#' Generates one plot for each dataset, colored by chosen feature (column) from cell.data slot.
+#' Feature can be categorical (factor) or continuous. 
+#' Can also plot all datasets combined with by.dataset = F.    
+#'
+#' @param object \code{liger} object. Should call runTSNE or runUMAP before calling. 
+#' @param feature Feature to plot (should be column from cell.data slot).
+#' @param by.dataset Whether to generate separate plot for each dataset (default TRUE).
+#' @param title Plot title (default NULL).
+#' @param pt.size Controls size of points representing cells (default 0.3).
+#' @param text.size Controls size of plot text (cluster center labels) (default 3).
+#' @param do.shuffle Randomly shuffle points so that points from same dataset are not plotted 
+#'   one after the other (default TRUE).
+#' @param rand.seed Random seed for reproducibility of point shuffling (default 1).
+#' @param do.labels Print centroid labels for categorical features (default FALSE).
+#' @param axis.labels Vector of two strings to use as x and y labels respectively.
+#' @param do.legend Display legend on plots (default TRUE).
+#' @param legend.size Size of legend spots for discrete data (default 5).
+#' @param option Colormap option to use for ggplot2's scale_color_viridis (default 'plasma').
+#' @param zero.color Color to use for zero values (no expression) (default '#F5F5F5').
+#' @param return.plots Return ggplot plot objects instead of printing directly (default FALSE).
+#' 
+#' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to 
+#'   console).
+#' @export
+#' @importFrom ggplot2 ggplot geom_point aes scale_color_viridis_c
+#' @importFrom dplyr %>% group_by summarize
+#' @examples
+#' \dontrun{
+#'  # liger object with aligned factor loadings
+#' ligerex
+#' # get tsne.coords for normalized data
+#' ligerex <- runTSNE(ligerex)
+#' # plot nUMI to console
+#' plotFeature(ligerex, feature = 'nUMI')
+#' }
+
+plotFeature <- function(object, feature, by.dataset = T, title = NULL, pt.size = 0.3,
+                        text.size = 3, do.shuffle = T, rand.seed = 1, do.labels = F,
+                        axis.labels = NULL, do.legend = T, legend.size = 5, option = 'plasma', 
+                        zero.color = '#F5F5F5', return.plots = F) {
+  dr_df <- data.frame(object@tsne.coords)
+  colnames(dr_df) <- c("dr1", "dr2")
+  if (!(feature %in% colnames(object@cell.data))) {
+    stop('Please select existing feature in cell.data, or add it before calling.')
+  }
+  dr_df$feature <- object@cell.data[, feature]
+  if (class(dr_df$feature) != "factor") {
+    dr_df$feature[dr_df$feature == 0] <- NA
+    discrete <- FALSE
+  } else {
+    discrete <- TRUE
+  }
+  if (do.shuffle) {
+    set.seed(rand.seed)
+    idx <- sample(1:nrow(dr_df))
+    dr_df <- dr_df[idx, ]
+  }
+  p_list <- list()
+  if (by.dataset) {
+    dr_df$dataset <- object@cell.data$dataset
+  } else {
+    dr_df$dataset <- factor("single")
+  }
+  for (sub_df in split(dr_df, f = dr_df$dataset)) {
+    ggp <- ggplot(sub_df, aes(x = dr1, y = dr2, color = feature)) + geom_point(size = pt.size) 
+    
+    # if data is not discrete
+    if (discrete) {
+      ggp <- ggp + guides(color = guide_legend(override.aes = list(size = legend.size))) +
+        labs(col = feature)
+      if (do.labels) {
+        centers <- sub_df %>% group_by(feature) %>% summarize(
+          dr1 = median(x = dr1),
+          dr2 = median(x = dr2)
+        )
+        ggp <- ggp + geom_text(data = centers, mapping = aes(label = feature), 
+                               colour = "black", size = text.size)
+      }
+    } else {
+      ggp <- ggp + scale_color_viridis_c(option = option, 
+                                         direction = -1, 
+                                         na.value = zero.color) + labs(col = feature)
+    }
+   
+    if (!is.null(title)) {
+      ggp <- ggp + ggtitle(title)
+    }
+    if (!is.null(axis.labels)) {
+      ggp <- ggp + xlab(axis.labels[1]) + ylab(axis.labels[2])
+    }
+    if (!do.legend) {
+      ggp <- ggp + theme(legend.position = "none")
+    }
+    p_list[[as.character(sub_df$dataset[1])]] <- ggp
+    
+    if (!return.plots) {
+      print(ggp)
+    }
+  }
+  if (return.plots){
+    if (length(p_list) == 1) {
+      return(p_list[[1]])
+    } else {
+      return(p_list)
+    }
+  }
+}
+
 #' Plot scatter plots of unaligned and aligned factor loadings
 #'
 #' @description
