@@ -62,16 +62,22 @@ ligerex = quantileAlignSNF(ligerex) #SNF clustering and quantile alignment
 
 ## Visualizing the results
 We can visualize the results by using dimensionality reduction techniques like t-SNE or UMAP (recommended 
-for larger datasets). Visualizations can be colored by dataset of origin or cluster assignment. 
-`plotWordClouds` is a useful way to visualize the most highly loading genes (both shared and dataset
-specific) for each factor, in conjunction with the factor loadings across cells.  
+for larger datasets). Visualizations can be colored by dataset of origin, cluster assignment, or 
+any feature included in or added to the cell metadata (`cell.data`).
+
+`plotWordClouds` and `plotGeneLoadings` are useful ways to visualize the most highly loading genes (both shared and dataset specific) for each factor, in conjunction with the factor loadings across cells. 
+These functions are very similar, but `plotGeneLoadings` displays the top loading genes in ordered scatter plots instead of word clouds.
 ```r
 ligerex = runTSNE(ligerex)
 # for larger datasets, may want to use UMAP instead
 ligerex = runUMAP(ligerex)
 plotByDatasetAndCluster(ligerex) #Can also pass in different set of cluster labels to plot
+plotFeature(ligerex, "nUMI")
 pdf("word_clouds.pdf")
 plotWordClouds(ligerex)
+dev.off()
+pdf("gene_loadings.pdf")
+plotGeneLoadings(ligerex)
 dev.off()
 ```
 
