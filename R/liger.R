@@ -285,7 +285,7 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
       }
     })
   }
-  if (length(Reduce(intersect, lapply(raw.data, colnames))) > 0) {
+  if (length(raw.data) > 1 && length(Reduce(intersect, lapply(raw.data, colnames))) > 0) {
     stop('At least one cell name is repeated across datasets; please make sure all cell names
          are unique.')
   }
