@@ -24,6 +24,8 @@ analysis, and visualization. Users can:
 We have also designed LIGER to interface with existing single-cell analysis packages, including 
 [Seurat](https://satijalab.org/seurat/).
 
+The development of LIGER was supported by the [Chan Zuckerburg Initiative](https://chanzuckerberg.com/) and the [NIH Brain Initiative Cell Census Network](https://braininitiative.nih.gov/brain-programs/cell-census-network-biccn).
+
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
