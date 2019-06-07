@@ -1,7 +1,7 @@
 Package: liger
 Type: Package
 Title: Linked Inference of Genomic Experimental Relationships
-Version: 0.4.0
+Version: 0.4.1
 Date: 2018-04-09
 Author: Joshua Welch
 Maintainer: Joshua Welch <jwelch@broadinstitute.org>,
