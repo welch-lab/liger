@@ -20,7 +20,7 @@
 #'   matrix)
 #' @slot W Shared gene loading factors (k by genes)
 #' @slot V Dataset-specific gene loading factors (one matrix per dataset, dimensions k by genes)
-#' @slot tsne.coords Matrix of 2D coordinates obtained from running t-SNE on H.norm or H matrices
+#' @slot dr.coords List of 2 matricies of 2D coordinates obtained from running t-SNE or UMAP on H.norm or H matrices
 #' @slot alignment.clusters Initial joint cluster assignments from shared factor alignment 
 #' @slot clusters Joint cluster assignments for cells
 #' @slot snf List of values associated with shared nearest factor matrix for use in clustering and 
@@ -48,7 +48,7 @@ liger <- methods::setClass(
     H.norm = "matrix",
     W = "matrix",
     V = "list",
-    tsne.coords = "matrix",
+    dr.coords = "list",
     alignment.clusters = 'factor',
     clusters= "factor",
     agg.data = "list",
@@ -70,7 +70,7 @@ setMethod(
   f = "show",
   signature = "liger",
   definition = function(object) {
-    cat(
+    message(
       "An object of class",
       class(object),
       "\nwith",
@@ -128,7 +128,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
     num.cells <- rep(num.cells, length(sample.dirs))
   }
   for (i in seq_along(sample.dirs)) {
-    print(paste0("Processing sample ", sample.names[i]))
+    message("Processing sample ", sample.names[i])
     sample.dir <- sample.dirs[[i]]
     inner1 <- paste0(sample.dir, "/outs")
     if (dir.exists(inner1)) {
@@ -170,7 +170,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
     # filter for UMIs first to increase speed
     umi.pass <- which(colSums(rawdata) > min.umis)
     if (length(umi.pass) == 0) {
-      print("No cells pass UMI cutoff. Please lower it.")
+      stop("No cells pass UMI cutoff. Please lower it.")
     }
     rawdata <- rawdata[, umi.pass, drop = F]
     
@@ -208,10 +208,10 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
       cs <- colSums(samplelist[["Gene Expression"]])
       limit <- ncol(samplelist[["Gene Expression"]])
       if (num.cells[i] > limit) {
-        print(paste0(
+        warning(
           "You selected more cells than are in matrix ", i,
           ". Returning all ", limit, " cells."
-        ))
+        )
         num.cells[i] <- limit
       }
       samplelist[["Gene Expression"]] <- samplelist[["Gene Expression"]][, order(cs, decreasing = T)
@@ -221,7 +221,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
     datalist[[i]] <- samplelist
   }
   if (merge) {
-    print('Merging samples')
+    message('Merging samples')
     return_dges <- lapply(datatypes, function(x) {
       mergelist <- lapply(datalist, function(d) {
         d[[x]]
@@ -234,7 +234,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
     
     # if only one type of data present
     if (length(return_dges) == 1) {
-      print(paste0("Returning ", datatypes, " data matrix"))
+      message("Returning ", datatypes, " data matrix")
       return(return_dges[[1]])
     }
     return(return_dges)
@@ -295,11 +295,10 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
       missing_genes <- which(rowSums(merged.data) == 0)
       if (length(missing_genes) > 0) {
         message(
-          paste0("Removing ", length(missing_genes),
-                 " genes not expressed in any cells across merged datasets.")
+          "Removing ", length(missing_genes)," genes not expressed in any cells across merged datasets."
         )
         if (length(missing_genes) < 25) {
-          print(rownames(merged.data)[missing_genes])
+          message(rownames(merged.data)[missing_genes])
         }
         merged.data <- merged.data[-missing_genes, ]
       } 
@@ -462,8 +461,7 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
     }
   }
   if (length(genes.use) == 0) {
-    warning("No genes were selected; lower var.thresh values or choose 'union' for combine parameter",
-            immediate. = T)
+    stop("No genes were selected; lower var.thresh values or choose 'union' for combine parameter")
   }
   object@var.genes <- genes.use
   return(object)
@@ -550,18 +548,18 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
       missing <- which(rowSums(filter.data[[x]]) == 0)
     }
     if (length(missing) > 0) {
-      print(paste0(
+      message(
         "Removing ",  length(missing), " ", removed, " not expressing", expressed, " in ",
         names(object@raw.data)[x], "."
-      ))
+      )
       if (use.cols) {
         if (length(missing) < 25) {
-          print(colnames(filter.data[[x]])[missing])
+          message(colnames(filter.data[[x]])[missing])
         }
         subset <- filter.data[[x]][, -missing]
       } else {
         if (length(missing) < 25) {
-          print(rownames(filter.data[[x]])[missing])
+          message(rownames(filter.data[[x]])[missing])
         }
         subset <- filter.data[[x]][-missing, ]
       }
@@ -635,12 +633,12 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
   N <- length(E)
   ns <- sapply(E, nrow)
   if (k >= min(ns)) {
-    stop(paste0('Select k lower than the number of cells in smallest dataset: ', min(ns)))
+    stop('Select k lower than the number of cells in smallest dataset: ', min(ns))
   }
   tmp <- gc()
   g <- ncol(E[[1]])
   if (k >= g) {
-    stop(paste0('Select k lower than the number of variable genes:', g))
+    stop('Select k lower than the number of variable genes: ', g)
   } 
   W_m <- matrix(0, k, g)
   V_m <- lapply(1:N, function(i) {
@@ -724,8 +722,8 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
     }
     setTxtProgressBar(pb, max.iters)
     if (iters == max.iters) {
-      print("Warning: failed to converge within the allowed number of iterations. 
-            Re-running with a higher max.iters is recommended.")
+      warning("Failed to converge within the allowed number of iterations. 
+              Re-running with a higher max.iters is recommended.")
     }
     if (obj < best_obj) {
       W_m <- W
@@ -737,13 +735,12 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
     end_time <- difftime(Sys.time(), start_time, units = "auto")
     run_stats[i, 1] <- as.double(end_time)
     run_stats[i, 2] <- iters
-    cat("\nConverged in ", run_stats[i, 1], " ", units(end_time), ", ", iters, " iterations.\n", 
-        sep = "")
+    message("\nConverged in ", run_stats[i, 1], " ", units(end_time), ", ", iters, " iterations.\n")
     if (print.obj) {
-      cat("Objective:", obj, "\n")
+      message("Objective:", obj, "\n")
     }
     }
-  cat("Best results with seed ", best_seed, ".\n", sep = "")
+  message("Best results with seed ", best_seed, ".\n")
   object@H <- H_m
   object@H <- lapply(1:length(object@scale.data), function(i) {
     rownames(object@H[[i]]) <- rownames(object@scale.data[[i]])
@@ -921,12 +918,12 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
   }
   if (add.to.existing) {
     for (i in 1:length(new.data)) {
-      print(dim(object@raw.data[[which.datasets[[i]]]]))
+      message(dim(object@raw.data[[which.datasets[[i]]]]))
       object@raw.data[[which.datasets[[i]]]] <- cbind(
         object@raw.data[[which.datasets[[i]]]],
         new.data[[i]]
       )
-      print(dim(object@raw.data[[which.datasets[[i]]]]))
+      message(dim(object@raw.data[[which.datasets[[i]]]]))
     }
     object <- normalize(object)
     object <- scaleNotCenter(object)
@@ -963,11 +960,11 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
     g <- ncol(object@W)
     sqrt_lambda <- sqrt(lambda)
     for (i in 1:N) {
-      print(ns[[i]])
-      print(dim(object@raw.data[[i]]))
-      print(dim(object@norm.data[[i]]))
-      print(dim(object@scale.data[[i]]))
-      print(dim(object@V[[i]]))
+      message(ns[[i]])
+      message(dim(object@raw.data[[i]]))
+      message(dim(object@norm.data[[i]]))
+      message(dim(object@scale.data[[i]]))
+      message(dim(object@V[[i]]))
     }
     H_new <- lapply(1:length(new.data), function(i) {
       t(solveNNLS(rbind(t(object@W) + t(object@V[[new.names[i]]]), 
@@ -1054,7 +1051,7 @@ optimizeSubset <- function(object, cell.subset = NULL, cluster.subset = NULL, la
     } else {
       object@scale.data[[i]] <- t(object@norm.data[[i]][object@var.genes, ])
     }
-    print(dim(object@scale.data[[i]]))
+    message(dim(object@scale.data[[i]]))
   }
   
   names(object@raw.data) <- names(object@norm.data) <- names(object@H) <- old_names
@@ -1098,8 +1095,8 @@ optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100
   H <- object@H
   W <- object@W
   if (new.lambda < object@parameters$lambda) {
-    print(paste("New lambda less than current lambda; new factorization may not be optimal.",
-                "Re-optimization with optimizeAlS recommended instead."))
+    warning(paste("New lambda less than current lambda; new factorization may not be optimal.",
+                  "Re-optimization with optimizeAlS recommended instead."))
   }
   object <- optimizeALS(object, k, lambda = new.lambda, thresh = thresh, max.iters = max.iters,
                         H.init = H, W.init = W, rand.seed = rand.seed)
@@ -1161,15 +1158,15 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
   }
   time_start <- Sys.time()
   # optimize smallest lambda value first to take advantage of efficient updating
-  print("This operation may take several minutes depending on number of values being tested")
+  message("This operation may take several minutes depending on number of values being tested")
   rep_data <- list()
   for (r in 1:nrep) {
-    print(paste0("Preprocessing for rep ", r,
-                 ": optimizing initial factorization with smallest test lambda=", 
-                 lambda.test[1]))
+    message("Preprocessing for rep ", r,
+            ": optimizing initial factorization with smallest test lambda=", 
+            lambda.test[1])
     object <- optimizeALS(object, k = k, thresh = thresh, lambda = lambda.test[1], 
                           max.iters = max.iters, nrep = 1, rand.seed = (rand.seed + r - 1))
-    print('Progress now represents completed factorizations (out of total number of lambda values)')
+    message('Progress now represents completed factorizations (out of total number of lambda values)')
     cl <- makeCluster(num.cores)
     registerDoSNOW(cl)
     pb <- txtProgressBar(min = 0, max = length(lambda.test), style = 3, initial = 1, file = "")
@@ -1212,7 +1209,7 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
   mean_aligns <- apply(aligns, 1, mean)
   
   time_elapsed <- difftime(Sys.time(), time_start, units = "auto")
-  cat(paste("\nCompleted in:", as.double(time_elapsed), units(time_elapsed)))
+  message("\nCompleted in:", as.double(time_elapsed), units(time_elapsed))
   # make dataframe
   df_al <- data.frame(align = mean_aligns, lambda = lambda.test)
   
@@ -1223,7 +1220,7 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
     theme(legend.position = 'top')
   
   if (return.data) {
-    print(p1)
+    message(p1)
     if (return.raw) {
       rownames(aligns) <- lambda.test
       return(aligns)
@@ -1285,15 +1282,15 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
                      return.data = F, return.raw = F) {
   time_start <- Sys.time()
   # optimize largest k value first to take advantage of efficient updating
-  print("This operation may take several minutes depending on number of values being tested")
+  message("This operation may take several minutes depending on number of values being tested")
   rep_data <- list()
   for (r in 1:nrep) {
-    print(paste0("Preprocessing for rep ", r,
-                 ": optimizing initial factorization with largest test k=", 
-                 k.test[length(k.test)]))
+    message("Preprocessing for rep ", r,
+            ": optimizing initial factorization with largest test k=", 
+            k.test[length(k.test)])
     object <- optimizeALS(object, k = k.test[length(k.test)], lambda = lambda, thresh = thresh, 
                           max.iters = max.iters, nrep = 1, rand.seed = (rand.seed + r - 1))
-    print('Progress now represents completed factorizations (out of total number of k values)')
+    message('Progress now represents completed factorizations (out of total number of k values)')
     cl <- makeCluster(num.cores)
     registerDoSNOW(cl)
     pb <- txtProgressBar(min = 0, max = length(k.test), style = 3, initial = 1, file = "")
@@ -1333,7 +1330,7 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
   mean_kls <- apply(medians, 1, mean)
   
   time_elapsed <- difftime(Sys.time(), time_start, units = "auto")
-  cat(paste("\nCompleted in:", as.double(time_elapsed), units(time_elapsed)))
+  message("\nCompleted in:", as.double(time_elapsed), units(time_elapsed))
   # make dataframe
   df_kl <- data.frame(median_kl = c(mean_kls, log2(k.test)), k = c(k.test, k.test),
                       calc = c(rep('KL_div', length(k.test)), rep('log2(k)', length(k.test))))
@@ -1348,7 +1345,7 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
     theme(legend.position = 'top')
   
   if (return.data) {
-    print(p1)
+    message(p1)
     if (return.raw) {
       rep_data <- lapply(rep_data, function(x) {
         rownames(x) <- k.test
@@ -1517,11 +1514,11 @@ quantileAlignSNF <- function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, r
     }
   }
   if (print.align.summary & length(unlist(too.few)) > 0) {
-    print("Summary:")
+    message("Summary:")
     for (i in 1:length(Hs)) {
-      print(paste("In dataset", names(Hs)[i], 
-                  "these clusters did not align normally (too few cells):"))
-      print(unique(too.few[[names(Hs)[i]]]))
+      warning("In dataset", names(Hs)[i], 
+              "these clusters did not align normally (too few cells):")
+      message(unique(too.few[[names(Hs)[i]]]))
     }
   }
   object@H.norm <- Reduce(rbind, Hs)
@@ -1592,10 +1589,10 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
     if (dist.use == "CR") {
       norm <- t(apply(object@H[[i]][, dims.use], 1, scaleL2norm))
       if (any(is.na(norm))) {
-        stop(paste(
-          "Unable to normalize loadings for all cells; some cells",
+        stop(
+          "Unable to normalize loadings for all cells; some cells ",
           "loading on no selected factors."
-        ))
+        )
       }
     } else {
       norm <- object@H[[i]][, dims.use]
@@ -1608,10 +1605,10 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
   rownames(NN.maxes) <- unlist(lapply(object@H, rownames))
   # extract small clusters
   if (small.clust.thresh > 0) {
-    print(paste0(
+    message(
       "Isolating small clusters with fewer than ", small.clust.thresh,
       " members"
-    ))
+    )
   }
   max.val <- factor(apply(NN.maxes, 1, which.max))
   names(max.val) <- rownames(NN.maxes)
@@ -1652,8 +1649,7 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
 #' Perform t-SNE dimensionality reduction
 #' 
 #' Runs t-SNE on the normalized cell factors (or raw cell factors) to generate a 2D embedding for 
-#' visualization. Has option to run on subset of factors. Note that running multiple times will
-#' reset tsne.coords values. 
+#' visualization. Has option to run on subset of factors.
 #' 
 #' In order to run fftRtsne (recommended for large datasets), you must first install FIt-SNE as 
 #' detailed \href{https://github.com/KlugerLab/FIt-SNE}{here}. Include the path to the cloned 
@@ -1674,7 +1670,7 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
 #'   for using fftRtsne -- only first time runTSNE is called) (default NULL).
 #' @param rand.seed Random seed for reproducibility (default 42).
 #' 
-#' @return \code{liger} object with tsne.coords slot set. 
+#' @return \code{liger} object with dr.coord["tsne"] slot set. 
 #' @importFrom Rtsne Rtsne
 #' @export
 #' @examples
@@ -1683,9 +1679,9 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
 #' ligerex
 #' # generate H.norm by quantile aligning factor loadings
 #' ligerex <- quantileAlignSNF(ligerex)
-#' # get tsne.coords for normalized data
+#' # get dr.coord["tsne"] for normalized data
 #' ligerex <- runTSNE(ligerex)
-#' # get tsne.coords for raw factor loadings
+#' # get dr.coord["tsne"] for raw factor loadings
 #' ligerex <- runTSNE(ligerex, use.raw = T)
 #' }
 
@@ -1702,8 +1698,8 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
   }
   if (method == 'Rtsne') {
     set.seed(rand.seed)
-    object@tsne.coords <- Rtsne(data.use[, dims.use], pca = use.pca, check_duplicates = F, 
-                                theta = theta, perplexity = perplexity)$Y
+    object@dr.coords["tsne"] <- Rtsne(data.use[, dims.use], pca = use.pca, check_duplicates = F, 
+                                      theta = theta, perplexity = perplexity)$Y
   } else if (method == 'fftRtsne') {
     if (!exists('fftRtsne')) {
       if (is.null(fitsne.path)) {
@@ -1711,12 +1707,12 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
       }
       source(paste0(fitsne.path, '/fast_tsne.R'), chdir = T)
     }
-    object@tsne.coords <- fftRtsne(data.use[, dims.use], rand_seed = rand.seed, 
-                                   theta = theta, perplexity = perplexity)
+    object@dr.coords["tsne"] <- fftRtsne(data.use[, dims.use], rand_seed = rand.seed, 
+                                         theta = theta, perplexity = perplexity)
   } else {
     stop('Invalid method: Please choose Rtsne or fftRtsne')
   }
-  rownames(object@tsne.coords) <- rownames(data.use)
+  rownames(object@dr.coords["tsne"]) <- rownames(data.use)
   return(object)
 }
 
@@ -1725,8 +1721,8 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 #' @description
 #' Run UMAP on the normalized cell factors (or raw cell factors) to generate a 2D embedding for 
 #' visualization (or general dimensionality reduction). Has option to run on subset of factors. 
-#' Note that running multiple times will overwrite tsne.coords values. It is generally 
-#' recommended to use this method for dimensionality reduction with extremely large datasets.
+#' It is generally recommended to use this method for dimensionality reduction with extremely large 
+#' datasets.
 #' 
 #' Note that this method requires that the package reticulate is installed, along with the Python 
 #' package umap-learn. 
@@ -1748,7 +1744,7 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 #'   the range 0.001 to 0.5, with 0.1 being a reasonable default. (default 0.1)
 #' @param rand.seed Random seed for reproducibility (default 42).
 #' 
-#' @return \code{liger} object with tsne.coords slot set. 
+#' @return \code{liger} object with dr.coords["umap"] slot set. 
 #' @export
 #' @examples
 #' \dontrun{
@@ -1756,9 +1752,9 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 #' ligerex
 #' # generate H.norm by quantile aligning factor loadings
 #' ligerex <- quantileAlignSNF(ligerex)
-#' # get tsne.coords for normalized data
+#' # get dr.coords["umap"] for normalized data
 #' ligerex <- runUMAP(ligerex)
-#' # get tsne.coords for raw factor loadings
+#' # get dr.coords["umap"] for raw factor loadings
 #' ligerex <- runUMAP(ligerex, use.raw = T)
 #' }
 
@@ -1784,11 +1780,11 @@ runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2,
     if (identical(dims.use, 1:0)) {
       dims.use <- 1:ncol(raw.data)
     }
-    object@tsne.coords <- Rumap(raw.data[, dims.use])
-    rownames(object@tsne.coords) <- rownames(raw.data)
+    object@drs.coords["umap"] <- Rumap(raw.data[, dims.use])
+    rownames(object@drs.coords["umap"]) <- rownames(raw.data)
   } else {
-    object@tsne.coords <- Rumap(object@H.norm[, dims.use])
-    rownames(object@tsne.coords) <- rownames(object@H.norm)
+    object@drs.coords["umap"] <- Rumap(object@H.norm[, dims.use])
+    rownames(object@drs.coords["umap"]) <- rownames(object@H.norm)
   }
   return(object)
 }
@@ -1992,7 +1988,7 @@ calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL, cel
     num_cells <- length(c(cells.use, cells.comp))
     func_H <- list(cells1 = nmf_factors[cells.use, ],
                    cells2 = nmf_factors[cells.comp, ])
-    print('Using designated sets cells.use and cells.comp as subsets to compare')
+    message('Using designated sets cells.use and cells.comp as subsets to compare')
   } else {
     nmf_factors <- object@H.norm[cells.use, ]
     num_cells <- length(cells.use)
@@ -2025,7 +2021,7 @@ calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL, cel
   if (is.null(k)) {
     k <- min(max(floor(0.01 * num_cells), 10), max_k)
   } else if (k > max_k) {
-    stop(paste0("Please select k <=", max_k))
+    stop("Please select k <=", max_k)
   }
   knn_graph <- get.knn(nmf_factors[sampled_cells, 1:num_factors], k)
   # Generate new "datasets" for desired cell groups
@@ -2093,7 +2089,7 @@ calcAlignmentPerCluster <- function(object, rand.seed = 1, k = NULL, by.dataset 
     if (length(k) == 1) {
       k <- rep(k, length(clusters))
     } else if (length(k) != length(clusters)) {
-      print("Length of k does not match length of clusters")
+      stop("Length of k does not match length of clusters")
     }
   }
   align_metrics <- sapply(seq_along(clusters), function(x) {
@@ -2143,7 +2139,7 @@ calcAlignmentPerCluster <- function(object, rand.seed = 1, k = NULL, by.dataset 
 
 calcARI <- function(object, clusters.compare) {
   if (length(clusters.compare) < length(object@clusters)) {
-    print("Calculating ARI for subset of full cells")
+    message("Calculating ARI for subset of full cells")
   }
   return(adjustedRandIndex(object@clusters[names(clusters.compare)], 
                            clusters.compare))
@@ -2179,7 +2175,7 @@ calcARI <- function(object, clusters.compare) {
 
 calcPurity <- function(object, classes.compare) {
   if (length(classes.compare) < length(object@clusters)) {
-    print("Calculating purity for subset of full cells")
+    message("Calculating purity for subset of full cells")
   }
   clusters <- object@clusters[names(classes.compare)]
   purity <- sum(apply(table(classes.compare, clusters), 2, max)) / length(clusters)
@@ -2199,6 +2195,8 @@ calcPurity <- function(object, classes.compare) {
 #' names match those of cells). 
 #'
 #' @param object \code{liger} object. Should call runTSNE or runUMAP before calling. 
+#' @param dr.method Dimensionality reduction method to reference. Should call the appropriate function
+#'   (runTSNE for "tsne") or (runUMAP for "umap") first. 
 #' @param clusters Another clustering to use for coloring second plot (must have same names as 
 #'   clusters slot) (default NULL).
 #' @param title Plot titles (list or vector of length 2) (default NULL).
@@ -2221,7 +2219,7 @@ calcPurity <- function(object, classes.compare) {
 #' \dontrun{
 #'  # liger object with aligned factor loadings
 #' ligerex
-#' # get tsne.coords for normalized data
+#' # get dr.coords["tsne"] for normalized data
 #' ligerex <- runTSNE(ligerex)
 #' # plot to console
 #' plotByDatasetAndCluster(ligerex)
@@ -2229,11 +2227,18 @@ calcPurity <- function(object, classes.compare) {
 #' plots <- plotByDatasetAndCluster(ligerex, return.plots = T)
 #' }
 
-plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
+plotByDatasetAndCluster <- function(object, dr.method = "tsne", clusters = NULL, title = NULL, pt.size = 0.3,
                                     text.size = 3, do.shuffle = T, rand.seed = 1, 
                                     axis.labels = NULL, do.legend = T, legend.size = 5, 
                                     return.plots = F) {
-  tsne_df <- data.frame(object@tsne.coords)
+  if(dr.method != "tsne" || dr.method != "umap"){
+    stop("Method does not match a valid value")
+  }
+  if(is.null(object@dr.coords[dr.method])){
+    stop("object@dr.coords[dr.method] is null.Please run the corresponding dimensionality 
+         reduction method runTSNE or runUMAP first.")
+  }
+  tsne_df <- data.frame(object@dr.coords[dr.method])
   colnames(tsne_df) <- c("tsne1", "tsne2")
   tsne_df$Dataset <- unlist(lapply(1:length(object@H), function(x) {
     rep(names(object@H)[x], nrow(object@H[[x]]))
@@ -2242,8 +2247,8 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
   if (is.null(clusters)) {
     # if clusters have not been set yet
     if (length(object@clusters) == 0) {
-      clusters <- rep(1, nrow(object@tsne.coords))
-      names(clusters) <- c_names <- rownames(object@tsne.coords)
+      clusters <- rep(1, nrow(object@dr.coords[dr.method]))
+      names(clusters) <- c_names <- rownames(object@dr.coords[dr.method])
     } else {
       clusters <- object@clusters
       c_names <- names(object@clusters)
@@ -2283,10 +2288,10 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
   if (return.plots) {
     return(list(p1, p2))
   } else {
-    print(p1)
-    print(p2)
+    message(p1)
+    message(p2)
   }
-}
+  }
 
 #' Plot specific feature on t-SNE coordinates 
 #' 
@@ -2296,6 +2301,8 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #'
 #' @param object \code{liger} object. Should call runTSNE or runUMAP before calling. 
 #' @param feature Feature to plot (should be column from cell.data slot).
+#' @param dr.method Dimensionality reduction method to reference. Should call the appropriate function
+#'   (runTSNE for "tsne") or (runUMAP for "umap") first. 
 #' @param by.dataset Whether to generate separate plot for each dataset (default TRUE).
 #' @param title Plot title (default NULL).
 #' @param pt.size Controls size of points representing cells (default 0.3).
@@ -2320,17 +2327,24 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #' \dontrun{
 #'  # liger object with aligned factor loadings
 #' ligerex
-#' # get tsne.coords for normalized data
+#' # get dr.coords["tsne"] for normalized data
 #' ligerex <- runTSNE(ligerex)
 #' # plot nUMI to console
 #' plotFeature(ligerex, feature = 'nUMI')
 #' }
 
-plotFeature <- function(object, feature, by.dataset = T, title = NULL, pt.size = 0.3,
+plotFeature <- function(object, feature, dr.method = "tsne", by.dataset = T, title = NULL, pt.size = 0.3,
                         text.size = 3, do.shuffle = T, rand.seed = 1, do.labels = F,
                         axis.labels = NULL, do.legend = T, legend.size = 5, option = 'plasma', 
                         zero.color = '#F5F5F5', return.plots = F) {
-  dr_df <- data.frame(object@tsne.coords)
+  if(dr.method != "tsne" || dr.method != "umap"){
+    stop("Method does not match a valid value")
+  }
+  if(is.null(object@dr.coords[dr.method])){
+    stop("object@dr.coords[dr.method] is null. Please run the corresponding dimensionality 
+         reduction method runTSNE or runUMAP first.")
+  }
+  dr_df <- data.frame(object@dr.coords[method])
   colnames(dr_df) <- c("dr1", "dr2")
   if (!(feature %in% colnames(object@cell.data))) {
     stop('Please select existing feature in cell.data, or add it before calling.')
@@ -2397,7 +2411,7 @@ plotFeature <- function(object, feature, by.dataset = T, title = NULL, pt.size =
       print(plot)
     }
   }
-}
+  }
 
 #' Plot scatter plots of unaligned and aligned factor loadings
 #'
@@ -2413,7 +2427,9 @@ plotFeature <- function(object, feature, by.dataset = T, title = NULL, pt.size =
 #' @param object \code{liger} object. Should call quantileAlignSNF before calling.
 #' @param num.genes Number of genes to display for each factor (default 10).
 #' @param cells.highlight Names of specific cells to highlight in plot (black) (default NULL).
-#' @param plot.tsne Plot t-SNE coordinates for each factor (default FALSE).
+#' @param plot.dr Plot t-SNE or UMAP coordinates for each factor (default FALSE).
+#' @param dr.method Dimensionality reduction method to reference. Should call the appropriate function
+#'   (runTSNE for "tsne") or (runUMAP for "umap") first.
 #' 
 #' @return Plots to console (1-2 pages per factor)
 #' @export
@@ -2422,7 +2438,7 @@ plotFeature <- function(object, feature, by.dataset = T, title = NULL, pt.size =
 #'  # liger object with factorization complete 
 #' ligerex
 #' ligerex <- quantileAlignSNF(ligerex)
-#' # get tsne.coords for normalized data
+#' # get dr.coords["tsne"] for normalized data
 #' ligerex <- runTSNE(ligerex)
 #' # factor plots into pdf file
 #' pdf("plot_factors.pdf")
@@ -2430,7 +2446,7 @@ plotFeature <- function(object, feature, by.dataset = T, title = NULL, pt.size =
 #' dev.off()
 #' }
 
-plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsne = F) {
+plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.dr = F, dr.method = "tsne") {
   k <- ncol(object@H.norm)
   pb <- txtProgressBar(min = 0, max = k, style = 3)
   
@@ -2463,9 +2479,16 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
          pch = 20, cex = 0.2,
          col = cols, xlab = "Cell", ylab = "H_norm Score"
     )
-    if (plot.tsne) {
+    if (plot.dr) {
+      if(dr.method != "tsne" || dr.method != "umap"){
+        stop("Method does not match a valid value")
+      }
+      if(is.null(object@dr.coords[dr.method])){
+        stop("object@dr.coords[dr.method] is null. Please run the corresponding dimensionality 
+           reduction method runTSNE or runUMAP first.")
+      }
       par(mfrow = c(1, 1))
-      fplot(object@tsne.coords, object@H.norm[, i], title = paste0("Factor ", i))
+      fplot(object@dr.coords[dr.method], object@H.norm[, i], title = paste0("Factor ", i))
     }
     setTxtProgressBar(pb, i)
   }
@@ -2497,6 +2520,8 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
 #' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
 #'   (default 0.05).
+#' @param dr.method Dimensionality reduction method to reference. Should call the appropriate function
+#'   (runTSNE for "tsne") or (runUMAP for "umap") first.
 #' @param do.spec.plot Include dataset specificity plot in printout (default TRUE).
 #' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
 #'   
@@ -2517,13 +2542,19 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 
 plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1, 
                            max.size = 4, factor.share.thresh = 10, log.fc.thresh = 1,
-                           umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05, 
+                           umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05, dr.method = "tsne"
                            do.spec.plot = T, return.plots = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
   }
-  
+  if(dr.method != "tsne" || dr.method != "umap"){
+    stop("Method does not match a valid value")
+  }
+  if(is.null(object@dr.coords[dr.method])){
+    stop("object@dr.coords[dr.method] is null. Please run the corresponding dimensionality 
+         reduction method runTSNE or runUMAP first.")
+  }
   H_aligned <- object@H.norm
   W <- t(object@W)
   V1 <- t(object@V[[dataset1]])
@@ -2545,7 +2576,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
   rownames(W) <- rownames(V1) <- rownames(V2) <- object@var.genes
   loadings_list <- list(V1, W, V2)
   names_list <- list(dataset1, "Shared", dataset2)
-  tsne_coords <- object@tsne.coords
+  tsne_coords <- object@dr.coords[dr.method]
   pb <- txtProgressBar(min = 0, max = length(factors.use), style = 3)
   return_plots <- list()
   for (i in factors.use) {
@@ -2612,6 +2643,8 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' @param object \code{liger} object. Should call runTSNE before calling.
 #' @param dataset1 Name of first dataset (by default takes first two datasets for dataset1 and 2)
 #' @param dataset2 Name of second dataset
+#' @param dr.method Dimensionality reduction method to referece. Should call the appropriate function
+#'   (runTSNE for "tsne") or (runUMAP for "umap") first.
 #' @param num.genes Number of genes to show in word clouds (default 30).
 #' @param mark.top.genes Plot points corresponding to top loading genes in different color (default
 #'   TRUE).
@@ -2642,7 +2675,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' dev.off()
 #' }
 
-plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes.show = 12,
+plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL,dr.method = "tsne", num.genes.show = 12,
                              num.genes = 30, mark.top.genes = T, factor.share.thresh = 10,
                              log.fc.thresh = 1, umi.thresh = 30, frac.thresh = 0,
                              pval.thresh = 0.05, do.spec.plot = T, max.val = 0.1, pt.size = 0.1,
@@ -2651,7 +2684,13 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
   }
-  
+  if(dr.method != "tsne" || dr.method != "umap"){
+    stop("Method does not match a valid value")
+  }
+  if(is.null(object@dr.coords[dr.method])){
+    stop("object@dr.coords[dr.method] is null. Please run the corresponding dimensionality 
+         reduction method runTSNE or runUMAP first.")
+  }
   H_aligned <- object@H.norm
   W_orig <- t(object@W)
   V1 <- t(object@V[[dataset1]])
@@ -2678,7 +2717,7 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
   rownames(W) <- rownames(V1) <- rownames(V2) <- rownames(W_orig) <- object@var.genes
   loadings_list <- list(V1, W, V2)
   names_list <- list(dataset1, "Shared", dataset2)
-  tsne_coords <- object@tsne.coords
+  tsne_coords <- object@dr.coords[dr.method]
   pb <- txtProgressBar(min = 0, max = length(factors.use), style = 3)
   return_plots <- list()
   for (i in factors.use) {
@@ -2795,6 +2834,8 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
 #' @param methylation.indices Indices of datasets in object with methylation data (this data is not
 #'   magnified and put on log scale).
 #' @param by.dataset Plots gene expression for each dataset separately (default TRUE).
+#' @param dr.method Dimensionality reduction method to referece. Should call the appropriate function
+#'   (runTSNE for "tsne") or (runUMAP for "umap") first.
 #' @param return.plots Return ggplot objects instead of printing directly to console (default
 #'   FALSE).
 #'   
@@ -2810,7 +2851,14 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
 #' }
 
 plotGeneViolin <- function(object, gene, methylation.indices = NULL,
-                           by.dataset = T, return.plots = F) {
+                           by.dataset = T, dr.method = "tsne", return.plots = F) {
+  if(dr.method != "tsne" || dr.method != "umap"){
+    stop("Method does not match a valid value")
+  }
+  if(is.null(object@dr.coords[dr.method])){
+    stop("object@dr.coords[dr.method] is null. Please run the corresponding dimensionality 
+         reduction method runTSNE or runUMAP first.")
+  }
   gene_vals <- c()
   for (i in 1:length(object@norm.data)) {
     if (i %in% methylation.indices) {
@@ -2827,7 +2875,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
     }
   }
   
-  gene_df <- data.frame(object@tsne.coords)
+  gene_df <- data.frame(object@dr.coords[dr.method])
   rownames(gene_df) <- names(object@clusters)
   gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])
   colnames(gene_df) <- c("tSNE1", "tSNE2", "gene")
@@ -2870,6 +2918,8 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #'
 #' @param object \code{liger} object. Should call runTSNE before calling.
 #' @param gene Gene for which to plot relative expression.
+#' @param dr.method Dimensionality reduction method to referece. Should call the appropriate function
+#'   (runTSNE for "tsne") or (runUMAP for "umap") first.
 #' @param use.raw Plot raw values instead of normalized and log-transformed data (default FALSE). 
 #' @param methylation.indices Indices of datasets in object with methylation data (this data is not
 #'   magnified and put on log scale).
@@ -2894,9 +2944,16 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
 #' }
 
-plotGene <- function(object, gene, use.raw = F, methylation.indices = NULL, pt.size = 0.1, 
+plotGene <- function(object, gene, dr.method ="tsne", use.raw = F, methylation.indices = NULL, pt.size = 0.1, 
                      min.clip = 0, max.clip = 1, points.only = F, option = 'plasma', 
                      zero.color = '#F5F5F5', return.plots = F) {
+  if(dr.method != "tsne" || dr.method != "umap"){
+    stop("Method does not match a valid value")
+  }
+  if(is.null(object@dr.coords[dr.method])){
+    stop("object@dr.coords[dr.method] is null. Please run the corresponding dimensionality 
+         reduction method runTSNE or runUMAP first.")
+  }
   gene_vals <- c()
   if (use.raw) {
     for (i in 1:length(object@raw.data)) {
@@ -2929,7 +2986,7 @@ plotGene <- function(object, gene, use.raw = F, methylation.indices = NULL, pt.s
     }
   }
   gene_vals[gene_vals == 0] <- NA
-  gene_df <- data.frame(object@tsne.coords)
+  gene_df <- data.frame(object@dr.coords["dr.method"])
   rownames(gene_df) <- names(object@clusters)
   gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])
   colnames(gene_df) <- c("tSNE1", "tSNE2", "gene")
@@ -3053,7 +3110,7 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
   if (length(intersect(levels(cluster1), levels(cluster2))) > 0 |
       length(intersect(levels(cluster1), levels(cluster_consensus))) > 0 |
       length(intersect(levels(cluster2), levels(cluster_consensus))) > 0) {
-    print("Duplicate cluster names detected. Adding 1- and 2- to make unique names.")
+    message("Duplicate cluster names detected. Adding 1- and 2- to make unique names.")
     cluster1 <- mapvalues(cluster1, from = levels(cluster1), 
                           to = paste("1", levels(cluster1), sep = "-"))
     cluster2 <- mapvalues(cluster2, from = levels(cluster2), 
@@ -3331,10 +3388,9 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
   factors.use <- which(abs(dataset.specificity[[3]]) <= factor.share.thresh)
   
   if (length(factors.use) < 2) {
-    print(paste(
-      "Warning: only", length(factors.use),
-      "factors passed the dataset specificity threshold."
-    ))
+    warning("only", length(factors.use),
+            "factors passed the dataset specificity threshold."
+    )
   }
   
   Hs_scaled <- lapply(object@H, function(x) {
@@ -3358,7 +3414,7 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
     rownames(W) <- rownames(V1) <- rownames(V2) <- object@var.genes
     # if not max factor for any cell in either dataset
     if (sum(labels[[dataset1]] == i) <= 1 | sum(labels[[dataset2]] == i) <= 1) {
-      print(paste("Warning: factor", i, "did not appear as max in any cell in either dataset"))
+      warning("Factor", i, "did not appear as max in any cell in either dataset")
       next
     }
     # filter genes by gene_count and cell_frac thresholds
@@ -3411,12 +3467,12 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
     top_genes_W <- top_genes_W[which(W[top_genes_W, i] > 0)]
     
     if (print.genes) {
-      print(paste("Factor", i))
-      print('Dataset 1')
+      message("Factor ", i)
+      message('Dataset 1')
       print(top_genes_V1)
-      print('Shared')
+      message('Shared')
       print(top_genes_W)
-      print('Dataset 2')
+      message('Dataset 2')
       print(top_genes_V2)
     }
     
@@ -3489,7 +3545,7 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #' Create a Seurat object containing the data from a liger object
 #' 
 #' Merges raw.data and scale.data of object, and creates Seurat object with these values along with 
-#' tsne.coords, iNMF factorization, and cluster assignments. Supports Seurat V2 and V3.
+#' dr.coords[method], iNMF factorization, and cluster assignments. Supports Seurat V2 and V3.
 #' 
 #' Stores original dataset identity by default in new object metadata if dataset names are passed 
 #' in nms. iNMF factorization is stored in dim.reduction object with key "iNMF". 
@@ -3526,6 +3582,7 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
       as(x, 'CsparseMatrix')
     })
   }
+  
   raw.data <- MergeSparseDataAll(object@raw.data, nms)
   scale.data <- do.call(rbind, object@scale.data)
   rownames(scale.data) <- colnames(raw.data)
@@ -3537,13 +3594,13 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
     )
     rownames(inmf.obj@gene.loadings) <- var.genes
     tsne.obj <- new(
-      Class = "dim.reduction", cell.embeddings = object@tsne.coords,
+      Class = "dim.reduction", cell.embeddings = object@dr.coords["tsne"],
       key = "tSNE_"
     )
   } else {
     var.genes <- object@var.genes
     if (any(grepl('_', var.genes))) {
-      print("Warning: Seurat v3 genes cannot have underscores, replacing with dashes ('-')")
+      warning("Seurat v3 genes cannot have underscores, replacing with dashes ('-')")
       var.genes <- gsub("_", replacement = "-", var.genes)
     }
     inmf.obj <- new(
@@ -3552,7 +3609,7 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
     )
     rownames(inmf.obj@feature.loadings) <- var.genes
     tsne.obj <- new(
-      Class = "DimReduc", cell.embeddings = object@tsne.coords,
+      Class = "DimReduc", cell.embeddings = object@dr.coords["tsne"],
       key = "tSNE_"
     )
   }
@@ -3689,9 +3746,9 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
         object.raw <- objects@raw.data
       }
       if (nrow(objects@meta.data) != ncol(object.raw)) {
-        cat("Warning: Mismatch between meta.data and raw.data in this Seurat object. \nSome cells", 
-            "will not be assigned to a raw dataset. \nRepeat Seurat analysis without filters to",
-            "allow all cells to be assigned.\n")
+        warning("Mismatch between meta.data and raw.data in this Seurat object. \nSome cells", 
+                "will not be assigned to a raw dataset. \nRepeat Seurat analysis without filters to",
+                "allow all cells to be assigned.\n")
       }
       raw.data <- lapply(unique(objects@meta.data[[meta.var]]), function(x) {
         cells <- rownames(objects@meta.data[objects@meta.data[[meta.var]] == x, ])
@@ -3710,22 +3767,22 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
       var.genes <- VariableFeatures(objects)
       idents <- Idents(objects)
       if (is.null(objects@reductions$tsne)) {
-        cat("Warning: no t-SNE coordinates available for this Seurat object.\n")
-        tsne.coords <- NULL
+        warning("No t-SNE coordinates available for this Seurat object.\n")
+        dr.coords["tsne"] <- NULL
       } else {
-        tsne.coords <- objects@reductions$tsne@cell.embeddings
+        dr.coords["tsne"] <- objects@reductions$tsne@cell.embeddings
       }
     } else {
       # Get var.genes
       var.genes <- objects@var.genes
       # Get idents/clusters
       idents <- objects@ident
-      # Get tsne.coords
+      # Get dr.coords["tsne"]
       if (is.null(objects@dr$tsne)) {
-        cat("Warning: no t-SNE coordinates available for this Seurat object.\n")
-        tsne.coords <- NULL
+        warning("Warning: no t-SNE coordinates available for this Seurat object.\n")
+        dr.coords["tsne"] <- NULL
       } else {
-        tsne.coords <- objects@dr$tsne@cell.embeddings
+        dr.coords["tsne"] <- objects@dr$tsne@cell.embeddings
       }
     }
   } else {
@@ -3741,7 +3798,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
     names(raw.data) <- lapply(seq_along(objects), function(x) {
       if (identical(names, "use-projects")) {
         if (!is.null(meta.var)) {
-          cat("Warning: meta.var value is set - set names = 'use-meta' to use meta.var for names.\n")
+          warning("meta.var value is set - set names = 'use-meta' to use meta.var for names.\n")
         }
         objects[[x]]@project.name
       } else if (identical(names, "use-meta")) {
@@ -3754,7 +3811,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
       }
     })
     # tsne coords not very meaningful for separate objects 
-    tsne.coords <- NULL
+    dr.coords["tsne"] <- NULL
     
     if (version > 2) {
       var.genes <- Reduce(union, lapply(objects, function(x) {
@@ -3805,17 +3862,17 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
   if (use.idents) {
     new.liger@clusters <- idents
   }
-  if ((use.tsne) & (!is.null(tsne.coords))) {
-    new.liger@tsne.coords <- tsne.coords
+  if ((use.tsne) & (!is.null(dr.coords["tsne"]))) {
+    new.liger@dr.coords["tsne"] <- dr.coords["tsne"]
   }
   # Get CCA loadings if requested 
   if (cca.to.H & combined.seurat) {
     if (version > 2) {
-      cat("Warning: no CCA loadings available for Seurat v3 objects.\n")
+      warning("no CCA loadings available for Seurat v3 objects.\n")
       return(new.liger)
     }
     if (is.null(objects@dr$cca)) {
-      cat("Warning: no CCA loadings available for this Seurat object.\n")
+      warning("no CCA loadings available for this Seurat object.\n")
     } else {
       new.liger@H <- lapply(unique(objects@meta.data[[meta.var]]), function(x) {
         cells <- rownames(objects@meta.data[objects@meta.data[[meta.var]] == x, ])
@@ -3827,7 +3884,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
       names(new.liger@H) <- names(new.liger@raw.data)
     }
     if (is.null(objects@dr$cca.aligned)) {
-      cat("Warning: no aligned CCA loadings available for this Seurat object.\n")
+      warning("no aligned CCA loadings available for this Seurat object.\n")
     } else {
       new.liger@H.norm <- objects@dr$cca.aligned@cell.embeddings
       new.liger@H.norm <- addMissingCells(Reduce(rbind, new.liger@H), new.liger@H.norm,
@@ -3840,7 +3897,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
 #' Construct a liger object with a specified subset 
 #' 
 #' The subset can be based on cell names or clusters. This function applies the subsetting to 
-#' raw.data, norm.data, scale.data, cell.data, H, W, V, H.norm, tsne.coords, and clusters. 
+#' raw.data, norm.data, scale.data, cell.data, H, W, V, H.norm, dr.coords["tsne"], and clusters. 
 #' Note that it does NOT reoptimize the factorization. See optimizeSubset for this functionality. 
 #'
 #' @param object \code{liger} object. Should run quantileAlignSNF and runTSNE before calling. 
@@ -3850,7 +3907,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
 #'   (default TRUE).
 #'
 #' @return \code{liger} object with subsetting applied to raw.data, norm.data, scale.data, H, W, V,
-#'   H.norm, tsne.coords, and clusters.
+#'   H.norm, dr.coords["tsne"], and clusters.
 #' @export
 #' @examples
 #' \dontrun{
@@ -3870,37 +3927,37 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
     if (length(cells) > 0) {
       object@raw.data[[q]][, cells]
     } else {
-      warning(paste0("Selected subset eliminates dataset ", names(object@raw.data)[q]))
-      return(NULL)
+      warning("Selected subset eliminates dataset ", names(object@raw.data)[q]))
+  return(NULL)
     }
   })
-  missing <- sapply(raw.data, is.null)
-  raw.data <- raw.data[!missing]
-  nms <- names(object@raw.data)[!missing]
-  names(raw.data) <- nms
-  a <- createLiger(raw.data, remove.missing = remove.missing)
-  # Add back additional cell.data
-  if (ncol(a@cell.data) < ncol(object@cell.data)) {
-    a@cell.data <- droplevels(data.frame(object@cell.data[cells.use, ]))
-  }
-  a@norm.data <- lapply(1:length(a@raw.data), function(i) {
-    object@norm.data[[nms[i]]][, colnames(a@raw.data[[i]])]
-  })
-  a@scale.data <- lapply(1:length(a@raw.data), function(i) {
-    object@scale.data[[nms[i]]][colnames(a@raw.data[[i]]), ]
-  })
-  a@H <- lapply(1:length(a@raw.data), function(i) {
-    object@H[[nms[i]]][colnames(a@raw.data[[i]]), ]
-  })
-  a@clusters <- object@clusters[unlist(lapply(a@H, rownames))]
-  a@clusters <- droplevels(a@clusters)
-  a@tsne.coords <- object@tsne.coords[names(a@clusters), ]
-  a@H.norm <- object@H.norm[names(a@clusters), ]
-  a@W <- object@W
-  a@V <- object@V
-  a@var.genes <- object@var.genes
-  names(a@scale.data) <- names(a@norm.data) <- names(a@H) <- nms
-  return(a)
+missing <- sapply(raw.data, is.null)
+raw.data <- raw.data[!missing]
+nms <- names(object@raw.data)[!missing]
+names(raw.data) <- nms
+a <- createLiger(raw.data, remove.missing = remove.missing)
+# Add back additional cell.data
+if (ncol(a@cell.data) < ncol(object@cell.data)) {
+  a@cell.data <- droplevels(data.frame(object@cell.data[cells.use, ]))
+}
+a@norm.data <- lapply(1:length(a@raw.data), function(i) {
+  object@norm.data[[nms[i]]][, colnames(a@raw.data[[i]])]
+})
+a@scale.data <- lapply(1:length(a@raw.data), function(i) {
+  object@scale.data[[nms[i]]][colnames(a@raw.data[[i]]), ]
+})
+a@H <- lapply(1:length(a@raw.data), function(i) {
+  object@H[[nms[i]]][colnames(a@raw.data[[i]]), ]
+})
+a@clusters <- object@clusters[unlist(lapply(a@H, rownames))]
+a@clusters <- droplevels(a@clusters)
+a@dr.coords["tsne"] <- object@dr.coords["tsne"][names(a@clusters), ]
+a@H.norm <- object@H.norm[names(a@clusters), ]
+a@W <- object@W
+a@V <- object@V
+a@var.genes <- object@var.genes
+names(a@scale.data) <- names(a@norm.data) <- names(a@H) <- nms
+return(a)
 }
 
 #' Convert older liger object into most current version (based on class definition) 
@@ -3937,9 +3994,9 @@ convertOldLiger = function(object, override.raw = F) {
       slot(new.liger, slotname) <- slot(object, slotname) 
     }
   } 
-  print(paste0('Old slots not transferred: ', setdiff(slots_old, slots_new)))
+  warning('Old slots not transferred: ', setdiff(slots_old, slots_new))
   # compare to slots since it's possible that the analogizer object
   # class has slots that this particular object does not 
-  print(paste0('New slots not filled: ', setdiff(slots_new[slots_new != "cell.data"], slots)))
+  warning('New slots not filled: ', setdiff(slots_new[slots_new != "cell.data"], slots))
   return(new.liger)
 }
