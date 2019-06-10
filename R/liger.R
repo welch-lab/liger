@@ -2231,7 +2231,7 @@ plotByDatasetAndCluster <- function(object, dr.method = "tsne", clusters = NULL,
                                     text.size = 3, do.shuffle = T, rand.seed = 1, 
                                     axis.labels = NULL, do.legend = T, legend.size = 5, 
                                     return.plots = F) {
-  if(dr.method != "tsne" || dr.method != "umap"){
+  if(dr.method != "tsne" && dr.method != "umap"){
     stop("Method does not match a valid value")
   }
   if(is.null(object@dr.coords[dr.method])){
@@ -2337,7 +2337,7 @@ plotFeature <- function(object, feature, dr.method = "tsne", by.dataset = T, tit
                         text.size = 3, do.shuffle = T, rand.seed = 1, do.labels = F,
                         axis.labels = NULL, do.legend = T, legend.size = 5, option = 'plasma', 
                         zero.color = '#F5F5F5', return.plots = F) {
-  if(dr.method != "tsne" || dr.method != "umap"){
+  if(dr.method != "tsne" && dr.method != "umap"){
     stop("Method does not match a valid value")
   }
   if(is.null(object@dr.coords[dr.method])){
@@ -2480,7 +2480,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.dr 
          col = cols, xlab = "Cell", ylab = "H_norm Score"
     )
     if (plot.dr) {
-      if(dr.method != "tsne" || dr.method != "umap"){
+      if(dr.method != "tsne" && dr.method != "umap"){
         stop("Method does not match a valid value")
       }
       if(is.null(object@dr.coords[dr.method])){
@@ -2542,13 +2542,13 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.dr 
 
 plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1, 
                            max.size = 4, factor.share.thresh = 10, log.fc.thresh = 1,
-                           umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05, dr.method = "tsne"
+                           umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05, dr.method = "tsne",
                            do.spec.plot = T, return.plots = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
   }
-  if(dr.method != "tsne" || dr.method != "umap"){
+  if(dr.method != "tsne" && dr.method != "umap"){
     stop("Method does not match a valid value")
   }
   if(is.null(object@dr.coords[dr.method])){
@@ -2684,7 +2684,7 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL,dr.method 
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
   }
-  if(dr.method != "tsne" || dr.method != "umap"){
+  if(dr.method != "tsne" && dr.method != "umap"){
     stop("Method does not match a valid value")
   }
   if(is.null(object@dr.coords[dr.method])){
@@ -2852,7 +2852,7 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL,dr.method 
 
 plotGeneViolin <- function(object, gene, methylation.indices = NULL,
                            by.dataset = T, dr.method = "tsne", return.plots = F) {
-  if(dr.method != "tsne" || dr.method != "umap"){
+  if(dr.method != "tsne" && dr.method != "umap"){
     stop("Method does not match a valid value")
   }
   if(is.null(object@dr.coords[dr.method])){
@@ -2947,7 +2947,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 plotGene <- function(object, gene, dr.method ="tsne", use.raw = F, methylation.indices = NULL, pt.size = 0.1, 
                      min.clip = 0, max.clip = 1, points.only = F, option = 'plasma', 
                      zero.color = '#F5F5F5', return.plots = F) {
-  if(dr.method != "tsne" || dr.method != "umap"){
+  if(dr.method != "tsne" && dr.method != "umap"){
     stop("Method does not match a valid value")
   }
   if(is.null(object@dr.coords[dr.method])){
@@ -3927,7 +3927,7 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
     if (length(cells) > 0) {
       object@raw.data[[q]][, cells]
     } else {
-      warning("Selected subset eliminates dataset ", names(object@raw.data)[q]))
+      warning("Selected subset eliminates dataset ", names(object@raw.data)[q])
   return(NULL)
     }
   })

@@ -131,7 +131,7 @@ test_that("Number of genes is correct for intersection", {
 })
 
 test_that("Gives warning when no genes selected", {
-  expect_warning(selectGenes(ligex, var.thresh = c(2.3, 2.3), do.plot = F, 
+  expect_error(selectGenes(ligex, var.thresh = c(2.3, 2.3), do.plot = F, 
                              combine = "intersection"))
 })
 

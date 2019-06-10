@@ -102,8 +102,8 @@ ligex <- runTSNE(ligex, use.raw = F, rand.seed = 1, method = 'Rtsne')
 ligex_rawtsne <- runTSNE(ligex, use.raw = T, rand.seed = 1, method = 'Rtsne')
 
 test_that("Dimensions are correct", {
-  expect_equal(dim(ligex@tsne.coords), c(494, 2))
-  expect_equal(dim(ligex_rawtsne@tsne.coords), c(494, 2))
+  expect_equal(dim(ligex@dr.coords["tsne"]), c(494, 2))
+  expect_equal(dim(ligex_rawtsne@dr.coords["tsne"]), c(494, 2))
 })
 
 
@@ -156,7 +156,7 @@ test_that("Returns correct subsetted object", {
                                                             "Myeloid_1040"))
   expect_equal(levels(ligex_subset@clusters), c("1", "2", "3", "4"))
   expect_equal(nrow(ligex_subset@cell.data), 257)
-  expect_equal(rownames(ligex_subset@cell.data), rownames(ligex_subset@tsne.coords))
+  expect_equal(rownames(ligex_subset@cell.data), rownames(ligex_subset@dr.coords["tsne"]))
 })
 
 # TODO: Add tests for ligerToSeurat and seuratToLiger functions 
