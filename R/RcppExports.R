@@ -2,17 +2,18 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 scaleNotCenterFast <- function(x) {
-    .Call(`_liger_scaleNotCenterFast`, x)
+    .Call('_liger_scaleNotCenterFast', PACKAGE = 'liger', x)
 }
 
 rowMeansFast <- function(x) {
-    .Call(`_liger_rowMeansFast`, x)
+    .Call('_liger_rowMeansFast', PACKAGE = 'liger', x)
 }
 
 rowVarsFast <- function(x, means) {
-    .Call(`_liger_rowVarsFast`, x, means)
+    .Call('_liger_rowVarsFast', PACKAGE = 'liger', x, means)
 }
 
-solve_nnls <- function(C, B) {
-    .Call('_liger_solve_nnls', PACKAGE = 'liger', C, B)
+solveNNLS <- function(C, B) {
+    .Call('_liger_solveNNLS', PACKAGE = 'liger', C, B)
 }
+

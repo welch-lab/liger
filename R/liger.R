@@ -742,7 +742,7 @@ optimizeALS.list  <- function(
       H <- lapply(
         X = 1:N,
         FUN = function(i) {
-          return(t(x = solve_nnls(
+          return(t(x = solveNNLS(
             C = rbind(t(x = W) + t(x = V[[i]]), sqrt_lambda * t(x = V[[i]])),
             B = rbind(t(x = E[[i]]), matrix(data = 0, nrow = g, ncol = ns[i]))
           )))
@@ -752,14 +752,14 @@ optimizeALS.list  <- function(
       V <- lapply(
         X = 1:N,
         FUN = function(i) {
-          return(solve_nnls(
+          return(solveNNLS(
             C = rbind(H[[i]], sqrt_lambda * H[[i]]),
             B = rbind(E[[i]] - H[[i]] %*% W, matrix(data = 0, nrow = ns[[i]], ncol = g))
           ))
         }
       )
       tmp <- gc()
-      W <- solve_nnls(
+      W <- solveNNLS(
         C = rbindlist(mat_list = H),
         B = rbindlist(mat_list = lapply(
           X = 1:N,
