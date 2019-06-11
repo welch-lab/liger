@@ -33,24 +33,24 @@ suggestLambda(object, k, lambda.test = NULL, rand.seed = 1,
 
 \item{resolution}{Resolution for quantileAlignSNF (default 1).}
 
-\item{gen.new}{Do not use optimizeNewLambda in factorizations. Recommended to set TRUE 
+\item{gen.new}{Do not use optimizeNewLambda in factorizations. Recommended to set TRUE
 when looking at only a small range of lambdas (ie. 1:7) (default FALSE)}
 
-\item{nrep}{Number restarts to perform at each lambda value tested (increase to produce 
+\item{nrep}{Number restarts to perform at each lambda value tested (increase to produce
 smoother curve if results unclear) (default 1).}
 
-\item{return.data}{Whether to return list of data matrices (raw) or dataframe (processed) 
+\item{return.data}{Whether to return list of data matrices (raw) or dataframe (processed)
 instead of ggplot object (default FALSE).}
 
 \item{return.raw}{If return.results TRUE, whether to return raw data (in format described below),
-or dataframe used to produce ggplot object. Raw data is matrix of alignment values for each 
+or dataframe used to produce ggplot object. Raw data is matrix of alignment values for each
 lambda value tested (each column represents a different rep for nrep).(default FALSE)}
 }
 \value{
 Matrix of results if indicated or ggplot object. Plots alignment vs. lambda to console.
 }
 \description{
-Can be used to select appropriate value of lambda for factorization of particular dataset. Plot 
+Can be used to select appropriate value of lambda for factorization of particular dataset. Plot
 alignment and agreement for various test values of lambda. Most appropriate lambda
 is likely around the "elbow" of the alignment plot (when alignment stops increasing). This will
 likely also correspond to slower decrease in agreement. Depending on number of cores used,

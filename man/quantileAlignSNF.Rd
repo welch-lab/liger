@@ -39,16 +39,16 @@ the dataset with the largest number of cells is used.}
 
 \item{quantiles}{Number of quantiles to use for quantile normalization (default 50).}
 
-\item{nstart}{Number of times to perform Louvain community detection with different random 
+\item{nstart}{Number of times to perform Louvain community detection with different random
 starts (default 10).}
 
-\item{resolution}{Controls the number of communities detected. Higher resolution -> more 
+\item{resolution}{Controls the number of communities detected. Higher resolution -> more
 communities. (default 1)}
 
-\item{center}{Centers the data when scaling factors (useful for less sparse modalities like 
+\item{center}{Centers the data when scaling factors (useful for less sparse modalities like
 methylation data). (default FALSE)}
 
-\item{id.number}{Number to use for identifying edge file (when running in parallel) 
+\item{id.number}{Number to use for identifying edge file (when running in parallel)
 (generates random value by default).}
 
 \item{print.mod}{Print modularity output from clustering algorithm (default FALSE).}
@@ -57,15 +57,15 @@ methylation data). (default FALSE)}
 
 \item{knn_k}{Number of nearest neighbors for within-dataset knn graph (default 20).}
 
-\item{k2}{Horizon parameter for shared nearest factor graph. Distances to all but the k2 nearest 
+\item{k2}{Horizon parameter for shared nearest factor graph. Distances to all but the k2 nearest
 neighbors are set to 0 (cuts down on memory usage for very large graphs). (default 500)}
 
-\item{dims.use}{Indices of factors to use for shared nearest factor determination (default 
+\item{dims.use}{Indices of factors to use for shared nearest factor determination (default
 1:ncol(H[[1]])).}
 
 \item{dist.use}{Distance metric to use in calculating nearest neighbors (default "CR").}
 
-\item{small.clust.thresh}{Extracts small clusters loading highly on single factor with fewer 
+\item{small.clust.thresh}{Extracts small clusters loading highly on single factor with fewer
 cells than this before regular alignment (default 0 -- no small cluster extraction).}
 
 \item{ref_dataset}{Name or index of reference dataset}
@@ -74,20 +74,20 @@ cells than this before regular alignment (default 0 -- no small cluster extracti
 \code{liger} object with H.norm slot set.
 }
 \description{
-This process builds a shared factor neighborhood graph to jointly cluster cells, then quantile 
+This process builds a shared factor neighborhood graph to jointly cluster cells, then quantile
 normalizes corresponding clusters.
 }
 \details{
-The first step, building the shared factor neighborhood graph, is performed in SNF(), and 
+The first step, building the shared factor neighborhood graph, is performed in SNF(), and
 produces a graph representation where edge weights between cells (across all datasets)
 correspond to their similarity in the shared factor neighborhood space. An important parameter
 here is knn_k, the number of neighbors used to build the shared factor space (see SNF()). Afterwards,
-modularity-based community detection is performed on this graph (Louvain clustering) in order 
+modularity-based community detection is performed on this graph (Louvain clustering) in order
 to identify shared clusters across datasets. The method was first developed by Waltman and van Eck
-(2013) and source code is available at http://www.ludowaltman.nl/slm/. The most important parameter 
+(2013) and source code is available at http://www.ludowaltman.nl/slm/. The most important parameter
 here is resolution, which corresponds to the number of communities detected.
 
-Next we perform quantile alignment for each dataset, factor, and cluster (by 
+Next we perform quantile alignment for each dataset, factor, and cluster (by
 stretching/compressing datasets' quantiles to better match those of the reference dataset). These
 aligned factor loadings are combined into a single matrix and returned as H.norm.
 }

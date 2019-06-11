@@ -18,7 +18,7 @@ context("iNMF factorization")
 
 ligex <- optimizeALS(ligex, k = 15, lambda = 5, rand.seed = 1)
 
-test_that("Dataset names passed correctly", {
+ test_that("Dataset names passed correctly", {
   expect_identical(names(ligex@H), c('tenx', 'seqwell'))
   expect_identical(names(ligex@V), c('tenx', 'seqwell'))
   expect_identical(rownames(ligex@scale.data[[1]]), rownames(ligex@H[[1]]))
@@ -48,7 +48,7 @@ test_that("Factorization is correct", {
 
 # TODO: Add tests for different lambda setting
 # TODO: Add tests for updating k, or with new data
-# Note that this should be done so that total test time still < 60s
+# Note that this should be done so that total test time still < 60s or skip on cran
 
 # Tests for shared factor neighborhood quantile alignment
 ####################################################################################
@@ -114,7 +114,50 @@ context("Plotting")
 
 geneloadings_plots <- plotGeneLoadings(ligex, return.plots = T)
 
-test_that("Returns correct number of assembled ggplot objects", {
+test_that("plotGeneLoadings returns correct number of assembled ggplot objects", {
   expect_equal(length(geneloadings_plots), ncol(ligex@H[[1]]))
   expect_is(geneloadings_plots[[1]], class = c("ggassemble", "gg", "ggplot"))
 })
+
+plotgenes_plots <- plotGene(ligex, gene = 'CD8A', use.raw = T, return.plots = T)
+test_that("plotGene returns correct ggplot objects", {
+  expect_equal(length(plotgenes_plots), length(ligex@raw.data))
+  expect_is(plotgenes_plots[[1]], class = c("ggplot"))
+  expect_equal(unname(plotgenes_plots[[1]]$data$gene[45:50]), 
+               c(NA, NA, 2, 2, NA, NA))
+})
+
+plotfeatures_plots <- plotFeature(ligex, feature = 'nUMI', by.dataset = T, return.plots = T)
+test_that("plotFeature returns correct ggplot objects", {
+  expect_equal(length(plotfeatures_plots), length(ligex@raw.data))
+  expect_is(plotfeatures_plots[[1]], class = c("ggplot"))
+  expect_equal(rownames(plotfeatures_plots[[1]]$data)[1:5], 
+               c("AATGCGTGGCTATG", "GAAAGATGATTTCC", "TTCCAAACTCCCAC", "CACTGAGACAGTCA",
+                 "GACGGCACACGGGA"))
+})
+
+# Tests for subsetting, object conversion
+# Again, included here because these functions are object dependent (see above)
+####################################################################################
+context("Object subsetting and conversion")
+
+# Subsetting functionality
+# First add a new cell.data column
+ligex@cell.data[["clusters"]] = ligex@alignment.clusters
+ligex_subset <- subsetLiger(ligex, clusters.use = c(1, 2, 3, 4))
+
+test_that("Returns correct subsetted object", {
+  expect_equal(names(ligex_subset@raw.data), c('tenx', 'seqwell'))
+  expect_equal(dim(ligex_subset@raw.data[[1]]), c(10982, 119))
+  expect_equal(colnames(ligex_subset@raw.data[[1]])[1:3], c("ATGCCAGACAGTCA", 
+                                                            "CCAAAGTGTGAGAA", "GACCAAACGACTAC"))
+  expect_equal(dim(ligex_subset@raw.data[[2]]), c(6705, 138))
+  expect_equal(colnames(ligex_subset@raw.data[[2]])[1:3], c("Myeloid_457", "Myeloid_671",
+                                                            "Myeloid_1040"))
+  expect_equal(levels(ligex_subset@clusters), c("1", "2", "3", "4"))
+  expect_equal(nrow(ligex_subset@cell.data), 257)
+  expect_equal(rownames(ligex_subset@cell.data), rownames(ligex_subset@tsne.coords))
+})
+
+# TODO: Add tests for ligerToSeurat and seuratToLiger functions 
+# after including functionality related to new cell.data slot 

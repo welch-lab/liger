@@ -6,9 +6,9 @@
 \alias{liger-class}
 \title{The LIGER Class}
 \description{
-The liger object is created from two or more single cell datasets. To construct a 
-liger object, the user needs to provide at least two expression (or another 
-single-cell modality) matrices. The class provides functions for data 
+The liger object is created from two or more single cell datasets. To construct a
+liger object, the user needs to provide at least two expression (or another
+single-cell modality) matrices. The class provides functions for data
 preprocessing, integrative analysis, and visualization.
 }
 \details{
@@ -23,7 +23,10 @@ The key slots used in the liger object are described below.
 
 \item{\code{scale.data}}{List of scaled matrices (cells by genes)}
 
-\item{\code{var.genes}}{Subset of informative genes shared across datasets to be used in matrix 
+\item{\code{cell.data}}{Dataframe of cell attributes across all datasets (nrows equal to total number
+cells across all datasets)}
+
+\item{\code{var.genes}}{Subset of informative genes shared across datasets to be used in matrix
 factorization}
 
 \item{\code{H}}{Cell loading factors (one matrix per dataset, dimensions cells by k)}
@@ -41,11 +44,13 @@ matrix)}
 
 \item{\code{clusters}}{Joint cluster assignments for cells}
 
-\item{\code{snf}}{List of values associated with shared nearest factor matrix for use in clustering and 
+\item{\code{snf}}{List of values associated with shared nearest factor matrix for use in clustering and
 alignment (out.summary contains edge weight information between cell combinations)}
 
 \item{\code{agg.data}}{Data aggregated within clusters}
 
 \item{\code{parameters}}{List of parameters used throughout analysis}
+
+\item{\code{version}}{Version of package used to create object}
 }}
 

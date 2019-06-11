@@ -18,7 +18,7 @@ Adjusted Rand index value.
 }
 \description{
 Computes adjusted Rand index for \code{liger} clustering and external clustering.
-The Rand index ranges from 0 to 1, with 0 indicating no agreement between clusterings and 1 
+The Rand index ranges from 0 to 1, with 0 indicating no agreement between clusterings and 1
 indicating perfect agreement.
 }
 \examples{
@@ -26,7 +26,7 @@ indicating perfect agreement.
 # liger object, factorization done
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
-# toy clusters 
+# toy clusters
 cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = T)
 names(cluster1) <- colnames(ligerex@raw.data[[1]])
 cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = T)

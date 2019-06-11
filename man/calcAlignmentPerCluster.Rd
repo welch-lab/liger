@@ -25,7 +25,7 @@ Returns alignment for each cluster in analysiss (see documentation for calcAlign
 }
 \examples{
 \dontrun{
-# liger object, factorization complete 
+# liger object, factorization complete
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
 # get alignment for each cluster

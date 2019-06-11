@@ -16,4 +16,3 @@ rowVarsFast <- function(x, means) {
 solve_nnls <- function(C, B) {
     .Call('_liger_solve_nnls', PACKAGE = 'liger', C, B)
 }
-

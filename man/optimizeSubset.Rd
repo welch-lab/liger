@@ -11,10 +11,10 @@ optimizeSubset(object, cell.subset = NULL, cluster.subset = NULL,
 \arguments{
 \item{object}{\code{liger} object. Should call optimizeALS before calling.}
 
-\item{cell.subset}{List of cell names to retain from each dataset (same length as number of 
+\item{cell.subset}{List of cell names to retain from each dataset (same length as number of
 datasets).}
 
-\item{cluster.subset}{Clusters for which to keep cells (ie. c(1, 5, 6)). Should pass in either 
+\item{cluster.subset}{Clusters for which to keep cells (ie. c(1, 5, 6)). Should pass in either
 cell.subset or cluster.subset but not both.}
 
 \item{lambda}{Regularization parameter. By default, uses last used lambda.}
@@ -27,12 +27,13 @@ cell.subset or cluster.subset but not both.}
 \item{datasets.scale}{Names of datasets to rescale after subsetting (default NULL).}
 }
 \value{
-\code{liger} object with H, W, and V slots reset. Scale.data 
+\code{liger} object with H, W, and V slots reset. Scale.data
   (if desired) will also be updated to reflect the subset.
 }
 \description{
-Uses an efficient strategy for updating that takes advantage of the information in the existing 
-factorization. Can use either cell names or cluster names to subset.
+Uses an efficient strategy for updating that takes advantage of the information in the existing
+factorization. Can use either cell names or cluster names to subset. For more basic subsetting
+functionality (without automatic optimization), see subsetLiger.
 }
 \examples{
 \dontrun{

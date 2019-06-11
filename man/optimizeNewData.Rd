@@ -12,10 +12,10 @@ optimizeNewData(object, new.data, which.datasets, add.to.existing = T,
 
 \item{new.data}{List of raw data matrices (one or more). Each list entry should be named.}
 
-\item{which.datasets}{List of datasets to append new.data to if add.to.existing is true. 
+\item{which.datasets}{List of datasets to append new.data to if add.to.existing is true.
 Otherwise, the most similar existing datasets for each entry in new.data.}
 
-\item{add.to.existing}{Add the new data to existing datasets or treat as totally new datasets 
+\item{add.to.existing}{Add the new data to existing datasets or treat as totally new datasets
 (calculate new Vs?) (default TRUE)}
 
 \item{lambda}{Regularization parameter. By default, this will use the lambda last used with
@@ -31,6 +31,6 @@ optimizeALS.}
   also be updated to include the new data.
 }
 \description{
-Uses an efficient strategy for updating that takes advantage of the information in the existing 
+Uses an efficient strategy for updating that takes advantage of the information in the existing
 factorization. Assumes that selected genes (var.genes) are represented in the new datasets.
 }

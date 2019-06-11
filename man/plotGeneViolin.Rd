@@ -25,7 +25,7 @@ Generates violin plots of expression of specified gene for each dataset.
 }
 \examples{
 \dontrun{
-# liger object, factorization complete 
+# liger object, factorization complete
 ligerex
 # plot expression for CD4 and return plots
 violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = T)

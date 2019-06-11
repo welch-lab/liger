@@ -23,7 +23,7 @@ plotGeneLoadings(object, dataset1 = NULL, dataset2 = NULL,
 \item{mark.top.genes}{Plot points corresponding to top loading genes in different color (default
 TRUE).}
 
-\item{factor.share.thresh}{Use only factors with a dataset specificity less than or equal to 
+\item{factor.share.thresh}{Use only factors with a dataset specificity less than or equal to
 threshold (default 10).}
 
 \item{log.fc.thresh}{Lower log-fold change threshold for differential expression in markers
@@ -51,15 +51,15 @@ NULL to revert to default gradient scaling. (default 0.1)}
 }
 \description{
 Plots t-SNE coordinates of all cells by their loadings on each factor. Underneath it displays the
-most highly loading shared and dataset-specific genes, along with the overall gene loadings 
-for each dataset. 
+most highly loading shared and dataset-specific genes, along with the overall gene loadings
+for each dataset.
 
-It is recommended to call this function into a PDF due to the large number of 
+It is recommended to call this function into a PDF due to the large number of
 plots produced.
 }
 \examples{
 \dontrun{
-# liger object, factorization complete 
+# liger object, factorization complete
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
 ligerex <- runTSNE(ligerex)

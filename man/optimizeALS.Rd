@@ -21,12 +21,12 @@ optimizeALS(object, ...)
 
 \item{...}{Arguments passed to other methods}
 
-\item{k}{Inner dimension of factorization (number of factors). Run suggestK to determine 
-appropriate value; a general rule of thumb is that a higher k will be needed for datasets with 
+\item{k}{Inner dimension of factorization (number of factors). Run suggestK to determine
+appropriate value; a general rule of thumb is that a higher k will be needed for datasets with
 more sub-structure.}
 
-\item{lambda}{Regularization parameter. Larger values penalize dataset-specific effects more 
-strongly (ie. alignment should increase as lambda increases). Run suggestLambda to determine 
+\item{lambda}{Regularization parameter. Larger values penalize dataset-specific effects more
+strongly (ie. alignment should increase as lambda increases). Run suggestLambda to determine
 most appropriate value for balancing dataset alignment and agreement (default 5.0).}
 
 \item{thresh}{Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
@@ -34,7 +34,7 @@ most appropriate value for balancing dataset alignment and agreement (default 5.
 
 \item{max.iters}{Maximum number of block coordinate descent iterations to perform (default 100).}
 
-\item{nrep}{Number of restarts to perform (iNMF objective function is non-convex, so taking the 
+\item{nrep}{Number of restarts to perform (iNMF objective function is non-convex, so taking the
 best objective from multiple successive initializations is recommended). For easier
 reproducibility, this increments the random seed by 1 for each consecutive restart, so future
 factorizations of the same dataset can be run with one rep if necessary. (default 1)}
@@ -54,13 +54,13 @@ factorizations of the same dataset can be run with one rep if necessary. (defaul
 }
 \description{
 Perform integrative non-negative matrix factorization to return factorized H, W, and V matrices.
-It optimizes the iNMF objective function using block coordinate descent (alternating non-negative 
-least squares), where the number of factors is set by k. TODO: include objective function 
+It optimizes the iNMF objective function using block coordinate descent (alternating non-negative
+least squares), where the number of factors is set by k. TODO: include objective function
 equation here in documentation (using deqn)
 
-For each dataset, this factorization produces an H matrix (cells by k), a V matrix (k by genes), 
+For each dataset, this factorization produces an H matrix (cells by k), a V matrix (k by genes),
 and a shared W matrix (k by genes). The H matrices represent the cell factor loadings.
-W is held consistent among all datasets, as it represents the shared components of the metagenes 
+W is held consistent among all datasets, as it represents the shared components of the metagenes
 across datasets. The V matrices represent the dataset-specific components of the metagenes.
 }
 \examples{

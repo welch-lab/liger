@@ -125,7 +125,7 @@ void cpp_to_arma(const DenseMatrix& X, mat& A)
 }
 
 // [[Rcpp::export]]
-arma::mat solve_nnls(const arma::mat& C, const arma::mat& B)
+arma::mat solveNNLS(const arma::mat& C, const arma::mat& B)
 {
 	int max_iter_nnls = 100;
 	LowerTriangularMatrix CTC(C.n_cols);

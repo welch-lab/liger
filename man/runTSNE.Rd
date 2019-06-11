@@ -22,8 +22,8 @@ runTSNE(object, use.raw = F, dims.use = 1:ncol(object@H.norm),
 \item{theta}{Speed/accuracy trade-off (increase for less accuracy), set to 0.0 for exact TSNE
 (default 0.5).}
 
-\item{method}{Supports two methods for estimating tSNE values: Rtsne (Barnes-Hut implementation 
-of t-SNE) and fftRtsne (FFT-accelerated Interpolation-based t-SNE) (using Kluger Lab 
+\item{method}{Supports two methods for estimating tSNE values: Rtsne (Barnes-Hut implementation
+of t-SNE) and fftRtsne (FFT-accelerated Interpolation-based t-SNE) (using Kluger Lab
 implementation). (default Rtsne)}
 
 \item{fitsne.path}{Path to the cloned FIt-SNE directory (ie. '/path/to/dir/FIt-SNE') (required
@@ -35,13 +35,13 @@ for using fftRtsne -- only first time runTSNE is called) (default NULL).}
 \code{liger} object with tsne.coords slot set.
 }
 \description{
-Runs t-SNE on the normalized cell factors (or raw cell factors) to generate a 2D embedding for 
+Runs t-SNE on the normalized cell factors (or raw cell factors) to generate a 2D embedding for
 visualization. Has option to run on subset of factors. Note that running multiple times will
 reset tsne.coords values.
 }
 \details{
-In order to run fftRtsne (recommended for large datasets), you must first install FIt-SNE as 
-detailed \href{https://github.com/KlugerLab/FIt-SNE}{here}. Include the path to the cloned 
+In order to run fftRtsne (recommended for large datasets), you must first install FIt-SNE as
+detailed \href{https://github.com/KlugerLab/FIt-SNE}{here}. Include the path to the cloned
 FIt-SNE directory as the fitsne.path parameter, though this is only necessary for the first call
 to runTSNE. For more detailed FIt-SNE installation instructions, see the liger repo README.
 }

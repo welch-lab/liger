@@ -12,20 +12,21 @@ createLiger(raw.data, make.sparse = T, take.gene.union = F,
 
 \item{make.sparse}{Whether to convert raw data into sparse matrices (default TRUE).}
 
-\item{take.gene.union}{Whether to fill out raw.data matrices with union of genes across all 
+\item{take.gene.union}{Whether to fill out raw.data matrices with union of genes across all
 datasets (filling in 0 for missing data) (requires make.sparse=T) (default FALSE).}
 
 \item{remove.missing}{Whether to remove cells not expressing any measured genes, and genes not
-expressed in any cells (if take.gene.union = T, removes only genes not expressed in any 
+expressed in any cells (if take.gene.union = T, removes only genes not expressed in any
 dataset) (default TRUE).}
 }
 \value{
 \code{liger} object with raw.data slot set.
 }
 \description{
-This function initializes a liger object with the raw data passed in. It requires a list of 
-expression (or another single-cell modality) matrices (gene by cell) for at least two datasets. 
+This function initializes a liger object with the raw data passed in. It requires a list of
+expression (or another single-cell modality) matrices (gene by cell) for at least two datasets.
 By default, it converts all passed data into sparse matrices (dgCMatrix) to reduce object size.
+It initializes cell.data with nUMI and nGene calculated for every cell.
 }
 \examples{
 \dontrun{

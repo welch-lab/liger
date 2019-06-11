@@ -10,7 +10,7 @@ optimizeNewLambda(object, new.lambda, thresh = 1e-04, max.iters = 100,
 \arguments{
 \item{object}{\code{liger} object. Should call optimizeALS before calling.}
 
-\item{new.lambda}{Regularization parameter. Larger values penalize dataset-specific effects more 
+\item{new.lambda}{Regularization parameter. Larger values penalize dataset-specific effects more
 strongly.}
 
 \item{thresh}{Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh}
@@ -23,8 +23,8 @@ strongly.}
 \code{liger} object with optimized factorization values
 }
 \description{
-Uses an efficient strategy for updating that takes advantage of the information in the existing 
-factorization; uses previous k. Recommended mainly when re-optimizing for higher lambda and when 
+Uses an efficient strategy for updating that takes advantage of the information in the existing
+factorization; uses previous k. Recommended mainly when re-optimizing for higher lambda and when
 new lambda value is significantly different; otherwise may not return optimal results.
 }
 \examples{
