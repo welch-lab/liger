@@ -102,8 +102,8 @@ ligex <- runTSNE(ligex, use.raw = F, rand.seed = 1, method = 'Rtsne')
 ligex_rawtsne <- runTSNE(ligex, use.raw = T, rand.seed = 1, method = 'Rtsne')
 
 test_that("Dimensions are correct", {
-  expect_equal(dim(ligex@dr.coords["tsne"]), c(494, 2))
-  expect_equal(dim(ligex_rawtsne@dr.coords["tsne"]), c(494, 2))
+  expect_equal(dim(ligex@dr.coords[["tsne"]]), c(494, 2))
+  expect_equal(dim(ligex_rawtsne@dr.coords[["tsne"]]), c(494, 2))
 })
 
 

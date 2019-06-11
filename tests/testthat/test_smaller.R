@@ -3,7 +3,8 @@
 set.seed(1)
 
 pbmc.file <- system.file('tests', 'testdata', 'smaller_pbmc_data.RDS', package = 'liger')
-pbmc.small <- readRDS(pbmc.file)
+load(pbmc.file)
+pbmc.small <- smaller_pbmc
 
 # Tests for object creation 
 ####################################################################################
@@ -23,13 +24,11 @@ test_that("Sparse matrices created", {
   expect_is(ligex@raw.data[[1]], "CsparseMatrix")
 })
 
-# is cell.data still a thing?
-# note that seqwell data is previously normalized, so nUMI is 10000 for all cells
 test_that("cell.data created correctly", {
   expect_is(ligex@cell.data, "data.frame")
   expect_equal(rownames(ligex@cell.data)[1:10], colnames(ligex@raw.data[[1]])[1:10])
-  expect_equal(unname(ligex@cell.data[["nUMI"]][3]), 2043)
-  expect_equal(unname(ligex@cell.data[["nGene"]][253]), 1534)
+  expect_equal(unname(ligex@cell.data[["nUMI"]][3]), 307)
+  expect_equal(unname(ligex@cell.data[["nGene"]][253]), 461)
   expect_equal(as.character(ligex@cell.data[["dataset"]][3]), "tenx")
   expect_equal(as.character(ligex@cell.data[["dataset"]][253]), "seqwell")
 })
@@ -129,7 +128,7 @@ ligex_intersect <- selectGenes(ligex, var.thresh = c(0.3, 0.9), do.plot = F, com
 
 #next two testthats give abnormal output with the current version of the code
 test_that("Number of genes is correct for intersection", {
-  expect_equal(length(ligex_intersect@var.genes), 0)
+  expect_equal(length(ligex_intersect@var.genes), 10)
 })
 
 test_that("Gives warning when no genes selected", {
@@ -252,8 +251,8 @@ ligex <- runTSNE(ligex, use.raw = F, rand.seed = 1, method = 'Rtsne')
 ligex_rawtsne <- runTSNE(ligex, use.raw = T, rand.seed = 1, method = 'Rtsne')
 
 test_that("Dimensions are correct", {
-  expect_equal(dim(ligex@dr.coords["tsne"]), c(494, 2))
-  expect_equal(dim(ligex_rawtsne@dr.coords["tsne"]), c(494, 2))
+  expect_equal(dim(ligex@dr.coords[["tsne"]]), c(494, 2))
+  expect_equal(dim(ligex_rawtsne@dr.coords[["tsne"]]), c(494, 2))
 })
 
 

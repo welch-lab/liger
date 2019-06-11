@@ -1670,7 +1670,7 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
 #'   for using fftRtsne -- only first time runTSNE is called) (default NULL).
 #' @param rand.seed Random seed for reproducibility (default 42).
 #' 
-#' @return \code{liger} object with dr.coord["tsne"] slot set. 
+#' @return \code{liger} object with dr.coords[["tsne"]] slot set. 
 #' @importFrom Rtsne Rtsne
 #' @export
 #' @examples
@@ -1679,9 +1679,9 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
 #' ligerex
 #' # generate H.norm by quantile aligning factor loadings
 #' ligerex <- quantileAlignSNF(ligerex)
-#' # get dr.coord["tsne"] for normalized data
+#' # get dr.coords[["tsne"]] for normalized data
 #' ligerex <- runTSNE(ligerex)
-#' # get dr.coord["tsne"] for raw factor loadings
+#' # get dr.coords[["tsne"]] for raw factor loadings
 #' ligerex <- runTSNE(ligerex, use.raw = T)
 #' }
 
@@ -1698,8 +1698,8 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
   }
   if (method == 'Rtsne') {
     set.seed(rand.seed)
-    object@dr.coords["tsne"] <- Rtsne(data.use[, dims.use], pca = use.pca, check_duplicates = F, 
-                                      theta = theta, perplexity = perplexity)$Y
+    object@dr.coords[["tsne"]] <- Rtsne(data.use[, dims.use], pca = use.pca, check_duplicates = F, 
+                                theta = theta, perplexity = perplexity)$Y
   } else if (method == 'fftRtsne') {
     if (!exists('fftRtsne')) {
       if (is.null(fitsne.path)) {
@@ -1707,12 +1707,12 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
       }
       source(paste0(fitsne.path, '/fast_tsne.R'), chdir = T)
     }
-    object@dr.coords["tsne"] <- fftRtsne(data.use[, dims.use], rand_seed = rand.seed, 
-                                         theta = theta, perplexity = perplexity)
+    object@dr.coords[["tsne"]] <- fftRtsne(data.use[, dims.use], rand_seed = rand.seed, 
+                                   theta = theta, perplexity = perplexity)
   } else {
     stop('Invalid method: Please choose Rtsne or fftRtsne')
   }
-  rownames(object@dr.coords["tsne"]) <- rownames(data.use)
+  rownames(object@dr.coords[["tsne"]]) <- rownames(data.use)
   return(object)
 }
 
@@ -1744,7 +1744,7 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 #'   the range 0.001 to 0.5, with 0.1 being a reasonable default. (default 0.1)
 #' @param rand.seed Random seed for reproducibility (default 42).
 #' 
-#' @return \code{liger} object with dr.coords["umap"] slot set. 
+#' @return \code{liger} object with dr.coords[["umap"]] slot set. 
 #' @export
 #' @examples
 #' \dontrun{
@@ -1752,9 +1752,9 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 #' ligerex
 #' # generate H.norm by quantile aligning factor loadings
 #' ligerex <- quantileAlignSNF(ligerex)
-#' # get dr.coords["umap"] for normalized data
+#' # get dr.coords[["umap"]] for normalized data
 #' ligerex <- runUMAP(ligerex)
-#' # get dr.coords["umap"] for raw factor loadings
+#' # get dr.coords[["umap"]] for raw factor loadings
 #' ligerex <- runUMAP(ligerex, use.raw = T)
 #' }
 
@@ -1780,11 +1780,11 @@ runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2,
     if (identical(dims.use, 1:0)) {
       dims.use <- 1:ncol(raw.data)
     }
-    object@drs.coords["umap"] <- Rumap(raw.data[, dims.use])
-    rownames(object@drs.coords["umap"]) <- rownames(raw.data)
+    object@drs.coords[["umap"]] <- Rumap(raw.data[, dims.use])
+    rownames(object@drs.coords[["umap"]]) <- rownames(raw.data)
   } else {
-    object@drs.coords["umap"] <- Rumap(object@H.norm[, dims.use])
-    rownames(object@drs.coords["umap"]) <- rownames(object@H.norm)
+    object@drs.coords[["umap"]] <- Rumap(object@H.norm[, dims.use])
+    rownames(object@drs.coords[["umap"]]) <- rownames(object@H.norm)
   }
   return(object)
 }
@@ -2219,7 +2219,7 @@ calcPurity <- function(object, classes.compare) {
 #' \dontrun{
 #'  # liger object with aligned factor loadings
 #' ligerex
-#' # get dr.coords["tsne"] for normalized data
+#' # get dr.coords[["tsne"]] for normalized data
 #' ligerex <- runTSNE(ligerex)
 #' # plot to console
 #' plotByDatasetAndCluster(ligerex)
@@ -2231,7 +2231,7 @@ plotByDatasetAndCluster <- function(object, dr.method = "tsne", clusters = NULL,
                                     text.size = 3, do.shuffle = T, rand.seed = 1, 
                                     axis.labels = NULL, do.legend = T, legend.size = 5, 
                                     return.plots = F) {
-  if(dr.method != "tsne" && dr.method != "umap"){
+  if(dr.method != "tsne" || dr.method != "umap"){
     stop("Method does not match a valid value")
   }
   if(is.null(object@dr.coords[dr.method])){
@@ -2327,7 +2327,7 @@ plotByDatasetAndCluster <- function(object, dr.method = "tsne", clusters = NULL,
 #' \dontrun{
 #'  # liger object with aligned factor loadings
 #' ligerex
-#' # get dr.coords["tsne"] for normalized data
+#' # get dr.coords[["tsne"]] for normalized data
 #' ligerex <- runTSNE(ligerex)
 #' # plot nUMI to console
 #' plotFeature(ligerex, feature = 'nUMI')
@@ -2337,7 +2337,7 @@ plotFeature <- function(object, feature, dr.method = "tsne", by.dataset = T, tit
                         text.size = 3, do.shuffle = T, rand.seed = 1, do.labels = F,
                         axis.labels = NULL, do.legend = T, legend.size = 5, option = 'plasma', 
                         zero.color = '#F5F5F5', return.plots = F) {
-  if(dr.method != "tsne" && dr.method != "umap"){
+  if(dr.method != "tsne" || dr.method != "umap"){
     stop("Method does not match a valid value")
   }
   if(is.null(object@dr.coords[dr.method])){
@@ -2438,7 +2438,7 @@ plotFeature <- function(object, feature, dr.method = "tsne", by.dataset = T, tit
 #'  # liger object with factorization complete 
 #' ligerex
 #' ligerex <- quantileAlignSNF(ligerex)
-#' # get dr.coords["tsne"] for normalized data
+#' # get dr.coords[["tsne"]] for normalized data
 #' ligerex <- runTSNE(ligerex)
 #' # factor plots into pdf file
 #' pdf("plot_factors.pdf")
@@ -2480,7 +2480,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.dr 
          col = cols, xlab = "Cell", ylab = "H_norm Score"
     )
     if (plot.dr) {
-      if(dr.method != "tsne" && dr.method != "umap"){
+      if(dr.method != "tsne" || dr.method != "umap"){
         stop("Method does not match a valid value")
       }
       if(is.null(object@dr.coords[dr.method])){
@@ -2548,7 +2548,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
   }
-  if(dr.method != "tsne" && dr.method != "umap"){
+  if(dr.method != "tsne" || dr.method != "umap"){
     stop("Method does not match a valid value")
   }
   if(is.null(object@dr.coords[dr.method])){
@@ -2852,7 +2852,7 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL,dr.method 
 
 plotGeneViolin <- function(object, gene, methylation.indices = NULL,
                            by.dataset = T, dr.method = "tsne", return.plots = F) {
-  if(dr.method != "tsne" && dr.method != "umap"){
+  if(dr.method != "tsne" || dr.method != "umap"){
     stop("Method does not match a valid value")
   }
   if(is.null(object@dr.coords[dr.method])){
@@ -2947,7 +2947,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 plotGene <- function(object, gene, dr.method ="tsne", use.raw = F, methylation.indices = NULL, pt.size = 0.1, 
                      min.clip = 0, max.clip = 1, points.only = F, option = 'plasma', 
                      zero.color = '#F5F5F5', return.plots = F) {
-  if(dr.method != "tsne" && dr.method != "umap"){
+  if(dr.method != "tsne" || dr.method != "umap"){
     stop("Method does not match a valid value")
   }
   if(is.null(object@dr.coords[dr.method])){
@@ -3594,7 +3594,7 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
     )
     rownames(inmf.obj@gene.loadings) <- var.genes
     tsne.obj <- new(
-      Class = "dim.reduction", cell.embeddings = object@dr.coords["tsne"],
+      Class = "dim.reduction", cell.embeddings = object@dr.coords[["tsne"]],
       key = "tSNE_"
     )
   } else {
@@ -3609,7 +3609,7 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
     )
     rownames(inmf.obj@feature.loadings) <- var.genes
     tsne.obj <- new(
-      Class = "DimReduc", cell.embeddings = object@dr.coords["tsne"],
+      Class = "DimReduc", cell.embeddings = object@dr.coords[["tsne"]],
       key = "tSNE_"
     )
   }
@@ -3768,21 +3768,21 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
       idents <- Idents(objects)
       if (is.null(objects@reductions$tsne)) {
         warning("No t-SNE coordinates available for this Seurat object.\n")
-        dr.coords["tsne"] <- NULL
+        dr.coords[["tsne"]] <- NULL
       } else {
-        dr.coords["tsne"] <- objects@reductions$tsne@cell.embeddings
+        dr.coords[["tsne"]] <- objects@reductions$tsne@cell.embeddings
       }
     } else {
       # Get var.genes
       var.genes <- objects@var.genes
       # Get idents/clusters
       idents <- objects@ident
-      # Get dr.coords["tsne"]
+      # Get dr.coords[["tsne"]]
       if (is.null(objects@dr$tsne)) {
         warning("Warning: no t-SNE coordinates available for this Seurat object.\n")
-        dr.coords["tsne"] <- NULL
+        dr.coords[["tsne"]] <- NULL
       } else {
-        dr.coords["tsne"] <- objects@dr$tsne@cell.embeddings
+        dr.coords[["tsne"]] <- objects@dr$tsne@cell.embeddings
       }
     }
   } else {
@@ -3811,7 +3811,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
       }
     })
     # tsne coords not very meaningful for separate objects 
-    dr.coords["tsne"] <- NULL
+    dr.coords[["tsne"]] <- NULL
     
     if (version > 2) {
       var.genes <- Reduce(union, lapply(objects, function(x) {
@@ -3862,8 +3862,8 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
   if (use.idents) {
     new.liger@clusters <- idents
   }
-  if ((use.tsne) & (!is.null(dr.coords["tsne"]))) {
-    new.liger@dr.coords["tsne"] <- dr.coords["tsne"]
+  if ((use.tsne) & (!is.null(dr.coords[["tsne"]]))) {
+    new.liger@dr.coords[["tsne"]] <- dr.coords[["tsne"]]
   }
   # Get CCA loadings if requested 
   if (cca.to.H & combined.seurat) {
@@ -3897,7 +3897,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
 #' Construct a liger object with a specified subset 
 #' 
 #' The subset can be based on cell names or clusters. This function applies the subsetting to 
-#' raw.data, norm.data, scale.data, cell.data, H, W, V, H.norm, dr.coords["tsne"], and clusters. 
+#' raw.data, norm.data, scale.data, cell.data, H, W, V, H.norm, dr.coords[["tsne"]], and clusters. 
 #' Note that it does NOT reoptimize the factorization. See optimizeSubset for this functionality. 
 #'
 #' @param object \code{liger} object. Should run quantileAlignSNF and runTSNE before calling. 
@@ -3907,7 +3907,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
 #'   (default TRUE).
 #'
 #' @return \code{liger} object with subsetting applied to raw.data, norm.data, scale.data, H, W, V,
-#'   H.norm, dr.coords["tsne"], and clusters.
+#'   H.norm, dr.coords[["tsne"]], and clusters.
 #' @export
 #' @examples
 #' \dontrun{
@@ -3951,7 +3951,7 @@ a@H <- lapply(1:length(a@raw.data), function(i) {
 })
 a@clusters <- object@clusters[unlist(lapply(a@H, rownames))]
 a@clusters <- droplevels(a@clusters)
-a@dr.coords["tsne"] <- object@dr.coords["tsne"][names(a@clusters), ]
+a@dr.coords[["tsne"]] <- object@dr.coords[["tsne"]][names(a@clusters), ]
 a@H.norm <- object@H.norm[names(a@clusters), ]
 a@W <- object@W
 a@V <- object@V
