@@ -199,6 +199,8 @@ test_that("Factorization is correct", {
 # TODO: Add tests for updating k, or with new data
 # Note that this should be done so that total test time still < 60s or skip on cran
 
+# will have to skip on cran bc takes about 30 seconds
+
 # Tests for shared factor neighborhood quantile alignment
 ####################################################################################
 context("Quantile alignment")
@@ -261,12 +263,49 @@ test_that("Dimensions are correct", {
 ####################################################################################
 context("Plotting")
 
-geneloadings_plots <- plotGeneLoadings(ligex, return.plots = T)
+datasetandcluster_plots <- plotByDatasetAndCluster(ligex, return.plots = T)
+test_that("plotByDatasetAndCluster returns correct ggplot objects", {
+  expect_equal(length(datasetandcluster_plots), 2)
+  expect_is(datasetandcluster_plots[[1]], class = c("ggplot"))
+  expect_equal(length(datasetandcluster_plots[[1]]$data$tsne1),494)
+  expect_equal(datasetandcluster_plots[[1]]$data$tsne1[67], 7.368928, tolerance = 1e-6)
+  expect_equal(datasetandcluster_plots[[1]]$data$tsne2[467], 2.612385, tolerance = 1e-6)
+  
+  expect_is(datasetandcluster_plots[[2]], class = c("ggplot"))
+  expect_equal(length(datasetandcluster_plots[[2]]$data$tsne1),494)
+  expect_equal(datasetandcluster_plots[[2]]$data$tsne1[193], 0.1443542, tolerance = 1e-6)
+  expect_equal(datasetandcluster_plots[[2]]$data$tsne2[345], -3.489582, tolerance = 1e-6)
+  #todo - add more
+})
 
-#liger in arc connect RStudio doesn't recognize this function (?)
+plotfeatures_plots <- plotFeature(ligex, feature = 'nUMI', by.dataset = T, return.plots = T)
+test_that("plotFeature returns correct ggplot objects", {
+  expect_equal(length(plotfeatures_plots), length(ligex@raw.data))
+  expect_is(plotfeatures_plots[[1]], class = c("ggplot"))
+  expect_equal(rownames(plotfeatures_plots[[1]]$data)[1:5], 
+               c("AATGCGTGGCTATG", "GAAAGATGATTTCC", "TTCCAAACTCCCAC", "CACTGAGACAGTCA",
+                 "GACGGCACACGGGA"))
+  expect_equal(plotfeatures_plots[[1]]$data[46:50,2], c(4.285448, -8.290261, 11.154347,
+                                                        11.924466, 6.620738), tolerance = 1e-6)
+  expect_equal(plotfeatures_plots[[1]]$data[136:140,3], c(278, 467, 342, 288, 288))
+})
+
+#note - takes a while compared to other plots, maybe skip on cran?
+#data gives very poor result, might delete later
+plotwordcloud_plot <- plotWordClouds(ligex,return.plots = T)
+test_that("plotWordCloud returns correct ggplot objects", {
+  expect_equal(length(plotfeatures_plots), 2)
+  expect_is(plotfeatures_plots[[1]], class = c("ggplot"))
+})
+
+geneloadings_plots <- plotGeneLoadings(ligex, return.plots = T)
 test_that("plotGeneLoadings returns correct number of assembled ggplot objects", {
   expect_equal(length(geneloadings_plots), ncol(ligex@H[[1]]))
   expect_is(geneloadings_plots[[1]], class = c("ggassemble", "gg", "ggplot"))
+  expect_equal(dim(geneloadings_plots[[1]]$assemble$plots[[1]]$data), c(494,3))
+  expect_equal(dim(geneloadings_plots[[1]]$assemble$plots[[2]]$data), c(69,3))
+  expect_equal(geneloadings_plots[[1]]$assemble$plots[[2]]$data[3,2], 0.02941176, tolerance = 1e-6)
+  expect_equal(geneloadings_plots[[1]]$assemble$plots[[2]]$data[11,3], FALSE)
 })
 
 plotgenes_plots <- plotGene(ligex, gene = 'CD8A', return.plots = T)
@@ -277,15 +316,7 @@ test_that("plotGene returns correct ggplot objects", {
                c(NA, NA, 5.802051540, 5.515470544, NA, NA))
 })
 
-#liger in arc connect RStudio doesn't recognize this function (?)
-plotfeatures_plots <- plotFeature(ligex, feature = 'nUMI', by.dataset = T, return.plots = T)
-test_that("plotFeature returns correct ggplot objects", {
-  expect_equal(length(plotfeatures_plots), length(ligex@raw.data))
-  expect_is(plotfeatures_plots[[1]], class = c("ggplot"))
-  expect_equal(rownames(plotfeatures_plots[[1]]$data)[1:5], 
-               c("AATGCGTGGCTATG", "GAAAGATGATTTCC", "TTCCAAACTCCCAC", "CACTGAGACAGTCA",
-                 "GACGGCACACGGGA"))
-})
+
 
 
 

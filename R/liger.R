@@ -422,7 +422,7 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
     }
     trx_per_cell <- colSums(object@raw.data[[i]])
     # Each gene's mean expression level (across all cells)
-    gene_expr_mean <- rowMeansFast(object@norm.data[[i]])
+    gene_expr_mean <- rowMeans(object@norm.data[[i]])
     # Each gene's expression variance (across all cells)
     gene_expr_var <- rowVarsFast(object@norm.data[[i]], gene_expr_mean)
     names(gene_expr_mean) <- names(gene_expr_var) <- rownames(object@norm.data[[i]])
@@ -773,7 +773,7 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
 #' 
 #' @return \code{liger} object with H, W, and V slots reset.
 #' @export
-#' @importFrom plyr rbind.fill.matrix
+#' @importFrom dplyr bind_rows
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -833,8 +833,8 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
       )
     })
     W_new <- solveNNLS(
-      rbind.fill.matrix(H_new),
-      rbind.fill.matrix(lapply(1:N, function(i) {
+      bind_rows(H_new),
+      bind_rows(lapply(1:N, function(i) {
         object@scale.data[[i]] - H[[i]] %*% (W + V[[i]]) - H_new[[i]] %*% V_new[[i]]
       }))
     )
@@ -2231,14 +2231,14 @@ plotByDatasetAndCluster <- function(object, dr.method = "tsne", clusters = NULL,
                                     text.size = 3, do.shuffle = T, rand.seed = 1, 
                                     axis.labels = NULL, do.legend = T, legend.size = 5, 
                                     return.plots = F) {
-  if(dr.method != "tsne" || dr.method != "umap"){
+  if(dr.method != "tsne" && dr.method != "umap"){
     stop("Method does not match a valid value")
   }
-  if(is.null(object@dr.coords[dr.method])){
-    stop("object@dr.coords[dr.method] is null.Please run the corresponding dimensionality 
+  if(is.null(object@dr.coords[[dr.method]])){
+    stop("object@dr.coords[[dr.method]] is null.Please run the corresponding dimensionality 
          reduction method runTSNE or runUMAP first.")
   }
-  tsne_df <- data.frame(object@dr.coords[dr.method])
+  tsne_df <- data.frame(object@dr.coords[[dr.method]])
   colnames(tsne_df) <- c("tsne1", "tsne2")
   tsne_df$Dataset <- unlist(lapply(1:length(object@H), function(x) {
     rep(names(object@H)[x], nrow(object@H[[x]]))
@@ -2247,8 +2247,8 @@ plotByDatasetAndCluster <- function(object, dr.method = "tsne", clusters = NULL,
   if (is.null(clusters)) {
     # if clusters have not been set yet
     if (length(object@clusters) == 0) {
-      clusters <- rep(1, nrow(object@dr.coords[dr.method]))
-      names(clusters) <- c_names <- rownames(object@dr.coords[dr.method])
+      clusters <- rep(1, nrow(object@dr.coords[[dr.method]]))
+      names(clusters) <- c_names <- rownames(object@dr.coords[[dr.method]])
     } else {
       clusters <- object@clusters
       c_names <- names(object@clusters)
@@ -2337,14 +2337,14 @@ plotFeature <- function(object, feature, dr.method = "tsne", by.dataset = T, tit
                         text.size = 3, do.shuffle = T, rand.seed = 1, do.labels = F,
                         axis.labels = NULL, do.legend = T, legend.size = 5, option = 'plasma', 
                         zero.color = '#F5F5F5', return.plots = F) {
-  if(dr.method != "tsne" || dr.method != "umap"){
+  if(dr.method != "tsne" && dr.method != "umap"){
     stop("Method does not match a valid value")
   }
-  if(is.null(object@dr.coords[dr.method])){
-    stop("object@dr.coords[dr.method] is null. Please run the corresponding dimensionality 
+  if(is.null(object@dr.coords[[dr.method]])){
+    stop("object@dr.coords[[dr.method]] is null. Please run the corresponding dimensionality 
          reduction method runTSNE or runUMAP first.")
   }
-  dr_df <- data.frame(object@dr.coords[method])
+  dr_df <- data.frame(object@dr.coords[[dr.method]])
   colnames(dr_df) <- c("dr1", "dr2")
   if (!(feature %in% colnames(object@cell.data))) {
     stop('Please select existing feature in cell.data, or add it before calling.')
@@ -2480,15 +2480,15 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.dr 
          col = cols, xlab = "Cell", ylab = "H_norm Score"
     )
     if (plot.dr) {
-      if(dr.method != "tsne" || dr.method != "umap"){
+      if(dr.method != "tsne" && dr.method != "umap"){
         stop("Method does not match a valid value")
       }
-      if(is.null(object@dr.coords[dr.method])){
-        stop("object@dr.coords[dr.method] is null. Please run the corresponding dimensionality 
+      if(is.null(object@dr.coords[[dr.method]])){
+        stop("object@dr.coords[[dr.method]] is null. Please run the corresponding dimensionality 
            reduction method runTSNE or runUMAP first.")
       }
       par(mfrow = c(1, 1))
-      fplot(object@dr.coords[dr.method], object@H.norm[, i], title = paste0("Factor ", i))
+      fplot(object@dr.coords[[dr.method]], object@H.norm[, i], title = paste0("Factor ", i))
     }
     setTxtProgressBar(pb, i)
   }
@@ -2548,11 +2548,11 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
   }
-  if(dr.method != "tsne" || dr.method != "umap"){
+  if(dr.method != "tsne" && dr.method != "umap"){
     stop("Method does not match a valid value")
   }
-  if(is.null(object@dr.coords[dr.method])){
-    stop("object@dr.coords[dr.method] is null. Please run the corresponding dimensionality 
+  if(is.null(object@dr.coords[[dr.method]])){
+    stop("object@dr.coords[[dr.method]] is null. Please run the corresponding dimensionality 
          reduction method runTSNE or runUMAP first.")
   }
   H_aligned <- object@H.norm
@@ -2576,7 +2576,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
   rownames(W) <- rownames(V1) <- rownames(V2) <- object@var.genes
   loadings_list <- list(V1, W, V2)
   names_list <- list(dataset1, "Shared", dataset2)
-  tsne_coords <- object@dr.coords[dr.method]
+  tsne_coords <- object@dr.coords[[dr.method]]
   pb <- txtProgressBar(min = 0, max = length(factors.use), style = 3)
   return_plots <- list()
   for (i in factors.use) {
@@ -2687,8 +2687,8 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL,dr.method 
   if(dr.method != "tsne" && dr.method != "umap"){
     stop("Method does not match a valid value")
   }
-  if(is.null(object@dr.coords[dr.method])){
-    stop("object@dr.coords[dr.method] is null. Please run the corresponding dimensionality 
+  if(is.null(object@dr.coords[[dr.method]])){
+    stop("object@dr.coords[[dr.method]] is null. Please run the corresponding dimensionality 
          reduction method runTSNE or runUMAP first.")
   }
   H_aligned <- object@H.norm
@@ -2717,7 +2717,7 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL,dr.method 
   rownames(W) <- rownames(V1) <- rownames(V2) <- rownames(W_orig) <- object@var.genes
   loadings_list <- list(V1, W, V2)
   names_list <- list(dataset1, "Shared", dataset2)
-  tsne_coords <- object@dr.coords[dr.method]
+  tsne_coords <- object@dr.coords[[dr.method]]
   pb <- txtProgressBar(min = 0, max = length(factors.use), style = 3)
   return_plots <- list()
   for (i in factors.use) {
@@ -2852,11 +2852,11 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL,dr.method 
 
 plotGeneViolin <- function(object, gene, methylation.indices = NULL,
                            by.dataset = T, dr.method = "tsne", return.plots = F) {
-  if(dr.method != "tsne" || dr.method != "umap"){
+  if(dr.method != "tsne" && dr.method != "umap"){
     stop("Method does not match a valid value")
   }
-  if(is.null(object@dr.coords[dr.method])){
-    stop("object@dr.coords[dr.method] is null. Please run the corresponding dimensionality 
+  if(is.null(object@dr.coords[[dr.method]])){
+    stop("object@dr.coords[[dr.method]] is null. Please run the corresponding dimensionality 
          reduction method runTSNE or runUMAP first.")
   }
   gene_vals <- c()
@@ -2875,7 +2875,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
     }
   }
   
-  gene_df <- data.frame(object@dr.coords[dr.method])
+  gene_df <- data.frame(object@dr.coords[[dr.method]])
   rownames(gene_df) <- names(object@clusters)
   gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])
   colnames(gene_df) <- c("tSNE1", "tSNE2", "gene")
@@ -2947,11 +2947,11 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 plotGene <- function(object, gene, dr.method ="tsne", use.raw = F, methylation.indices = NULL, pt.size = 0.1, 
                      min.clip = 0, max.clip = 1, points.only = F, option = 'plasma', 
                      zero.color = '#F5F5F5', return.plots = F) {
-  if(dr.method != "tsne" || dr.method != "umap"){
+  if(dr.method != "tsne" && dr.method != "umap"){
     stop("Method does not match a valid value")
   }
-  if(is.null(object@dr.coords[dr.method])){
-    stop("object@dr.coords[dr.method] is null. Please run the corresponding dimensionality 
+  if(is.null(object@dr.coords[[dr.method]])){
+    stop("object@dr.coords[[dr.method]] is null. Please run the corresponding dimensionality 
          reduction method runTSNE or runUMAP first.")
   }
   gene_vals <- c()
@@ -2986,7 +2986,7 @@ plotGene <- function(object, gene, dr.method ="tsne", use.raw = F, methylation.i
     }
   }
   gene_vals[gene_vals == 0] <- NA
-  gene_df <- data.frame(object@dr.coords["dr.method"])
+  gene_df <- data.frame(object@dr.coords[["dr.method"]])
   rownames(gene_df) <- names(object@clusters)
   gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])
   colnames(gene_df) <- c("tSNE1", "tSNE2", "gene")
@@ -3080,7 +3080,9 @@ plotGenes <- function(object, genes) {
 #'   By default will try to automatically order them appropriately.
 #'   
 #' @export
-#' @importFrom plyr mapvalues
+#' @importFrom dplyr recode
+#' (In the process of removing references to plyr, still testing to ensure recode offers the same 
+#'   functionality)
 #' @importFrom riverplot makeRiver
 #' @importFrom riverplot plot.riverplot
 #' @examples
@@ -3111,10 +3113,10 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
       length(intersect(levels(cluster1), levels(cluster_consensus))) > 0 |
       length(intersect(levels(cluster2), levels(cluster_consensus))) > 0) {
     message("Duplicate cluster names detected. Adding 1- and 2- to make unique names.")
-    cluster1 <- mapvalues(cluster1, from = levels(cluster1), 
-                          to = paste("1", levels(cluster1), sep = "-"))
-    cluster2 <- mapvalues(cluster2, from = levels(cluster2), 
-                          to = paste("2", levels(cluster2), sep = "-"))
+    cluster1.key <- unlist(split(as.character(paste("1", levels(cluster1), sep = "-")), levels(cluster1)))
+    cluster2.key <- unlist(split(as.character(paste("2", levels(cluster2), sep = "-")), levels(cluster2)))
+    cluster1 <- recode(cluster1, !!!cluster1.key)
+    cluster2 <- recode(cluster2, !!!cluster2.key)
   }
   # set node order
   if (identical(node.order, "auto")) {
