@@ -286,8 +286,8 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
     })
   }
   if (length(Reduce(intersect, lapply(raw.data, colnames))) > 0) {
-    stop('At least one cell name is repeated across datasets; please make sure all cell names
-         are unique.')
+    stop(paste0(length(Reduce(intersect, lapply(raw.data, colnames))), ' cell names are repeated 
+          across datasets; please make sure all cell names are unique.'))
   }
   if (take.gene.union) {
     merged.data <- MergeSparseDataAll(raw.data)
@@ -3770,9 +3770,9 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
       idents <- Idents(objects)
       if (is.null(objects@reductions$tsne)) {
         warning("No t-SNE coordinates available for this Seurat object.\n")
-        dr.coords[["tsne"]] <- NULL
+        dr.coords <- NULL
       } else {
-        dr.coords[["tsne"]] <- objects@reductions$tsne@cell.embeddings
+        dr.coords <- objects@reductions$tsne@cell.embeddings
       }
     } else {
       # Get var.genes
@@ -3782,9 +3782,9 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
       # Get dr.coords[["tsne"]]
       if (is.null(objects@dr$tsne)) {
         warning("Warning: no t-SNE coordinates available for this Seurat object.\n")
-        dr.coords[["tsne"]] <- NULL
+        dr.coords <- NULL
       } else {
-        dr.coords[["tsne"]] <- objects@dr$tsne@cell.embeddings
+        dr.coords <- objects@dr$tsne@cell.embeddings
       }
     }
   } else {
@@ -3813,7 +3813,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
       }
     })
     # tsne coords not very meaningful for separate objects 
-    dr.coords[["tsne"]] <- NULL
+    dr.coords <- NULL
     
     if (version > 2) {
       var.genes <- Reduce(union, lapply(objects, function(x) {
@@ -3864,8 +3864,8 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
   if (use.idents) {
     new.liger@clusters <- idents
   }
-  if ((use.tsne) & (!is.null(dr.coords[["tsne"]]))) {
-    new.liger@dr.coords[["tsne"]] <- dr.coords[["tsne"]]
+  if ((use.tsne) & (!is.null(dr.coords))) {
+    new.liger@dr.coords[["tsne"]] <- dr.coords
   }
   # Get CCA loadings if requested 
   if (cca.to.H & combined.seurat) {
