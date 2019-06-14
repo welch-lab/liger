@@ -13,6 +13,7 @@
 #' @slot scale.data List of scaled matrices (cells by genes)
 #' @slot cell.data Dataframe of cell attributes across all datasets (nrows equal to total number
 #'   cells across all datasets)
+#' @slot jaccard Holds Jaccard matrix for use in Louvain-Jaccard clustering and imputation
 #' @slot var.genes Subset of informative genes shared across datasets to be used in matrix 
 #'   factorization
 #' @slot H Cell loading factors (one matrix per dataset, dimensions cells by k)
@@ -26,6 +27,7 @@
 #' @slot snf List of values associated with shared nearest factor matrix for use in clustering and 
 #'   alignment (out.summary contains edge weight information between cell combinations)
 #' @slot agg.data Data aggregated within clusters
+#' @slot wilcoxon Data frame of Wilcoxon test output
 #' @slot parameters List of parameters used throughout analysis
 #' @slot version Version of package used to create object
 #'
@@ -43,6 +45,7 @@ liger <- methods::setClass(
     norm.data = "list",
     scale.data = "list",
     cell.data = "data.frame",
+    jaccard = "list",
     var.genes = "vector",
     H = "list",
     H.norm = "matrix",
@@ -52,6 +55,7 @@ liger <- methods::setClass(
     alignment.clusters = 'factor',
     clusters= "factor",
     agg.data = "list",
+    wilcoxon = "data.frame",
     parameters = "list",
     snf = 'list',
     version = 'ANY'
@@ -4002,3 +4006,57 @@ convertOldLiger = function(object, override.raw = F) {
   warning('New slots not filled: ', setdiff(slots_new[slots_new != "cell.data"], slots))
   return(new.liger)
 }
+
+#In progress
+#Completes wilcoxon rank sum test, currently built on Presto package
+calcWilcoxon <- function(object, clusters = NULL, top.n = 10){
+  if (!require("presto", quietly = TRUE)) {
+    stop("Package \"presto\" needed for this function to perform fast Wilcoxon rank sum test. Please install it.",
+         call. = FALSE
+    )
+  }
+  
+  cluster_labels <- as.vector(object@clusters)
+  names(cluster_labels) <- rownames(as.data.frame(object@clusters))
+  
+  #if clusters null, do for all, if cluster does not exist throw error
+  if(is.null(clusters)){
+    clusters = 0:max(cluster_labels)
+  } else if(length(clusters)==1){
+    stop("Wilcoxon Rank Sum Test cannot be completed for one cluster. Please include 2 or more clusters.",
+         call = FALSE)
+  } 
+  
+  else if(length(union(cluster_labels, clusters)) > length(unique(cluster_labels))){
+      stop("Selected clusters do not match clusters in data. Please limit your list to clusters in the data.",
+           call = FALSE)
+  }
+  expression_mat = t(object@scale.data[[1]])
+  for (i in 2:length(object@scale.data)){
+    expression_mat <- cbind(expression_mat, t(object@scale.data[[i]]))
+  }
+  cluster_labels <- cluster_labels[cluster_labels %in% clusters]
+  expression_mat <- expression_mat[,names(cluster_labels)]
+  
+  wilcoxon_output <- wilcoxauc(expression_mat, cluster_labels)
+  object@wilcoxon <- as.data.frame(top_markers(wilcoxon_output, n = top.n))
+  
+  return(object)
+}
+
+#makes a sparse jaccard matrix
+runJaccard <- function(object){
+    for(i in 1:length(object@scale.data)){
+      common_values <- object@scale.data[[i]] %*% t(object@scale.data[[i]])
+      nonzero_value_index <- which(common_values > 0,  arr.ind=TRUE)
+      nonzero_value <- common_values[nonzero_value_index]
+      row_sums <- rowSums(t(object@scale.data[[i]]))
+      jaccard <- nonzero_value/(row_sums[nonzero_value_index[,1]]
+                                +row_sums[nonzero_value_index[,1]] - nonzero_value)
+      object@jaccard[[i]] <- sparseMatrix(i = nonzero_value_index[,1],
+                                   j = nonzero_value_index[,2],
+                                   x = jaccard, dims = dim(common_values))
+    }
+  return(object)
+}
+
