@@ -451,11 +451,6 @@ test_that("Returns correct agreement and alignment", {
 #calcAlignmentPerCluster
 #not working for some reason, despite alignment itself working
 
-cluster_levels <- as.vector(ligex@clusters)
-names(cluster_levels) <- rownames(as.data.frame(ligex@clusters))
-cluster_1 = cluster_levels[cluster_levels == "1"]
-cluster_2 = cluster_levels[cluster_levels == "2"]
-
 #calcARI
 cluster_levels <- as.vector(ligex@clusters)
 names(cluster_levels) <- rownames(as.data.frame(ligex@clusters))
