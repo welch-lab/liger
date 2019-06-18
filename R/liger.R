@@ -4007,9 +4007,25 @@ convertOldLiger = function(object, override.raw = F) {
   return(new.liger)
 }
 
-#In progress
-#Completes wilcoxon rank sum test, currently built on Presto package
-calcWilcoxon <- function(object, clusters = NULL, top.n = 10){
+#' Analyze differential gene expression using presto's implementation of the Wilcoxon rank sum test.
+#' 
+#' @param object \code{liger} object. Should run quantileAlignSNF first 
+#' @param compare.datasets Split clusters by dataset of origin to compare differences in expression
+#'   (default TRUE)
+#' @param clusters A list of clusters to include for comparison (defualt NULL).
+#'
+#' @return Updated \code{liger} object.
+#' @export
+#' @importFrom presto wilcoxauc
+#' @examples
+#' \dontrun{
+#' # liger object, clustering complete 
+#' ligerex
+#' # fill wilcoxon slot with dataframe of information from presto's Wilcoxon rank sum test
+#' ligerex <- calculateWilcoxon(ligerex)
+#' }
+#' 
+calculateWilcoxon <- function(object, compare.datasets = TRUE, clusters = NULL){
   if (!require("presto", quietly = TRUE)) {
     stop("Package \"presto\" needed for this function to perform fast Wilcoxon rank sum test. Please install it.",
          call. = FALSE
@@ -4018,16 +4034,26 @@ calcWilcoxon <- function(object, clusters = NULL, top.n = 10){
   
   cluster_labels <- as.vector(object@clusters)
   names(cluster_labels) <- rownames(as.data.frame(object@clusters))
+  if(compare.datasets == TRUE){
+    for(i in 1:length(object@scale.data)){
+      cluster_labels[rownames(object@scale.data[[i]])] <-
+        toupper(paste0(cluster_labels[rownames(object@scale.data[[i]])],"_",unlist(attributes(ligex@scale.data)[1])[i]))
+    }
+  }
+  cluster_labels = factor(cluster_labels)
   
   #if clusters null, do for all, if cluster does not exist throw error
   if(is.null(clusters)){
-    clusters = 0:max(cluster_labels)
+    clusters = levels(cluster_labels)
+  } else if(is.numeric(clusters) && compare.datasets){
+    combinations <- expand.grid(clusters, unlist(attributes(ligex@scale.data)[1]))
+    for(i in 1:nrow(combinations)){
+      clusters[i] = toupper(paste0(combinations[i,1],"_",combinations[i,2]))
+    }
   } else if(length(clusters)==1){
     stop("Wilcoxon Rank Sum Test cannot be completed for one cluster. Please include 2 or more clusters.",
          call = FALSE)
-  } 
-  
-  else if(length(union(cluster_labels, clusters)) > length(unique(cluster_labels))){
+  } else if(length(union(cluster_labels, clusters)) > length(unique(cluster_labels))){
       stop("Selected clusters do not match clusters in data. Please limit your list to clusters in the data.",
            call = FALSE)
   }
@@ -4038,25 +4064,91 @@ calcWilcoxon <- function(object, clusters = NULL, top.n = 10){
   cluster_labels <- cluster_labels[cluster_labels %in% clusters]
   expression_mat <- expression_mat[,names(cluster_labels)]
   
-  wilcoxon_output <- wilcoxauc(expression_mat, cluster_labels)
-  object@wilcoxon <- as.data.frame(top_markers(wilcoxon_output, n = top.n))
-  
+  object@wilcoxon <- wilcoxauc(expression_mat, cluster_labels)
+
   return(object)
 }
 
-#makes a sparse jaccard matrix
+#' Subset a dataframe produced by calculateWilcox by feature, dataset, or column
+#' 
+#' @param object \code{liger} object. Should run calculateWilcox first 
+#' @param features A list of features to include in the subset (default NULL)
+#' @param datasets A list of datasets to include in the subset  (defualt NULL).
+#' @param columns A list of columns to include in the subset  (default NULL).
+#' @param return.subset Return the subsetted dataframe instead of a liger object (default FALSE)
+#' @param save.subset Replace the unsubset dataframe with the subset (default TRUE)
+#'
+#' @return Updated \code{liger} object.
+#' @export
+#' @importFrom presto wilcoxauc
+#' @examples
+#' \dontrun{
+#' # liger object, after running CalculateWilcoxon 
+#' ligerex
+#' # create lists of features, datasets, and columns to subset by
+#' genes = c("UBBP4","KIAA1715","TMEM50B")
+#' datasets = c("tenx")
+#' #
+#' ligerex <- subsetWilcoxon(ligerex, features = genes, datasets = datasets)
+#' }
+subsetWilcoxon <- function(object, features = NULL, datasets = NULL, columns = NULL,
+                           return.subset = FALSE, save.subset = TRUE){
+  if(!return.subset && !save.subset){
+    return(object)
+  }
+  if(!is.null(columns)){
+    columns = c("feature", "group", columns)
+    wilcoxon = object@wilcoxon[columns]
+  }
+  if(!is.null(features)){
+    wilcoxon = object@wilcoxon[object@wilcoxon$feature == toupper(features)]
+  }
+  if(!is.null(datasets)){
+    for(name in datasets){
+      wilcoxon = object@wilcoxon[grepl(toupper(name), object@wilcoxon$group, fixed = TRUE)]
+    }
+  }
+  if(save.subset){
+    object@wilcoxon = wilcoxon
+  }
+  if(return.subset){
+    return(wilcoxon)
+  }
+  return(object)
+}
+
+#wrapper for top marker
+listMarkersWilcoxon <- function(object, ...){
+  return(top_markers(object@wilcoxon, ...))
+}
+
+
+#' Make Jaccard matrix (will have use when imputation is implemented)
+#' 
+#' @param object \code{liger} object. Should run scaleNotCenter first 
+#'
+#' @return Updated \code{liger} object.
+#' @export
+#' @examples
+#' \dontrun{
+#' # liger object, after running scaleNotCenter 
+#' ligerex
+#' # add Jaccard matrix to a list for each dataset
+#' ligerex <- runJaccard(ligerex)
+#' }
 runJaccard <- function(object){
-    for(i in 1:length(object@scale.data)){
-      common_values <- object@scale.data[[i]] %*% t(object@scale.data[[i]])
+    for(i in object@scale.data){
+      common_values <- i %*% t(i)
       nonzero_value_index <- which(common_values > 0,  arr.ind=TRUE)
       nonzero_value <- common_values[nonzero_value_index]
-      row_sums <- rowSums(t(object@scale.data[[i]]))
+      row_sums <- rowSums(t(i))
       jaccard <- nonzero_value/(row_sums[nonzero_value_index[,1]]
                                 +row_sums[nonzero_value_index[,1]] - nonzero_value)
-      object@jaccard[[i]] <- sparseMatrix(i = nonzero_value_index[,1],
+      object@jaccard.append(sparseMatrix(i = nonzero_value_index[,1],
                                    j = nonzero_value_index[,2],
-                                   x = jaccard, dims = dim(common_values))
+                                   x = jaccard, dims = dim(common_values)))
     }
   return(object)
 }
+
 
