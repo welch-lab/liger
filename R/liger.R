@@ -2570,6 +2570,8 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #' @param object \code{liger} object. Should call runTSNE or runUMAP before calling.
 #' @param feature Feature to plot (should be column from cell.data slot).
 #' @param by.dataset Whether to generate separate plot for each dataset (default TRUE).
+#' @param discrete Whether to treat feature as discrete; if left NULL will infer from column class
+#'   in cell.data (if factor, treated like discrete) (default NULL).
 #' @param title Plot title (default NULL).
 #' @param pt.size Controls size of points representing cells (default 0.3).
 #' @param text.size Controls size of plot text (cluster center labels) (default 3).
@@ -2599,9 +2601,9 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #' plotFeature(ligerex, feature = 'nUMI')
 #' }
 
-plotFeature <- function(object, feature, by.dataset = T, title = NULL, pt.size = 0.3,
-                        text.size = 3, do.shuffle = T, rand.seed = 1, do.labels = F,
-                        axis.labels = NULL, do.legend = T, legend.size = 5, option = 'plasma',
+plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title = NULL, 
+                        pt.size = 0.3, text.size = 3, do.shuffle = T, rand.seed = 1, do.labels = F,
+                        axis.labels = NULL, do.legend = T, legend.size = 5, option = 'plasma', 
                         zero.color = '#F5F5F5', return.plots = F) {
   dr_df <- data.frame(object@tsne.coords)
   colnames(dr_df) <- c("dr1", "dr2")
@@ -2609,11 +2611,15 @@ plotFeature <- function(object, feature, by.dataset = T, title = NULL, pt.size =
     stop('Please select existing feature in cell.data, or add it before calling.')
   }
   dr_df$feature <- object@cell.data[, feature]
-  if (class(dr_df$feature) != "factor") {
+  if (is.null(discrete)) {
+    if (class(dr_df$feature) != "factor") {
+      discrete <- FALSE
+    } else {
+      discrete <- TRUE
+    }
+  }
+  if (!discrete){
     dr_df$feature[dr_df$feature == 0] <- NA
-    discrete <- FALSE
-  } else {
-    discrete <- TRUE
   }
   if (by.dataset) {
     dr_df$dataset <- object@cell.data$dataset
@@ -2647,9 +2653,15 @@ plotFeature <- function(object, feature, by.dataset = T, title = NULL, pt.size =
                                          na.value = zero.color) + labs(col = feature)
     }
 
-    if (!is.null(title)) {
-      ggp <- ggp + ggtitle(title)
+    if (by.dataset) {
+      base <- as.character(sub_df$dataset[1])
+    } else {
+      base <- ""
     }
+    if (!is.null(title)) {
+      base <- paste(title, base)
+    }
+    ggp <- ggp + ggtitle(base)
     if (!is.null(axis.labels)) {
       ggp <- ggp + xlab(axis.labels[1]) + ylab(axis.labels[2])
     }
@@ -2658,7 +2670,10 @@ plotFeature <- function(object, feature, by.dataset = T, title = NULL, pt.size =
     }
     p_list[[as.character(sub_df$dataset[1])]] <- ggp
   }
-  p_list <- p_list[names(object@raw.data)]
+  if (by.dataset) {
+    p_list <- p_list[names(object@raw.data)]
+  }
+  
   if (return.plots){
     if (length(p_list) == 1) {
       return(p_list[[1]])

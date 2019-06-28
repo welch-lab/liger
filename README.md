@@ -2,7 +2,10 @@
 
 # LIGER (Linked Inference of Genomic Experimental Relationships)
 
-LIGER (`liger`) is a package for integrating and analyzing multiple single-cell datasets, developed and maintained by the Macosko lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors. Check out our [Cell paper](https://www.cell.com/cell/fulltext/S0092-8674%2819%2930504-5) for a more complete description of the methods and analyses.
+LIGER (`liger`) is a package for integrating and analyzing multiple single-cell datasets, developed and maintained by the Macosko lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors. 
+
+Check out our [Cell paper](https://www.cell.com/cell/fulltext/S0092-8674%2819%2930504-5) for a more complete description of the methods and analyses. To access data used in our SN and BNST analyses, visit our [study](https://portals.broadinstitute.org/single_cell/study/SCP466) on the
+Single Cell Portal. 
 
 LIGER can be used to compare and contrast experimental datasets in a variety of contexts, for instance:
 
@@ -37,7 +40,7 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 1. Install [R](https://www.r-project.org/)  (>= 3.4)
 2. Install [Rstudio](https://www.rstudio.com/products/rstudio/download/) (recommended)
-3. Make sure you have Java installed in your machine. Check by typing `java -version` into Terminal or CommandPrompt. 
+3. Make sure you have Java installed in your machine. Check by typing `java -version` into Terminal or Command Prompt. 
 4. Use the following R commands.
 ```
 install.packages('devtools')
@@ -91,7 +94,7 @@ If you wish to access local files in this container (mounting to `/data`) modify
 ```
 docker run -d -v /path/to/local/directory:/data -p 8787:8787 docker.io/vkozareva/sc-liger:latest
 ```
-Note that you will have to stop the container if you wish to allocate port 8787 to another application
+Note that you will have to stop the container if you wish to allocate port `8787` to another application
 later on. Further Docker documentation can be found [here](https://docs.docker.com/get-started/).
 
 ### Detailed Instructions for FIt-SNE Installation for use in runTSNE (recommended for large datasets)
@@ -117,7 +120,7 @@ pwd
 ```
 Use the output of `pwd` as the `fitsne.path` parameter in runTSNE. 
 
-Note that the above instructions require root access. To install into a specified folder (such as your home directory) on a server, use the --prefix option:
+Note that the above instructions require root access. To install into a specified folder (such as your home directory) on a server, use the `--prefix` option:
 ```
 ./configure --prefix=<install_dir>
 make
