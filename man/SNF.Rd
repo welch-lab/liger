@@ -2,26 +2,37 @@
 % Please edit documentation in R/liger.R
 \name{SNF}
 \alias{SNF}
+\alias{SNF.list}
+\alias{SNF.liger}
 \title{Generate shared factor neighborhood graph}
 \usage{
-SNF(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR",
-  center = F, knn_k = 20, k2 = 500, small.clust.thresh = knn_k)
+SNF(object, ...)
+
+\method{SNF}{list}(object, dims.use = 1:ncol(x = object[[1]]),
+  dist.use = "CR", center = FALSE, knn_k = 20, k2 = 500,
+  small.clust.thresh = knn_k, ...)
+
+\method{SNF}{liger}(object, dims.use = 1:ncol(x = object@H[[1]]),
+  dist.use = "CR", center = FALSE, knn_k = 20, k2 = 500,
+  small.clust.thresh = knn_k, ...)
 }
 \arguments{
-\item{dims.use}{Indices of factors to use for shared nearest factor determination (default 
+\item{...}{Arguments passed to and from other methods}
+
+\item{dims.use}{Indices of factors to use for shared nearest factor determination (default
 1:ncol(H[[1]])).}
 
 \item{dist.use}{Distance metric to use in calculating nearest neighbors (default "CR").}
 
-\item{center}{Centers the data when scaling factors (useful for less sparse modalities like 
+\item{center}{Centers the data when scaling factors (useful for less sparse modalities like
 methylation data). (default FALSE)}
 
 \item{knn_k}{Number of nearest neighbors for within-dataset knn graph (default 20).}
 
-\item{k2}{Horizon parameter for shared nearest factor graph. Distances to all but the k2 nearest 
+\item{k2}{Horizon parameter for shared nearest factor graph. Distances to all but the k2 nearest
 neighbors are set to 0 (cuts down on memory usage for very large graphs). (default 500)}
 
-\item{small.clust.thresh}{Extracts small clusters loading highly on single factor with fewer 
+\item{small.clust.thresh}{Extracts small clusters loading highly on single factor with fewer
 cells than this before regular alignment (default 0 -- no small cluster extraction).}
 }
 \value{
@@ -30,18 +41,18 @@ List of three values. First is names of cells identified in small cluster extrac
   is the edge weight representation of the shared factor neighborhood graph.
 }
 \description{
-Builds shared factor neighborhood graph representation of all cells in analysis. The first step 
-is to scale factor loadings across each cell for each factor. This corresponds to scaling (by L2 
-norm or similar) the columns of the H matrices, and allows us for subsequent comparison across 
-factors in a cell's loadings. The max factor for each cell is computed. 
+Builds shared factor neighborhood graph representation of all cells in analysis. The first step
+is to scale factor loadings across each cell for each factor. This corresponds to scaling (by L2
+norm or similar) the columns of the H matrices, and allows us for subsequent comparison across
+factors in a cell's loadings. The max factor for each cell is computed.
 
 The next step is to determine the knn_k nearest neighbors (within the same dataset) for each cell
 based on the cells' factor loadings. For each cell, we count the number of neighbors with max
-factor loadings for each factor. 
+factor loadings for each factor.
 
-This creates a shared space across datasets based on the max factor neighborhoods -- we now find 
-the nearest k2 neighbors and their corresponding distances across all datasets. We rescale these 
-distances into edge weights where an edge weight of 1 corresponds to minimal distance and 0 
+This creates a shared space across datasets based on the max factor neighborhoods -- we now find
+the nearest k2 neighbors and their corresponding distances across all datasets. We rescale these
+distances into edge weights where an edge weight of 1 corresponds to minimal distance and 0
 corresponds to the max distance.
 }
 \examples{
@@ -51,4 +62,5 @@ ligerex
 # get SNF graph (third element)
 SNF_graph <- SNF(ligerex, knn_k = 15)[[3]]
 }
+
 }

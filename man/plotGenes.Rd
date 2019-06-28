@@ -17,7 +17,7 @@ function into a PDF due to the large number of plots produced.
 }
 \examples{
 \dontrun{
-# liger object, factorization complete 
+# liger object, factorization complete
 ligerex
 ligerex <- runTSNE(ligerex)
 # plot expression for CD4 and FCGR3A

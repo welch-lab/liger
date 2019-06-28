@@ -23,20 +23,20 @@ suggestK(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-04,
 
 \item{rand.seed}{Random seed for reproducibility (default 1).}
 
-\item{gen.new}{Do not use optimizeNewK in factorizations. Results in slower factorizations. 
+\item{gen.new}{Do not use optimizeNewK in factorizations. Results in slower factorizations.
 (default FALSE).}
 
-\item{nrep}{Number restarts to perform at each k value tested (increase to produce 
+\item{nrep}{Number restarts to perform at each k value tested (increase to produce
 smoother curve if results unclear) (default 1).}
 
-\item{plot.log2}{Plot log2 curve for reference on K-L plot (log2 is upper bound and con 
+\item{plot.log2}{Plot log2 curve for reference on K-L plot (log2 is upper bound and con
 sometimes help in identifying "elbow" of plot). (default TRUE)}
 
-\item{return.data}{Whether to return list of data matrices (raw) or dataframe (processed) 
+\item{return.data}{Whether to return list of data matrices (raw) or dataframe (processed)
 instead of ggplot object (default FALSE).}
 
 \item{return.raw}{If return.results TRUE, whether to return raw data (in format described below),
-or dataframe used to produce ggplot object. Raw data is list of matrices of K-L divergences 
+or dataframe used to produce ggplot object. Raw data is list of matrices of K-L divergences
 (length(k.test) by n_cells). Length of list corresponds to nrep. (default FALSE)}
 }
 \value{
@@ -45,9 +45,9 @@ Matrix of results if indicated or ggplot object. Plots K-L divergence vs. k to c
 \description{
 This can be used to select appropriate value of k for factorization of particular dataset.
 Plots median (across cells in all datasets) K-L divergence from uniform for cell factor loadings
-as a function of k. This should increase as k increases but is expected to level off above 
+as a function of k. This should increase as k increases but is expected to level off above
 sufficiently high number of factors (k). This is because cells should have factor loadings which
-are not uniformly distributed when an appropriate number of factors is reached. 
+are not uniformly distributed when an appropriate number of factors is reached.
 
 Depending on number of cores used, this process can take 10-20 minutes.
 }

@@ -15,8 +15,8 @@ calcPurity(object, classes.compare)
 Purity value.
 }
 \description{
-Calculates purity for \code{liger} clustering and external clustering (true clusters/classes). 
-Purity can sometimes be a more useful metric when the clustering to be tested contains more 
+Calculates purity for \code{liger} clustering and external clustering (true clusters/classes).
+Purity can sometimes be a more useful metric when the clustering to be tested contains more
 subgroups or clusters than the true clusters (or classes). Purity also ranges from 0 to 1,
 with a score of 1 representing a pure, or accurate, clustering.
 }
@@ -25,7 +25,7 @@ with a score of 1 representing a pure, or accurate, clustering.
 # liger object, factorization done
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
-# toy clusters 
+# toy clusters
 cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = T)
 names(cluster1) <- colnames(ligerex@raw.data[[1]])
 cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = T)

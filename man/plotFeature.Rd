@@ -26,7 +26,7 @@ in cell.data (if factor, treated like discrete) (default NULL).}
 
 \item{text.size}{Controls size of plot text (cluster center labels) (default 3).}
 
-\item{do.shuffle}{Randomly shuffle points so that points from same dataset are not plotted 
+\item{do.shuffle}{Randomly shuffle points so that points from same dataset are not plotted
 one after the other (default TRUE).}
 
 \item{rand.seed}{Random seed for reproducibility of point shuffling (default 1).}
@@ -46,12 +46,12 @@ one after the other (default TRUE).}
 \item{return.plots}{Return ggplot plot objects instead of printing directly (default FALSE).}
 }
 \value{
-List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to 
+List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
   console).
 }
 \description{
 Generates one plot for each dataset, colored by chosen feature (column) from cell.data slot.
-Feature can be categorical (factor) or continuous. 
+Feature can be categorical (factor) or continuous.
 Can also plot all datasets combined with by.dataset = F.
 }
 \examples{

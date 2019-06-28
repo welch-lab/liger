@@ -11,7 +11,7 @@ ligerToSeurat(object, nms = names(object@H), renormalize = T,
 \item{object}{\code{liger} object.}
 
 \item{nms}{By default, labels cell names with dataset of origin (this is to account for cells in
-different datasets which may have same name). Other names can be passed here as vector, must 
+different datasets which may have same name). Other names can be passed here as vector, must
 have same length as the number of datasets. (default names(H))}
 
 \item{renormalize}{Whether to log-normalize raw data using Seurat defaults (default TRUE).}
@@ -24,11 +24,11 @@ have same length as the number of datasets. (default names(H))}
 Seurat object with raw.data, scale.data, dr$tsne, dr$inmf, and ident slots set.
 }
 \description{
-Merges raw.data and scale.data of object, and creates Seurat object with these values along with 
+Merges raw.data and scale.data of object, and creates Seurat object with these values along with
 tsne.coords, iNMF factorization, and cluster assignments. Supports Seurat V2 and V3.
 }
 \details{
-Stores original dataset identity by default in new object metadata if dataset names are passed 
+Stores original dataset identity by default in new object metadata if dataset names are passed
 in nms. iNMF factorization is stored in dim.reduction object with key "iNMF".
 }
 \examples{

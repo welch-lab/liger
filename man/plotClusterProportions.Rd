@@ -16,7 +16,7 @@ Generates plot of clusters sized by the proportion of total cells
 }
 \examples{
 \dontrun{
-# liger object, factorization complete 
+# liger object, factorization complete
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
 # plot cluster proportions

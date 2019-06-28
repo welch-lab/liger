@@ -5,39 +5,41 @@ Version: 0.4.1
 Date: 2018-04-09
 Author: Joshua Welch
 Maintainer: Joshua Welch <jwelch@broadinstitute.org>,
-	    Velina Kozareva <vkozarev@broadinstitute.org>
+        Velina Kozareva <vkozarev@broadinstitute.org>
 Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors
 License: GPL-3
 SystemRequirements: Java (>= 6)
-Imports: Rcpp (>= 0.12.10), 
-	 plyr, 
-	 Matrix, 
-	 cowplot, 
-	 FNN, 
-	 dplyr, 
-	 RANN.L1, 
-	 grid, 
-	 ggrepel, 
-	 irlba,
-	 ica,
-	 Rtsne,
-	 ggplot2,
-	 riverplot,
-	 Hmisc,
-	 foreach,
-	 snow,
-	 doSNOW,
-	 mclust,
-	 patchwork
+Imports: Rcpp (>= 0.12.10),
+     plyr,
+     Matrix,
+     cowplot,
+     FNN,
+     dplyr,
+     RANN.L1,
+     grid,
+     ggrepel,
+     irlba,
+     ica,
+     Rtsne,
+     ggplot2,
+     riverplot,
+     Hmisc,
+     foreach,
+     snow,
+     doSNOW,
+     mclust,
+     patchwork
 Remotes: thomasp85/patchwork
 LinkingTo: Rcpp, RcppArmadillo
-Depends: cowplot,
-         Matrix,
-	 patchwork
-RoxygenNote: 6.0.1
-Suggests: Seurat,
-	  knitr,
-          reticulate,
-    	  rmarkdown,
-	  NNLM
+Depends:
+    cowplot,
+    Matrix,
+    patchwork
+RoxygenNote: 6.1.1
+Suggests:
+    Seurat,
+    knitr,
+    reticulate,
+    rmarkdown,
+    NNLM
 VignetteBuilder: knitr

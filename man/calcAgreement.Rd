@@ -10,15 +10,15 @@ calcAgreement(object, dr.method = "NMF", ndims = 40, k = 15,
 \arguments{
 \item{object}{\code{liger} object. Should call quantileAlignSNF before calling.}
 
-\item{dr.method}{Dimensionality reduction method to use for assessing pre-alignment geometry 
+\item{dr.method}{Dimensionality reduction method to use for assessing pre-alignment geometry
 (either "PCA", "NMF", or "ICA"). (default "NMF")}
 
-\item{ndims}{Number of dimensions to use in dimensionality reduction (recommended to use the 
+\item{ndims}{Number of dimensions to use in dimensionality reduction (recommended to use the
 same as number of factors) (default 40).}
 
 \item{k}{Number of nearest neighbors to use in calculating Jaccard index (default 15).}
 
-\item{use.aligned}{Whether to use quantile aligned or unaligned cell factor loadings (default 
+\item{use.aligned}{Whether to use quantile aligned or unaligned cell factor loadings (default
 TRUE).}
 
 \item{rand.seed}{Random seed for reproducibility (default 42).}
@@ -29,21 +29,21 @@ TRUE).}
 Agreement metric (or vector of agreement per dataset).
 }
 \description{
-This metric quantifies how much the factorization and alignment distorts the geometry of the 
+This metric quantifies how much the factorization and alignment distorts the geometry of the
 original datasets. The greater the agreement, the less distortion of geometry there is. This is
 calculated by performing dimensionality reduction on the original and quantile aligned (or just
-factorized) datasets, and measuring similarity between the k nearest neighbors for each cell in 
+factorized) datasets, and measuring similarity between the k nearest neighbors for each cell in
 original and aligned datasets. The Jaccard index is used to quantify similarity, and is the final
 metric averages across all cells.
 
-Note that for most datasets, the greater the chosen k, the greater the agreement in general. 
-There are several options for dimensionality reduction, with the default being 'NMF' as it is 
+Note that for most datasets, the greater the chosen k, the greater the agreement in general.
+There are several options for dimensionality reduction, with the default being 'NMF' as it is
 expected to be most similar to iNMF. Although agreement can theoretically approach 1, in practice
 it is usually no higher than 0.2-0.3 (particularly for non-deterministic approaches like NMF).
 }
 \examples{
 \dontrun{
-# liger object, factorization complete 
+# liger object, factorization complete
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
 agreement <- calcAgreement(ligerex, dr.method = "NMF")

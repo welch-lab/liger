@@ -20,17 +20,17 @@ plotFactors(object, num.genes = 10, cells.highlight = NULL,
 Plots to console (1-2 pages per factor)
 }
 \description{
-Generates scatter plots of factor loadings vs cells for both unaligned and aligned 
-(normalized) factor loadings. This allows for easier visualization of the changes made to the 
+Generates scatter plots of factor loadings vs cells for both unaligned and aligned
+(normalized) factor loadings. This allows for easier visualization of the changes made to the
 factor loadings during the alignment step. Lists a subset of highly loading genes for each factor.
-Also provides an option to plot t-SNE coordinates of the cells colored by aligned factor loadings. 
+Also provides an option to plot t-SNE coordinates of the cells colored by aligned factor loadings.
 
-It is recommended to call this function into a PDF due to the large number of 
+It is recommended to call this function into a PDF due to the large number of
 plots produced.
 }
 \examples{
 \dontrun{
- # liger object with factorization complete 
+ # liger object with factorization complete
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
 # get tsne.coords for normalized data
