@@ -3999,7 +3999,8 @@ convertOldLiger = function(object, override.raw = F) {
     if (!(slotname %in% c('raw.data')) | (override.raw)) {
       slot(new.liger, slotname) <- slot(object, slotname) 
     }
-  } 
+  }
+  new.liger@version = packageVersion("liger")
   warning('Old slots not transferred: ', setdiff(slots_old, slots_new))
   # compare to slots since it's possible that the analogizer object
   # class has slots that this particular object does not 
