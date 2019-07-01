@@ -4152,4 +4152,17 @@ runJaccard <- function(object){
   return(object)
 }
 
+#' Check version of liger object and update if necessary
+#' 
+#' @param object \code{liger} object.
+#'
+#' @return Updated \code{liger} object.
+#' @export
+updateLiger <- function(object){
+  if(object@version != packageVersion("liger")){
+    warning(paste("Liger object of version ",object@version," will be updated."))
+    object <- convertOldLiger(object)
+  }
+  return(object)
+}
 
