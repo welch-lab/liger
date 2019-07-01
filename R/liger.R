@@ -360,6 +360,7 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
 #' }
 
 normalize <- function(object) {
+  object <- updateLiger(object)
   object <- removeMissingObs(object, slot.use = "raw.data", use.cols = T)
   if (class(object@raw.data[[1]])[1] == "dgTMatrix" | 
       class(object@raw.data[[1]])[1] == "dgCMatrix") {
@@ -414,6 +415,8 @@ normalize <- function(object) {
 
 selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine = "union",
                         keep.unique = F, capitalize = F, do.plot = T, cex.use = 0.3) {
+  object <- updateLiger(object)
+  
   # Expand if only single var.thresh passed
   if (length(var.thresh) == 1) {
     var.thresh <- rep(var.thresh, length(object@raw.data))
@@ -496,6 +499,8 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
 #' }
 
 scaleNotCenter <- function(object, remove.missing = T) {
+  object <- updateLiger(object)
+  
   if (class(object@raw.data[[1]])[1] == "dgTMatrix" | 
       class(object@raw.data[[1]])[1] == "dgCMatrix") {
     object@scale.data <- lapply(1:length(object@norm.data), function(i) {
