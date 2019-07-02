@@ -289,10 +289,10 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
       }
     })
   }
-  if (length(Reduce(intersect, lapply(raw.data, colnames))) > 0) {
-    stop(paste0(length(Reduce(intersect, lapply(raw.data, colnames))), ' cell names are repeated 
-          across datasets; please make sure all cell names are unique.'))
-  }
+  #if (length(Reduce(intersect, lapply(raw.data, colnames))) > 0) {
+  # stop(paste0(length(Reduce(intersect, lapply(raw.data, colnames))), ' cell names are repeated 
+  #      across datasets; please make sure all cell names are unique.'))
+  #}
   if (take.gene.union) {
     merged.data <- MergeSparseDataAll(raw.data)
     if (remove.missing) {
