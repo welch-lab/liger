@@ -546,6 +546,8 @@ scaleNotCenter <- function(object, remove.missing = T) {
 #' }
 
 removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
+  object <- updateLiger(object)
+
   filter.data <- slot(object, slot.use)
   removed <- ifelse((slot.use %in% c("raw.data", "norm.data")) & (use.cols == T), 
                     yes = "cells", no = "genes")
@@ -636,6 +638,7 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100, nrep = 1,
                         H.init = NULL, W.init = NULL, V.init = NULL, rand.seed = 1,
                         print.obj = F) {
+  object <- updateLiger(object)
   # remove cells with no selected gene expression
   object <- removeMissingObs(object, slot.use = "scale.data", use.cols = F)
   E <- object@scale.data
@@ -799,6 +802,7 @@ optimizeALS <- function(object, k, lambda = 5.0, thresh = 1e-4, max.iters = 100,
 
 optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters = 100, 
                          rand.seed = 1) {
+  object <- updateLiger(object)
   if (is.null(lambda)) {
     lambda <- object@parameters$lambda
   }
@@ -922,6 +926,7 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
 
 optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = T, lambda = NULL,
                             thresh = 1e-4, max.iters = 100) {
+  object <- updateLiger(object)
   if (is.null(lambda)) {
     lambda <- object@parameters$lambda
   }
@@ -1031,6 +1036,7 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
 
 optimizeSubset <- function(object, cell.subset = NULL, cluster.subset = NULL, lambda = NULL,
                            thresh = 1e-4, max.iters = 100, datasets.scale = NULL) {
+  object <- updateLiger(object)
   if (is.null(lambda)) {
     lambda <- object@parameters$lambda
   }
@@ -1100,6 +1106,7 @@ optimizeSubset <- function(object, cell.subset = NULL, cluster.subset = NULL, la
 #' }
 
 optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100, rand.seed = 1) {
+  object <- updateLiger(object)
   k <- ncol(object@H[[1]])
   H <- object@H
   W <- object@W
@@ -1162,6 +1169,7 @@ optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100
 suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.cores = 1,
                           thresh = 1e-4, max.iters = 100, knn_k = 20, k2 = 500, ref_dataset = NULL,
                           resolution = 1, gen.new = F, nrep = 1, return.data = F, return.raw = F) {
+  object <- updateLiger(object)
   if (is.null(lambda.test)) {
     lambda.test <- c(seq(0.25, 1, 0.25), seq(2, 10, 1), seq(15, 60, 5))
   }
@@ -1289,6 +1297,7 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, max.iters = 100,
                      num.cores = 1, rand.seed = 1, gen.new = F, nrep = 1, plot.log2 = T, 
                      return.data = F, return.raw = F) {
+  object <- updateLiger(object)
   time_start <- Sys.time()
   # optimize largest k value first to take advantage of efficient updating
   message("This operation may take several minutes depending on number of values being tested")
@@ -1434,6 +1443,7 @@ quantileAlignSNF <- function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, r
                              dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", center = F, 
                              small.clust.thresh = 0, id.number = NULL, print.mod = F, 
                              print.align.summary = F) {
+  object <- updateLiger(object)
   if (is.null(ref_dataset)) {
     ns <- sapply(object@scale.data, nrow)
     ref_dataset <- names(object@scale.data)[which.max(ns)]
@@ -1697,6 +1707,7 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
 runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.pca = F,
                     perplexity = 30, theta = 0.5, method = 'Rtsne', fitsne.path = NULL,
                     rand.seed = 42) {
+  object <- updateLiger(object)
   if (use.raw) {
     data.use <- do.call(rbind, object@H)
     if (identical(dims.use, 1:0)) {
@@ -1775,6 +1786,7 @@ runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2,
                "version accesible to reticulate."),
          call. = FALSE)
   }
+  object <- updateLiger(object)
   set.seed(rand.seed)
   reticulate::py_set_seed(rand.seed)
   UMAP <- reticulate::import("umap")
@@ -2346,6 +2358,8 @@ plotFeature <- function(object, feature, dr.method = "tsne", by.dataset = T, tit
                         text.size = 3, do.shuffle = T, rand.seed = 1, do.labels = F,
                         axis.labels = NULL, do.legend = T, legend.size = 5, option = 'plasma', 
                         zero.color = '#F5F5F5', return.plots = F) {
+  object <- updateLiger(object)
+  
   if(dr.method != "tsne" && dr.method != "umap"){
     stop("Method does not match a valid value")
   }
@@ -3580,6 +3594,7 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 
 ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.liger.genes = T,
                           by.dataset = F) {
+  object <- updateLiger(object)
   if (!require("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" needed for this function to work. Please install it.",
          call. = FALSE
@@ -3930,6 +3945,8 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
 #' }
 
 subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.missing = T) {
+  object <- updateLiger(object)
+  
   if (!is.null(clusters.use)) {
     cells.use <- names(object@clusters)[which(object@clusters %in% clusters.use)]
   }
@@ -4018,7 +4035,7 @@ convertOldLiger = function(object, override.raw = F) {
 #' @param object \code{liger} object. Should run quantileAlignSNF first 
 #' @param compare.datasets Split clusters by dataset of origin to compare differences in expression
 #'   (default TRUE)
-#' @param clusters A list of clusters to include for comparison (defualt NULL).
+#' @param clusters A list of clusters to include for comparison (default NULL).
 #'
 #' @return Updated \code{liger} object.
 #' @export
@@ -4170,4 +4187,31 @@ updateLiger <- function(object){
   }
   return(object)
 }
+
+imputeAccesibility = function(object,k=20,sigma=NULL)
+{
+  require(FNN)
+  if(length(object@jaccard)==0){
+    object <- runJaccard(object)
+  }
+  for(i in 1:length(object@jaccard)){
+    jmat = object@jaccard[[i]]
+    jmat[is.na(jmat)] <- 0
+    acc_mat = t(object@scale.data[[i]])
+    knn = nn2(jmat,k=k+1,eps=0)
+    imp_acc = matrix(0,nrow(acc_mat),ncol(acc_mat))
+    dimnames(imp_acc)=dimnames(acc_mat)
+    if(is.null(sigma)){
+      sigma = apply(knn$nn.dists, MARGIN=2, function(x){median(x[1:nrow(acc_mat)])})[-1]
+    }
+    for (j in 1:nrow(jmat)){
+      imp_acc[,j]=rowSums(acc_mat[,knn$nn.idx[j,2:(k+1)]]*exp(-knn$nn.dists[j,2:(k+1)]/sigma))
+    }
+    object@scale.data[[i]] = t(imp_acc)
+  }
+  return(object)
+}
+
+
+
 
