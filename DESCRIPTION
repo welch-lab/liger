@@ -42,5 +42,6 @@ Suggests:
     knitr,
     reticulate,
     rmarkdown,
-    NNLM
+    NNLM,
+    testthat
 VignetteBuilder: knitr
