@@ -1,4 +1,4 @@
-#' @importFrom Matrix colSums rowSums
+#' @importFrom Matrix colSums rowSums t
 NULL
 
 #' The LIGER Class
