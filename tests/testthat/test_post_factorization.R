@@ -2,7 +2,8 @@
 
 set.seed(1)
 
-pbmc.file <- system.file('tests', 'testdata', 'small_pbmc_data.RDS', package = 'liger')
+# pbmc.file <- system.file('tests', 'testdata', 'small_pbmc_data.RDS', package = 'liger')
+pbmc.file <- "../testdata/small_pbmc_data.RDS"
 pbmc.small <- readRDS(pbmc.file)
 
 # preprocessing steps (object required for tests)

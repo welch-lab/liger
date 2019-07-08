@@ -34,6 +34,7 @@ LinkingTo: Rcpp, RcppArmadillo
 Depends:
     cowplot,
     Matrix,
+    methods,
     patchwork
 RoxygenNote: 6.1.1
 Suggests:
