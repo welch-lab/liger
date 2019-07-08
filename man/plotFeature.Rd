@@ -4,9 +4,9 @@
 \alias{plotFeature}
 \title{Plot specific feature on t-SNE coordinates}
 \usage{
-plotFeature(object, feature, by.dataset = T, title = NULL,
-  pt.size = 0.3, text.size = 3, do.shuffle = T, rand.seed = 1,
-  do.labels = F, axis.labels = NULL, do.legend = T,
+plotFeature(object, feature, by.dataset = T, discrete = NULL,
+  title = NULL, pt.size = 0.3, text.size = 3, do.shuffle = T,
+  rand.seed = 1, do.labels = F, axis.labels = NULL, do.legend = T,
   legend.size = 5, option = "plasma", zero.color = "#F5F5F5",
   return.plots = F)
 }
@@ -17,7 +17,7 @@ plotFeature(object, feature, by.dataset = T, title = NULL,
 
 \item{by.dataset}{Whether to generate separate plot for each dataset (default TRUE).}
 
-\item{discrete}{Whether to treat feature as discrete; if left NULL will infer from column class 
+\item{discrete}{Whether to treat feature as discrete; if left NULL will infer from column class
 in cell.data (if factor, treated like discrete) (default NULL).}
 
 \item{title}{Plot title (default NULL).}
