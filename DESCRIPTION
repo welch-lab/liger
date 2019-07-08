@@ -1,7 +1,7 @@
 Package: liger
 Type: Package
 Title: Linked Inference of Genomic Experimental Relationships
-Version: 0.4.2
+Version: 0.4.2.9000
 Date: 2018-04-09
 Author: Joshua Welch
 Maintainer: Joshua Welch <jwelch@broadinstitute.org>,
@@ -33,7 +33,6 @@ Remotes: thomasp85/patchwork
 LinkingTo: Rcpp, RcppArmadillo
 Depends:
     cowplot,
-    Matrix,
     patchwork
 RoxygenNote: 6.1.1
 Suggests:
