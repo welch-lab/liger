@@ -34,6 +34,7 @@ LinkingTo: Rcpp, RcppArmadillo
 Depends:
     cowplot,
     Matrix,
+    methods,
     patchwork
 RoxygenNote: 6.1.1
 Suggests:
@@ -41,5 +42,6 @@ Suggests:
     knitr,
     reticulate,
     rmarkdown,
-    NNLM
+    NNLM,
+    testthat
 VignetteBuilder: knitr

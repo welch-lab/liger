@@ -5,8 +5,7 @@
 \title{Calculate alignment metric}
 \usage{
 calcAlignment(object, k = NULL, rand.seed = 1, cells.use = NULL,
-  cells.comp = NULL, clusters.use = NULL, by.cell = F,
-  by.dataset = F)
+  cells.comp = NULL, clusters.use = NULL, by.cell = F, by.dataset = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call quantileAlignSNF before calling.}
