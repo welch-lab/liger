@@ -1260,7 +1260,7 @@ optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100
 #' @return Matrix of results if indicated or ggplot object. Plots alignment vs. lambda to console.
 #'
 #' @import doSNOW
-#' @importFrom snow makeCluster
+#' @importFrom snow makeCluster stopCluster
 #' @importFrom foreach foreach
 #' @importFrom foreach "%dopar%"
 #' @export
@@ -1388,7 +1388,7 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 #'
 #' @return Matrix of results if indicated or ggplot object. Plots K-L divergence vs. k to console.
 #' @import doSNOW
-#' @importFrom snow makeCluster
+#' @importFrom snow makeCluster stopCluster
 #' @importFrom foreach foreach
 #' @importFrom foreach "%dopar%"
 #' @export
