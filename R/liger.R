@@ -142,9 +142,9 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
       matrix.prefix <- ifelse(use.filtered, "filtered", "raw")
       if (is_v3) {
         sample.dir <- paste0(sample.dir, "/", matrix.prefix, "_feature_bc_matrix")
-      } if (is_atac){
+      } else if (is_atac){
         sample.dir <- paste0(sample.dir, "/", matrix.prefix, "_peak_bc_matrix")
-      }else {
+      } else {
         if (is.null(reference)) {
           references <- list.dirs(paste0(sample.dir, "/raw_gene_bc_matrices"),
                                   full.names = F,
