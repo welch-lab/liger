@@ -138,10 +138,13 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
     if (dir.exists(inner1)) {
       sample.dir <- inner1
       is_v3 <- dir.exists(paste0(sample.dir, "/filtered_feature_bc_matrix"))
+      is_atac <- dir.exists(paste0(sample.dir, "/filtered_peak_bc_matrix"))
       matrix.prefix <- ifelse(use.filtered, "filtered", "raw")
       if (is_v3) {
         sample.dir <- paste0(sample.dir, "/", matrix.prefix, "_feature_bc_matrix")
-      } else {
+      } if(is_atac){
+        sample.dir <- paste0(sample.dir, "/", matrix.prefix, "_peak_bc_matrix")
+      }else {
         if (is.null(reference)) {
           references <- list.dirs(paste0(sample.dir, "/raw_gene_bc_matrices"),
                                   full.names = F,
@@ -157,13 +160,22 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
       }
     } else {
       is_v3 <- file.exists(paste0(sample.dir, "/features.tsv.gz"))
+      is_atac <- file.exists(paste0(sample.dir, "/filtered_peak_bc_matrix.h5"))
     }
     suffix <- ifelse(is_v3, ".gz", "")
+    if(is_atac){
+      if(dir.exists(paste0(sample.dir, "/filtered_peak_bc_matrix"))){
+        sample.dir <- paste0(sample.dir, "/filtered_feature_bc_matrix")
+      }
+      peaks.file <- paste0(sample.dir, "/peaks.bed")
+      matrix.file <- paste0(sample.dir, "/matrix.mtx")
+      barcodes.file <- paste0(sample.dir, "/barcodes.tsv")
+    } else{
     features.file <- ifelse(is_v3, paste0(sample.dir, "/features.tsv.gz"),
-                            paste0(sample.dir, "/genes.tsv")
-    )
+                            paste0(sample.dir, "/genes.tsv"))
     matrix.file <- paste0(sample.dir, "/matrix.mtx", suffix)
     barcodes.file <- paste0(sample.dir, "/barcodes.tsv", suffix)
+    }
     
     rawdata <- readMM(matrix.file)
     # convert to dgc matrix
@@ -186,14 +198,24 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
       }))
     }
     
-    features <- read.delim(features.file, header = F, stringsAsFactors = F)
-    # since some genes are only differentiated by ENSMBL
-    rownames(rawdata) <- make.unique(features[, 2])
+    if(is_atac){
+      # will return the range for the peaks - should figure out how to get genes instead
+      peaks <- read.delim(peaks.file, header = F, stringsAsFactors = F)
+      rawdata.rows = paste0(peaks[,1],"_",peaks[,2],"_",peaks[,3])
+    } else {
+      features <- read.delim(features.file, header = F, stringsAsFactors = F)
+      # since some genes are only differentiated by ENSMBL
+      rawdata.rows <- make.unique(features[, 2])
+    }
+    rownames(rawdata) <- rawdata.rows
     colnames(rawdata) <- barcodes
     
     # split based on 10X datatype -- V3 has Gene Expression, Antibody Capture, CRISPR, CUSTOM
     # V2 has only Gene Expression by default and just two columns
-    if (ncol(features) < 3) {
+    if(is_atac){
+      samplelist <- list(rawdata)
+      names(samplelist) <- c("ATAC")
+    } else if (ncol(features) < 3) {
       samplelist <- list(rawdata)
       names(samplelist) <- c("Gene Expression")
     } else {
@@ -414,7 +436,7 @@ normalize <- function(object) {
 #' }
 
 selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine = "union",
-                        keep.unique = F, capitalize = F, do.plot = T, cex.use = 0.3) {
+                        keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3) {
   object <- updateLiger(object)
   
   # Expand if only single var.thresh passed
@@ -4026,7 +4048,8 @@ convertOldLiger = function(object, override.raw = F) {
   warning('Old slots not transferred: ', setdiff(slots_old, slots_new))
   # compare to slots since it's possible that the analogizer object
   # class has slots that this particular object does not 
-  warning('New slots not filled: ', setdiff(slots_new[slots_new != "cell.data"], slots))
+  warning('New slots not filled: ')
+  print(setdiff(slots_new[slots_new != "cell.data"], slots))
   return(new.liger)
 }
 
@@ -4161,6 +4184,7 @@ listMarkersWilcoxon <- function(object, ...){
 #' }
 runJaccard <- function(object){
     for(i in object@scale.data){
+      i[i!=0] <- 1 
       common_values <- i %*% t(i)
       nonzero_value_index <- which(common_values > 0,  arr.ind=TRUE)
       nonzero_value <- common_values[nonzero_value_index]
