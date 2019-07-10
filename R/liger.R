@@ -142,7 +142,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
       matrix.prefix <- ifelse(use.filtered, "filtered", "raw")
       if (is_v3) {
         sample.dir <- paste0(sample.dir, "/", matrix.prefix, "_feature_bc_matrix")
-      } if(is_atac){
+      } if (is_atac){
         sample.dir <- paste0(sample.dir, "/", matrix.prefix, "_peak_bc_matrix")
       }else {
         if (is.null(reference)) {
@@ -163,14 +163,14 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
       is_atac <- file.exists(paste0(sample.dir, "/filtered_peak_bc_matrix.h5"))
     }
     suffix <- ifelse(is_v3, ".gz", "")
-    if(is_atac){
+    if (is_atac){
       if(dir.exists(paste0(sample.dir, "/filtered_peak_bc_matrix"))){
         sample.dir <- paste0(sample.dir, "/filtered_feature_bc_matrix")
       }
       peaks.file <- paste0(sample.dir, "/peaks.bed")
       matrix.file <- paste0(sample.dir, "/matrix.mtx")
       barcodes.file <- paste0(sample.dir, "/barcodes.tsv")
-    } else{
+    } else {
     features.file <- ifelse(is_v3, paste0(sample.dir, "/features.tsv.gz"),
                             paste0(sample.dir, "/genes.tsv"))
     matrix.file <- paste0(sample.dir, "/matrix.mtx", suffix)
@@ -198,7 +198,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
       }))
     }
     
-    if(is_atac){
+    if (is_atac){
       # will return the range for the peaks - should figure out how to get genes instead
       peaks <- read.delim(peaks.file, header = F, stringsAsFactors = F)
       rawdata.rows = paste0(peaks[,1],"_",peaks[,2],"_",peaks[,3])
@@ -212,7 +212,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
     
     # split based on 10X datatype -- V3 has Gene Expression, Antibody Capture, CRISPR, CUSTOM
     # V2 has only Gene Expression by default and just two columns
-    if(is_atac){
+    if (is_atac){
       samplelist <- list(rawdata)
       names(samplelist) <- c("ATAC")
     } else if (ncol(features) < 3) {
