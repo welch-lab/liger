@@ -1404,6 +1404,9 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, max.iters = 100,
                      num.cores = 1, rand.seed = 1, gen.new = F, nrep = 1, plot.log2 = T,
                      return.data = F, return.raw = F) {
+  if (length(object@scale.data) == 0) {
+    stop("scaleNotCenter should be run on the object before running suggestK.")
+  }
   time_start <- Sys.time()
   # optimize largest k value first to take advantage of efficient updating
   print("This operation may take several minutes depending on number of values being tested")
