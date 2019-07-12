@@ -15,53 +15,53 @@ seuratToLiger(objects, combined.seurat = F, names = "use-projects",
 \item{combined.seurat}{Whether Seurat object (single) already contains multiple datasets (default
 FALSE).}
 
-\item{names}{Names to use for datasets in new liger object. If use-projects, takes project names 
-from individual Seurat objects; if use-meta, takes value of object meta.data in meta.var column 
-for each dataset; otherwise, user can pass in vector of names with same length 
+\item{names}{Names to use for datasets in new liger object. If use-projects, takes project names
+from individual Seurat objects; if use-meta, takes value of object meta.data in meta.var column
+for each dataset; otherwise, user can pass in vector of names with same length
 as number of datasets. If combined.seurat, infers project names based on whether meta.var
 or assays.use is present (at least one required).}
 
-\item{meta.var}{Seurat meta.data column name to use in naming datasets. Either meta.var or 
+\item{meta.var}{Seurat meta.data column name to use in naming datasets. Either meta.var or
 assays.use required if combined.seurat is TRUE (default NULL).}
 
-\item{assays.use}{Names of Seurat v3 assays to use as separate datasets in conversion (e.g. RNA, 
+\item{assays.use}{Names of Seurat v3 assays to use as separate datasets in conversion (e.g. RNA,
 ADT) (default NULL).}
 
 \item{raw.assay}{Name of Seurat v3 assay to use for raw data if meta.var used to split combined
 Seurat object -- in case integrated assay has been set as default (default "RNA").}
 
-\item{remove.missing}{Whether to remove missing genes/cells when converting raw.data to liger object 
+\item{remove.missing}{Whether to remove missing genes/cells when converting raw.data to liger object
 (default TRUE).}
 
-\item{renormalize}{Whether to automatically normalize raw.data once \code{liger} object is created 
+\item{renormalize}{Whether to automatically normalize raw.data once \code{liger} object is created
 (default TRUE).}
 
 \item{use.seurat.genes}{Carry over variable genes from Seurat objects. If num.hvg.info is set, uses
-that value to get top most highly variable genes from hvg.info slot in Seurat objects. Otherwise 
-uses var.genes slot in Seurat objects. For multiple datasets, takes the union of the variable 
+that value to get top most highly variable genes from hvg.info slot in Seurat objects. Otherwise
+uses var.genes slot in Seurat objects. For multiple datasets, takes the union of the variable
 genes. (default TRUE)}
 
-\item{num.hvg.info}{Number of highly variable genes to include from each object's hvg.info slot. 
+\item{num.hvg.info}{Number of highly variable genes to include from each object's hvg.info slot.
 Only available for Seurat v2 objects. If set, recommended value is 2000 (default NULL).}
 
-\item{use.idents}{Carry over cluster identities from Seurat objects. If multiple objects with 
+\item{use.idents}{Carry over cluster identities from Seurat objects. If multiple objects with
 overlapping cluster names, will preface cluster names by dataset names to distinguish. (default
 TRUE).}
 
 \item{use.tsne}{Carry over t-SNE coordinates from Seurat object (only meaningful for combined
 analysis Seurat object). Useful for plotting directly afterwards. (default TRUE)}
 
-\item{cca.to.H}{Carry over CCA (and aligned) loadings and insert them into H (and H.norm) slot in 
-liger object (only meaningful for combined analysis Seurat object). Useful for plotting directly 
+\item{cca.to.H}{Carry over CCA (and aligned) loadings and insert them into H (and H.norm) slot in
+liger object (only meaningful for combined analysis Seurat object). Useful for plotting directly
 afterwards. (default FALSE)}
 }
 \value{
 \code{liger} object.
 }
 \description{
-This function creates a \code{liger} object from multiple (disjoint) Seurat objects or a single 
-(combined-analysis) Seurat object. It includes options for keeping the variable genes and cluster 
-identities from the original Seurat objects. Seurat V2 and V3 supported (though all objects 
+This function creates a \code{liger} object from multiple (disjoint) Seurat objects or a single
+(combined-analysis) Seurat object. It includes options for keeping the variable genes and cluster
+identities from the original Seurat objects. Seurat V2 and V3 supported (though all objects
 should share the same major version).
 }
 \examples{

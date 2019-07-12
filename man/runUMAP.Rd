@@ -17,18 +17,18 @@ runUMAP(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k = 2,
 
 \item{k}{Number of dimensions to reduce to (default 2).}
 
-\item{distance}{Mtric used to measure distance in the input space. A wide variety of metrics are 
+\item{distance}{Mtric used to measure distance in the input space. A wide variety of metrics are
 already coded, and a user defined function can be passed as long as it has been JITd by numba.
 (default "euclidean")}
 
-\item{n_neighbors}{Number of neighboring points used in local approximations of manifold 
-structure. Larger values will result in more global structure being preserved at the loss of 
-detailed local structure. In general this parameter should often be in the range 5 to 50, with 
+\item{n_neighbors}{Number of neighboring points used in local approximations of manifold
+structure. Larger values will result in more global structure being preserved at the loss of
+detailed local structure. In general this parameter should often be in the range 5 to 50, with
 a choice of 10 to 15 being a sensible default. (default 10)}
 
-\item{min_dist}{Controls how tightly the embedding is allowed compress points together. Larger 
-values ensure embedded points are more evenly distributed, while smaller values allow the 
-algorithm to optimise more accurately with regard to local structure. Sensible values are in 
+\item{min_dist}{Controls how tightly the embedding is allowed compress points together. Larger
+values ensure embedded points are more evenly distributed, while smaller values allow the
+algorithm to optimise more accurately with regard to local structure. Sensible values are in
 the range 0.001 to 0.5, with 0.1 being a reasonable default. (default 0.1)}
 
 \item{rand.seed}{Random seed for reproducibility (default 42).}
@@ -37,12 +37,12 @@ the range 0.001 to 0.5, with 0.1 being a reasonable default. (default 0.1)}
 \code{liger} object with tsne.coords slot set.
 }
 \description{
-Run UMAP on the normalized cell factors (or raw cell factors) to generate a 2D embedding for 
-visualization (or general dimensionality reduction). Has option to run on subset of factors. 
-Note that running multiple times will overwrite tsne.coords values. It is generally 
+Run UMAP on the normalized cell factors (or raw cell factors) to generate a 2D embedding for
+visualization (or general dimensionality reduction). Has option to run on subset of factors.
+Note that running multiple times will overwrite tsne.coords values. It is generally
 recommended to use this method for dimensionality reduction with extremely large datasets.
 
-Note that this method requires that the package reticulate is installed, along with the Python 
+Note that this method requires that the package reticulate is installed, along with the Python
 package umap-learn.
 }
 \examples{

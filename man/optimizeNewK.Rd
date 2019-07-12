@@ -26,7 +26,7 @@ optimizeALS.}
 \code{liger} object with H, W, and V slots reset.
 }
 \description{
-This uses an efficient strategy for updating that takes advantage of the information in the 
+This uses an efficient strategy for updating that takes advantage of the information in the
 existing factorization. It is most recommended for values of k smaller than current value,
 where it is more likely to speed up the factorization.
 }

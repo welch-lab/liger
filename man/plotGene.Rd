@@ -20,10 +20,10 @@ magnified and put on log scale).}
 
 \item{pt.size}{Point size for plots (default 0.1)}
 
-\item{min.clip}{Quantile probability for lower bound of methylation data (everything lower set 
+\item{min.clip}{Quantile probability for lower bound of methylation data (everything lower set
 to this quantile value) (default 0)}
 
-\item{max.clip}{Quantile probability for upper bound of methylation data (everything greater set 
+\item{max.clip}{Quantile probability for upper bound of methylation data (everything greater set
 to this quantile value) (default 1)}
 
 \item{points.only}{Remove axes when plotting t-sne coordinates (default FALSE).}

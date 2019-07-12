@@ -23,7 +23,7 @@ plotWordClouds(object, dataset1 = NULL, dataset2 = NULL,
 
 \item{max.size}{Size of largest gene symbol in word cloud (default 4).}
 
-\item{factor.share.thresh}{Use only factors with a dataset specificity less than or equalt to 
+\item{factor.share.thresh}{Use only factors with a dataset specificity less than or equalt to
 threshold (default 10).}
 
 \item{log.fc.thresh}{Lower log-fold change threshold for differential expression in markers
@@ -45,15 +45,15 @@ available.}
 }
 \description{
 Plots t-SNE coordinates of all cells by their loadings on each factor. Underneath it displays the
-most highly loading shared and dataset-specific genes, with the size of the marker indicating 
-the magnitude of the loading. 
+most highly loading shared and dataset-specific genes, with the size of the marker indicating
+the magnitude of the loading.
 
-It is recommended to call this function into a PDF due to the large number of 
+It is recommended to call this function into a PDF due to the large number of
 plots produced.
 }
 \examples{
 \dontrun{
-# liger object, factorization complete 
+# liger object, factorization complete
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
 ligerex <- runTSNE(ligerex)

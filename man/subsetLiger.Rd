@@ -22,15 +22,15 @@ subsetLiger(object, clusters.use = NULL, cells.use = NULL,
   H.norm, tsne.coords, and clusters.
 }
 \description{
-The subset can be based on cell names or clusters. This function applies the subsetting to 
-raw.data, norm.data, scale.data, cell.data, H, W, V, H.norm, tsne.coords, and clusters. 
+The subset can be based on cell names or clusters. This function applies the subsetting to
+raw.data, norm.data, scale.data, cell.data, H, W, V, H.norm, tsne.coords, and clusters.
 Note that it does NOT reoptimize the factorization. See optimizeSubset for this functionality.
 }
 \examples{
 \dontrun{
 # liger object, with clusters 0:10
 # factorization, alignment, and t-SNE calculation have been performed
-ligerex 
+ligerex
 # subset by clusters
 ligerex_subset <- subsetLiger(ligerex, clusters.use = c(1, 4, 5))
 }

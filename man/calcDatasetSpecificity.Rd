@@ -17,19 +17,19 @@ calcDatasetSpecificity(object, dataset1 = NULL, dataset2 = NULL,
 \item{do.plot}{Display barplot of dataset specificity scores (by factor) (default TRUE).}
 }
 \value{
-List containing three elements. First two elements are the norm of each metagene factor 
+List containing three elements. First two elements are the norm of each metagene factor
 for each dataset. Last element is the vector of dataset specificity scores.
 }
 \description{
 This score represents the relative magnitude of the dataset-specific components of each factor's
-gene loadings compared to the shared components for two datasets. First, for each dataset we 
-calculate the norm of the sum of each factor's shared loadings (W) and dataset-specific loadings 
-(V). We then determine the ratio of these two values and subtract from 1... TODO: finish 
+gene loadings compared to the shared components for two datasets. First, for each dataset we
+calculate the norm of the sum of each factor's shared loadings (W) and dataset-specific loadings
+(V). We then determine the ratio of these two values and subtract from 1... TODO: finish
 description.
 }
 \examples{
 \dontrun{
-# liger object, factorization complete 
+# liger object, factorization complete
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
 dataset_spec <- calcDatasetSpecificity(ligerex, do.plot = F)

@@ -12,13 +12,13 @@ makeRiverplot(object, cluster1, cluster2, cluster_consensus = NULL,
 \arguments{
 \item{object}{\code{liger} object. Should run quantileAlignSNF before calling.}
 
-\item{cluster1}{Cluster assignments for dataset 1. Note that cluster names should be distinct 
+\item{cluster1}{Cluster assignments for dataset 1. Note that cluster names should be distinct
 across datasets.}
 
-\item{cluster2}{Cluster assignments for dataset 2. Note that cluster names should be distinct 
+\item{cluster2}{Cluster assignments for dataset 2. Note that cluster names should be distinct
 across datasets.}
 
-\item{cluster_consensus}{Optional external consensus clustering (to use instead of object 
+\item{cluster_consensus}{Optional external consensus clustering (to use instead of object
 clusters)}
 
 \item{min.frac}{Minimum fraction of cluster for edge to be shown (default 0.05).}
@@ -45,7 +45,7 @@ between the nodes (default 0.1).}
 By default will try to automatically order them appropriately.}
 }
 \description{
-Creates a riverplot to show how separate cluster assignments from two datasets map onto a 
+Creates a riverplot to show how separate cluster assignments from two datasets map onto a
 joint clustering. The joint clustering is by default the object clustering, but an external one
 can also be passed in. Uses the riverplot package to construct riverplot object and then plot.
 }
@@ -54,12 +54,12 @@ can also be passed in. Uses the riverplot package to construct riverplot object 
 # liger object, factorization done
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
-# toy clusters 
+# toy clusters
 cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = T)
 names(cluster1) <- colnames(ligerex@raw.data[[1]])
 cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = T)
 names(cluster2) <- colnames(ligerex@raw.data[[2]])
-# create riverplot 
+# create riverplot
 makeRiverplot(ligerex, cluster1, cluster2)
 }
 }

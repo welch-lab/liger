@@ -1,5 +1,7 @@
 <img src="docs/img/liger_cropped.png" width="150">
 
+[![Build Status](https://travis-ci.org/MacoskoLab/liger.svg?branch=master)](https://travis-ci.org/MacoskoLab/liger.svg?branch=master)
+
 # LIGER (Linked Inference of Genomic Experimental Relationships)
 
 LIGER (`liger`) is a package for integrating and analyzing multiple single-cell datasets, developed and maintained by the Macosko lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors. 

@@ -9,22 +9,22 @@ convertOldLiger(object, override.raw = F)
 \arguments{
 \item{object}{\code{liger} object.}
 
-\item{override.raw}{Keep original raw.data without any modifications (removing missing cells 
+\item{override.raw}{Keep original raw.data without any modifications (removing missing cells
 etc.) (defualt FALSE).}
 }
 \value{
 Updated \code{liger} object.
 }
 \description{
-Also works for Analogizer objects (but must have both liger and Analogizer loaded). Transfers 
-data in slots with same names from old class object to new, leaving slots defined only in new 
+Also works for Analogizer objects (but must have both liger and Analogizer loaded). Transfers
+data in slots with same names from old class object to new, leaving slots defined only in new
 class NULL.
 }
 \examples{
 \dontrun{
-# old Analogizer object 
+# old Analogizer object
 analogy
-# convert to latest class definition 
+# convert to latest class definition
 ligerex <- convertOldLiger(analogy)
 }
 }

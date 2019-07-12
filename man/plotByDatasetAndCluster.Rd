@@ -12,7 +12,7 @@ plotByDatasetAndCluster(object, clusters = NULL, title = NULL,
 \arguments{
 \item{object}{\code{liger} object. Should call runTSNE or runUMAP before calling.}
 
-\item{clusters}{Another clustering to use for coloring second plot (must have same names as 
+\item{clusters}{Another clustering to use for coloring second plot (must have same names as
 clusters slot) (default NULL).}
 
 \item{title}{Plot titles (list or vector of length 2) (default NULL).}
@@ -21,7 +21,7 @@ clusters slot) (default NULL).}
 
 \item{text.size}{Controls size of plot text (cluster center labels) (default 3).}
 
-\item{do.shuffle}{Randomly shuffle points so that points from same dataset are not plotted 
+\item{do.shuffle}{Randomly shuffle points so that points from same dataset are not plotted
 one after the other (default TRUE).}
 
 \item{rand.seed}{Random seed for reproducibility of point shuffling (default 1).}
@@ -35,14 +35,14 @@ one after the other (default TRUE).}
 \item{return.plots}{Return ggplot plot objects instead of printing directly (default FALSE).}
 }
 \value{
-List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to 
+List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
   console).
 }
 \description{
-Generates two plots of all cells across datasets, one colored by dataset and one colored by 
+Generates two plots of all cells across datasets, one colored by dataset and one colored by
 cluster. These are useful for visually examining the alignment and cluster distributions,
 respectively. If clusters have not been set yet (quantileAlignSNF not called), will plot by
-single color for second plot. It is also possible to pass in another clustering (as long as 
+single color for second plot. It is also possible to pass in another clustering (as long as
 names match those of cells).
 }
 \examples{
@@ -53,7 +53,7 @@ ligerex
 ligerex <- runTSNE(ligerex)
 # plot to console
 plotByDatasetAndCluster(ligerex)
-# return list of plots 
+# return list of plots
 plots <- plotByDatasetAndCluster(ligerex, return.plots = T)
 }
 }

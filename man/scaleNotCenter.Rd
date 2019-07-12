@@ -9,7 +9,7 @@ scaleNotCenter(object, remove.missing = T)
 \arguments{
 \item{object}{\code{liger} object. Should call normalize and selectGenes before calling.}
 
-\item{remove.missing}{Whether to remove cells from scale.data with no gene expression 
+\item{remove.missing}{Whether to remove cells from scale.data with no gene expression
 (default TRUE).}
 }
 \value{
@@ -17,8 +17,8 @@ scaleNotCenter(object, remove.missing = T)
 }
 \description{
 This function scales normalized gene expression data after variable genes have been selected.
-Note that the data is not mean-centered before scaling because expression values must remain 
-positive (NMF only accepts positive values). It also removes cells which do not have any 
+Note that the data is not mean-centered before scaling because expression values must remain
+positive (NMF only accepts positive values). It also removes cells which do not have any
 expression across the genes selected, by default.
 }
 \examples{

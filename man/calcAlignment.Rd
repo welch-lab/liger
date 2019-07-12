@@ -11,8 +11,8 @@ calcAlignment(object, k = NULL, rand.seed = 1, cells.use = NULL,
 \arguments{
 \item{object}{\code{liger} object. Should call quantileAlignSNF before calling.}
 
-\item{k}{Number of nearest neighbors to use in calculating alignment. By default, this will be 
-floor(0.01 * total number of cells), with a lower bound of 10 in all cases except where the 
+\item{k}{Number of nearest neighbors to use in calculating alignment. By default, this will be
+floor(0.01 * total number of cells), with a lower bound of 10 in all cases except where the
 total number of sampled cells is less than 10.}
 
 \item{rand.seed}{Random seed for reproducibility (default 1).}
@@ -33,16 +33,16 @@ alignment (instead of dataset designations). These can be from the same dataset 
 Alignment metric.
 }
 \description{
-This metric quantifies how well-aligned two or more datasets are. Alignment is defined as in the 
+This metric quantifies how well-aligned two or more datasets are. Alignment is defined as in the
 documentation for Seurat. We randomly downsample all datasets to have as many cells as the
 smallest one. We construct a nearest-neighbor graph and calculate for each cell how many of its
-neighbors are from the same dataset. We average across all cells and compare to the expected 
-value for perfectly mixed datasets, and scale the value from 0 to 1. Note that in practice, 
+neighbors are from the same dataset. We average across all cells and compare to the expected
+value for perfectly mixed datasets, and scale the value from 0 to 1. Note that in practice,
 alignment can be greater than 1 occasionally.
 }
 \examples{
 \dontrun{
-# liger object, factorization complete 
+# liger object, factorization complete
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
 alignment <- calcAlignment(ligerex)

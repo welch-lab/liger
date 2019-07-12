@@ -16,7 +16,7 @@ getFactorMarkers(object, dataset1 = NULL, dataset2 = NULL,
 
 \item{dataset2}{Name of second dataset (default second dataset by order)}
 
-\item{factor.share.thresh}{Use only factors with a dataset specificity less than or equalt to 
+\item{factor.share.thresh}{Use only factors with a dataset specificity less than or equalt to
 threshold (default 10).}
 
 \item{dataset.specificity}{Pre-calculated dataset specificity if available. Will calculate if not
@@ -38,20 +38,20 @@ available.}
 }
 \value{
 List of shared and specific factors. First three elements are dataframes of dataset1-
-  specific, shared, and dataset2-specific markers. Last two elements are tables indicating the 
+  specific, shared, and dataset2-specific markers. Last two elements are tables indicating the
   number of factors in which marker appears.
 }
 \description{
-Applies various filters to genes on the shared (W) and dataset-specific (V) components of the 
-factorization, before selecting those which load most significantly on each factor (in a shared 
+Applies various filters to genes on the shared (W) and dataset-specific (V) components of the
+factorization, before selecting those which load most significantly on each factor (in a shared
 or dataset-specific way).
 }
 \examples{
 \dontrun{
-# liger object, factorization complete 
+# liger object, factorization complete
 ligerex
 markers <- getFactorMarkers(ligerex, num.genes = 10)
-# look at shared markers 
+# look at shared markers
 head(markers[[2]])
 }
 }
