@@ -2,10 +2,12 @@
 % Please edit documentation in R/deprecated.R
 \name{clusterLouvainJaccard}
 \alias{clusterLouvainJaccard}
-\title{Perform graph-based clustering (Louvain algorithm) using number of shared nearest neighbors (Jaccard index) as a distance metric.}
+\title{Perform graph-based clustering (Louvain algorithm) using number of shared nearest neighbors 
+(Jaccard index) as a distance metric. Note that use of this function requires Seurat to be 
+loaded.}
 \usage{
-clusterLouvainJaccard(object, resolution = 0.1, k.param = 30, n.iter = 10,
-  n.start = 10, print.output = F, ...)
+clusterLouvainJaccard(object, resolution = 0.1, k.param = 30,
+  n.iter = 10, n.start = 10, print.output = F, ...)
 }
 \arguments{
 \item{object}{analogizer object. Should call quantile_norm before calling.}
@@ -20,7 +22,9 @@ clusterLouvainJaccard(object, resolution = 0.1, k.param = 30, n.iter = 10,
 analogizer object with cluster assignments
 }
 \description{
-Perform graph-based clustering (Louvain algorithm) using number of shared nearest neighbors (Jaccard index) as a distance metric.
+Perform graph-based clustering (Louvain algorithm) using number of shared nearest neighbors 
+(Jaccard index) as a distance metric. Note that use of this function requires Seurat to be 
+loaded.
 }
 \examples{
 \dontrun{
