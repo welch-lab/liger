@@ -136,15 +136,15 @@ alignment_metric_per_factor<-function(object,k=NULL)
   return(align_metrics)
 }
 
-#' Perform graph-based clustering (Louvain algorithm) using number of shared nearest neighbors (Jaccard index) as a distance metric.
+#' Perform graph-based clustering (Louvain algorithm) using number of shared nearest neighbors 
+#' (Jaccard index) as a distance metric. Note that use of this function requires Seurat to be 
+#' loaded.
 #'
 #' @param object analogizer object. Should call quantile_norm before calling.
 #' @param res.param cluster resolution parameter
 #' @param k.param nearest neighbor parameter for shared nearest neighbor graph construction
 #' @param k.scale scale parameter for shared nearest neighbor graph construction
 #' @return analogizer object with cluster assignments
-#' @importFrom Seurat FindClusters
-#' @importFrom Seurat CreateSeuratObject
 #' @export
 #' @examples
 #' \dontrun{
@@ -160,6 +160,11 @@ alignment_metric_per_factor<-function(object,k=NULL)
 clusterLouvainJaccard = function(object, resolution = 0.1, k.param=30, n.iter = 10, n.start = 10,
                                  print.output = F, ...)
 {
+  if (!require("Seurat", quietly = TRUE)) {
+    stop("Package \"Seurat\" needed for this function to work. Please install it.",
+         call. = FALSE
+    )
+  }
   temp.seurat = CreateSeuratObject(t(Reduce(rbind,object@scale.data)))
   temp.seurat@scale.data = t(Reduce(rbind,object@scale.data))
   rownames(object@H.norm)=colnames(temp.seurat@scale.data)

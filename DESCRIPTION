@@ -10,35 +10,35 @@ Description: Uses an extension of nonnegative matrix factorization to identify s
 License: GPL-3
 SystemRequirements: Java (>= 6)
 Imports: Rcpp (>= 0.12.10),
+     dplyr,
+     doSNOW,
+     FNN,
+     foreach,
+     ggplot2,
+     ggrepel,
+     grid,
+     Hmisc,
+     ica,
+     irlba,
+     mclust,
      plyr,
      Matrix,
-     cowplot,
-     FNN,
-     dplyr,
      RANN.L1,
-     grid,
-     ggrepel,
-     irlba,
-     ica,
-     Rtsne,
-     ggplot2,
      riverplot,
-     Hmisc,
-     foreach,
-     snow,
-     doSNOW,
-     mclust,
-     patchwork
+     Rtsne,
+     snow
 Remotes: thomasp85/patchwork
 LinkingTo: Rcpp, RcppArmadillo
 Depends:
     cowplot,
+    methods,
     patchwork
 RoxygenNote: 6.1.1
 Suggests:
     Seurat,
     knitr,
+    NNLM,
     reticulate,
     rmarkdown,
-    NNLM
+    testthat
 VignetteBuilder: knitr
