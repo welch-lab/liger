@@ -1259,6 +1259,7 @@ optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100
 #' @import doSNOW
 #' @importFrom foreach foreach
 #' @importFrom foreach "%dopar%"
+#' @importFrom ggplot2 ggplot aes geom_point geom_line guides guide_legend labs theme theme_classic
 #' @export
 #' @examples
 #' \dontrun{
@@ -1337,8 +1338,8 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 
   p1 <- ggplot(df_al, aes(x = lambda, y = mean_aligns)) + geom_line(size=1) +
     geom_point() +
-    theme_classic() + labs(y='Alignment', x = 'Lambda') +
-    guides(col=guide_legend(title="", override.aes = list(size = 2))) +
+    theme_classic() + labs(y = 'Alignment', x = 'Lambda') +
+    guides(col = guide_legend(title = "", override.aes = list(size = 2))) +
     theme(legend.position = 'top')
 
   if (return.data) {
@@ -1386,6 +1387,7 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 #' @import doSNOW
 #' @importFrom foreach foreach
 #' @importFrom foreach "%dopar%"
+#' @importFrom ggplot2 ggplot aes geom_point geom_line guides guide_legend labs theme theme_classic
 #' @export
 #' @examples
 #' \dontrun{
@@ -2488,8 +2490,8 @@ calcPurity <- function(object, classes.compare) {
 #' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
 #'   console).
 #' @export
-#' @importFrom ggplot2 ggplot geom_point aes
-#' @importFrom dplyr %>%
+#' @importFrom ggplot2 ggplot geom_point geom_text ggtitle guides guide_legend aes theme xlab ylab 
+#' @importFrom dplyr %>% group_by summarize
 #' @examples
 #' \dontrun{
 #'  # liger object with aligned factor loadings
@@ -2533,7 +2535,7 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
     geom_point(size = pt.size) +
     guides(color = guide_legend(override.aes = list(size = legend.size)))
 
-  centers <- tsne_df %>% dplyr::group_by(Cluster) %>% dplyr::summarize(
+  centers <- tsne_df %>% group_by(Cluster) %>% summarize(
     tsne1 = median(x = tsne1),
     tsne2 = median(x = tsne2)
   )
@@ -2589,7 +2591,8 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
 #'   console).
 #' @export
-#' @importFrom ggplot2 ggplot geom_point aes scale_color_viridis_c
+#' @importFrom ggplot2 ggplot geom_point geom_text ggtitle aes guides guide_legend labs 
+#' scale_color_viridis_c theme xlab ylab
 #' @importFrom dplyr %>% group_by summarize
 #' @examples
 #' \dontrun{
@@ -2789,6 +2792,8 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
 #'
 #' @importFrom ggrepel geom_text_repel
+#' @importFrom ggplot2 ggplot aes aes_string geom_point ggtitle scale_color_gradient scale_size
+#' scale_x_continuous scale_y_continuous coord_fixed labs
 #' @importFrom grid roundrectGrob
 #' @importFrom grid gpar
 #' @export
@@ -2917,7 +2922,10 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' @inheritParams plotGene
 #' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
 #'
-#' @importFrom grid gpar
+#' @importFrom ggplot2 aes aes_string annotate coord_cartesian element_blank ggplot geom_point 
+#' ggtitle scale_color_viridis_c theme 
+#' theme_bw
+#' @importFrom grid gpar unit
 #' @export
 #' @examples
 #' \dontrun{
@@ -3088,7 +3096,8 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
 #'
 #' @export
 #' @importFrom cowplot plot_grid
-#' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
+#' @importFrom ggplot2 aes_string ggplot geom_point geom_boxplot geom_violin ggtitle labs
+#' scale_color_gradient2 theme 
 #' @examples
 #' \dontrun{
 #' # liger object, factorization complete
@@ -3133,10 +3142,10 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
     max_v <- max(gene_df.sub["gene"], na.rm = T)
     min_v <- min(gene_df.sub["gene"], na.rm = T)
     midpoint <- (max_v - min_v) / 2
-    plot_i <- (ggplot(gene_df.sub, aes_string(x = "Cluster", y = "gene", fill = "Cluster")) +
+    plot_i <- ggplot(gene_df.sub, aes_string(x = "Cluster", y = "gene", fill = "Cluster")) +
                  geom_boxplot(position = "dodge", width = 0.4, outlier.shape = NA, alpha = 0.7) +
                  geom_violin(position = "dodge", alpha = 0.7) +
-                 ggtitle(title))
+                 ggtitle(title)
     gene_plots[[i]] <- plot_i + theme(legend.position = "none") + labs(y = gene)
     if (i == 1 & !by.dataset) {
       break
@@ -3172,7 +3181,8 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
 #'
 #' @export
-#' @importFrom ggplot2 ggplot geom_point aes_string scale_color_viridis_c ggtitle
+#' @importFrom ggplot2 ggplot geom_point aes_string element_blank ggtitle labs 
+#' scale_color_viridis_c theme
 #' @examples
 #' \dontrun
 #' # liger object, factorization complete
@@ -3455,7 +3465,9 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
 #' @param return.plot Return ggplot object (default FALSE)
 #'
 #' @export
-#' @importFrom ggplot2 ggplot
+#' @importFrom grid unit
+#' @importFrom ggplot2 ggplot aes coord_fixed element_blank geom_point guides guide_legend 
+#' scale_size scale_y_discrete theme
 #' @examples
 #' \dontrun{
 #' # liger object, factorization complete

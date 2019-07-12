@@ -7,9 +7,9 @@
 plotGeneLoadings(object, dataset1 = NULL, dataset2 = NULL,
   num.genes.show = 12, num.genes = 30, mark.top.genes = T,
   factor.share.thresh = 10, log.fc.thresh = 1, umi.thresh = 30,
-  frac.thresh = 0, pval.thresh = 0.05, do.spec.plot = T, max.val = 0.1,
-  pt.size = 0.1, option = "plasma", zero.color = "#F5F5F5",
-  return.plots = F)
+  frac.thresh = 0, pval.thresh = 0.05, do.spec.plot = T,
+  max.val = 0.1, pt.size = 0.1, option = "plasma",
+  zero.color = "#F5F5F5", return.plots = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call runTSNE before calling.}

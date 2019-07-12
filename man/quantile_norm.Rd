@@ -4,7 +4,8 @@
 \alias{quantile_norm}
 \title{Quantile normalizes cell factors}
 \usage{
-quantile_norm(object, quantiles = 50, ref_dataset = NULL, min_cells = 2)
+quantile_norm(object, quantiles = 50, ref_dataset = NULL,
+  min_cells = 2)
 }
 \arguments{
 \item{object}{analogizer object. Should run optimizeALS before calling.}

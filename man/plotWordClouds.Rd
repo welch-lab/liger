@@ -4,10 +4,11 @@
 \alias{plotWordClouds}
 \title{Generate word clouds and t-SNE plots}
 \usage{
-plotWordClouds(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30,
-  min.size = 1, max.size = 4, factor.share.thresh = 10,
-  log.fc.thresh = 1, umi.thresh = 30, frac.thresh = 0,
-  pval.thresh = 0.05, do.spec.plot = T, return.plots = F)
+plotWordClouds(object, dataset1 = NULL, dataset2 = NULL,
+  num.genes = 30, min.size = 1, max.size = 4,
+  factor.share.thresh = 10, log.fc.thresh = 1, umi.thresh = 30,
+  frac.thresh = 0, pval.thresh = 0.05, do.spec.plot = T,
+  return.plots = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call runTSNE before calling.}
