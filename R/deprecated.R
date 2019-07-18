@@ -172,6 +172,38 @@ clusterLouvainJaccard = function(object, resolution = 0.1, k.param=30, n.iter = 
   return(object)
 }
 
+clusterLouvainJaccard.updated = function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, 
+                                         min_cells = 2, nstart = 10, resolution = 1, 
+                                         dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", center = F, 
+                                         small.clust.thresh = 0, id.number = NULL, print.mod = F, 
+                                         print.align.summary = F)
+{
+  snf <- SNF(object,
+             knn_k = knn_k, k2 = k2, dist.use = dist.use, center = center,
+             dims.use = dims.use, small.clust.thresh = small.clust.thresh)
+  cell.names <- unlist(lapply(object@scale.data, rownames))
+  idents <- snf$idents
+  
+  idents.rest <- SLMCluster(
+    edge = snf$out.summary, nstart = nstart, R = resolution,
+    prune.thresh = prune.thresh, id.number = id.number,
+    print.mod = print.mod
+  )
+  names(idents.rest) <- setdiff(cell.names, snf$cells.cl)
+  # Especially when datasets are large, SLM generates a fair number of singletons.
+  # To assign these to a cluster, take mode of the cluster assignments of within-dataset neighbors
+  if (min(table(idents.rest)) == 1) {
+    idents.rest <- assign.singletons(object, idents.rest, center = center)
+  }
+  idents[names(idents.rest)] <- as.character(idents.rest)
+  idents <- factor(idents)
+  names(idents) <- cell.names
+  
+  object@alignment.clusters <- idents
+  object@clusters <- idents
+  object@snf <- snf
+}
+
 #' Aggregate gene-level measurements across cells within clusters to allow correlation across datasets
 #'
 #' @param object analogizer object. Should run quantile_norm and possibly clusterLouvainJaccard before calling.
