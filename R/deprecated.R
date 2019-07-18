@@ -172,7 +172,7 @@ clusterLouvainJaccard = function(object, resolution = 0.1, k.param=30, n.iter = 
   return(object)
 }
 
-clusterLouvainJaccard.updated = function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, 
+clusterLouvain = function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, 
                                          min_cells = 2, nstart = 10, resolution = 1, 
                                          dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", center = F, 
                                          small.clust.thresh = 0, id.number = NULL, print.mod = F, 
@@ -182,7 +182,7 @@ clusterLouvainJaccard.updated = function(object, knn_k = 20, k2 = 500, prune.thr
              knn_k = knn_k, k2 = k2, dist.use = dist.use, center = center,
              dims.use = dims.use, small.clust.thresh = small.clust.thresh)
   cell.names <- unlist(lapply(object@scale.data, rownames))
-  idents <- snf$idents
+  idents <- snf[[2]]
   
   idents.rest <- SLMCluster(
     edge = snf$out.summary, nstart = nstart, R = resolution,
