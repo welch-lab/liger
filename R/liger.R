@@ -389,6 +389,8 @@ normalize <- function(object) {
 #'   expression variance greater than threshold (relative to mean) are selected.
 #'   (higher threshold -> fewer selected genes). Accepts single value or vector with separate
 #'   var.thresh for each dataset. (default 0.1)
+#' @param datasets.use List of datasets to include for discovery of highly variable genes. 
+#'   (default 1:length(object@raw.data))
 #' @param combine How to combine variable genes across experiments. Either "union" or "intersect".
 #'   (default "union")
 #' @param keep.unique Keep genes that occur (i.e., there is a corresponding column in raw.data) only
@@ -413,14 +415,18 @@ normalize <- function(object) {
 #' ligerex <- selectGenes(ligerex, var.thresh=0.8)
 #' }
 
-selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine = "union",
+selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1,
+                        datasets.use = 1:length(object@raw.data), combine = "union",
                         keep.unique = F, capitalize = F, do.plot = T, cex.use = 0.3) {
   # Expand if only single var.thresh passed
   if (length(var.thresh) == 1) {
     var.thresh <- rep(var.thresh, length(object@raw.data))
   }
+  if(intersect(datasets.use, 1:length(object@raw.data)) != 1:length(object@raw.data)){
+    datasets.use = intersect(datasets.use, 1:length(object@raw.data))
+  }
   genes.use <- c()
-  for (i in 1:length(object@raw.data)) {
+  for (i in datasets.use) {
     if (capitalize) {
       rownames(object@raw.data[[i]]) <- toupper(rownames(object@raw.data[[i]]))
       rownames(object@norm.data[[i]]) <- toupper(rownames(object@norm.data[[i]]))
