@@ -311,10 +311,10 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
       }
     })
   }
-  if (length(raw.data) > 1 & length(Reduce(intersect, lapply(raw.data, colnames))) > 0) {
-   stop(paste0(length(Reduce(intersect, lapply(raw.data, colnames))), ' cell names are repeated 
-        across datasets; please make sure all cell names are unique.'))
-  }
+  #if (length(raw.data) > 1 & length(Reduce(intersect, lapply(raw.data, colnames))) > 0) {
+  # stop(paste0(length(Reduce(intersect, lapply(raw.data, colnames))), ' cell names are repeated 
+  #      across datasets; please make sure all cell names are unique.'))
+  #}
   if (take.gene.union) {
     merged.data <- MergeSparseDataAll(raw.data)
     if (remove.missing) {
@@ -411,6 +411,8 @@ normalize <- function(object) {
 #'   expression variance greater than threshold (relative to mean) are selected. 
 #'   (higher threshold -> fewer selected genes). Accepts single value or vector with separate
 #'   var.thresh for each dataset. (default 0.1)
+#' @param datasets.use List of datasets to include for discovery of highly variable genes. 
+#'   (default 1:length(object@raw.data))
 #' @param combine How to combine variable genes across experiments. Either "union" or "intersect".
 #'   (default "union")
 #' @param keep.unique Keep genes that occur (i.e., there is a corresponding column in raw.data) only
@@ -435,7 +437,7 @@ normalize <- function(object) {
 #' ligerex <- selectGenes(ligerex, var.thresh=0.8)
 #' }
 
-selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine = "union",
+selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, datasets.use = 1:length(object@raw.data), combine = "union",
                         keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3) {
   object <- updateLiger(object)
   
@@ -444,7 +446,10 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine =
     var.thresh <- rep(var.thresh, length(object@raw.data))
   }
   genes.use <- c()
-  for (i in 1:length(object@raw.data)) {
+  if(intersect(datasets.use, 1:length(object@raw.data)) != 1:length(object@raw.data)){
+    datasets.use = intersect(datasets.use, 1:length(object@raw.data))
+  }
+  for (i in datasets.use) {
     if (capitalize) {
       rownames(object@raw.data[[i]]) <- toupper(rownames(object@raw.data[[i]]))
       rownames(object@norm.data[[i]]) <- toupper(rownames(object@norm.data[[i]]))
@@ -1635,10 +1640,18 @@ SNF <- function(object, dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", cente
           "loading on no selected factors."
         )
       }
-    } else {
+    } else if (dist.use == "JAC"){
+      if(length(object@jaccard) == 0){
+        object <- runJaccard(object)
+      }
+    }else {
       norm <- object@H[[i]][, dims.use]
     }
-    knn.idx <- get.knn(norm, knn_k, algorithm = dist.use)$nn.index
+    if (dist.use == "JAC"){
+      knn.idx <- distMat.knn.index.dist(as.matrix(object@jaccard[[i]]), k = knn_k)[[1]]
+    } else {
+      knn.idx <- get.knn(norm, knn_k, algorithm = dist.use)$nn.index
+    }
     t(apply(knn.idx, 1, function(q) {
       table(maxes[q])
     }))
@@ -1811,7 +1824,7 @@ runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2,
   object <- updateLiger(object)
   set.seed(rand.seed)
   reticulate::py_set_seed(rand.seed)
-  UMAP <- reticulate::import("umap")
+  UMAP <- reticulate::import("umap-learn")
   umapper <- UMAP$UMAP(
     n_components = as.integer(k), metric = distance,
     n_neighbors = as.integer(n_neighbors), min_dist = min_dist
@@ -3372,7 +3385,7 @@ plotClusterFactors <- function(object, use.aligned = F, Rowv = NA, Colv = "Rowv"
   colnames(cluster.bars) <- 1:ncol(cluster.bars)
   title <- ifelse(use.aligned, "H.norm", "raw H")
   heatmap(cluster.bars,
-          Rowv = Rowv, Colv = Rowv, col = col, xlab = "Factor", ylab = "Cluster",
+          Rowv = Rowv, Colv = Colv, col = col, xlab = "Factor", ylab = "Cluster",
           main = title, ...
   )
   if (return.data) {
@@ -4183,6 +4196,7 @@ listMarkersWilcoxon <- function(object, ...){
 #' ligerex <- runJaccard(ligerex)
 #' }
 runJaccard <- function(object){
+    n = 1
     for(i in object@scale.data){
       i[i!=0] <- 1 
       common_values <- i %*% t(i)
@@ -4191,9 +4205,10 @@ runJaccard <- function(object){
       row_sums <- rowSums(t(i))
       jaccard <- nonzero_value/(row_sums[nonzero_value_index[,1]]
                                 +row_sums[nonzero_value_index[,1]] - nonzero_value)
-      object@jaccard.append(sparseMatrix(i = nonzero_value_index[,1],
+      object@jaccard[[n]] = sparseMatrix(i = nonzero_value_index[,1],
                                    j = nonzero_value_index[,2],
-                                   x = jaccard, dims = dim(common_values)))
+                                   x = jaccard, dims = dim(common_values))
+      n = n + 1
     }
   return(object)
 }

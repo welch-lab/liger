@@ -174,7 +174,7 @@ clusterLouvainJaccard = function(object, resolution = 0.1, k.param=30, n.iter = 
 
 clusterLouvain = function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2, 
                                          min_cells = 2, nstart = 10, resolution = 1, 
-                                         dims.use = 1:ncol(object@H[[1]]), dist.use = "CR", center = F, 
+                                         dims.use = 1:ncol(object@H[[1]]), dist.use = "JAC", center = F, 
                                          small.clust.thresh = 0, id.number = NULL, print.mod = F, 
                                          print.align.summary = F)
 {
@@ -182,7 +182,11 @@ clusterLouvain = function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2,
              knn_k = knn_k, k2 = k2, dist.use = dist.use, center = center,
              dims.use = dims.use, small.clust.thresh = small.clust.thresh)
   cell.names <- unlist(lapply(object@scale.data, rownames))
-  idents <- snf[[2]]
+  if(is(snf, "liger")){
+    idents = snf@snf
+  } else {
+    idents <- snf[["idents"]]
+  }
   
   idents.rest <- SLMCluster(
     edge = snf$out.summary, nstart = nstart, R = resolution,
@@ -201,7 +205,12 @@ clusterLouvain = function(object, knn_k = 20, k2 = 500, prune.thresh = 0.2,
   
   object@alignment.clusters <- idents
   object@clusters <- idents
-  object@snf <- snf
+  if(is(snf, "liger")){
+    object@snf = snf@snf
+  } else {
+    object@snf <- snf
+  }
+  return(object)
 }
 
 #' Aggregate gene-level measurements across cells within clusters to allow correlation across datasets
