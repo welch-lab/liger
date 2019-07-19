@@ -289,7 +289,7 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
       }
     })
   }
-  if (length(Reduce(intersect, lapply(raw.data, colnames))) > 0) {
+  if (length(Reduce(intersect, lapply(raw.data, colnames))) > 0 & length(raw.data) > 1) {
     stop('At least one cell name is repeated across datasets; please make sure all cell names
          are unique.')
   }
@@ -398,7 +398,7 @@ normalize <- function(object) {
 #' @param capitalize Capitalize gene names to match homologous genes (ie. across species)
 #'   (default FALSE)
 #' @param do.plot Display log plot of gene variance vs. gene expression for each dataset.
-#'   Selected genes are plotted in green. (default TRUE)
+#'   Selected genes are plotted in green. (default FALSE)
 #' @param cex.use Point size for plot.
 
 #' @return \code{liger} object with var.genes slot set.
@@ -417,7 +417,7 @@ normalize <- function(object) {
 
 selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1,
                         datasets.use = 1:length(object@raw.data), combine = "union",
-                        keep.unique = F, capitalize = F, do.plot = T, cex.use = 0.3) {
+                        keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3) {
   # Expand if only single var.thresh passed
   if (length(var.thresh) == 1) {
     var.thresh <- rep(var.thresh, length(object@raw.data))
