@@ -13,6 +13,10 @@ rowVarsFast <- function(x, means) {
     .Call('_liger_rowVarsFast', PACKAGE = 'liger', x, means)
 }
 
+makeFeatureMatrix <- function(bedmat, barcodes) {
+    .Call('_liger_makeFeatureMatrix', PACKAGE = 'liger', bedmat, barcodes)
+}
+
 solveNNLS <- function(C, B) {
     .Call('_liger_solveNNLS', PACKAGE = 'liger', C, B)
 }
