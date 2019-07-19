@@ -2820,9 +2820,9 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' dev.off()
 #' }
 
-plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1,
-                           max.size = 4, factor.share.thresh = 10, log.fc.thresh = 1,
-                           umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05,
+plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30,
+                           dr.method = "tsne", min.size = 1, max.size = 4, factor.share.thresh = 10,
+                           log.fc.thresh = 1, umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05,
                            do.spec.plot = T, return.plots = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
@@ -2952,11 +2952,12 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' dev.off()
 #' }
 
-plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes.show = 12,
-                             num.genes = 30, mark.top.genes = T, factor.share.thresh = 10,
-                             log.fc.thresh = 1, umi.thresh = 30, frac.thresh = 0,
-                             pval.thresh = 0.05, do.spec.plot = T, max.val = 0.1, pt.size = 0.1,
-                             option = "plasma", zero.color = "#F5F5F5", return.plots = F) {
+plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, dr.method = "tsne",
+                             num.genes.show = 12,num.genes = 30, mark.top.genes = T,
+                             factor.share.thresh = 10, log.fc.thresh = 1, umi.thresh = 30,
+                             frac.thresh = 0, pval.thresh = 0.05, do.spec.plot = T, max.val = 0.1,
+                             pt.size = 0.1, option = "plasma", zero.color = "#F5F5F5",
+                             return.plots = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
