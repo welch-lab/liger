@@ -4208,6 +4208,10 @@ runJaccard <- function(object){
       object@jaccard[[n]] = sparseMatrix(i = nonzero_value_index[,1],
                                    j = nonzero_value_index[,2],
                                    x = jaccard, dims = dim(common_values))
+      for(j in 1:nrow(object@jaccard[[n]])){
+        object@jaccard[[n]][j,j] = 0
+      }
+      object@jaccard[[n]][is.na(object@jaccard[[n]])] <- 0
       n = n + 1
     }
   return(object)
