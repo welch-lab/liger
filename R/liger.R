@@ -422,7 +422,7 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1,
   if (length(var.thresh) == 1) {
     var.thresh <- rep(var.thresh, length(object@raw.data))
   }
-  if(intersect(datasets.use, 1:length(object@raw.data)) != 1:length(object@raw.data)){
+  if(intersect(datasets.use, 1:length(object@raw.data)) != datasets.use){
     datasets.use = intersect(datasets.use, 1:length(object@raw.data))
   }
   genes.use <- c()
