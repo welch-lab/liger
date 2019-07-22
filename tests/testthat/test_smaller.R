@@ -2,9 +2,8 @@
 
 set.seed(1)
 
-pbmc.file <- system.file('tests', 'testdata', 'smaller_pbmc_data.RDS', package = 'liger')
-pbmc.file <- "~/liger/tests/testdata/smaller_pbmc_data.RDS"
-load(pbmc.file)
+pbmc.file <- "../testdata/smaller_pbmc_data.RDS"
+pbmc.small <- readRDS(pbmc.file)
 
 # Tests for object creation 
 ####################################################################################
