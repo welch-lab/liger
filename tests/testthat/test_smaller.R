@@ -2,8 +2,8 @@
 
 set.seed(1)
 
-pbmc.file <- "../testdata/smaller_pbmc_data.RDS"
-pbmc.small <- readRDS(pbmc.file)
+pbmc.file <- system.file('tests', 'testdata', 'smaller_pbmc_data.RDS', package = 'liger')
+load(pbmc.file)
 
 # Tests for object creation 
 ####################################################################################
@@ -54,31 +54,31 @@ rm(ligex.nofil, ligex.union, ligex.union.nofil)
 
 # Tests for data merging
 ##########################################################################################
-#context('Sparse merging')
+context('Sparse merging')
 
 # create fake datasets
-#dataset1 <- as(matrix(0, nrow = 6, ncol = 5), 'CsparseMatrix')
-#dataset1[c(1, 5, 14, 18, 21, 28)] <- 1:6
-#rownames(dataset1) <- paste0('gene', 11:16)
-#colnames(dataset1) <- paste0('cell', 1:5)
+dataset1 <- as(matrix(0, nrow = 6, ncol = 5), 'CsparseMatrix')
+dataset1[c(1, 5, 14, 18, 21, 28)] <- 1:6
+rownames(dataset1) <- paste0('gene', 11:16)
+colnames(dataset1) <- paste0('cell', 1:5)
 
-#dataset2 <- as(matrix(0, nrow = 6, ncol = 6), 'CsparseMatrix')
-#dataset2[c(3, 8, 12, 14, 20, 21, 35)] <- 1:7
-#rownames(dataset2) <- c(paste0('gene', 11:13), paste0('gene', 7:9))
-#colnames(dataset2) <- paste0('cell', 6:11)
+dataset2 <- as(matrix(0, nrow = 6, ncol = 6), 'CsparseMatrix')
+dataset2[c(3, 8, 12, 14, 20, 21, 35)] <- 1:7
+rownames(dataset2) <- c(paste0('gene', 11:13), paste0('gene', 7:9))
+colnames(dataset2) <- paste0('cell', 6:11)
 
-#merged <- MergeSparseDataAll(list(dataset1, dataset2))
+merged <- MergeSparseDataAll(list(dataset1, dataset2))
 
-#test_that("Merged entries correct", {
-#  expect_equal(unname(merged[, 'cell2']), rep(0, 9))
-#  expect_equal(unname(merged[, 'cell7']), c(0, 2, 0, 0, 0, 0, 0, 0, 3))
-#  expect_equal(unname(merged['gene12', ]), c(0, 0, 3, 0, 0, 0, 2, 4, 5, 0, 0))
-#  expect_equal(unname(merged['gene7', ]), rep(0, 11))
-#  expect_equal(merged['gene13', 'cell9'], 6)
-#  expect_equal(merged['gene14', 'cell5'], 6)
-#})
+test_that("Merged entries correct", {
+  expect_equal(unname(merged[, 'cell2']), rep(0, 9))
+  expect_equal(unname(merged[, 'cell7']), c(0, 2, 0, 0, 0, 0, 0, 0, 3))
+  expect_equal(unname(merged['gene12', ]), c(0, 0, 3, 0, 0, 0, 2, 4, 5, 0, 0))
+  expect_equal(unname(merged['gene7', ]), rep(0, 11))
+  expect_equal(merged['gene13', 'cell9'], 6)
+  expect_equal(merged['gene14', 'cell5'], 6)
+})
 
-#rm(dataset1, dataset2, merged)
+rm(dataset1, dataset2, merged)
 
 # Tests for normalization
 ##########################################################################################
@@ -133,8 +133,8 @@ test_that("Number of genes is correct for intersection", {
 })
 
 test_that("Gives warning when no genes selected", {
-  expect_warning(selectGenes(ligex, var.thresh = c(2.3, 2.3), do.plot = F, 
-                             combine = "intersection"))
+  expect_error(selectGenes(ligex, var.thresh = c(2.3, 2.3), do.plot = F, 
+                           combine = "intersection"))
 })
 
 rm(ligex_higher, test_genes, gene_inclusion, gene_inclusion_higher, ligex_intersect)
@@ -253,7 +253,7 @@ test_that("Alignment and clustering are correct", {
 test_that("SNF is correct", {
   expect_equal(dim(as.data.frame(ligex@snf[["idents"]])), c(494,1))
   expect_equal(rownames(as.data.frame(ligex@snf[["idents"]]))[1:5], c("ATGCCAGACAGTCA",
-                                                                      "CCAAAGTGTGAGAA", "GACCAAACGACTAC", "TGATACCTCACTAG", "AGTTATGAACAGTC"))
+                        "CCAAAGTGTGAGAA", "GACCAAACGACTAC", "TGATACCTCACTAG", "AGTTATGAACAGTC"))
   expect_equal(dim(ligex@snf[["out.summary"]]), c(98800,3))
   expect_equal(ligex@snf[["out.summary"]][1563,], c(7.0, 178.0, 0.1))
   expect_equal(ligex@snf[["out.summary"]][56891,], c(284, 156, 0.35))
@@ -316,13 +316,13 @@ test_that("Dimensions are correct", {
   expect_equal(ligex@dr.coords[["tsne"]][56:60], c(-4.00397980, -0.24390106, -4.52338154, 
                                                    0.20838293, 0.02052938), tolerance = 1e-6)
   expect_equal(as.vector(ligex@dr.coords[["tsne"]][56:60,2]), c(3.955963, 6.510291, 1.385297,
-                                                                4.285448, 4.960550), tolerance = 1e-6)
+                                                        4.285448, 4.960550), tolerance = 1e-6)
   
   expect_equal(dim(ligex_rawtsne@dr.coords[["tsne"]]), c(494, 2))
   expect_equal(ligex_rawtsne@dr.coords[["tsne"]][312:316], c(-9.027826, -4.045090, -1.801967,
-                                                             -2.801441, 7.784805), tolerance = 1e-6)
+                                                        -2.801441, 7.784805), tolerance = 1e-6)
   expect_equal(as.vector(ligex_rawtsne@dr.coords[["tsne"]][312:316,2]), c(-12.375348, -7.008916,
-                                                                          -5.619409, -5.278337, 9.237971), tolerance = 1e-6)
+                                                -5.619409, -5.278337, 9.237971), tolerance = 1e-6)
 })
 
 
@@ -395,14 +395,15 @@ ligex@cell.data[["clusters"]] = ligex@alignment.clusters
 ligex_subset <- subsetLiger(ligex, clusters.use = c(1, 2, 3, 4))
 test_that("Returns correct subsetted object", {
   expect_equal(names(ligex_subset@raw.data), c('tenx', 'seqwell'))
-  expect_equal(dim(ligex_subset@raw.data[[1]]), c(1359, 145))
-  expect_equal(colnames(ligex_subset@raw.data[[1]])[1:3], c("GACCAAACGACTAC", 
-                                                            "TGATACCTCACTAG", "AGTTATGAACAGTC"))
-  expect_equal(dim(ligex_subset@raw.data[[2]]), c(2011, 133))
+  expect_equal(dim(ligex_subset@raw.data[[1]]), c(10982, 119))
+  expect_equal(colnames(ligex_subset@raw.data[[1]])[1:3], c("ATGCCAGACAGTCA", 
+                                                            "CCAAAGTGTGAGAA", "GACCAAACGACTAC"))
+  expect_equal(dim(ligex_subset@raw.data[[2]]), c(6705, 138))
   expect_equal(colnames(ligex_subset@raw.data[[2]])[1:3], c("Myeloid_457", "Myeloid_671",
                                                             "Myeloid_1040"))
   expect_equal(levels(ligex_subset@clusters), c("1", "2", "3", "4"))
-  expect_equal(nrow(ligex_subset@cell.data), 278)
+  expect_equal(nrow(ligex_subset@cell.data), 257)
+  expect_equal(rownames(ligex_subset@cell.data), rownames(ligex_subset@dr.coords["tsne"]))
 })
 
 # TODO: Add tests for ligerToSeurat and seuratToLiger functions 
@@ -419,7 +420,7 @@ test_that("Returns correct Seurat object", {
                , tolerance = 1e-6)
 })
 
-ligex_from_seurat <- seuratToLiger(seurat_from_liger,combined.seurat = T, assays.use = c("RNA"))
+ligex_from_seurat <- seuratToLiger(pbmc.seurat,combined.seurat = T, assays.use = c("RNA"))
 
 
 rm(seurat_from_liger, liger_from_seurat)
@@ -434,7 +435,7 @@ test_that("Returns correct dataset specificity", {
   expect_equal(dataset_spec[[2]][6:10], c(100.91134, 112.07151, 123.82733, 77.75074, 88.71075),
                tolerance = 1e-6)
   expect_equal(dataset_spec[[3]][11:15], c(0.03951941, -0.51374525, -0.70291549, -0.06761655,
-                                           -0.79589711),tolerance = 1e-6)
+               -0.79589711),tolerance = 1e-6)
 })
 
 #calcAgreement
@@ -468,3 +469,5 @@ test_that("Returns correct purity", {
   expect_equal(purity_1, 1, tolerance = 1e-6)
   expect_equal(purity_2, 1, tolerance = 1e-6)
 })
+
+
