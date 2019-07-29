@@ -3197,6 +3197,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' ligerex <- runTSNE(ligerex)
 #' # plot expression for CD4 and return plots
 #' gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
+#' }	
 
 
 plotGene <- function(object, gene, use.raw = F, methylation.indices = NULL, pt.size = 0.1,
