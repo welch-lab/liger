@@ -2,8 +2,9 @@
 
 set.seed(1)
 
-pbmc.file <- system.file('tests', 'testdata', 'smaller_pbmc_data.RDS', package = 'liger')
-load(pbmc.file)
+# pbmc.file <- system.file('tests', 'testdata', 'smaller_pbmc_data.RDS', package = 'liger')
+pbmc.file <- "../testdata/smaller_pbmc_data.RDS"
+pbmc.small <- readRDS(pbmc.file)
 
 # Tests for object creation 
 ####################################################################################
@@ -50,7 +51,39 @@ test_that("Dimensions correct for filtered and not filtered", {
   expect_equal(dim(ligex.union.nofil@raw.data[[2]]), c(5767, 244))
 })
 
+ligex_single <- createLiger(list(tenx= pbmc.small[[1]]), make.sparse = T, take.gene.union = F,
+                     remove.missing = T)
+
+test_that("Single dataset object created correctly", {
+  expect_identical(names(ligex_single@raw.data), c('tenx'))
+  expect_equal(dim(ligex_single@raw.data[[1]]), c(1517, 250))
+  expect_error(dim(ligex_single@raw.data[[2]]))
+})
+
 rm(ligex.nofil, ligex.union, ligex.union.nofil)
+
+# Tests for object creation 
+####################################################################################
+context("Feature matrix creation")
+
+bedmat.file <- "../testdata/test_feature_mat.RDS"
+bedmat <- readRDS(bedmat.file)
+barcode.file <- "../testdata/barcode_list.RDS"
+barcode <- readRDS(barcode.file)
+
+feature.mat <- makeFeatureMatrix(bedmat, barcode)
+
+test_that("Feature matrix created correctly", {
+  expect_equal(mean(feature.mat), 0.525)
+  expect_equal(max(feature.mat), 4)
+  expect_equal(min(feature.mat), 0)
+  expect_equal(feature.mat[4,35], 2)
+  expect_equal(rownames(feature.mat)[1:5], c("Gene_1","Gene_2","Gene_3","Gene_4","Gene_5"))
+  expect_equal(colnames(feature.mat)[1:5],
+               c("Barcode_1","Barcode_2","Barcode_3","Barcode_4","Barcode_5"))
+})
+
+rm(bedmat.file, barcode.file, bedmat, barcode, feature.mat)
 
 # Tests for data merging
 ##########################################################################################
@@ -106,6 +139,13 @@ context('Gene selection')
 ligex <- selectGenes(ligex, var.thresh = c(0.3, 0.9), do.plot = F)
 ligex_higher <- selectGenes(ligex, var.thresh = c(0.5, 0.9), do.plot = F)
 
+ligex_tenx <- selectGenes(ligex, datasets.use = c(1))
+ligex_seqwell <- selectGenes(ligex, datasets.use = c(2))
+
+test_that("Datasets provide different variable genes", {
+  expect_false(identical(ligex_tenx@var.genes, ligex_seqwell@var.genes))
+})
+
 # Check for inclusion of significant genes
 test_genes <- c('CTBP2', 'CAPN1', 'FCGR1A', 'DEDD', 'RPS18')
 gene_inclusion <- sapply(test_genes, function(x) {
@@ -137,7 +177,7 @@ test_that("Gives warning when no genes selected", {
                            combine = "intersection"))
 })
 
-rm(ligex_higher, test_genes, gene_inclusion, gene_inclusion_higher, ligex_intersect)
+rm(ligex_higher, test_genes, gene_inclusion, gene_inclusion_higher, ligex_intersect, ligex_tenx, ligex_seqwell)
 
 # Tests for gene scaling
 ##########################################################################################
@@ -253,7 +293,7 @@ test_that("Alignment and clustering are correct", {
 test_that("SNF is correct", {
   expect_equal(dim(as.data.frame(ligex@snf[["idents"]])), c(494,1))
   expect_equal(rownames(as.data.frame(ligex@snf[["idents"]]))[1:5], c("ATGCCAGACAGTCA",
-                                                                      "CCAAAGTGTGAGAA", "GACCAAACGACTAC", "TGATACCTCACTAG", "AGTTATGAACAGTC"))
+                        "CCAAAGTGTGAGAA", "GACCAAACGACTAC", "TGATACCTCACTAG", "AGTTATGAACAGTC"))
   expect_equal(dim(ligex@snf[["out.summary"]]), c(98800,3))
   expect_equal(ligex@snf[["out.summary"]][1563,], c(7.0, 178.0, 0.1))
   expect_equal(ligex@snf[["out.summary"]][56891,], c(284, 156, 0.35))
@@ -316,13 +356,13 @@ test_that("Dimensions are correct", {
   expect_equal(ligex@dr.coords[["tsne"]][56:60], c(-4.00397980, -0.24390106, -4.52338154, 
                                                    0.20838293, 0.02052938), tolerance = 1e-6)
   expect_equal(as.vector(ligex@dr.coords[["tsne"]][56:60,2]), c(3.955963, 6.510291, 1.385297,
-                                                                4.285448, 4.960550), tolerance = 1e-6)
+                                                        4.285448, 4.960550), tolerance = 1e-6)
   
   expect_equal(dim(ligex_rawtsne@dr.coords[["tsne"]]), c(494, 2))
   expect_equal(ligex_rawtsne@dr.coords[["tsne"]][312:316], c(-9.027826, -4.045090, -1.801967,
-                                                             -2.801441, 7.784805), tolerance = 1e-6)
+                                                        -2.801441, 7.784805), tolerance = 1e-6)
   expect_equal(as.vector(ligex_rawtsne@dr.coords[["tsne"]][312:316,2]), c(-12.375348, -7.008916,
-                                                                          -5.619409, -5.278337, 9.237971), tolerance = 1e-6)
+                                                -5.619409, -5.278337, 9.237971), tolerance = 1e-6)
 })
 
 
@@ -435,7 +475,7 @@ test_that("Returns correct dataset specificity", {
   expect_equal(dataset_spec[[2]][6:10], c(100.91134, 112.07151, 123.82733, 77.75074, 88.71075),
                tolerance = 1e-6)
   expect_equal(dataset_spec[[3]][11:15], c(0.03951941, -0.51374525, -0.70291549, -0.06761655,
-                                           -0.79589711),tolerance = 1e-6)
+               -0.79589711),tolerance = 1e-6)
 })
 
 #calcAgreement
