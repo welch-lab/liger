@@ -20,7 +20,7 @@
 #'   matrix)
 #' @slot W Shared gene loading factors (k by genes)
 #' @slot V Dataset-specific gene loading factors (one matrix per dataset, dimensions k by genes)
-#' @slot tsne.coords Matrix of 2D coordinates obtained from running t-SNE on H.norm or H matrices
+#' @slot dr.coords List of 2 matricies of 2D coordinates obtained from running t-SNE or UMAP on H.norm or H matrices
 #' @slot alignment.clusters Initial joint cluster assignments from shared factor alignment
 #' @slot clusters Joint cluster assignments for cells
 #' @slot snf List of values associated with shared nearest factor matrix for use in clustering and
@@ -48,7 +48,7 @@ liger <- methods::setClass(
     H.norm = "matrix",
     W = "matrix",
     V = "list",
-    tsne.coords = "matrix",
+    dr.coords = "list",
     alignment.clusters = 'factor',
     clusters= "factor",
     agg.data = "list",
@@ -1952,7 +1952,7 @@ SNF.liger <- function(
 #'   for using fftRtsne -- only first time runTSNE is called) (default NULL).
 #' @param rand.seed Random seed for reproducibility (default 42).
 #'
-#' @return \code{liger} object with tsne.coords slot set.
+#' @return \code{liger} object with dr.coords[["tsne"]] slot set.
 #' @importFrom Rtsne Rtsne
 #' @export
 #' @examples
@@ -1980,7 +1980,7 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
   }
   if (method == 'Rtsne') {
     set.seed(rand.seed)
-    object@tsne.coords <- Rtsne(data.use[, dims.use], pca = use.pca, check_duplicates = F,
+    object@dr.coords[["tsne"]] <- Rtsne(data.use[, dims.use], pca = use.pca, check_duplicates = F,
                                 theta = theta, perplexity = perplexity)$Y
   } else if (method == 'fftRtsne') {
     if (!exists('fftRtsne')) {
@@ -1989,12 +1989,12 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
       }
       source(paste0(fitsne.path, '/fast_tsne.R'), chdir = T)
     }
-    object@tsne.coords <- fftRtsne(data.use[, dims.use], rand_seed = rand.seed,
+    object@dr.coords[["tsne"]] <- fftRtsne(data.use[, dims.use], rand_seed = rand.seed,
                                    theta = theta, perplexity = perplexity)
   } else {
     stop('Invalid method: Please choose Rtsne or fftRtsne')
   }
-  rownames(object@tsne.coords) <- rownames(data.use)
+  rownames(object@dr.coords[["tsne"]]) <- rownames(data.use)
   return(object)
 }
 
@@ -2026,7 +2026,7 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 #'   the range 0.001 to 0.5, with 0.1 being a reasonable default. (default 0.1)
 #' @param rand.seed Random seed for reproducibility (default 42).
 #'
-#' @return \code{liger} object with tsne.coords slot set.
+#' @return \code{liger} object with dr.coords[["umap"]] slot set.
 #' @export
 #' @examples
 #' \dontrun{
@@ -2062,11 +2062,11 @@ runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2,
     if (identical(dims.use, 1:0)) {
       dims.use <- 1:ncol(raw.data)
     }
-    object@tsne.coords <- Rumap(raw.data[, dims.use])
-    rownames(object@tsne.coords) <- rownames(raw.data)
+    object@dr.coords[["umap"]] <- Rumap(raw.data[, dims.use])
+    rownames(object@dr.coords[["umap"]]) <- rownames(raw.data)
   } else {
-    object@tsne.coords <- Rumap(object@H.norm[, dims.use])
-    rownames(object@tsne.coords) <- rownames(object@H.norm)
+    object@dr.coords[["umap"]] <- Rumap(object@H.norm[, dims.use])
+    rownames(object@dr.coords[["umap"]]) <- rownames(object@H.norm)
   }
   return(object)
 }
@@ -2479,6 +2479,8 @@ calcPurity <- function(object, classes.compare) {
 #' @param object \code{liger} object. Should call runTSNE or runUMAP before calling.
 #' @param clusters Another clustering to use for coloring second plot (must have same names as
 #'   clusters slot) (default NULL).
+#' @param dr.method Dimensionality reduction method to reference. Should call the appropriate function
+#'   (runTSNE for "tsne") or (runUMAP for "umap") first.
 #' @param title Plot titles (list or vector of length 2) (default NULL).
 #' @param pt.size Controls size of points representing cells (default 0.3).
 #' @param text.size Controls size of plot text (cluster center labels) (default 3).
@@ -2507,11 +2509,11 @@ calcPurity <- function(object, classes.compare) {
 #' plots <- plotByDatasetAndCluster(ligerex, return.plots = T)
 #' }
 
-plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
-                                    text.size = 3, do.shuffle = T, rand.seed = 1,
+plotByDatasetAndCluster <- function(object, clusters = NULL, dr.method = "tsne",title = NULL,
+                                    pt.size = 0.3, text.size = 3, do.shuffle = T, rand.seed = 1,
                                     axis.labels = NULL, do.legend = T, legend.size = 5,
                                     return.plots = F) {
-  tsne_df <- data.frame(object@tsne.coords)
+  tsne_df <- data.frame(object@dr.coords[[dr.method]])
   colnames(tsne_df) <- c("tsne1", "tsne2")
   tsne_df$Dataset <- unlist(lapply(1:length(object@H), function(x) {
     rep(names(object@H)[x], nrow(object@H[[x]]))
@@ -2520,8 +2522,8 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
   if (is.null(clusters)) {
     # if clusters have not been set yet
     if (length(object@clusters) == 0) {
-      clusters <- rep(1, nrow(object@tsne.coords))
-      names(clusters) <- c_names <- rownames(object@tsne.coords)
+      clusters <- rep(1, nrow(object@dr.coords[[dr.method]]))
+      names(clusters) <- c_names <- rownames(object@dr.coords[[dr.method]])
     } else {
       clusters <- object@clusters
       c_names <- names(object@clusters)
@@ -2574,6 +2576,8 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #'
 #' @param object \code{liger} object. Should call runTSNE or runUMAP before calling.
 #' @param feature Feature to plot (should be column from cell.data slot).
+#' @param dr.method Dimensionality reduction method to reference. Should call the appropriate function
+#'   (runTSNE for "tsne") or (runUMAP for "umap") first.
 #' @param by.dataset Whether to generate separate plot for each dataset (default TRUE).
 #' @param discrete Whether to treat feature as discrete; if left NULL will infer from column class
 #'   in cell.data (if factor, treated like discrete) (default NULL).
@@ -2607,11 +2611,11 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #' plotFeature(ligerex, feature = 'nUMI')
 #' }
 
-plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title = NULL, 
-                        pt.size = 0.3, text.size = 3, do.shuffle = T, rand.seed = 1, do.labels = F,
-                        axis.labels = NULL, do.legend = T, legend.size = 5, option = 'plasma', 
-                        zero.color = '#F5F5F5', return.plots = F) {
-  dr_df <- data.frame(object@tsne.coords)
+plotFeature <- function(object, feature, dr.method = "tsne", by.dataset = T, discrete = NULL,
+                        title = NULL, pt.size = 0.3, text.size = 3, do.shuffle = T, rand.seed = 1,
+                        do.labels = F, axis.labels = NULL, do.legend = T, legend.size = 5,
+                        option = 'plasma', zero.color = '#F5F5F5', return.plots = F) {
+  dr_df <- data.frame(object@dr.coords[[dr.method]])
   colnames(dr_df) <- c("dr1", "dr2")
   if (!(feature %in% colnames(object@cell.data))) {
     stop('Please select existing feature in cell.data, or add it before calling.')
@@ -2708,6 +2712,8 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
 #' @param num.genes Number of genes to display for each factor (default 10).
 #' @param cells.highlight Names of specific cells to highlight in plot (black) (default NULL).
 #' @param plot.tsne Plot t-SNE coordinates for each factor (default FALSE).
+#' @param dr.method Dimensionality reduction method to reference. Should call the appropriate function
+#'   (runTSNE for "tsne") or (runUMAP for "umap") first.
 #'
 #' @return Plots to console (1-2 pages per factor)
 #' @export
@@ -2724,7 +2730,8 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
 #' dev.off()
 #' }
 
-plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsne = F) {
+plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsne = F,
+                        dr.method = "tsne") {
   k <- ncol(object@H.norm)
   pb <- txtProgressBar(min = 0, max = k, style = 3)
 
@@ -2759,7 +2766,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
     )
     if (plot.tsne) {
       par(mfrow = c(1, 1))
-      fplot(object@tsne.coords, object@H.norm[, i], title = paste0("Factor ", i))
+      fplot(object@dr.coords[[dr.method]], object@H.norm[, i], title = paste0("Factor ", i))
     }
     setTxtProgressBar(pb, i)
   }
@@ -2778,6 +2785,8 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' @param object \code{liger} object. Should call runTSNE before calling.
 #' @param dataset1 Name of first dataset (by default takes first two datasets for dataset1 and 2)
 #' @param dataset2 Name of second dataset
+#' @param dr.method Dimensionality reduction method to reference Should call the appropriate function
+#'   (runTSNE for "tsne") or (runUMAP for "umap") first.
 #' @param num.genes Number of genes to show in word clouds (default 30).
 #' @param min.size Size of smallest gene symbol in word cloud (default 1).
 #' @param max.size Size of largest gene symbol in word cloud (default 4).
@@ -2811,9 +2820,9 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' dev.off()
 #' }
 
-plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1,
-                           max.size = 4, factor.share.thresh = 10, log.fc.thresh = 1,
-                           umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05,
+plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30,
+                           dr.method = "tsne", min.size = 1, max.size = 4, factor.share.thresh = 10,
+                           log.fc.thresh = 1, umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05,
                            do.spec.plot = T, return.plots = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
@@ -2841,7 +2850,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
   rownames(W) <- rownames(V1) <- rownames(V2) <- object@var.genes
   loadings_list <- list(V1, W, V2)
   names_list <- list(dataset1, "Shared", dataset2)
-  tsne_coords <- object@tsne.coords
+  tsne_coords <- object@dr.coords[[dr.method]]
   pb <- txtProgressBar(min = 0, max = length(factors.use), style = 3)
   return_plots <- list()
   for (i in factors.use) {
@@ -2908,6 +2917,8 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' @param object \code{liger} object. Should call runTSNE before calling.
 #' @param dataset1 Name of first dataset (by default takes first two datasets for dataset1 and 2)
 #' @param dataset2 Name of second dataset
+#' @param dr.method Dimensionality reduction method to reference Should call the appropriate function
+#'   (runTSNE for "tsne") or (runUMAP for "umap") first.
 #' @param num.genes Number of genes to show in word clouds (default 30).
 #' @param mark.top.genes Plot points corresponding to top loading genes in different color (default
 #'   TRUE).
@@ -2941,11 +2952,12 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' dev.off()
 #' }
 
-plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes.show = 12,
-                             num.genes = 30, mark.top.genes = T, factor.share.thresh = 10,
-                             log.fc.thresh = 1, umi.thresh = 30, frac.thresh = 0,
-                             pval.thresh = 0.05, do.spec.plot = T, max.val = 0.1, pt.size = 0.1,
-                             option = "plasma", zero.color = "#F5F5F5", return.plots = F) {
+plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, dr.method = "tsne",
+                             num.genes.show = 12,num.genes = 30, mark.top.genes = T,
+                             factor.share.thresh = 10, log.fc.thresh = 1, umi.thresh = 30,
+                             frac.thresh = 0, pval.thresh = 0.05, do.spec.plot = T, max.val = 0.1,
+                             pt.size = 0.1, option = "plasma", zero.color = "#F5F5F5",
+                             return.plots = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
@@ -2977,7 +2989,7 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
   rownames(W) <- rownames(V1) <- rownames(V2) <- rownames(W_orig) <- object@var.genes
   loadings_list <- list(V1, W, V2)
   names_list <- list(dataset1, "Shared", dataset2)
-  tsne_coords <- object@tsne.coords
+  tsne_coords <- object@dr.coords[[dr.method]]
   pb <- txtProgressBar(min = 0, max = length(factors.use), style = 3)
   return_plots <- list()
   for (i in factors.use) {
@@ -3093,6 +3105,8 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
 #' @param gene Gene for which to plot relative expression.
 #' @param methylation.indices Indices of datasets in object with methylation data (this data is not
 #'   magnified and put on log scale).
+#' @param dr.method Dimensionality reduction method to reference Should call the appropriate function
+#'   (runTSNE for "tsne") or (runUMAP for "umap") first.
 #' @param by.dataset Plots gene expression for each dataset separately (default TRUE).
 #' @param return.plots Return ggplot objects instead of printing directly to console (default
 #'   FALSE).
@@ -3109,7 +3123,7 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
 #' violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = T)
 #' }
 
-plotGeneViolin <- function(object, gene, methylation.indices = NULL,
+plotGeneViolin <- function(object, gene, methylation.indices = NULL, dr.method = "tsne",
                            by.dataset = T, return.plots = F) {
   gene_vals <- c()
   for (i in 1:length(object@norm.data)) {
@@ -3127,7 +3141,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
     }
   }
 
-  gene_df <- data.frame(object@tsne.coords)
+  gene_df <- data.frame(object@dr.coords[[dr.method]])
   rownames(gene_df) <- names(object@clusters)
   gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])
   colnames(gene_df) <- c("tSNE1", "tSNE2", "gene")
@@ -3230,7 +3244,7 @@ plotGene <- function(object, gene, use.raw = F, methylation.indices = NULL, pt.s
     }
   }
   gene_vals[gene_vals == 0] <- NA
-  gene_df <- data.frame(object@tsne.coords)
+  gene_df <- data.frame(object@dr.coords[["tsne"]])
   rownames(gene_df) <- names(object@clusters)
   gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])
   colnames(gene_df) <- c("tSNE1", "tSNE2", "gene")
@@ -3840,7 +3854,7 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
     )
     rownames(inmf.obj@gene.loadings) <- var.genes
     tsne.obj <- new(
-      Class = "dim.reduction", cell.embeddings = object@tsne.coords,
+      Class = "dim.reduction", cell.embeddings = object@dr.coords[["tsne"]],
       key = "tSNE_"
     )
   } else {
@@ -3855,7 +3869,7 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
     )
     rownames(inmf.obj@feature.loadings) <- var.genes
     tsne.obj <- new(
-      Class = "DimReduc", cell.embeddings = object@tsne.coords,
+      Class = "DimReduc", cell.embeddings = object@dr.coords[["tsne"]],
       key = "tSNE_"
     )
   }
@@ -4109,7 +4123,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
     new.liger@clusters <- idents
   }
   if ((use.tsne) & (!is.null(tsne.coords))) {
-    new.liger@tsne.coords <- tsne.coords
+    new.liger@dr.coords[[dr.method]] <- tsne.coords
   }
   # Get CCA loadings if requested
   if (cca.to.H & combined.seurat) {
@@ -4197,7 +4211,8 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   })
   a@clusters <- object@clusters[unlist(lapply(a@H, rownames))]
   a@clusters <- droplevels(a@clusters)
-  a@tsne.coords <- object@tsne.coords[names(a@clusters), ]
+  a@dr.coords[["tsne"]] <- object@dr.coords[["tsne"]][names(a@clusters), ]
+  a@dr.coords[["umap"]] <- object@dr.coords[["umap"]][names(a@clusters), ]
   a@H.norm <- object@H.norm[names(a@clusters), ]
   a@W <- object@W
   a@V <- object@V
