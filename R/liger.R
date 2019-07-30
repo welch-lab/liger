@@ -289,7 +289,7 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
       }
     })
   }
-  if (length(Reduce(intersect, lapply(raw.data, colnames))) > 0 & length(raw.data) > 1) {
+  if (length(Reduce(intersect, lapply(raw.data, colnames))) > 0) {
     stop('At least one cell name is repeated across datasets; please make sure all cell names
          are unique.')
   }
@@ -389,8 +389,6 @@ normalize <- function(object) {
 #'   expression variance greater than threshold (relative to mean) are selected.
 #'   (higher threshold -> fewer selected genes). Accepts single value or vector with separate
 #'   var.thresh for each dataset. (default 0.1)
-#' @param datasets.use List of datasets to include for discovery of highly variable genes. 
-#'   (default 1:length(object@raw.data))
 #' @param combine How to combine variable genes across experiments. Either "union" or "intersect".
 #'   (default "union")
 #' @param keep.unique Keep genes that occur (i.e., there is a corresponding column in raw.data) only
@@ -398,7 +396,7 @@ normalize <- function(object) {
 #' @param capitalize Capitalize gene names to match homologous genes (ie. across species)
 #'   (default FALSE)
 #' @param do.plot Display log plot of gene variance vs. gene expression for each dataset.
-#'   Selected genes are plotted in green. (default FALSE)
+#'   Selected genes are plotted in green. (default TRUE)
 #' @param cex.use Point size for plot.
 
 #' @return \code{liger} object with var.genes slot set.
@@ -415,18 +413,14 @@ normalize <- function(object) {
 #' ligerex <- selectGenes(ligerex, var.thresh=0.8)
 #' }
 
-selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1,
-                        datasets.use = 1:length(object@raw.data), combine = "union",
-                        keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3) {
+selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1, combine = "union",
+                        keep.unique = F, capitalize = F, do.plot = T, cex.use = 0.3) {
   # Expand if only single var.thresh passed
   if (length(var.thresh) == 1) {
     var.thresh <- rep(var.thresh, length(object@raw.data))
   }
-  if (!identical(intersect(datasets.use, 1:length(object@raw.data)),datasets.use)) {
-    datasets.use = intersect(datasets.use, 1:length(object@raw.data))
-  }
   genes.use <- c()
-  for (i in datasets.use) {
+  for (i in 1:length(object@raw.data)) {
     if (capitalize) {
       rownames(object@raw.data[[i]]) <- toupper(rownames(object@raw.data[[i]]))
       rownames(object@norm.data[[i]]) <- toupper(rownames(object@norm.data[[i]]))
@@ -3373,14 +3367,19 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
     cluster2 <- mapvalues(cluster2, from = levels(cluster2),
                           to = paste("2", levels(cluster2), sep = "-"))
   }
+
+  cluster1 <- cluster1[intersect(names(cluster1), names(cluster_consensus))]
+  cluster2 <- cluster2[intersect(names(cluster2), names(cluster_consensus))]
+  cluster_consensus <- cluster_consensus[intersect(names(cluster1), names(cluster2))]
+  
   # set node order
   if (identical(node.order, "auto")) {
     tab.1 <- table(cluster1, cluster_consensus[names(cluster1)])
     tab.1 <- sweep(tab.1, 1, rowSums(tab.1), "/")
     tab.2 <- table(cluster2, cluster_consensus[names(cluster2)])
     tab.2 <- sweep(tab.2, 1, rowSums(tab.2), "/")
-    whichmax.1 <- apply(tab.1, 1, which.max)
-    whichmax.2 <- apply(tab.2, 1, which.max)
+    whichmax.1 <- apply(tab.1, 1, function(x){return(which(x==max(x)))})
+    whichmax.2 <- apply(tab.2, 1, function(x){return(which(x==max(x)))})
     ord.1 <- order(whichmax.1)
     ord.2 <- order(whichmax.2)
     cluster1 <- factor(cluster1, levels = levels(cluster1)[ord.1])
