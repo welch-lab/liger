@@ -4305,6 +4305,24 @@ runJaccard <- function(object){
 #' ligerex <- calculateWilcoxon(ligerex)
 #' }
 #' 
+#' Analyze differential gene expression using presto's implementation of the Wilcoxon rank sum test.
+#' 
+#' @param object \code{liger} object. Should run quantileAlignSNF first 
+#' @param compare.datasets Split clusters by dataset of origin to compare differences in expression
+#'   (default TRUE)
+#' @param clusters A list of clusters to include for comparison (default NULL).
+#'
+#' @return Updated \code{liger} object.
+#' @export
+#' @importFrom presto wilcoxauc
+#' @examples
+#' \dontrun{
+#' # liger object, clustering complete 
+#' ligerex
+#' # fill wilcoxon slot with dataframe of information from presto's Wilcoxon rank sum test
+#' ligerex <- calculateWilcoxon(ligerex)
+#' }
+#' 
 calculateWilcoxon <- function(object, compare.datasets = TRUE, clusters = NULL){
   if (!require("presto", quietly = TRUE)) {
     stop("Package \"presto\" needed for this function to perform fast Wilcoxon rank sum test. Please install it.",
@@ -4317,7 +4335,7 @@ calculateWilcoxon <- function(object, compare.datasets = TRUE, clusters = NULL){
   if(compare.datasets == TRUE){
     for(i in 1:length(object@scale.data)){
       cluster_labels[rownames(object@scale.data[[i]])] <-
-        toupper(paste0(cluster_labels[rownames(object@scale.data[[i]])],"_",unlist(attributes(ligex@scale.data)[1])[i]))
+        toupper(paste0(cluster_labels[rownames(object@scale.data[[i]])],"_",unlist(attributes(object@scale.data)[1])[i]))
     }
   }
   cluster_labels = factor(cluster_labels)
@@ -4326,7 +4344,7 @@ calculateWilcoxon <- function(object, compare.datasets = TRUE, clusters = NULL){
   if(is.null(clusters)){
     clusters = levels(cluster_labels)
   } else if(is.numeric(clusters) && compare.datasets){
-    combinations <- expand.grid(clusters, unlist(attributes(ligex@scale.data)[1]))
+    combinations <- expand.grid(clusters, unlist(attributes(object@scale.data)[1]))
     for(i in 1:nrow(combinations)){
       clusters[i] = toupper(paste0(combinations[i,1],"_",combinations[i,2]))
     }
