@@ -3326,7 +3326,7 @@ plotGenes <- function(object, genes) {
 #' @export
 #' @importFrom plyr mapvalues
 #' @importFrom riverplot makeRiver
-# @importFrom riverplot plot.riverplot
+#' @importFrom riverplot plot.riverplot
 #' @examples
 #' \dontrun{
 #' # liger object, factorization done
