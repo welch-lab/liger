@@ -36,6 +36,8 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 * [Walkthrough with two PBMC datasets](https://github.com/MacoskoLab/liger/blob/master/vignettes/walkthrough_pbmc.pdf)
 
+* [Running Liger directly on Seurat objects using Seurat wrappers](https://htmlpreview.github.io/?https://github.com/satijalab/seurat.wrappers/blob/master/docs/liger.html)
+
 ## Installation
 
 `liger` is written in R and has a few other system requirements (Java) and recommended packages (umap in Python). To install the most recent development version, follow these instructions:
