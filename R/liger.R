@@ -111,6 +111,7 @@ setMethod(
 #' @return List of merged matrices across data types (returns sparse matrix if only one data type
 #'   detected), or nested list of matrices organized by sample if merge=F.
 #' @export
+#' @import Matrix
 #' @examples
 #' \dontrun{
 #' # 10X output directory V2 -- contains outs/raw_gene_bc_matrices/<reference>/...
@@ -263,6 +264,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
 #'
 #' @return \code{liger} object with raw.data slot set.
 #' @export
+#' @import Matrix
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -3192,7 +3194,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' @importFrom ggplot2 ggplot geom_point aes_string element_blank ggtitle labs 
 #' scale_color_viridis_c theme
 #' @examples
-#' \dontrun
+#' \dontrun{
 #' # liger object, factorization complete
 #' ligerex
 #' ligerex <- runTSNE(ligerex)
@@ -3331,7 +3333,7 @@ plotGenes <- function(object, genes) {
 #' @export
 #' @importFrom plyr mapvalues
 #' @importFrom riverplot makeRiver
-# @importFrom riverplot plot.riverplot
+#' @importFrom riverplot riverplot
 #' @examples
 #' \dontrun{
 #' # liger object, factorization done
@@ -3812,6 +3814,7 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #'
 #' @return Seurat object with raw.data, scale.data, dr$tsne, dr$inmf, and ident slots set.
 #' @export
+#' @import Matrix
 #' @examples
 #' \dontrun{
 #' # liger object
@@ -3945,6 +3948,7 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
 
 #' @return \code{liger} object.
 #' @export
+#' @import Matrix
 #' @examples
 #' \dontrun{
 #' # Seurat objects for two pbmc datasets
