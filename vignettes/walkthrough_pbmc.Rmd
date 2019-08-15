@@ -1,8 +1,10 @@
 ---
 title: "Walkthrough -- Aligning PBMC Data"
 author: "Velina Kozareva"
-date: "10/30/2018"
-output: html_document
+date: "8/2/2019"
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -53,11 +55,12 @@ a.pbmc <- scaleNotCenter(a.pbmc)
 ###Factorization
 Next we perform integrative non-negative matrix factorization in order to identify shared and distinct metagenes across the datasets and the corresponding factor/metagene loadings for each cell. The most important parameters in the factorization are `k` (the number of factors) and `lambda` (the penalty parameter which limits the dataset-specific component of the factorization). The default value of `lambda=5.0` usually provides reasonable results for most analyses, although the `suggestLambda` function can be used to determine a more appropriate `lambda` value for the desired level of dataset alignment. 
 
-To determine the appropriate number of factors to use, we can use the `suggestK` function which plots median K-L divergence from the uniform distribution in the factor loadings as a function of `k`. We want to look for the section of the plot where this metric stops increasing as sharply (the "elbow" of the plot). In general, we should expect a positive correlation between the number of subgroups we expect to find in the analysis and the appropriate number of factors to use. Since the `suggestK` function can take more than 10 minutes to run, it can sometimes be useful to run a quick preliminary analysis with `k=20` to get an idea of whether a much higher number of factors is needed. 
+To determine the appropriate number of factors to use, we can use the `suggestK` function which plots median K-L divergence from the uniform distribution in the factor loadings as a function of `k`. We want to look for the section of the plot where this metric stops increasing as sharply (the "elbow" of the plot). In general, we should expect a positive correlation between the number of subgroups we expect to find in the analysis and the appropriate number of factors to use. Since the `suggestK` function can take more than 10 minutes to run, it can sometimes be useful to run a quick preliminary analysis with `k=20` to get an idea of whether a much higher number of factors is needed. (Note that the command provided below requests 5 cores – adjust this value if you have fewer cores available.)
 
 ``` {r kselection, eval=F}
 # running suggestK on multiple cores can greatly decrease the runtime
-k.suggest <- suggestK(a.pbmc, num.cores = 5, gen.new = T, return.results = T, plot.log2 = F)
+k.suggest <- suggestK(a.pbmc, num.cores = 5, gen.new = T, return.results = T, plot.log2 = F,
+                      nrep = 5)
 ```
 
 For this analysis, we select a `k` of 22, though you can try various values in that range for similar results. We select the default `lambda=5.0`. (You can also run `suggestLambda` to get a plot of expected alignment vs. lambda for a given number of factors.)
@@ -141,6 +144,15 @@ head(markers$tenx[markers$tenx$factor_num == 9, ])
 # Prevent text progress bar from printing
 word_clouds <- plotWordClouds(a.pbmc, num.genes = 10, do.spec.plot = F, return.plots = T)
 print(word_clouds[[9]])
+```
+
+A related type of visualization is a gene loadings plot, which may allow for easier comparison of the most highly-loading genes:
+
+```{r gene loadings, results='hide', fig.width=5, fig.height=6}
+# Show top 10 highly loading dataset specific and shared genes
+# with plots of gene loading values
+gene_loadings <- plotGeneLoadings(a.pbmc, num.genes = 10, do.spec.plot = F, return.plots = T)
+print(gene_loadings[[9]])
 ```
 
 We can now plot this gene to better observe finer-grained dataset specific differences. 
