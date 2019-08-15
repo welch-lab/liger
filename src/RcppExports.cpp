@@ -40,6 +40,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// makeFeatureMatrix
+NumericMatrix makeFeatureMatrix(DataFrame& bedmat, StringVector& barcodes);
+RcppExport SEXP _liger_makeFeatureMatrix(SEXP bedmatSEXP, SEXP barcodesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< DataFrame& >::type bedmat(bedmatSEXP);
+    Rcpp::traits::input_parameter< StringVector& >::type barcodes(barcodesSEXP);
+    rcpp_result_gen = Rcpp::wrap(makeFeatureMatrix(bedmat, barcodes));
+    return rcpp_result_gen;
+END_RCPP
+}
 // solveNNLS
 arma::mat solveNNLS(const arma::mat& C, const arma::mat& B);
 RcppExport SEXP _liger_solveNNLS(SEXP CSEXP, SEXP BSEXP) {
@@ -57,6 +69,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_liger_scaleNotCenterFast", (DL_FUNC) &_liger_scaleNotCenterFast, 1},
     {"_liger_rowMeansFast", (DL_FUNC) &_liger_rowMeansFast, 1},
     {"_liger_rowVarsFast", (DL_FUNC) &_liger_rowVarsFast, 2},
+    {"_liger_makeFeatureMatrix", (DL_FUNC) &_liger_makeFeatureMatrix, 2},
     {"_liger_solveNNLS", (DL_FUNC) &_liger_solveNNLS, 2},
     {NULL, NULL, 0}
 };
