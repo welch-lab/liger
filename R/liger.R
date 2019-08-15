@@ -1,3 +1,5 @@
+#' @importFrom Matrix colSums rowSums t
+NULL
 
 #' The LIGER Class
 #'
@@ -109,6 +111,7 @@ setMethod(
 #' @return List of merged matrices across data types (returns sparse matrix if only one data type
 #'   detected), or nested list of matrices organized by sample if merge=F.
 #' @export
+#' @import Matrix
 #' @examples
 #' \dontrun{
 #' # 10X output directory V2 -- contains outs/raw_gene_bc_matrices/<reference>/...
@@ -261,6 +264,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
 #'
 #' @return \code{liger} object with raw.data slot set.
 #' @export
+#' @import Matrix
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -1256,7 +1260,9 @@ optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100
 #'   lambda value tested (each column represents a different rep for nrep).(default FALSE)
 #'
 #' @return Matrix of results if indicated or ggplot object. Plots alignment vs. lambda to console.
+#'
 #' @import doSNOW
+#' @importFrom snow makeCluster stopCluster
 #' @importFrom foreach foreach
 #' @importFrom foreach "%dopar%"
 #' @importFrom ggplot2 ggplot aes geom_point geom_line guides guide_legend labs theme theme_classic
@@ -1385,6 +1391,7 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 #'
 #' @return Matrix of results if indicated or ggplot object. Plots K-L divergence vs. k to console.
 #' @import doSNOW
+#' @importFrom snow makeCluster stopCluster
 #' @importFrom foreach foreach
 #' @importFrom foreach "%dopar%"
 #' @importFrom ggplot2 ggplot aes geom_point geom_line guides guide_legend labs theme theme_classic
@@ -3187,7 +3194,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' @importFrom ggplot2 ggplot geom_point aes_string element_blank ggtitle labs 
 #' scale_color_viridis_c theme
 #' @examples
-#' \dontrun
+#' \dontrun{
 #' # liger object, factorization complete
 #' ligerex
 #' ligerex <- runTSNE(ligerex)
@@ -3807,6 +3814,7 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #'
 #' @return Seurat object with raw.data, scale.data, dr$tsne, dr$inmf, and ident slots set.
 #' @export
+#' @import Matrix
 #' @examples
 #' \dontrun{
 #' # liger object
@@ -3940,6 +3948,7 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
 
 #' @return \code{liger} object.
 #' @export
+#' @import Matrix
 #' @examples
 #' \dontrun{
 #' # Seurat objects for two pbmc datasets

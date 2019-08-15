@@ -38,3 +38,12 @@ to this quantile value) (default 1)}
 Generates plot of t-SNE coordinates colored by expression of specified gene, for each dataset.
 Color scale can be modified.
 }
+\examples{
+\dontrun{
+# liger object, factorization complete
+ligerex
+ligerex <- runTSNE(ligerex)
+# plot expression for CD4 and return plots
+gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
+}
+}

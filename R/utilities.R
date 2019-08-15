@@ -1,3 +1,6 @@
+#' @importFrom Matrix colSums rowSums rowMeans t sparseMatrix
+NULL
+
 # Utility functions for iiger methods. Some published, some not.
 
 # Helper function for plotFactors
