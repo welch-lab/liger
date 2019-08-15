@@ -1,24 +1,25 @@
 ---
 title: "Walkthrough -- Aligning PBMC Data"
 author: "Velina Kozareva"
-date: "8/24/2018"
-output: html_document
+date: "8/2/2019"
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-This walkthrough steps through a basic analysis and alignment of two datasets of peripheral blood mononuclear cells (PBMCs), and provides a simple comparison of the results achieved with LIGER to those achieved with Seurat. Both tools discover similar clusters and trends in the data, although LIGER can be used to identify more dataset-specific differences. 
+This walkthrough steps through a basic analysis and alignment of two datasets of peripheral blood mononuclear cells (PBMCs), 
+provided by 10X and [Gierahn et al., 2017](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5376227/). We show how LIGER can be used to identify trends and clusters across both datasets, in addition to dataset-specific differences. We also demonstrate some
+of the package's visualization capabilities while reproducing some of the figure panels from the manuscript (Fig. 2).
 
-First load the combined Seurat object which is created with the guided tutorial published online [here](https://satijalab.org/seurat/Seurat_AlignmentTutorial.html). The object and accompanying data can be downloaded here (or from `vignettes/pbmc_alignment.zip` -- Seurat object not yet available). We can use the raw data from this object to set up our `liger` object as well. Note that we could also set up the `liger` object independently using the 10X and Seqwell datasets provided in the same directory.
+The data can be downloaded from `vignettes/pbmc_alignment.zip`. First we set up the `liger` object using the 10X and Seqwell datasets provided in this directory.
 
 ```{r load, results='hide', message=F, warning=F}
 library(liger)
-# loading Seurat can be skipped for LIGER-only analysis
-library(Seurat)
 library(cowplot)
 
-s.pbmc <- readRDS('~/Downloads/pbmc_alignment/seurat_pbmc.RDS')
 pbmc.10x <- read.table('~/Downloads/pbmc_alignment/pbmc_10X.expressionMatrix.txt',
                        sep="\t",stringsAsFactors=F,header=T,row.names = 1)
 pbmc.seqwell <- read.table('~/Downloads/pbmc_alignment/pbmc_SeqWell.expressionMatrix.txt',
@@ -34,37 +35,38 @@ Before running the factorization, we need to normalize the data to account for d
 
 The `selectGenes` function performs variable gene selection on each of the datasets separately, then takes the union of the result. The most variable genes are selected by comparing the variance of each gene's expression to its mean expression and keeping those with var/mean ratio above a certain threshold. 
 
-In this case, we want the total number of variable genes to be similar across the LIGER and Seurat analyses, ideally with a large overlap in the variable gene sets. We can raise the variance threshold to have approximately the same number of variable genes, but we see that the overlap between gene sets is not as high as we would like -- we'll proceed instead by setting the variable genes to match those selected in the Seurat analysis for a cleaner comparison. 
+We can also simply pass pre-selected variable genes to the object if we've determined them from another 
+source. In this case, we are using the variable genes determined by the Seurat package for their 
+analysis of these two datasets (this was done in the manuscript for a cleaner comparison of the 
+methods).
 
 ```{r preprocess}
 a.pbmc <- normalize(a.pbmc)
-# Raise default varthresh to find about 2800 variable genes
-a.pbmc <- selectGenes(a.pbmc, var.thresh = 0.85, do.plot = F)
-print(paste('A genes:', length(a.pbmc@var.genes), 'S genes:', length(s.pbmc@var.genes)))
-# Want greater than ~90% of genes to match (>2550 genes)
-length(intersect(a.pbmc@var.genes, s.pbmc@var.genes))
+# Can pass different var.thresh values to each dataset if one seems to be contributing significantly
+# more genes than the other
+a.pbmc <- selectGenes(a.pbmc, var.thresh = c(0.3, 0.875), do.plot = F)
 
-a.pbmc@var.genes <- s.pbmc@var.genes
-# Use following if seurat object not available
-# s.var.genes <- readRDS(var_genes.RDS)
-# a.pbmc@var.genes <- s.var.genes
+# In this case, we have a precomputed set of variable genes
+s.var.genes <- readRDS('~/Downloads/pbmc_alignment/var_genes.RDS')
+a.pbmc@var.genes <- s.var.genes
 a.pbmc <- scaleNotCenter(a.pbmc)
 ```
 
 ###Factorization
 Next we perform integrative non-negative matrix factorization in order to identify shared and distinct metagenes across the datasets and the corresponding factor/metagene loadings for each cell. The most important parameters in the factorization are `k` (the number of factors) and `lambda` (the penalty parameter which limits the dataset-specific component of the factorization). The default value of `lambda=5.0` usually provides reasonable results for most analyses, although the `suggestLambda` function can be used to determine a more appropriate `lambda` value for the desired level of dataset alignment. 
 
-To determine the appropriate number of factors to use, we can use the `suggestK` function which plots median K-L divergence from the uniform distribution in the factor loadings as a function of `k`. We want to look for the section of the plot where this metric stops increasing as sharply (the "elbow" of the plot). In general, we should expect a positive correlation between the number of subgroups we expect to find in the analysis and the appropriate number of factors to use. Since the `suggestK` function can take more than 10 minutes to run, it can sometimes be useful to run a quick preliminary analysis with `k=20` to get an idea of whether a much higher number of factors is needed. 
+To determine the appropriate number of factors to use, we can use the `suggestK` function which plots median K-L divergence from the uniform distribution in the factor loadings as a function of `k`. We want to look for the section of the plot where this metric stops increasing as sharply (the "elbow" of the plot). In general, we should expect a positive correlation between the number of subgroups we expect to find in the analysis and the appropriate number of factors to use. Since the `suggestK` function can take more than 10 minutes to run, it can sometimes be useful to run a quick preliminary analysis with `k=20` to get an idea of whether a much higher number of factors is needed. (Note that the command provided below requests 5 cores – adjust this value if you have fewer cores available.)
 
 ``` {r kselection, eval=F}
 # running suggestK on multiple cores can greatly decrease the runtime
-k.suggest <- suggestK(a.pbmc, num.cores = 5, gen.new = T, return.results = T, plot.log2 = F)
+k.suggest <- suggestK(a.pbmc, num.cores = 5, gen.new = T, return.results = T, plot.log2 = F,
+                      nrep = 5)
 ```
 
-For this analysis, we select a `k` of 22, though you can try various values in that range for similar results. We also select the default `lambda=5.0`. 
+For this analysis, we select a `k` of 22, though you can try various values in that range for similar results. We select the default `lambda=5.0`. (You can also run `suggestLambda` to get a plot of expected alignment vs. lambda for a given number of factors.)
 ```{r factorization, results='hide'}
 # Take the lowest objective of three factorizations with different initializations
-# This is recommended since iNMF is non-deterministic
+# Multiple restarts are recommended for initial analyses since iNMF is non-deterministic
 a.pbmc <- optimizeALS(a.pbmc, k=22, thresh = 5e-5, nrep = 3)
 ```
 
@@ -78,40 +80,46 @@ print(p1[[1]])
 
 To better integrate the datasets, we perform a quantile alignment step. This process first identifies similarly loading cells across datasets by building a similarity graph based on shared factor neighborhoods. Using Louvain community detection, we then identify clusters shared across datasets, and align quantiles within each cluster and factor. The key parameters in this step are the `resolution` (increasing this increases the number of communities detected) and `knn_k` (the number of dataset neighbors used in generating the shared factor neighborhood). In general, lowering `knn_k` will allow for more fine-grained identification of smaller groups with shared factor neighborhoods. 
 
-We can also try to extract even smaller clusters by setting the `small_clust_thresh` parameter equal to the current `knn_k`; we do this here since we expect a small group of megakaryocytes in the 10X dataset. We set the `resolution` to 0.4 to identify larger clusters, and use the default settings for the other parameters. 
+We can also try to extract even smaller clusters by setting the `small_clust_thresh` parameter equal to the current `knn_k`; we do this here since we expect a small group of megakaryocytes in the 10X dataset. We set the `resolution` to 0.4 to identify larger clusters, and use the default settings for the other parameters. (For a simpler analysis, and to perfectly reproduce the manuscript figures, you can use the default `small.clust.thresh = 0`, though this will prevent separation of the megakaryocytes.)
 
 ```{r aligned, results='hide'}
 a.pbmc <- quantileAlignSNF(a.pbmc, resolution = 0.4, small.clust.thresh = 20)
+# Could also forgo small cluster extraction if desired
+# a.pbmc <- quantileAlignSNF(a.pbmc, resolution = 0.4)
 
 ```
 
-Now we can visualize the integrated data, and determine identities of the detected clusters. We can also compare the alignment visually between the LIGER and Seurat analyses.  
-```{r visualize, fig.width=9, fig.height=4.5}
+###Visualization 
+Now we can visualize the integrated data, and determine identities of the detected clusters.
+```{r visualize, fig.width=6, fig.height=4.5}
 a.pbmc <- runTSNE(a.pbmc)
 p_a <- plotByDatasetAndCluster(a.pbmc, return.plots = T) 
 # Modify plot output slightly
 p_a[[1]] <- p_a[[1]] + theme_classic() + theme(legend.position = c(0.85, 0.15)) + 
   guides(col=guide_legend(title = '', override.aes = list(size = 4)))
-# Plot by dataset in Seurat -- switch colors to match dataset labels in LIGER
-p_s <- TSNEPlot(object = s.pbmc, group.by = "protocol", do.return = TRUE, pt.size = 0.3, 
-                colors.use = c('#00BFC4', '#F8766D')) + theme_classic() + theme(legend.position = 'none')
-plot_grid(p_s, (p_a[[1]]), labels=c('Seurat', 'LIGER'), 
-          label_x = c(0.45, 0.35), label_y = 0.99, label_size = 10)
+
+print(p_a[[1]])
 
 ```
 
-Since we have cluster information from the original publication/analysis for each of these two datasets, we 
-can easily take a look at how our clustering compares using a river (i.e. Sankey) plot. Note that these clusterings were generated by individual (not joint) analyses of each dataset. 
+Since we have cluster information from the original publications/analyses for each of these two datasets, we 
+can easily take a look at how our clustering compares using a river (i.e. Sankey) plot. Note that these clusterings were generated by individual (not joint) analyses of each dataset. The 10X labels come from the Seurat analysis
+detailed [here](https://satijalab.org/seurat/pbmc3k_tutorial.html) and the SeqWell labels from the
+original SeqWell publication. 
 
 ```{r clustering, message=F, warning=F}
-# load cluster labels from Seurat 10X analysis and seqwell publication
+# load cluster labels from Seurat 10X PBMC analysis and original SeqWell publication
 clusters_prior <- readRDS('~/Downloads/pbmc_alignment/tenx_seqwell_clusters.RDS')
 tenx_c <- droplevels(clusters_prior[rownames(a.pbmc@H[[1]])])
 seqwell_c <- droplevels(clusters_prior[rownames(a.pbmc@H[[2]])])
 
+# Set specific node order for cleaner visualization (can also leave to default value for 
+# automatic ordering)
 set_node_order = list(c(2, 6, 3, 4, 8, 1, 5, 7), c(1, 6, 2, 3, 4, 5, 7, 8, 9), c(5, 2, 3, 6, 1, 4))
 makeRiverplot(a.pbmc, tenx_c, seqwell_c, min.frac = 0.05, node.order = set_node_order,
               river.usr = c(0, 1, -0.6, 1.6))
+# If using object with default small.clust.thresh settings, use this node order instead
+# set_node_order = list(c(7, 2, 6, 3, 4, 8, 1, 5), c(1, 6, 2, 3, 4, 5, 7, 8), rev(c(4, 1, 6, 3, 2, 5)))
 
 # plot t-SNE plot colored by clusters 
 print(p_a[[2]]) 
@@ -136,6 +144,15 @@ head(markers$tenx[markers$tenx$factor_num == 9, ])
 # Prevent text progress bar from printing
 word_clouds <- plotWordClouds(a.pbmc, num.genes = 10, do.spec.plot = F, return.plots = T)
 print(word_clouds[[9]])
+```
+
+A related type of visualization is a gene loadings plot, which may allow for easier comparison of the most highly-loading genes:
+
+```{r gene loadings, results='hide', fig.width=5, fig.height=6}
+# Show top 10 highly loading dataset specific and shared genes
+# with plots of gene loading values
+gene_loadings <- plotGeneLoadings(a.pbmc, num.genes = 10, do.spec.plot = F, return.plots = T)
+print(gene_loadings[[9]])
 ```
 
 We can now plot this gene to better observe finer-grained dataset specific differences. 
