@@ -2601,6 +2601,8 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #' @param do.legend Display legend on plots (default TRUE).
 #' @param legend.size Size of legend spots for discrete data (default 5).
 #' @param option Colormap option to use for ggplot2's scale_color_viridis (default 'plasma').
+#' @param cols.use Vector of colors to form gradient over instead of viridis colormap (low to high).
+#'   Only applies to continuous features (default NULL). 
 #' @param zero.color Color to use for zero values (no expression) (default '#F5F5F5').
 #' @param return.plots Return ggplot plot objects instead of printing directly (default FALSE).
 #'
@@ -2608,7 +2610,7 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #'   console).
 #' @export
 #' @importFrom ggplot2 ggplot geom_point geom_text ggtitle aes guides guide_legend labs 
-#' scale_color_viridis_c theme xlab ylab
+#' scale_color_viridis_c scale_color_gradientn theme xlab ylab
 #' @importFrom dplyr %>% group_by summarize
 #' @examples
 #' \dontrun{
@@ -2623,7 +2625,7 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title = NULL, 
                         pt.size = 0.3, text.size = 3, do.shuffle = T, rand.seed = 1, do.labels = F,
                         axis.labels = NULL, do.legend = T, legend.size = 5, option = 'plasma', 
-                        zero.color = '#F5F5F5', return.plots = F) {
+                        cols.use = NULL, zero.color = '#F5F5F5', return.plots = F) {
   dr_df <- data.frame(object@tsne.coords)
   colnames(dr_df) <- c("dr1", "dr2")
   if (!(feature %in% colnames(object@cell.data))) {
@@ -2654,7 +2656,7 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
   for (sub_df in split(dr_df, f = dr_df$dataset)) {
     ggp <- ggplot(sub_df, aes(x = dr1, y = dr2, color = feature)) + geom_point(size = pt.size)
     
-    # if data is not discrete
+    # if data is discrete
     if (discrete) {
       ggp <- ggp + guides(color = guide_legend(override.aes = list(size = legend.size))) +
         labs(col = feature)
@@ -2667,11 +2669,16 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
                                colour = "black", size = text.size)
       }
     } else {
-      ggp <- ggp + scale_color_viridis_c(option = option,
-                                         direction = -1,
-                                         na.value = zero.color) + labs(col = feature)
+      if (is.null(cols.use)) {
+        ggp <- ggp + scale_color_viridis_c(option = option,
+                                           direction = -1,
+                                           na.value = zero.color) + labs(col = feature)
+      } else {
+        ggp <- ggp + scale_color_gradientn(colors = cols.use,
+                                           na.value = zero.color) + labs(col = feature)
+      }
+      
     }
-    
     if (by.dataset) {
       base <- as.character(sub_df$dataset[1])
     } else {
