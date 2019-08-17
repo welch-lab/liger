@@ -2478,6 +2478,35 @@ calcPurity <- function(object, classes.compare) {
   return(purity)
 }
 
+#' Calculate proportion mitochondrial contribution
+#'
+#' Calculates proportion of mitochondrial contribution based on raw or normalized data.
+#'
+#' @param object \code{liger} object.
+#' @param use.norm Whether to use cell normalized data in calculating contribution (default FALSE).
+#' @return Named vector containing proportion of mitochondrial contribution for each cell.
+#' @export
+#' @examples
+#' \dontrun{
+#' # liger object, factorization done
+#' ligerex
+#' ligerex@cell.data[["percent_mito"]] <- getProportionMito(ligerex)
+#' }
+
+getProportionMito <- function(object, use.norm = F) {
+  all.genes <- Reduce(union, lapply(object@raw.data, rownames))
+  mito.genes <- grep(pattern = "^mt-", x = all.genes, value = TRUE)
+  data.use <- object@raw.data
+  if (use.norm) {
+    data.use <- object@norm.data
+  }
+  percent_mito <- unlist(lapply(unname(data.use), function(x) {
+    colSums(x[mito.genes, ]) / colSums(x)
+  }), use.names = T)
+  
+  return(percent_mito)
+}
+
 #######################################################################################
 #### Visualization
 
