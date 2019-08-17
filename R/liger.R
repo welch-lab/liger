@@ -4370,6 +4370,62 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   return(a)
 }
 
+#' Construct a liger object organized by another feature
+#'
+#' Using the same data, rearrange functional datasets using another discrete feature in cell.data.
+#' This removes most computed data slots, though cell.data and current clustering can be retained. 
+#'
+#' @param object \code{liger} object. 
+#' @param by.feature Column in cell.data to use in reorganizing raw data. 
+#' @param keep.meta Whether to carry over all existing data in cell.data slot (default TRUE). 
+#' @param new.label If cell.data is to be retained, new column name for original organizing feature
+#'   (previously labeled as dataset) (default "orig.dataset")
+#' @param ... Additional parameters passed on to createLiger. 
+#'
+#' @return \code{liger} object with rearranged raw.data slot.
+#' @export
+#' @import Matrix
+#' @examples
+#' \dontrun{
+#' # liger object organized by species, with column designating sex in cell.data
+#' ligerex
+#' # rearrange by sex
+#' ligerex_new <- reorganizeLiger(ligerex, by.feature = "sex", new.label = "species")
+#' }
+
+reorganizeLiger <- function(object, by.feature, keep.meta = T, new.label = "orig.dataset",
+                            ...) {
+  if (!(by.feature %in% colnames(object@cell.data))) {
+    stop("Please select existing feature in cell.data to reorganize by, or add it before calling.")
+  }
+  if (!is.null(object@clusters)) {
+    object@cell.data[['orig.cluster']] <- object@clusters
+  }
+  orig.data <- object@cell.data
+  colnames(orig.data)[colnames(orig.data) == "dataset"] <- new.label
+  
+  # make this less memory intensive for large datasets
+  all.data <- MergeSparseDataAll(object@raw.data)
+  
+  new.raw <- lapply(levels(orig.data[[by.feature]]), function(x) {
+    cells.keep <- rownames(orig.data)[which(orig.data[[by.feature]] == x)]
+    all.data[, cells.keep]
+  })
+  names(new.raw) <- levels(orig.data[[by.feature]])
+  rm(all.data)
+  gc()
+  new.object <- createLiger(raw.data = new.raw, ...)
+  
+  if (keep.meta) {
+    cols.to.add <- setdiff(colnames(orig.data), colnames(new.object@cell.data))
+    cols.to.add <- cols.to.add[which(cols.to.add != by.feature)]
+    for (col in cols.to.add) {
+      new.object@cell.data[[col]] = orig.data[rownames(new.object@cell.data), col]
+    }
+  }
+  return(new.object)
+}
+
 #' Convert older liger object into most current version (based on class definition)
 #'
 #' Also works for Analogizer objects (but must have both liger and Analogizer loaded). Transfers
