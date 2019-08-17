@@ -5,8 +5,8 @@
 \title{Select a subset of informative genes}
 \usage{
 selectGenes(object, alpha.thresh = 0.99, var.thresh = 0.1,
-  combine = "union", keep.unique = F, capitalize = F, do.plot = T,
-  cex.use = 0.3)
+  datasets.use = 1:length(object@raw.data), combine = "union",
+  keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3)
 }
 \arguments{
 \item{object}{\code{liger} object. Should have already called normalize.}
@@ -19,6 +19,9 @@ expression variance greater than threshold (relative to mean) are selected.
 (higher threshold -> fewer selected genes). Accepts single value or vector with separate
 var.thresh for each dataset. (default 0.1)}
 
+\item{datasets.use}{List of datasets to include for discovery of highly variable genes. 
+(default 1:length(object@raw.data))}
+
 \item{combine}{How to combine variable genes across experiments. Either "union" or "intersect".
 (default "union")}
 
@@ -29,7 +32,7 @@ in one dataset (default FALSE)}
 (default FALSE)}
 
 \item{do.plot}{Display log plot of gene variance vs. gene expression for each dataset.
-Selected genes are plotted in green. (default TRUE)}
+Selected genes are plotted in green. (default FALSE)}
 
 \item{cex.use}{Point size for plot.}
 }
