@@ -3212,29 +3212,50 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
   }
 }
 
-#' Plot t-SNE coordinates by expression of specified gene
+#' Plot gene expression on dimensional reduction (t-SNE) coordinates
 #'
-#' Generates plot of t-SNE coordinates colored by expression of specified gene, for each dataset.
-#' Color scale can be modified.
+#' Generates plot of dimensional reduction coordinates (default t-SNE) colored by expression of 
+#' specified gene. Data can be scaled by dataset or selected feature column from cell.data (or across
+#' all cells). Data plots can be split by feature. 
 #'
 #' @param object \code{liger} object. Should call runTSNE before calling.
-#' @param gene Gene for which to plot relative expression.
-#' @param use.raw Plot raw values instead of normalized and log-transformed data (default FALSE).
+#' @param gene Gene for which to plot expression.
+#' @param use.raw Plot raw UMI values instead of normalized, log-transformed data (default FALSE).
+#' @param use.scaled Plot values scaled across specified groups of cells (with log transformation)
+#'   (default FALSE).
+#' @param scale.by Grouping of cells by which to scale gene (can be any factor column in cell.data
+#'   or 'none' for scaling across all cells) (default 'dataset').
 #' @param methylation.indices Indices of datasets in object with methylation data (this data is not
-#'   magnified and put on log scale).
-#' @param pt.size Point size for plots (default 0.1)
-#' @param min.clip Quantile probability for lower bound of methylation data (everything lower set
-#'   to this quantile value) (default 0)
-#' @param max.clip Quantile probability for upper bound of methylation data (everything greater set
-#'   to this quantile value) (default 1)
-#' @param points.only Remove axes when plotting t-sne coordinates (default FALSE).
+#'   log transformed and must use normalized values). (default NULL)
+#' @param plot.by How to group cells for plotting (can be any factor column in cell.data or 'none' 
+#'   for plotting all cells in a single plot). Note that this can result in large number of plots.
+#'   Users are encouraged to use same value as for scale.by (default 'dataset').
+#' @param set.dr.lims Whether to keep dimensional reduction coordinates consistent when multiple 
+#'   plots created (default FALSE).
+#' @param pt.size Point size for plots (default 0.1).
+#' @param min.clip Minimum value for expression values plotted. Can pass in quantile (0-1) or 
+#'   absolute cutoff (set clip.absolute = T). Can also pass in vector if expecting multiple plots;
+#'   users are encouraged to pass in named vector (from levels of desired feature) to avoid 
+#'   mismatches in order (default NULL).
+#' @param max.clip Maximum value for expression values plotted. Can pass in quantile (0-1) or 
+#'   absolute cutoff (set clip.absolute = T). Can also pass in vector if expecting multiple plots;
+#'   users are encouraged to pass in named vector (from levels of desired feature) to avoid 
+#'   mismatches in order (default NULL).
+#' @param clip.absolute Whether to treat clip values as absolute cutoffs instead of quantiles 
+#'   (default FALSE).
+#' @param points.only Remove axes, background, and legend when plotting coordinates (default FALSE).
 #' @param option Colormap option to use for ggplot2's scale_color_viridis (default 'plasma').
+#' @param cols.use Vector of colors to form gradient over instead of viridis colormap (low to high).
+#'   (default NULL).  
 #' @param zero.color Color to use for zero values (no expression) (default '#F5F5F5').
+#' @param axis.labels Vector of two strings to use as x and y labels respectively. (default NULL)
+#' @param do.legend Display legend on plots (default TRUE).
 #' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
 #'
 #' @export
 #' @importFrom ggplot2 ggplot geom_point aes_string element_blank ggtitle labs 
-#' scale_color_viridis_c theme
+#' scale_color_viridis_c scale_color_gradientn theme
+#' @importFrom stats quantile
 #' @examples
 #' \dontrun{
 #' # liger object, factorization complete
@@ -3244,60 +3265,140 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
 #' }
 
-plotGene <- function(object, gene, use.raw = F, methylation.indices = NULL, pt.size = 0.1,
-                     min.clip = 0, max.clip = 1, points.only = F, option = 'plasma',
-                     zero.color = '#F5F5F5', return.plots = F) {
-  gene_vals <- c()
+plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'dataset', 
+                     methylation.indices = NULL, plot.by = 'dataset', set.dr.lims = F, 
+                     pt.size = 0.1, min.clip = NULL, max.clip = NULL, clip.absolute = F, 
+                     points.only = F, option = 'plasma', cols.use = NULL, zero.color = '#F5F5F5', 
+                     axis.labels = NULL, do.legend = T, return.plots = F) {
+  if ((plot.by != scale.by) & (use.scaled)) {
+    warning("Provided values for plot.by and scale.by do not match; results may not be very
+            interpretable.")
+  }
   if (use.raw) {
-    for (i in 1:length(object@raw.data)) {
-      if (gene %in% rownames(object@raw.data[[i]])) {
-        gene_vals_int <- object@raw.data[[i]][gene, ]
-      } else {
-        gene_vals_int <- rep(list(NA), ncol(object@raw.data[[i]]))
-        names(gene_vals_int) <- colnames(object@raw.data[[i]])
-      }
-      gene_vals <- c(gene_vals, gene_vals_int)
-    }
+    # drop only outer level names
+    gene_vals <- getGeneValues(object@raw.data, gene)
   } else {
-    for (i in 1:length(object@norm.data)) {
-      if (i %in% methylation.indices) {
-        tmp <- object@norm.data[[i]][gene, ]
-        max_v <- quantile(tmp, probs = max.clip, na.rm = T)
-        min_v <- quantile(tmp, probs = min.clip, na.rm = T)
-        tmp[tmp < min_v & !is.na(tmp)] <- min_v
-        tmp[tmp > max_v & !is.na(tmp)] <- max_v
-        gene_vals <- c(gene_vals, tmp)
-      } else {
-        if (gene %in% rownames(object@norm.data[[i]])) {
-          gene_vals_int <- log2(10000 * object@norm.data[[i]][gene, ] + 1)
-        } else {
-          gene_vals_int <- rep(list(NA), ncol(object@norm.data[[i]]))
-          names(gene_vals_int) <- colnames(object@norm.data[[i]])
+    if (use.scaled) {
+      if (scale.by != 'dataset') {
+        # check for feature 
+        if (!(scale.by %in% colnames(object@cell.data)) & scale.by != 'none') {
+          stop("Please select existing feature in cell.data to scale.by, or add it before calling.")
         }
-        gene_vals <- c(gene_vals, gene_vals_int)
+        # have to rescale in this case 
+        gene_vals <- getGeneValues(object@norm.data, gene)
+        cellnames <- names(gene_vals)
+        # set up dataframe with groups
+        gene_df <- data.frame(gene = gene_vals)
+        if (scale.by == 'none') {
+          gene_df[['scaleby']] = 'none'
+        } else {
+          gene_df[['scaleby']] = factor(object@cell.data[[scale.by]])
+        }
+        # using dplyr
+        gene_df1 <- gene_df %>%
+          group_by(scaleby) %>%
+          # scale by selected feature
+          mutate_at(vars(-group_cols()), function(x) { scale(x, center = F)})
+        gene_vals <- gene_df1$gene
+        names(gene_vals) <- cellnames
+      } else {
+        # remember to use cols instead
+        gene_vals <- getGeneValues(object@scale.data, gene, use.cols = T, log2scale = T)
       }
+    } else {
+      # using normalized data
+      # indicate methylation indices here 
+      gene_vals <- getGeneValues(object@norm.data, gene, methylation.indices = methylation.indices,
+                                 log2scale = T)
     }
   }
   gene_vals[gene_vals == 0] <- NA
-  gene_df <- data.frame(object@tsne.coords)
-  rownames(gene_df) <- names(object@clusters)
-  gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])
-  colnames(gene_df) <- c("tSNE1", "tSNE2", "gene")
-  gene_plots <- list()
-  for (i in 1:length(object@norm.data)) {
-    gene_df.sub <- gene_df[rownames(object@scale.data[[i]]), ]
-    plot_i <- (ggplot(gene_df.sub, aes_string(x = "tSNE1", y = "tSNE2", color = "gene")) +
-                 geom_point(size = pt.size) +
-                 scale_color_viridis_c(option = option,
-                                       direction = -1,
-                                       na.value = zero.color) +
-                 labs(col = gene) +
-                 ggtitle(names(object@scale.data)[i]))
-    gene_plots[[i]] <- plot_i
+  dr_df <- data.frame(object@tsne.coords)
+  rownames(dr_df) <- rownames(object@cell.data)
+  dr_df$gene <- as.numeric(gene_vals[rownames(dr_df)])
+  colnames(dr_df) <- c("dr1", "dr2", "gene")
+  # get dr limits for later
+  lim1 <- c(min(dr_df$dr1), max(dr_df$dr1))
+  lim2 <- c(min(dr_df$dr2), max(dr_df$dr2))
+  
+  if (plot.by != 'none') {
+    if (!(plot.by %in% colnames(object@cell.data))) {
+      stop("Please select existing feature in cell.data to plot.by, or add it before calling.")
+    }
+    dr_df$plotby <- factor(object@cell.data[[plot.by]])
+  } else {
+    dr_df$plotby <- factor("none")
   }
-  if (points.only) {
-    for (i in 1:length(gene_plots)) {
-      gene_plots[[i]] <- gene_plots[[i]] + theme(
+  # expand clip values if only single provided
+  num_levels <- length(levels(dr_df$plotby))
+  if (length(min.clip) == 1) {
+    min.clip <- rep(min.clip, num_levels)
+    names(min.clip) <- levels(dr_df$plotby)
+  }
+  if (length(max.clip) == 1) {
+    max.clip <- rep(max.clip, num_levels)
+    names(max.clip) <- levels(dr_df$plotby)
+  }
+  if (!is.null(min.clip) & is.null(names(min.clip))) {
+    if (num_levels > 1) {
+      message("Adding names to min.clip according to levels in plot.by group; order may not be 
+              preserved as intended if multiple clip values passed in. Pass in named vector to 
+              prevent this.")
+    }
+    names(min.clip) <- levels(dr_df$plotby)
+    }
+  if (!is.null(max.clip) & is.null(names(max.clip))) {
+    if (num_levels > 1) {
+      message("Adding names to max.clip according to levels in plot.by group; order may not be 
+              preserved as intended if multiple clip values passed in. Pass in named vector to 
+              prevent this.")
+    }
+    names(max.clip) <- levels(dr_df$plotby)
+    }
+  p_list <- list()
+  for (sub_df in split(dr_df, f = dr_df$plotby)) {
+    # maybe do quantile cutoff here
+    group_name <- as.character(sub_df$plotby[1])
+    if (!clip.absolute) {
+      max_v <- quantile(sub_df$gene, probs = max.clip[group_name], na.rm = T)
+      min_v <- quantile(sub_df$gene, probs = min.clip[group_name], na.rm = T)
+    } else {
+      max_v <- max.clip[group_name]
+      min_v <- min.clip[group_name]
+    }
+    sub_df$gene[sub_df$gene < min_v & !is.na(sub_df$gene)] <- min_v
+    sub_df$gene[sub_df$gene > max_v & !is.na(sub_df$gene)] <- max_v
+    
+    ggp <- ggplot(sub_df, aes(x = dr1, y = dr2, color = gene)) + geom_point(size = pt.size) +
+      labs(col = gene)
+    
+    if (!is.null(cols.use)) {
+      ggp <- ggp + scale_color_gradientn(colors = cols.use,
+                                         na.value = zero.color)
+    } else {
+      ggp <- ggp + scale_color_viridis_c(option = option,
+                                         direction = -1,
+                                         na.value = zero.color)
+    }
+    if (set.dr.lims) {
+      ggp <- ggp + xlim(lim1) + ylim(lim2)
+    }
+    
+    if (plot.by != 'none') {
+      base <- as.character(sub_df$plotby[1])
+    } else {
+      base <- ""
+    }
+    ggp <- ggp + ggtitle(base)
+    
+    if (!is.null(axis.labels)) {
+      ggp <- ggp + xlab(axis.labels[1]) + ylab(axis.labels[2])
+    }
+    if (!do.legend) {
+      ggp <- ggp + theme(legend.position = "none")
+    }
+    if (points.only) {
+      ggp <- ggp + theme(
         axis.line = element_blank(), axis.text.x = element_blank(),
         axis.text.y = element_blank(), axis.ticks = element_blank(),
         axis.title.x = element_blank(),
@@ -3307,12 +3408,21 @@ plotGene <- function(object, gene, use.raw = F, methylation.indices = NULL, pt.s
         plot.background = element_blank(), plot.title = element_blank()
       )
     }
+    p_list[[as.character(sub_df$plotby[1])]] <- ggp
   }
-  if (return.plots) {
-    return(gene_plots)
+  if (plot.by == 'dataset') {
+    p_list <- p_list[names(object@raw.data)]
+  }
+  
+  if (return.plots){
+    if (length(p_list) == 1) {
+      return(p_list[[1]])
+    } else {
+      return(p_list)
+    }
   } else {
-    for (i in 1:length(gene_plots)) {
-      print(gene_plots[[i]])
+    for (plot in p_list) {
+      print(plot)
     }
   }
 }
