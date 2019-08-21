@@ -190,16 +190,16 @@ summary {
 <p>This vignette shows how to jointly define clusters using single-cell RNA-seq and single-nuclear ATAC-seq data. We will use the peripheral blood mononuclear cell (PBMC) scRNA-seq and snATAC-seq datasets provided by 10X. The workflow for jointly analyzing RNA and ATAC is quite similar to that for integrating multiple RNA datasets. The only differences are (1) we need to process the ATAC data into gene-level values comparable to gene expression and (2) we perform gene selection using the RNA data only.</p>
 <div id="load-pre-computed-count-matrices-for-rna-and-atac-data" class="section level2">
 <h2>Load Pre-Computed Count Matrices for RNA and ATAC Data</h2>
-<p>Because ATAC-seq measures chromatin accessibility, a different data modality than gene expression, we need to process the ATAC data to obtain gene-level features that we can use to integrate with the RNA data. Although one could imagine many strategies for calculating gene-level features from ATAC data, we found that the simplest possible strategy works well: counting the number of reads that overlap the gene body and promoter for each gene. We show how to do this below starting from the <code>cellranger</code> output, but for now we will simply read in the final gene x cell matrices for RNA and ATAC data. These matrices and all other inputs are provided [here] (<a href="https://umich.box.com/s/5hkhpou4inrulo570yhc38ay8g3ont5b" class="uri">https://umich.box.com/s/5hkhpou4inrulo570yhc38ay8g3ont5b</a>), so we can load them directly:</p>
+<p>Because ATAC-seq measures chromatin accessibility, a different data modality than gene expression, we need to process the ATAC data to obtain gene-level features that we can use to integrate with the RNA data. Although one could imagine many strategies for calculating gene-level features from ATAC data, we found that the simplest possible strategy works well: counting the number of reads that overlap the gene body and promoter for each gene. We show how to do this below starting from the <code>cellranger</code> output, but for now we will simply read in the final gene x cell matrices for RNA and ATAC data. These matrices and all other inputs are provided <a href="https://umich.box.com/s/5hkhpou4inrulo570yhc38ay8g3ont5b">here</a>, so we can load them directly:</p>
 <pre class="r"><code>rna_clusts = readRDS(&quot;rna_cluster_assignments.RDS&quot;)
 atac_clusts = readRDS(&quot;atac_cluster_assignments.RDS&quot;)
 pbmc.atac &lt;- readRDS('pbmc.atac.expression.mat.RDS')
 pbmc.rna &lt;- readRDS('pbmc.rna.expression.mat.RDS')</code></pre>
 <div id="calculate-gene-level-features-for-atac-data" class="section level3">
 <h3>Calculate Gene-Level Features for ATAC Data</h3>
-<p>Here we show how to compute a gene x cell feature matrix starting from the <code>fragments.tsv</code> file output by the 10X <code>cellranger count</code> pipeline. SKip this section for now if you want to simply try out <code>liger</code> on the provided counts.</p>
+<p>Here we show how to compute a gene x cell feature matrix starting from the <code>fragments.tsv</code> file output by the 10X <code>cellranger count</code> pipeline. Skip this section for now if you want to simply try out <code>liger</code> on the provided counts.</p>
 <p>Although one could imagine many strategies for calculating gene-level features from ATAC data, we found that the simplest possible strategy works well: counting the number of reads that overlap the gene body and promoter for each gene. We found that summing the peak counts output by <code>cellranger count</code> for the peaks overlapping each gene can also work, but this strategy is less desirable because (1) information from reads not in peaks is lost and (2) the <code>cellranger</code> peak calling is performed on all cells, which leads to an overrepresentation of peaks from abundant cell populations and biases against rare cell populations.</p>
-<p>We sort the fragments output by <code>cellranger</code> by barcode and use the BEDOPS <code>bedmap</code> tool to make a list of cell barcodes that overlap each gene and promoter. To perform this step, you need to install BEDOPS (see <a href="https://bedops.readthedocs.io/en/latest/content/installation.html">this page</a> for installation instructions). The file <code>atac_fragments.tsv</code> is available from the 10X website at [this link] (<a href="http://cf.10xgenomics.com/samples/cell-atac/1.1.0/atac_v1_pbmc_10k/atac_v1_pbmc_10k_fragments.tsv.gz" class="uri">http://cf.10xgenomics.com/samples/cell-atac/1.1.0/atac_v1_pbmc_10k/atac_v1_pbmc_10k_fragments.tsv.gz</a>). Note that this file is very large and the step to sort the file is somewhat slow.</p>
+<p>We sort the fragments output by <code>cellranger</code> by barcode and use the BEDOPS <code>bedmap</code> tool to make a list of cell barcodes that overlap each gene and promoter. To perform this step, you need to install BEDOPS (see <a href="https://bedops.readthedocs.io/en/latest/content/installation.html">this page</a> for installation instructions). The file <code>atac_fragments.tsv</code> is available from the 10X website at <a href="http://cf.10xgenomics.com/samples/cell-atac/1.1.0/atac_v1_pbmc_10k/atac_v1_pbmc_10k_fragments.tsv.gz">this link</a>. Note that this file is very large and the step to sort the file is somewhat slow.</p>
 <pre class="r"><code>system(&quot;sort -k4,4 atac_v1_pbmc_10k_fragments.tsv &gt; atac_fragments.sort.bed&quot;)
 system(&quot;bedmap --delim \&quot;\\t\&quot; --echo --echo-map-id hg19_genes.bed atac_fragments.sort.bed &gt; atac_genes_bc.bed&quot;)
 system(&quot;bedmap --delim \&quot;\\t\&quot; --echo --echo-map-id hg19_promoters.bed atac_fragments.sort.bed &gt; atac_promoters_bc.bed&quot;)</code></pre>
@@ -227,7 +227,7 @@ pbmc.rna &lt;- read10X(sample.dirs = list(sample.dir), sample.names = list(sampl
 </div>
 </div>
 <div id="data-preprocessing" class="section level2">
-<h2>Data preprocessing</h2>
+<h2>Data Preprocessing</h2>
 <p>The algorithm takes a list of two or more count matrices as input. Genes should be in rows and cells in columns. We can make a list of the count matrices and pass this as parameter to the <code>createLiger</code> function to construct a Liger object.</p>
 <pre class="r"><code>library(liger)
 ggplot2::theme_set(theme_cowplot())
@@ -238,8 +238,8 @@ int.pbmc &lt;- createLiger(pbmc.data)</code></pre>
 <pre class="r"><code>int.pbmc &lt;- normalize(int.pbmc)
 int.pbmc &lt;- selectGenes(int.pbmc, datasets.use = 2)
 int.pbmc &lt;- scaleNotCenter(int.pbmc)</code></pre>
-<div id="factorization" class="section level3">
-<h3>Factorization</h3>
+<div id="factorization-and-quantile-normalization" class="section level3">
+<h3>Factorization and Quantile Normalization</h3>
 <p>Next we perform integrative non-negative matrix factorization in order to identify shared and distinct metagenes across the datasets and the corresponding metagene loadings for each cell. The most important parameters in the factorization are <code>k</code> (the number of factors) and <code>lambda</code> (the penalty parameter which limits the dataset-specific component of the factorization). The default value of <code>lambda=5.0</code> usually provides reasonable results for most analyses. For this analysis, we simply use <code>k = 20</code> and the default value of <code>lambda</code>.</p>
 <pre class="r"><code>int.pbmc &lt;- optimizeALS(int.pbmc, k=20)</code></pre>
 <p>After the factorization, we still need to quantile normalize the factor loadings across the datasets. Notice that if we plot a t-SNE representation of the factor loadings before normalization, the cells still cluster mainly by modality.</p>
@@ -252,7 +252,7 @@ print(p1[[1]])</code></pre>
 </div>
 <div id="visualization" class="section level3">
 <h3>Visualization</h3>
-<p>Now we can visualize the integrated data.</p>
+<p>Now we can visualize the integrated data using t-SNE. (Note that liger also has a runUMAP function if you prefer UMAP and a FItSNE option for larger datasets.)</p>
 <pre class="r"><code>int.pbmc &lt;- runTSNE(int.pbmc)
 plots &lt;- plotByDatasetAndCluster(int.pbmc, return.plots = T,clusters=rna_clusts) 
 print(plots[[1]])</code></pre>
