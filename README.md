@@ -34,7 +34,9 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 * [Basic commands tutorial](http://htmlpreview.github.io/?https://github.com/MacoskoLab/liger/blob/master/vignettes/liger-vignette.html)
 
-* [Walkthrough with two PBMC datasets](https://macoskolab.github.io/liger/walkthrough_pbmc.html)
+* [Integrating Multiple Single-Cell RNA-seq Datasets](https://macoskolab.github.io/liger/walkthrough_pbmc.html)
+
+* [Jointly Defining Cell Types from scRNA-seq and snATAC-seq](https://macoskolab.github.io/liger/walkthrough_rna_atac.html)
 
 * [Running Liger directly on Seurat objects using Seurat wrappers](https://htmlpreview.github.io/?https://github.com/satijalab/seurat.wrappers/blob/master/docs/liger.html)
 
