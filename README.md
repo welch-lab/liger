@@ -36,7 +36,7 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 * [Integrating Multiple Single-Cell RNA-seq Datasets](https://macoskolab.github.io/liger/walkthrough_pbmc.html)
 
-* [Jointly Defining Cell Types from scRNA-seq and snATAC-seq](https://github.com/MacoskoLab/liger/blob/master/vignettes/walkthrough_rna_atac.html)
+* [Jointly Defining Cell Types from scRNA-seq and snATAC-seq](https://macoskolab.github.io/liger/walkthrough_rna_atac.html)
 
 * [Running Liger directly on Seurat objects using Seurat wrappers](https://htmlpreview.github.io/?https://github.com/satijalab/seurat.wrappers/blob/master/docs/liger.html)
 
