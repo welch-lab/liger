@@ -33,7 +33,9 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 * [Basic commands tutorial](liger-vignette.html)
 
-* [Walkthrough with two PBMC datasets](walkthrough_pbmc.html)
+* [Integrating Multiple Single-Cell RNA-seq Datasets](walkthrough_pbmc.html)
+
+* [Jointly Defining Cell Types from scRNA-seq and snATAC-seq](walkthrough_rna_atac.html)
 
 * [Running Liger directly on Seurat objects using Seurat wrappers](https://htmlpreview.github.io/?https://github.com/satijalab/seurat.wrappers/blob/master/docs/liger.html)
 
