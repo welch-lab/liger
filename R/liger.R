@@ -3375,7 +3375,7 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
   }
   cluster1 <- cluster1[intersect(names(cluster1), names(cluster_consensus))]
   cluster2 <- cluster2[intersect(names(cluster2), names(cluster_consensus))]
-  cluster_consensus <- cluster_consensus[intersect(names(cluster1), names(cluster2))]
+
   # set node order
   if (identical(node.order, "auto")) {
     tab.1 <- table(cluster1, cluster_consensus[names(cluster1)])
