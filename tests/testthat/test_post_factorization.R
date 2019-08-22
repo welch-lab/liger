@@ -138,6 +138,16 @@ test_that("plotFeature returns correct ggplot objects", {
                'seqwell')
 })
 
+# Ensure that riverplot function runs 
+# TODO: Perhaps check graphics output with vdiffr to make this a real unit test
+seqwell_c <- factor(sapply(colnames(ligex@raw.data[[2]]), function(x) {
+  strsplit(x, "_")[[1]][1]
+}))
+tenx_c <- factor(rep("tenx", ncol(ligex@raw.data[[1]])))
+names(tenx_c) <- colnames(ligex@raw.data[[1]])
+
+makeRiverplot(ligex, tenx_c, seqwell_c, min.frac = 0.05)
+
 # Tests for subsetting, object conversion
 # Again, included here because these functions are object dependent (see above)
 ####################################################################################
