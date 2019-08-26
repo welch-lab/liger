@@ -242,6 +242,9 @@ getMode <- function(x, na.rm = FALSE) {
 }
 
 # utility function for seuratToLiger function
+# Compares colnames in reference matrix1 and adds back any missing 
+# column names to matrix.subset as rows 
+# Set transpose = T if rownames of matrix1 should be referenced
 addMissingCells <- function(matrix1, matrix.subset, transpose = F) {
   if (transpose) {
     matrix1 <- t(matrix1)
@@ -252,6 +255,55 @@ addMissingCells <- function(matrix1, matrix.subset, transpose = F) {
     colnames(extra) <- colnames(matrix.subset)
     rownames(extra) <- setdiff(colnames(matrix1), rownames(matrix.subset))
     matrix.subset <- rbind(matrix.subset, extra)
+    # get original order
+    matrix.subset <- matrix.subset[colnames(matrix1), ]
   }
   return(matrix.subset)
+}
+
+#' Get gene expression values from list of expression matrices.
+#'
+#' @description
+#' Returns single vector of gene values across all datasets in list provided. Data can be in raw, 
+#' normalized or scaled form. If matrices are in cell x gene format, set use.cols = T. 
+#'
+#' @param list List of gene x cell (or cell x gene) matrices
+#' @param gene Gene for which to return values (if gene is not found in appropriate dimnames will
+#'   return vector of NA).
+#' @param use.cols Whether to query columns for desired gene (set to TRUE if matrices are cell x 
+#'   gene) (default FALSE).
+#' @param methylation.indices Indices of datasets with methylation data (never log2scaled) 
+#'   (default NULL).
+#' @param log2scale Whether to log2+1 scale (with multiplicative factor) values (default FALSE).
+#' @param scale.factor Scale factor to use with log2 scaling (default 10000).
+#'
+#' @return Plots to console (1-2 pages per factor)
+#' @export
+#' @examples
+#' \dontrun{
+#'  # liger object with factorization complete
+#' ligerex
+#' gene_values <- getGeneValues(ligerex@raw.data, 'MALAT1')
+#' }
+
+getGeneValues <- function(list, gene, use.cols = F, methylation.indices = NULL, log2scale = F,
+                          scale.factor = 10000) {
+  gene_vals <- unlist(lapply(seq_along(list), function(i) {
+    mtx <- unname(list)[[i]]
+    if (use.cols) {
+      mtx <- t(mtx)
+    } 
+    if (gene %in% rownames(mtx)) {
+      gene_vals_int <- mtx[gene, ]
+    } else {
+      gene_vals_int <- rep(list(0), ncol(mtx))
+      names(gene_vals_int) <- colnames(mtx)
+    }
+    if (log2scale & !(i %in% methylation.indices)) {
+      gene_vals_int <- log2(scale.factor * gene_vals_int + 1)
+    } 
+    return(gene_vals_int)
+  }),
+  use.names = T)
+  return(gene_vals)
 }

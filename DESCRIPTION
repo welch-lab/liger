@@ -1,7 +1,7 @@
 Package: liger
 Type: Package
 Title: Linked Inference of Genomic Experimental Relationships
-Version: 0.4.2.9000
+Version: 0.4.2
 Date: 2018-04-09
 Author: Joshua Welch
 Maintainer: Joshua Welch <jwelch@broadinstitute.org>,
@@ -10,35 +10,39 @@ Description: Uses an extension of nonnegative matrix factorization to identify s
 License: GPL-3
 SystemRequirements: Java (>= 6)
 Imports: Rcpp (>= 0.12.10),
-     dplyr,
-     doSNOW,
-     FNN,
-     foreach,
-     ggplot2,
-     ggrepel,
-     grid,
-     Hmisc,
-     ica,
-     irlba,
-     mclust,
      plyr,
      Matrix,
+     cowplot,
+     FNN,
+     dplyr,
      RANN.L1,
-     riverplot,
+     grid,
+     ggrepel,
+     irlba,
+     ica,
      Rtsne,
-     snow
+     ggplot2,
+     riverplot,
+     Hmisc,
+     foreach,
+     snow,
+     doSNOW,
+     mclust,
+     patchwork
 Remotes: thomasp85/patchwork
 LinkingTo: Rcpp, RcppArmadillo
 Depends:
     cowplot,
+    Matrix,
     methods,
     patchwork
 RoxygenNote: 6.1.1
+Encoding: UTF-8
 Suggests:
     Seurat,
     knitr,
-    NNLM,
     reticulate,
     rmarkdown,
+    NNLM,
     testthat
 VignetteBuilder: knitr
