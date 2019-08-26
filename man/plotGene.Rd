@@ -65,6 +65,10 @@ mismatches in order (default NULL).}
 
 \item{return.plots}{Return ggplot objects instead of printing directly (default FALSE).}
 }
+\value{
+If returning single plot, returns ggplot object; if returning multiple plots; returns
+  list of ggplot objects.
+}
 \description{
 Generates plot of dimensional reduction coordinates (default t-SNE) colored by expression of 
 specified gene. Data can be scaled by dataset or selected feature column from cell.data (or across

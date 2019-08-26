@@ -158,3 +158,14 @@ test_that("Scaling is correct", {
   expect_equal(ligex@scale.data[[2]][3, 5], 1.253122, tolerance = 1e-6)
   expect_equal(ligex@scale.data[[2]][113, 115], 0.261834, tolerance = 1e-6)
 })
+
+# Tests for preliminary calculations
+##########################################################################################
+context('Calculating mitochondrial proportion')
+
+mito_prop <- getProportionMito(ligex)
+
+test_that("Values calculated correctly and names passed", {
+  expect_equal(unname(mito_prop[1:10]), rep(0, 10))
+  expect_equal(names(mito_prop), rownames(ligex@cell.data))
+})

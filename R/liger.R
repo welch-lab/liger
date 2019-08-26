@@ -3252,6 +3252,8 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' @param do.legend Display legend on plots (default TRUE).
 #' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
 #'
+#' @return If returning single plot, returns ggplot object; if returning multiple plots; returns
+#'   list of ggplot objects.
 #' @export
 #' @importFrom ggplot2 ggplot geom_point aes_string element_blank ggtitle labs 
 #' scale_color_viridis_c scale_color_gradientn theme
@@ -4399,7 +4401,7 @@ reorganizeLiger <- function(object, by.feature, keep.meta = T, new.label = "orig
     stop("Please select existing feature in cell.data to reorganize by, or add it before calling.")
   }
   if (!is.null(object@clusters)) {
-    object@cell.data[['orig.cluster']] <- object@clusters
+    object@cell.data[['orig.clusters']] <- object@clusters
   }
   orig.data <- object@cell.data
   colnames(orig.data)[colnames(orig.data) == "dataset"] <- new.label
