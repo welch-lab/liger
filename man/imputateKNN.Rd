@@ -32,6 +32,6 @@ ligerex <- normalize(ligerex)
 # select genes
 ligerex <- selectGenes(ligerex)
 ligerex <- scaleNotCenter(ligerex)
-ligerex <- imputateKNN(y_set, z_set, weight = TRUE)
+ligerex <- imputateKNN('y_set', 'z_set', weight = TRUE)
 }
 }

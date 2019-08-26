@@ -4493,7 +4493,7 @@ convertOldLiger = function(object, override.raw = F) {
 #' # select genes
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
-#' ligerex <- imputateKNN(y_set, z_set, weight = TRUE)
+#' ligerex <- imputateKNN('y_set', 'z_set', weight = TRUE)
 #' }
 
 imputateKNN <- function(object, knn_k = 50, reference, query, weight = FALSE) {
