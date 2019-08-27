@@ -36,6 +36,8 @@ ligerex <- normalize(ligerex)
 # select genes
 ligerex <- selectGenes(ligerex)
 ligerex <- scaleNotCenter(ligerex)
+ligerex = optimizeALS(ligerex, k = 20)
+ligerex = quantileAlignSNF(ligerex)
 # impute every dataset other than the reference dataset
 ligerex <- imputeKNN(ligerex, reference = 'y_set', weight = TRUE)
 # impute only z_set dataset
