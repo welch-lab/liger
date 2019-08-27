@@ -4,17 +4,17 @@
 \alias{imputateKNN}
 \title{Impute the query cell expression matrix}
 \usage{
-imputateKNN(object, knn_k = 50, reference, queries = "all",
+imputateKNN(object, reference, queries = "all", knn_k = 50,
   weight = FALSE)
 }
 \arguments{
 \item{object}{\code{liger} object.}
 
-\item{knn_k}{The maximum number of nearest neighbors to search. The default value is set to 50.}
-
 \item{reference}{Name of the reference data}
 
 \item{queries}{Names of the query data. The default value is 'all', but can also pass in a list of the names of the query datasets}
+
+\item{knn_k}{The maximum number of nearest neighbors to search. The default value is set to 50.}
 
 \item{weight}{Use KNN distances as weight matrix (default FALSE)}
 }
@@ -34,7 +34,7 @@ ligerex <- normalize(ligerex)
 # select genes
 ligerex <- selectGenes(ligerex)
 ligerex <- scaleNotCenter(ligerex)
-ligerex <- imputateKNN('y_set', weight = TRUE) # impute every dataset other than y_set
-ligerex <- imputateKNN('y_set', list('z_set'), weight = TRUE) # impute only z_set dataset
+ligerex <- imputateKNN(ligerex, reference = 'y_set', weight = TRUE) # impute every dataset other than the reference dataset
+ligerex <- imputateKNN(ligerex, reference = 'y_set', queries = list('z_set'), weight = TRUE) # impute only z_set dataset
 }
 }

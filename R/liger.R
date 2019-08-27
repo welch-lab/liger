@@ -4494,11 +4494,11 @@ convertOldLiger = function(object, override.raw = F) {
 #' # select genes
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
-#' ligerex <- imputateKNN('y_set', weight = TRUE) # impute every dataset other than y_set
-#' ligerex <- imputateKNN('y_set', list('z_set'), weight = TRUE) # impute only z_set dataset
+#' ligerex <- imputateKNN(ligerex, reference = 'y_set', weight = TRUE) # impute every dataset other than the reference dataset
+#' ligerex <- imputateKNN(ligerex, reference = 'y_set', queries = list('z_set'), weight = TRUE) # impute only z_set dataset
 #' }
 
-imputateKNN <- function(object, knn_k = 50, reference, queries = 'all', weight = FALSE) {
+imputateKNN <- function(object, reference, queries = 'all', knn_k = 50, weight = FALSE) {
   if (queries != 'all') {
     queries = as.list(queries)
   }
@@ -4507,22 +4507,24 @@ imputateKNN <- function(object, knn_k = 50, reference, queries = 'all', weight =
     queries = as.list(queries[!queries %in% reference])
   }
   
-  reference_cells = rownames(object@scale.data[[reference]]) #genes x cells 
+  reference_cells = rownames(object@scale.data[[reference]]) # cells by genes
   for (query in queries) {
     query_cells = rownames(object@scale.data[[query]])
     nn.k = get.knnx(object@H.norm[reference_cells,],object@H.norm[query_cells,],k=knn_k) #find nearest neighbors for query cell in normed ref datasets
-    imputed_vals = sapply(1:nrow(nn.k$nn.index),function(n){ # for each cell in the taeget dataset:
+    imputed_vals = sapply(1:nrow(nn.k$nn.index),function(n){ # for each cell in the target dataset:
       weights = nn.k$nn.dist[n,]
-      weights = weights/sum(weights)
-      imp = object@raw.data[[reference]][,nn.k$nn.index[n,]]
+      weights = as.matrix(weights/sum(weights))
+      imp = object@raw.data[[reference]][,nn.k$nn.index[n,]] # genes by cells, genes are from reference dataset
       if (weight) {
-        imp = imp*t(weight) #multiply by the weight matrix
+        imp = imp%*%weights # (genes by k) multiply by the weight matrix (k by 1)
       }
       else {
-        imp = rowMeans(imp) #simply get count the rowmeans
+        imp = rowMeans(imp) #simply count the rowmeans
       }
       return(imp)
     })
+    colnames(imputed_vals) = query_cells
+    rownames(imputed_vals) = rownames(object@raw.data[[reference]])
     object@impute.data[[query]] = imputed_vals
   }
   return(object)
