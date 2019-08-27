@@ -4478,7 +4478,7 @@ convertOldLiger = function(object, override.raw = F) {
 #' @param object \code{liger} object. 
 #' @param knn_k The maximum number of nearest neighbors to search. The default value is set to 50.
 #' @param reference Name of the reference data
-#' @param query Name of the query data
+#' @param queries Names of the query data. The default value is 'all', but can also pass in a list of the names of the query datasets
 #' @param weight Use KNN distances as weight matrix (default FALSE)
 #'
 #' @return \code{liger} object with impute.data slot set.
@@ -4488,32 +4488,42 @@ convertOldLiger = function(object, override.raw = F) {
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 #' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
+#' X<- matrix(c(1, 2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 6), nrow = 4, byrow = T)
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z, x_set = X))
 #' ligerex <- normalize(ligerex)
 #' # select genes
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
-#' ligerex <- imputateKNN('y_set', 'z_set', weight = TRUE)
+#' ligerex <- imputateKNN('y_set', weight = TRUE) # impute every dataset other than y_set
+#' ligerex <- imputateKNN('y_set', list('z_set'), weight = TRUE) # impute only z_set dataset
 #' }
 
-imputateKNN <- function(object, knn_k = 50, reference, query, weight = FALSE) {
-  reference_cells = rownames(object@scale.data[[reference]]) #genes x cells 
-  query_cells = rownames(object@scale.data[[query]])
+imputateKNN <- function(object, knn_k = 50, reference, queries = 'all', weight = FALSE) {
+  if (queries != 'all') {
+    queries = as.list(queries)
+  }
+  else {
+    queries = names(object@raw.data)
+    queries = as.list(queries[!queries %in% reference])
+  }
   
-  nn.k = get.knnx(object@H.norm[reference_cells,],object@H.norm[query_cells,],k=knn_k) #find nearest neighbors for query cell in H space
-  imputed_vals = sapply(1:nrow(nn.k$nn.index),function(n){ # for each cell in the taeget dataset:
-    weights = nn.k$nn.dist[n,]
-    weights = weights/sum(weights)
-    imp = object@raw.data[[reference]][,nn.k$nn.index[n,]]
-    if (weight) {
-       imp = imp*t(weight) #multiply by the weight matrix
-    }
-    else {
-       imp = rowMeans(imp) #simply get count the rowmeans
-    }
-    return(imp)
-  })
-  object@impute.data[[query]] = imputed_vals
+  reference_cells = rownames(object@scale.data[[reference]]) #genes x cells 
+  for (query in queries) {
+    query_cells = rownames(object@scale.data[[query]])
+    nn.k = get.knnx(object@H.norm[reference_cells,],object@H.norm[query_cells,],k=knn_k) #find nearest neighbors for query cell in normed ref datasets
+    imputed_vals = sapply(1:nrow(nn.k$nn.index),function(n){ # for each cell in the taeget dataset:
+      weights = nn.k$nn.dist[n,]
+      weights = weights/sum(weights)
+      imp = object@raw.data[[reference]][,nn.k$nn.index[n,]]
+      if (weight) {
+        imp = imp*t(weight) #multiply by the weight matrix
+      }
+      else {
+        imp = rowMeans(imp) #simply get count the rowmeans
+      }
+      return(imp)
+    })
+    object@impute.data[[query]] = imputed_vals
+  }
   return(object)
 }
-
