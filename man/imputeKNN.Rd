@@ -12,9 +12,11 @@ imputeKNN(object, reference, queries = "all", knn_k = 50,
 
 \item{reference}{Name of the reference data}
 
-\item{queries}{Names of the query data. The default value is 'all', but can also pass in a list of the names of the query datasets}
+\item{queries}{Names of the query data. The default value is 'all', 
+but can also pass in a list of the names of the query datasets}
 
-\item{knn_k}{The maximum number of nearest neighbors to search. The default value is set to 50.}
+\item{knn_k}{The maximum number of nearest neighbors to search. 
+The default value is set to 50.}
 
 \item{weight}{Use KNN distances as weight matrix (default FALSE)}
 }
@@ -34,7 +36,9 @@ ligerex <- normalize(ligerex)
 # select genes
 ligerex <- selectGenes(ligerex)
 ligerex <- scaleNotCenter(ligerex)
-ligerex <- imputeKNN(ligerex, reference = 'y_set', weight = TRUE) # impute every dataset other than the reference dataset
-ligerex <- imputeKNN(ligerex, reference = 'y_set', queries = list('z_set'), weight = TRUE) # impute only z_set dataset
+# impute every dataset other than the reference dataset
+ligerex <- imputeKNN(ligerex, reference = 'y_set', weight = TRUE)
+# impute only z_set dataset
+ligerex <- imputeKNN(ligerex, reference = 'y_set', queries = list('z_set'), weight = TRUE) 
 }
 }

@@ -4476,9 +4476,11 @@ convertOldLiger = function(object, override.raw = F) {
 #' Impute query features from a reference dataset using KNN.
 #'
 #' @param object \code{liger} object. 
-#' @param knn_k The maximum number of nearest neighbors to search. The default value is set to 50.
+#' @param knn_k The maximum number of nearest neighbors to search. 
+#'  The default value is set to 50.
 #' @param reference Name of the reference data
-#' @param queries Names of the query data. The default value is 'all', but can also pass in a list of the names of the query datasets
+#' @param queries Names of the query data. The default value is 'all', 
+#'  but can also pass in a list of the names of the query datasets
 #' @param weight Use KNN distances as weight matrix (default FALSE)
 #'
 #' @return \code{liger} object with impute.data slot set.
@@ -4494,8 +4496,10 @@ convertOldLiger = function(object, override.raw = F) {
 #' # select genes
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
-#' ligerex <- imputeKNN(ligerex, reference = 'y_set', weight = TRUE) # impute every dataset other than the reference dataset
-#' ligerex <- imputeKNN(ligerex, reference = 'y_set', queries = list('z_set'), weight = TRUE) # impute only z_set dataset
+#' # impute every dataset other than the reference dataset
+#' ligerex <- imputeKNN(ligerex, reference = 'y_set', weight = TRUE)
+#' # impute only z_set dataset
+#' ligerex <- imputeKNN(ligerex, reference = 'y_set', queries = list('z_set'), weight = TRUE) 
 #' }
 
 imputeKNN <- function(object, reference, queries = 'all', knn_k = 50, weight = FALSE) {
@@ -4510,7 +4514,8 @@ imputeKNN <- function(object, reference, queries = 'all', knn_k = 50, weight = F
   reference_cells = rownames(object@scale.data[[reference]]) # cells by genes
   for (query in queries) {
     query_cells = rownames(object@scale.data[[query]])
-    nn.k = get.knnx(object@H.norm[reference_cells,],object@H.norm[query_cells,],k=knn_k) #find nearest neighbors for query cell in normed ref datasets
+    #find nearest neighbors for query cell in normed ref datasets
+    nn.k = get.knnx(object@H.norm[reference_cells,],object@H.norm[query_cells,],k=knn_k)
     imputed_vals = sapply(1:nrow(nn.k$nn.index),function(n){ # for each cell in the target dataset:
       weights = nn.k$nn.dist[n,]
       weights = as.matrix(weights/sum(weights))
