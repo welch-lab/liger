@@ -4494,11 +4494,11 @@ convertOldLiger = function(object, override.raw = F) {
 #' # select genes
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
-#' ligerex <- imputateKNN(ligerex, reference = 'y_set', weight = TRUE) # impute every dataset other than the reference dataset
-#' ligerex <- imputateKNN(ligerex, reference = 'y_set', queries = list('z_set'), weight = TRUE) # impute only z_set dataset
+#' ligerex <- imputeKNN(ligerex, reference = 'y_set', weight = TRUE) # impute every dataset other than the reference dataset
+#' ligerex <- imputeKNN(ligerex, reference = 'y_set', queries = list('z_set'), weight = TRUE) # impute only z_set dataset
 #' }
 
-imputateKNN <- function(object, reference, queries = 'all', knn_k = 50, weight = FALSE) {
+imputeKNN <- function(object, reference, queries = 'all', knn_k = 50, weight = FALSE) {
   if (queries != 'all') {
     queries = as.list(queries)
   }
