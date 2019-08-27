@@ -4,7 +4,8 @@
 \alias{imputateKNN}
 \title{Impute the query cell expression matrix}
 \usage{
-imputateKNN(object, knn_k = 50, reference, query, weight = FALSE)
+imputateKNN(object, knn_k = 50, reference, queries = "all",
+  weight = FALSE)
 }
 \arguments{
 \item{object}{\code{liger} object.}
@@ -13,7 +14,7 @@ imputateKNN(object, knn_k = 50, reference, query, weight = FALSE)
 
 \item{reference}{Name of the reference data}
 
-\item{query}{Name of the query data}
+\item{queries}{Names of the query data. The default value is 'all', but can also pass in a list of the names of the query datasets}
 
 \item{weight}{Use KNN distances as weight matrix (default FALSE)}
 }
@@ -27,11 +28,13 @@ Impute query features from a reference dataset using KNN.
 \dontrun{
 Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-ligerex <- createLiger(list(y_set = Y, z_set = Z))
+X<- matrix(c(1, 2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 6), nrow = 4, byrow = T)
+ligerex <- createLiger(list(y_set = Y, z_set = Z, x_set = X))
 ligerex <- normalize(ligerex)
 # select genes
 ligerex <- selectGenes(ligerex)
 ligerex <- scaleNotCenter(ligerex)
-ligerex <- imputateKNN('y_set', 'z_set', weight = TRUE)
+ligerex <- imputateKNN('y_set', weight = TRUE) # impute every dataset other than y_set
+ligerex <- imputateKNN('y_set', list('z_set'), weight = TRUE) # impute only z_set dataset
 }
 }
