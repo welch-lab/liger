@@ -27,7 +27,8 @@
 #' @slot snf List of values associated with shared nearest factor matrix for use in clustering and
 #'   alignment (out.summary contains edge weight information between cell combinations)
 #' @slot agg.data Data aggregated within clusters
-#' @slot wilcoxon Data frame of Wilcoxon test output
+#' @slot wilcoxon.compare.datasets Data frame of Wilcoxon test output for comparing datasets
+#' @slot wilcoxon.compare.clusters Data frame of Wilcoxon test output for comparing clusters
 #' @slot parameters List of parameters used throughout analysis
 #' @slot version Version of package used to create object
 #'
@@ -55,7 +56,8 @@ liger <- methods::setClass(
     alignment.clusters = 'factor',
     clusters= "factor",
     agg.data = "list",
-    wilcoxon = "data.frame",
+    wilcoxon.compare.datasets = "data.frame",
+    wilcoxon.compare.clusters = "data.frame",
     parameters = "list",
     snf = 'list',
     version = 'ANY'
@@ -4287,12 +4289,13 @@ runJaccard <- function(object){
   return(object)
 }
 
+
 #' Analyze differential gene expression using presto's implementation of the Wilcoxon rank sum test.
 #' 
 #' @param object \code{liger} object. Should run quantileAlignSNF first 
-#' @param compare.datasets Split clusters by dataset of origin to compare differences in expression
+#' @param compare.datasets differential expression analysis for different datasets within in each cluster
 #'   (default TRUE)
-#' @param clusters A list of clusters to include for comparison (default NULL).
+#' @param compare.clusters differential expression analysis for different clusters (default TRUE).
 #'
 #' @return Updated \code{liger} object.
 #' @export
@@ -4305,67 +4308,145 @@ runJaccard <- function(object){
 #' ligerex <- calculateWilcoxon(ligerex)
 #' }
 #' 
-#' Analyze differential gene expression using presto's implementation of the Wilcoxon rank sum test.
-#' 
-#' @param object \code{liger} object. Should run quantileAlignSNF first 
-#' @param compare.datasets Split clusters by dataset of origin to compare differences in expression
-#'   (default TRUE)
-#' @param clusters A list of clusters to include for comparison (default NULL).
-#'
-#' @return Updated \code{liger} object.
-#' @export
-#' @importFrom presto wilcoxauc
-#' @examples
-#' \dontrun{
-#' # liger object, clustering complete 
-#' ligerex
-#' # fill wilcoxon slot with dataframe of information from presto's Wilcoxon rank sum test
-#' ligerex <- calculateWilcoxon(ligerex)
-#' }
-#' 
-calculateWilcoxon <- function(object, compare.datasets = TRUE, clusters = NULL){
+calculateWilcoxon <- function(object, compare.datasets = TRUE, compare.clusters = TRUE){
   if (!require("presto", quietly = TRUE)) {
-    stop("Package \"presto\" needed for this function to perform fast Wilcoxon rank sum test. Please install it.",
-         call. = FALSE
-    )
+    print("Package \"presto\" needed to perform fast Wilcoxon rank sum test. Installation started.")
+    library(devtools)
+    install_github('immunogenomics/presto')
   }
   
-  cluster_labels <- as.vector(object@clusters)
-  names(cluster_labels) <- rownames(as.data.frame(object@clusters))
-  if(compare.datasets == TRUE){
-    for(i in 1:length(object@scale.data)){
-      cluster_labels[rownames(object@scale.data[[i]])] <-
-        toupper(paste0(cluster_labels[rownames(object@scale.data[[i]])],"_",unlist(attributes(object@scale.data)[1])[i]))
+  clusterIDs = levels(object@clusters) # unique cluster labels
+  cell_clusterID = as.vector(object@clusters) # cluster label for each cell
+  cell_ID = rownames(as.data.frame(object@clusters)) # cell label
+  source_name = attributes(object@scale.data)$names # label of different datasets
+
+  num_source = length(source_name) # number of different datasets
+  num_clusters = length(clusterIDs) # number of clusters
+
+  all_seq = c()
+  cell_source = c()
+  for (i in 1:num_source){
+    all_seq = rbind(all_seq, object@scale.data[[i]])
+    cell_source = c(cell_source, rep(source_name[i], nrow(object@scale.data[[i]])))
+  }
+  cell_info = as.data.frame(cbind(cell_ID,cell_source,cell_clusterID))
+  names(cell_info) = c("cell_id","source","cluster_id")
+
+
+  ### compare datasets and/or clusters
+  if (compare.datasets == TRUE) {
+    wilcoxon_compare_datasets = c() # save all the test results
+  
+    for (i in 1:length(clusterIDs)){
+      cluster_i = cell_info[cell_info$cluster_id == clusterIDs[i], ]
+      seq_i = t(all_seq[rownames(all_seq) %in% cluster_i$cell_id, ]) # gene by cell matrix
+      wilcoxon_cluster_i = wilcoxauc(seq_i, cluster_i$source)
+      wilcoxon_cluster_i = cbind(rep(clusterIDs[i], nrow(wilcoxon_cluster_i)), wilcoxon_cluster_i)
+      wilcoxon_compare_datasets =  rbind(wilcoxon_compare_datasets, wilcoxon_cluster_i)
     }
-  }
-  cluster_labels = factor(cluster_labels)
   
-  #if clusters null, do for all, if cluster does not exist throw error
-  if(is.null(clusters)){
-    clusters = levels(cluster_labels)
-  } else if(is.numeric(clusters) && compare.datasets){
-    combinations <- expand.grid(clusters, unlist(attributes(object@scale.data)[1]))
-    for(i in 1:nrow(combinations)){
-      clusters[i] = toupper(paste0(combinations[i,1],"_",combinations[i,2]))
+    names(wilcoxon_compare_datasets)[1] = "cluster"
+    object@wilcoxon.compare.datasets = wilcoxon_compare_datasets
+  }
+
+  if (compare.clusters == TRUE) {
+    wilcoxon_compare_clusters = c() # save all the test results
+  
+    for (i in 1:num_clusters){
+      cluster_i_others = cell_info
+      cluster_i_others[cluster_i_others$cluster_id != clusterIDs[i], ]$cluster_id == "others"  
+      seq_ij = t(all_seq) # gene by cell matrix
+      wilcoxon_cluster_i = wilcoxauc(seq_ij, cluster_i_others$cluster_id)
+      wilcoxon_cluster_i = wilcoxon_cluster_i[wilcoxon_cluster_i$group == clusterIDs[i], ]
+      wilcoxon_compare_clusters =  rbind(wilcoxon_compare_clusters, wilcoxon_cluster_i)
     }
-  } else if(length(clusters)==1){
-    stop("Wilcoxon Rank Sum Test cannot be completed for one cluster. Please include 2 or more clusters.",
-         call = FALSE)
-  } else if(length(union(cluster_labels, clusters)) > length(unique(cluster_labels))){
-    stop("Selected clusters do not match clusters in data. Please limit your list to clusters in the data.",
-         call = FALSE)
+    object@wilcoxon.compare.clusters = wilcoxon_compare_clusters
   }
-  expression_mat = t(object@scale.data[[1]])
-  for (i in 2:length(object@scale.data)){
-    expression_mat <- cbind(expression_mat, t(object@scale.data[[i]]))
-  }
-  cluster_labels <- cluster_labels[cluster_labels %in% clusters]
-  expression_mat <- expression_mat[,names(cluster_labels)]
-  
-  object@wilcoxon <- wilcoxauc(expression_mat, cluster_labels)
-  
   return(object)
 }
+
+
+
+#' Generate heatmap for visulization of Wilconxon rank sum test results. Display top expressed genes for each cluster.
+#' 
+#' @param object \code{liger} object. After \code{calculateWilcoxon} is completed.
+#' @param num_top number of top expressed genes to be displayed (default=10)
+#' @return Updated \code{liger} object.
+#' @export
+#' @importFrom presto wilcoxauc
+#' @examples
+#' \dontrun{
+#' # liger object, Wilcoxon rank sum test complete 
+#' ligerex
+#' # fill wilcoxon slot with dataframe of information from presto's Wilcoxon rank sum test
+#' p <- plotWilcoxon(ligerex)
+#' }
+#' 
+plotWilcoxon <- function(object, num_top = 10){
+  clusterIDs = levels(object@clusters)
+  num_clusters = length(clusterIDs)
+  clusters = list()
+  top_genes = c() # store signature genes for each cluster
+
+  for (i in 1:num_clusters){
+    clusters[[i]] = wilcoxon_compare_clusters[wilcoxon_compare_clusters$group == clusterIDs[i], ]
+    clusters[[i]] = clusters[[i]][order(clusters[[i]]$padj), ]
+    names(clusters[[i]])[3] = paste("cluster_",clusterIDs[i], sep = "")
+    top_genes = union(top_genes, clusters[[i]][1:num_top, "feature"])
+  }
+
+  top_genes = data.frame(feature = top_genes)
+
+  clusters_expression = merge(top_genes, clusters[[1]][ ,c("feature", paste("cluster_","0", sep = ""))], by = "feature", by.x = T, sort=F)
+  
+  for (i in 2:num_clusters){
+    clusters_expression = merge(clusters_expression, clusters[[i]][ ,c("feature", paste("cluster_",clusterIDs[i], sep = ""))], 
+                              by = "feature", sort=F, no.dups = F)
+  }
+
+  expr_mat = as.matrix(clusters_expression[,-1])
+  rownames(expr_mat) = top_genes$feature
+
+  # Josh O'Brien @ http://stackoverflow.com/questions/15505607
+  draw_colnames_45 = function (coln, gaps, ...) {
+    coord = pheatmap:::find_coordinates(length(coln), gaps)
+    x = coord$coord - 0.5 * coord$size
+    res = grid::textGrob(coln, x = x, y = unit(1, "npc") - unit(3,"bigpts"),
+    vjust = 0.75, hjust = 1, rot = 45, gp = grid::gpar(...)
+    )
+    return(res)
+  }
+
+  assignInNamespace(
+    x = "draw_colnames",
+    value = "draw_colnames_45",
+    ns = asNamespace("pheatmap")
+  )
+
+  quantile_breaks <- function(mat, n = 10) {
+    breaks <- quantile(mat, probs = seq(0, 1, length.out = n))
+    breaks[!duplicated(breaks)]
+  }
+
+  mat_breaks <- quantile_breaks(expr_mat, n = 30)
+
+
+
+  pheatmap(expr_mat, 
+         cutree_cols = num_clusters,
+         breaks = mat_breaks,
+         #cluster_rows = FALSE, 
+         #cluster_cols = FALSE, 
+         treeheight_row = 0, 
+         treeheight_col = 0,
+         color = inferno(30),
+         #cex = 1.5,
+         legend = T,
+         fontsize = 8,
+         main = "Gene expression comparison among clusters")
+}
+
+
 
 #' Subset a dataframe produced by calculateWilcox by feature, dataset, or column
 #' 
