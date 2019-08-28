@@ -13,7 +13,6 @@ NULL
 #' @slot raw.data List of raw data matrices, one per experiment/dataset (genes by cells)
 #' @slot norm.data List of normalized matrices (genes by cells)
 #' @slot scale.data List of scaled matrices (cells by genes)
-#' @slot impute.data List of imputed matrices (genes by cells)
 #' @slot cell.data Dataframe of cell attributes across all datasets (nrows equal to total number
 #'   cells across all datasets)
 #' @slot var.genes Subset of informative genes shared across datasets to be used in matrix
@@ -45,7 +44,6 @@ liger <- methods::setClass(
     raw.data = "list",
     norm.data = "list",
     scale.data = "list",
-    impute.data = "list",
     cell.data = "data.frame",
     var.genes = "vector",
     H = "list",
@@ -4483,9 +4481,9 @@ convertOldLiger = function(object, override.raw = F) {
 #'  but can also pass in a list of the names of the query datasets
 #' @param weight Use KNN distances as weight matrix (default FALSE)
 #'
-#' @return \code{liger} object with impute.data slot set.
+#' @return list object containing all the imputed dataets
 #' @export
-#' @import FNN
+#' @importFrom FNN get.knnx
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -4504,14 +4502,15 @@ convertOldLiger = function(object, override.raw = F) {
 #' ligerex <- imputeKNN(ligerex, reference = 'y_set', queries = list('z_set'), weight = TRUE) 
 #' }
 
-imputeKNN <- function(object, reference, queries = 'all', knn_k = 50, weight = FALSE) {
-  if (queries != 'all') {
-    queries = as.list(queries)
-  }
-  else {
+imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FALSE) {
+  if (is.null(queries)){ # all datasets
     queries = names(object@raw.data)
     queries = as.list(queries[!queries %in% reference])
   }
+  else { # only given query datasets
+    queries = as.list(queries)
+  }
+  results = list()
   
   reference_cells = rownames(object@scale.data[[reference]]) # cells by genes
   for (query in queries) {
@@ -4532,7 +4531,7 @@ imputeKNN <- function(object, reference, queries = 'all', knn_k = 50, weight = F
     })
     colnames(imputed_vals) = query_cells
     rownames(imputed_vals) = rownames(object@raw.data[[reference]])
-    object@impute.data[[query]] = imputed_vals
+    results[[query]] = imputed_vals
   }
-  return(object)
+  return(results)
 }

@@ -223,4 +223,21 @@ test_that("Returns correct cell.data columns", {
   expect_true("protocol" %in% colnames(ligex_reorg@cell.data))
 })
        
-       
+
+# Tests for imputing query datasets
+# Since this function depends on the H.norm matrix, optimizeALS and quantileAlignSNF
+# should be performed before this test
+####################################################################################
+context("Imputing query datasets")
+
+imputation <- imputeKNN(ligex, reference = 'seqwell', weight = TRUE)
+
+test_that("List names and dimensions correctly", {
+  expect_equal(names(imputation), 'tenx')
+  expect_equal(dim(imputation[['tenx']]), c(6713, 244))
+})
+
+test_that("Dimensions are correct", {
+  expect_equal(imputation[['tenx']][1, 1:5], c(0.10605442, 0.11861770, 0.4252715, 0.08657738, 0.10173451))
+})
+

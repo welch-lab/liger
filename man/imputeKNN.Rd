@@ -4,7 +4,7 @@
 \alias{imputeKNN}
 \title{Impute the query cell expression matrix}
 \usage{
-imputeKNN(object, reference, queries = "all", knn_k = 50,
+imputeKNN(object, reference, queries = NULL, knn_k = 50,
   weight = FALSE)
 }
 \arguments{
@@ -21,7 +21,7 @@ The default value is set to 50.}
 \item{weight}{Use KNN distances as weight matrix (default FALSE)}
 }
 \value{
-\code{liger} object with impute.data slot set.
+list object containing all the imputed dataets
 }
 \description{
 Impute query features from a reference dataset using KNN.
