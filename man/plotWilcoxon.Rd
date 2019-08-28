@@ -12,7 +12,7 @@ plotWilcoxon(object, num_top = 10)
 \item{num_top}{number of top expressed genes to be displayed (default=10)}
 }
 \value{
-Updated \code{liger} object.
+a heatmap comparing the average expression values of selected top genes.
 }
 \description{
 Generate heatmap for visulization of Wilconxon rank sum test results. Display top expressed genes for each cluster.

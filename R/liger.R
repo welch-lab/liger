@@ -3793,6 +3793,88 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
   return(output_list)
 }
 
+
+
+#' Generate heatmap for visulization of Wilconxon rank sum test results. Display top expressed genes for each cluster.
+#' 
+#' @param object \code{liger} object. After \code{calculateWilcoxon} is completed.
+#' @param num_top number of top expressed genes to be displayed (default=10)
+#' @return a heatmap comparing the average expression values of selected top genes.
+#' @export
+#' @importFrom presto wilcoxauc
+#' @examples
+#' \dontrun{
+#' # liger object, Wilcoxon rank sum test complete 
+#' ligerex
+#' # fill wilcoxon slot with dataframe of information from presto's Wilcoxon rank sum test
+#' p <- plotWilcoxon(ligerex)
+#' }
+#' 
+plotWilcoxon <- function(object, num_top = 10){
+  clusterIDs = levels(object@clusters)
+  num_clusters = length(clusterIDs)
+  clusters = list()
+  top_genes = c() # store signature genes for each cluster
+  
+  for (i in 1:num_clusters){
+    clusters[[i]] = object@wilcoxon.compare.clusters[object@wilcoxon.compare.clusters$group == clusterIDs[i], ]
+    clusters[[i]] = clusters[[i]][order(clusters[[i]]$padj), ]
+    names(clusters[[i]])[3] = paste("cluster_",clusterIDs[i], sep = "")
+    top_genes = union(top_genes, clusters[[i]][1:num_top, "feature"])
+  }
+  
+  top_genes = data.frame(feature = top_genes)
+  
+  clusters_expression = merge(top_genes, clusters[[1]][ ,c("feature", paste("cluster_","0", sep = ""))], by = "feature", by.x = T, sort=F)
+  
+  for (i in 2:num_clusters){
+    clusters_expression = merge(clusters_expression, clusters[[i]][ ,c("feature", paste("cluster_",clusterIDs[i], sep = ""))], 
+                                by = "feature", sort=F)
+  }
+  
+  expr_mat = as.matrix(clusters_expression[,-1])
+  rownames(expr_mat) = top_genes$feature
+  
+  mat_breaks = quantile_breaks(expr_mat, n = 50)
+  
+  assignInNamespace(
+    x = "draw_colnames",
+    value = "liger:::draw_colnames_45",
+    ns = asNamespace("pheatmap")
+  )
+  
+  pheatmap(expr_mat, 
+           cutree_cols = num_clusters,
+           breaks = mat_breaks,
+           treeheight_row = 0, 
+           treeheight_col = 0,
+           color = inferno(n=50, direction = -1),
+           legend = T,
+           fontsize = 8,
+           main = "Expression (Avg) of Selected Genes")
+
+}
+
+# A function used to set up the plotWilcoxon
+# Credits to Josh O'Brien @ http://stackoverflow.com/questions/15505607
+
+draw_colnames_45 <- function (coln, gaps,...) {
+  coord = pheatmap:::find_coordinates(length(coln), gaps)
+  x = coord$coord - 0.5 * coord$size
+  res = grid::textGrob(coln, x = x, y = grid::unit(1, "npc") - grid::unit(3,"bigpts"),
+                       vjust = 0.75, hjust = 1, rot = 45, gp = grid::gpar(...)
+  )
+  return(res)
+}
+
+
+
+quantile_breaks <- function(mat, n = 10) {
+  breaks = quantile(mat, probs = seq(0, 1, length.out = n))
+  breaks[!duplicated(breaks)]
+}
+
+
 #######################################################################################
 #### Conversion/Transformation
 
@@ -4367,84 +4449,7 @@ calculateWilcoxon <- function(object, compare.datasets = TRUE, compare.clusters 
 
 
 
-#' Generate heatmap for visulization of Wilconxon rank sum test results. Display top expressed genes for each cluster.
-#' 
-#' @param object \code{liger} object. After \code{calculateWilcoxon} is completed.
-#' @param num_top number of top expressed genes to be displayed (default=10)
-#' @return Updated \code{liger} object.
-#' @export
-#' @importFrom presto wilcoxauc
-#' @examples
-#' \dontrun{
-#' # liger object, Wilcoxon rank sum test complete 
-#' ligerex
-#' # fill wilcoxon slot with dataframe of information from presto's Wilcoxon rank sum test
-#' p <- plotWilcoxon(ligerex)
-#' }
-#' 
-plotWilcoxon <- function(object, num_top = 10){
-  clusterIDs = levels(object@clusters)
-  num_clusters = length(clusterIDs)
-  clusters = list()
-  top_genes = c() # store signature genes for each cluster
 
-  for (i in 1:num_clusters){
-    clusters[[i]] = wilcoxon_compare_clusters[wilcoxon_compare_clusters$group == clusterIDs[i], ]
-    clusters[[i]] = clusters[[i]][order(clusters[[i]]$padj), ]
-    names(clusters[[i]])[3] = paste("cluster_",clusterIDs[i], sep = "")
-    top_genes = union(top_genes, clusters[[i]][1:num_top, "feature"])
-  }
-
-  top_genes = data.frame(feature = top_genes)
-
-  clusters_expression = merge(top_genes, clusters[[1]][ ,c("feature", paste("cluster_","0", sep = ""))], by = "feature", by.x = T, sort=F)
-  
-  for (i in 2:num_clusters){
-    clusters_expression = merge(clusters_expression, clusters[[i]][ ,c("feature", paste("cluster_",clusterIDs[i], sep = ""))], 
-                              by = "feature", sort=F, no.dups = F)
-  }
-
-  expr_mat = as.matrix(clusters_expression[,-1])
-  rownames(expr_mat) = top_genes$feature
-
-  # Josh O'Brien @ http://stackoverflow.com/questions/15505607
-  draw_colnames_45 = function (coln, gaps, ...) {
-    coord = pheatmap:::find_coordinates(length(coln), gaps)
-    x = coord$coord - 0.5 * coord$size
-    res = grid::textGrob(coln, x = x, y = unit(1, "npc") - unit(3,"bigpts"),
-    vjust = 0.75, hjust = 1, rot = 45, gp = grid::gpar(...)
-    )
-    return(res)
-  }
-
-  assignInNamespace(
-    x = "draw_colnames",
-    value = "draw_colnames_45",
-    ns = asNamespace("pheatmap")
-  )
-
-  quantile_breaks <- function(mat, n = 10) {
-    breaks <- quantile(mat, probs = seq(0, 1, length.out = n))
-    breaks[!duplicated(breaks)]
-  }
-
-  mat_breaks <- quantile_breaks(expr_mat, n = 30)
-
-
-
-  pheatmap(expr_mat, 
-         cutree_cols = num_clusters,
-         breaks = mat_breaks,
-         #cluster_rows = FALSE, 
-         #cluster_cols = FALSE, 
-         treeheight_row = 0, 
-         treeheight_col = 0,
-         color = inferno(30),
-         #cex = 1.5,
-         legend = T,
-         fontsize = 8,
-         main = "Gene expression comparison among clusters")
-}
 
 
 
