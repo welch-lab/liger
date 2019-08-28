@@ -4523,10 +4523,10 @@ imputeKNN <- function(object, reference, queries = 'all', knn_k = 50, weight = F
       weights = as.matrix(weights/sum(weights))
       imp = object@raw.data[[reference]][,nn.k$nn.index[n,]] # genes by cells, genes are from reference dataset
       if (weight) {
-        imp = imp%*%weights # (genes by k) multiply by the weight matrix (k by 1)
+        imp = as.matrix(imp%*%weights) # (genes by k) multiply by the weight matrix (k by 1)
       }
       else {
-        imp = rowMeans(imp) #simply count the rowmeans
+        imp = as.matrix(rowMeans(imp)) #simply count the rowmeans
       }
       return(imp)
     })
