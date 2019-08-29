@@ -38,6 +38,8 @@ matrix)}
 
 \item{\code{V}}{Dataset-specific gene loading factors (one matrix per dataset, dimensions k by genes)}
 
+\item{\code{jaccard}}{Holds Jaccard matrices for use in Louvain-Jaccard clustering and imputation}
+
 \item{\code{tsne.coords}}{Matrix of 2D coordinates obtained from running t-SNE on H.norm or H matrices}
 
 \item{\code{alignment.clusters}}{Initial joint cluster assignments from shared factor alignment}
@@ -48,6 +50,10 @@ matrix)}
 alignment (out.summary contains edge weight information between cell combinations)}
 
 \item{\code{agg.data}}{Data aggregated within clusters}
+
+\item{\code{wilcoxon.compare.datasets}}{Data frame of Wilcoxon test output for comparing datasets}
+
+\item{\code{wilcoxon.compare.clusters}}{Data frame of Wilcoxon test output for comparing clusters}
 
 \item{\code{parameters}}{List of parameters used throughout analysis}
 
