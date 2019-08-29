@@ -383,6 +383,8 @@ normalize <- function(object) {
 #' expression across genes and cells). Selected genes are plotted in green.
 #'
 #' @param object \code{liger} object. Should have already called normalize.
+#' @param numGenesPerDataset Number of genes to find for each dataset. Optimises the value of var.thresh
+#'   for each dataset to get this number of genes (optional, default=NULL)
 #' @param alpha.thresh Alpha threshold. Controls upper bound for expected mean gene expression
 #'   (lower threshold -> higher upper bound). (default 0.99)
 #' @param var.thresh Variance threshold. Main threshold used to identify variable genes. Genes with
@@ -415,7 +417,7 @@ normalize <- function(object) {
 #' ligerex <- selectGenes(ligerex, var.thresh=0.8)
 #' }
 
-selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1,
+selectGenes <- function(object, numGenesPerDataset = NULL, alpha.thresh = 0.99, var.thresh = 0.1,
                         datasets.use = 1:length(object@raw.data), combine = "union",
                         keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3) {
   # Expand if only single var.thresh passed
@@ -441,6 +443,22 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1,
     alphathresh.corrected <- alpha.thresh / nrow(object@raw.data[[i]])
     genemeanupper <- gene_expr_mean + qnorm(1 - alphathresh.corrected / 2) *
       sqrt(gene_expr_mean * nolan_constant / ncol(object@raw.data[[i]]))
+    
+    num_varGenes = function(x,numGenesPerDataset){
+      # This function returns the difference between the desired number of genes (numGenesPerDataset) and
+      #  the number actually obtained when thresholded on x
+      y = length(names(gene_expr_var)[which(gene_expr_var / nolan_constant > genemeanupper &
+                                   log10(gene_expr_var) > log10(gene_expr_mean) +
+                                   (log10(nolan_constant) + x))])
+      d = numGenesPerDataset-y
+      return(abs(d))
+    }
+    
+    if(!is.null(numGenesPerDataset)){
+      # Use optimisation function to find value of x which gives the desired number of genes for this dataset
+      var.thresh[i] = optimize(num_varGenes, c(0, 1), tol = 0.0001, numGenesPerDataset=numGenesPerDataset)$minimum
+    }
+    
     genes.new <- names(gene_expr_var)[which(gene_expr_var / nolan_constant > genemeanupper &
                                               log10(gene_expr_var) > log10(gene_expr_mean) +
                                               (log10(nolan_constant) + var.thresh[i]))]
