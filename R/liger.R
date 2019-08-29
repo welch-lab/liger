@@ -3839,7 +3839,7 @@ plotWilcoxon <- function(object, num_top = 10){
   
   assignInNamespace(
     x = "draw_colnames",
-    value = "liger:::draw_colnames_45",
+    value = draw_colnames_45,
     ns = asNamespace("pheatmap")
   )
   
@@ -3851,7 +3851,7 @@ plotWilcoxon <- function(object, num_top = 10){
            color = inferno(n=50, direction = -1),
            legend = T,
            fontsize = 8,
-           main = "Expression (Avg) of Selected Genes")
+           main = "Average Expression Value (Scaled) of Selected Genes")
 
 }
 
@@ -3868,7 +3868,7 @@ draw_colnames_45 <- function (coln, gaps,...) {
 }
 
 
-
+# A function used to set up the breaks in plotWilcoxon
 quantile_breaks <- function(mat, n = 10) {
   breaks = quantile(mat, probs = seq(0, 1, length.out = n))
   breaks[!duplicated(breaks)]

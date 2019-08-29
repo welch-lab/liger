@@ -37,8 +37,7 @@ Depends:
     cowplot,
     Matrix,
     methods,
-    patchwork,
-    grid
+    patchwork
 RoxygenNote: 6.1.1
 Suggests:
     Seurat,
