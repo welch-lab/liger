@@ -21,7 +21,7 @@ The default value is set to 50.}
 \item{weight}{Use KNN distances as weight matrix (default FALSE)}
 }
 \value{
-list object containing all the imputed dataets
+list object containing all the imputed dataets(genes by cells)
 }
 \description{
 Impute query features from a reference dataset using KNN.

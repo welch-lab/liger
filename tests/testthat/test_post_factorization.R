@@ -232,12 +232,13 @@ context("Imputing query datasets")
 
 imputation <- imputeKNN(ligex, reference = 'seqwell', weight = TRUE)
 
-test_that("List names and dimensions correctly", {
+test_that("List names and dimensions correct", {
   expect_equal(names(imputation), 'tenx')
-  expect_equal(dim(imputation[['tenx']]), c(6713, 244))
+  expect_equal(dim(imputation[['tenx']]), c(6712, 250))
 })
 
-test_that("Dimensions are correct", {
-  expect_equal(imputation[['tenx']][1, 1:5], c(0.10605442, 0.11861770, 0.4252715, 0.08657738, 0.10173451))
+test_that("Imputation results correct", {
+  expect_equivalent(imputation[['tenx']][1, 1:5], c(0.100934163, 0.101276286, 0.2445604407, 0.1012499851, 0.1010526404),
+               tolerance = 1e-8)
 })
 

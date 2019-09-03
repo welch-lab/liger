@@ -4481,7 +4481,7 @@ convertOldLiger = function(object, override.raw = F) {
 #'  but can also pass in a list of the names of the query datasets
 #' @param weight Use KNN distances as weight matrix (default FALSE)
 #'
-#' @return list object containing all the imputed dataets
+#' @return list object containing all the imputed dataets(genes by cells)
 #' @export
 #' @importFrom FNN get.knnx
 #' @examples
@@ -4519,7 +4519,7 @@ imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FA
     nn.k = get.knnx(object@H.norm[reference_cells,],object@H.norm[query_cells,],k=knn_k)
     imputed_vals = sapply(1:nrow(nn.k$nn.index),function(n){ # for each cell in the target dataset:
       weights = nn.k$nn.dist[n,]
-      weights = as.matrix(weights/sum(weights))
+      weights = as.matrix(exp(-weights)/sum(exp(-weights)))
       imp = object@raw.data[[reference]][,nn.k$nn.index[n,]] # genes by cells, genes are from reference dataset
       if (weight) {
         imp = as.matrix(imp%*%weights) # (genes by k) multiply by the weight matrix (k by 1)
