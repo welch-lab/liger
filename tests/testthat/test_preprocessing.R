@@ -136,6 +136,14 @@ test_that("Gives warning when no genes selected", {
                              combine = "intersection"))
 })
 
+# Keeping unique here would break iNMF later on but allows us to check number of genes
+ligex_higher <- selectGenes(ligex, num.genes = 950, keep.unique = T, datasets.use = 2)
+test_that("Returns same number of genes as requested", {
+  expect_equal(length(ligex_higher@var.genes), 950)
+})
+
+rm(ligex_intersect, ligex_higher)
+
 # Tests for gene scaling
 ##########################################################################################
 context('Gene scaling (no centering)')
