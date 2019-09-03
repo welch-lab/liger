@@ -28,7 +28,8 @@ Imports: Rcpp (>= 0.12.10),
      snow,
      doSNOW,
      mclust,
-     patchwork
+     patchwork,
+     stats
 Remotes: thomasp85/patchwork
 LinkingTo: Rcpp, RcppArmadillo
 Depends:

@@ -383,12 +383,16 @@ normalize <- function(object) {
 #' expression across genes and cells). Selected genes are plotted in green.
 #'
 #' @param object \code{liger} object. Should have already called normalize.
-#' @param alpha.thresh Alpha threshold. Controls upper bound for expected mean gene expression
-#'   (lower threshold -> higher upper bound). (default 0.99)
 #' @param var.thresh Variance threshold. Main threshold used to identify variable genes. Genes with
 #'   expression variance greater than threshold (relative to mean) are selected.
 #'   (higher threshold -> fewer selected genes). Accepts single value or vector with separate
 #'   var.thresh for each dataset. (default 0.1)
+#' @param alpha.thresh Alpha threshold. Controls upper bound for expected mean gene expression
+#'   (lower threshold -> higher upper bound). (default 0.99)
+#' @param num.genes Number of genes to find for each dataset. Optimises the value of var.thresh
+#'   for each dataset to get this number of genes. Accepts single value or vector with same length
+#'   as number of datasets (optional, default=NULL).
+#' @param tol Tolerance to use for optimization if num.genes values passed in (default 0.0001).
 #' @param datasets.use List of datasets to include for discovery of highly variable genes. 
 #'   (default 1:length(object@raw.data))
 #' @param combine How to combine variable genes across experiments. Either "union" or "intersect".
@@ -403,6 +407,7 @@ normalize <- function(object) {
 
 #' @return \code{liger} object with var.genes slot set.
 #' @export
+#' @importFrom stats optimize
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -415,12 +420,15 @@ normalize <- function(object) {
 #' ligerex <- selectGenes(ligerex, var.thresh=0.8)
 #' }
 
-selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1,
-                        datasets.use = 1:length(object@raw.data), combine = "union",
+selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes = NULL,
+                        tol = 0.0001, datasets.use = 1:length(object@raw.data), combine = "union",
                         keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3) {
   # Expand if only single var.thresh passed
   if (length(var.thresh) == 1) {
     var.thresh <- rep(var.thresh, length(object@raw.data))
+  }
+  if (length(num.genes) == 1) {
+    num.genes <- rep(num.genes, length(object@raw.data))
   }
   if (!identical(intersect(datasets.use, 1:length(object@raw.data)),datasets.use)) {
     datasets.use = intersect(datasets.use, 1:length(object@raw.data))
@@ -441,9 +449,31 @@ selectGenes <- function(object, alpha.thresh = 0.99, var.thresh = 0.1,
     alphathresh.corrected <- alpha.thresh / nrow(object@raw.data[[i]])
     genemeanupper <- gene_expr_mean + qnorm(1 - alphathresh.corrected / 2) *
       sqrt(gene_expr_mean * nolan_constant / ncol(object@raw.data[[i]]))
+    basegenelower <- log10(gene_expr_mean * nolan_constant)
+    
+    num_varGenes <- function(x, num.genes.des){
+      # This function returns the difference between the desired number of genes and
+      # the number actually obtained when thresholded on x
+      y <- length(which(gene_expr_var / nolan_constant > genemeanupper &
+                        log10(gene_expr_var) > basegenelower + x))
+      return(abs(num.genes.des - y))
+    }
+    
+    if (!is.null(num.genes)) {
+      # Optimize to find value of x which gives the desired number of genes for this dataset
+      # if very small number of genes requested, var.thresh may need to exceed 1
+      optimized <- optimize(num_varGenes, c(0, 1.5), tol = tol, 
+                            num.genes.des = num.genes[i])
+      var.thresh[i] <- optimized$minimum
+      if (optimized$objective > 1) {
+        warning(paste0("Returned number of genes for dataset ", i, " differs from requested by ",
+                       optimized$objective, ". Lower tol or alpha.thresh for better results."))
+      }
+    }
+    
     genes.new <- names(gene_expr_var)[which(gene_expr_var / nolan_constant > genemeanupper &
-                                              log10(gene_expr_var) > log10(gene_expr_mean) +
-                                              (log10(nolan_constant) + var.thresh[i]))]
+                                            log10(gene_expr_var) > basegenelower + var.thresh[i])]
+    
     if (do.plot) {
       plot(log10(gene_expr_mean), log10(gene_expr_var), cex = cex.use,
            xlab='Gene Expression Mean (log10)',

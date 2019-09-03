@@ -4,20 +4,27 @@
 \alias{selectGenes}
 \title{Select a subset of informative genes}
 \usage{
-selectGenes(object, alpha.thresh = 0.99, var.thresh = 0.1,
+selectGenes(object, var.thresh = 0.1, alpha.thresh = 0.99,
+  num.genes = NULL, tol = 1e-04,
   datasets.use = 1:length(object@raw.data), combine = "union",
   keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3)
 }
 \arguments{
 \item{object}{\code{liger} object. Should have already called normalize.}
 
-\item{alpha.thresh}{Alpha threshold. Controls upper bound for expected mean gene expression
-(lower threshold -> higher upper bound). (default 0.99)}
-
 \item{var.thresh}{Variance threshold. Main threshold used to identify variable genes. Genes with
 expression variance greater than threshold (relative to mean) are selected.
 (higher threshold -> fewer selected genes). Accepts single value or vector with separate
 var.thresh for each dataset. (default 0.1)}
+
+\item{alpha.thresh}{Alpha threshold. Controls upper bound for expected mean gene expression
+(lower threshold -> higher upper bound). (default 0.99)}
+
+\item{num.genes}{Number of genes to find for each dataset. Optimises the value of var.thresh
+for each dataset to get this number of genes. Accepts single value or vector with same length
+as number of datasets (optional, default=NULL).}
+
+\item{tol}{Tolerance to use for optimization if num.genes values passed in (default 0.0001).}
 
 \item{datasets.use}{List of datasets to include for discovery of highly variable genes. 
 (default 1:length(object@raw.data))}
