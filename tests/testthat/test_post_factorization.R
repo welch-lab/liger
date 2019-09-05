@@ -238,7 +238,7 @@ test_that("List names and dimensions correct", {
 })
 
 test_that("Imputation results correct", {
-  expect_equivalent(imputation[['tenx']][1, 1:5], c(0.100934163, 0.101276286, 0.2445604407, 0.1012499851, 0.1010526404),
+  expect_equivalent(imputation[['tenx']][1, 1:5], c(0.1010272982, 0.1480327620, 0.2882094083, 0.1549154381, 0.1010290263),
                tolerance = 1e-8)
 })
 

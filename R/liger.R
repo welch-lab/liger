@@ -4516,7 +4516,7 @@ imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FA
   for (query in queries) {
     query_cells = rownames(object@scale.data[[query]])
     #find nearest neighbors for query cell in normed ref datasets
-    nn.k = get.knnx(object@H.norm[reference_cells,],object@H.norm[query_cells,],k=knn_k)
+    nn.k = get.knnx(object@H.norm[reference_cells,],object@H.norm[query_cells,], k=knn_k, algorithm='CR')
     imputed_vals = sapply(1:nrow(nn.k$nn.index),function(n){ # for each cell in the target dataset:
       weights = nn.k$nn.dist[n,]
       weights = as.matrix(exp(-weights)/sum(exp(-weights)))
