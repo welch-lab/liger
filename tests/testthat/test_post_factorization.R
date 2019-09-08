@@ -230,15 +230,15 @@ test_that("Returns correct cell.data columns", {
 ####################################################################################
 context("Imputing query datasets")
 
-imputation <- imputeKNN(ligex, reference = 'seqwell', weight = TRUE)
+ligex <- imputeKNN(ligex, reference = 'seqwell', weight = TRUE)
 
 test_that("List names and dimensions correct", {
-  expect_equal(names(imputation), 'tenx')
-  expect_equal(dim(imputation[['tenx']]), c(6712, 250))
+  expect_equal(names(ligex@raw.data), c('tenx', 'seqwell'))
+  expect_equal(dim(ligex@raw.data[['tenx']]), c(6712, 250))
 })
 
 test_that("Imputation results correct", {
-  expect_equivalent(imputation[['tenx']][1, 1:5], c(0.1010272982, 0.1480327620, 0.2882094083, 0.1549154381, 0.1010290263),
+  expect_equivalent(ligex@raw.data[['tenx']][1, 1:5], c(0.1010272982, 0.1480327620, 0.2882094083, 0.1549154381, 0.1010290263),
                tolerance = 1e-8)
 })
 
