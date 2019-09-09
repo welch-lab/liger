@@ -5,23 +5,27 @@
 \title{Impute the query cell expression matrix}
 \usage{
 imputeKNN(object, reference, queries = NULL, knn_k = 50,
-  weight = FALSE)
+  weight = FALSE, norm = TRUE, scale = TRUE)
 }
 \arguments{
 \item{object}{\code{liger} object.}
 
 \item{reference}{Name of the reference data}
 
-\item{queries}{Names of the query data. The default value is 'all', 
+\item{queries}{Names of the query data. The default value is 'all',
 but can also pass in a list of the names of the query datasets}
 
-\item{knn_k}{The maximum number of nearest neighbors to search. 
+\item{knn_k}{The maximum number of nearest neighbors to search.
 The default value is set to 50.}
 
 \item{weight}{Use KNN distances as weight matrix (default FALSE)}
+
+\item{norm}{Whether normalize the imputed data with default parameters (default TRUE)}
+
+\item{scale}{Whether scale but not center the imputed data with default parameters (default TRUE)}
 }
 \value{
-list object containing all the imputed dataets(genes by cells)
+\code{liger} object with raw data in raw.data slot replaced by imputed data (genes by cells)
 }
 \description{
 Impute query features from a reference dataset using KNN.
@@ -30,17 +34,18 @@ Impute query features from a reference dataset using KNN.
 \dontrun{
 Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
 Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-X<- matrix(c(1, 2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 6), nrow = 4, byrow = T)
+X <- matrix(c(1, 2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 6), nrow = 4, byrow = T)
 ligerex <- createLiger(list(y_set = Y, z_set = Z, x_set = X))
 ligerex <- normalize(ligerex)
 # select genes
 ligerex <- selectGenes(ligerex)
 ligerex <- scaleNotCenter(ligerex)
-ligerex = optimizeALS(ligerex, k = 20)
-ligerex = quantileAlignSNF(ligerex)
+ligerex <- optimizeALS(ligerex, k = 20)
+ligerex <- quantileAlignSNF(ligerex)
 # impute every dataset other than the reference dataset
-ligerex <- imputeKNN(ligerex, reference = 'y_set', weight = TRUE)
+ligerex <- imputeKNN(ligerex, reference = "y_set", weight = TRUE)
 # impute only z_set dataset
-ligerex <- imputeKNN(ligerex, reference = 'y_set', queries = list('z_set'), weight = TRUE) 
+ligerex <- imputeKNN(ligerex, reference = "y_set", queries = list("z_set"), weight = TRUE)
 }
+
 }
