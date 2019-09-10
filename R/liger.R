@@ -2023,8 +2023,17 @@ imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FA
     })
     colnames(imputed_vals) <- query_cells
     rownames(imputed_vals) <- rownames(object@raw.data[[reference]])
+    # formatiing the matrix
+    if (class(object@raw.data[[reference]])[1] == "dgTMatrix" |
+        class(object@raw.data[[reference]])[1] == "dgCMatrix") {
+      imputed_vals <- as(imputed_vals, "dgCMatrix")
+    } else {
+      imputed_vals <- as.matrix(imputed_vals)
+    }
+    
     object@raw.data[[query]] <- imputed_vals
   }
+  
   if (norm == TRUE) {
     cat('\nNormalizing data...\n')
     object <- normalize(object)
