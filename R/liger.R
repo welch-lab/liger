@@ -2034,11 +2034,11 @@ imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FA
     object@raw.data[[query]] <- imputed_vals
   }
   
-  if (norm == TRUE) {
+  if (norm) {
     cat('\nNormalizing data...\n')
     object <- normalize(object)
   }
-  if (scale == TRUE) {
+  if (scale) {
     cat('Scaling (but not centering) data...')
     object <- scaleNotCenter(object)
   }
