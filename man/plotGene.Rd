@@ -5,7 +5,7 @@
 \title{Plot gene expression on dimensional reduction (t-SNE) coordinates}
 \usage{
 plotGene(object, gene, use.raw = F, use.scaled = F,
-  scale.by = "dataset", methylation.indices = NULL,
+  scale.by = "dataset", log2scale = NULL, methylation.indices = NULL,
   plot.by = "dataset", set.dr.lims = F, pt.size = 0.1,
   min.clip = NULL, max.clip = NULL, clip.absolute = F,
   points.only = F, option = "plasma", cols.use = NULL,
@@ -24,6 +24,9 @@ plotGene(object, gene, use.raw = F, use.scaled = F,
 
 \item{scale.by}{Grouping of cells by which to scale gene (can be any factor column in cell.data
 or 'none' for scaling across all cells) (default 'dataset').}
+
+\item{log2scale}{Whether to show log2 transformed values or original normalized, raw, or scaled 
+values (as stored in object). Default value is FALSE if use.raw = T, otherwise TRUE.}
 
 \item{methylation.indices}{Indices of datasets in object with methylation data (this data is not
 log transformed and must use normalized values). (default NULL)}

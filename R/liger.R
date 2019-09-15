@@ -3255,6 +3255,8 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #'   (default FALSE).
 #' @param scale.by Grouping of cells by which to scale gene (can be any factor column in cell.data
 #'   or 'none' for scaling across all cells) (default 'dataset').
+#' @param log2scale Whether to show log2 transformed values or original normalized, raw, or scaled 
+#'   values (as stored in object). Default value is FALSE if use.raw = T, otherwise TRUE.
 #' @param methylation.indices Indices of datasets in object with methylation data (this data is not
 #'   log transformed and must use normalized values). (default NULL)
 #' @param plot.by How to group cells for plotting (can be any factor column in cell.data or 'none' 
@@ -3285,6 +3287,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' @return If returning single plot, returns ggplot object; if returning multiple plots; returns
 #'   list of ggplot objects.
 #' @export
+#' @importFrom dplyr %>% group_by mutate_at vars group_cols
 #' @importFrom ggplot2 ggplot geom_point aes_string element_blank ggtitle labs 
 #' scale_color_viridis_c scale_color_gradientn theme
 #' @importFrom stats quantile
@@ -3298,50 +3301,53 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' }
 
 plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'dataset', 
-                     methylation.indices = NULL, plot.by = 'dataset', set.dr.lims = F, 
-                     pt.size = 0.1, min.clip = NULL, max.clip = NULL, clip.absolute = F, 
-                     points.only = F, option = 'plasma', cols.use = NULL, zero.color = '#F5F5F5', 
-                     axis.labels = NULL, do.legend = T, return.plots = F) {
+                     log2scale = NULL, methylation.indices = NULL, plot.by = 'dataset', 
+                     set.dr.lims = F, pt.size = 0.1, min.clip = NULL, max.clip = NULL, 
+                     clip.absolute = F, points.only = F, option = 'plasma', cols.use = NULL, 
+                     zero.color = '#F5F5F5', axis.labels = NULL, do.legend = T, return.plots = F) {
   if ((plot.by != scale.by) & (use.scaled)) {
     warning("Provided values for plot.by and scale.by do not match; results may not be very
             interpretable.")
   }
   if (use.raw) {
+    if (is.null(log2scale)) {
+      log2scale <- FALSE
+    }
     # drop only outer level names
-    gene_vals <- getGeneValues(object@raw.data, gene)
+    gene_vals <- getGeneValues(object@raw.data, gene, log2scale = log2scale)
   } else {
+    if (is.null(log2scale)) {
+      log2scale <- TRUE
+    }
+    # rescale in case requested gene not highly variable
     if (use.scaled) {
-      if (scale.by != 'dataset') {
-        # check for feature 
-        if (!(scale.by %in% colnames(object@cell.data)) & scale.by != 'none') {
-          stop("Please select existing feature in cell.data to scale.by, or add it before calling.")
-        }
-        # have to rescale in this case 
-        gene_vals <- getGeneValues(object@norm.data, gene)
-        cellnames <- names(gene_vals)
-        # set up dataframe with groups
-        gene_df <- data.frame(gene = gene_vals)
-        if (scale.by == 'none') {
-          gene_df[['scaleby']] = 'none'
-        } else {
-          gene_df[['scaleby']] = factor(object@cell.data[[scale.by]])
-        }
-        # using dplyr
-        gene_df1 <- gene_df %>%
-          group_by(scaleby) %>%
-          # scale by selected feature
-          mutate_at(vars(-group_cols()), function(x) { scale(x, center = F)})
-        gene_vals <- gene_df1$gene
-        names(gene_vals) <- cellnames
+      # check for feature 
+      if (!(scale.by %in% colnames(object@cell.data)) & scale.by != 'none') {
+        stop("Please select existing feature in cell.data to scale.by, or add it before calling.")
+      }
+      gene_vals <- getGeneValues(object@norm.data, gene)
+      cellnames <- names(gene_vals)
+      # set up dataframe with groups
+      gene_df <- data.frame(gene = gene_vals)
+      if (scale.by == 'none') {
+        gene_df[['scaleby']] = 'none'
       } else {
-        # remember to use cols instead
-        gene_vals <- getGeneValues(object@scale.data, gene, use.cols = T, log2scale = T)
+        gene_df[['scaleby']] = factor(object@cell.data[[scale.by]])
+      }
+      gene_df1 <- gene_df %>%
+        group_by(scaleby) %>%
+        # scale by selected feature
+        mutate_at(vars(-group_cols()), function(x) { scale(x, center = F)})
+      gene_vals <- gene_df1$gene
+      names(gene_vals) <- cellnames
+      if (log2scale) {
+        gene_vals <- log2(10000 * gene_vals + 1)
       }
     } else {
       # using normalized data
       # indicate methylation indices here 
       gene_vals <- getGeneValues(object@norm.data, gene, methylation.indices = methylation.indices,
-                                 log2scale = T)
+                                 log2scale = log2scale)
     }
   }
   gene_vals[gene_vals == 0] <- NA
