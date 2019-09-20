@@ -1967,6 +1967,116 @@ SNF.liger <- function(
   return(object)
 }
 
+#' Impute the query cell expression matrix
+#'
+#' Impute query features from a reference dataset using KNN.
+#'
+#' @param object \code{liger} object.
+#' @param knn_k The maximum number of nearest neighbors to search.
+#'  The default value is set to 50.
+#' @param reference Name of the reference data
+#' @param queries Names of the query data. The default value is 'all',
+#'  but can also pass in a list of the names of the query datasets
+#' @param weight Use KNN distances as weight matrix (default FALSE)
+#' @param norm Whether normalize the imputed data with default parameters (default TRUE)
+#' @param scale Whether scale but not center the imputed data with default parameters (default TRUE)
+#'
+#' @return \code{liger} object with raw data in raw.data slot replaced by imputed data (genes by cells)
+#' @export
+#' @importFrom FNN get.knnx
+#' @examples
+#' \dontrun{
+#' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+#' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+#' X <- matrix(c(1, 2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 6), nrow = 4, byrow = T)
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z, x_set = X))
+#' ligerex <- normalize(ligerex)
+#' # select genes
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' ligerex <- optimizeALS(ligerex, k = 20)
+#' ligerex <- quantileAlignSNF(ligerex)
+#' # impute every dataset other than the reference dataset
+#' ligerex <- imputeKNN(ligerex, reference = "y_set", weight = TRUE)
+#' # impute only z_set dataset
+#' ligerex <- imputeKNN(ligerex, reference = "y_set", queries = list("z_set"), weight = TRUE)
+#' }
+#'
+imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FALSE, norm = TRUE, scale = TRUE) {
+  cat("Warning:\nThis function will discard the raw data previously stored in the liger object and replace the raw.data slot with the imputed data.\n\n")
+  if (length(reference) > 1) {
+    stop("Invalid reference dataset: Can only have ONE reference dataset")
+  }
+  if (is.null(queries)) { # all datasets
+    queries <- names(object@raw.data)
+    queries <- as.list(queries[!queries %in% reference])
+    cat(
+      "Imputing ALL the datasets except the reference dataset\n",
+      "Reference dataset:\n",
+      paste("  ", reference, "\n"),
+      "Query datasets:\n",
+      paste("  ", as.character(queries), "\n")
+      )
+  }
+  else { # only given query datasets
+    queries <- as.list(queries)
+    if (reference %in% queries) {
+      stop("Invalid query datasets: Reference dataset CANNOT be inclued in the query datasets")
+    }
+    else {
+      cat(
+        "Imputing given query datasets\n",
+        "Reference dataset:\n",
+        paste("  ", reference, "\n"),
+        "Query datasets:\n",
+        paste("  ", as.character(queries), "\n")
+        )
+    }
+    }
+  
+  reference_cells <- rownames(object@scale.data[[reference]]) # cells by genes
+  for (query in queries) {
+    query_cells <- rownames(object@scale.data[[query]])
+    # find nearest neighbors for query cell in normed ref datasets
+    nn.k <- get.knnx(object@H.norm[reference_cells, ], object@H.norm[query_cells, ], k = knn_k, algorithm = "CR")
+    imputed_vals <- sapply(1:nrow(nn.k$nn.index), function(n) { # for each cell in the target dataset:
+      weights <- nn.k$nn.dist[n, ]
+      weights <- as.matrix(exp(-weights) / sum(exp(-weights)))
+      imp <- object@raw.data[[reference]][, nn.k$nn.index[n, ]] # genes by cells, genes are from reference dataset
+      if (weight) {
+        imp <- as.matrix(imp %*% weights) # (genes by k) multiply by the weight matrix (k by 1)
+      }
+      else {
+        imp <- as.matrix(rowMeans(imp)) # simply count the rowmeans
+      }
+      return(imp)
+    })
+    colnames(imputed_vals) <- query_cells
+    rownames(imputed_vals) <- rownames(object@raw.data[[reference]])
+    # formatiing the matrix
+    if (class(object@raw.data[[reference]])[1] == "dgTMatrix" |
+        class(object@raw.data[[reference]])[1] == "dgCMatrix") {
+      imputed_vals <- as(imputed_vals, "dgCMatrix")
+    } else {
+      imputed_vals <- as.matrix(imputed_vals)
+    }
+    
+    object@raw.data[[query]] <- imputed_vals
+  }
+  
+  if (norm) {
+    cat('\nNormalizing data...\n')
+    object <- normalize(object)
+  }
+  if (scale) {
+    cat('Scaling (but not centering) data...')
+    object <- scaleNotCenter(object)
+  }
+  
+  return(object)
+  }
+
+
 #######################################################################################
 #### Dimensionality Reduction
 
