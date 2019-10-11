@@ -1645,6 +1645,9 @@ quantileAlignSNF.list <- function(
     set.seed(seed = NULL)
     id.number <- sample(x = 1000000:9999999, size = 1)
   }
+  is.defined <- function(sym) class(try(sym, TRUE))!='try-error'
+  if(!is.defined(resolution)){stop("'resolution' is not properly defined")}
+  if(!is.finite(resolution)){stop("'resolution' is not properly defined")}
   idents <- snf$idents
   Hs <- object
   idents.rest <- SLMCluster(
