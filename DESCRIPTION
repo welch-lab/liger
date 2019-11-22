@@ -37,7 +37,7 @@ Depends:
     Matrix,
     methods,
     patchwork
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.0
 Encoding: UTF-8
 Suggests:
     Seurat,

@@ -4,13 +4,28 @@
 \alias{plotGene}
 \title{Plot gene expression on dimensional reduction (t-SNE) coordinates}
 \usage{
-plotGene(object, gene, use.raw = F, use.scaled = F,
-  scale.by = "dataset", log2scale = NULL, methylation.indices = NULL,
-  plot.by = "dataset", set.dr.lims = F, pt.size = 0.1,
-  min.clip = NULL, max.clip = NULL, clip.absolute = F,
-  points.only = F, option = "plasma", cols.use = NULL,
-  zero.color = "#F5F5F5", axis.labels = NULL, do.legend = T,
-  return.plots = F)
+plotGene(
+  object,
+  gene,
+  use.raw = F,
+  use.scaled = F,
+  scale.by = "dataset",
+  log2scale = NULL,
+  methylation.indices = NULL,
+  plot.by = "dataset",
+  set.dr.lims = F,
+  pt.size = 0.1,
+  min.clip = NULL,
+  max.clip = NULL,
+  clip.absolute = F,
+  points.only = F,
+  option = "plasma",
+  cols.use = NULL,
+  zero.color = "#F5F5F5",
+  axis.labels = NULL,
+  do.legend = T,
+  return.plots = F
+)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call runTSNE before calling.}

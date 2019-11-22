@@ -4,8 +4,15 @@
 \alias{imputeKNN}
 \title{Impute the query cell expression matrix}
 \usage{
-imputeKNN(object, reference, queries = NULL, knn_k = 50,
-  weight = FALSE, norm = TRUE, scale = TRUE)
+imputeKNN(
+  object,
+  reference,
+  queries = NULL,
+  knn_k = 20,
+  weight = TRUE,
+  norm = TRUE,
+  scale = FALSE
+)
 }
 \arguments{
 \item{object}{\code{liger} object.}
@@ -16,13 +23,13 @@ imputeKNN(object, reference, queries = NULL, knn_k = 50,
 but can also pass in a list of the names of the query datasets}
 
 \item{knn_k}{The maximum number of nearest neighbors to search.
-The default value is set to 50.}
+The default value is set to 20.}
 
-\item{weight}{Use KNN distances as weight matrix (default FALSE)}
+\item{weight}{Use KNN distances as weight matrix (default TRUE)}
 
 \item{norm}{Whether normalize the imputed data with default parameters (default TRUE)}
 
-\item{scale}{Whether scale but not center the imputed data with default parameters (default TRUE)}
+\item{scale}{Whether scale but not center the imputed data with default parameters (default FALSE)}
 }
 \value{
 \code{liger} object with raw data in raw.data slot replaced by imputed data (genes by cells)

@@ -230,7 +230,7 @@ test_that("Returns correct cell.data columns", {
 ####################################################################################
 context("Imputing query datasets")
 
-ligex <- imputeKNN(ligex, reference = 'seqwell', weight = TRUE)
+ligex <- imputeKNN(ligex, reference = 'seqwell', knn_k = 50, weight = TRUE, scale = TRUE)
 
 test_that("List names and dimensions correct", {
   expect_equal(names(ligex@raw.data), c('tenx', 'seqwell'))

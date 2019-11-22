@@ -4,9 +4,17 @@
 \alias{runTSNE}
 \title{Perform t-SNE dimensionality reduction}
 \usage{
-runTSNE(object, use.raw = F, dims.use = 1:ncol(object@H.norm),
-  use.pca = F, perplexity = 30, theta = 0.5, method = "Rtsne",
-  fitsne.path = NULL, rand.seed = 42)
+runTSNE(
+  object,
+  use.raw = F,
+  dims.use = 1:ncol(object@H.norm),
+  use.pca = F,
+  perplexity = 30,
+  theta = 0.5,
+  method = "Rtsne",
+  fitsne.path = NULL,
+  rand.seed = 42
+)
 }
 \arguments{
 \item{object}{\code{liger} object. Should run quantileAlignSNF before calling with defaults.}

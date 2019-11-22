@@ -4,11 +4,25 @@
 \alias{plotFeature}
 \title{Plot specific feature on t-SNE coordinates}
 \usage{
-plotFeature(object, feature, by.dataset = T, discrete = NULL,
-  title = NULL, pt.size = 0.3, text.size = 3, do.shuffle = T,
-  rand.seed = 1, do.labels = F, axis.labels = NULL, do.legend = T,
-  legend.size = 5, option = "plasma", cols.use = NULL,
-  zero.color = "#F5F5F5", return.plots = F)
+plotFeature(
+  object,
+  feature,
+  by.dataset = T,
+  discrete = NULL,
+  title = NULL,
+  pt.size = 0.3,
+  text.size = 3,
+  do.shuffle = T,
+  rand.seed = 1,
+  do.labels = F,
+  axis.labels = NULL,
+  do.legend = T,
+  legend.size = 5,
+  option = "plasma",
+  cols.use = NULL,
+  zero.color = "#F5F5F5",
+  return.plots = F
+)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call runTSNE or runUMAP before calling.}

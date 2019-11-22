@@ -8,13 +8,27 @@
 \usage{
 SNF(object, ...)
 
-\method{SNF}{list}(object, dims.use = 1:ncol(x = object[[1]]),
-  dist.use = "CR", center = FALSE, knn_k = 20, k2 = 500,
-  small.clust.thresh = knn_k, ...)
+\method{SNF}{list}(
+  object,
+  dims.use = 1:ncol(x = object[[1]]),
+  dist.use = "CR",
+  center = FALSE,
+  knn_k = 20,
+  k2 = 500,
+  small.clust.thresh = knn_k,
+  ...
+)
 
-\method{SNF}{liger}(object, dims.use = 1:ncol(x = object@H[[1]]),
-  dist.use = "CR", center = FALSE, knn_k = 20, k2 = 500,
-  small.clust.thresh = knn_k, ...)
+\method{SNF}{liger}(
+  object,
+  dims.use = 1:ncol(x = object@H[[1]]),
+  dist.use = "CR",
+  center = FALSE,
+  knn_k = 20,
+  k2 = 500,
+  small.clust.thresh = knn_k,
+  ...
+)
 }
 \arguments{
 \item{...}{Arguments passed to and from other methods}

@@ -1973,13 +1973,13 @@ SNF.liger <- function(
 #'
 #' @param object \code{liger} object.
 #' @param knn_k The maximum number of nearest neighbors to search.
-#'  The default value is set to 50.
+#'  The default value is set to 20.
 #' @param reference Name of the reference data
 #' @param queries Names of the query data. The default value is 'all',
 #'  but can also pass in a list of the names of the query datasets
-#' @param weight Use KNN distances as weight matrix (default FALSE)
+#' @param weight Use KNN distances as weight matrix (default TRUE)
 #' @param norm Whether normalize the imputed data with default parameters (default TRUE)
-#' @param scale Whether scale but not center the imputed data with default parameters (default TRUE)
+#' @param scale Whether scale but not center the imputed data with default parameters (default FALSE)
 #'
 #' @return \code{liger} object with raw data in raw.data slot replaced by imputed data (genes by cells)
 #' @export
@@ -2002,7 +2002,7 @@ SNF.liger <- function(
 #' ligerex <- imputeKNN(ligerex, reference = "y_set", queries = list("z_set"), weight = TRUE)
 #' }
 #'
-imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FALSE, norm = TRUE, scale = TRUE) {
+imputeKNN <- function(object, reference, queries = NULL, knn_k = 20, weight = TRUE, norm = TRUE, scale = FALSE) {
   cat("Warning:\nThis function will discard the raw data previously stored in the liger object and replace the raw.data slot with the imputed data.\n\n")
   if (length(reference) > 1) {
     stop("Invalid reference dataset: Can only have ONE reference dataset")
@@ -2016,7 +2016,7 @@ imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FA
       paste("  ", reference, "\n"),
       "Query datasets:\n",
       paste("  ", as.character(queries), "\n")
-      )
+    )
   }
   else { # only given query datasets
     queries <- as.list(queries)
@@ -2030,29 +2030,35 @@ imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FA
         paste("  ", reference, "\n"),
         "Query datasets:\n",
         paste("  ", as.character(queries), "\n")
-        )
+      )
     }
-    }
+  }
   
   reference_cells <- rownames(object@scale.data[[reference]]) # cells by genes
   for (query in queries) {
     query_cells <- rownames(object@scale.data[[query]])
-    # find nearest neighbors for query cell in normed ref datasets
-    nn.k <- get.knnx(object@H.norm[reference_cells, ], object@H.norm[query_cells, ], k = knn_k, algorithm = "CR")
-    imputed_vals <- sapply(1:nrow(nn.k$nn.index), function(n) { # for each cell in the target dataset:
-      weights <- nn.k$nn.dist[n, ]
-      weights <- as.matrix(exp(-weights) / sum(exp(-weights)))
-      imp <- object@raw.data[[reference]][, nn.k$nn.index[n, ]] # genes by cells, genes are from reference dataset
-      if (weight) {
-        imp <- as.matrix(imp %*% weights) # (genes by k) multiply by the weight matrix (k by 1)
+    
+    # creating a (reference cell numbers X query cell numbers) weights matrix for knn weights and unit weights
+    weights <- Matrix(0, nrow = ncol(object@raw.data[[reference]]), ncol = ncol(object@raw.data[[query]]), sparse = TRUE)
+    if (weight){ # for weighted situation
+      # find nearest neighbors for query cell in normed ref datasets
+      nn.k <- get.knnx(object@H.norm[reference_cells, ], object@H.norm[query_cells, ], k = knn_k, algorithm = "CR")
+      for (n in 1:nrow(nn.k$nn.index)) { # record ref-query cell-cell distances
+        weights[nn.k$nn.index[n, ], n] <- exp(-nn.k$nn.dist[n, ]) / sum(exp(-nn.k$nn.dist[n, ]))
       }
-      else {
-        imp <- as.matrix(rowMeans(imp)) # simply count the rowmeans
+    }
+    else{ # for unweighted situation
+      for (n in 1:nrow(nn.k$nn.index)) {
+        weights[nn.k$nn.index[n, ], n] <- 1/knn_k # simply count the mean
       }
-      return(imp)
-    })
+    }
+    
+    # (genes by ref cell num) multiply by the weight matrix (ref cell num by query cell num)
+    imputed_vals <- object@raw.data[[reference]] %*% weights
+    # assigning dimnames
     colnames(imputed_vals) <- query_cells
     rownames(imputed_vals) <- rownames(object@raw.data[[reference]])
+    
     # formatiing the matrix
     if (class(object@raw.data[[reference]])[1] == "dgTMatrix" |
         class(object@raw.data[[reference]])[1] == "dgCMatrix") {
@@ -2074,7 +2080,7 @@ imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FA
   }
   
   return(object)
-  }
+}
 
 
 #######################################################################################
