@@ -169,9 +169,9 @@ clusterLouvainJaccard = function(object, resolution = 0.1, k.param=30, n.iter = 
     )
   }
   temp.seurat = CreateSeuratObject(t(Reduce(rbind,object@scale.data)))
-  temp.seurat@scale.data = t(Reduce(rbind,object@scale.data))
-  rownames(object@H.norm)=colnames(temp.seurat@scale.data)
-  temp.seurat@dr$NMF=new(Class="dim.reduction",cell.embeddings=object@H.norm,key="NMF")
+  temp.seurat@assays[["scale.data"]] = t(Reduce(rbind,object@scale.data))
+  rownames(object@H.norm)=colnames(temp.seurat@assays[["scale.data"]])
+  temp.seurat@reductions[["NMF"]]=new(Class="dim.reduction",cell.embeddings=object@H.norm,key="NMF")
   temp.seurat <- FindClusters(object = temp.seurat, reduction.type = "NMF", 
                               dims.use = 1:ncol(object@H.norm),force.recalc=T,
                               save.SNN = T,resolution=resolution,k.param=k.param,
