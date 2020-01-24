@@ -1,8 +1,10 @@
 ---
 title: "Walkthrough -- Aligning PBMC Data"
 author: "Velina Kozareva"
-date: "10/30/2018"
-output: html_document
+date: "8/2/2019"
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -12,7 +14,7 @@ This walkthrough steps through a basic analysis and alignment of two datasets of
 provided by 10X and [Gierahn et al., 2017](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5376227/). We show how LIGER can be used to identify trends and clusters across both datasets, in addition to dataset-specific differences. We also demonstrate some
 of the package's visualization capabilities while reproducing some of the figure panels from the manuscript (Fig. 2).
 
-The data can be downloaded from `vignettes/pbmc_alignment.zip`. First we set up the `liger` object using the 10X and Seqwell datasets provided in this directory.
+The data can be downloaded from `vignettes/pbmc_alignment.zip`. First we set up the liger object using the 10X and Seqwell datasets provided in this directory.
 
 ```{r load, results='hide', message=F, warning=F}
 library(liger)
@@ -29,9 +31,9 @@ a.pbmc <- createLiger(pbmc.data)
 ```
 
 ###Data Preprocessing
-Before running the factorization, we need to normalize the data to account for different numbers of UMIs per cell, select variable genes, and scale the data. Note that we do not center the data when scaling because nonnegative matrix factorization accepts only positive values. 
+Before running the factorization, we need to normalize the data to account for differences in sequencing depth and capture efficiency across cells, select variable genes, and scale the data. Note that we do not center the data when scaling because non-negative matrix factorization accepts only non-negative values. 
 
-The `selectGenes` function performs variable gene selection on each of the datasets separately, then takes the union of the result. The most variable genes are selected by comparing the variance of each gene's expression to its mean expression and keeping those with var/mean ratio above a certain threshold. 
+The `selectGenes` function performs variable gene selection on each of the datasets separately, then takes the union of the result. Highly variable genes are selected by comparing the variance of each gene's expression to its mean expression and keeping those with a ratio above a specified threshold. 
 
 We can also simply pass pre-selected variable genes to the object if we've determined them from another 
 source. In this case, we are using the variable genes determined by the Seurat package for their 
@@ -53,11 +55,12 @@ a.pbmc <- scaleNotCenter(a.pbmc)
 ###Factorization
 Next we perform integrative non-negative matrix factorization in order to identify shared and distinct metagenes across the datasets and the corresponding factor/metagene loadings for each cell. The most important parameters in the factorization are `k` (the number of factors) and `lambda` (the penalty parameter which limits the dataset-specific component of the factorization). The default value of `lambda=5.0` usually provides reasonable results for most analyses, although the `suggestLambda` function can be used to determine a more appropriate `lambda` value for the desired level of dataset alignment. 
 
-To determine the appropriate number of factors to use, we can use the `suggestK` function which plots median K-L divergence from the uniform distribution in the factor loadings as a function of `k`. We want to look for the section of the plot where this metric stops increasing as sharply (the "elbow" of the plot). In general, we should expect a positive correlation between the number of subgroups we expect to find in the analysis and the appropriate number of factors to use. Since the `suggestK` function can take more than 10 minutes to run, it can sometimes be useful to run a quick preliminary analysis with `k=20` to get an idea of whether a much higher number of factors is needed. 
+To determine the appropriate number of factors to use, we can use the `suggestK` function which plots median K-L divergence from the uniform distribution in the factor loadings as a function of `k`. We want to look for the section of the plot where this metric stops increasing as sharply (the "elbow" of the plot). In general, we should expect a positive correlation between the number of subgroups we expect to find in the analysis and the appropriate number of factors to use. Since the `suggestK` function can take more than 10 minutes to run, it can sometimes be useful to run a quick preliminary analysis with `k=20` to get an idea of whether a much higher number of factors is needed. (Note that the command provided below requests 5 cores – adjust this value if you have fewer cores available.)
 
 ``` {r kselection, eval=F}
 # running suggestK on multiple cores can greatly decrease the runtime
-k.suggest <- suggestK(a.pbmc, num.cores = 5, gen.new = T, return.results = T, plot.log2 = F)
+k.suggest <- suggestK(a.pbmc, num.cores = 5, gen.new = T, return.results = T, plot.log2 = F,
+                      nrep = 5)
 ```
 
 For this analysis, we select a `k` of 22, though you can try various values in that range for similar results. We select the default `lambda=5.0`. (You can also run `suggestLambda` to get a plot of expected alignment vs. lambda for a given number of factors.)
@@ -100,7 +103,7 @@ print(p_a[[1]])
 ```
 
 Since we have cluster information from the original publications/analyses for each of these two datasets, we 
-can easily take a look at how our clustering compares using a river (i.e. Sankey) plot. Note that these clusterings were generated by individual (not joint) analyses of each dataset. The 10X labels come from the Seurat analysis
+can easily see how our clustering compares using a river (i.e. Sankey) plot. Note that these clusterings were generated by individual (not joint) analyses of each dataset. The 10X labels come from the Seurat analysis
 detailed [here](https://satijalab.org/seurat/pbmc3k_tutorial.html) and the SeqWell labels from the
 original SeqWell publication. 
 
@@ -141,6 +144,15 @@ head(markers$tenx[markers$tenx$factor_num == 9, ])
 # Prevent text progress bar from printing
 word_clouds <- plotWordClouds(a.pbmc, num.genes = 10, do.spec.plot = F, return.plots = T)
 print(word_clouds[[9]])
+```
+
+A related type of visualization is a gene loadings plot, which may allow for easier comparison of the most highly-loading genes:
+
+```{r gene loadings, results='hide', fig.width=5, fig.height=6}
+# Show top 10 highly loading dataset specific and shared genes
+# with plots of gene loading values
+gene_loadings <- plotGeneLoadings(a.pbmc, num.genes = 10, do.spec.plot = F, return.plots = T)
+print(gene_loadings[[9]])
 ```
 
 We can now plot this gene to better observe finer-grained dataset specific differences. 

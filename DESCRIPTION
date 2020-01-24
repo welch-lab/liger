@@ -31,6 +31,7 @@ Imports: Rcpp (>= 0.12.10),
      patchwork,
      viridis,
      pheatmap
+     stats
 Remotes: thomasp85/patchwork
 LinkingTo: Rcpp, RcppArmadillo
 Depends:
@@ -39,6 +40,7 @@ Depends:
     methods,
     patchwork
 RoxygenNote: 6.1.1
+Encoding: UTF-8
 Suggests:
     Seurat,
     knitr,

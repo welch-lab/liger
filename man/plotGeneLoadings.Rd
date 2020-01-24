@@ -41,7 +41,7 @@ threshold (default 10).}
 \item{max.val}{Value between 0 and 1 at which color gradient should saturate to max color. Set to
 NULL to revert to default gradient scaling. (default 0.1)}
 
-\item{pt.size}{Point size for plots (default 0.1)}
+\item{pt.size}{Point size for plots (default 0.1).}
 
 \item{option}{Colormap option to use for ggplot2's scale_color_viridis (default 'plasma').}
 

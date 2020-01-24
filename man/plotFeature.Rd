@@ -7,8 +7,8 @@
 plotFeature(object, feature, by.dataset = T, discrete = NULL,
   title = NULL, pt.size = 0.3, text.size = 3, do.shuffle = T,
   rand.seed = 1, do.labels = F, axis.labels = NULL, do.legend = T,
-  legend.size = 5, option = "plasma", zero.color = "#F5F5F5",
-  return.plots = F)
+  legend.size = 5, option = "plasma", cols.use = NULL,
+  zero.color = "#F5F5F5", return.plots = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call runTSNE or runUMAP before calling.}
@@ -40,6 +40,9 @@ one after the other (default TRUE).}
 \item{legend.size}{Size of legend spots for discrete data (default 5).}
 
 \item{option}{Colormap option to use for ggplot2's scale_color_viridis (default 'plasma').}
+
+\item{cols.use}{Vector of colors to form gradient over instead of viridis colormap (low to high).
+Only applies to continuous features (default NULL).}
 
 \item{zero.color}{Color to use for zero values (no expression) (default '#F5F5F5').}
 

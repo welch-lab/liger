@@ -121,11 +121,37 @@ test_that("plotGeneLoadings returns correct number of assembled ggplot objects",
 })
 
 plotgenes_plots <- plotGene(ligex, gene = 'CD8A', use.raw = T, return.plots = T)
-test_that("plotGene returns correct ggplot objects", {
+test_that("plotGene raw returns correct ggplot objects", {
   expect_equal(length(plotgenes_plots), length(ligex@raw.data))
   expect_is(plotgenes_plots[[1]], class = c("ggplot"))
   expect_equal(unname(plotgenes_plots[[1]]$data$gene[45:50]), 
                c(NA, NA, 2, 2, NA, NA))
+  expect_equal(unname(plotgenes_plots[[2]]$data$gene[45:50]), 
+               c(NA, NA, NA, 3.281916639, NA, NA))
+})
+
+plotgenes_plots <- plotGene(ligex, gene = 'CD8A', return.plots = T)
+test_that("plotGene normalizes correctly", {
+  expect_equal(length(plotgenes_plots), length(ligex@raw.data))
+  expect_equal(unname(plotgenes_plots[[1]]$data$gene[45:50]), 
+               c(NA, NA, 3.083491754, 2.879568640, NA, NA))
+  expect_equal(unname(plotgenes_plots[[2]]$data$gene[45:50]), 
+               c(NA, NA, NA, 2.098256709, NA, NA))
+})
+
+plotgenes_plots <- plotGene(ligex, gene = 'CD8A', use.scaled = T, return.plots = T)
+test_that("plotGene scales correctly", {
+  expect_equal(length(plotgenes_plots), length(ligex@raw.data))
+  expect_equal(unname(plotgenes_plots[[1]]$data$gene[45:50]), 
+               c(NA, NA, 14.69475989, 14.46124833, NA, NA))
+  expect_equal(unname(plotgenes_plots[[2]]$data$gene[45:50]), 
+               c(NA, NA, NA, 13.61593681, NA, NA))
+})
+
+plotgenes_plots <- plotGene(ligex, gene = 'CD8A', plot.by = 'none', 
+                            return.plots = T)
+test_that("plotGene returns correct number of plots", {
+  expect_is(plotgenes_plots, class = c("ggplot"))
 })
 
 plotfeatures_plots <- plotFeature(ligex, feature = 'nUMI', by.dataset = T, return.plots = T)
@@ -138,6 +164,16 @@ test_that("plotFeature returns correct ggplot objects", {
                'seqwell')
 })
 
+# Ensure that riverplot function runs 
+# TODO: Perhaps check graphics output with vdiffr to make this a real unit test
+seqwell_c <- factor(sapply(colnames(ligex@raw.data[[2]]), function(x) {
+  strsplit(x, "_")[[1]][1]
+}))
+tenx_c <- factor(rep("tenx", ncol(ligex@raw.data[[1]])))
+names(tenx_c) <- colnames(ligex@raw.data[[1]])
+
+makeRiverplot(ligex, tenx_c, seqwell_c, min.frac = 0.05)
+
 # Tests for subsetting, object conversion
 # Again, included here because these functions are object dependent (see above)
 ####################################################################################
@@ -145,7 +181,7 @@ context("Object subsetting and conversion")
 
 # Subsetting functionality
 # First add a new cell.data column
-ligex@cell.data[["clusters"]] = ligex@alignment.clusters
+ligex@cell.data[["clusters"]] <- ligex@alignment.clusters
 ligex_subset <- subsetLiger(ligex, clusters.use = c(1, 2, 3, 4))
 
 test_that("Returns correct subsetted object", {
@@ -163,3 +199,46 @@ test_that("Returns correct subsetted object", {
 
 # TODO: Add tests for ligerToSeurat and seuratToLiger functions 
 # after including functionality related to new cell.data slot 
+
+# Reorganization
+# Make dummy grouping
+ligex@cell.data[["broad_type"]] <- ligex@alignment.clusters
+levels(ligex@cell.data[["broad_type"]]) <- c("non-myeloid", "non-myeloid", "myeloid", "non-myeloid",
+                                             "myeloid", "non-myeloid", "non-myeloid", "non-myeloid")
+ligex_reorg <- reorganizeLiger(ligex, by.feature = "broad_type", new.label = "protocol",
+                               remove.missing = F)
+gene_union <- length(union(rownames(ligex@raw.data[[1]]), rownames(ligex@raw.data[[2]])))
+
+test_that("Returns correctly organized object", {
+  expect_equal(names(ligex_reorg@raw.data), c('non-myeloid', 'myeloid'))
+  expect_equal(dim(ligex_reorg@raw.data[[1]]), c(gene_union, 370))
+  expect_equal(rownames(ligex@cell.data[ligex@cell.data$broad_type == "myeloid", ]),
+               colnames(ligex_reorg@raw.data[["myeloid"]]))
+  expect_equal(dim(ligex_reorg@raw.data[[2]]), c(gene_union, 124))
+  expect_equal(rownames(ligex@cell.data[ligex@cell.data$broad_type == "non-myeloid", ]),
+               colnames(ligex_reorg@raw.data[["non-myeloid"]]))
+})
+
+test_that("Returns correct cell.data columns", {
+  expect_true("protocol" %in% colnames(ligex_reorg@cell.data))
+})
+       
+
+# Tests for imputing query datasets
+# Since this function depends on the H.norm matrix, optimizeALS and quantileAlignSNF
+# should be performed before this test
+####################################################################################
+context("Imputing query datasets")
+
+ligex <- imputeKNN(ligex, reference = 'seqwell', weight = TRUE)
+
+test_that("List names and dimensions correct", {
+  expect_equal(names(ligex@raw.data), c('tenx', 'seqwell'))
+  expect_equal(dim(ligex@raw.data[['tenx']]), c(6712, 250))
+})
+
+test_that("Imputation results correct", {
+  expect_equivalent(ligex@raw.data[['tenx']][1, 1:5], c(0.1010272982, 0.1480327620, 0.2882094083, 0.1549154381, 0.1010290263),
+               tolerance = 1e-8)
+})
+

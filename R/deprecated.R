@@ -1,3 +1,6 @@
+#' @importFrom Matrix colSums rowSums rowMeans t sparseMatrix
+NULL
+
 # These are deprecated functions likely to be removed in future versions. 
 # Documentation for these functions is incomplete.
 

@@ -2,39 +2,87 @@
 % Please edit documentation in R/liger.R
 \name{plotGene}
 \alias{plotGene}
-\title{Plot t-SNE coordinates by expression of specified gene}
+\title{Plot gene expression on dimensional reduction (t-SNE) coordinates}
 \usage{
-plotGene(object, gene, use.raw = F, methylation.indices = NULL,
-  pt.size = 0.1, min.clip = 0, max.clip = 1, points.only = F,
-  option = "plasma", zero.color = "#F5F5F5", return.plots = F)
+plotGene(object, gene, use.raw = F, use.scaled = F,
+  scale.by = "dataset", log2scale = NULL, methylation.indices = NULL,
+  plot.by = "dataset", set.dr.lims = F, pt.size = 0.1,
+  min.clip = NULL, max.clip = NULL, clip.absolute = F,
+  points.only = F, option = "plasma", cols.use = NULL,
+  zero.color = "#F5F5F5", axis.labels = NULL, do.legend = T,
+  return.plots = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call runTSNE before calling.}
 
-\item{gene}{Gene for which to plot relative expression.}
+\item{gene}{Gene for which to plot expression.}
 
-\item{use.raw}{Plot raw values instead of normalized and log-transformed data (default FALSE).}
+\item{use.raw}{Plot raw UMI values instead of normalized, log-transformed data (default FALSE).}
+
+\item{use.scaled}{Plot values scaled across specified groups of cells (with log transformation)
+(default FALSE).}
+
+\item{scale.by}{Grouping of cells by which to scale gene (can be any factor column in cell.data
+or 'none' for scaling across all cells) (default 'dataset').}
+
+\item{log2scale}{Whether to show log2 transformed values or original normalized, raw, or scaled 
+values (as stored in object). Default value is FALSE if use.raw = T, otherwise TRUE.}
 
 \item{methylation.indices}{Indices of datasets in object with methylation data (this data is not
-magnified and put on log scale).}
+log transformed and must use normalized values). (default NULL)}
 
-\item{pt.size}{Point size for plots (default 0.1)}
+\item{plot.by}{How to group cells for plotting (can be any factor column in cell.data or 'none' 
+for plotting all cells in a single plot). Note that this can result in large number of plots.
+Users are encouraged to use same value as for scale.by (default 'dataset').}
 
-\item{min.clip}{Quantile probability for lower bound of methylation data (everything lower set
-to this quantile value) (default 0)}
+\item{set.dr.lims}{Whether to keep dimensional reduction coordinates consistent when multiple 
+plots created (default FALSE).}
 
-\item{max.clip}{Quantile probability for upper bound of methylation data (everything greater set
-to this quantile value) (default 1)}
+\item{pt.size}{Point size for plots (default 0.1).}
 
-\item{points.only}{Remove axes when plotting t-sne coordinates (default FALSE).}
+\item{min.clip}{Minimum value for expression values plotted. Can pass in quantile (0-1) or 
+absolute cutoff (set clip.absolute = T). Can also pass in vector if expecting multiple plots;
+users are encouraged to pass in named vector (from levels of desired feature) to avoid 
+mismatches in order (default NULL).}
+
+\item{max.clip}{Maximum value for expression values plotted. Can pass in quantile (0-1) or 
+absolute cutoff (set clip.absolute = T). Can also pass in vector if expecting multiple plots;
+users are encouraged to pass in named vector (from levels of desired feature) to avoid 
+mismatches in order (default NULL).}
+
+\item{clip.absolute}{Whether to treat clip values as absolute cutoffs instead of quantiles 
+(default FALSE).}
+
+\item{points.only}{Remove axes, background, and legend when plotting coordinates (default FALSE).}
 
 \item{option}{Colormap option to use for ggplot2's scale_color_viridis (default 'plasma').}
 
+\item{cols.use}{Vector of colors to form gradient over instead of viridis colormap (low to high).
+(default NULL).}
+
 \item{zero.color}{Color to use for zero values (no expression) (default '#F5F5F5').}
+
+\item{axis.labels}{Vector of two strings to use as x and y labels respectively. (default NULL)}
+
+\item{do.legend}{Display legend on plots (default TRUE).}
 
 \item{return.plots}{Return ggplot objects instead of printing directly (default FALSE).}
 }
+\value{
+If returning single plot, returns ggplot object; if returning multiple plots; returns
+  list of ggplot objects.
+}
 \description{
-Generates plot of t-SNE coordinates colored by expression of specified gene, for each dataset.
-Color scale can be modified.
+Generates plot of dimensional reduction coordinates (default t-SNE) colored by expression of 
+specified gene. Data can be scaled by dataset or selected feature column from cell.data (or across
+all cells). Data plots can be split by feature.
+}
+\examples{
+\dontrun{
+# liger object, factorization complete
+ligerex
+ligerex <- runTSNE(ligerex)
+# plot expression for CD4 and return plots
+gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
+}
 }
