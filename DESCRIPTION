@@ -15,7 +15,6 @@ Imports: Rcpp (>= 0.12.10),
      cowplot,
      FNN,
      dplyr,
-     RANN.L1,
      grid,
      ggrepel,
      irlba,
@@ -29,6 +28,8 @@ Imports: Rcpp (>= 0.12.10),
      doSNOW,
      mclust,
      patchwork,
+     viridis,
+     pheatmap,
      stats
 Remotes: thomasp85/patchwork
 LinkingTo: Rcpp, RcppArmadillo
