@@ -4,8 +4,7 @@
 \alias{plotFactors}
 \title{Plot scatter plots of unaligned and aligned factor loadings}
 \usage{
-plotFactors(object, num.genes = 10, cells.highlight = NULL,
-  plot.tsne = F)
+plotFactors(object, num.genes = 10, cells.highlight = NULL, plot.tsne = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call quantileAlignSNF before calling.}

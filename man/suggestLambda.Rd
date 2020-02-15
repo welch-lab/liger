@@ -4,10 +4,23 @@
 \alias{suggestLambda}
 \title{Visually suggest appropriate lambda value}
 \usage{
-suggestLambda(object, k, lambda.test = NULL, rand.seed = 1,
-  num.cores = 1, thresh = 1e-04, max.iters = 100, knn_k = 20,
-  k2 = 500, ref_dataset = NULL, resolution = 1, gen.new = F,
-  nrep = 1, return.data = F, return.raw = F)
+suggestLambda(
+  object,
+  k,
+  lambda.test = NULL,
+  rand.seed = 1,
+  num.cores = 1,
+  thresh = 1e-04,
+  max.iters = 100,
+  knn_k = 20,
+  k2 = 500,
+  ref_dataset = NULL,
+  resolution = 1,
+  gen.new = F,
+  nrep = 1,
+  return.data = F,
+  return.raw = F
+)
 }
 \arguments{
 \item{object}{\code{liger} object. Should normalize, select genes, and scale before calling.}

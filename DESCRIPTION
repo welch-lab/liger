@@ -29,15 +29,17 @@ Imports: Rcpp (>= 0.12.10),
      doSNOW,
      mclust,
      patchwork,
-     stats
-Remotes: thomasp85/patchwork
+     stats,
+     presto
+Remotes: thomasp85/patchwork,
+     immunogenomics/presto
 LinkingTo: Rcpp, RcppArmadillo
 Depends:
     cowplot,
     Matrix,
     methods,
     patchwork
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2
 Encoding: UTF-8
 Suggests:
     Seurat,

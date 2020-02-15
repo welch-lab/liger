@@ -1972,14 +1972,12 @@ SNF.liger <- function(
 #' Impute query features from a reference dataset using KNN.
 #'
 #' @param object \code{liger} object.
-#' @param knn_k The maximum number of nearest neighbors to search.
-#'  The default value is set to 50.
-#' @param reference Name of the reference data
-#' @param queries Names of the query data. The default value is 'all',
-#'  but can also pass in a list of the names of the query datasets
-#' @param weight Use KNN distances as weight matrix (default FALSE)
-#' @param norm Whether normalize the imputed data with default parameters (default TRUE)
-#' @param scale Whether scale but not center the imputed data with default parameters (default TRUE)
+#' @param knn_k The maximum number of nearest neighbors to search. (default 20)
+#' @param reference Dataset containing values to impute into query dataset(s).
+#' @param queries Dataset to be augmented by imputation. If not specified, will pass in all datasets.
+#' @param weight Whether to use KNN distances as weight matrix (default FALSE).
+#' @param norm Whether normalize the imputed data with default parameters (default TRUE).
+#' @param scale Whether scale but not center the imputed data with default parameters (default TRUE).
 #'
 #' @return \code{liger} object with raw data in raw.data slot replaced by imputed data (genes by cells)
 #' @export
@@ -1997,17 +1995,17 @@ SNF.liger <- function(
 #' ligerex <- optimizeALS(ligerex, k = 20)
 #' ligerex <- quantileAlignSNF(ligerex)
 #' # impute every dataset other than the reference dataset
-#' ligerex <- imputeKNN(ligerex, reference = "y_set", weight = TRUE)
+#' ligerex <- imputeKNN(ligerex, reference = "y_set", weight = FALSE)
 #' # impute only z_set dataset
-#' ligerex <- imputeKNN(ligerex, reference = "y_set", queries = list("z_set"), weight = TRUE)
+#' ligerex <- imputeKNN(ligerex, reference = "y_set", queries = list("z_set"), knn_k = 50)
 #' }
-#'
-imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FALSE, norm = TRUE, scale = TRUE) {
+
+imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, norm = TRUE, scale = FALSE) {
   cat("Warning:\nThis function will discard the raw data previously stored in the liger object and replace the raw.data slot with the imputed data.\n\n")
   if (length(reference) > 1) {
     stop("Invalid reference dataset: Can only have ONE reference dataset")
   }
-  if (is.null(queries)) { # all datasets
+  if (missing(queries)) { # all datasets
     queries <- names(object@raw.data)
     queries <- as.list(queries[!queries %in% reference])
     cat(
@@ -2016,7 +2014,7 @@ imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FA
       paste("  ", reference, "\n"),
       "Query datasets:\n",
       paste("  ", as.character(queries), "\n")
-      )
+    )
   }
   else { # only given query datasets
     queries <- as.list(queries)
@@ -2030,29 +2028,35 @@ imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FA
         paste("  ", reference, "\n"),
         "Query datasets:\n",
         paste("  ", as.character(queries), "\n")
-        )
+      )
     }
-    }
+  }
   
   reference_cells <- rownames(object@scale.data[[reference]]) # cells by genes
   for (query in queries) {
     query_cells <- rownames(object@scale.data[[query]])
-    # find nearest neighbors for query cell in normed ref datasets
+    
+    # creating a (reference cell numbers X query cell numbers) weights matrix for knn weights and unit weights
     nn.k <- get.knnx(object@H.norm[reference_cells, ], object@H.norm[query_cells, ], k = knn_k, algorithm = "CR")
-    imputed_vals <- sapply(1:nrow(nn.k$nn.index), function(n) { # for each cell in the target dataset:
-      weights <- nn.k$nn.dist[n, ]
-      weights <- as.matrix(exp(-weights) / sum(exp(-weights)))
-      imp <- object@raw.data[[reference]][, nn.k$nn.index[n, ]] # genes by cells, genes are from reference dataset
-      if (weight) {
-        imp <- as.matrix(imp %*% weights) # (genes by k) multiply by the weight matrix (k by 1)
+    weights <- Matrix(0, nrow = ncol(object@raw.data[[reference]]), ncol = nrow(nn.k$nn.index), sparse = TRUE)
+    if (weight == TRUE){ # for weighted situation
+      # find nearest neighbors for query cell in normed ref datasets
+      for (n in 1:nrow(nn.k$nn.index)) { # record ref-query cell-cell distances
+        weights[nn.k$nn.index[n, ], n] <- exp(-nn.k$nn.dist[n, ]) / sum(exp(-nn.k$nn.dist[n, ]))
       }
-      else {
-        imp <- as.matrix(rowMeans(imp)) # simply count the rowmeans
+    }
+    else{ # for unweighted situation
+      for (n in 1:nrow(nn.k$nn.index)) {
+        weights[nn.k$nn.index[n, ], n] <- 1/knn_k # simply count the mean
       }
-      return(imp)
-    })
+    }
+    
+    # (genes by ref cell num) multiply by the weight matrix (ref cell num by query cell num)
+    imputed_vals <- object@raw.data[[reference]] %*% weights
+    # assigning dimnames
     colnames(imputed_vals) <- query_cells
     rownames(imputed_vals) <- rownames(object@raw.data[[reference]])
+    
     # formatiing the matrix
     if (class(object@raw.data[[reference]])[1] == "dgTMatrix" |
         class(object@raw.data[[reference]])[1] == "dgCMatrix") {
@@ -2066,15 +2070,117 @@ imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FA
   
   if (norm) {
     cat('\nNormalizing data...\n')
-    object <- normalize(object)
+    object <- liger::normalize(object)
   }
   if (scale) {
     cat('Scaling (but not centering) data...')
-    object <- scaleNotCenter(object)
+    object <- liger::scaleNotCenter(object)
   }
   
   return(object)
+}
+
+#' Perform Wilcoxon rank-sum test
+#'
+#' Perform Wilcoxon rank-sum tests on specified dataset using given method.
+#'
+#' @param object \code{liger} object.
+#' @param data.use This selects which dataset(s) to use. (default 'all')
+#' @param compare.method This indicates the metric of the test. Either 'clusters' or 'datasets'.
+#'
+#' @return A 10-columns data.frame with test results.
+#' @export
+#' @importFrom presto wilcoxauc
+#' @examples
+#' \dontrun{
+#' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+#' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+#' X <- matrix(c(1, 2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 6), nrow = 4, byrow = T)
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z, x_set = X))
+#' ligerex <- normalize(ligerex)
+#' # select genes
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' ligerex <- optimizeALS(ligerex, k = 20)
+#' ligerex <- quantileAlignSNF(ligerex)
+#' wilcox.results <- runWilcoxon(ligerex, compare.method = "cluster")
+#' wilcox.results <- runWilcoxon(ligerex, compare.method = "datastes", data.use = c(1, 2))
+#' }
+#'
+runWilcoxon <- function(object, data.use = "all", compare.method) {
+  # check parameter inputs
+  if (missing(compare.method)) {
+    stop("Error: Parameter *compare.method* cannot be empty!")
   }
+  if (compare.method != 'datasets' & compare.method != 'clusters'){
+    stop('Error: Parameter *compare.method* should be either *clusters* or *datasets*.')
+  }
+  if (compare.method == "datasets") {
+    if (length(names(object@norm.data)) < 2) {
+      stop("Invalid inputs: Should have at least TWO inputs to compare between datasets")
+    }
+    if (!missing(data.use) & length(data.use) < 2) {
+      stop("Invalid inputs: Should have at least TWO inputs to compare between datasets")
+    }
+  }
+  
+  ### create feature x sample matrix
+  if (data.use == "all" | length(data.use) > 1) { # at least two datasets
+    if (data.use == "all") {
+      print("Performing test on ALL datasets...")
+      sample.list <- attributes(object@norm.data)$names
+    }
+    else {
+      print("Performing test on GIVEN datasets...")
+      sample.list <- data.use
+    }
+    genes <- Reduce(intersect, lapply(sample.list, function(sample) {
+      object@norm.data[[sample]]@Dimnames[[1]]
+    })) # get all shared genes of every datasets
+    
+    feature_matrix <- Reduce(cbind, lapply(sample.list, function(sample) {
+      object@norm.data[[sample]][genes, ]
+    })) # get feature matrix, shared genes as rows and all barcodes as columns
+    
+    # get labels of clusters and datasets
+    cell_source <- object@cell.data[["dataset"]] # from which dataset
+    names(cell_source) <- names(object@clusters)
+    cell_source <- cell_source[colnames(feature_matrix), drop = TRUE]
+    clusters <- object@clusters[colnames(feature_matrix), drop = TRUE] # from which cluster
+  } else { # for one dataset only
+    print("Perform test on GIVEN dataset...")
+    feature_matrix <- object@norm.data[[data.use]]
+    clusters <- object@clusters[object@norm.data[[data.use]]@Dimnames[[2]], drop = TRUE] # from which cluster
+  }
+  
+  ### perform wilcoxon test
+  if (compare.method == "clusters") { # compare between clusters across datasets
+    len <- nrow(feature_matrix)
+    if (len > 100000) {
+      print("Calculating Large-scale Input...")
+      results <- Reduce(rbind, lapply(suppressWarnings(split(seq(len), seq(len / 100000))), function(index) {
+        wilcoxauc(log(feature_matrix[index, ] + 1e-10), clusters)
+      }))
+    } else {
+      results <- wilcoxauc(log(feature_matrix + 1e-10), clusters)
+    }
+  }
+  
+  if (compare.method == "datasets") { # compare between datasets within each cluster
+    results <- Reduce(rbind, lapply(levels(clusters), function(cluster) {
+      sub_barcodes <- names(clusters[clusters == cluster]) # every barcode within this cluster
+      sub_label <- paste0(cluster, "-", cell_source[sub_barcodes]) # data source for each cell
+      sub_matrix <- feature_matrix[, sub_barcodes]
+      if (length(unique(cell_source[sub_barcodes])) == 1) { # if cluster has only 1 data source
+        print(paste0("Note: Skip Cluster ", cluster, " since it has only ONE data source."))
+        return()
+      }
+      return(wilcoxauc(log(sub_matrix + 1e-10), sub_label))
+    }))
+  }
+  
+  return(results)
+}
 
 
 #######################################################################################

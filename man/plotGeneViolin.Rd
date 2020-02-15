@@ -4,8 +4,13 @@
 \alias{plotGeneViolin}
 \title{Plot violin plots for gene expression}
 \usage{
-plotGeneViolin(object, gene, methylation.indices = NULL,
-  by.dataset = T, return.plots = F)
+plotGeneViolin(
+  object,
+  gene,
+  methylation.indices = NULL,
+  by.dataset = T,
+  return.plots = F
+)
 }
 \arguments{
 \item{object}{\code{liger} object.}

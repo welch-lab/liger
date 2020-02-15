@@ -230,15 +230,47 @@ test_that("Returns correct cell.data columns", {
 ####################################################################################
 context("Imputing query datasets")
 
-ligex <- imputeKNN(ligex, reference = 'seqwell', weight = TRUE)
+ligex.ds <- imputeKNN(ligex, reference = 'seqwell', knn_k = 50)
 
 test_that("List names and dimensions correct", {
-  expect_equal(names(ligex@raw.data), c('tenx', 'seqwell'))
-  expect_equal(dim(ligex@raw.data[['tenx']]), c(6712, 250))
+  expect_equal(names(ligex.ds@raw.data), c('tenx', 'seqwell'))
+  expect_equal(dim(ligex.ds@raw.data[['tenx']]), c(6712, 250))
 })
 
 test_that("Imputation results correct", {
-  expect_equivalent(ligex@raw.data[['tenx']][1, 1:5], c(0.1010272982, 0.1480327620, 0.2882094083, 0.1549154381, 0.1010290263),
+  expect_equivalent(ligex.ds@raw.data[['tenx']][1, 1:5], c(0.1010272982, 0.1480327620, 0.2882094083, 0.1549154381, 0.1010290263),
                tolerance = 1e-8)
 })
 
+ligex.ds <- imputeKNN(ligex, reference = 'seqwell', weight = FALSE, knn_k = 50)
+
+test_that("List names and dimensions correct", {
+  expect_equal(names(ligex.ds@raw.data), c('tenx', 'seqwell'))
+  expect_equal(dim(ligex.ds@raw.data[['tenx']]), c(6712, 250))
+})
+
+test_that("Imputation results correct", {
+  expect_equivalent(ligex.ds@raw.data[['tenx']][1, 1:5], c(0.1010403803, 0.1480523653, 0.2882429284, 0.1549487361, 0.1010403803),
+                    tolerance = 1e-8)
+})
+rm(ligex.ds)
+
+# Tests for running Wilcoxon tests
+# Since this function depends on the cluster assignments, optimizeALS and quantileAlignSNF
+# should be performed before this test
+####################################################################################
+context("Running Wilcoxon tests")
+
+wilcox.results = runWilcoxon(ligex, data.use = 2, compare.method = 'clusters')
+
+test_that("Wilcoxon test for 'clusters' results correct", {
+  expect_equal(wilcox.results[1, 1], 'AAED1')
+  expect_equivalent(wilcox.results[1, 7], 0.6986961322, tolerance = 1e-8)
+})
+
+wilcox.results = runWilcoxon(ligex, compare.method = 'datasets')
+
+test_that("Wilcoxon test for 'datasets' results correct", {
+  expect_equal(wilcox.results[1, 1], 'ISG15')
+  expect_equivalent(wilcox.results[1, 7], 0.6557919528, tolerance = 1e-8)
+})
