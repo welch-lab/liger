@@ -29,10 +29,7 @@ Imports: Rcpp (>= 0.12.10),
      mclust,
      patchwork,
      stats,
-     psych,
-     TxDb.Hsapiens.UCSC.hg19.knownGene,
-     TxDb.Hsapiens.UCSC.mm10.knownGene,
-     org.Hs.eg.db
+     psych
 Remotes: thomasp85/patchwork,
      mikelove/DESeq2,
      immunogenomics/presto,
@@ -58,5 +55,9 @@ Suggests:
     GenomicFeatures,
     GenomicRanges,
     IRanges,
-    DESeq2
+    DESeq2,
+    DelayedArray,
+    TxDb.Hsapiens.UCSC.hg19.knownGene,
+    TxDb.Mmusculus.UCSC.mm10.knownGene,
+    org.Hs.eg.db
 VignetteBuilder: knitr
