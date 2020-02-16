@@ -34,7 +34,7 @@ Imports: Rcpp (>= 0.12.10),
      psych
 Remotes: thomasp85/patchwork,
      immunogenomics/presto
-biocViews: DESeq2
+biocViews:
 LinkingTo: Rcpp, RcppArmadillo
 Depends:
     cowplot,
@@ -53,5 +53,6 @@ Suggests:
     GenomicFeatures,
     GenomicRanges,
     IRanges,
-    BiocManager
+    BiocManager,
+    DESeq2
 VignetteBuilder: knitr
