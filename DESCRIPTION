@@ -32,7 +32,8 @@ Imports: Rcpp (>= 0.12.10),
      psych,
      TxDb.Hsapiens.UCSC.hg19.knownGene,
      TxDb.Mmusculus.UCSC.mm10.knownGene,
-     org.Hs.eg.db
+     org.Hs.eg.db,
+     DelayedArray
 Remotes: thomasp85/patchwork,
      mikelove/DESeq2,
      immunogenomics/presto,
@@ -58,6 +59,5 @@ Suggests:
     GenomicFeatures,
     GenomicRanges,
     IRanges,
-    DESeq2,
-    DelayedArray
+    DESeq2
 VignetteBuilder: knitr
