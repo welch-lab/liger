@@ -21,7 +21,9 @@ plotGeneLoadings(
   pt.size = 0.1,
   option = "plasma",
   zero.color = "#F5F5F5",
-  return.plots = F
+  return.plots = F,
+  axis.labels = NULL,
+  do.title = F
 )
 }
 \arguments{
@@ -61,6 +63,10 @@ NULL to revert to default gradient scaling. (default 0.1)}
 \item{zero.color}{Color to use for zero values (no expression) (default '#F5F5F5').}
 
 \item{return.plots}{Return ggplot objects instead of printing directly (default FALSE).}
+
+\item{axis.labels}{Vector of two strings to use as x and y labels respectively (default NULL).}
+
+\item{do.title}{Include top title with cluster and Dataset Specificity (default FALSE).}
 }
 \description{
 Plots t-SNE coordinates of all cells by their loadings on each factor. Underneath it displays the
@@ -76,8 +82,9 @@ plots produced.
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
 ligerex <- runTSNE(ligerex)
-pdf('gene_loadings.pdf')
+pdf("gene_loadings.pdf")
 plotGeneLoadings(ligerex, num.genes = 20)
 dev.off()
 }
+
 }

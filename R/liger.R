@@ -2003,7 +2003,7 @@ SNF.liger <- function(
 imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, norm = TRUE, scale = FALSE) {
   cat("Warning:\nThis function will discard the raw data previously stored in the liger object and replace the raw.data slot with the imputed data.\n\n")
   if (length(reference) > 1) {
-    stop("Invalid reference dataset: Can only have ONE reference dataset")
+    stop("Can only have ONE reference dataset")
   }
   if (missing(queries)) { # all datasets
     queries <- names(object@raw.data)
@@ -2019,7 +2019,7 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
   else { # only given query datasets
     queries <- as.list(queries)
     if (reference %in% queries) {
-      stop("Invalid query datasets: Reference dataset CANNOT be inclued in the query datasets")
+      stop("Reference dataset CANNOT be inclued in the query datasets")
     }
     else {
       cat(
@@ -2110,17 +2110,17 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
 runWilcoxon <- function(object, data.use = "all", compare.method) {
   # check parameter inputs
   if (missing(compare.method)) {
-    stop("Error: Parameter *compare.method* cannot be empty!")
+    stop("Parameter *compare.method* cannot be empty!")
   }
   if (compare.method != 'datasets' & compare.method != 'clusters'){
-    stop('Error: Parameter *compare.method* should be either *clusters* or *datasets*.')
+    stop('Parameter *compare.method* should be either *clusters* or *datasets*.')
   }
   if (compare.method == "datasets") {
     if (length(names(object@norm.data)) < 2) {
-      stop("Invalid inputs: Should have at least TWO inputs to compare between datasets")
+      stop("Should have at least TWO inputs to compare between datasets")
     }
     if (!missing(data.use) & length(data.use) < 2) {
-      stop("Invalid inputs: Should have at least TWO inputs to compare between datasets")
+      stop("Should have at least TWO inputs to compare between datasets")
     }
   }
   
@@ -2180,6 +2180,155 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
   }
   
   return(results)
+}
+
+#' Linking genes to putative regulatory elements
+#'
+#' Evaluate the relationships between pairs of genes and peaks based on specified distance metric.
+#'
+#' @param gene_counts A gene expression matrix (genes by cells) of normalized counts.
+#' This matrix has to share the same column names (cell barcodes) as the matrix passed to peak_counts
+#' @param peak_counts A peak-level matrix (peaks by cells) of normalized accessibility values, such as the one resulting from imputeKNN.
+#' This matrix must share the same column names (cell barcodes) as the matrix passed to gene_counts.
+#' @param genes.list A list of the genes symbols to be tested. If not specified,
+#' this function will use all the gene symbols from the matrix passed to gmat by default.
+#' @param alpha Significance threshold for correlation p-value. Peak-gene correlations with p-values below
+#' this threshold are considered significant. The default is 0.05.
+#' @param dist This indicates the type of correlation to calculate -- one of “spearman” (default), "pearson", or "kendall".
+#' @param genome.use Genome to be used for identifying genes and peaks locations. The default is ‘hg19’.
+#' The function also works with ‘mm10’.
+#'
+#' @return a sparse matrix with peak names as rows and gene symbols as columns, with each element indicating the
+#' correlation between peak i and gene j (or 0 if the gene and peak are not significantly linked).
+#' @export
+#' @importFrom psych corr.test
+#' @examples
+#' \dontrun{
+#' gmat.small <- readRDS("../testdata/small_gmat.RDS") # some gene counts matrix
+#' pmat.small <- readRDS("../testdata/small_pmat.RDS") # some peak counts matrix
+#' regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", alpha = 0.05, genome.use = "hg19")
+#' }
+#'
+linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist = "spearman", alpha = 0.05, genome.use) {
+  ### check packages
+  if (!require("org.Hs.eg.db", quietly = TRUE)) {
+    print("Package \"org.Hs.eg.db\" needed. Installation started.")
+    BiocManager::install("org.Hs.eg.db")
+    library(org.Hs.eg.db)
+  }
+
+  if (genome.use == "hg19") {
+    if (!require("TxDb.Hsapiens.UCSC.hg19.knownGene", quietly = TRUE)) {
+      print("Package \"TxDb.Hsapiens.UCSC.hg19.knownGene\" needed. Installation started.")
+      BiocManager::install("TxDb.Hsapiens.UCSC.hg19.knownGene")
+      library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+    }
+  } else if (genome.use == "mm10") {
+    if (!require("TxDb.Hsapiens.UCSC.mm10.knownGene", quietly = TRUE)) {
+      print("Package \"TxDb.Hsapiens.UCSC.mm10.knownGene\" needed. Installation started.")
+      BiocManager::install("TxDb.Hsapiens.UCSC.mm10.knownGene")
+      library(TxDb.Hsapiens.UCSC.mm10.knownGene)
+    }
+  } else {
+    stop("Parameter \"genome.use\" not valid.")
+  }
+
+  ### make Granges object for peaks
+  peak.names <- strsplit(rownames(peak_counts), "[:-]")
+  chrs <- Reduce(append, lapply(peak.names, function(peak) {
+    peak[1]
+  }))
+  chrs.start <- Reduce(append, lapply(peak.names, function(peak) {
+    peak[2]
+  }))
+  chrs.end <- Reduce(append, lapply(peak.names, function(peak) {
+    peak[3]
+  }))
+  peaks.pos <- GenomicRanges::GRanges(
+    seqnames = chrs,
+    ranges = IRanges::IRanges(as.numeric(chrs.start), end = as.numeric(chrs.end))
+  )
+
+  ### construct regnet
+  gene_counts <- t(gene_counts) # cell x genes
+  peak_counts <- t(peak_counts) # cell x genes
+
+  # subset the genomic coordinates by gene symbol
+  print("Preparing genomic coordinates...")
+  if (genome.use == "hg19") {
+    genes.coords <- GenomicFeatures::genes(TxDb.Hsapiens.UCSC.hg19.knownGene)
+  } else {
+    genes.coords <- GenomicFeatures::genes(TxDb.Hsapiens.UCSC.mm10.knownGene)
+  }
+  gene_names <- as.data.frame(org.Hs.egSYMBOL)
+  rownames(gene_names) <- gene_names$gene_id
+  gene_names <- gene_names[genes.coords$gene_id, ]$symbol
+  names(genes.coords) <- gene_names
+  genes.coords <- genes.coords[complete.cases(names(genes.coords)), ]
+
+  # find overlap peaks for each gene
+  if (missing(genes.list)) {
+    genes.list <- colnames(gene_counts)
+  }
+  missing_genes <- !genes.list %in% names(genes.coords)
+  print(
+    paste0(
+      "Removing ", sum(missing_genes),
+      " genes not in UCSC known genes..."
+    )
+  )
+  genes.list <- genes.list[!missing_genes]
+  genes.coords <- genes.coords[genes.list]
+
+  print("Calculating correlation for gene-peak pairs...")
+  each.len <<- 0
+
+  elements <- lapply(seq(length(genes.list)), function(pos) {
+    gene.use <- genes.list[pos]
+    # re-scale the window for each gene
+    gene.loci <- trim(suppressWarnings(promoters(resize(genes.coords[gene.use], width = 1, fix = "start"),
+      upstream = 500000, downstream = 500000
+    )))
+    peaks.use <- queryHits(findOverlaps(peaks.pos, gene.loci))
+    if ((x <- length(peaks.use)) == 0L) { # if no peaks in window, skip this iteration
+      return(list(NULL, as.numeric(each.len), NULL))
+    }
+    ### compute correlation and p-adj for genes and peaks ###
+    res <- suppressWarnings(corr.test(
+      x = gene_counts[, gene.use], y = as.matrix(peak_counts[, peaks.use]),
+      method = dist, adjust = "holm", ci = FALSE, use = "complete"
+    ))
+    pick <- res[["p"]] < alpha # filter by p-value
+    pick[is.na(pick)] <- FALSE
+
+    if (sum(pick) == 0) { # if no peaks are important, skip this iteration
+      return(list(NULL, as.numeric(each.len), NULL))
+    }
+    else {
+      res.corr <- as.numeric(res[["r"]][pick])
+      peaks.use <- peaks.use[pick]
+    }
+    each.len <<- each.len + length(peaks.use)
+    return(list(as.numeric(peaks.use), as.numeric(each.len), res.corr))
+  })
+
+  i_index <- Reduce(append, lapply(elements, function(ele) {
+    ele[[1]]
+  }))
+  p_index <- c(0, Reduce(append, lapply(elements, function(ele) {
+    ele[[2]]
+  })))
+  value_list <- Reduce(append, lapply(elements, function(ele) {
+    ele[[3]]
+  }))
+
+  # make final sparse matrix
+  regnet <- sparseMatrix(
+    i = i_index, p = p_index, x = value_list,
+    dim = c(ncol(peak_counts), length(genes.list)), dimnames = list(colnames(peak_counts), genes.list)
+  )
+
+  return(regnet)
 }
 
 
@@ -3219,9 +3368,11 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #'   NULL to revert to default gradient scaling. (default 0.1)
 #' @inheritParams plotGene
 #' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
+#' @param axis.labels Vector of two strings to use as x and y labels respectively (default NULL).
+#' @param do.title Include top title with cluster and Dataset Specificity (default FALSE).
 #'
-#' @importFrom ggplot2 aes aes_string annotate coord_cartesian element_blank ggplot geom_point 
-#' ggtitle scale_color_viridis_c theme 
+#' @importFrom ggplot2 aes aes_string annotate coord_cartesian element_blank ggplot geom_point
+#' ggtitle scale_color_viridis_c theme
 #' theme_bw
 #' @importFrom grid gpar unit
 #' @export
@@ -3231,44 +3382,45 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' ligerex
 #' ligerex <- quantileAlignSNF(ligerex)
 #' ligerex <- runTSNE(ligerex)
-#' pdf('gene_loadings.pdf')
+#' pdf("gene_loadings.pdf")
 #' plotGeneLoadings(ligerex, num.genes = 20)
 #' dev.off()
 #' }
-
+#'
 plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes.show = 12,
                              num.genes = 30, mark.top.genes = T, factor.share.thresh = 10,
                              log.fc.thresh = 1, umi.thresh = 30, frac.thresh = 0,
                              pval.thresh = 0.05, do.spec.plot = T, max.val = 0.1, pt.size = 0.1,
-                             option = "plasma", zero.color = "#F5F5F5", return.plots = F) {
+                             option = "plasma", zero.color = "#F5F5F5", return.plots = F,
+                             axis.labels = NULL, do.title = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
   }
-  
+
   H_aligned <- object@H.norm
   W_orig <- t(object@W)
   V1 <- t(object@V[[dataset1]])
   V2 <- t(object@V[[dataset2]])
   W <- pmin(W_orig + V1, W_orig + V2)
-  
+
   dataset.specificity <- calcDatasetSpecificity(object,
-                                                dataset1 = dataset1,
-                                                dataset2 = dataset2, do.plot = do.spec.plot
+    dataset1 = dataset1,
+    dataset2 = dataset2, do.plot = do.spec.plot
   )
-  
+
   factors.use <- which(abs(dataset.specificity[[3]]) <= factor.share.thresh)
-  
-  
+
+
   markers <- getFactorMarkers(object,
-                              dataset1 = dataset1, dataset2 = dataset2,
-                              factor.share.thresh = factor.share.thresh,
-                              num.genes = num.genes, log.fc.thresh = log.fc.thresh,
-                              umi.thresh = umi.thresh, frac.thresh = frac.thresh,
-                              pval.thresh = pval.thresh,
-                              dataset.specificity = dataset.specificity
+    dataset1 = dataset1, dataset2 = dataset2,
+    factor.share.thresh = factor.share.thresh,
+    num.genes = num.genes, log.fc.thresh = log.fc.thresh,
+    umi.thresh = umi.thresh, frac.thresh = frac.thresh,
+    pval.thresh = pval.thresh,
+    dataset.specificity = dataset.specificity
   )
-  
+
   rownames(W) <- rownames(V1) <- rownames(V2) <- rownames(W_orig) <- object@var.genes
   loadings_list <- list(V1, W, V2)
   names_list <- list(dataset1, "Shared", dataset2)
@@ -3295,8 +3447,15 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
         direction = -1,
         na.value = zero.color, values = values
       ) +
-      ggtitle(label = factor_ds)
-    
+      theme_cowplot(12)
+
+    if (!is.null(axis.labels)) {
+      p1 <- p1 + xlab(axis.labels[1]) + ylab(axis.labels[2])
+    }
+    if (do.title) {
+      p1 <- p1 + ggtitle(label = factor_ds)
+    }
+
     # subset to specific factor and sort by p-value
     top_genes_V1 <- markers[[1]][markers[[1]]$factor_num == i, ]
     top_genes_V1 <- top_genes_V1[order(top_genes_V1$p_value), ]$gene
@@ -3304,10 +3463,10 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
     top_genes_W <- markers[[2]][markers[[2]]$factor_num == i, ]$gene
     top_genes_V2 <- markers[[3]][markers[[3]]$factor_num == i, ]
     top_genes_V2 <- top_genes_V2[order(top_genes_V2$p_value), ]$gene
-    
+
     top_genes_list <- list(top_genes_V1, top_genes_W, top_genes_V2)
     # subset down to those which will be shown if sorting by p-val
-    
+
     top_genes_list <- lapply(top_genes_list, function(x) {
       if (length(x) > num.genes.show) {
         # to avoid subset warning
@@ -3315,7 +3474,7 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
       }
       x
     })
-    
+
     plot_list <- lapply(seq_along(top_genes_list), function(x) {
       top_genes <- top_genes_list[[x]]
       # make dataframe for cum gene loadings plot
@@ -3327,7 +3486,7 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
       if (length(top_genes) == 0) {
         top_genes <- c("no genes")
       }
-      
+
       gene_df <- data.frame(
         loadings = sorted,
         xpos = seq(0, 1, length.out = length(sorted)),
@@ -3335,7 +3494,8 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
       )
       y_lim_text <- max(gene_df$loadings)
       # plot and annotate with top genes
-      out_plot <- ggplot(gene_df, aes(x = xpos, y = loadings)) + geom_point(size = 0.4) +
+      out_plot <- ggplot(gene_df, aes(x = xpos, y = loadings)) +
+        geom_point(size = 0.4) +
         theme_bw() +
         theme(
           axis.ticks.x = element_blank(),
@@ -3344,11 +3504,12 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
           axis.text.x = element_blank(),
           panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank()
-        ) + ggtitle(label = names_list[[x]]) +
+        ) +
+        ggtitle(label = names_list[[x]]) +
         annotate("text",
-                 x = 1.1,
-                 y = seq(y_lim_text, 0, length.out = num.genes.show)[1:length(top_genes)],
-                 label = top_genes, hjust = 0, col = "#8227A0"
+          x = 1.1,
+          y = seq(y_lim_text, 0, length.out = num.genes.show)[1:length(top_genes)],
+          label = top_genes, hjust = 0, col = "#8227A0"
         ) +
         coord_cartesian(
           xlim = c(0, 1), # This focuses the x-axis on the range of interest
@@ -3364,9 +3525,9 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
       }
       return(out_plot)
     })
-    
+
     # p2 <- plot_grid(plotlist = plot_list, nrow = 1)
-    
+
     return_plots[[i]] <- p1 / (plot_list[[1]] | plot_list[[2]] | plot_list[[3]])
     # if can figure out how to make cowplot work, might bring this back
     # return_plots[[i]] <- plot_grid(p1, p2, nrow = 2, align = "h")

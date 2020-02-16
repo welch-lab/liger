@@ -30,9 +30,11 @@ Imports: Rcpp (>= 0.12.10),
      mclust,
      patchwork,
      stats,
-     presto
+     presto,
+     psych
 Remotes: thomasp85/patchwork,
-     immunogenomics/presto
+     immunogenomics/presto,
+biocViews: DESeq2
 LinkingTo: Rcpp, RcppArmadillo
 Depends:
     cowplot,
@@ -47,5 +49,9 @@ Suggests:
     reticulate,
     rmarkdown,
     NNLM,
-    testthat
+    testthat,
+    GenomicFeatures,
+    GenomicRanges,
+    IRanges,
+    BiocManager
 VignetteBuilder: knitr
