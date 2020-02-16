@@ -15,7 +15,6 @@ Imports: Rcpp (>= 0.12.10),
      cowplot,
      FNN,
      dplyr,
-     RANN.L1,
      grid,
      ggrepel,
      irlba,
@@ -33,8 +32,10 @@ Imports: Rcpp (>= 0.12.10),
      presto,
      psych
 Remotes: thomasp85/patchwork,
-     immunogenomics/presto
-biocViews: DESeq2
+     mikelove/DESeq2,
+     immunogenomics/presto,
+     jefferis/RANN@master-L1
+biocViews:
 LinkingTo: Rcpp, RcppArmadillo
 Depends:
     cowplot,
@@ -53,5 +54,8 @@ Suggests:
     GenomicFeatures,
     GenomicRanges,
     IRanges,
-    BiocManager
+    org.Hs.eg.db,
+    DESeq2,
+    TxDb.Hsapiens.UCSC.hg19.knownGene,
+    TxDb.Hsapiens.UCSC.mm10.knownGene
 VignetteBuilder: knitr

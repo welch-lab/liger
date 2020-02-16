@@ -2211,27 +2211,27 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
 #'
 linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist = "spearman", alpha = 0.05, genome.use) {
   ### check packages
-  if (!require("org.Hs.eg.db", quietly = TRUE)) {
-    print("Package \"org.Hs.eg.db\" needed. Installation started.")
-    BiocManager::install("org.Hs.eg.db")
-    library(org.Hs.eg.db)
-  }
-
-  if (genome.use == "hg19") {
-    if (!require("TxDb.Hsapiens.UCSC.hg19.knownGene", quietly = TRUE)) {
-      print("Package \"TxDb.Hsapiens.UCSC.hg19.knownGene\" needed. Installation started.")
-      BiocManager::install("TxDb.Hsapiens.UCSC.hg19.knownGene")
-      library(TxDb.Hsapiens.UCSC.hg19.knownGene)
-    }
-  } else if (genome.use == "mm10") {
-    if (!require("TxDb.Hsapiens.UCSC.mm10.knownGene", quietly = TRUE)) {
-      print("Package \"TxDb.Hsapiens.UCSC.mm10.knownGene\" needed. Installation started.")
-      BiocManager::install("TxDb.Hsapiens.UCSC.mm10.knownGene")
-      library(TxDb.Hsapiens.UCSC.mm10.knownGene)
-    }
-  } else {
-    stop("Parameter \"genome.use\" not valid.")
-  }
+  # if (!require("org.Hs.eg.db", quietly = TRUE)) {
+  #   print("Package \"org.Hs.eg.db\" needed. Installation started.")
+  #   BiocManager::install("org.Hs.eg.db")
+  #   library(org.Hs.eg.db)
+  # }
+  # 
+  # if (genome.use == "hg19") {
+  #   if (!require("TxDb.Hsapiens.UCSC.hg19.knownGene", quietly = TRUE)) {
+  #     print("Package \"TxDb.Hsapiens.UCSC.hg19.knownGene\" needed. Installation started.")
+  #     BiocManager::install("TxDb.Hsapiens.UCSC.hg19.knownGene")
+  #     library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+  #   }
+  # } else if (genome.use == "mm10") {
+  #   if (!require("TxDb.Hsapiens.UCSC.mm10.knownGene", quietly = TRUE)) {
+  #     print("Package \"TxDb.Hsapiens.UCSC.mm10.knownGene\" needed. Installation started.")
+  #     BiocManager::install("TxDb.Hsapiens.UCSC.mm10.knownGene")
+  #     library(TxDb.Hsapiens.UCSC.mm10.knownGene)
+  #   }
+  # } else {
+  #   stop("Parameter \"genome.use\" not valid.")
+  # }
 
   ### make Granges object for peaks
   peak.names <- strsplit(rownames(peak_counts), "[:-]")
@@ -2256,11 +2256,11 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
   # subset the genomic coordinates by gene symbol
   print("Preparing genomic coordinates...")
   if (genome.use == "hg19") {
-    genes.coords <- GenomicFeatures::genes(TxDb.Hsapiens.UCSC.hg19.knownGene)
+    genes.coords <- GenomicFeatures::genes(TxDb.Hsapiens.UCSC.hg19.knownGene::TxDb.Hsapiens.UCSC.hg19.knownGene)
   } else {
-    genes.coords <- GenomicFeatures::genes(TxDb.Hsapiens.UCSC.mm10.knownGene)
+    genes.coords <- GenomicFeatures::genes(TxDb.Hsapiens.UCSC.mm10.knownGene::TxDb.Hsapiens.UCSC.mm10.knownGene)
   }
-  gene_names <- as.data.frame(org.Hs.egSYMBOL)
+  gene_names <- as.data.frame(org.Hs.eg.db::org.Hs.egSYMBOL)
   rownames(gene_names) <- gene_names$gene_id
   gene_names <- gene_names[genes.coords$gene_id, ]$symbol
   names(genes.coords) <- gene_names
