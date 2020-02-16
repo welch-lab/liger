@@ -2090,7 +2090,6 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
 #'
 #' @return A 10-columns data.frame with test results.
 #' @export
-#' @importFrom presto wilcoxauc
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -2159,10 +2158,10 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
     if (len > 100000) {
       print("Calculating Large-scale Input...")
       results <- Reduce(rbind, lapply(suppressWarnings(split(seq(len), seq(len / 100000))), function(index) {
-        wilcoxauc(log(feature_matrix[index, ] + 1e-10), clusters)
+        presto::wilcoxauc(log(feature_matrix[index, ] + 1e-10), clusters)
       }))
     } else {
-      results <- wilcoxauc(log(feature_matrix + 1e-10), clusters)
+      results <- presto::wilcoxauc(log(feature_matrix + 1e-10), clusters)
     }
   }
   
@@ -2175,7 +2174,7 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
         print(paste0("Note: Skip Cluster ", cluster, " since it has only ONE data source."))
         return()
       }
-      return(wilcoxauc(log(sub_matrix + 1e-10), sub_label))
+      return(presto::wilcoxauc(log(sub_matrix + 1e-10), sub_label))
     }))
   }
   
@@ -2211,28 +2210,9 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
 #'
 linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist = "spearman", alpha = 0.05, genome.use) {
   ### check packages
-  # if (!require("org.Hs.eg.db", quietly = TRUE)) {
-  #   print("Package \"org.Hs.eg.db\" needed. Installation started.")
-  #   BiocManager::install("org.Hs.eg.db")
-  #   library(org.Hs.eg.db)
-  # }
-  # 
-  # if (genome.use == "hg19") {
-  #   if (!require("TxDb.Hsapiens.UCSC.hg19.knownGene", quietly = TRUE)) {
-  #     print("Package \"TxDb.Hsapiens.UCSC.hg19.knownGene\" needed. Installation started.")
-  #     BiocManager::install("TxDb.Hsapiens.UCSC.hg19.knownGene")
-  #     library(TxDb.Hsapiens.UCSC.hg19.knownGene)
-  #   }
-  # } else if (genome.use == "mm10") {
-  #   if (!require("TxDb.Hsapiens.UCSC.mm10.knownGene", quietly = TRUE)) {
-  #     print("Package \"TxDb.Hsapiens.UCSC.mm10.knownGene\" needed. Installation started.")
-  #     BiocManager::install("TxDb.Hsapiens.UCSC.mm10.knownGene")
-  #     library(TxDb.Hsapiens.UCSC.mm10.knownGene)
-  #   }
-  # } else {
-  #   stop("Parameter \"genome.use\" not valid.")
-  # }
-
+  if (genome.use != 'mm10' & genome.use != 'hg19') {
+    stop("Parameter \"genome.use\" not valid.")
+  }
   ### make Granges object for peaks
   peak.names <- strsplit(rownames(peak_counts), "[:-]")
   chrs <- Reduce(append, lapply(peak.names, function(peak) {
