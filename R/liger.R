@@ -2107,12 +2107,27 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
 #' }
 #'
 runWilcoxon <- function(object, data.use = "all", compare.method) {
+  ### check dependencies
+  if (!requireNamespace("DESeq2", quietly = TRUE)) {
+    stop("Package \"DESeq2\" needed for this function to work. Please install it by command:\n",
+      "devtools::install_github('mikelove/DESeq2')",
+      call. = FALSE
+    )
+  }
+
+  if (!requireNamespace("presto", quietly = TRUE)) {
+    stop("Package \"presto\" needed for this function to work. Please install it by command:\n",
+      "devtools::install_github('immunogenomics/presto')",
+      call. = FALSE
+    )
+  }
+
   # check parameter inputs
   if (missing(compare.method)) {
     stop("Parameter *compare.method* cannot be empty!")
   }
-  if (compare.method != 'datasets' & compare.method != 'clusters'){
-    stop('Parameter *compare.method* should be either *clusters* or *datasets*.')
+  if (compare.method != "datasets" & compare.method != "clusters") {
+    stop("Parameter *compare.method* should be either *clusters* or *datasets*.")
   }
   if (compare.method == "datasets") {
     if (length(names(object@norm.data)) < 2) {
@@ -2122,7 +2137,7 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
       stop("Should have at least TWO inputs to compare between datasets")
     }
   }
-  
+
   ### create feature x sample matrix
   if (data.use == "all" | length(data.use) > 1) { # at least two datasets
     if (data.use == "all") {
@@ -2136,11 +2151,11 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
     genes <- Reduce(intersect, lapply(sample.list, function(sample) {
       object@norm.data[[sample]]@Dimnames[[1]]
     })) # get all shared genes of every datasets
-    
+
     feature_matrix <- Reduce(cbind, lapply(sample.list, function(sample) {
       object@norm.data[[sample]][genes, ]
     })) # get feature matrix, shared genes as rows and all barcodes as columns
-    
+
     # get labels of clusters and datasets
     cell_source <- object@cell.data[["dataset"]] # from which dataset
     names(cell_source) <- names(object@clusters)
@@ -2151,7 +2166,7 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
     feature_matrix <- object@norm.data[[data.use]]
     clusters <- object@clusters[object@norm.data[[data.use]]@Dimnames[[2]], drop = TRUE] # from which cluster
   }
-  
+
   ### perform wilcoxon test
   if (compare.method == "clusters") { # compare between clusters across datasets
     len <- nrow(feature_matrix)
@@ -2164,7 +2179,7 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
       results <- presto::wilcoxauc(log(feature_matrix + 1e-10), clusters)
     }
   }
-  
+
   if (compare.method == "datasets") { # compare between datasets within each cluster
     results <- Reduce(rbind, lapply(levels(clusters), function(cluster) {
       sub_barcodes <- names(clusters[clusters == cluster]) # every barcode within this cluster
@@ -2177,7 +2192,7 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
       return(presto::wilcoxauc(log(sub_matrix + 1e-10), sub_label))
     }))
   }
-  
+
   return(results)
 }
 
@@ -2210,9 +2225,38 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
 #'
 linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist = "spearman", alpha = 0.05, genome.use) {
   ### check packages
-  if (genome.use != 'mm10' & genome.use != 'hg19') {
+  if (!requireNamespace("org.Hs.eg.db", quietly = TRUE)) {
+    stop("Package \"org.Hs.eg.db\" needed for this function to work.\n",
+      "Please install it from Bioconductor:\n",
+      "BiocManager::install('org.Hs.eg.db')",
+      call. = FALSE
+    )
+  }
+
+  if (genome.use == "hg19") {
+    if (!requireNamespace("TxDb.Hsapiens.UCSC.hg19.knownGene", quietly = TRUE)) {
+      stop("Package \"TxDb.Hsapiens.UCSC.hg19.knownGene\" needed for this function to work\n",
+        "Please install it from Bioconductor:\n",
+        "BiocManager::install('TxDb.Hsapiens.UCSC.hg19.knownGene')",
+        call. = FALSE
+      )
+    }
+  }
+
+  if (genome.use == "mm10") {
+    if (!requireNamespace("TxDb.Mmusculus.UCSC.mm10.knownGene", quietly = TRUE)) {
+      stop("Package \"TxDb.Mmusculus.UCSC.mm10.knownGene\" needed for this function to work\n",
+        "Please install it from Bioconductor:\n",
+        "BiocManager::install('TxDb.Mmusculus.UCSC.mm10.knownGene')",
+        call. = FALSE
+      )
+    }
+  }
+
+  if (genome.use != "mm10" & genome.use != "hg19") {
     stop("Parameter \"genome.use\" not valid.")
   }
+
   ### make Granges object for peaks
   peak.names <- strsplit(rownames(peak_counts), "[:-]")
   chrs <- Reduce(append, lapply(peak.names, function(peak) {
@@ -2238,7 +2282,7 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
   if (genome.use == "hg19") {
     genes.coords <- GenomicFeatures::genes(TxDb.Hsapiens.UCSC.hg19.knownGene::TxDb.Hsapiens.UCSC.hg19.knownGene)
   } else {
-    genes.coords <- GenomicFeatures::genes(TxDb.Hsapiens.UCSC.mm10.knownGene::TxDb.Hsapiens.UCSC.mm10.knownGene)
+    genes.coords <- GenomicFeatures::genes(TxDb.Mmusculus.UCSC.mm10.knownGene::TxDb.Mmusculus.UCSC.mm10.knownGene)
   }
   gene_names <- as.data.frame(org.Hs.eg.db::org.Hs.egSYMBOL)
   rownames(gene_names) <- gene_names$gene_id
@@ -2266,10 +2310,13 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
   elements <- lapply(seq(length(genes.list)), function(pos) {
     gene.use <- genes.list[pos]
     # re-scale the window for each gene
-    gene.loci <- trim(suppressWarnings(promoters(resize(genes.coords[gene.use], width = 1, fix = "start"),
-      upstream = 500000, downstream = 500000
+    gene.loci <- GenomicRanges::trim(suppressWarnings(GenomicRanges::promoters(GenomicRanges::resize(
+      genes.coords[gene.use],
+      width = 1, fix = "start"
+    ),
+    upstream = 500000, downstream = 500000
     )))
-    peaks.use <- queryHits(findOverlaps(peaks.pos, gene.loci))
+    peaks.use <- S4Vectors::queryHits(GenomicRanges::findOverlaps(peaks.pos, gene.loci))
     if ((x <- length(peaks.use)) == 0L) { # if no peaks in window, skip this iteration
       return(list(NULL, as.numeric(each.len), NULL))
     }

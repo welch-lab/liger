@@ -30,10 +30,7 @@ Imports: Rcpp (>= 0.12.10),
      patchwork,
      stats,
      psych,
-     TxDb.Hsapiens.UCSC.hg19.knownGene,
-     TxDb.Mmusculus.UCSC.mm10.knownGene,
-     org.Hs.eg.db,
-     DelayedArray
+     RANN.L1
 Remotes: thomasp85/patchwork,
      mikelove/DESeq2,
      immunogenomics/presto,
@@ -53,11 +50,14 @@ Suggests:
     reticulate,
     rmarkdown,
     NNLM,
-    RANN.L1,
     testthat,
-    presto,
     GenomicFeatures,
     GenomicRanges,
     IRanges,
-    DESeq2
+    S4Vectors,
+    TxDb.Hsapiens.UCSC.hg19.knownGene,
+    TxDb.Mmusculus.UCSC.mm10.knownGene,
+    org.Hs.eg.db,
+    DESeq2,
+    presto
 VignetteBuilder: knitr
