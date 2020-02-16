@@ -260,33 +260,33 @@ test_that("Imputation results correct", {
 # Since this function depends on the cluster assignments, optimizeALS and quantileAlignSNF
 # should be performed before this test
 ####################################################################################
-# context("Running Wilcoxon tests")
-# 
-# wilcox.results <- runWilcoxon(ligex, data.use = 2, compare.method = "clusters")
-# 
-# test_that("Wilcoxon test for 'clusters' results correct", {
-#   expect_equal(wilcox.results[1, 1], "AAED1")
-#   expect_equivalent(wilcox.results[1, 7], 0.6986961322, tolerance = 1e-8)
-# })
-# 
-# wilcox.results <- runWilcoxon(ligex, compare.method = "datasets")
-# 
-# test_that("Wilcoxon test for 'datasets' results correct", {
-#   expect_equal(wilcox.results[1, 1], "ISG15")
-#   expect_equivalent(wilcox.results[1, 7], 0.6557919528, tolerance = 1e-8)
-# })
+context("Running Wilcoxon tests")
+
+wilcox.results <- runWilcoxon(ligex, data.use = 2, compare.method = "clusters")
+
+test_that("Wilcoxon test for 'clusters' results correct", {
+  expect_equal(wilcox.results[1, 1], "AAED1")
+  expect_equivalent(wilcox.results[1, 7], 0.6986961322, tolerance = 1e-8)
+})
+
+wilcox.results <- runWilcoxon(ligex, compare.method = "datasets")
+
+test_that("Wilcoxon test for 'datasets' results correct", {
+  expect_equal(wilcox.results[1, 1], "ISG15")
+  expect_equivalent(wilcox.results[1, 7], 0.6557919528, tolerance = 1e-8)
+})
 
 # Tests for Creating gene-peak regulation network
 # Since this function depends on the cluster assignments, optimizeALS and quantileAlignSNF
 # should be performed before this test
 ####################################################################################
-# context("Linking Genes and Peaks")
-# 
-# gmat.small <- readRDS("../testdata/small_gmat.RDS")
-# pmat.small <- readRDS("../testdata/small_pmat.RDS")
-# regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", alpha = 0.05, genome.use = "hg19") # about 40 mins
-# 
-# test_that("Testing linkage between gene and peaks", {
-#   expect_equivalent(regnet[9, 25], -0.04162306294, tolerance = 1e-8)
-#   expect_equal(dim(regnet), c(200, 91))
-# })
+context("Linking Genes and Peaks")
+
+gmat.small <- readRDS("../testdata/small_gmat.RDS")
+pmat.small <- readRDS("../testdata/small_pmat.RDS")
+regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", alpha = 0.05, genome.use = "hg19") # about 40 mins
+
+test_that("Testing linkage between gene and peaks", {
+  expect_equivalent(regnet[9, 25], -0.04162306294, tolerance = 1e-8)
+  expect_equal(dim(regnet), c(200, 91))
+})

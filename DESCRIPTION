@@ -34,7 +34,8 @@ Imports: Rcpp (>= 0.12.10),
 Remotes: thomasp85/patchwork,
      mikelove/DESeq2,
      immunogenomics/presto,
-     jefferis/RANN@master-L1
+     jefferis/RANN@master-L1,
+     linxihui/NNLM
 biocViews:
 LinkingTo: Rcpp, RcppArmadillo
 Depends:
