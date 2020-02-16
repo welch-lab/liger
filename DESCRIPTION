@@ -33,6 +33,7 @@ Imports: Rcpp (>= 0.12.10),
      presto,
      psych
 Remotes: thomasp85/patchwork,
+     mikelove/DESeq2,
      immunogenomics/presto
 biocViews:
 LinkingTo: Rcpp, RcppArmadillo
