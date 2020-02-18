@@ -28,13 +28,16 @@ Imports: Rcpp (>= 0.12.10),
      doSNOW,
      mclust,
      patchwork,
-     stats
+     stats,
+     psych
 Remotes: thomasp85/patchwork,
      mikelove/DESeq2,
      immunogenomics/presto,
      jefferis/RANN@master-L1,
-     linxihui/NNLM
-biocViews:
+     linxihui/NNLM,
+     bioc::release/GenomicRanges,
+     bioc::release/IRanges
+LazyData: true
 LinkingTo: Rcpp, RcppArmadillo
 Depends:
     cowplot,
@@ -55,6 +58,5 @@ Suggests:
     S4Vectors,
     DESeq2,
     presto,
-    psych,
     RANN.L1
 VignetteBuilder: knitr
