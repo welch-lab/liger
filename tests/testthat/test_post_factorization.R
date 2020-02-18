@@ -282,11 +282,35 @@ test_that("Wilcoxon test for 'datasets' results correct", {
 ####################################################################################
 context("Linking Genes and Peaks")
 
-gmat.small <- readRDS("../testdata/small_gmat.RDS")
-pmat.small <- readRDS("../testdata/small_pmat.RDS")
-regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", alpha = 0.05, genome.use = "hg19") # about 40 mins
+temp_bed <- data.frame(
+  V1 = c("chr1", "chr1"),
+  V2 = c(1353799, 1337275),
+  V3 = c(1356824, 1342693),
+  V4 = c("ANKRD65", "MRPL20")
+)
+
+write.table(temp_bed,
+  file = "../testdata/temp_coords.bed", append = TRUE,
+  quote = FALSE, sep = "\t", eol = "\n", na = "NA", dec = ".",
+  row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
+  fileEncoding = ""
+)
+
+set.seed(17)
+psudo_data <- rnorm(200, mean = 0.5, sd = 0.1)
+gmat.small <- Matrix(
+  data = psudo_data, nrow = 2, ncol = 100,
+  dimnames = list(c("MRPL20", "ANKRD65"), paste0("cell_", seq(1:100))), sparse = T
+)
+pmat.small <- Matrix(
+  data = c(psudo_data[1:100], psudo_data[101:200] + 0.2), nrow = 2, ncol = 100,
+  dimnames = list(c("chr1:1821507-1822007", "chr1:1850611-1851111"), paste0("cell_", seq(1:100))), sparse = T
+)
+
+regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", alpha = 0.05, path_to_coords = "../testdata/temp_coords.bed") # about 40 mins
 
 test_that("Testing linkage between gene and peaks", {
-  expect_equivalent(regnet[9, 25], -0.04162306294, tolerance = 1e-8)
-  expect_equal(dim(regnet), c(200, 91))
+  expect_equivalent(regnet[1, 1], 0.6340474, tolerance = 1e-7)
+  expect_equivalent(regnet[2, 2], 0.6929733, tolerance = 1e-7)
 })
+unlink("../testdata/temp_coords.bed")

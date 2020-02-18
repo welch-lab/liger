@@ -1842,7 +1842,6 @@ quantileAlignSNF.liger <- function(
 #'   is the edge weight representation of the shared factor neighborhood graph.
 #'
 #' @export
-#' @importFrom RANN.L1 nn2
 #' @importFrom FNN get.knn
 #'
 #' @examples
@@ -1917,7 +1916,7 @@ SNF.list <- function(
   cl <- levels(x = max.val)[which(x = table(max.val) < small.clust.thresh)]
   cells.cl <- names(x = max.val)[which(x = max.val %in% cl)]
   idents[cells.cl] <- paste0("F", as.character(x = max.val[cells.cl]))
-  nn.obj <- nn2(
+  nn.obj <- RANN.L1::nn2(
     data = NN.maxes[setdiff(x = rownames(x = NN.maxes), y = cells.cl), ],
     k = k2
   )
@@ -2209,54 +2208,19 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
 #' @param alpha Significance threshold for correlation p-value. Peak-gene correlations with p-values below
 #' this threshold are considered significant. The default is 0.05.
 #' @param dist This indicates the type of correlation to calculate -- one of “spearman” (default), "pearson", or "kendall".
-#' @param genome.use Genome to be used for identifying genes and peaks locations. The default is ‘hg19’.
-#' The function also works with ‘mm10’.
+#' @param path_to_coords Path to the gene coordinates file.
 #'
 #' @return a sparse matrix with peak names as rows and gene symbols as columns, with each element indicating the
 #' correlation between peak i and gene j (or 0 if the gene and peak are not significantly linked).
 #' @export
-#' @importFrom psych corr.test
 #' @examples
 #' \dontrun{
 #' gmat.small <- readRDS("../testdata/small_gmat.RDS") # some gene counts matrix
 #' pmat.small <- readRDS("../testdata/small_pmat.RDS") # some peak counts matrix
-#' regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", alpha = 0.05, genome.use = "hg19")
+#' regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", alpha = 0.05, path_to_coords = 'some_path')
 #' }
 #'
-linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist = "spearman", alpha = 0.05, genome.use) {
-  ### check packages
-  if (!requireNamespace("org.Hs.eg.db", quietly = TRUE)) {
-    stop("Package \"org.Hs.eg.db\" needed for this function to work.\n",
-      "Please install it from Bioconductor:\n",
-      "BiocManager::install('org.Hs.eg.db')",
-      call. = FALSE
-    )
-  }
-
-  if (genome.use == "hg19") {
-    if (!requireNamespace("TxDb.Hsapiens.UCSC.hg19.knownGene", quietly = TRUE)) {
-      stop("Package \"TxDb.Hsapiens.UCSC.hg19.knownGene\" needed for this function to work\n",
-        "Please install it from Bioconductor:\n",
-        "BiocManager::install('TxDb.Hsapiens.UCSC.hg19.knownGene')",
-        call. = FALSE
-      )
-    }
-  }
-
-  if (genome.use == "mm10") {
-    if (!requireNamespace("TxDb.Mmusculus.UCSC.mm10.knownGene", quietly = TRUE)) {
-      stop("Package \"TxDb.Mmusculus.UCSC.mm10.knownGene\" needed for this function to work\n",
-        "Please install it from Bioconductor:\n",
-        "BiocManager::install('TxDb.Mmusculus.UCSC.mm10.knownGene')",
-        call. = FALSE
-      )
-    }
-  }
-
-  if (genome.use != "mm10" & genome.use != "hg19") {
-    stop("Parameter \"genome.use\" not valid.")
-  }
-
+linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist = "spearman", alpha = 0.05, path_to_coords) {
   ### make Granges object for peaks
   peak.names <- strsplit(rownames(peak_counts), "[:-]")
   chrs <- Reduce(append, lapply(peak.names, function(peak) {
@@ -2273,34 +2237,31 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
     ranges = IRanges::IRanges(as.numeric(chrs.start), end = as.numeric(chrs.end))
   )
 
+  ### make Granges object for genes
+  gene.names <- read.csv2(path_to_coords, sep = "\t", header = FALSE, stringsAsFactors = F)
+  genes.coords <- GenomicRanges::GRanges(
+    seqnames = gene.names$V1,
+    ranges = IRanges::IRanges(as.numeric(gene.names$V2), end = as.numeric(gene.names$V3))
+  )
+  names(genes.coords) <- gene.names$V4
+
   ### construct regnet
   gene_counts <- t(gene_counts) # cell x genes
   peak_counts <- t(peak_counts) # cell x genes
-
-  # subset the genomic coordinates by gene symbol
-  print("Preparing genomic coordinates...")
-  if (genome.use == "hg19") {
-    genes.coords <- GenomicFeatures::genes(TxDb.Hsapiens.UCSC.hg19.knownGene::TxDb.Hsapiens.UCSC.hg19.knownGene)
-  } else {
-    genes.coords <- GenomicFeatures::genes(TxDb.Mmusculus.UCSC.mm10.knownGene::TxDb.Mmusculus.UCSC.mm10.knownGene)
-  }
-  gene_names <- as.data.frame(org.Hs.eg.db::org.Hs.egSYMBOL)
-  rownames(gene_names) <- gene_names$gene_id
-  gene_names <- gene_names[genes.coords$gene_id, ]$symbol
-  names(genes.coords) <- gene_names
-  genes.coords <- genes.coords[complete.cases(names(genes.coords)), ]
 
   # find overlap peaks for each gene
   if (missing(genes.list)) {
     genes.list <- colnames(gene_counts)
   }
   missing_genes <- !genes.list %in% names(genes.coords)
-  print(
-    paste0(
-      "Removing ", sum(missing_genes),
-      " genes not in UCSC known genes..."
+  if (missing_genes!=0){
+    print(
+      paste0(
+        "Removing ", sum(missing_genes),
+        " genes not found in given gene coordinates..."
+      )
     )
-  )
+  }
   genes.list <- genes.list[!missing_genes]
   genes.coords <- genes.coords[genes.list]
 
@@ -2321,7 +2282,7 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
       return(list(NULL, as.numeric(each.len), NULL))
     }
     ### compute correlation and p-adj for genes and peaks ###
-    res <- suppressWarnings(corr.test(
+    res <- suppressWarnings(psych::corr.test(
       x = gene_counts[, gene.use], y = as.matrix(peak_counts[, peaks.use]),
       method = dist, adjust = "holm", ci = FALSE, use = "complete"
     ))
@@ -2357,7 +2318,6 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
 
   return(regnet)
 }
-
 
 #######################################################################################
 #### Dimensionality Reduction

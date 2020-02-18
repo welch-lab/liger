@@ -28,9 +28,7 @@ Imports: Rcpp (>= 0.12.10),
      doSNOW,
      mclust,
      patchwork,
-     stats,
-     psych,
-     RANN.L1
+     stats
 Remotes: thomasp85/patchwork,
      mikelove/DESeq2,
      immunogenomics/presto,
@@ -52,13 +50,11 @@ Suggests:
     rmarkdown,
     NNLM,
     testthat,
-    GenomicFeatures,
     GenomicRanges,
     IRanges,
     S4Vectors,
-    TxDb.Hsapiens.UCSC.hg19.knownGene,
-    TxDb.Mmusculus.UCSC.mm10.knownGene,
-    org.Hs.eg.db,
     DESeq2,
-    presto
+    presto,
+    psych,
+    RANN.L1
 VignetteBuilder: knitr

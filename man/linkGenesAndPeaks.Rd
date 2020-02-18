@@ -10,7 +10,7 @@ linkGenesAndPeaks(
   genes.list = NULL,
   dist = "spearman",
   alpha = 0.05,
-  genome.use
+  path_to_coords
 )
 }
 \arguments{
@@ -28,8 +28,7 @@ this function will use all the gene symbols from the matrix passed to gmat by de
 \item{alpha}{Significance threshold for correlation p-value. Peak-gene correlations with p-values below
 this threshold are considered significant. The default is 0.05.}
 
-\item{genome.use}{Genome to be used for identifying genes and peaks locations. The default is ‘hg19’.
-The function also works with ‘mm10’.}
+\item{path_to_coords}{Path to the gene coordinates file.}
 }
 \value{
 a sparse matrix with peak names as rows and gene symbols as columns, with each element indicating the
