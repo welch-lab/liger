@@ -51,9 +51,9 @@ test_that("Factorization is correct", {
 # TODO: Add tests for updating k, or with new data
 # Note that this should be done so that total test time still < 60s or skip on cran
 
-# Tests for shared factor neighborhood quantile alignment
+# Tests for shared factor neighborhood quantile alignment -- deprecated
 ####################################################################################
-context("Quantile alignment")
+context("Deprecated -- Quantile alignment")
 
 ligex <- quantileAlignSNF(ligex, knn_k = 20, k2 = 200, resolution = 1)
 
@@ -76,6 +76,7 @@ test_that("Alignment and clustering are correct", {
 # TODO: Add tests for saving of SNF (once better parameter setting in place)
 # TODO: Add tests for different knn_k and k2 settings 
 
+#### Tests for new functions
 ligex <- quantileAlignSNF(ligex, knn_k = 20, k2 = 200, resolution = 1.5)
 
 test_that("Number of clusters increases to correct value", {
@@ -90,6 +91,59 @@ test_that("New alignment and clustering are correct", {
   expect_equal(as.character(ligex@alignment.clusters[3]), "4")
   expect_equal(as.character(ligex@alignment.clusters[203]), "0")
 })
+
+# Tests for shared factor neighborhood quantile alignment
+####################################################################################
+context("Quantile alignment")
+
+ligex.ds <- ligex
+ligex.ds <- quantile_norm(ligex.ds)
+
+test_that("Dimensions and lengths are correct", {
+  expect_equal(dim(ligex.ds@H.norm), c(494, 15))
+  expect_equal(length(ligex.ds@alignment.clusters), 494)
+  expect_equal(length(ligex.ds@clusters), 494)
+  expect_equal(levels(ligex.ds@clusters), c("1" ,"10","11","12","13","14","15","2","3","4","5","6","7","8","9" ))
+})
+
+test_that("Alignment and clustering are correct", {
+  expect_equal(ligex.ds@H.norm[5, 1:5], c(0.004141647, 0, 0.002073747, 0, 0),
+               tolerance = 1e-6)
+  expect_equal(ligex.ds@H.norm[405, 1:5], c(0.0022715258, 0.0194911522, 0.0077549767, 0, 0.0003304383),
+               tolerance = 1e-6)
+  expect_equal(as.character(ligex.ds@alignment.clusters[3]), "4")
+  expect_equal(as.character(ligex.ds@alignment.clusters[203]), "0")
+})
+
+ligex.ds <- quantile_norm(ligex.ds, eps = 3, knn_k = 50)
+
+test_that("Number of clusters increases to correct value", {
+  expect_equal(levels(ligex.ds@clusters), c("1" ,"10","11","12","13","14","15","2","3","4","5","6","7","8","9" ))
+})
+
+test_that("New alignment and clustering are correct", {
+  expect_equal(ligex.ds@H.norm[5, 1:5], c(0.004141647, 0, 0.002073747, 0, 0),
+               tolerance = 1e-6)
+  expect_equal(ligex.ds@H.norm[405, 1:5], c(2.522757e-03, 8.402540e-03, 7.761288e-03, 1.924189e-05, 1.065345e-04),
+               tolerance = 1e-6)
+  expect_equal(as.character(ligex.ds@alignment.clusters[3]), "4")
+  expect_equal(as.character(ligex.ds@alignment.clusters[203]), "0")
+})
+
+# Tests for Louvain Community Detection
+####################################################################################
+context("Louvain Community Detection")
+
+ligex.ds <- louvainCluster(ligex.ds)
+
+test_that("Dimensions and lengths are correct", {
+  expect_equal(dim(ligex.ds@H.norm), c(494, 15))
+  expect_equal(length(ligex.ds@alignment.clusters), 494)
+  expect_equal(length(ligex.ds@clusters), 494)
+  expect_equal(levels(ligex.ds@clusters), c("0", "1", "2", "3", "4", "5", "6", "7"))
+})
+rm(ligex.ds)
+
 
 # Tests for dimensional reduction
 # These are included here because these functions are object dependent,

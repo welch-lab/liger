@@ -2,6 +2,7 @@
 // Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #include <RcppArmadillo.h>
+#include <RcppEigen.h>
 #include <Rcpp.h>
 
 using namespace Rcpp;
@@ -52,6 +53,44 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cluster_vote
+IntegerVector cluster_vote(const Eigen::MatrixXd& nn_ranked, IntegerVector clusts);
+RcppExport SEXP _liger_cluster_vote(SEXP nn_rankedSEXP, SEXP clustsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type nn_ranked(nn_rankedSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type clusts(clustsSEXP);
+    rcpp_result_gen = Rcpp::wrap(cluster_vote(nn_ranked, clusts));
+    return rcpp_result_gen;
+END_RCPP
+}
+// scale_columns_fast
+Eigen::MatrixXd scale_columns_fast(Eigen::MatrixXd mat, bool scale, bool center);
+RcppExport SEXP _liger_scale_columns_fast(SEXP matSEXP, SEXP scaleSEXP, SEXP centerSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< bool >::type scale(scaleSEXP);
+    Rcpp::traits::input_parameter< bool >::type center(centerSEXP);
+    rcpp_result_gen = Rcpp::wrap(scale_columns_fast(mat, scale, center));
+    return rcpp_result_gen;
+END_RCPP
+}
+// max_factor
+IntegerVector max_factor(Eigen::MatrixXd H, IntegerVector dims_use, bool center_cols);
+RcppExport SEXP _liger_max_factor(SEXP HSEXP, SEXP dims_useSEXP, SEXP center_colsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type H(HSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type dims_use(dims_useSEXP);
+    Rcpp::traits::input_parameter< bool >::type center_cols(center_colsSEXP);
+    rcpp_result_gen = Rcpp::wrap(max_factor(H, dims_use, center_cols));
+    return rcpp_result_gen;
+END_RCPP
+}
 // solveNNLS
 arma::mat solveNNLS(const arma::mat& C, const arma::mat& B);
 RcppExport SEXP _liger_solveNNLS(SEXP CSEXP, SEXP BSEXP) {
@@ -70,6 +109,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_liger_rowMeansFast", (DL_FUNC) &_liger_rowMeansFast, 1},
     {"_liger_rowVarsFast", (DL_FUNC) &_liger_rowVarsFast, 2},
     {"_liger_makeFeatureMatrix", (DL_FUNC) &_liger_makeFeatureMatrix, 2},
+    {"_liger_cluster_vote", (DL_FUNC) &_liger_cluster_vote, 2},
+    {"_liger_scale_columns_fast", (DL_FUNC) &_liger_scale_columns_fast, 3},
+    {"_liger_max_factor", (DL_FUNC) &_liger_max_factor, 3},
     {"_liger_solveNNLS", (DL_FUNC) &_liger_solveNNLS, 2},
     {NULL, NULL, 0}
 };

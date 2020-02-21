@@ -17,6 +17,18 @@ makeFeatureMatrix <- function(bedmat, barcodes) {
     .Call('_liger_makeFeatureMatrix', PACKAGE = 'liger', bedmat, barcodes)
 }
 
+cluster_vote <- function(nn_ranked, clusts) {
+    .Call('_liger_cluster_vote', PACKAGE = 'liger', nn_ranked, clusts)
+}
+
+scale_columns_fast <- function(mat, scale = TRUE, center = TRUE) {
+    .Call('_liger_scale_columns_fast', PACKAGE = 'liger', mat, scale, center)
+}
+
+max_factor <- function(H, dims_use, center_cols = FALSE) {
+    .Call('_liger_max_factor', PACKAGE = 'liger', H, dims_use, center_cols)
+}
+
 solveNNLS <- function(C, B) {
     .Call('_liger_solveNNLS', PACKAGE = 'liger', C, B)
 }

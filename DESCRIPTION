@@ -29,7 +29,9 @@ Imports: Rcpp (>= 0.12.10),
      mclust,
      patchwork,
      stats,
-     psych
+     psych,
+     RcppEigen,
+     RANN
 Remotes: thomasp85/patchwork,
      mikelove/DESeq2,
      immunogenomics/presto,
@@ -38,7 +40,7 @@ Remotes: thomasp85/patchwork,
      bioc::release/GenomicRanges,
      bioc::release/IRanges
 LazyData: true
-LinkingTo: Rcpp, RcppArmadillo
+LinkingTo: Rcpp, RcppArmadillo, RcppEigen
 Depends:
     cowplot,
     Matrix,

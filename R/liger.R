@@ -1531,6 +1531,175 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 
 #######################################################################################
 #### Quantile Alignment/Normalization
+#' Quantile align (normalize) factor loadings
+#'
+#' This process builds a shared factor neighborhood graph to jointly cluster cells, then quantile
+#' normalizes corresponding clusters.
+#'
+#' The first step, building the shared factor neighborhood graph, is performed in SNF(), and
+#' produces a graph representation where edge weights between cells (across all datasets)
+#' correspond to their similarity in the shared factor neighborhood space. An important parameter
+#' here is knn_k, the number of neighbors used to build the shared factor space. 
+#'
+#' Next we perform quantile alignment for each dataset, factor, and cluster (by
+#' stretching/compressing datasets' quantiles to better match those of the reference dataset). These
+#' aligned factor loadings are combined into a single matrix and returned as H.norm.
+#'
+#' @param object \code{liger} object. Should run optimizeALS before calling.
+#' @param knn_k Number of nearest neighbors for within-dataset knn graph (default 20).
+#' @param ref_dataset Name of dataset to use as a "reference" for normalization. By default,
+#'   the dataset with the largest number of cells is used.
+#' @param min_cells Minimum number of cells to consider a cluster shared across datasets (default 20)
+#' @param quantiles Number of quantiles to use for quantile normalization (default 50).
+#' @param eps  The error bound of the nearest neighbor search. (default 0.9) Lower values give more 
+#' accurate nearest neighbor graphs but take much longer to computer.
+#' @param dims.use Indices of factors to use for shared nearest factor determination (default
+#'   1:ncol(H[[1]])).
+#' @param do.center Centers the data when scaling factors (useful for less sparse modalities like
+#'   methylation data). (default FALSE)
+#' @param max_sample Maximum number of cells used for quantile normalization of each cluster 
+#' and factor. (default 1000)
+#' @param refine.knn whether to increase robustness of cluster assignments using KNN graph.(default TRUE)
+#' @param ... Arguments passed to other methods
+#'
+#' @return \code{liger} object with 'H.norm' and 'clusters' slot set.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # liger object, factorization complete
+#' ligerex
+#' # do basic quantile alignment
+#' ligerex <- quantile_norm(ligerex)
+#' # higher resolution for more clusters (note that SNF is conserved)
+#' ligerex <- quantile_norm(ligerex, resolution = 1.2)
+#' # change knn_k for more fine-grained local clustering
+#' ligerex <- quantile_norm(ligerex, knn_k = 15, resolution = 1.2)
+#' }
+#'
+quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells = 20, knn_k = 20, 
+                          dims.use = NULL, do.center = F, max_sample = 1000, eps = 0.9, refine.knn = T) {
+  if (is.null(ref_dataset)) {
+    ns <- sapply(object@scale.data, nrow)
+    ref_dataset <- names(object@scale.data)[which.max(ns)]
+  }
+  labels <- list()
+  if (is.null(dims.use)) {
+    use_these_factors <- 1:ncol(object@H[[1]])
+  }
+  else {
+    use_these_factors <- dims.use
+  }
+  # fast max factor assignment with Rcpp code
+  labels <- lapply(object@H, max_factor, dims_use = use_these_factors, center_cols = do.center)
+  object@clusters <- as.factor(unlist(lapply(labels, as.character)))
+  names(object@clusters) <- unlist(lapply(object@scale.data, rownames))
+
+  # increase robustness of cluster assignments using knn graph
+  if (refine.knn) {
+    object@clusters <- refine_clusts_knn(object@H, object@clusters, k = knn_k, eps = eps)
+  }
+  clusters <- lapply(object@H, function(x) {
+    object@clusters[rownames(x)]
+  })
+  names(clusters) <- names(object@H)
+  dims <- ncol(object@H[[ref_dataset]])
+
+  dataset <- unlist(lapply(1:length(object@H), function(i) {
+    rep(names(object@H)[i], nrow(object@H[[i]]))
+  }))
+  Hs <- object@H
+  num_clusters <- dims
+  for (k in 1:length(object@H)) {
+    for (j in 1:num_clusters) {
+      cells2 <- which(clusters[[k]] == j)
+      cells1 <- which(clusters[[ref_dataset]] == j)
+      for (i in 1:dims) {
+        num_cells2 <- length(cells2)
+        num_cells1 <- length(cells1)
+        if (num_cells1 < min_cells | num_cells2 < min_cells) {
+          next
+        }
+        if (num_cells2 == 1) {
+          Hs[[k]][cells2, i] <- mean(Hs[[ref_dataset]][cells1, i])
+          next
+        }
+        if (num_cells2 > max_sample | num_cells1 > max_sample) {
+          q2 <- quantile(sample(Hs[[k]][cells2, i], min(num_cells2, max_sample)), seq(0, 1, by = 1 / quantiles))
+          q1 <- quantile(sample(Hs[[ref_dataset]][cells1, i], min(num_cells1, max_sample)), seq(0, 1, by = 1 / quantiles))
+        }
+        else {
+          q2 <- quantile(sample(Hs[[k]][cells2, i], min(num_cells2, max_sample)), seq(0, 1, by = 1 / quantiles))
+          q1 <- quantile(sample(Hs[[ref_dataset]][cells1, i], min(num_cells1, max_sample)), seq(0, 1, by = 1 / quantiles))
+        }
+        if (sum(q1) == 0 | sum(q2) == 0 | length(unique(q1)) <
+          2 | length(unique(q2)) < 2) {
+          new_vals <- rep(0, num_cells2)
+        }
+        else {
+          warp_func <- approxfun(q2, q1, rule = 2)
+          new_vals <- warp_func(Hs[[k]][cells2, i])
+        }
+        Hs[[k]][cells2, i] <- new_vals
+      }
+    }
+  }
+  object@H.norm <- Reduce(rbind, Hs)
+  return(object)
+}
+
+#' Louvain algorithm for community detection
+#'
+#' @description
+#' After quantile normalization, users can additionally run the Louvain algorithm 
+#' for community detection, which is widely used in single-cell analysis and excels at merging 
+#' small clusters into broad cell classes.
+#'
+#' @param object \code{liger} object. Should run quantile_norm before calling.
+#' @param k The maximum number of nearest neighbours to compute. (default 20)
+#' @param resolution Value of the resolution parameter, use a value above (below) 1.0 if you want 
+#' to obtain a larger (smaller) number of communities. (default 1.0)
+#' @param prune Sets the cutoff for acceptable Jaccard index when
+#' computing the neighborhood overlap for the SNN construction. Any edges with
+#' values less than or equal to this will be set to 0 and removed from the SNN
+#' graph. Essentially sets the strigency of pruning (0 --- no pruning, 1 ---
+#' prune everything). (default 1/15)
+#' @param eps The error bound of the nearest neighbor search. (default 0.1)
+#' @param nRandomStarts Number of random starts. (default 10)
+#' @param nIterations Maximal number of iterations per random start. (default 100)
+#' @param random.seed Seed of the random number generator. (default 1)
+#'
+#' @return \code{liger} object with refined 'clusters' slot set.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # liger object, factorization complete
+#' ligerex <- louvainCluster(ligerex, resulotion = 0.3)
+#' }
+#'
+
+louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps = 0.1, nRandomStarts = 10,
+                           nIterations = 100, random.seed = 1) {
+  if (!requireNamespace("Seurat", quietly = TRUE)) {
+    stop("Package \"Seurat\" needed for this function to work. Please install it.",
+      call. = FALSE
+    )
+  }
+  output_path <- paste0(getwd(), '/edge_test.txt')
+  knn <- RANN::nn2(object@H.norm, k = k, eps = eps)
+  snn <- Seurat:::ComputeSNN(knn$nn.idx, prune = prune)
+  Seurat:::WriteEdgeFile(snn, output_path, display_progress = T)
+  clusts <- Seurat:::RunModularityClusteringCpp(snn,
+    modularityFunction = 1, resolution = resolution, nRandomStarts = nRandomStarts,
+    nIterations = nIterations, algorithm = 1, randomSeed = random.seed, printOutput = T,
+    edgefilename = output_path
+  )
+  object@clusters <- as.factor(clusts)
+  unlink(output_path)
+  return(object)
+}
 
 #' Quantile align (normalize) factor loadings
 #'
@@ -1596,6 +1765,9 @@ quantileAlignSNF <- function(
   object,
   ...
 ) {
+  warning(paste0("This is a deprecated function likely to be removed in future versions.\n",
+                 "Use 'quantile_norm' instead."),
+          immediate. = T)
   UseMethod(generic = 'quantileAlignSNF', object = object)
 }
 
@@ -2221,6 +2393,21 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
 #' }
 #'
 linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist = "spearman", alpha = 0.05, path_to_coords) {
+  ## check dependency
+  if (!requireNamespace("GenomicRanges", quietly = TRUE)) {
+    stop("Package \"GenomicRanges\" needed for this function to work. Please install it by command:\n",
+         "BiocManager::install('GenomicRanges')",
+         call. = FALSE
+    )
+  }
+  
+  if (!requireNamespace("IRanges", quietly = TRUE)) {
+    stop("Package \"IRanges\" needed for this function to work. Please install it by command:\n",
+         "BiocManager::install('IRanges')",
+         call. = FALSE
+    )
+  }
+  
   ### make Granges object for peaks
   peak.names <- strsplit(rownames(peak_counts), "[:-]")
   chrs <- Reduce(append, lapply(peak.names, function(peak) {
@@ -2318,6 +2505,115 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
 
   return(regnet)
 }
+
+
+#' Export predicted gene-pair interaction
+#'
+#' Export the predicted gene-pair interactions calculated by upstream function 'linkGenesAndPeaks' into an Interact Track file 
+#' which is compatible with UCSC Genome Browser. 
+#'
+#' @param corr.mat A sparse matrix with peak names as rows and gene symbols as columns.
+#' @param genes.list A list of the genes symbols to be tested. If not specified,
+#' this function will use all the gene symbols from the matrix passed to gmat by default.
+#' @param output_path Path in which the output file will be stored.
+#' @param path_to_coords Path to the gene coordinates file.
+#'
+#' @return An Interact Track file stored in the specified path.
+#' @export
+#' @examples
+#' \dontrun{
+#' regent <- readRDS("../testdata/small_gmat.RDS") # some gene-peak correlation matrix
+#' makeInteractTrack(regnet, path_to_coords = 'some_path_to_gene_coordinates/hg19_genes.bed')
+#' }
+#'
+makeInteractTrack <- function(corr.mat, genes.list, output_path, path_to_coords) {
+  # get genomic coordinates
+  if (missing(path_to_coords)) {
+    stop("Parameter 'path_to_coords' cannot be empty.")
+  }
+
+  ### make Granges object for genes
+  genes.coords <- read.csv2(path_to_coords,
+    sep = "\t", header = F, colClasses =
+      c("character", "integer", "integer", "character", "NULL", "NULL")
+  )
+  genes.coords <- genes.coords[complete.cases(genes.coords$V4), ]
+  rownames(genes.coords) <- genes.coords[, 4]
+
+  # split peak names into chrom and coordinates
+  peak.names <- strsplit(rownames(corr.mat), "[:-]")
+  chrs <- Reduce(append, lapply(peak.names, function(peak) {
+    peak[1]
+  }))
+  chrs.start <- as.numeric(Reduce(append, lapply(peak.names, function(peak) {
+    peak[2]
+  })))
+  chrs.end <- as.numeric(Reduce(append, lapply(peak.names, function(peak) {
+    peak[3]
+  })))
+
+  # check genes.list
+  if (missing(genes.list)) {
+    genes.list <- colnames(corr.mat)
+  }
+
+  # check output_path
+  if (missing(output_path)) {
+    output_path <- getwd()
+  }
+
+  output_path <- paste0(output_path, "/Interact_Track.bed")
+  track.doc <- paste0('track type=interact name="Interaction Track" description="Gene-Peaks Links"',
+                      ' interactDirectional=true maxHeightPixels=200:100:50 visibility=full')
+  write(track.doc, file = output_path)
+
+  genes_not_existed <- 0
+  filtered_genes <- 0
+
+  for (gene in genes.list) {
+    if (!gene %in% colnames(corr.mat)) { # if gene not in the corr.mat
+      genes_not_existed <- genes_not_existed + 1
+      next
+    }
+    peaks.sel <- which(corr.mat[, gene] != 0)
+    if (sum(peaks.sel) == 0) {
+      filtered_genes <- filtered_genes + 1
+      next
+    }
+
+    track <- data.frame(
+      chrom = chrs[peaks.sel],
+      chromStart = chrs.start[peaks.sel],
+      chromEnd = chrs.end[peaks.sel],
+      name = paste0(gene, "/", rownames(corr.mat)[peaks.sel]),
+      score = 0,
+      value = as.numeric(corr.mat[peaks.sel, gene]),
+      exp = ".",
+      color = 5,
+      sourceChrom = chrs[peaks.sel],
+      sourceStart = chrs.start[peaks.sel],
+      sourceEnd = chrs.start[peaks.sel] + 1,
+      sourceName = ".",
+      sourceStrand = ".",
+      targetChrom = genes.coords[gene, 1],
+      targetStart = genes.coords[gene, 2],
+      targetEnd = genes.coords[gene, 2] + 1,
+      targetName = gene,
+      targetStrand = "."
+    )
+    write.table(track,
+      file = output_path, append = TRUE,
+      quote = FALSE, sep = "\t", eol = "\n", na = "NA", dec = ".",
+      row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
+      fileEncoding = ""
+    )
+  }
+
+  print(paste0("A total of ", genes_not_existed, " genes do not exist in input matrix."))
+  print(paste0("A total of ", filtered_genes, " genes do not have significant correlated peaks."))
+  print(paste0("The Interaction Track is stored in Path: ", output_path))
+}
+
 
 #######################################################################################
 #### Dimensionality Reduction
@@ -2437,7 +2733,7 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 
 runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2,
                     distance = "euclidean", n_neighbors = 10, min_dist = 0.1, rand.seed = 42) {
-  if (!require("reticulate", quietly = TRUE)) {
+  if (!requireNamespace("reticulate", quietly = TRUE)) {
     stop(paste("Package \"reticulate\" needed for this function to work. Please install it.\n",
                "Also ensure Python package umap (PyPI name umap-learn) is installed in python",
                "version accesible to reticulate."),
@@ -2560,7 +2856,7 @@ calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.
 
 calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.aligned = TRUE,
                           rand.seed = 42, by.dataset = FALSE) {
-  if (!require("NNLM", quietly = TRUE) & dr.method == "NMF") {
+  if (!requireNamespace("NNLM", quietly = TRUE) & dr.method == "NMF") {
     stop("Package \"NNLM\" needed for this function to perform NMF. Please install it.",
          call. = FALSE
     )
@@ -4381,7 +4677,7 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 
 ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.liger.genes = T,
                           by.dataset = F) {
-  if (!require("Seurat", quietly = TRUE)) {
+  if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" needed for this function to work. Please install it.",
          call. = FALSE
     )

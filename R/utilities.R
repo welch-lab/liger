@@ -307,3 +307,22 @@ getGeneValues <- function(list, gene, use.cols = F, methylation.indices = NULL, 
   use.names = T)
   return(gene_vals)
 }
+
+# helper function for refining clusers by KNN
+# related to function quantile_norm
+refine_clusts_knn = function(H,clusts,k,eps=0.1)
+{
+  for (i in 1:length(H))
+  {
+    clusts_H = clusts[rownames(H[[i]])]
+    H_knn = RANN::nn2(H[[i]],eps=eps,k=k,searchtype="standard")
+    #for (j in 1:length(clusts_H))
+    #{
+    #  clusts_H[j] = names(which.max(table(clusts_H[H_knn$nn.idx[j,]])))
+    #}
+    #clusts[rownames(H[[i]])] = clusts_H
+    new_clusts = cluster_vote(H_knn$nn.idx,clusts_H)
+    clusts[rownames(H[[i]])] = new_clusts
+  }
+  return(clusts)
+}
