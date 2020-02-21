@@ -13,6 +13,50 @@ rowVarsFast <- function(x, means) {
     .Call('_liger_rowVarsFast', PACKAGE = 'liger', x, means)
 }
 
+cpp_sumGroups_dgc <- function(x, p, i, ncol, groups, ngroups) {
+    .Call('_liger_cpp_sumGroups_dgc', PACKAGE = 'liger', x, p, i, ncol, groups, ngroups)
+}
+
+cpp_sumGroups_dgc_T <- function(x, p, i, ncol, nrow, groups, ngroups) {
+    .Call('_liger_cpp_sumGroups_dgc_T', PACKAGE = 'liger', x, p, i, ncol, nrow, groups, ngroups)
+}
+
+cpp_sumGroups_dense <- function(X, groups, ngroups) {
+    .Call('_liger_cpp_sumGroups_dense', PACKAGE = 'liger', X, groups, ngroups)
+}
+
+cpp_sumGroups_dense_T <- function(X, groups, ngroups) {
+    .Call('_liger_cpp_sumGroups_dense_T', PACKAGE = 'liger', X, groups, ngroups)
+}
+
+cpp_nnzeroGroups_dense <- function(X, groups, ngroups) {
+    .Call('_liger_cpp_nnzeroGroups_dense', PACKAGE = 'liger', X, groups, ngroups)
+}
+
+cpp_nnzeroGroups_dense_T <- function(X, groups, ngroups) {
+    .Call('_liger_cpp_nnzeroGroups_dense_T', PACKAGE = 'liger', X, groups, ngroups)
+}
+
+cpp_nnzeroGroups_dgc <- function(p, i, ncol, groups, ngroups) {
+    .Call('_liger_cpp_nnzeroGroups_dgc', PACKAGE = 'liger', p, i, ncol, groups, ngroups)
+}
+
+cpp_in_place_rank_mean <- function(v_temp, idx_begin, idx_end) {
+    .Call('_liger_cpp_in_place_rank_mean', PACKAGE = 'liger', v_temp, idx_begin, idx_end)
+}
+
+cpp_rank_matrix_dgc <- function(x, p, nrow, ncol) {
+    .Call('_liger_cpp_rank_matrix_dgc', PACKAGE = 'liger', x, p, nrow, ncol)
+}
+
+cpp_rank_matrix_dense <- function(X) {
+    .Call('_liger_cpp_rank_matrix_dense', PACKAGE = 'liger', X)
+}
+
+cpp_nnzeroGroups_dgc_T <- function(p, i, ncol, nrow, groups, ngroups) {
+    .Call('_liger_cpp_nnzeroGroups_dgc_T', PACKAGE = 'liger', p, i, ncol, nrow, groups, ngroups)
+}
+
 makeFeatureMatrix <- function(bedmat, barcodes) {
     .Call('_liger_makeFeatureMatrix', PACKAGE = 'liger', bedmat, barcodes)
 }

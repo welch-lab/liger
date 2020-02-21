@@ -2344,10 +2344,10 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
     if (len > 100000) {
       print("Calculating Large-scale Input...")
       results <- Reduce(rbind, lapply(suppressWarnings(split(seq(len), seq(len / 100000))), function(index) {
-        presto::wilcoxauc(log(feature_matrix[index, ] + 1e-10), clusters)
+        wilcoxauc(log(feature_matrix[index, ] + 1e-10), clusters)
       }))
     } else {
-      results <- presto::wilcoxauc(log(feature_matrix + 1e-10), clusters)
+      results <- wilcoxauc(log(feature_matrix + 1e-10), clusters)
     }
   }
 
@@ -2360,7 +2360,7 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
         print(paste0("Note: Skip Cluster ", cluster, " since it has only ONE data source."))
         return()
       }
-      return(presto::wilcoxauc(log(sub_matrix + 1e-10), sub_label))
+      return(wilcoxauc(log(sub_matrix + 1e-10), sub_label))
     }))
   }
 
@@ -2392,7 +2392,8 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
 #' regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", alpha = 0.05, path_to_coords = 'some_path')
 #' }
 #'
-linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist = "spearman", alpha = 0.05, path_to_coords) {
+linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist = "spearman", 
+                              alpha = 0.05, path_to_coords) {
   ## check dependency
   if (!requireNamespace("GenomicRanges", quietly = TRUE)) {
     stop("Package \"GenomicRanges\" needed for this function to work. Please install it by command:\n",

@@ -33,12 +33,9 @@ Imports: Rcpp (>= 0.12.10),
      RcppEigen,
      RANN
 Remotes: thomasp85/patchwork,
-     mikelove/DESeq2,
-     immunogenomics/presto,
      jefferis/RANN@master-L1,
-     linxihui/NNLM,
-     bioc::release/GenomicRanges,
-     bioc::release/IRanges
+     linxihui/NNLM
+biocViews:
 LazyData: true
 LinkingTo: Rcpp, RcppArmadillo, RcppEigen
 Depends:
@@ -56,9 +53,7 @@ Suggests:
     NNLM,
     testthat,
     GenomicRanges,
-    IRanges,
     S4Vectors,
-    DESeq2,
-    presto,
+    IRanges,
     RANN.L1
 VignetteBuilder: knitr
