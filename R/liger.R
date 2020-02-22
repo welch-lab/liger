@@ -2278,21 +2278,6 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
 #' }
 #'
 runWilcoxon <- function(object, data.use = "all", compare.method) {
-  ### check dependencies
-  if (!requireNamespace("DESeq2", quietly = TRUE)) {
-    stop("Package \"DESeq2\" needed for this function to work. Please install it by command:\n",
-      "devtools::install_github('mikelove/DESeq2')",
-      call. = FALSE
-    )
-  }
-
-  if (!requireNamespace("presto", quietly = TRUE)) {
-    stop("Package \"presto\" needed for this function to work. Please install it by command:\n",
-      "devtools::install_github('immunogenomics/presto')",
-      call. = FALSE
-    )
-  }
-
   # check parameter inputs
   if (missing(compare.method)) {
     stop("Parameter *compare.method* cannot be empty!")
