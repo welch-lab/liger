@@ -2297,11 +2297,11 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
   ### create feature x sample matrix
   if (data.use == "all" | length(data.use) > 1) { # at least two datasets
     if (data.use == "all") {
-      print("Performing test on ALL datasets...")
+      print(paste0("Performing Wilcoxon test on ALL datasets: ", toString(names(object@norm.data))))
       sample.list <- attributes(object@norm.data)$names
     }
     else {
-      print("Performing test on GIVEN datasets...")
+      print(paste0("Performing Wilcoxon test on GIVEN datasets: ", toString(data.use)))
       sample.list <- data.use
     }
     genes <- Reduce(intersect, lapply(sample.list, function(sample) {
@@ -2318,7 +2318,7 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
     cell_source <- cell_source[colnames(feature_matrix), drop = TRUE]
     clusters <- object@clusters[colnames(feature_matrix), drop = TRUE] # from which cluster
   } else { # for one dataset only
-    print("Perform test on GIVEN dataset...")
+    print(paste0("Performing Wilcoxon test on GIVEN dataset: ", data.use))
     feature_matrix <- object@norm.data[[data.use]]
     clusters <- object@clusters[object@norm.data[[data.use]]@Dimnames[[2]], drop = TRUE] # from which cluster
   }
