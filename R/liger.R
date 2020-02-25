@@ -639,8 +639,8 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #'   strongly (ie. alignment should increase as lambda increases). Run suggestLambda to determine
 #'   most appropriate value for balancing dataset alignment and agreement (default 5.0).
 #' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
-#'   (default 1e-4)
-#' @param max.iters Maximum number of block coordinate descent iterations to perform (default 100).
+#'   (default 1e-6)
+#' @param max.iters Maximum number of block coordinate descent iterations to perform (default 30).
 #' @param nrep Number of restarts to perform (iNMF objective function is non-convex, so taking the
 #'   best objective from multiple successive initializations is recommended). For easier
 #'   reproducibility, this increments the random seed by 1 for each consecutive restart, so future
@@ -683,8 +683,8 @@ optimizeALS.list  <- function(
   object,
   k,
   lambda = 5.0,
-  thresh = 1e-4,
-  max.iters = 100,
+  thresh = 1e-6,
+  max.iters = 30,
   nrep = 1,
   H.init = NULL,
   W.init = NULL,
@@ -828,10 +828,10 @@ optimizeALS.list  <- function(
       setTxtProgressBar(pb = pb, value = iters)
     }
     setTxtProgressBar(pb = pb, value = max.iters)
-    if (iters == max.iters) {
-      print("Warning: failed to converge within the allowed number of iterations.
-            Re-running with a higher max.iters is recommended.")
-    }
+    # if (iters == max.iters) {
+    #   print("Warning: failed to converge within the allowed number of iterations.
+    #         Re-running with a higher max.iters is recommended.")
+    # }
     if (obj < best_obj) {
       W_m <- W
       H_m <- H
@@ -843,13 +843,19 @@ optimizeALS.list  <- function(
     run_stats[i, 1] <- as.double(x = end_time)
     run_stats[i, 2] <- iters
     cat(
-      "\nConverged in ",
+      "\nFinished in ",
       run_stats[i, 1],
       " ",
       units(x = end_time),
       ", ",
       iters,
       " iterations.\n",
+      "Max iterations: ",
+      max.iters,
+      ".\n",
+      "Convergence loss: ",
+      delta,
+      '.\n',
       sep = ""
     )
     if (print.obj) {
@@ -878,8 +884,8 @@ optimizeALS.liger <- function(
   object,
   k,
   lambda = 5.0,
-  thresh = 1e-4,
-  max.iters = 100,
+  thresh = 1e-6,
+  max.iters = 30,
   nrep = 1,
   H.init = NULL,
   W.init = NULL,

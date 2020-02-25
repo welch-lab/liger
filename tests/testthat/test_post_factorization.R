@@ -17,7 +17,7 @@ ligex <- scaleNotCenter(ligex)
 ####################################################################################
 context("iNMF factorization")
 
-ligex <- optimizeALS(ligex, k = 15, lambda = 5, rand.seed = 1)
+ligex <- optimizeALS(ligex, k = 15, lambda = 5, rand.seed = 1, max.iters = 100, thresh = 1e-4)
 
  test_that("Dataset names passed correctly", {
   expect_identical(names(ligex@H), c('tenx', 'seqwell'))

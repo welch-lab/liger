@@ -139,4 +139,21 @@ g++ -std=c++11 -O3  src/sptree.cpp src/tsne.cpp src/nbodyfft.cpp  -I<install_dir
 pwd
 ```
 
+### Install Time and Expected Run Time
 
+The installation process of `liger` should take less than 30 minutes.
+
+The expected run time is 1 - 4 hours depending on dataset size and downstream analysis of the user’s choice.
+
+### Sample Datasets
+The `liger` package provides a small simulated dataset for basic demos of the functions, you can find it in folder `liger/tests/testdata/small_pbmc_data.RDS`.
+
+We also provide a set of scRNA-seq and scATAC-seq datasets for real-world style demos.  These matrices are provided [here](https://umich.app.box.com/s/5hkhpou4inrulo570yhc38ay8g3ont5b). More detailed tutorials can be found in section **Usage** above.
+
+The sources of these datasets are as follows:
+
+* `pbmc.atac.expression.mat.RDS`: raw data provided by [10X Genomics](https://support.10xgenomics.com/single-cell-atac/datasets/1.1.0/atac_v1_pbmc_10k), created by Cell Ranger ATAC 1.1.0;
+* `pbmc.rna.expression.mat.RDS`: raw data provided by [10X Genomics](https://support.10xgenomics.com/single-cell-gene-expression/datasets/3.0.0/pbmc_10k_v3), created by Cell Ranger 3.0.0.
+
+### License
+This project is covered under the **GNU General Public License 3.0**.
