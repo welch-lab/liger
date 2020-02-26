@@ -42,6 +42,25 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 * [Running Liger directly on Seurat objects using Seurat wrappers](https://htmlpreview.github.io/?https://github.com/satijalab/seurat.wrappers/blob/master/docs/liger.html)
 
+## System Requirements
+
+### Hardware requirements
+The `liger` package requires only a standard computer with enough RAM to support the in-memory operations. For minimal performance, please make sure that the computer has at least about 2 GB of RAM. For optimal performance, we recommend a computer with the following specs:
+
+* RAM: 16+ GB
+* CPU: 4+ cores, 2.3 GHz/core
+
+### Software requirements
+
+The package development version is tested on *Linux* operating systems and *Mac OSX*.
+
+* Linux: CentOS 7, Manjaro 5.3.18
+* Mac OSX: Mojave (10.14.1), Catalina (10.15.2)
+
+The `liger` package should be compatible with Windows, Mac, and Linux operating systems.
+
+Before setting up the `liger` package, users should have R version 3.4.0 or higher, and several packages set up from CRAN and other repositories. The user can check the dependencies in `DESCRIPTION`.
+
 ## Installation
 
 `liger` is written in R and has a few other system requirements (Java) and recommended packages (umap in Python). To install the most recent development version, follow these instructions:
@@ -145,7 +164,7 @@ The installation process of `liger` should take less than 30 minutes.
 
 The expected run time is 1 - 4 hours depending on dataset size and downstream analysis of the user’s choice.
 
-### Sample Datasets
+## Sample Datasets
 The `liger` package provides a small simulated dataset for basic demos of the functions, you can find it in folder `liger/tests/testdata/small_pbmc_data.RDS`.
 
 We also provide a set of scRNA-seq and scATAC-seq datasets for real-world style demos.  These matrices are provided [here](https://umich.app.box.com/s/5hkhpou4inrulo570yhc38ay8g3ont5b). More detailed tutorials can be found in section **Usage** above.
@@ -155,5 +174,5 @@ The sources of these datasets are as follows:
 * `pbmc.atac.expression.mat.RDS`: raw data provided by [10X Genomics](https://support.10xgenomics.com/single-cell-atac/datasets/1.1.0/atac_v1_pbmc_10k), created by Cell Ranger ATAC 1.1.0;
 * `pbmc.rna.expression.mat.RDS`: raw data provided by [10X Genomics](https://support.10xgenomics.com/single-cell-gene-expression/datasets/3.0.0/pbmc_10k_v3), created by Cell Ranger 3.0.0.
 
-### License
+## License
 This project is covered under the **GNU General Public License 3.0**.
