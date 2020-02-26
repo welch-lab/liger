@@ -4,25 +4,30 @@
 \alias{imputeKNN}
 \title{Impute the query cell expression matrix}
 \usage{
-imputeKNN(object, reference, queries = NULL, knn_k = 50,
-  weight = FALSE, norm = TRUE, scale = TRUE)
+imputeKNN(
+  object,
+  reference,
+  queries,
+  knn_k = 20,
+  weight = TRUE,
+  norm = TRUE,
+  scale = FALSE
+)
 }
 \arguments{
 \item{object}{\code{liger} object.}
 
-\item{reference}{Name of the reference data}
+\item{reference}{Dataset containing values to impute into query dataset(s).}
 
-\item{queries}{Names of the query data. The default value is 'all',
-but can also pass in a list of the names of the query datasets}
+\item{queries}{Dataset to be augmented by imputation. If not specified, will pass in all datasets.}
 
-\item{knn_k}{The maximum number of nearest neighbors to search.
-The default value is set to 50.}
+\item{knn_k}{The maximum number of nearest neighbors to search. (default 20)}
 
-\item{weight}{Use KNN distances as weight matrix (default FALSE)}
+\item{weight}{Whether to use KNN distances as weight matrix (default FALSE).}
 
-\item{norm}{Whether normalize the imputed data with default parameters (default TRUE)}
+\item{norm}{Whether normalize the imputed data with default parameters (default TRUE).}
 
-\item{scale}{Whether scale but not center the imputed data with default parameters (default TRUE)}
+\item{scale}{Whether scale but not center the imputed data with default parameters (default TRUE).}
 }
 \value{
 \code{liger} object with raw data in raw.data slot replaced by imputed data (genes by cells)
@@ -43,9 +48,8 @@ ligerex <- scaleNotCenter(ligerex)
 ligerex <- optimizeALS(ligerex, k = 20)
 ligerex <- quantileAlignSNF(ligerex)
 # impute every dataset other than the reference dataset
-ligerex <- imputeKNN(ligerex, reference = "y_set", weight = TRUE)
+ligerex <- imputeKNN(ligerex, reference = "y_set", weight = FALSE)
 # impute only z_set dataset
-ligerex <- imputeKNN(ligerex, reference = "y_set", queries = list("z_set"), weight = TRUE)
+ligerex <- imputeKNN(ligerex, reference = "y_set", queries = list("z_set"), knn_k = 50)
 }
-
 }

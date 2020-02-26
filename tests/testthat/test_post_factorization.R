@@ -17,7 +17,7 @@ ligex <- scaleNotCenter(ligex)
 ####################################################################################
 context("iNMF factorization")
 
-ligex <- optimizeALS(ligex, k = 15, lambda = 5, rand.seed = 1)
+ligex <- optimizeALS(ligex, k = 15, lambda = 5, rand.seed = 1, max.iters = 100, thresh = 1e-4)
 
  test_that("Dataset names passed correctly", {
   expect_identical(names(ligex@H), c('tenx', 'seqwell'))
@@ -51,9 +51,9 @@ test_that("Factorization is correct", {
 # TODO: Add tests for updating k, or with new data
 # Note that this should be done so that total test time still < 60s or skip on cran
 
-# Tests for shared factor neighborhood quantile alignment
+# Tests for shared factor neighborhood quantile alignment -- deprecated
 ####################################################################################
-context("Quantile alignment")
+context("Deprecated -- Quantile alignment")
 
 ligex <- quantileAlignSNF(ligex, knn_k = 20, k2 = 200, resolution = 1)
 
@@ -76,6 +76,7 @@ test_that("Alignment and clustering are correct", {
 # TODO: Add tests for saving of SNF (once better parameter setting in place)
 # TODO: Add tests for different knn_k and k2 settings 
 
+#### Tests for new functions
 ligex <- quantileAlignSNF(ligex, knn_k = 20, k2 = 200, resolution = 1.5)
 
 test_that("Number of clusters increases to correct value", {
@@ -90,6 +91,59 @@ test_that("New alignment and clustering are correct", {
   expect_equal(as.character(ligex@alignment.clusters[3]), "4")
   expect_equal(as.character(ligex@alignment.clusters[203]), "0")
 })
+
+# Tests for shared factor neighborhood quantile alignment
+####################################################################################
+context("Quantile alignment")
+
+ligex.ds <- ligex
+ligex.ds <- quantile_norm(ligex.ds)
+
+test_that("Dimensions and lengths are correct", {
+  expect_equal(dim(ligex.ds@H.norm), c(494, 15))
+  expect_equal(length(ligex.ds@alignment.clusters), 494)
+  expect_equal(length(ligex.ds@clusters), 494)
+  expect_equal(levels(ligex.ds@clusters), c("1" ,"10","11","12","13","14","15","2","3","4","5","6","7","8","9" ))
+})
+
+test_that("Alignment and clustering are correct", {
+  expect_equal(ligex.ds@H.norm[5, 1:5], c(0.004141647, 0, 0.002073747, 0, 0),
+               tolerance = 1e-6)
+  expect_equal(ligex.ds@H.norm[405, 1:5], c(0.0022715258, 0.0194911522, 0.0077549767, 0, 0.0003304383),
+               tolerance = 1e-6)
+  expect_equal(as.character(ligex.ds@alignment.clusters[3]), "4")
+  expect_equal(as.character(ligex.ds@alignment.clusters[203]), "0")
+})
+
+ligex.ds <- quantile_norm(ligex.ds, eps = 3, knn_k = 50)
+
+test_that("Number of clusters increases to correct value", {
+  expect_equal(levels(ligex.ds@clusters), c("1" ,"10","11","12","13","14","15","2","3","4","5","6","7","8","9" ))
+})
+
+test_that("New alignment and clustering are correct", {
+  expect_equal(ligex.ds@H.norm[5, 1:5], c(0.004141647, 0, 0.002073747, 0, 0),
+               tolerance = 1e-6)
+  expect_equal(ligex.ds@H.norm[405, 1:5], c(2.522757e-03, 8.402540e-03, 7.761288e-03, 1.924189e-05, 1.065345e-04),
+               tolerance = 1e-6)
+  expect_equal(as.character(ligex.ds@alignment.clusters[3]), "4")
+  expect_equal(as.character(ligex.ds@alignment.clusters[203]), "0")
+})
+
+# Tests for Louvain Community Detection
+####################################################################################
+context("Louvain Community Detection")
+
+ligex.ds <- louvainCluster(ligex.ds)
+
+test_that("Dimensions and lengths are correct", {
+  expect_equal(dim(ligex.ds@H.norm), c(494, 15))
+  expect_equal(length(ligex.ds@alignment.clusters), 494)
+  expect_equal(length(ligex.ds@clusters), 494)
+  expect_equal(levels(ligex.ds@clusters), c("0", "1", "2", "3", "4", "5", "6", "7"))
+})
+rm(ligex.ds)
+
 
 # Tests for dimensional reduction
 # These are included here because these functions are object dependent,
@@ -230,15 +284,87 @@ test_that("Returns correct cell.data columns", {
 ####################################################################################
 context("Imputing query datasets")
 
-ligex <- imputeKNN(ligex, reference = 'seqwell', weight = TRUE)
+ligex.ds <- imputeKNN(ligex, reference = "seqwell", weight = FALSE, knn_k = 50)
 
 test_that("List names and dimensions correct", {
-  expect_equal(names(ligex@raw.data), c('tenx', 'seqwell'))
-  expect_equal(dim(ligex@raw.data[['tenx']]), c(6712, 250))
+  expect_equal(names(ligex.ds@raw.data), c("tenx", "seqwell"))
+  expect_equal(dim(ligex.ds@raw.data[["tenx"]]), c(6712, 250))
 })
 
 test_that("Imputation results correct", {
-  expect_equivalent(ligex@raw.data[['tenx']][1, 1:5], c(0.1010272982, 0.1480327620, 0.2882094083, 0.1549154381, 0.1010290263),
-               tolerance = 1e-8)
+  expect_equivalent(ligex.ds@raw.data[["tenx"]][1, 1:5], c(0.1010403803, 0.1480523653, 0.2882429284, 0.1549487361, 0.1010403803),
+    tolerance = 1e-8
+  )
 })
 
+ligex.ds <- imputeKNN(ligex, reference = "seqwell", knn_k = 50)
+
+test_that("List names and dimensions correct", {
+  expect_equal(names(ligex.ds@raw.data), c("tenx", "seqwell"))
+  expect_equal(dim(ligex.ds@raw.data[["tenx"]]), c(6712, 250))
+})
+
+test_that("Imputation results correct", {
+  expect_equivalent(ligex.ds@raw.data[["tenx"]][1, 1:5], c(0.1010272982, 0.1480327620, 0.2882094083, 0.1549154381, 0.1010290263),
+    tolerance = 1e-8
+  )
+})
+
+# Tests for running Wilcoxon tests
+# Since this function depends on the cluster assignments, optimizeALS and quantileAlignSNF
+# should be performed before this test
+####################################################################################
+context("Running Wilcoxon tests")
+
+wilcox.results <- runWilcoxon(ligex, data.use = 2, compare.method = "clusters")
+
+test_that("Wilcoxon test for 'clusters' results correct", {
+  expect_equal(wilcox.results[1, 1], "AAED1")
+  expect_equivalent(wilcox.results[1, 7], 0.6986961322, tolerance = 1e-8)
+})
+
+wilcox.results <- runWilcoxon(ligex, compare.method = "datasets")
+
+test_that("Wilcoxon test for 'datasets' results correct", {
+  expect_equal(wilcox.results[1, 1], "ISG15")
+  expect_equivalent(wilcox.results[1, 7], 0.6557919528, tolerance = 1e-8)
+})
+
+# Tests for Creating gene-peak regulation network
+# Since this function depends on the cluster assignments, optimizeALS and quantileAlignSNF
+# should be performed before this test
+####################################################################################
+context("Linking Genes and Peaks")
+
+temp_bed <- data.frame(
+  V1 = c("chr1", "chr1"),
+  V2 = c(1353799, 1337275),
+  V3 = c(1356824, 1342693),
+  V4 = c("ANKRD65", "MRPL20")
+)
+
+write.table(temp_bed,
+  file = "../testdata/temp_coords.bed", append = TRUE,
+  quote = FALSE, sep = "\t", eol = "\n", na = "NA", dec = ".",
+  row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
+  fileEncoding = ""
+)
+
+set.seed(17)
+psudo_data <- rnorm(200, mean = 0.5, sd = 0.1)
+gmat.small <- Matrix(
+  data = psudo_data, nrow = 2, ncol = 100,
+  dimnames = list(c("MRPL20", "ANKRD65"), paste0("cell_", seq(1:100))), sparse = T
+)
+pmat.small <- Matrix(
+  data = c(psudo_data[1:100], psudo_data[101:200] + 0.2), nrow = 2, ncol = 100,
+  dimnames = list(c("chr1:1821507-1822007", "chr1:1850611-1851111"), paste0("cell_", seq(1:100))), sparse = T
+)
+
+regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", alpha = 0.05, path_to_coords = "../testdata/temp_coords.bed") # about 40 mins
+
+test_that("Testing linkage between gene and peaks", {
+  expect_equivalent(regnet[1, 1], 0.6340474, tolerance = 1e-7)
+  expect_equivalent(regnet[2, 2], 0.6929733, tolerance = 1e-7)
+})
+unlink("../testdata/temp_coords.bed")

@@ -639,8 +639,8 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #'   strongly (ie. alignment should increase as lambda increases). Run suggestLambda to determine
 #'   most appropriate value for balancing dataset alignment and agreement (default 5.0).
 #' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
-#'   (default 1e-4)
-#' @param max.iters Maximum number of block coordinate descent iterations to perform (default 100).
+#'   (default 1e-6)
+#' @param max.iters Maximum number of block coordinate descent iterations to perform (default 30).
 #' @param nrep Number of restarts to perform (iNMF objective function is non-convex, so taking the
 #'   best objective from multiple successive initializations is recommended). For easier
 #'   reproducibility, this increments the random seed by 1 for each consecutive restart, so future
@@ -683,8 +683,8 @@ optimizeALS.list  <- function(
   object,
   k,
   lambda = 5.0,
-  thresh = 1e-4,
-  max.iters = 100,
+  thresh = 1e-6,
+  max.iters = 30,
   nrep = 1,
   H.init = NULL,
   W.init = NULL,
@@ -828,10 +828,10 @@ optimizeALS.list  <- function(
       setTxtProgressBar(pb = pb, value = iters)
     }
     setTxtProgressBar(pb = pb, value = max.iters)
-    if (iters == max.iters) {
-      print("Warning: failed to converge within the allowed number of iterations.
-            Re-running with a higher max.iters is recommended.")
-    }
+    # if (iters == max.iters) {
+    #   print("Warning: failed to converge within the allowed number of iterations.
+    #         Re-running with a higher max.iters is recommended.")
+    # }
     if (obj < best_obj) {
       W_m <- W
       H_m <- H
@@ -843,13 +843,19 @@ optimizeALS.list  <- function(
     run_stats[i, 1] <- as.double(x = end_time)
     run_stats[i, 2] <- iters
     cat(
-      "\nConverged in ",
+      "\nFinished in ",
       run_stats[i, 1],
       " ",
       units(x = end_time),
       ", ",
       iters,
       " iterations.\n",
+      "Max iterations: ",
+      max.iters,
+      ".\n",
+      "Convergence loss: ",
+      delta,
+      '.\n',
       sep = ""
     )
     if (print.obj) {
@@ -878,8 +884,8 @@ optimizeALS.liger <- function(
   object,
   k,
   lambda = 5.0,
-  thresh = 1e-4,
-  max.iters = 100,
+  thresh = 1e-6,
+  max.iters = 30,
   nrep = 1,
   H.init = NULL,
   W.init = NULL,
@@ -1531,6 +1537,175 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 
 #######################################################################################
 #### Quantile Alignment/Normalization
+#' Quantile align (normalize) factor loadings
+#'
+#' This process builds a shared factor neighborhood graph to jointly cluster cells, then quantile
+#' normalizes corresponding clusters.
+#'
+#' The first step, building the shared factor neighborhood graph, is performed in SNF(), and
+#' produces a graph representation where edge weights between cells (across all datasets)
+#' correspond to their similarity in the shared factor neighborhood space. An important parameter
+#' here is knn_k, the number of neighbors used to build the shared factor space. 
+#'
+#' Next we perform quantile alignment for each dataset, factor, and cluster (by
+#' stretching/compressing datasets' quantiles to better match those of the reference dataset). These
+#' aligned factor loadings are combined into a single matrix and returned as H.norm.
+#'
+#' @param object \code{liger} object. Should run optimizeALS before calling.
+#' @param knn_k Number of nearest neighbors for within-dataset knn graph (default 20).
+#' @param ref_dataset Name of dataset to use as a "reference" for normalization. By default,
+#'   the dataset with the largest number of cells is used.
+#' @param min_cells Minimum number of cells to consider a cluster shared across datasets (default 20)
+#' @param quantiles Number of quantiles to use for quantile normalization (default 50).
+#' @param eps  The error bound of the nearest neighbor search. (default 0.9) Lower values give more 
+#' accurate nearest neighbor graphs but take much longer to computer.
+#' @param dims.use Indices of factors to use for shared nearest factor determination (default
+#'   1:ncol(H[[1]])).
+#' @param do.center Centers the data when scaling factors (useful for less sparse modalities like
+#'   methylation data). (default FALSE)
+#' @param max_sample Maximum number of cells used for quantile normalization of each cluster 
+#' and factor. (default 1000)
+#' @param refine.knn whether to increase robustness of cluster assignments using KNN graph.(default TRUE)
+#' @param ... Arguments passed to other methods
+#'
+#' @return \code{liger} object with 'H.norm' and 'clusters' slot set.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # liger object, factorization complete
+#' ligerex
+#' # do basic quantile alignment
+#' ligerex <- quantile_norm(ligerex)
+#' # higher resolution for more clusters (note that SNF is conserved)
+#' ligerex <- quantile_norm(ligerex, resolution = 1.2)
+#' # change knn_k for more fine-grained local clustering
+#' ligerex <- quantile_norm(ligerex, knn_k = 15, resolution = 1.2)
+#' }
+#'
+quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells = 20, knn_k = 20, 
+                          dims.use = NULL, do.center = F, max_sample = 1000, eps = 0.9, refine.knn = T) {
+  if (is.null(ref_dataset)) {
+    ns <- sapply(object@scale.data, nrow)
+    ref_dataset <- names(object@scale.data)[which.max(ns)]
+  }
+  labels <- list()
+  if (is.null(dims.use)) {
+    use_these_factors <- 1:ncol(object@H[[1]])
+  }
+  else {
+    use_these_factors <- dims.use
+  }
+  # fast max factor assignment with Rcpp code
+  labels <- lapply(object@H, max_factor, dims_use = use_these_factors, center_cols = do.center)
+  object@clusters <- as.factor(unlist(lapply(labels, as.character)))
+  names(object@clusters) <- unlist(lapply(object@scale.data, rownames))
+
+  # increase robustness of cluster assignments using knn graph
+  if (refine.knn) {
+    object@clusters <- refine_clusts_knn(object@H, object@clusters, k = knn_k, eps = eps)
+  }
+  clusters <- lapply(object@H, function(x) {
+    object@clusters[rownames(x)]
+  })
+  names(clusters) <- names(object@H)
+  dims <- ncol(object@H[[ref_dataset]])
+
+  dataset <- unlist(lapply(1:length(object@H), function(i) {
+    rep(names(object@H)[i], nrow(object@H[[i]]))
+  }))
+  Hs <- object@H
+  num_clusters <- dims
+  for (k in 1:length(object@H)) {
+    for (j in 1:num_clusters) {
+      cells2 <- which(clusters[[k]] == j)
+      cells1 <- which(clusters[[ref_dataset]] == j)
+      for (i in 1:dims) {
+        num_cells2 <- length(cells2)
+        num_cells1 <- length(cells1)
+        if (num_cells1 < min_cells | num_cells2 < min_cells) {
+          next
+        }
+        if (num_cells2 == 1) {
+          Hs[[k]][cells2, i] <- mean(Hs[[ref_dataset]][cells1, i])
+          next
+        }
+        if (num_cells2 > max_sample | num_cells1 > max_sample) {
+          q2 <- quantile(sample(Hs[[k]][cells2, i], min(num_cells2, max_sample)), seq(0, 1, by = 1 / quantiles))
+          q1 <- quantile(sample(Hs[[ref_dataset]][cells1, i], min(num_cells1, max_sample)), seq(0, 1, by = 1 / quantiles))
+        }
+        else {
+          q2 <- quantile(sample(Hs[[k]][cells2, i], min(num_cells2, max_sample)), seq(0, 1, by = 1 / quantiles))
+          q1 <- quantile(sample(Hs[[ref_dataset]][cells1, i], min(num_cells1, max_sample)), seq(0, 1, by = 1 / quantiles))
+        }
+        if (sum(q1) == 0 | sum(q2) == 0 | length(unique(q1)) <
+          2 | length(unique(q2)) < 2) {
+          new_vals <- rep(0, num_cells2)
+        }
+        else {
+          warp_func <- approxfun(q2, q1, rule = 2)
+          new_vals <- warp_func(Hs[[k]][cells2, i])
+        }
+        Hs[[k]][cells2, i] <- new_vals
+      }
+    }
+  }
+  object@H.norm <- Reduce(rbind, Hs)
+  return(object)
+}
+
+#' Louvain algorithm for community detection
+#'
+#' @description
+#' After quantile normalization, users can additionally run the Louvain algorithm 
+#' for community detection, which is widely used in single-cell analysis and excels at merging 
+#' small clusters into broad cell classes.
+#'
+#' @param object \code{liger} object. Should run quantile_norm before calling.
+#' @param k The maximum number of nearest neighbours to compute. (default 20)
+#' @param resolution Value of the resolution parameter, use a value above (below) 1.0 if you want 
+#' to obtain a larger (smaller) number of communities. (default 1.0)
+#' @param prune Sets the cutoff for acceptable Jaccard index when
+#' computing the neighborhood overlap for the SNN construction. Any edges with
+#' values less than or equal to this will be set to 0 and removed from the SNN
+#' graph. Essentially sets the strigency of pruning (0 --- no pruning, 1 ---
+#' prune everything). (default 1/15)
+#' @param eps The error bound of the nearest neighbor search. (default 0.1)
+#' @param nRandomStarts Number of random starts. (default 10)
+#' @param nIterations Maximal number of iterations per random start. (default 100)
+#' @param random.seed Seed of the random number generator. (default 1)
+#'
+#' @return \code{liger} object with refined 'clusters' slot set.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # liger object, factorization complete
+#' ligerex <- louvainCluster(ligerex, resulotion = 0.3)
+#' }
+#'
+
+louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps = 0.1, nRandomStarts = 10,
+                           nIterations = 100, random.seed = 1) {
+  if (!requireNamespace("Seurat", quietly = TRUE)) {
+    stop("Package \"Seurat\" needed for this function to work. Please install it.",
+      call. = FALSE
+    )
+  }
+  output_path <- paste0(getwd(), '/edge_test.txt')
+  knn <- RANN::nn2(object@H.norm, k = k, eps = eps)
+  snn <- Seurat:::ComputeSNN(knn$nn.idx, prune = prune)
+  Seurat:::WriteEdgeFile(snn, output_path, display_progress = T)
+  clusts <- Seurat:::RunModularityClusteringCpp(snn,
+    modularityFunction = 1, resolution = resolution, nRandomStarts = nRandomStarts,
+    nIterations = nIterations, algorithm = 1, randomSeed = random.seed, printOutput = T,
+    edgefilename = output_path
+  )
+  object@clusters <- as.factor(clusts)
+  unlink(output_path)
+  return(object)
+}
 
 #' Quantile align (normalize) factor loadings
 #'
@@ -1596,6 +1771,9 @@ quantileAlignSNF <- function(
   object,
   ...
 ) {
+  warning(paste0("This is a deprecated function likely to be removed in future versions.\n",
+                 "Use 'quantile_norm' instead."),
+          immediate. = T)
   UseMethod(generic = 'quantileAlignSNF', object = object)
 }
 
@@ -1842,7 +2020,6 @@ quantileAlignSNF.liger <- function(
 #'   is the edge weight representation of the shared factor neighborhood graph.
 #'
 #' @export
-#' @importFrom RANN.L1 nn2
 #' @importFrom FNN get.knn
 #'
 #' @examples
@@ -1917,7 +2094,7 @@ SNF.list <- function(
   cl <- levels(x = max.val)[which(x = table(max.val) < small.clust.thresh)]
   cells.cl <- names(x = max.val)[which(x = max.val %in% cl)]
   idents[cells.cl] <- paste0("F", as.character(x = max.val[cells.cl]))
-  nn.obj <- nn2(
+  nn.obj <- RANN.L1::nn2(
     data = NN.maxes[setdiff(x = rownames(x = NN.maxes), y = cells.cl), ],
     k = k2
   )
@@ -1972,14 +2149,12 @@ SNF.liger <- function(
 #' Impute query features from a reference dataset using KNN.
 #'
 #' @param object \code{liger} object.
-#' @param knn_k The maximum number of nearest neighbors to search.
-#'  The default value is set to 50.
-#' @param reference Name of the reference data
-#' @param queries Names of the query data. The default value is 'all',
-#'  but can also pass in a list of the names of the query datasets
-#' @param weight Use KNN distances as weight matrix (default FALSE)
-#' @param norm Whether normalize the imputed data with default parameters (default TRUE)
-#' @param scale Whether scale but not center the imputed data with default parameters (default TRUE)
+#' @param knn_k The maximum number of nearest neighbors to search. (default 20)
+#' @param reference Dataset containing values to impute into query dataset(s).
+#' @param queries Dataset to be augmented by imputation. If not specified, will pass in all datasets.
+#' @param weight Whether to use KNN distances as weight matrix (default FALSE).
+#' @param norm Whether normalize the imputed data with default parameters (default TRUE).
+#' @param scale Whether scale but not center the imputed data with default parameters (default TRUE).
 #'
 #' @return \code{liger} object with raw data in raw.data slot replaced by imputed data (genes by cells)
 #' @export
@@ -1997,17 +2172,17 @@ SNF.liger <- function(
 #' ligerex <- optimizeALS(ligerex, k = 20)
 #' ligerex <- quantileAlignSNF(ligerex)
 #' # impute every dataset other than the reference dataset
-#' ligerex <- imputeKNN(ligerex, reference = "y_set", weight = TRUE)
+#' ligerex <- imputeKNN(ligerex, reference = "y_set", weight = FALSE)
 #' # impute only z_set dataset
-#' ligerex <- imputeKNN(ligerex, reference = "y_set", queries = list("z_set"), weight = TRUE)
+#' ligerex <- imputeKNN(ligerex, reference = "y_set", queries = list("z_set"), knn_k = 50)
 #' }
-#'
-imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FALSE, norm = TRUE, scale = TRUE) {
+
+imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, norm = TRUE, scale = FALSE) {
   cat("Warning:\nThis function will discard the raw data previously stored in the liger object and replace the raw.data slot with the imputed data.\n\n")
   if (length(reference) > 1) {
-    stop("Invalid reference dataset: Can only have ONE reference dataset")
+    stop("Can only have ONE reference dataset")
   }
-  if (is.null(queries)) { # all datasets
+  if (missing(queries)) { # all datasets
     queries <- names(object@raw.data)
     queries <- as.list(queries[!queries %in% reference])
     cat(
@@ -2016,12 +2191,12 @@ imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FA
       paste("  ", reference, "\n"),
       "Query datasets:\n",
       paste("  ", as.character(queries), "\n")
-      )
+    )
   }
   else { # only given query datasets
     queries <- as.list(queries)
     if (reference %in% queries) {
-      stop("Invalid query datasets: Reference dataset CANNOT be inclued in the query datasets")
+      stop("Reference dataset CANNOT be inclued in the query datasets")
     }
     else {
       cat(
@@ -2030,29 +2205,35 @@ imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FA
         paste("  ", reference, "\n"),
         "Query datasets:\n",
         paste("  ", as.character(queries), "\n")
-        )
+      )
     }
-    }
+  }
   
   reference_cells <- rownames(object@scale.data[[reference]]) # cells by genes
   for (query in queries) {
     query_cells <- rownames(object@scale.data[[query]])
-    # find nearest neighbors for query cell in normed ref datasets
+    
+    # creating a (reference cell numbers X query cell numbers) weights matrix for knn weights and unit weights
     nn.k <- get.knnx(object@H.norm[reference_cells, ], object@H.norm[query_cells, ], k = knn_k, algorithm = "CR")
-    imputed_vals <- sapply(1:nrow(nn.k$nn.index), function(n) { # for each cell in the target dataset:
-      weights <- nn.k$nn.dist[n, ]
-      weights <- as.matrix(exp(-weights) / sum(exp(-weights)))
-      imp <- object@raw.data[[reference]][, nn.k$nn.index[n, ]] # genes by cells, genes are from reference dataset
-      if (weight) {
-        imp <- as.matrix(imp %*% weights) # (genes by k) multiply by the weight matrix (k by 1)
+    weights <- Matrix(0, nrow = ncol(object@raw.data[[reference]]), ncol = nrow(nn.k$nn.index), sparse = TRUE)
+    if (weight == TRUE){ # for weighted situation
+      # find nearest neighbors for query cell in normed ref datasets
+      for (n in 1:nrow(nn.k$nn.index)) { # record ref-query cell-cell distances
+        weights[nn.k$nn.index[n, ], n] <- exp(-nn.k$nn.dist[n, ]) / sum(exp(-nn.k$nn.dist[n, ]))
       }
-      else {
-        imp <- as.matrix(rowMeans(imp)) # simply count the rowmeans
+    }
+    else{ # for unweighted situation
+      for (n in 1:nrow(nn.k$nn.index)) {
+        weights[nn.k$nn.index[n, ], n] <- 1/knn_k # simply count the mean
       }
-      return(imp)
-    })
+    }
+    
+    # (genes by ref cell num) multiply by the weight matrix (ref cell num by query cell num)
+    imputed_vals <- object@raw.data[[reference]] %*% weights
+    # assigning dimnames
     colnames(imputed_vals) <- query_cells
     rownames(imputed_vals) <- rownames(object@raw.data[[reference]])
+    
     # formatiing the matrix
     if (class(object@raw.data[[reference]])[1] == "dgTMatrix" |
         class(object@raw.data[[reference]])[1] == "dgCMatrix") {
@@ -2066,15 +2247,364 @@ imputeKNN <- function(object, reference, queries = NULL, knn_k = 50, weight = FA
   
   if (norm) {
     cat('\nNormalizing data...\n')
-    object <- normalize(object)
+    object <- liger::normalize(object)
   }
   if (scale) {
     cat('Scaling (but not centering) data...')
-    object <- scaleNotCenter(object)
+    object <- liger::scaleNotCenter(object)
   }
   
   return(object)
+}
+
+#' Perform Wilcoxon rank-sum test
+#'
+#' Perform Wilcoxon rank-sum tests on specified dataset using given method.
+#'
+#' @param object \code{liger} object.
+#' @param data.use This selects which dataset(s) to use. (default 'all')
+#' @param compare.method This indicates the metric of the test. Either 'clusters' or 'datasets'.
+#'
+#' @return A 10-columns data.frame with test results.
+#' @export
+#' @examples
+#' \dontrun{
+#' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+#' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+#' X <- matrix(c(1, 2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 6), nrow = 4, byrow = T)
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z, x_set = X))
+#' ligerex <- normalize(ligerex)
+#' # select genes
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' ligerex <- optimizeALS(ligerex, k = 20)
+#' ligerex <- quantileAlignSNF(ligerex)
+#' wilcox.results <- runWilcoxon(ligerex, compare.method = "cluster")
+#' wilcox.results <- runWilcoxon(ligerex, compare.method = "datastes", data.use = c(1, 2))
+#' }
+#'
+runWilcoxon <- function(object, data.use = "all", compare.method) {
+  # check parameter inputs
+  if (missing(compare.method)) {
+    stop("Parameter *compare.method* cannot be empty!")
   }
+  if (compare.method != "datasets" & compare.method != "clusters") {
+    stop("Parameter *compare.method* should be either *clusters* or *datasets*.")
+  }
+  if (compare.method == "datasets") {
+    if (length(names(object@norm.data)) < 2) {
+      stop("Should have at least TWO inputs to compare between datasets")
+    }
+    if (!missing(data.use) & length(data.use) < 2) {
+      stop("Should have at least TWO inputs to compare between datasets")
+    }
+  }
+
+  ### create feature x sample matrix
+  if (data.use == "all" | length(data.use) > 1) { # at least two datasets
+    if (data.use == "all") {
+      print(paste0("Performing Wilcoxon test on ALL datasets: ", toString(names(object@norm.data))))
+      sample.list <- attributes(object@norm.data)$names
+    }
+    else {
+      print(paste0("Performing Wilcoxon test on GIVEN datasets: ", toString(data.use)))
+      sample.list <- data.use
+    }
+    genes <- Reduce(intersect, lapply(sample.list, function(sample) {
+      object@norm.data[[sample]]@Dimnames[[1]]
+    })) # get all shared genes of every datasets
+
+    feature_matrix <- Reduce(cbind, lapply(sample.list, function(sample) {
+      object@norm.data[[sample]][genes, ]
+    })) # get feature matrix, shared genes as rows and all barcodes as columns
+
+    # get labels of clusters and datasets
+    cell_source <- object@cell.data[["dataset"]] # from which dataset
+    names(cell_source) <- names(object@clusters)
+    cell_source <- cell_source[colnames(feature_matrix), drop = TRUE]
+    clusters <- object@clusters[colnames(feature_matrix), drop = TRUE] # from which cluster
+  } else { # for one dataset only
+    print(paste0("Performing Wilcoxon test on GIVEN dataset: ", data.use))
+    feature_matrix <- object@norm.data[[data.use]]
+    clusters <- object@clusters[object@norm.data[[data.use]]@Dimnames[[2]], drop = TRUE] # from which cluster
+  }
+
+  ### perform wilcoxon test
+  if (compare.method == "clusters") { # compare between clusters across datasets
+    len <- nrow(feature_matrix)
+    if (len > 100000) {
+      print("Calculating Large-scale Input...")
+      results <- Reduce(rbind, lapply(suppressWarnings(split(seq(len), seq(len / 100000))), function(index) {
+        wilcoxauc(log(feature_matrix[index, ] + 1e-10), clusters)
+      }))
+    } else {
+      results <- wilcoxauc(log(feature_matrix + 1e-10), clusters)
+    }
+  }
+
+  if (compare.method == "datasets") { # compare between datasets within each cluster
+    results <- Reduce(rbind, lapply(levels(clusters), function(cluster) {
+      sub_barcodes <- names(clusters[clusters == cluster]) # every barcode within this cluster
+      sub_label <- paste0(cluster, "-", cell_source[sub_barcodes]) # data source for each cell
+      sub_matrix <- feature_matrix[, sub_barcodes]
+      if (length(unique(cell_source[sub_barcodes])) == 1) { # if cluster has only 1 data source
+        print(paste0("Note: Skip Cluster ", cluster, " since it has only ONE data source."))
+        return()
+      }
+      return(wilcoxauc(log(sub_matrix + 1e-10), sub_label))
+    }))
+  }
+
+  return(results)
+}
+
+#' Linking genes to putative regulatory elements
+#'
+#' Evaluate the relationships between pairs of genes and peaks based on specified distance metric.
+#'
+#' @param gene_counts A gene expression matrix (genes by cells) of normalized counts.
+#' This matrix has to share the same column names (cell barcodes) as the matrix passed to peak_counts
+#' @param peak_counts A peak-level matrix (peaks by cells) of normalized accessibility values, such as the one resulting from imputeKNN.
+#' This matrix must share the same column names (cell barcodes) as the matrix passed to gene_counts.
+#' @param genes.list A list of the genes symbols to be tested. If not specified,
+#' this function will use all the gene symbols from the matrix passed to gmat by default.
+#' @param alpha Significance threshold for correlation p-value. Peak-gene correlations with p-values below
+#' this threshold are considered significant. The default is 0.05.
+#' @param dist This indicates the type of correlation to calculate -- one of “spearman” (default), "pearson", or "kendall".
+#' @param path_to_coords Path to the gene coordinates file.
+#'
+#' @return a sparse matrix with peak names as rows and gene symbols as columns, with each element indicating the
+#' correlation between peak i and gene j (or 0 if the gene and peak are not significantly linked).
+#' @export
+#' @examples
+#' \dontrun{
+#' gmat.small <- readRDS("../testdata/small_gmat.RDS") # some gene counts matrix
+#' pmat.small <- readRDS("../testdata/small_pmat.RDS") # some peak counts matrix
+#' regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", alpha = 0.05, path_to_coords = 'some_path')
+#' }
+#'
+linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist = "spearman", 
+                              alpha = 0.05, path_to_coords) {
+  ## check dependency
+  if (!requireNamespace("GenomicRanges", quietly = TRUE)) {
+    stop("Package \"GenomicRanges\" needed for this function to work. Please install it by command:\n",
+         "BiocManager::install('GenomicRanges')",
+         call. = FALSE
+    )
+  }
+  
+  if (!requireNamespace("IRanges", quietly = TRUE)) {
+    stop("Package \"IRanges\" needed for this function to work. Please install it by command:\n",
+         "BiocManager::install('IRanges')",
+         call. = FALSE
+    )
+  }
+  
+  ### make Granges object for peaks
+  peak.names <- strsplit(rownames(peak_counts), "[:-]")
+  chrs <- Reduce(append, lapply(peak.names, function(peak) {
+    peak[1]
+  }))
+  chrs.start <- Reduce(append, lapply(peak.names, function(peak) {
+    peak[2]
+  }))
+  chrs.end <- Reduce(append, lapply(peak.names, function(peak) {
+    peak[3]
+  }))
+  peaks.pos <- GenomicRanges::GRanges(
+    seqnames = chrs,
+    ranges = IRanges::IRanges(as.numeric(chrs.start), end = as.numeric(chrs.end))
+  )
+
+  ### make Granges object for genes
+  gene.names <- read.csv2(path_to_coords, sep = "\t", header = FALSE, stringsAsFactors = F)
+  genes.coords <- GenomicRanges::GRanges(
+    seqnames = gene.names$V1,
+    ranges = IRanges::IRanges(as.numeric(gene.names$V2), end = as.numeric(gene.names$V3))
+  )
+  names(genes.coords) <- gene.names$V4
+
+  ### construct regnet
+  gene_counts <- t(gene_counts) # cell x genes
+  peak_counts <- t(peak_counts) # cell x genes
+
+  # find overlap peaks for each gene
+  if (missing(genes.list)) {
+    genes.list <- colnames(gene_counts)
+  }
+  missing_genes <- !genes.list %in% names(genes.coords)
+  if (missing_genes!=0){
+    print(
+      paste0(
+        "Removing ", sum(missing_genes),
+        " genes not found in given gene coordinates..."
+      )
+    )
+  }
+  genes.list <- genes.list[!missing_genes]
+  genes.coords <- genes.coords[genes.list]
+
+  print("Calculating correlation for gene-peak pairs...")
+  each.len <<- 0
+
+  elements <- lapply(seq(length(genes.list)), function(pos) {
+    gene.use <- genes.list[pos]
+    # re-scale the window for each gene
+    gene.loci <- GenomicRanges::trim(suppressWarnings(GenomicRanges::promoters(GenomicRanges::resize(
+      genes.coords[gene.use],
+      width = 1, fix = "start"
+    ),
+    upstream = 500000, downstream = 500000
+    )))
+    peaks.use <- S4Vectors::queryHits(GenomicRanges::findOverlaps(peaks.pos, gene.loci))
+    if ((x <- length(peaks.use)) == 0L) { # if no peaks in window, skip this iteration
+      return(list(NULL, as.numeric(each.len), NULL))
+    }
+    ### compute correlation and p-adj for genes and peaks ###
+    res <- suppressWarnings(psych::corr.test(
+      x = gene_counts[, gene.use], y = as.matrix(peak_counts[, peaks.use]),
+      method = dist, adjust = "holm", ci = FALSE, use = "complete"
+    ))
+    pick <- res[["p"]] < alpha # filter by p-value
+    pick[is.na(pick)] <- FALSE
+
+    if (sum(pick) == 0) { # if no peaks are important, skip this iteration
+      return(list(NULL, as.numeric(each.len), NULL))
+    }
+    else {
+      res.corr <- as.numeric(res[["r"]][pick])
+      peaks.use <- peaks.use[pick]
+    }
+    each.len <<- each.len + length(peaks.use)
+    return(list(as.numeric(peaks.use), as.numeric(each.len), res.corr))
+  })
+
+  i_index <- Reduce(append, lapply(elements, function(ele) {
+    ele[[1]]
+  }))
+  p_index <- c(0, Reduce(append, lapply(elements, function(ele) {
+    ele[[2]]
+  })))
+  value_list <- Reduce(append, lapply(elements, function(ele) {
+    ele[[3]]
+  }))
+
+  # make final sparse matrix
+  regnet <- sparseMatrix(
+    i = i_index, p = p_index, x = value_list,
+    dim = c(ncol(peak_counts), length(genes.list)), dimnames = list(colnames(peak_counts), genes.list)
+  )
+
+  return(regnet)
+}
+
+
+#' Export predicted gene-pair interaction
+#'
+#' Export the predicted gene-pair interactions calculated by upstream function 'linkGenesAndPeaks' into an Interact Track file 
+#' which is compatible with UCSC Genome Browser. 
+#'
+#' @param corr.mat A sparse matrix with peak names as rows and gene symbols as columns.
+#' @param genes.list A list of the genes symbols to be tested. If not specified,
+#' this function will use all the gene symbols from the matrix passed to gmat by default.
+#' @param output_path Path in which the output file will be stored.
+#' @param path_to_coords Path to the gene coordinates file.
+#'
+#' @return An Interact Track file stored in the specified path.
+#' @export
+#' @examples
+#' \dontrun{
+#' regent <- readRDS("../testdata/small_gmat.RDS") # some gene-peak correlation matrix
+#' makeInteractTrack(regnet, path_to_coords = 'some_path_to_gene_coordinates/hg19_genes.bed')
+#' }
+#'
+makeInteractTrack <- function(corr.mat, genes.list, output_path, path_to_coords) {
+  # get genomic coordinates
+  if (missing(path_to_coords)) {
+    stop("Parameter 'path_to_coords' cannot be empty.")
+  }
+
+  ### make Granges object for genes
+  genes.coords <- read.csv2(path_to_coords,
+    sep = "\t", header = F, colClasses =
+      c("character", "integer", "integer", "character", "NULL", "NULL")
+  )
+  genes.coords <- genes.coords[complete.cases(genes.coords$V4), ]
+  rownames(genes.coords) <- genes.coords[, 4]
+
+  # split peak names into chrom and coordinates
+  peak.names <- strsplit(rownames(corr.mat), "[:-]")
+  chrs <- Reduce(append, lapply(peak.names, function(peak) {
+    peak[1]
+  }))
+  chrs.start <- as.numeric(Reduce(append, lapply(peak.names, function(peak) {
+    peak[2]
+  })))
+  chrs.end <- as.numeric(Reduce(append, lapply(peak.names, function(peak) {
+    peak[3]
+  })))
+
+  # check genes.list
+  if (missing(genes.list)) {
+    genes.list <- colnames(corr.mat)
+  }
+
+  # check output_path
+  if (missing(output_path)) {
+    output_path <- getwd()
+  }
+
+  output_path <- paste0(output_path, "/Interact_Track.bed")
+  track.doc <- paste0('track type=interact name="Interaction Track" description="Gene-Peaks Links"',
+                      ' interactDirectional=true maxHeightPixels=200:100:50 visibility=full')
+  write(track.doc, file = output_path)
+
+  genes_not_existed <- 0
+  filtered_genes <- 0
+
+  for (gene in genes.list) {
+    if (!gene %in% colnames(corr.mat)) { # if gene not in the corr.mat
+      genes_not_existed <- genes_not_existed + 1
+      next
+    }
+    peaks.sel <- which(corr.mat[, gene] != 0)
+    if (sum(peaks.sel) == 0) {
+      filtered_genes <- filtered_genes + 1
+      next
+    }
+
+    track <- data.frame(
+      chrom = chrs[peaks.sel],
+      chromStart = chrs.start[peaks.sel],
+      chromEnd = chrs.end[peaks.sel],
+      name = paste0(gene, "/", rownames(corr.mat)[peaks.sel]),
+      score = 0,
+      value = as.numeric(corr.mat[peaks.sel, gene]),
+      exp = ".",
+      color = 5,
+      sourceChrom = chrs[peaks.sel],
+      sourceStart = chrs.start[peaks.sel],
+      sourceEnd = chrs.start[peaks.sel] + 1,
+      sourceName = ".",
+      sourceStrand = ".",
+      targetChrom = genes.coords[gene, 1],
+      targetStart = genes.coords[gene, 2],
+      targetEnd = genes.coords[gene, 2] + 1,
+      targetName = gene,
+      targetStrand = "."
+    )
+    write.table(track,
+      file = output_path, append = TRUE,
+      quote = FALSE, sep = "\t", eol = "\n", na = "NA", dec = ".",
+      row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
+      fileEncoding = ""
+    )
+  }
+
+  print(paste0("A total of ", genes_not_existed, " genes do not exist in input matrix."))
+  print(paste0("A total of ", filtered_genes, " genes do not have significant correlated peaks."))
+  print(paste0("The Interaction Track is stored in Path: ", output_path))
+}
 
 
 #######################################################################################
@@ -2195,7 +2725,7 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 
 runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2,
                     distance = "euclidean", n_neighbors = 10, min_dist = 0.1, rand.seed = 42) {
-  if (!require("reticulate", quietly = TRUE)) {
+  if (!requireNamespace("reticulate", quietly = TRUE)) {
     stop(paste("Package \"reticulate\" needed for this function to work. Please install it.\n",
                "Also ensure Python package umap (PyPI name umap-learn) is installed in python",
                "version accesible to reticulate."),
@@ -2318,7 +2848,7 @@ calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.
 
 calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.aligned = TRUE,
                           rand.seed = 42, by.dataset = FALSE) {
-  if (!require("NNLM", quietly = TRUE) & dr.method == "NMF") {
+  if (!requireNamespace("NNLM", quietly = TRUE) & dr.method == "NMF") {
     stop("Package \"NNLM\" needed for this function to perform NMF. Please install it.",
          call. = FALSE
     )
@@ -3113,9 +3643,11 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #'   NULL to revert to default gradient scaling. (default 0.1)
 #' @inheritParams plotGene
 #' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
+#' @param axis.labels Vector of two strings to use as x and y labels respectively (default NULL).
+#' @param do.title Include top title with cluster and Dataset Specificity (default FALSE).
 #'
-#' @importFrom ggplot2 aes aes_string annotate coord_cartesian element_blank ggplot geom_point 
-#' ggtitle scale_color_viridis_c theme 
+#' @importFrom ggplot2 aes aes_string annotate coord_cartesian element_blank ggplot geom_point
+#' ggtitle scale_color_viridis_c theme
 #' theme_bw
 #' @importFrom grid gpar unit
 #' @export
@@ -3125,44 +3657,45 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' ligerex
 #' ligerex <- quantileAlignSNF(ligerex)
 #' ligerex <- runTSNE(ligerex)
-#' pdf('gene_loadings.pdf')
+#' pdf("gene_loadings.pdf")
 #' plotGeneLoadings(ligerex, num.genes = 20)
 #' dev.off()
 #' }
-
+#'
 plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes.show = 12,
                              num.genes = 30, mark.top.genes = T, factor.share.thresh = 10,
                              log.fc.thresh = 1, umi.thresh = 30, frac.thresh = 0,
                              pval.thresh = 0.05, do.spec.plot = T, max.val = 0.1, pt.size = 0.1,
-                             option = "plasma", zero.color = "#F5F5F5", return.plots = F) {
+                             option = "plasma", zero.color = "#F5F5F5", return.plots = F,
+                             axis.labels = NULL, do.title = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
   }
-  
+
   H_aligned <- object@H.norm
   W_orig <- t(object@W)
   V1 <- t(object@V[[dataset1]])
   V2 <- t(object@V[[dataset2]])
   W <- pmin(W_orig + V1, W_orig + V2)
-  
+
   dataset.specificity <- calcDatasetSpecificity(object,
-                                                dataset1 = dataset1,
-                                                dataset2 = dataset2, do.plot = do.spec.plot
+    dataset1 = dataset1,
+    dataset2 = dataset2, do.plot = do.spec.plot
   )
-  
+
   factors.use <- which(abs(dataset.specificity[[3]]) <= factor.share.thresh)
-  
-  
+
+
   markers <- getFactorMarkers(object,
-                              dataset1 = dataset1, dataset2 = dataset2,
-                              factor.share.thresh = factor.share.thresh,
-                              num.genes = num.genes, log.fc.thresh = log.fc.thresh,
-                              umi.thresh = umi.thresh, frac.thresh = frac.thresh,
-                              pval.thresh = pval.thresh,
-                              dataset.specificity = dataset.specificity
+    dataset1 = dataset1, dataset2 = dataset2,
+    factor.share.thresh = factor.share.thresh,
+    num.genes = num.genes, log.fc.thresh = log.fc.thresh,
+    umi.thresh = umi.thresh, frac.thresh = frac.thresh,
+    pval.thresh = pval.thresh,
+    dataset.specificity = dataset.specificity
   )
-  
+
   rownames(W) <- rownames(V1) <- rownames(V2) <- rownames(W_orig) <- object@var.genes
   loadings_list <- list(V1, W, V2)
   names_list <- list(dataset1, "Shared", dataset2)
@@ -3189,8 +3722,15 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
         direction = -1,
         na.value = zero.color, values = values
       ) +
-      ggtitle(label = factor_ds)
-    
+      theme_cowplot(12)
+
+    if (!is.null(axis.labels)) {
+      p1 <- p1 + xlab(axis.labels[1]) + ylab(axis.labels[2])
+    }
+    if (do.title) {
+      p1 <- p1 + ggtitle(label = factor_ds)
+    }
+
     # subset to specific factor and sort by p-value
     top_genes_V1 <- markers[[1]][markers[[1]]$factor_num == i, ]
     top_genes_V1 <- top_genes_V1[order(top_genes_V1$p_value), ]$gene
@@ -3198,10 +3738,10 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
     top_genes_W <- markers[[2]][markers[[2]]$factor_num == i, ]$gene
     top_genes_V2 <- markers[[3]][markers[[3]]$factor_num == i, ]
     top_genes_V2 <- top_genes_V2[order(top_genes_V2$p_value), ]$gene
-    
+
     top_genes_list <- list(top_genes_V1, top_genes_W, top_genes_V2)
     # subset down to those which will be shown if sorting by p-val
-    
+
     top_genes_list <- lapply(top_genes_list, function(x) {
       if (length(x) > num.genes.show) {
         # to avoid subset warning
@@ -3209,7 +3749,7 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
       }
       x
     })
-    
+
     plot_list <- lapply(seq_along(top_genes_list), function(x) {
       top_genes <- top_genes_list[[x]]
       # make dataframe for cum gene loadings plot
@@ -3221,7 +3761,7 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
       if (length(top_genes) == 0) {
         top_genes <- c("no genes")
       }
-      
+
       gene_df <- data.frame(
         loadings = sorted,
         xpos = seq(0, 1, length.out = length(sorted)),
@@ -3229,7 +3769,8 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
       )
       y_lim_text <- max(gene_df$loadings)
       # plot and annotate with top genes
-      out_plot <- ggplot(gene_df, aes(x = xpos, y = loadings)) + geom_point(size = 0.4) +
+      out_plot <- ggplot(gene_df, aes(x = xpos, y = loadings)) +
+        geom_point(size = 0.4) +
         theme_bw() +
         theme(
           axis.ticks.x = element_blank(),
@@ -3238,11 +3779,12 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
           axis.text.x = element_blank(),
           panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank()
-        ) + ggtitle(label = names_list[[x]]) +
+        ) +
+        ggtitle(label = names_list[[x]]) +
         annotate("text",
-                 x = 1.1,
-                 y = seq(y_lim_text, 0, length.out = num.genes.show)[1:length(top_genes)],
-                 label = top_genes, hjust = 0, col = "#8227A0"
+          x = 1.1,
+          y = seq(y_lim_text, 0, length.out = num.genes.show)[1:length(top_genes)],
+          label = top_genes, hjust = 0, col = "#8227A0"
         ) +
         coord_cartesian(
           xlim = c(0, 1), # This focuses the x-axis on the range of interest
@@ -3258,9 +3800,9 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
       }
       return(out_plot)
     })
-    
+
     # p2 <- plot_grid(plotlist = plot_list, nrow = 1)
-    
+
     return_plots[[i]] <- p1 / (plot_list[[1]] | plot_list[[2]] | plot_list[[3]])
     # if can figure out how to make cowplot work, might bring this back
     # return_plots[[i]] <- plot_grid(p1, p2, nrow = 2, align = "h")
@@ -4127,7 +4669,7 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 
 ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.liger.genes = T,
                           by.dataset = F) {
-  if (!require("Seurat", quietly = TRUE)) {
+  if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" needed for this function to work. Please install it.",
          call. = FALSE
     )

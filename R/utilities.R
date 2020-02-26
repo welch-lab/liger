@@ -307,3 +307,296 @@ getGeneValues <- function(list, gene, use.cols = F, methylation.indices = NULL, 
   use.names = T)
   return(gene_vals)
 }
+
+# helper function for refining clusers by KNN
+# related to function quantile_norm
+refine_clusts_knn = function(H,clusts,k,eps=0.1)
+{
+  for (i in 1:length(H))
+  {
+    clusts_H = clusts[rownames(H[[i]])]
+    H_knn = RANN::nn2(H[[i]],eps=eps,k=k,searchtype="standard")
+    #for (j in 1:length(clusts_H))
+    #{
+    #  clusts_H[j] = names(which.max(table(clusts_H[H_knn$nn.idx[j,]])))
+    #}
+    #clusts[rownames(H[[i]])] = clusts_H
+    new_clusts = cluster_vote(H_knn$nn.idx,clusts_H)
+    clusts[rownames(H[[i]])] = new_clusts
+  }
+  return(clusts)
+}
+
+
+################################## For fast Wilcoxon test ################################
+# helper function for wilcoxon tests on general variables like matrix and dgCMatrix
+# related to function runWilcoxon
+wilcoxauc <- function(X, y, groups_use=NULL, verbose=TRUE) {
+  ## Check and possibly correct input values
+  if (is(X, 'dgeMatrix')) X <- as.matrix(X)
+  if (is(X, 'data.frame')) X <- as.matrix(X)
+  # if (is(X, 'DataFrame')) X <- as.matrix(X)
+  # if (is(X, 'data.table')) X <- as.matrix(X)
+  if (is(X, 'dgTMatrix')) X <- as(X, 'dgCMatrix')
+  if (is(X, 'TsparseMatrix')) X <- as(X, 'dgCMatrix')
+  if (ncol(X) != length(y)) stop("number of columns of X does not
+                                 match length of y")
+  if (!is.null(groups_use)) {
+    idx_use <- which(y %in% intersect(groups_use, y))
+    y <- y[idx_use]
+    X <- X[, idx_use]
+  }
+  
+  
+  y <- factor(y)
+  idx_use <- which(!is.na(y))
+  if (length(idx_use) < length(y)) {
+    y <- y[idx_use]
+    X <- X[, idx_use]
+    if (verbose) 
+      message('Removing NA values from labels')        
+  }
+  
+  group.size <- as.numeric(table(y))
+  if (length(group.size[group.size > 0]) < 2) {
+    stop('Must have at least 2 groups defined.')
+  }
+  
+  #     features_use <- which(apply(!is.na(X), 1, all))
+  #     if (verbose & length(features_use) < nrow(X)) {
+  #         message('Removing features with NA values')
+  #     }
+  #     X <- X[features_use, ]
+  if (is.null(row.names(X))) {
+    row.names(X) <- paste0('Feature', seq_len(nrow(X)))
+  }
+  
+  ## Compute primary statistics
+  group.size <- as.numeric(table(y))
+  n1n2 <- group.size * (ncol(X) - group.size)
+  if (is(X, 'dgCMatrix')) {
+    rank_res <- rank_matrix(Matrix::t(X))        
+  } else {
+    rank_res <- rank_matrix(X)
+  }
+  
+  ustat <- compute_ustat(rank_res$X_ranked, y, n1n2, group.size) 
+  auc <- t(ustat / n1n2)
+  pvals <- compute_pval(ustat, rank_res$ties, ncol(X), n1n2) 
+  fdr <- apply(pvals, 2, function(x) p.adjust(x, 'BH'))
+  
+  ### Auxiliary Statistics (AvgExpr, PctIn, LFC, etc)
+  group_sums <- sumGroups(X, y, 1)
+  group_nnz <- nnzeroGroups(X, y, 1)
+  group_pct <- sweep(group_nnz, 1, as.numeric(table(y)), "/") %>% t()
+  group_pct_out <- -group_nnz %>% 
+    sweep(2, colSums(group_nnz) , "+") %>% 
+    sweep(1, as.numeric(length(y) - table(y)), "/") %>% t()
+  group_means <- sweep(group_sums, 1, as.numeric(table(y)), "/") %>% t()
+  cs <- colSums(group_sums)
+  gs <- as.numeric(table(y))
+  lfc <- Reduce(cbind, lapply(seq_len(length(levels(y))), function(g) {
+    group_means[, g] - ((cs - group_sums[g, ]) / (length(y) - gs[g]))
+  }))
+  
+  res_list <- list(auc = auc, 
+                   pval = pvals,
+                   padj = fdr, 
+                   pct_in = 100 * group_pct, 
+                   pct_out = 100 * group_pct_out,
+                   avgExpr = group_means, 
+                   statistic = t(ustat),
+                   logFC = lfc)
+  return(tidy_results(res_list, row.names(X), levels(y)))
+}
+
+
+
+#' Pipe operator
+#'
+#' @name %>%
+#' @rdname pipe
+#' @importFrom dplyr %>%
+#' @examples
+#' \dontrun{
+#' x <- 5 %>% sum(10)
+#' }
+#' @return return value of rhs function. 
+NULL
+
+
+tidy_results <- function(wide_res, features, groups) {
+  res <- Reduce(cbind, lapply(wide_res, as.numeric)) %>% data.frame() 
+  colnames(res) <- names(wide_res)
+  res$feature <- rep(features, times = length(groups))
+  res$group <- rep(groups, each = length(features))
+  res %>% dplyr::select(
+    .data$feature, 
+    .data$group, 
+    .data$avgExpr, 
+    .data$logFC, 
+    .data$statistic, 
+    .data$auc, 
+    .data$pval, 
+    .data$padj, 
+    .data$pct_in, 
+    .data$pct_out
+  )
+}
+
+
+compute_ustat <- function(Xr, cols, n1n2, group.size) {
+  grs <- sumGroups(Xr, cols)
+  
+  if (is(Xr, 'dgCMatrix')) {
+    gnz <- (group.size - nnzeroGroups(Xr, cols))
+    zero.ranks <- (nrow(Xr) - diff(Xr@p) + 1) / 2
+    ustat <- t((t(gnz) * zero.ranks)) + grs - group.size *
+      (group.size + 1 ) / 2        
+  } else {
+    ustat <- grs - group.size * (group.size + 1 ) / 2
+  }
+  return(ustat)
+}
+
+
+compute_pval <- function(ustat, ties, N, n1n2) {
+  z <- ustat - .5 * n1n2
+  z <- z - sign(z) * .5
+  .x1 <- N ^ 3 - N
+  .x2 <- 1 / (12 * (N^2 - N))
+  rhs <- lapply(ties, function(tvals) {
+    (.x1 - sum(tvals ^ 3 - tvals)) * .x2
+  }) %>% unlist
+  usigma <- sqrt(matrix(n1n2, ncol = 1) %*% matrix(rhs, nrow = 1))
+  z <- t(z / usigma)
+  
+  pvals <- matrix(2 * pnorm(-abs(as.numeric(z))), ncol = ncol(z))
+  return(pvals)
+}
+
+
+#' rank_matrix
+#' 
+#' Utility function to rank columns of matrix
+#' 
+#' @param X feature by observation matrix. 
+#' 
+#' @examples
+#' \dontrun{
+#' data(exprs)
+#' rank_res <- rank_matrix(exprs)
+#' }
+#' @return List with 2 items
+#' \itemize{
+#' \item X_ranked - matrix of entry ranks
+#' \item ties - list of tied group sizes
+#' }
+rank_matrix <- function(X) {
+  UseMethod('rank_matrix')
+}
+
+#' @rdname rank_matrix
+rank_matrix.dgCMatrix <- function(X) {
+  Xr <- Matrix(X, sparse = TRUE)
+  ties <- cpp_rank_matrix_dgc(Xr@x, Xr@p, nrow(Xr), ncol(Xr))
+  return(list(X_ranked = Xr, ties = ties))
+}
+
+#' @rdname rank_matrix
+rank_matrix.matrix <- function(X) {
+  cpp_rank_matrix_dense(X)
+}
+
+#' sumGroups
+#' 
+#' Utility function to sum over group labels
+#' 
+#' @param X matrix
+#' @param y group labels
+#' @param MARGIN whether observations are rows (=2) or columns (=1)
+#' 
+#' @examples
+#' \dontrun{
+#' data(exprs)
+#' data(y)
+#' sumGroups_res <- sumGroups(exprs, y, 1)
+#' sumGroups_res <- sumGroups(t(exprs), y, 2)
+#' }
+#' @return Matrix of groups by features
+sumGroups <- function(X, y, MARGIN=2) {
+  if (MARGIN == 2 & nrow(X) != length(y)) {
+    stop('wrong dims')
+  } else if (MARGIN == 1 & ncol(X) != length(y)) {
+    stop('wrong dims') 
+  }
+  UseMethod('sumGroups')
+}
+
+#' @rdname sumGroups
+sumGroups.dgCMatrix <- function(X, y, MARGIN=2) {
+  if (MARGIN == 1) {
+    cpp_sumGroups_dgc_T(X@x, X@p, X@i, ncol(X), nrow(X), as.integer(y) - 1,
+                        length(unique(y)))        
+  } else {
+    cpp_sumGroups_dgc(X@x, X@p, X@i, ncol(X), as.integer(y) - 1,
+                      length(unique(y)))
+  }
+}
+
+#' @rdname sumGroups
+sumGroups.matrix <- function(X, y, MARGIN=2) {
+  if (MARGIN == 1) {
+    cpp_sumGroups_dense_T(X, as.integer(y) - 1, length(unique(y)))        
+  } else {
+    cpp_sumGroups_dense(X, as.integer(y) - 1, length(unique(y)))
+  }
+}
+
+
+
+#' nnzeroGroups
+#' 
+#' Utility function to compute number of zeros-per-feature within group
+#' 
+#' @param X matrix
+#' @param y group labels
+#' @param MARGIN whether observations are rows (=2) or columns (=1)
+#' 
+#' @examples
+#' 
+#' \dontrun{
+#' data(exprs)
+#' data(y)
+#' nnz_res <- nnzeroGroups(exprs, y, 1)
+#' nnz_res <- nnzeroGroups(t(exprs), y, 2)
+#' }
+#' @return Matrix of groups by features
+nnzeroGroups <- function(X, y, MARGIN=2) {
+  if (MARGIN == 2 & nrow(X) != length(y)) {
+    stop('wrong dims')
+  } else if (MARGIN == 1 & ncol(X) != length(y)) {
+    stop('wrong dims')        
+  }
+  UseMethod('nnzeroGroups')
+}
+
+#' @rdname nnzeroGroups
+nnzeroGroups.dgCMatrix <- function(X, y, MARGIN=2) {
+  if (MARGIN == 1) {
+    cpp_nnzeroGroups_dgc_T(X@p, X@i, ncol(X), nrow(X), as.integer(y) - 1,
+                           length(unique(y)))        
+  } else {
+    cpp_nnzeroGroups_dgc(X@p, X@i, ncol(X), as.integer(y) - 1,
+                         length(unique(y)))
+  }
+}
+
+#' @rdname nnzeroGroups
+nnzeroGroups.matrix <- function(X, y, MARGIN=2) {
+  if (MARGIN == 1) {        
+    cpp_nnzeroGroups_dense_T(X, as.integer(y) - 1, length(unique(y)))        
+  } else {
+    cpp_nnzeroGroups_dense(X, as.integer(y) - 1, length(unique(y)))
+  }
+}

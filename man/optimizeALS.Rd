@@ -8,13 +8,35 @@
 \usage{
 optimizeALS(object, ...)
 
-\method{optimizeALS}{list}(object, k, lambda = 5, thresh = 1e-04,
-  max.iters = 100, nrep = 1, H.init = NULL, W.init = NULL,
-  V.init = NULL, rand.seed = 1, print.obj = FALSE, ...)
+\method{optimizeALS}{list}(
+  object,
+  k,
+  lambda = 5,
+  thresh = 1e-06,
+  max.iters = 30,
+  nrep = 1,
+  H.init = NULL,
+  W.init = NULL,
+  V.init = NULL,
+  rand.seed = 1,
+  print.obj = FALSE,
+  ...
+)
 
-\method{optimizeALS}{liger}(object, k, lambda = 5, thresh = 1e-04,
-  max.iters = 100, nrep = 1, H.init = NULL, W.init = NULL,
-  V.init = NULL, rand.seed = 1, print.obj = FALSE, ...)
+\method{optimizeALS}{liger}(
+  object,
+  k,
+  lambda = 5,
+  thresh = 1e-06,
+  max.iters = 30,
+  nrep = 1,
+  H.init = NULL,
+  W.init = NULL,
+  V.init = NULL,
+  rand.seed = 1,
+  print.obj = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{\code{liger} object. Should normalize, select genes, and scale before calling.}
@@ -30,9 +52,9 @@ strongly (ie. alignment should increase as lambda increases). Run suggestLambda 
 most appropriate value for balancing dataset alignment and agreement (default 5.0).}
 
 \item{thresh}{Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
-(default 1e-4)}
+(default 1e-6)}
 
-\item{max.iters}{Maximum number of block coordinate descent iterations to perform (default 100).}
+\item{max.iters}{Maximum number of block coordinate descent iterations to perform (default 30).}
 
 \item{nrep}{Number of restarts to perform (iNMF objective function is non-convex, so taking the
 best objective from multiple successive initializations is recommended). For easier

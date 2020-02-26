@@ -4,8 +4,15 @@
 \alias{read10X}
 \title{Read 10X alignment data (including V3)}
 \usage{
-read10X(sample.dirs, sample.names, merge = T, num.cells = NULL,
-  min.umis = 0, use.filtered = F, reference = NULL)
+read10X(
+  sample.dirs,
+  sample.names,
+  merge = T,
+  num.cells = NULL,
+  min.umis = 0,
+  use.filtered = F,
+  reference = NULL
+)
 }
 \arguments{
 \item{sample.dirs}{List of directories containing either matrix.mtx(.gz) file along with genes.tsv,

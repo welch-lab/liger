@@ -4,10 +4,19 @@
 \alias{plotByDatasetAndCluster}
 \title{Plot t-SNE coordinates of cells across datasets}
 \usage{
-plotByDatasetAndCluster(object, clusters = NULL, title = NULL,
-  pt.size = 0.3, text.size = 3, do.shuffle = T, rand.seed = 1,
-  axis.labels = NULL, do.legend = T, legend.size = 5,
-  return.plots = F)
+plotByDatasetAndCluster(
+  object,
+  clusters = NULL,
+  title = NULL,
+  pt.size = 0.3,
+  text.size = 3,
+  do.shuffle = T,
+  rand.seed = 1,
+  axis.labels = NULL,
+  do.legend = T,
+  legend.size = 5,
+  return.plots = F
+)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call runTSNE or runUMAP before calling.}
