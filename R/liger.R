@@ -850,10 +850,10 @@ optimizeALS.list  <- function(
       ", ",
       iters,
       " iterations.\n",
-      "Max iterations: ",
+      "Max iterations set: ",
       max.iters,
       ".\n",
-      "Convergence loss: ",
+      "Final objective delta: ",
       delta,
       '.\n',
       sep = ""
@@ -1702,7 +1702,8 @@ louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps
     nIterations = nIterations, algorithm = 1, randomSeed = random.seed, printOutput = T,
     edgefilename = output_path
   )
-  object@clusters <- as.factor(clusts)
+  names(clusts) = names(object@clusters)
+  object@clusters = as.factor(clusts)
   unlink(output_path)
   return(object)
 }
@@ -2698,7 +2699,7 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 #' @param k Number of dimensions to reduce to (default 2).
 #' @param distance Mtric used to measure distance in the input space. A wide variety of metrics are
 #'   already coded, and a user defined function can be passed as long as it has been JITd by numba.
-#'   (default "euclidean")
+#'   (default "euclidean", alternatives: "cosine", "manhattan", "hamming")
 #' @param n_neighbors Number of neighboring points used in local approximations of manifold
 #'   structure. Larger values will result in more global structure being preserved at the loss of
 #'   detailed local structure. In general this parameter should often be in the range 5 to 50, with
@@ -2723,36 +2724,30 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 #' ligerex <- runUMAP(ligerex, use.raw = T)
 #' }
 
-runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2,
+runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k = 2,
                     distance = "euclidean", n_neighbors = 10, min_dist = 0.1, rand.seed = 42) {
-  if (!requireNamespace("reticulate", quietly = TRUE)) {
-    stop(paste("Package \"reticulate\" needed for this function to work. Please install it.\n",
-               "Also ensure Python package umap (PyPI name umap-learn) is installed in python",
-               "version accesible to reticulate."),
-         call. = FALSE)
-  }
   set.seed(rand.seed)
-  reticulate::py_set_seed(rand.seed)
-  UMAP <- reticulate::import("umap")
-  umapper <- UMAP$UMAP(
-    n_components = as.integer(k), metric = distance,
-    n_neighbors = as.integer(n_neighbors), min_dist = min_dist
-  )
-  Rumap <- umapper$fit_transform
   if (use.raw) {
     raw.data <- do.call(rbind, object@H)
     # if H.norm not set yet
     if (identical(dims.use, 1:0)) {
       dims.use <- 1:ncol(raw.data)
     }
-    object@tsne.coords <- Rumap(raw.data[, dims.use])
+    object@tsne.coords <- uwot::umap(raw.data[, dims.use],
+      n_components = as.integer(k), metric = distance,
+      n_neighbors = as.integer(n_neighbors), min_dist = min_dist
+    )
     rownames(object@tsne.coords) <- rownames(raw.data)
   } else {
-    object@tsne.coords <- Rumap(object@H.norm[, dims.use])
+    object@tsne.coords <- uwot::umap(object@H.norm[, dims.use],
+      n_components = as.integer(k), metric = distance,
+      n_neighbors = as.integer(n_neighbors), min_dist = min_dist
+    )
     rownames(object@tsne.coords) <- rownames(object@H.norm)
   }
   return(object)
 }
+
 
 #######################################################################################
 #### Metrics

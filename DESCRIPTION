@@ -32,8 +32,7 @@ Imports: Rcpp (>= 0.12.10),
      psych,
      RcppEigen,
      RANN
-Remotes: thomasp85/patchwork,
-     jefferis/RANN@master-L1,
+Remotes: jefferis/RANN@master-L1,
      linxihui/NNLM
 biocViews:
 LazyData: true
@@ -55,5 +54,8 @@ Suggests:
     GenomicRanges,
     S4Vectors,
     IRanges,
-    RANN.L1
+    RANN.L1,
+    org.Hs.eg.db,
+    reactome.db,
+    fgsea
 VignetteBuilder: knitr
