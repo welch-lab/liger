@@ -368,3 +368,15 @@ test_that("Testing linkage between gene and peaks", {
   expect_equivalent(regnet[2, 2], 0.6929733, tolerance = 1e-7)
 })
 unlink("../testdata/temp_coords.bed")
+
+# Tests for runGSEA
+# Since this function depends on the cluster assignments, optimizeALS and quantil_norm
+# should be performed before this test
+####################################################################################
+context("GSEA testing on metagenes")
+gsea <- runGSEA(ligex)
+
+test_that("Tests top pathways and NES values", {
+  expect_equal(gsea[[1]][1, 1][[1]], "Axon guidance")
+  expect_equivalent(gsea[[1]][1, 4][[1]], 0.5840286, tolerance = 1e-7)
+})

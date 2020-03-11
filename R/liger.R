@@ -108,6 +108,8 @@ setMethod(
 #' @param reference For 10X V<3, specify which reference directory to use if sample.dir is outer
 #'   level 10X directory (only necessary if more than one reference used for sequencing).
 #'   (default NULL)
+#' @param data.type Indicates the protocol of the input data. If not specified, input data will be 
+#' considered scRNA-seq data (default 'rna', alternatives: 'atac'). 
 #' @return List of merged matrices across data types (returns sparse matrix if only one data type
 #'   detected), or nested list of matrices organized by sample if merge=F.
 #' @export
@@ -123,7 +125,7 @@ setMethod(
 #' }
 
 read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.umis = 0,
-                    use.filtered = F, reference = NULL) {
+                    use.filtered = F, reference = NULL, data.type = "rna") {
   datalist <- list()
   datatypes <- c("Gene Expression")
   
@@ -158,9 +160,15 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
       is_v3 <- file.exists(paste0(sample.dir, "/features.tsv.gz"))
     }
     suffix <- ifelse(is_v3, ".gz", "")
-    features.file <- ifelse(is_v3, paste0(sample.dir, "/features.tsv.gz"),
-                            paste0(sample.dir, "/genes.tsv")
-    )
+    if (data.type == "rna") {
+      features.file <- ifelse(is_v3, paste0(sample.dir, "/features.tsv.gz"),
+                              paste0(sample.dir, "/genes.tsv")
+      )
+    } else if (data.type == "atac") {
+      features.file <- ifelse(is_v3, paste0(sample.dir, "/peaks.bed.gz"),
+                              paste0(sample.dir, "/peaks.bed")
+      )
+    }
     matrix.file <- paste0(sample.dir, "/matrix.mtx", suffix)
     barcodes.file <- paste0(sample.dir, "/barcodes.tsv", suffix)
     
@@ -184,15 +192,23 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
         strsplit(x, "-")[[1]][1]
       }))
     }
-    
-    features <- read.delim(features.file, header = F, stringsAsFactors = F)
+    if (data.type == "rna") {
+      features <- read.delim(features.file, header = F, stringsAsFactors = F)
+      rownames(rawdata) <- make.unique(features[, 2])
+    } else if (data.type == "atac") {
+      features <- read.table(features.file, header = F)
+      features <- paste0(features[, 1], ":", features[, 2], "-", features[, 3])
+      rownames(rawdata) <- features
+    }
     # since some genes are only differentiated by ENSMBL
-    rownames(rawdata) <- make.unique(features[, 2])
     colnames(rawdata) <- barcodes
     
     # split based on 10X datatype -- V3 has Gene Expression, Antibody Capture, CRISPR, CUSTOM
     # V2 has only Gene Expression by default and just two columns
-    if (ncol(features) < 3) {
+    if (is.null(ncol(features))) {
+      samplelist <- list(rawdata)
+      names(samplelist) <- c("Chromatin Accessibility")
+    } else if (ncol(features) < 3) {
       samplelist <- list(rawdata)
       names(samplelist) <- c("Gene Expression")
     } else {
@@ -208,23 +224,38 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
     
     # num.cells filter only for gene expression data
     if (!is.null(num.cells)) {
-      cs <- colSums(samplelist[["Gene Expression"]])
-      limit <- ncol(samplelist[["Gene Expression"]])
-      if (num.cells[i] > limit) {
-        print(paste0(
-          "You selected more cells than are in matrix ", i,
-          ". Returning all ", limit, " cells."
-        ))
-        num.cells[i] <- limit
+      if (names(samplelist) == "Gene Expression" | names(samplelist) == "Chromatin Accessibility") {
+        data_label <- names(samplelist)
+        cs <- colSums(samplelist[[data_label]])
+        limit <- ncol(samplelist[[data_label]])
+        if (num.cells[i] > limit) {
+          print(paste0(
+            "You selected more cells than are in matrix ", i,
+            ". Returning all ", limit, " cells."
+          ))
+          num.cells[i] <- limit
+        }
+        samplelist[[data_label]] <- samplelist[[data_label]][, order(cs, decreasing = T)
+                                                             [1:num.cells[i]]]
       }
-      samplelist[["Gene Expression"]] <- samplelist[["Gene Expression"]][, order(cs, decreasing = T)
-                                                                         [1:num.cells[i]]]
+      
+      # cs <- colSums(samplelist[["Gene Expression"]])
+      # limit <- ncol(samplelist[["Gene Expression"]])
+      # if (num.cells[i] > limit) {
+      #   print(paste0(
+      #     "You selected more cells than are in matrix ", i,
+      #     ". Returning all ", limit, " cells."
+      #   ))
+      #   num.cells[i] <- limit
+      # }
+      # samplelist[["Gene Expression"]] <- samplelist[["Gene Expression"]][, order(cs, decreasing = T)
+      #                                                                    [1:num.cells[i]]]
     }
     
     datalist[[i]] <- samplelist
   }
   if (merge) {
-    print('Merging samples')
+    print("Merging samples")
     return_dges <- lapply(datatypes, function(x) {
       mergelist <- lapply(datalist, function(d) {
         d[[x]]
@@ -246,6 +277,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
     return(datalist)
   }
 }
+
 
 #' Create a liger object.
 #'
@@ -2605,6 +2637,112 @@ makeInteractTrack <- function(corr.mat, genes.list, output_path, path_to_coords)
   print(paste0("A total of ", genes_not_existed, " genes do not exist in input matrix."))
   print(paste0("A total of ", filtered_genes, " genes do not have significant correlated peaks."))
   print(paste0("The Interaction Track is stored in Path: ", output_path))
+}
+
+
+#' Analyze biological interpretations of metagene
+#'
+#' Identify the biological pathways (gene sets from Reactome) that each metagene (factor) might belongs to.
+#'
+#' @param object \code{liger} object.
+#' @param gene_sets A list of the Reactome gene sets names to be tested. If not specified,
+#' this function will use all the gene sets from the Reactome by default
+#' @param mat_w This indicates whether to use the shared factor loadings 'W' (default TRUE)
+#' @param mat_v This indicates which V matrix to be added to the analysis. It can be a numeric number or a list
+#' of the numerics.
+#' @param custom_gene_sets A named list of character vectors of entrez gene ids. If not specified,
+#' this function will use all the gene symbols from the input matrix by default
+#'
+#' @return A list of matrices with GSEA analysis for each factor
+#' @export
+#' @examples
+#' \dontrun{
+#' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+#' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+#' X <- matrix(c(1, 2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 6), nrow = 4, byrow = T)
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z, x_set = X))
+#' ligerex <- normalize(ligerex)
+#' # select genes
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' ligerex <- optimizeALS(ligerex, k = 20)
+#' ligerex <- quantil_norm(ligerex)
+#' wilcox.results <- runGSEA(ligerex)
+#' wilcox.results <- runGSEA(ligerex, mat_v = c(1, 2))
+#' }
+#'
+runGSEA <- function(object, gene_sets = c(), mat_w = T, mat_v = 0, custom_gene_sets = c()) {
+  if (!requireNamespace("org.Hs.eg.db", quietly = TRUE)) {
+    stop("Package \"org.Hs.eg.db\" needed for this function to work. Please install it by command:\n",
+         "BiocManager::install('org.Hs.eg.db')",
+         call. = FALSE
+    )
+  }
+  
+  if (!requireNamespace("reactome.db", quietly = TRUE)) {
+    stop("Package \"reactome.db\" needed for this function to work. Please install it by command:\n",
+         "BiocManager::install('reactome.db')",
+         call. = FALSE
+    )
+  }
+  
+  if (!requireNamespace("fgsea", quietly = TRUE)) {
+    stop("Package \"fgsea\" needed for this function to work. Please install it by command:\n",
+         "BiocManager::install('fgsea')",
+         call. = FALSE
+    )
+  }
+  
+  if (length(mat_v) > length(object@V)) {
+    error("The gene loading input is invalid.")
+  }
+  
+  if (!.hasSlot(object, "W") | !.hasSlot(object, "V")) {
+    error("There is no W or V matrix. Please do iNMF first.")
+  }
+  
+  if (mat_w) {
+    gene_loadings <- object@W
+    if (mat_v) {
+      gene_loadings <- gene_loadings + Reduce("+", lapply(mat_v, function(v) {
+        object@V[[v]]
+      }))
+    }
+  } else {
+    gene_loadings <- Reduce("+", lapply(mat_v, function(v) {
+      object@V[[v]]
+    }))
+  }
+  
+  gene_ranks <- t(apply(gene_loadings, MARGIN = 1, function(x) {
+    rank(x)
+  }))
+  
+  colnames(gene_ranks) <- sapply(colnames(gene_ranks), toupper)
+  gene_id <- as.character(AnnotationDbi::mapIds(org.Hs.eg.db::org.Hs.eg.db, colnames(gene_ranks), "ENTREZID", "SYMBOL"))
+  colnames(gene_ranks) <- gene_id
+  gene_ranks <- gene_ranks[, !is.na(colnames(gene_ranks))]
+  if (inherits((custom_gene_sets)[1], "tbl_df")) {
+    pathways <- split(custom_gene_sets, x = custom_gene_sets$entrez_gene, f = custom_gene_sets$gs_name)
+    pathways <- lapply(pathways, function(x) {
+      as.character(x)
+    })
+  } else if (length(custom_gene_sets)) {
+    pathways <- custom_gene_sets
+  } else {
+    pathways <- fgsea::reactomePathways(colnames(gene_ranks))
+    if (length(gene_sets)) {
+      pathways <- pathways[intersect(gene_sets, names(pathways))]
+    }
+  }
+  # gsea <- list()
+  gsea <- apply(gene_ranks, MARGIN = 1, function(x) {
+    fgsea::fgsea(pathways, x, minSize = 15, maxSize = 500, nperm = 10000)
+  })
+  gsea <- lapply(gsea, function(x) {
+    as.matrix(x[order(x$pval), ])
+  })
+  return(gsea)
 }
 
 

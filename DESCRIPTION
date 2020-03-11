@@ -27,11 +27,11 @@ Imports: Rcpp (>= 0.12.10),
      snow,
      doSNOW,
      mclust,
-     patchwork,
      stats,
      psych,
      RcppEigen,
-     RANN
+     RANN,
+     uwot
 Remotes: jefferis/RANN@master-L1,
      linxihui/NNLM
 biocViews:
@@ -57,5 +57,6 @@ Suggests:
     RANN.L1,
     org.Hs.eg.db,
     reactome.db,
-    fgsea
+    fgsea,
+    AnnotationDbi
 VignetteBuilder: knitr
