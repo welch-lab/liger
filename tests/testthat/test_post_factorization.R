@@ -361,7 +361,8 @@ pmat.small <- Matrix(
   dimnames = list(c("chr1:1821507-1822007", "chr1:1850611-1851111"), paste0("cell_", seq(1:100))), sparse = T
 )
 
-regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", alpha = 0.05, path_to_coords = "../testdata/temp_coords.bed") # about 40 mins
+regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", 
+                            alpha = 0.05, path_to_coords = "../testdata/temp_coords.bed") # about 40 mins
 
 test_that("Testing linkage between gene and peaks", {
   expect_equivalent(regnet[1, 1], 0.6340474, tolerance = 1e-7)
@@ -378,5 +379,5 @@ gsea <- runGSEA(ligex)
 
 test_that("Tests top pathways and NES values", {
   expect_equal(gsea[[1]][1, 1][[1]], "Axon guidance")
-  expect_equivalent(gsea[[1]][1, 4][[1]], 0.5840286, tolerance = 1e-7)
+  expect_equivalent(gsea[[1]][1, 4][[1]], 0.5843316, tolerance = 1e-7)
 })

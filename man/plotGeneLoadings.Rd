@@ -82,9 +82,9 @@ plots produced.
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
 ligerex <- runTSNE(ligerex)
-pdf("gene_loadings.pdf")
+# pdf("gene_loadings.pdf")
 plotGeneLoadings(ligerex, num.genes = 20)
-dev.off()
+# dev.off()
 }
 
 }

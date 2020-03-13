@@ -21,8 +21,8 @@ function into a PDF due to the large number of plots produced.
 ligerex
 ligerex <- runTSNE(ligerex)
 # plot expression for CD4 and FCGR3A
-pdf("gene_plots.pdf")
+# pdf("gene_plots.pdf")
 plotGenes(ligerex, c("CD4", "FCGR3A"))
-dev.off()
+# dev.off()
 }
 }

@@ -1,4 +1,6 @@
 #' @importFrom Matrix colSums rowSums rowMeans t sparseMatrix
+#' @importFrom grDevices heat.colors
+#' @importFrom methods as is
 NULL
 
 # Utility functions for iiger methods. Some published, some not.
@@ -19,6 +21,7 @@ rbindlist = function(mat_list)
 
 # helper function for calculating KL divergence from uniform distribution
 # (related to Shannon entropy) for factorization
+#' @importFrom methods is
 kl_divergence_uniform = function(object, Hs=NULL)
 {
   if (is.null(Hs)) {Hs = object@H}
@@ -331,6 +334,7 @@ refine_clusts_knn = function(H,clusts,k,eps=0.1)
 ################################## For fast Wilcoxon test ################################
 # helper function for wilcoxon tests on general variables like matrix and dgCMatrix
 # related to function runWilcoxon
+#' @importFrom stats p.adjust
 wilcoxauc <- function(X, y, groups_use=NULL, verbose=TRUE) {
   ## Check and possibly correct input values
   if (is(X, 'dgeMatrix')) X <- as.matrix(X)
@@ -459,7 +463,7 @@ compute_ustat <- function(Xr, cols, n1n2, group.size) {
   return(ustat)
 }
 
-
+#' @importFrom stats pnorm
 compute_pval <- function(ustat, ties, N, n1n2) {
   z <- ustat - .5 * n1n2
   z <- z - sign(z) * .5

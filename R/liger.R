@@ -1,4 +1,5 @@
 #' @importFrom Matrix colSums rowSums t
+#' @importFrom grDevices dev.off pdf
 NULL
 
 #' The LIGER Class
@@ -31,8 +32,8 @@ NULL
 #' @slot parameters List of parameters used throughout analysis
 #' @slot version Version of package used to create object
 #'
-#' @name liger
-#' @rdname liger
+#' @name liger-class
+#' @rdname liger-class
 #' @aliases liger-class
 #' @exportClass liger
 #' @importFrom Rcpp evalCpp
@@ -114,6 +115,7 @@ setMethod(
 #'   detected), or nested list of matrices organized by sample if merge=F.
 #' @export
 #' @import Matrix
+#' @importFrom utils read.delim read.table
 #' @examples
 #' \dontrun{
 #' # 10X output directory V2 -- contains outs/raw_gene_bc_matrices/<reference>/...
@@ -440,6 +442,8 @@ normalize <- function(object) {
 #' @return \code{liger} object with var.genes slot set.
 #' @export
 #' @importFrom stats optimize
+#' @importFrom graphics abline plot points title
+#' @importFrom stats qnorm
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -507,16 +511,16 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
                                             log10(gene_expr_var) > basegenelower + var.thresh[i])]
     
     if (do.plot) {
-      plot(log10(gene_expr_mean), log10(gene_expr_var), cex = cex.use,
+      graphics::plot(log10(gene_expr_mean), log10(gene_expr_var), cex = cex.use,
            xlab='Gene Expression Mean (log10)',
            ylab='Gene Expression Variance (log10)')
       
-      points(log10(gene_expr_mean[genes.new]), log10(gene_expr_var[genes.new]),
+      graphics::points(log10(gene_expr_mean[genes.new]), log10(gene_expr_var[genes.new]),
              cex = cex.use, col = "green")
-      abline(log10(nolan_constant), 1, col = "purple")
+      graphics::abline(log10(nolan_constant), 1, col = "purple")
       
       legend("bottomright", paste0("Selected genes: ", length(genes.new)), pch = 20, col = "green")
-      title(main = names(object@raw.data)[i])
+      graphics::title(main = names(object@raw.data)[i])
     }
     if (combine == "union") {
       genes.use <- union(genes.use, genes.new)
@@ -709,6 +713,8 @@ optimizeALS <- function(
 
 #' @rdname optimizeALS
 #' @export
+#' @importFrom stats runif
+#' @importFrom utils setTxtProgressBar txtProgressBar
 #' @method optimizeALS list
 #'
 optimizeALS.list  <- function(
@@ -1107,7 +1113,7 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
 #' # acquire new data from different cell type, we'll just add another dataset
 #' X <- matrix(35:46, nrow = 4, byrow = T)
 #' # it's probably most similar to y_set
-#' ligerex <- optimizeNewData(ligerex, new.data = list(x_set = X), which.datasets = list('y_set),
+#' ligerex <- optimizeNewData(ligerex, new.data = list(x_set = X), which.datasets = list('y_set'),
 #'                            add.to.existing = F)
 #' }
 
@@ -1602,6 +1608,7 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #'
 #' @return \code{liger} object with 'H.norm' and 'clusters' slot set.
 #' @export
+#' @importFrom stats approxfun
 #'
 #' @examples
 #' \dontrun{
@@ -1675,7 +1682,7 @@ quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells 
           new_vals <- rep(0, num_cells2)
         }
         else {
-          warp_func <- approxfun(q2, q1, rule = 2)
+          warp_func <- stats::approxfun(q2, q1, rule = 2)
           new_vals <- warp_func(Hs[[k]][cells2, i])
         }
         Hs[[k]][cells2, i] <- new_vals
@@ -2409,11 +2416,13 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
 #' @return a sparse matrix with peak names as rows and gene symbols as columns, with each element indicating the
 #' correlation between peak i and gene j (or 0 if the gene and peak are not significantly linked).
 #' @export
+#' @importFrom utils read.csv2
 #' @examples
 #' \dontrun{
 #' gmat.small <- readRDS("../testdata/small_gmat.RDS") # some gene counts matrix
 #' pmat.small <- readRDS("../testdata/small_pmat.RDS") # some peak counts matrix
-#' regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", alpha = 0.05, path_to_coords = 'some_path')
+#' regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", 
+#' alpha = 0.05, path_to_coords = 'some_path')
 #' }
 #'
 linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist = "spearman", 
@@ -2525,7 +2534,8 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
   # make final sparse matrix
   regnet <- sparseMatrix(
     i = i_index, p = p_index, x = value_list,
-    dim = c(ncol(peak_counts), length(genes.list)), dimnames = list(colnames(peak_counts), genes.list)
+    dims = c(ncol(peak_counts), length(genes.list)), 
+    dimnames = list(colnames(peak_counts), genes.list)
   )
 
   return(regnet)
@@ -2534,8 +2544,8 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
 
 #' Export predicted gene-pair interaction
 #'
-#' Export the predicted gene-pair interactions calculated by upstream function 'linkGenesAndPeaks' into an Interact Track file 
-#' which is compatible with UCSC Genome Browser. 
+#' Export the predicted gene-pair interactions calculated by upstream function 'linkGenesAndPeaks'
+#'  into an Interact Track file which is compatible with UCSC Genome Browser. 
 #'
 #' @param corr.mat A sparse matrix with peak names as rows and gene symbols as columns.
 #' @param genes.list A list of the genes symbols to be tested. If not specified,
@@ -2545,6 +2555,8 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
 #'
 #' @return An Interact Track file stored in the specified path.
 #' @export
+#' @importFrom stats complete.cases
+#' @importFrom utils write.table
 #' @examples
 #' \dontrun{
 #' regent <- readRDS("../testdata/small_gmat.RDS") # some gene-peak correlation matrix
@@ -2654,6 +2666,7 @@ makeInteractTrack <- function(corr.mat, genes.list, output_path, path_to_coords)
 #' this function will use all the gene symbols from the input matrix by default
 #'
 #' @return A list of matrices with GSEA analysis for each factor
+#' @importFrom methods .hasSlot
 #' @export
 #' @examples
 #' \dontrun{
@@ -2694,11 +2707,11 @@ runGSEA <- function(object, gene_sets = c(), mat_w = T, mat_v = 0, custom_gene_s
   }
   
   if (length(mat_v) > length(object@V)) {
-    error("The gene loading input is invalid.")
+    stop("The gene loading input is invalid.", call. = FALSE)
   }
   
   if (!.hasSlot(object, "W") | !.hasSlot(object, "V")) {
-    error("There is no W or V matrix. Please do iNMF first.")
+    stop("There is no W or V matrix. Please do iNMF first.", call. = FALSE)
   }
   
   if (mat_w) {
@@ -2905,6 +2918,7 @@ runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k = 2
 #'
 #' @return List containing three elements. First two elements are the norm of each metagene factor
 #' for each dataset. Last element is the vector of dataset specificity scores.
+#' @importFrom graphics barplot
 #' @export
 #' @examples
 #' \dontrun{
@@ -2931,7 +2945,7 @@ calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.
   # pct1 = pct1/sum(pct1)
   # pct2 = pct2/sum(pct2)
   if (do.plot) {
-    barplot(100 * (1 - (pct1 / pct2)),
+    graphics::barplot(100 * (1 - (pct1 / pct2)),
             xlab = "Factor",
             ylab = "Percent Specificity", main = "Dataset Specificity of Factors",
             names.arg = 1:k, cex.names = 0.75, mgp = c(2, 0.5, 0)
@@ -3444,6 +3458,7 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #' @importFrom ggplot2 ggplot geom_point geom_text ggtitle aes guides guide_legend labs 
 #' scale_color_viridis_c scale_color_gradientn theme xlab ylab
 #' @importFrom dplyr %>% group_by summarize
+#' @importFrom stats median
 #' @examples
 #' \dontrun{
 #'  # liger object with aligned factor loadings
@@ -3562,6 +3577,8 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
 #' @param plot.tsne Plot t-SNE coordinates for each factor (default FALSE).
 #'
 #' @return Plots to console (1-2 pages per factor)
+#' @importFrom graphics legend par plot
+#' @importFrom grDevices rainbow
 #' @export
 #' @examples
 #' \dontrun{
@@ -3571,9 +3588,9 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
 #' # get tsne.coords for normalized data
 #' ligerex <- runTSNE(ligerex)
 #' # factor plots into pdf file
-#' pdf("plot_factors.pdf")
+#' # pdf("plot_factors.pdf")
 #' plotFactors(ligerex)
-#' dev.off()
+#' # dev.off()
 #' }
 
 plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsne = F) {
@@ -3584,7 +3601,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
   rownames(W) <- colnames(object@scale.data[[1]])
   Hs_norm <- object@H.norm
   for (i in 1:k) {
-    par(mfrow = c(2, 1))
+    graphics::par(mfrow = c(2, 1))
     top_genes.W <- rownames(W)[order(W[, i], decreasing = T)[1:num.genes]]
     top_genes.W.string <- paste0(top_genes.W, collapse = ", ")
     factor_textstring <- paste0("Factor", i)
@@ -3592,7 +3609,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
     plot_title1 <- paste(factor_textstring, "\n", top_genes.W.string, "\n")
     cols <- rep("gray", times = nrow(Hs_norm))
     names(cols) <- rownames(Hs_norm)
-    cols.use <- rainbow(length(object@H))
+    cols.use <- grDevices::rainbow(length(object@H))
     
     for (cl in 1:length(object@H)) {
       cols[rownames(object@H[[cl]])] <- rep(cols.use[cl], times = nrow(object@H[[cl]]))
@@ -3600,17 +3617,17 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
     if (!is.null(cells.highlight)) {
       cols[cells.highlight] <- rep("black", times = length(cells.highlight))
     }
-    plot(1:nrow(Hs_norm), do.call(rbind, object@H)[, i],
+    graphics::plot(1:nrow(Hs_norm), do.call(rbind, object@H)[, i],
          cex = 0.2, pch = 20,
          col = cols, main = plot_title1, xlab = "Cell", ylab = "Raw H Score"
     )
-    legend("top", names(object@H), pch = 20, col = cols.use, horiz = T, cex = 0.75)
-    plot(1:nrow(Hs_norm), object@H.norm[, i],
+    graphics::legend("top", names(object@H), pch = 20, col = cols.use, horiz = T, cex = 0.75)
+    graphics::plot(1:nrow(Hs_norm), object@H.norm[, i],
          pch = 20, cex = 0.2,
          col = cols, xlab = "Cell", ylab = "H_norm Score"
     )
     if (plot.tsne) {
-      par(mfrow = c(1, 1))
+      graphics::par(mfrow = c(1, 1))
       fplot(object@tsne.coords, object@H.norm[, i], title = paste0("Factor ", i))
     }
     setTxtProgressBar(pb, i)
@@ -3658,9 +3675,9 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' ligerex
 #' ligerex <- quantileAlignSNF(ligerex)
 #' ligerex <- runTSNE(ligerex)
-#' pdf('word_clouds.pdf')
+#' # pdf('word_clouds.pdf')
 #' plotWordClouds(ligerex, num.genes = 20)
-#' dev.off()
+#' # dev.off()
 #' }
 
 plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1,
@@ -3783,6 +3800,8 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' ggtitle scale_color_viridis_c theme
 #' theme_bw
 #' @importFrom grid gpar unit
+#' @import patchwork
+#' @importFrom stats loadings
 #' @export
 #' @examples
 #' \dontrun{
@@ -3790,9 +3809,9 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' ligerex
 #' ligerex <- quantileAlignSNF(ligerex)
 #' ligerex <- runTSNE(ligerex)
-#' pdf("gene_loadings.pdf")
+#' # pdf("gene_loadings.pdf")
 #' plotGeneLoadings(ligerex, num.genes = 20)
-#' dev.off()
+#' # dev.off()
 #' }
 #'
 plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes.show = 12,
@@ -4266,9 +4285,9 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
 #' ligerex
 #' ligerex <- runTSNE(ligerex)
 #' # plot expression for CD4 and FCGR3A
-#' pdf("gene_plots.pdf")
+#' # pdf("gene_plots.pdf")
 #' plotGenes(ligerex, c("CD4", "FCGR3A"))
-#' dev.off()
+#' # dev.off()
 #' }
 
 plotGenes <- function(object, genes) {
@@ -4309,6 +4328,8 @@ plotGenes <- function(object, genes) {
 #' @importFrom plyr mapvalues
 #' @importFrom riverplot makeRiver
 #' @importFrom riverplot riverplot
+#' @importFrom grDevices hcl
+#' @importFrom utils capture.output 
 #' @examples
 #' \dontrun{
 #' # liger object, factorization done
@@ -4411,7 +4432,7 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
   ggplotColors <- function(g) {
     d <- 360 / g
     h <- cumsum(c(15, rep(d, g - 1)))
-    hcl(h = h, c = 100, l = 65)
+    grDevices::hcl(h = h, c = 100, l = 65)
   }
   pal <- ggplotColors(length(nodes1))
   for (i in 1:length(nodes1)) {
@@ -4519,6 +4540,8 @@ plotClusterProportions <- function(object, return.plot = F) {
 #' @param ... Additional parameters to pass on to heatmap()
 #'
 #' @export
+#' @importFrom grDevices colorRampPalette
+#' @importFrom stats heatmap
 #' @return If requested, matrix of size num_cluster x num_factor
 #' @examples
 #' \dontrun{
@@ -4549,13 +4572,13 @@ plotClusterFactors <- function(object, use.aligned = F, Rowv = NA, Colv = "Rowv"
   }
   cluster.bars <- Reduce(rbind, cluster.bars)
   if (is.null(col)) {
-    colfunc <- colorRampPalette(c("black", "red"))
+    colfunc <- grDevices::colorRampPalette(c("black", "red"))
     col <- colfunc(15)
   }
   rownames(cluster.bars) <- levels(object@clusters)
   colnames(cluster.bars) <- 1:ncol(cluster.bars)
   title <- ifelse(use.aligned, "H.norm", "raw H")
-  heatmap(cluster.bars,
+  stats::heatmap(cluster.bars,
           Rowv = Rowv, Colv = Rowv, col = col, xlab = "Factor", ylab = "Cluster",
           main = title, ...
   )
@@ -4593,6 +4616,7 @@ plotClusterFactors <- function(object, use.aligned = F, Rowv = NA, Colv = "Rowv"
 #'   specific, shared, and dataset2-specific markers. Last two elements are tables indicating the
 #'   number of factors in which marker appears.
 #' @export
+#' @importFrom stats wilcox.test
 #' @examples
 #' \dontrun{
 #' # liger object, factorization complete
@@ -4712,7 +4736,7 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
     top_genes <- list(top_genes_V1, top_genes_V2, top_genes_W)
     for (k in 1:length(top_genes)) {
       pvals[[k]] <- sapply(top_genes[[k]], function(x) {
-        suppressWarnings(wilcox.test(
+        suppressWarnings(stats::wilcox.test(
           as.numeric(gene_info[[dataset1]]$norm_counts[x, ]),
           as.numeric(gene_info[[dataset2]]$norm_counts[x, ])
         )$p.value)
@@ -4793,6 +4817,8 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #' @return Seurat object with raw.data, scale.data, dr$tsne, dr$inmf, and ident slots set.
 #' @export
 #' @import Matrix
+#' @importFrom methods new
+#' @importFrom utils packageVersion
 #' @examples
 #' \dontrun{
 #' # liger object
@@ -5261,6 +5287,7 @@ reorganizeLiger <- function(object, by.feature, keep.meta = T, new.label = "orig
 #'
 #' @return Updated \code{liger} object.
 #' @export
+#' @importFrom methods .hasSlot slot slotNames
 #' @examples
 #' \dontrun{
 #' # old Analogizer object

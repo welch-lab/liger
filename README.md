@@ -179,8 +179,12 @@ We also provide a set of scRNA-seq and scATAC-seq datasets for real-world style 
      + `GSM4138888_atac_gene_counts_D5T1.RDS`;
      + `GSM4138888_atac_promoter_counts_D5T1.RDS`.
 
-* scRNA data composed of two datasets of interneurons and oligodendrocytes from the mouse frontal cortex, two distinct cell types that should not align if integrated. Provided by [Saunders, A. et.al.](https://doi.org/10.1016/j.cell.2018.07.028): you can access the pre-processed data from [here](https://umich.box.com/s/n1xfpu9hplrknu6to6u9kvbktsqcql8t):
+* scRNA data composed of two datasets of interneurons and oligodendrocytes from the mouse frontal cortex, two distinct cell types that should not align if integrated. Provided by [Saunders, A. et.al., 2018](https://doi.org/10.1016/j.cell.2018.07.028); you can access the pre-processed data from [here](https://umich.box.com/s/n1xfpu9hplrknu6to6u9kvbktsqcql8t):
      + `interneurons_and_oligo.RDS`;
+     
+* scRNA data from control and interferon-stimulated PBMCs. Raw data provided by [Kang, et.al., 2017](https://www.nature.com/articles/nbt.4042); The datasets were downsampled by applying the sample function without replacement yield 3000 cells for each matrix. You can download downsampled data from [here](https://umich.box.com/s/n1xfpu9hplrknu6to6u9kvbktsqcql8t):
+     + `PBMC_control.RDS`;
+     + `PBMC_interferon-stimulated.RDS`.
 
 Corresponding tutorials can be found in section **Usage** above.
 
