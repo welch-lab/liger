@@ -1918,9 +1918,12 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #' ligerex <- quantile_norm(ligerex, knn_k = 15, resolution = 1.2)
 #' }
 #'
-quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells = 20, knn_k = 20, 
-                          dims.use = NULL, do.center = F, max_sample = 1000, eps = 0.9, refine.knn = T) {
+quantile_norm = function (object, quantiles = 50, ref_dataset = NULL, min_cells = 20, 
+          knn_k = 20, dims.use = NULL, do.center = F, max_sample = 1000, 
+          eps = 0.9, refine.knn = T) 
+{
   if (is.null(ref_dataset)) {
+    
     ns <- sapply(object@H, nrow)
     ref_dataset <- names(object@H)[which.max(ns)]
   }
@@ -1931,21 +1934,20 @@ quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells 
   else {
     use_these_factors <- dims.use
   }
-  # fast max factor assignment with Rcpp code
-  labels <- lapply(object@H, max_factor, dims_use = use_these_factors, center_cols = do.center)
+  labels <- lapply(object@H, max_factor, dims_use = use_these_factors, 
+                   center_cols = do.center)
   object@clusters <- as.factor(unlist(lapply(labels, as.character)))
-  names(object@clusters) <- unlist(lapply(object@scale.data, rownames))
-
-  # increase robustness of cluster assignments using knn graph
+  names(object@clusters) <- unlist(lapply(object@H, 
+                                          rownames))
   if (refine.knn) {
-    object@clusters <- refine_clusts_knn(object@H, object@clusters, k = knn_k, eps = eps)
+    object@clusters <- refine_clusts_knn(object@H, object@clusters, 
+                                         k = knn_k, eps = eps)
   }
   clusters <- lapply(object@H, function(x) {
     object@clusters[rownames(x)]
   })
   names(clusters) <- names(object@H)
   dims <- ncol(object@H[[ref_dataset]])
-
   dataset <- unlist(lapply(1:length(object@H), function(i) {
     rep(names(object@H)[i], nrow(object@H[[i]]))
   }))
@@ -1962,19 +1964,26 @@ quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells 
           next
         }
         if (num_cells2 == 1) {
-          Hs[[k]][cells2, i] <- mean(Hs[[ref_dataset]][cells1, i])
+          Hs[[k]][cells2, i] <- mean(Hs[[ref_dataset]][cells1, 
+                                                       i])
           next
         }
         if (num_cells2 > max_sample | num_cells1 > max_sample) {
-          q2 <- quantile(sample(Hs[[k]][cells2, i], min(num_cells2, max_sample)), seq(0, 1, by = 1 / quantiles))
-          q1 <- quantile(sample(Hs[[ref_dataset]][cells1, i], min(num_cells1, max_sample)), seq(0, 1, by = 1 / quantiles))
+          q2 <- quantile(sample(Hs[[k]][cells2, i], min(num_cells2, 
+                                                        max_sample)), seq(0, 1, by = 1/quantiles))
+          q1 <- quantile(sample(Hs[[ref_dataset]][cells1, 
+                                                  i], min(num_cells1, max_sample)), seq(0, 
+                                                                                        1, by = 1/quantiles))
         }
         else {
-          q2 <- quantile(sample(Hs[[k]][cells2, i], min(num_cells2, max_sample)), seq(0, 1, by = 1 / quantiles))
-          q1 <- quantile(sample(Hs[[ref_dataset]][cells1, i], min(num_cells1, max_sample)), seq(0, 1, by = 1 / quantiles))
+          q2 <- quantile(sample(Hs[[k]][cells2, i], min(num_cells2, 
+                                                        max_sample)), seq(0, 1, by = 1/quantiles))
+          q1 <- quantile(sample(Hs[[ref_dataset]][cells1, 
+                                                  i], min(num_cells1, max_sample)), seq(0, 
+                                                                                        1, by = 1/quantiles))
         }
-        if (sum(q1) == 0 | sum(q2) == 0 | length(unique(q1)) <
-          2 | length(unique(q2)) < 2) {
+        if (sum(q1) == 0 | sum(q2) == 0 | length(unique(q1)) < 
+            2 | length(unique(q2)) < 2) {
           new_vals <- rep(0, num_cells2)
         }
         else {
@@ -1988,6 +1997,7 @@ quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells 
   object@H.norm <- Reduce(rbind, Hs)
   return(object)
 }
+
 
 #' Louvain algorithm for community detection
 #'
