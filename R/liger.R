@@ -1586,8 +1586,8 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells = 20, knn_k = 20, 
                           dims.use = NULL, do.center = F, max_sample = 1000, eps = 0.9, refine.knn = T) {
   if (is.null(ref_dataset)) {
-    ns <- sapply(object@scale.data, nrow)
-    ref_dataset <- names(object@scale.data)[which.max(ns)]
+    ns <- sapply(object@H, nrow)
+    ref_dataset <- names(object@H)[which.max(ns)]
   }
   labels <- list()
   if (is.null(dims.use)) {
