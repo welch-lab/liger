@@ -360,7 +360,7 @@ createLiger = function(raw.data, make.sparse = T, take.gene.union = F, remove.mi
 #' }
 
 normalize <- function(object, chunk = 1000) {
-  if (class(raw.data[[1]]) == "character") {
+  if (class(object@raw.data[[1]]) == "character") {
     hdf5_files = object@raw.data
     for (i in 1:length(hdf5_files)){ 
       print(names(hdf5_files)[i])
@@ -445,7 +445,6 @@ calcGeneVars = function(object,chunk=1000) {
   hdf5_files = object@raw.data
   for (i in 1:length(hdf5_files))
   { 
-    print(names(hdf5_files)[i])
     chunk_size = chunk
     fname = hdf5_files[[i]]
     file_info = h5ls(fname)
@@ -542,7 +541,7 @@ calcGeneVars = function(object,chunk=1000) {
 selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes = NULL,
                         tol = 0.0001, datasets.use = 1:length(object@raw.data), combine = "union",
                         keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3, chunk=1000) {
-  if (class(raw.data[[1]]) == "character") {
+  if (class(object@raw.data[[1]]) == "character") {
     object = calcGeneVars(object,chunk)
     hdf5_files = object@raw.data
     if (length(var.thresh) == 1) {
@@ -712,7 +711,7 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
 #' }
 
 scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
-  if (class(raw.data[[1]]) == "character") {
+  if (class(object@raw.data[[1]]) == "character") {
     hdf5_files = object@raw.data
     vargenes = object@var.genes
     for (i in 1:length(hdf5_files)) { 
