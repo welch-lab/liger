@@ -361,50 +361,60 @@ createLiger = function(raw.data, make.sparse = T, take.gene.union = F, remove.mi
 
 normalize <- function(object, chunk = 1000) {
   if (class(object@raw.data[[1]]) == "character") {
-    hdf5_files = object@raw.data
-    for (i in 1:length(hdf5_files)){ 
-      print(names(hdf5_files)[i])
-      chunk_size = chunk
-      fname = hdf5_files[[i]]
-      file_info = h5ls(fname)
-      num_cells = as.numeric(file_info$dim[file_info$name == "barcodes"])
-      num_genes = as.numeric(file_info$dim[file_info$name == "name"])
-      prev_end_col = 1
-      prev_end_data = 1
-      prev_end_ind = 1
-      gene_vars = rep(0,num_genes)
-      gene_means = h5read(hdf5_files[[i]],"/gene_means")
-      gene_num_pos = rep(0,num_genes)
-      while(prev_end_col < num_cells)
+      hdf5_files = object@raw.data
+      for (i in 1:length(hdf5_files))
       {
-        if (num_cells - prev_end_col < chunk_size)
+        print(names(hdf5_files)[i])
+        chunk_size = chunk
+        fname = hdf5_files[[i]]
+        file_info = h5ls(fname)
+        num_cells = as.numeric(file_info$dim[file_info$name == "barcodes"])
+        num_genes = as.numeric(file_info$dim[file_info$name == "name"])
+        num_entries = as.numeric(file_info$dim[file_info$name == "data"])
+        prev_end_col = 1
+        prev_end_data = 1
+        prev_end_ind = 1
+        gene_sum_sq = rep(0,num_genes)
+        gene_means = rep(0,num_genes)
+        h5createDataset(fname,"/norm.data",dims=num_entries,storage.mode="double", chunk = chunk_size)
+        h5createDataset(fname,"/cell_sums",dims=num_cells,storage.mode="integer", chunk = chunk_size)
+
+        while(prev_end_col < num_cells)
         {
-          chunk_size = num_cells - prev_end_col
+          if (num_cells - prev_end_col < chunk_size)
+          {
+            chunk_size = num_cells - prev_end_col
+          }
+          start_inds = h5read(fname, "/matrix/indptr", index = list(prev_end_col:(prev_end_col+chunk_size+1)))
+          dt <- data.table(
+            row = h5read(fname, "/matrix/indices", index=list(prev_end_ind:(tail(start_inds, 1)))) + 1, # zero-based index in H5 file, so + 1 in R
+            column = rep(seq_len(length(start_inds) - 1), diff(start_inds)), # (length(start_inds) - 1) columns
+            count = h5read(fname, "/matrix/data", index=list(prev_end_ind:tail(start_inds, 1))) # count data from the selected chunk
+          )
+          norm_data = dt[ ,list(norm=count/sum(count),row), by=column] 
+          col_sums = dt[ ,list(sum=sum(count)), by=column]
+          num_read = nrow(norm_data) # number of total reads in the given chunk
+          h5write(norm_data$norm,file=fname,name="/norm.data",index=list(prev_end_ind:tail(start_inds, 1)))
+          h5write(col_sums$sum,file=fname,name="/cell_sums",index=list(prev_end_col:(prev_end_col+chunk_size)))
+          prev_end_col = prev_end_col + chunk_size + 1
+          prev_end_data = prev_end_data + num_read 
+          prev_end_ind = tail(start_inds, 1)+1
+
+          # calculate row sum and sum of squares using normalized data
+          row_sums = norm_data[ ,list(sum = sum(norm),sum_sq = sum(norm*norm)), by=row]
+          row_inds = row_sums$row
+          gene_sum_sq[row_inds] = gene_sum_sq[row_inds] + row_sums$sum_sq
+          gene_means[row_inds] = gene_means[row_inds] + row_sums$sum
         }
-        start_inds = h5read(fname, "/matrix/indptr", index = list(prev_end_col:(prev_end_col+chunk_size+1)))
-        row_inds = h5read(fname, "/matrix/indices", index=list(prev_end_ind:(tail(start_inds, 1)))) + 1
-        dt <- data.table(
-          row = row_inds,
-          column = rep(seq_len(length(start_inds) - 1), diff(start_inds)),
-          norm = h5read(fname, "/norm.data", index=list(prev_end_ind:tail(start_inds, 1))),
-          means = gene_means[row_inds]
-        )
-        num_read = nrow(dt)
-        prev_end_col = prev_end_col + chunk_size + 1
-        prev_end_data = prev_end_data + num_read
-        prev_end_ind = tail(start_inds, 1)+1
-        
-        # calculate row sum and sum of squares using normalized data
-        row_sums = dt[ ,list(num_pos=.N,var = sum((norm-means)*(norm-means))), by=row]
-        row_inds = row_sums$row
-        gene_vars[row_inds] = gene_vars[row_inds] + row_sums$var
-        gene_num_pos[row_inds] = gene_num_pos[row_inds] + row_sums$num_pos
-      }
-      #add deviations for zero entries (not seen in above loop due to sparse matrix representation)
-      gene_vars = gene_vars + (num_cells-gene_num_pos)*(gene_means*gene_means)
-      gene_vars = gene_vars / (num_cells-1)
-      h5createDataset(fname,"/gene_vars",dims=num_genes,storage.mode="double")
-      h5write(gene_vars,name="/gene_vars",file=fname)
+        gene_means = gene_means / num_cells
+        h5createDataset(fname,"/gene_means",dims=num_genes,storage.mode="double")
+        h5write(gene_means,name="/gene_means",file=fname)
+        h5createDataset(fname,"/gene_sum_sq",dims=num_genes,storage.mode="double")
+        h5write(gene_sum_sq,name="/gene_sum_sq",file=fname)
+
+        rm(dt)
+        rm(col_sums)
+        rm(row_sums)
     }
   } else {
     object <- removeMissingObs(object, slot.use = "raw.data", use.cols = T)
