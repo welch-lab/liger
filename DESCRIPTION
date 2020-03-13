@@ -42,7 +42,8 @@ Depends:
     cowplot,
     Matrix,
     methods,
-    patchwork
+    patchwork,
+    rhdf5
 RoxygenNote: 7.0.2
 Encoding: UTF-8
 Suggests:
