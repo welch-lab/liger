@@ -50,6 +50,8 @@ liger <- methods::setClass(
     H.norm = "matrix",
     W = "matrix",
     V = "list",
+    A = "list",
+    B = "list",
     tsne.coords = "matrix",
     alignment.clusters = 'factor',
     clusters= "factor",
@@ -272,36 +274,39 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
 #' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' }
 
-createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
-                        remove.missing = T) {
+createLiger = function(raw.data, make.sparse = T, take.gene.union = F, remove.missing = T) {
+  if (class(raw.data[[1]]) == "character") {#HDF5 filenames instead of in-memory matrices
+    object <- methods::new(Class = "liger", raw.data = raw.data, 
+                           version = packageVersion("liger"))
+    return(object)
+  }
+  
   if (make.sparse) {
     raw.data <- lapply(raw.data, function(x) {
-      if (class(x)[1] == "dgTMatrix" | class(x)[1] == 'dgCMatrix') {
-        mat <- as(x, 'CsparseMatrix')
-        # Check if dimnames exist
+      if (class(x)[1] == "dgTMatrix" | class(x)[1] == "dgCMatrix") {
+        mat <- as(x, "CsparseMatrix")
         if (is.null(x@Dimnames[[1]])) {
-          stop('Raw data must have both row (gene) and column (cell) names.')
+          stop("Raw data must have both row (gene) and column (cell) names.")
         }
         mat@Dimnames <- x@Dimnames
         return(mat)
-      } else {
-        as(as.matrix(x), 'CsparseMatrix')
+      }
+      else {
+        as(as.matrix(x), "CsparseMatrix")
       }
     })
   }
-  if (length(Reduce(intersect, lapply(raw.data, colnames))) > 0 & length(raw.data) > 1) {
-    stop('At least one cell name is repeated across datasets; please make sure all cell names
-         are unique.')
+  if (length(Reduce(intersect, lapply(raw.data, colnames))) > 
+      0 & length(raw.data) > 1) {
+    stop("At least one cell name is repeated across datasets; please make sure all cell names\n         are unique.")
   }
   if (take.gene.union) {
     merged.data <- MergeSparseDataAll(raw.data)
     if (remove.missing) {
       missing_genes <- which(rowSums(merged.data) == 0)
       if (length(missing_genes) > 0) {
-        print(
-          paste0("Removing ", length(missing_genes),
-                 " genes not expressed in any cells across merged datasets.")
-        )
+        print(paste0("Removing ", length(missing_genes), 
+                     " genes not expressed in any cells across merged datasets."))
         if (length(missing_genes) < 25) {
           print(rownames(merged.data)[missing_genes])
         }
@@ -312,21 +317,14 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
       merged.data[, colnames(x)]
     })
   }
-  object <- methods::new(
-    Class = "liger",
-    raw.data = raw.data,
-    version = packageVersion("liger")
-  )
-  # remove missing cells
+  object <- methods::new(Class = "liger", raw.data = raw.data, 
+                         version = packageVersion("liger"))
   if (remove.missing) {
     object <- removeMissingObs(object, use.cols = T)
-    # remove missing genes if not already merged
     if (!take.gene.union) {
       object <- removeMissingObs(object, use.cols = F)
     }
   }
-  
-  # Initialize cell.data for object with nUMI, nGene, and dataset
   nUMI <- unlist(lapply(object@raw.data, function(x) {
     colSums(x)
   }), use.names = F)
@@ -337,18 +335,19 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
     rep(names(object@raw.data)[i], ncol(object@raw.data[[i]]))
   }), use.names = F)
   object@cell.data <- data.frame(nUMI, nGene, dataset)
-  rownames(object@cell.data) <- unlist(lapply(object@raw.data, function(x) {
-    colnames(x)
-  }), use.names = F)
-  
+  rownames(object@cell.data) <- unlist(lapply(object@raw.data, 
+                                              function(x) {
+                                                colnames(x)
+                                              }), use.names = F)
   return(object)
-  }
+}
 
 #' Normalize raw datasets to column sums
 #'
 #' This function normalizes data to account for total gene expression across a cell.
 #'
 #' @param object \code{liger} object.
+#' @param chunk size of chunks in hdf5 file. (default 1000)
 #'
 #' @return \code{liger} object with norm.data slot set.
 #' @export
@@ -360,15 +359,134 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
 #' ligerex <- normalize(ligerex)
 #' }
 
-normalize <- function(object) {
-  object <- removeMissingObs(object, slot.use = "raw.data", use.cols = T)
-  if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
-      class(object@raw.data[[1]])[1] == "dgCMatrix") {
-    object@norm.data <- lapply(object@raw.data, Matrix.column_norm)
+normalize <- function(object, chunk = 1000) {
+  if (class(raw.data[[1]]) == "character") {
+    hdf5_files = object@raw.data
+    for (i in 1:length(hdf5_files)){ 
+      print(names(hdf5_files)[i])
+      chunk_size = chunk
+      fname = hdf5_files[[i]]
+      file_info = h5ls(fname)
+      num_cells = as.numeric(file_info$dim[file_info$name == "barcodes"])
+      num_genes = as.numeric(file_info$dim[file_info$name == "name"])
+      prev_end_col = 1
+      prev_end_data = 1
+      prev_end_ind = 1
+      gene_vars = rep(0,num_genes)
+      gene_means = h5read(hdf5_files[[i]],"/gene_means")
+      gene_num_pos = rep(0,num_genes)
+      while(prev_end_col < num_cells)
+      {
+        if (num_cells - prev_end_col < chunk_size)
+        {
+          chunk_size = num_cells - prev_end_col
+        }
+        start_inds = h5read(fname, "/matrix/indptr", index = list(prev_end_col:(prev_end_col+chunk_size+1)))
+        row_inds = h5read(fname, "/matrix/indices", index=list(prev_end_ind:(tail(start_inds, 1)))) + 1
+        dt <- data.table(
+          row = row_inds,
+          column = rep(seq_len(length(start_inds) - 1), diff(start_inds)),
+          norm = h5read(fname, "/norm.data", index=list(prev_end_ind:tail(start_inds, 1))),
+          means = gene_means[row_inds]
+        )
+        num_read = nrow(dt)
+        prev_end_col = prev_end_col + chunk_size + 1
+        prev_end_data = prev_end_data + num_read
+        prev_end_ind = tail(start_inds, 1)+1
+        
+        # calculate row sum and sum of squares using normalized data
+        row_sums = dt[ ,list(num_pos=.N,var = sum((norm-means)*(norm-means))), by=row]
+        row_inds = row_sums$row
+        gene_vars[row_inds] = gene_vars[row_inds] + row_sums$var
+        gene_num_pos[row_inds] = gene_num_pos[row_inds] + row_sums$num_pos
+      }
+      #add deviations for zero entries (not seen in above loop due to sparse matrix representation)
+      gene_vars = gene_vars + (num_cells-gene_num_pos)*(gene_means*gene_means)
+      gene_vars = gene_vars / (num_cells-1)
+      h5createDataset(fname,"/gene_vars",dims=num_genes,storage.mode="double")
+      h5write(gene_vars,name="/gene_vars",file=fname)
+    }
   } else {
-    object@norm.data <- lapply(object@raw.data, function(x) {
-      sweep(x, 2, colSums(x), "/")
-    })
+    object <- removeMissingObs(object, slot.use = "raw.data", use.cols = T)
+    if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
+        class(object@raw.data[[1]])[1] == "dgCMatrix") {
+      object@norm.data <- lapply(object@raw.data, Matrix.column_norm)
+    } else {
+      object@norm.data <- lapply(object@raw.data, function(x) {
+        sweep(x, 2, colSums(x), "/")
+      })
+    }
+  }
+  
+  return(object)
+}
+
+#' Calculate variance of gene expression across cells in an online fashion
+#'
+#' This function calculates the variance of gene expression values across cells for hdf5 files.
+#'
+#' @param object \code{liger} object. The input raw.data should be a list of hdf5 files. 
+#'    Should call normalize and selectGenes before calling.
+#' @param chunk size of chunks in hdf5 file. (default 1000)
+#'
+#' @return \code{liger} object with scale.data slot set.
+#' @export
+#' @examples
+#' \dontrun{
+#' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+#' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
+#' # select genes
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' }
+calcGeneVars = function(object,chunk=1000) {
+  hdf5_files = object@raw.data
+  for (i in 1:length(hdf5_files))
+  { 
+    print(names(hdf5_files)[i])
+    chunk_size = chunk
+    fname = hdf5_files[[i]]
+    file_info = h5ls(fname)
+    num_cells = as.numeric(file_info$dim[file_info$name == "barcodes"])
+    num_genes = as.numeric(file_info$dim[file_info$name == "name"])
+    prev_end_col = 1
+    prev_end_data = 1
+    prev_end_ind = 1
+    gene_vars = rep(0,num_genes)
+    gene_means = h5read(hdf5_files[[i]],"/gene_means")
+    gene_num_pos = rep(0,num_genes)
+    while(prev_end_col < num_cells)
+    {
+      if (num_cells - prev_end_col < chunk_size)
+      {
+        chunk_size = num_cells - prev_end_col
+      }
+      start_inds = h5read(fname, "/matrix/indptr", index = list(prev_end_col:(prev_end_col+chunk_size+1)))
+      row_inds = h5read(fname, "/matrix/indices", index=list(prev_end_ind:(tail(start_inds, 1)))) + 1
+      dt <- data.table(
+        row = row_inds,
+        column = rep(seq_len(length(start_inds) - 1), diff(start_inds)),
+        norm = h5read(fname, "/norm.data", index=list(prev_end_ind:tail(start_inds, 1))),
+        means = gene_means[row_inds]
+      )
+      num_read = nrow(dt)
+      prev_end_col = prev_end_col + chunk_size + 1
+      prev_end_data = prev_end_data + num_read
+      prev_end_ind = tail(start_inds, 1)+1
+      
+      # calculate row sum and sum of squares using normalized data
+      row_sums = dt[ ,list(num_pos=.N,var = sum((norm-means)*(norm-means))), by=row]
+      row_inds = row_sums$row
+      gene_vars[row_inds] = gene_vars[row_inds] + row_sums$var
+      gene_num_pos[row_inds] = gene_num_pos[row_inds] + row_sums$num_pos
+    }
+    #add deviations for zero entries (not seen in above loop due to sparse matrix representation)
+    gene_vars = gene_vars + (num_cells-gene_num_pos)*(gene_means*gene_means)
+    gene_vars = gene_vars / (num_cells-1)
+    h5createDataset(fname,"/gene_vars",dims=num_genes,storage.mode="double")
+    h5write(gene_vars,name="/gene_vars",file=fname)
   }
   return(object)
 }
@@ -404,6 +522,7 @@ normalize <- function(object) {
 #' @param do.plot Display log plot of gene variance vs. gene expression for each dataset.
 #'   Selected genes are plotted in green. (default FALSE)
 #' @param cex.use Point size for plot.
+#' @param chunk size of chunks in hdf5 file. (default 1000)
 
 #' @return \code{liger} object with var.genes slot set.
 #' @export
@@ -422,90 +541,148 @@ normalize <- function(object) {
 
 selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes = NULL,
                         tol = 0.0001, datasets.use = 1:length(object@raw.data), combine = "union",
-                        keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3) {
-  # Expand if only single var.thresh passed
-  if (length(var.thresh) == 1) {
-    var.thresh <- rep(var.thresh, length(object@raw.data))
-  }
-  if (length(num.genes) == 1) {
-    num.genes <- rep(num.genes, length(object@raw.data))
-  }
-  if (!identical(intersect(datasets.use, 1:length(object@raw.data)),datasets.use)) {
-    datasets.use = intersect(datasets.use, 1:length(object@raw.data))
-  }
-  genes.use <- c()
-  for (i in datasets.use) {
-    if (capitalize) {
-      rownames(object@raw.data[[i]]) <- toupper(rownames(object@raw.data[[i]]))
-      rownames(object@norm.data[[i]]) <- toupper(rownames(object@norm.data[[i]]))
+                        keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3, chunk=1000) {
+  if (class(raw.data[[1]]) == "character") {
+    object = calcGeneVars(object,chunk)
+    hdf5_files = object@raw.data
+    if (length(var.thresh) == 1) {
+      var.thresh <- rep(var.thresh, length(hdf5_files))
     }
-    trx_per_cell <- colSums(object@raw.data[[i]])
-    # Each gene's mean expression level (across all cells)
-    gene_expr_mean <- rowMeansFast(object@norm.data[[i]])
-    # Each gene's expression variance (across all cells)
-    gene_expr_var <- rowVarsFast(object@norm.data[[i]], gene_expr_mean)
-    names(gene_expr_mean) <- names(gene_expr_var) <- rownames(object@norm.data[[i]])
-    nolan_constant <- mean((1 / trx_per_cell))
-    alphathresh.corrected <- alpha.thresh / nrow(object@raw.data[[i]])
-    genemeanupper <- gene_expr_mean + qnorm(1 - alphathresh.corrected / 2) *
-      sqrt(gene_expr_mean * nolan_constant / ncol(object@raw.data[[i]]))
-    basegenelower <- log10(gene_expr_mean * nolan_constant)
-    
-    num_varGenes <- function(x, num.genes.des){
-      # This function returns the difference between the desired number of genes and
-      # the number actually obtained when thresholded on x
-      y <- length(which(gene_expr_var / nolan_constant > genemeanupper &
-                        log10(gene_expr_var) > basegenelower + x))
-      return(abs(num.genes.des - y))
-    }
-    
-    if (!is.null(num.genes)) {
-      # Optimize to find value of x which gives the desired number of genes for this dataset
-      # if very small number of genes requested, var.thresh may need to exceed 1
-      optimized <- optimize(num_varGenes, c(0, 1.5), tol = tol, 
-                            num.genes.des = num.genes[i])
-      var.thresh[i] <- optimized$minimum
-      if (optimized$objective > 1) {
-        warning(paste0("Returned number of genes for dataset ", i, " differs from requested by ",
-                       optimized$objective, ". Lower tol or alpha.thresh for better results."))
+    genes.use <- c()
+    for (i in 1:length(hdf5_files)) {
+      print(names(hdf5_files)[i])
+      genes = h5read(hdf5_files[[i]], "/matrix/features/name")
+      if (capitalize) {
+        genes = toupper(genes)
+      }
+      trx_per_cell = h5read(hdf5_files[[i]],"/cell_sums")
+      gene_expr_mean = h5read(hdf5_files[[i]],"/gene_means")
+      gene_expr_var = h5read(hdf5_files[[i]],"/gene_vars")
+      names(gene_expr_mean) <- names(gene_expr_var) <- genes # assign gene names
+      nolan_constant <- mean((1/trx_per_cell))
+      alphathresh.corrected <- alpha.thresh/length(genes)
+      genemeanupper <- gene_expr_mean + qnorm(1 - alphathresh.corrected/2) * 
+        sqrt(gene_expr_mean * nolan_constant/length(trx_per_cell))
+      genes.new <- names(gene_expr_var)[which(gene_expr_var/nolan_constant > 
+                                                genemeanupper & log10(gene_expr_var) > log10(gene_expr_mean) + 
+                                                (log10(nolan_constant) + var.thresh[i]))]
+      if (do.plot) {
+        plot(log10(gene_expr_mean), log10(gene_expr_var), 
+              cex = cex.use, xlab = "Gene Expression Mean (log10)", 
+              ylab = "Gene Expression Variance (log10)")
+        points(log10(gene_expr_mean[genes.new]), log10(gene_expr_var[genes.new]), 
+                cex = cex.use, col = "green")
+        abline(log10(nolan_constant), 1, col = "purple")
+        legend("bottomright", paste0("Selected genes: ", 
+                                       length(genes.new)), pch = 20, col = "green")
+        title(main = names(hdf5_files)[i])
+      }
+      if (combine == "union") {
+        genes.use <- union(genes.use, genes.new)
+      }
+      if (combine == "intersection") {
+        if (length(genes.use) == 0) {
+          genes.use <- genes.new
+        }
+        genes.use <- intersect(genes.use, genes.new)
       }
     }
-    
-    genes.new <- names(gene_expr_var)[which(gene_expr_var / nolan_constant > genemeanupper &
-                                            log10(gene_expr_var) > basegenelower + var.thresh[i])]
-    
-    if (do.plot) {
-      plot(log10(gene_expr_mean), log10(gene_expr_var), cex = cex.use,
-           xlab='Gene Expression Mean (log10)',
-           ylab='Gene Expression Variance (log10)')
-      
-      points(log10(gene_expr_mean[genes.new]), log10(gene_expr_var[genes.new]),
-             cex = cex.use, col = "green")
-      abline(log10(nolan_constant), 1, col = "purple")
-      
-      legend("bottomright", paste0("Selected genes: ", length(genes.new)), pch = 20, col = "green")
-      title(main = names(object@raw.data)[i])
-    }
-    if (combine == "union") {
-      genes.use <- union(genes.use, genes.new)
-    }
-    if (combine == "intersection") {
-      if (length(genes.use) == 0) {
-        genes.use <- genes.new
+    if (!keep.unique) {
+      for (i in 1:length(hdf5_files)) {
+        genes = h5read(hdf5_files[[i]], "/matrix/features/name")
+        genes.use <- genes.use[genes.use %in% genes]
       }
-      genes.use <- intersect(genes.use, genes.new)
     }
-  }
-  if (!keep.unique) {
-    for (i in 1:length(object@raw.data)) {
-      genes.use <- genes.use[genes.use %in% rownames(object@raw.data[[i]])]
+    if (length(genes.use) == 0) {
+      warning("No genes were selected; lower var.thresh values or choose 'union' for combine parameter", 
+              immediate. = T)
     }
+    object@var.genes = genes.use
+  } else {
+    # Expand if only single var.thresh passed
+    if (length(var.thresh) == 1) {
+      var.thresh <- rep(var.thresh, length(object@raw.data))
+    }
+    if (length(num.genes) == 1) {
+      num.genes <- rep(num.genes, length(object@raw.data))
+    }
+    if (!identical(intersect(datasets.use, 1:length(object@raw.data)),datasets.use)) {
+      datasets.use = intersect(datasets.use, 1:length(object@raw.data))
+    }
+    genes.use <- c()
+    for (i in datasets.use) {
+      if (capitalize) {
+        rownames(object@raw.data[[i]]) <- toupper(rownames(object@raw.data[[i]]))
+        rownames(object@norm.data[[i]]) <- toupper(rownames(object@norm.data[[i]]))
+      }
+      trx_per_cell <- colSums(object@raw.data[[i]])
+      # Each gene's mean expression level (across all cells)
+      gene_expr_mean <- rowMeansFast(object@norm.data[[i]])
+      # Each gene's expression variance (across all cells)
+      gene_expr_var <- rowVarsFast(object@norm.data[[i]], gene_expr_mean)
+      names(gene_expr_mean) <- names(gene_expr_var) <- rownames(object@norm.data[[i]])
+      nolan_constant <- mean((1 / trx_per_cell))
+      alphathresh.corrected <- alpha.thresh / nrow(object@raw.data[[i]])
+      genemeanupper <- gene_expr_mean + qnorm(1 - alphathresh.corrected / 2) *
+        sqrt(gene_expr_mean * nolan_constant / ncol(object@raw.data[[i]]))
+      basegenelower <- log10(gene_expr_mean * nolan_constant)
+      
+      num_varGenes <- function(x, num.genes.des){
+        # This function returns the difference between the desired number of genes and
+        # the number actually obtained when thresholded on x
+        y <- length(which(gene_expr_var / nolan_constant > genemeanupper &
+                          log10(gene_expr_var) > basegenelower + x))
+        return(abs(num.genes.des - y))
+      }
+      
+      if (!is.null(num.genes)) {
+        # Optimize to find value of x which gives the desired number of genes for this dataset
+        # if very small number of genes requested, var.thresh may need to exceed 1
+        optimized <- optimize(num_varGenes, c(0, 1.5), tol = tol, 
+                              num.genes.des = num.genes[i])
+        var.thresh[i] <- optimized$minimum
+        if (optimized$objective > 1) {
+          warning(paste0("Returned number of genes for dataset ", i, " differs from requested by ",
+                         optimized$objective, ". Lower tol or alpha.thresh for better results."))
+        }
+      }
+      
+      genes.new <- names(gene_expr_var)[which(gene_expr_var / nolan_constant > genemeanupper &
+                                              log10(gene_expr_var) > basegenelower + var.thresh[i])]
+      
+      if (do.plot) {
+        plot(log10(gene_expr_mean), log10(gene_expr_var), cex = cex.use,
+             xlab='Gene Expression Mean (log10)',
+             ylab='Gene Expression Variance (log10)')
+        
+        points(log10(gene_expr_mean[genes.new]), log10(gene_expr_var[genes.new]),
+               cex = cex.use, col = "green")
+        abline(log10(nolan_constant), 1, col = "purple")
+        
+        legend("bottomright", paste0("Selected genes: ", length(genes.new)), pch = 20, col = "green")
+        title(main = names(object@raw.data)[i])
+      }
+      if (combine == "union") {
+        genes.use <- union(genes.use, genes.new)
+      }
+      if (combine == "intersection") {
+        if (length(genes.use) == 0) {
+          genes.use <- genes.new
+        }
+        genes.use <- intersect(genes.use, genes.new)
+      }
+    }
+    if (!keep.unique) {
+      for (i in 1:length(object@raw.data)) {
+        genes.use <- genes.use[genes.use %in% rownames(object@raw.data[[i]])]
+      }
+    }
+    if (length(genes.use) == 0) {
+      warning("No genes were selected; lower var.thresh values or choose 'union' for combine parameter",
+              immediate. = T)
+    }
+    object@var.genes <- genes.use
   }
-  if (length(genes.use) == 0) {
-    warning("No genes were selected; lower var.thresh values or choose 'union' for combine parameter",
-            immediate. = T)
-  }
-  object@var.genes <- genes.use
   return(object)
 }
 
@@ -517,6 +694,7 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
 #' expression across the genes selected, by default.
 #'
 #' @param object \code{liger} object. Should call normalize and selectGenes before calling.
+#' @param chunk size of chunks in hdf5 file. (default 1000)
 #' @param remove.missing Whether to remove cells from scale.data with no gene expression
 #'   (default TRUE).
 #'
@@ -533,30 +711,88 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
 #' ligerex <- scaleNotCenter(ligerex)
 #' }
 
-scaleNotCenter <- function(object, remove.missing = T) {
-  if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
-      class(object@raw.data[[1]])[1] == "dgCMatrix") {
-    object@scale.data <- lapply(1:length(object@norm.data), function(i) {
-      scaleNotCenterFast(t(object@norm.data[[i]][object@var.genes, ]))
-    })
-    # TODO: Preserve sparseness later on (convert inside optimizeALS)
-    object@scale.data <- lapply(object@scale.data, function(x) {
-      as.matrix(x)
-    })
+scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
+  if (class(raw.data[[1]]) == "character") {
+    hdf5_files = object@raw.data
+    vargenes = object@var.genes
+    for (i in 1:length(hdf5_files)) { 
+      print(names(hdf5_files)[i])
+      chunk_size = chunk
+      fname = hdf5_files[[i]]
+      file_info = h5ls(fname)
+      num_cells = as.numeric(file_info$dim[file_info$name == "barcodes"])
+      num_genes = as.numeric(file_info$dim[file_info$name == "name"])
+      num_entries = as.numeric(file_info$dim[file_info$name == "data"])
+      prev_end_col = 1
+      prev_end_data = 1
+      prev_end_ind = 1
+      genes = h5read(fname, "/matrix/features/name")
+      gene_inds = which(genes %in% vargenes)
+      gene_sum_sq = h5read(fname,"/gene_sum_sq")
+      gene_root_mean_sum_sq = sqrt(gene_sum_sq / num_cells)
+      #h5delete(fname,"/scale.data")
+      h5createDataset(fname,"/scale.data",dims=c(length(vargenes), num_cells),storage.mode="double", chunk=c(length(vargenes),chunk_size))
+      
+      while(prev_end_col < num_cells)
+      {
+        if (num_cells - prev_end_col < chunk_size)
+        {
+          chunk_size = num_cells - prev_end_col
+        }
+        #print(paste(prev_end_col,prev_end_data,prev_end_ind))
+        start_inds = h5read(fname, "/matrix/indptr", index = list(prev_end_col:(prev_end_col+chunk_size+1)))
+        dt <- data.table(
+          row = h5read(fname, "/matrix/indices", index=list(prev_end_ind:(tail(start_inds, 1)))) + 1,
+          column = rep(seq_len(length(start_inds) - 1), diff(start_inds)),
+          norm = h5read(fname, "/norm.data", index=list(prev_end_ind:tail(start_inds, 1)))
+        )
+        #read normalized data as sparse matrix
+        scaled = sparseMatrix(i=dt$row,j=dt$column,x=c(dt$norm),dims=c(num_genes,chunk_size+1))
+        #subset to variable genes only
+        scaled = scaled[gene_inds,]
+        #convert to dense
+        scaled = as.matrix(scaled)
+        #divide each gene by the precomputed sum of squares across all cells
+        root_mean_sum_sq = gene_root_mean_sum_sq[gene_inds]
+        scaled = sweep(scaled,1,root_mean_sum_sq,"/")
+        rownames(scaled) = genes[gene_inds]
+        #need to subset by gene symbol to match liger default behavior with duplicate gene symbols
+        scaled = scaled[vargenes,]
+        scaled[is.na(scaled)]=0
+        scaled[scaled==Inf]=0
+        h5write(scaled,file=fname,name="/scale.data",index=list(NULL, prev_end_col:(prev_end_col+chunk_size)))
+        
+        num_read = nrow(dt)
+        prev_end_col = prev_end_col + chunk_size + 1
+        prev_end_data = prev_end_data + num_read
+        prev_end_ind = tail(start_inds, 1) + 1
+      }
+    }
   } else {
-    object@scale.data <- lapply(1:length(object@norm.data), function(i) {
-      scale(t(object@norm.data[[i]][object@var.genes, ]), center = F, scale = T)
-    })
-  }
-  names(object@scale.data) <- names(object@norm.data)
-  for (i in 1:length(object@scale.data)) {
-    object@scale.data[[i]][is.na(object@scale.data[[i]])] <- 0
-    rownames(object@scale.data[[i]]) <- colnames(object@raw.data[[i]])
-    colnames(object@scale.data[[i]]) <- object@var.genes
-  }
-  # may want to remove such cells before scaling -- should not matter for large datasets?
-  if (remove.missing) {
-    object <- removeMissingObs(object, slot.use = "scale.data", use.cols = F)
+    if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
+        class(object@raw.data[[1]])[1] == "dgCMatrix") {
+      object@scale.data <- lapply(1:length(object@norm.data), function(i) {
+        scaleNotCenterFast(t(object@norm.data[[i]][object@var.genes, ]))
+      })
+      # TODO: Preserve sparseness later on (convert inside optimizeALS)
+      object@scale.data <- lapply(object@scale.data, function(x) {
+        as.matrix(x)
+      })
+    } else {
+      object@scale.data <- lapply(1:length(object@norm.data), function(i) {
+        scale(t(object@norm.data[[i]][object@var.genes, ]), center = F, scale = T)
+      })
+    }
+    names(object@scale.data) <- names(object@norm.data)
+    for (i in 1:length(object@scale.data)) {
+      object@scale.data[[i]][is.na(object@scale.data[[i]])] <- 0
+      rownames(object@scale.data[[i]]) <- colnames(object@raw.data[[i]])
+      colnames(object@scale.data[[i]]) <- object@var.genes
+    }
+    # may want to remove such cells before scaling -- should not matter for large datasets?
+    if (remove.missing) {
+      object <- removeMissingObs(object, slot.use = "scale.data", use.cols = F)
+    }
   }
   return(object)
 }
@@ -617,6 +853,96 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 
 #######################################################################################
 #### Factorization
+#' Perform online iNMF on scaled datasets
+#'
+#' @description
+#' Perform online integrative non-negative matrix factorization to return factorized H, W, and V 
+#' matrices. It optimizes the iNMF objective function using online learning (alternating non-negative
+#' least squares for H matrix, Hierarchical alternating least squares for W and V matrices), where the 
+#' number of factors is set by k. TODO: include objective function equation here in documentation (using deqn)
+#'
+#' For each dataset, this factorization produces an H matrix (cells by k), a V matrix (k by genes),
+#' and a shared W matrix (k by genes). The H matrices represent the cell factor loadings.
+#' W is held consistent among all datasets, as it represents the shared components of the metagenes
+#' across datasets. The V matrices represent the dataset-specific components of the metagenes.
+#'
+#' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
+#' @param k Inner dimension of factorization (number of factors). Run suggestK to determine
+#'   appropriate value; a general rule of thumb is that a higher k will be needed for datasets with
+#'   more sub-structure.
+#' @param lambda Regularization parameter. Larger values penalize dataset-specific effects more
+#'   strongly (ie. alignment should increase as lambda increases). Run suggestLambda to determine
+#'   most appropriate value for balancing dataset alignment and agreement (default 5.0).
+#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
+#'   (default 1e-6)
+#' @param max.iters Maximum number of block coordinate descent iterations to perform (default 30).
+#' @param nrep Number of restarts to perform (iNMF objective function is non-convex, so taking the
+#'   best objective from multiple successive initializations is recommended). For easier
+#'   reproducibility, this increments the random seed by 1 for each consecutive restart, so future
+#'   factorizations of the same dataset can be run with one rep if necessary. (default 1)
+#' @param H.init Initial values to use for H matrices. (default NULL)
+#' @param W.init Initial values to use for W matrix (default NULL)
+#' @param V.init Initial values to use for V matrices (default NULL)
+#' @param seed Random seed to allow reproducible results (default 1).
+#' @param print.obj Print objective function values after convergence (default FALSE).
+#' @param ... Arguments passed to other methods
+#'
+#' @return \code{liger} object with H, W, and V slots set.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+#' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
+#' # select genes
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' # get factorization using three restarts and 20 factors
+#' ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
+#' }
+#'
+
+online_iNMF <- function(object,
+                        W_project = FALSE,
+                        W_init=NULL,
+                        V_init=NULL,
+                        H_init=NULL,
+                        A_init=NULL,
+                        B_init=NULL,
+                        H_output=TRUE,
+                        k=40,
+                        lambda=5,
+                        max_epoch=5,
+                        miniBatch_max_iters=1,
+                        miniBatch_size=1000,
+                        thresh=1e-4,
+                        h5_chunk_size=1000,
+                        seed=123) {
+  if (class(object@raw.data[[1]]) == "character") {
+    object = online_iNMF_h5(object,X,project,W_init,V_init,k,lambda,max_iters,max_epochs,miniBatch_max_iters,miniBatch_size,thresh,h5_chunk_size,seed)
+  }
+}
+
+
+
+
+
+
+#' Perform online iNMF on scaled datasets
+#'
+#' @description
+#' Perform thresholding on the input dense matrix. Remove any values samller than eps by eps.
+#'
+#' @param x Dense matrix.
+#' @param eps Threshold. Should be a small positive value. (default 1e-16)
+#' @return Dense matrix with smallest values equal to eps.
+
+nonneg <- function(x,eps=1e-16) {
+  x[x<eps]=eps
+  return(x)
+}
 
 #' Perform iNMF on scaled datasets
 #'
