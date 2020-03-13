@@ -360,51 +360,61 @@ createLiger = function(raw.data, make.sparse = T, take.gene.union = F, remove.mi
 #' }
 
 normalize <- function(object, chunk = 1000) {
-  if (class(raw.data[[1]]) == "character") {
-    hdf5_files = object@raw.data
-    for (i in 1:length(hdf5_files)){ 
-      print(names(hdf5_files)[i])
-      chunk_size = chunk
-      fname = hdf5_files[[i]]
-      file_info = h5ls(fname)
-      num_cells = as.numeric(file_info$dim[file_info$name == "barcodes"])
-      num_genes = as.numeric(file_info$dim[file_info$name == "name"])
-      prev_end_col = 1
-      prev_end_data = 1
-      prev_end_ind = 1
-      gene_vars = rep(0,num_genes)
-      gene_means = h5read(hdf5_files[[i]],"/gene_means")
-      gene_num_pos = rep(0,num_genes)
-      while(prev_end_col < num_cells)
+  if (class(object@raw.data[[1]]) == "character") {
+      hdf5_files = object@raw.data
+      for (i in 1:length(hdf5_files))
       {
-        if (num_cells - prev_end_col < chunk_size)
+        print(names(hdf5_files)[i])
+        chunk_size = chunk
+        fname = hdf5_files[[i]]
+        file_info = h5ls(fname)
+        num_cells = as.numeric(file_info$dim[file_info$name == "barcodes"])
+        num_genes = as.numeric(file_info$dim[file_info$name == "name"])
+        num_entries = as.numeric(file_info$dim[file_info$name == "data"])
+        prev_end_col = 1
+        prev_end_data = 1
+        prev_end_ind = 1
+        gene_sum_sq = rep(0,num_genes)
+        gene_means = rep(0,num_genes)
+        h5createDataset(fname,"/norm.data",dims=num_entries,storage.mode="double", chunk = chunk_size)
+        h5createDataset(fname,"/cell_sums",dims=num_cells,storage.mode="integer", chunk = chunk_size)
+
+        while(prev_end_col < num_cells)
         {
-          chunk_size = num_cells - prev_end_col
+          if (num_cells - prev_end_col < chunk_size)
+          {
+            chunk_size = num_cells - prev_end_col
+          }
+          start_inds = h5read(fname, "/matrix/indptr", index = list(prev_end_col:(prev_end_col+chunk_size+1)))
+          dt <- data.table(
+            row = h5read(fname, "/matrix/indices", index=list(prev_end_ind:(tail(start_inds, 1)))) + 1, # zero-based index in H5 file, so + 1 in R
+            column = rep(seq_len(length(start_inds) - 1), diff(start_inds)), # (length(start_inds) - 1) columns
+            count = h5read(fname, "/matrix/data", index=list(prev_end_ind:tail(start_inds, 1))) # count data from the selected chunk
+          )
+          norm_data = dt[ ,list(norm=count/sum(count),row), by=column] 
+          col_sums = dt[ ,list(sum=sum(count)), by=column]
+          num_read = nrow(norm_data) # number of total reads in the given chunk
+          h5write(norm_data$norm,file=fname,name="/norm.data",index=list(prev_end_ind:tail(start_inds, 1)))
+          h5write(col_sums$sum,file=fname,name="/cell_sums",index=list(prev_end_col:(prev_end_col+chunk_size)))
+          prev_end_col = prev_end_col + chunk_size + 1
+          prev_end_data = prev_end_data + num_read 
+          prev_end_ind = tail(start_inds, 1)+1
+
+          # calculate row sum and sum of squares using normalized data
+          row_sums = norm_data[ ,list(sum = sum(norm),sum_sq = sum(norm*norm)), by=row]
+          row_inds = row_sums$row
+          gene_sum_sq[row_inds] = gene_sum_sq[row_inds] + row_sums$sum_sq
+          gene_means[row_inds] = gene_means[row_inds] + row_sums$sum
         }
-        start_inds = h5read(fname, "/matrix/indptr", index = list(prev_end_col:(prev_end_col+chunk_size+1)))
-        row_inds = h5read(fname, "/matrix/indices", index=list(prev_end_ind:(tail(start_inds, 1)))) + 1
-        dt <- data.table(
-          row = row_inds,
-          column = rep(seq_len(length(start_inds) - 1), diff(start_inds)),
-          norm = h5read(fname, "/norm.data", index=list(prev_end_ind:tail(start_inds, 1))),
-          means = gene_means[row_inds]
-        )
-        num_read = nrow(dt)
-        prev_end_col = prev_end_col + chunk_size + 1
-        prev_end_data = prev_end_data + num_read
-        prev_end_ind = tail(start_inds, 1)+1
-        
-        # calculate row sum and sum of squares using normalized data
-        row_sums = dt[ ,list(num_pos=.N,var = sum((norm-means)*(norm-means))), by=row]
-        row_inds = row_sums$row
-        gene_vars[row_inds] = gene_vars[row_inds] + row_sums$var
-        gene_num_pos[row_inds] = gene_num_pos[row_inds] + row_sums$num_pos
-      }
-      #add deviations for zero entries (not seen in above loop due to sparse matrix representation)
-      gene_vars = gene_vars + (num_cells-gene_num_pos)*(gene_means*gene_means)
-      gene_vars = gene_vars / (num_cells-1)
-      h5createDataset(fname,"/gene_vars",dims=num_genes,storage.mode="double")
-      h5write(gene_vars,name="/gene_vars",file=fname)
+        gene_means = gene_means / num_cells
+        h5createDataset(fname,"/gene_means",dims=num_genes,storage.mode="double")
+        h5write(gene_means,name="/gene_means",file=fname)
+        h5createDataset(fname,"/gene_sum_sq",dims=num_genes,storage.mode="double")
+        h5write(gene_sum_sq,name="/gene_sum_sq",file=fname)
+
+        rm(dt)
+        rm(col_sums)
+        rm(row_sums)
     }
   } else {
     object <- removeMissingObs(object, slot.use = "raw.data", use.cols = T)
@@ -445,7 +455,6 @@ calcGeneVars = function(object,chunk = 1000) {
   hdf5_files = object@raw.data
   for (i in 1:length(hdf5_files))
   { 
-    print(names(hdf5_files)[i])
     chunk_size = chunk
     fname = hdf5_files[[i]]
     file_info = h5ls(fname)
@@ -542,7 +551,7 @@ calcGeneVars = function(object,chunk = 1000) {
 selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes = NULL,
                         tol = 0.0001, datasets.use = 1:length(object@raw.data), combine = "union",
                         keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3, chunk=1000) {
-  if (class(raw.data[[1]]) == "character") {
+  if (class(object@raw.data[[1]]) == "character") {
     object = calcGeneVars(object,chunk)
     hdf5_files = object@raw.data
     if (length(var.thresh) == 1) {
@@ -712,7 +721,7 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
 #' }
 
 scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
-  if (class(raw.data[[1]]) == "character") {
+  if (class(object@raw.data[[1]]) == "character") {
     hdf5_files = object@raw.data
     vargenes = object@var.genes
     for (i in 1:length(hdf5_files)) { 
@@ -1909,9 +1918,12 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #' ligerex <- quantile_norm(ligerex, knn_k = 15, resolution = 1.2)
 #' }
 #'
-quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells = 20, knn_k = 20, 
-                          dims.use = NULL, do.center = F, max_sample = 1000, eps = 0.9, refine.knn = T) {
+quantile_norm = function (object, quantiles = 50, ref_dataset = NULL, min_cells = 20, 
+          knn_k = 20, dims.use = NULL, do.center = F, max_sample = 1000, 
+          eps = 0.9, refine.knn = T) 
+{
   if (is.null(ref_dataset)) {
+    
     ns <- sapply(object@H, nrow)
     ref_dataset <- names(object@H)[which.max(ns)]
   }
@@ -1922,21 +1934,20 @@ quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells 
   else {
     use_these_factors <- dims.use
   }
-  # fast max factor assignment with Rcpp code
-  labels <- lapply(object@H, max_factor, dims_use = use_these_factors, center_cols = do.center)
+  labels <- lapply(object@H, max_factor, dims_use = use_these_factors, 
+                   center_cols = do.center)
   object@clusters <- as.factor(unlist(lapply(labels, as.character)))
-  names(object@clusters) <- unlist(lapply(object@scale.data, rownames))
-
-  # increase robustness of cluster assignments using knn graph
+  names(object@clusters) <- unlist(lapply(object@H, 
+                                          rownames))
   if (refine.knn) {
-    object@clusters <- refine_clusts_knn(object@H, object@clusters, k = knn_k, eps = eps)
+    object@clusters <- refine_clusts_knn(object@H, object@clusters, 
+                                         k = knn_k, eps = eps)
   }
   clusters <- lapply(object@H, function(x) {
     object@clusters[rownames(x)]
   })
   names(clusters) <- names(object@H)
   dims <- ncol(object@H[[ref_dataset]])
-
   dataset <- unlist(lapply(1:length(object@H), function(i) {
     rep(names(object@H)[i], nrow(object@H[[i]]))
   }))
@@ -1953,19 +1964,26 @@ quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells 
           next
         }
         if (num_cells2 == 1) {
-          Hs[[k]][cells2, i] <- mean(Hs[[ref_dataset]][cells1, i])
+          Hs[[k]][cells2, i] <- mean(Hs[[ref_dataset]][cells1, 
+                                                       i])
           next
         }
         if (num_cells2 > max_sample | num_cells1 > max_sample) {
-          q2 <- quantile(sample(Hs[[k]][cells2, i], min(num_cells2, max_sample)), seq(0, 1, by = 1 / quantiles))
-          q1 <- quantile(sample(Hs[[ref_dataset]][cells1, i], min(num_cells1, max_sample)), seq(0, 1, by = 1 / quantiles))
+          q2 <- quantile(sample(Hs[[k]][cells2, i], min(num_cells2, 
+                                                        max_sample)), seq(0, 1, by = 1/quantiles))
+          q1 <- quantile(sample(Hs[[ref_dataset]][cells1, 
+                                                  i], min(num_cells1, max_sample)), seq(0, 
+                                                                                        1, by = 1/quantiles))
         }
         else {
-          q2 <- quantile(sample(Hs[[k]][cells2, i], min(num_cells2, max_sample)), seq(0, 1, by = 1 / quantiles))
-          q1 <- quantile(sample(Hs[[ref_dataset]][cells1, i], min(num_cells1, max_sample)), seq(0, 1, by = 1 / quantiles))
+          q2 <- quantile(sample(Hs[[k]][cells2, i], min(num_cells2, 
+                                                        max_sample)), seq(0, 1, by = 1/quantiles))
+          q1 <- quantile(sample(Hs[[ref_dataset]][cells1, 
+                                                  i], min(num_cells1, max_sample)), seq(0, 
+                                                                                        1, by = 1/quantiles))
         }
-        if (sum(q1) == 0 | sum(q2) == 0 | length(unique(q1)) <
-          2 | length(unique(q2)) < 2) {
+        if (sum(q1) == 0 | sum(q2) == 0 | length(unique(q1)) < 
+            2 | length(unique(q2)) < 2) {
           new_vals <- rep(0, num_cells2)
         }
         else {
@@ -1979,6 +1997,7 @@ quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells 
   object@H.norm <- Reduce(rbind, Hs)
   return(object)
 }
+
 
 #' Louvain algorithm for community detection
 #'
