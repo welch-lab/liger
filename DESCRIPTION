@@ -43,7 +43,8 @@ Depends:
     Matrix,
     methods,
     patchwork,
-    rhdf5
+    rhdf5,
+    data.table
 RoxygenNote: 7.0.2
 Encoding: UTF-8
 Suggests:
