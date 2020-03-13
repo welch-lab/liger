@@ -441,7 +441,7 @@ normalize <- function(object, chunk = 1000) {
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
 #' }
-calcGeneVars = function(object,chunk=1000) {
+calcGeneVars = function(object,chunk = 1000) {
   hdf5_files = object@raw.data
   for (i in 1:length(hdf5_files))
   { 
