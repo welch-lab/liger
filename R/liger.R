@@ -493,8 +493,13 @@ calcGeneVars = function(object,chunk=1000)
     gene_vars = rep(0,num_genes)
     gene_means = h5read(hdf5_files[[i]],"/gene_means")
     gene_num_pos = rep(0,num_genes)
+    
+    num_chunks = ceiling(num_cells/chunk_size)
+    pb = txtProgressBar(0,num_chunks,style = 3)
+    ind = 0
     while(prev_end_col < num_cells)
     {
+      ind = ind + 1
       if (num_cells - prev_end_col < chunk_size)
       {
         chunk_size = num_cells - prev_end_col
@@ -517,7 +522,10 @@ calcGeneVars = function(object,chunk=1000)
       row_inds = row_sums$row
       gene_vars[row_inds] = gene_vars[row_inds] + row_sums$var
       gene_num_pos[row_inds] = gene_num_pos[row_inds] + row_sums$num_pos
+      setTxtProgressBar(pb,ind)
     }
+    setTxtProgressBar(pb,num_chunks)
+    cat("\n")
     #add deviations for zero entries (not seen in above loop due to sparse matrix representation)
     gene_vars = gene_vars + (num_cells-gene_num_pos)*(gene_means*gene_means)
     gene_vars = gene_vars / (num_cells-1)
@@ -586,7 +594,6 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
     }
     genes.use <- c()
     for (i in 1:length(hdf5_files)) {
-      print(names(hdf5_files)[i])
       genes = h5read(hdf5_files[[i]], "/matrix/features/name")
       if (capitalize) {
         genes = toupper(genes)
