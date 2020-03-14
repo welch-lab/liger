@@ -373,63 +373,78 @@ safe_h5_create = function(filename,dataset_name,dims,mode="double",chunk_size=di
 #' ligerex <- normalize(ligerex)
 #' }
 
-normalize = function(object,chunk=1000)
+normalize = function (object, chunk = 1000) 
 {
-  hdf5_files = object@raw.data
-  for (i in 1:length(hdf5_files))
-  {
-    print(names(hdf5_files)[i])
-    chunk_size = chunk
-    fname = hdf5_files[[i]]
-    file_info = h5ls(fname)
-    num_cells = as.numeric(file_info$dim[file_info$name == "barcodes"])
-    num_genes = as.numeric(file_info$dim[file_info$name == "name"])
-    num_entries = as.numeric(file_info$dim[file_info$name == "data"])
-    prev_end_col = 1
-    prev_end_data = 1
-    prev_end_ind = 1
-    gene_sum_sq = rep(0,num_genes)
-    gene_means = rep(0,num_genes)
-    
-    safe_h5_create(fname,"/norm.data",dims=num_entries,mode = "double", chunk_size = chunk_size)
-    safe_h5_create(fname,"/cell_sums",dims=num_cells,mode = "integer", chunk_size = chunk_size)
-    
-    while(prev_end_col < num_cells)
+  if (class(object@raw.data[[1]]) == "character") {
+    hdf5_files = object@raw.data
+    for (i in 1:length(hdf5_files))
     {
-      if (num_cells - prev_end_col < chunk_size)
-      {
-        chunk_size = num_cells - prev_end_col
-      }
-      start_inds = h5read(fname, "/matrix/indptr", index = list(prev_end_col:(prev_end_col+chunk_size+1)))
-      dt <- data.table(
-        row = h5read(fname, "/matrix/indices", index=list(prev_end_ind:(tail(start_inds, 1)))) + 1, # zero-based index in H5 file, so + 1 in R
-        column = rep(seq_len(length(start_inds) - 1), diff(start_inds)), # (length(start_inds) - 1) columns
-        count = h5read(fname, "/matrix/data", index=list(prev_end_ind:tail(start_inds, 1))) # count data from the selected chunk
-      )
-      norm_data = dt[ ,list(norm=count/sum(count),row), by=column] 
-      col_sums = dt[ ,list(sum=sum(count)), by=column]
-      num_read = nrow(norm_data) # number of total reads in the given chunk
-      h5write(norm_data$norm,file=fname,name="/norm.data",index=list(prev_end_ind:tail(start_inds, 1)))
-      h5write(col_sums$sum,file=fname,name="/cell_sums",index=list(prev_end_col:(prev_end_col+chunk_size)))
-      prev_end_col = prev_end_col + chunk_size + 1
-      prev_end_data = prev_end_data + num_read 
-      prev_end_ind = tail(start_inds, 1)+1
+      print(names(hdf5_files)[i])
+      chunk_size = chunk
+      fname = hdf5_files[[i]]
+      file_info = h5ls(fname)
+      num_cells = as.numeric(file_info$dim[file_info$name == "barcodes"])
+      num_genes = as.numeric(file_info$dim[file_info$name == "name"])
+      num_entries = as.numeric(file_info$dim[file_info$name == "data"])
+      prev_end_col = 1
+      prev_end_data = 1
+      prev_end_ind = 1
+      gene_sum_sq = rep(0,num_genes)
+      gene_means = rep(0,num_genes)
       
-      # calculate row sum and sum of squares using normalized data
-      row_sums = norm_data[ ,list(sum = sum(norm),sum_sq = sum(norm*norm)), by=row]
-      row_inds = row_sums$row
-      gene_sum_sq[row_inds] = gene_sum_sq[row_inds] + row_sums$sum_sq
-      gene_means[row_inds] = gene_means[row_inds] + row_sums$sum
+      safe_h5_create(fname,"/norm.data",dims=num_entries,mode = "double", chunk_size = chunk_size)
+      safe_h5_create(fname,"/cell_sums",dims=num_cells,mode = "integer", chunk_size = chunk_size)
+      
+      while(prev_end_col < num_cells)
+      {
+        if (num_cells - prev_end_col < chunk_size)
+        {
+          chunk_size = num_cells - prev_end_col
+        }
+        start_inds = h5read(fname, "/matrix/indptr", index = list(prev_end_col:(prev_end_col+chunk_size+1)))
+        dt <- data.table(
+          row = h5read(fname, "/matrix/indices", index=list(prev_end_ind:(tail(start_inds, 1)))) + 1, # zero-based index in H5 file, so + 1 in R
+          column = rep(seq_len(length(start_inds) - 1), diff(start_inds)), # (length(start_inds) - 1) columns
+          count = h5read(fname, "/matrix/data", index=list(prev_end_ind:tail(start_inds, 1))) # count data from the selected chunk
+        )
+        norm_data = dt[ ,list(norm=count/sum(count),row), by=column] 
+        col_sums = dt[ ,list(sum=sum(count)), by=column]
+        num_read = nrow(norm_data) # number of total reads in the given chunk
+        h5write(norm_data$norm,file=fname,name="/norm.data",index=list(prev_end_ind:tail(start_inds, 1)))
+        h5write(col_sums$sum,file=fname,name="/cell_sums",index=list(prev_end_col:(prev_end_col+chunk_size)))
+        prev_end_col = prev_end_col + chunk_size + 1
+        prev_end_data = prev_end_data + num_read 
+        prev_end_ind = tail(start_inds, 1)+1
+        
+        # calculate row sum and sum of squares using normalized data
+        row_sums = norm_data[ ,list(sum = sum(norm),sum_sq = sum(norm*norm)), by=row]
+        row_inds = row_sums$row
+        gene_sum_sq[row_inds] = gene_sum_sq[row_inds] + row_sums$sum_sq
+        gene_means[row_inds] = gene_means[row_inds] + row_sums$sum
+      }
+      gene_means = gene_means / num_cells
+      safe_h5_create(fname,"/gene_means",dims=num_genes,mode="double")
+      h5write(gene_means,name="/gene_means",file=fname)
+      safe_h5_create(fname,"/gene_sum_sq",dims=num_genes,mode="double")
+      h5write(gene_sum_sq,name="/gene_sum_sq",file=fname)
+      
+      rm(dt)
+      rm(col_sums)
+      rm(row_sums)
     }
-    gene_means = gene_means / num_cells
-    safe_h5_create(fname,"/gene_means",dims=num_genes,mode="double")
-    h5write(gene_means,name="/gene_means",file=fname)
-    safe_h5_create(fname,"/gene_sum_sq",dims=num_genes,mode="double")
-    h5write(gene_sum_sq,name="/gene_sum_sq",file=fname)
-    
-    rm(dt)
-    rm(col_sums)
-    rm(row_sums)
+  }
+  else {
+    object <- removeMissingObs(object, slot.use = "raw.data", 
+                               use.cols = T)
+    if (class(object@raw.data[[1]])[1] == "dgTMatrix" | class(object@raw.data[[1]])[1] == 
+        "dgCMatrix") {
+      object@norm.data <- lapply(object@raw.data, Matrix.column_norm)
+    }
+    else {
+      object@norm.data <- lapply(object@raw.data, function(x) {
+        sweep(x, 2, colSums(x), "/")
+      })
+    }
   }
   return(object)
 }
