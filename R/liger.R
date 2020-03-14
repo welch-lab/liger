@@ -342,6 +342,20 @@ createLiger = function(raw.data, make.sparse = T, take.gene.union = F, remove.mi
   return(object)
 }
 
+#create new dataset, first deleting existing record if dataset already exists
+safe_h5_create = function(filename,dataset_name,dims,mode="double",chunk_size=dims)
+{
+  fid = H5Fopen(filename)
+  fexists = H5Lexists(fid,dataset_name)
+  H5Fclose(fid)
+  if (fexists)
+  {
+    h5delete(filename,dataset_name) 
+  }
+  h5createDataset(filename,dataset_name,dims=dims,storage.mode=mode, chunk = chunk_size)  
+  h5closeAll()
+}
+
 #' Normalize raw datasets to column sums
 #'
 #' This function normalizes data to account for total gene expression across a cell.
