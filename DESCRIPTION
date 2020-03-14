@@ -31,7 +31,8 @@ Imports: Rcpp (>= 0.12.10),
      stats,
      psych,
      RcppEigen,
-     RANN
+     RANN,
+     uwot
 Remotes: thomasp85/patchwork,
      jefferis/RANN@master-L1,
      linxihui/NNLM
