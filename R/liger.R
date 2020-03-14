@@ -587,6 +587,7 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
       trx_per_cell = h5read(hdf5_files[[i]],"/cell_sums")
       gene_expr_mean = h5read(hdf5_files[[i]],"/gene_means")
       gene_expr_var = h5read(hdf5_files[[i]],"/gene_vars")
+
       names(gene_expr_mean) <- names(gene_expr_var) <- genes # assign gene names
       nolan_constant <- mean((1/trx_per_cell))
       alphathresh.corrected <- alpha.thresh/length(genes)
@@ -597,13 +598,13 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
                                                 (log10(nolan_constant) + var.thresh[i]))]
       if (do.plot) {
         plot(log10(gene_expr_mean), log10(gene_expr_var), 
-              cex = cex.use, xlab = "Gene Expression Mean (log10)", 
-              ylab = "Gene Expression Variance (log10)")
+             cex = cex.use, xlab = "Gene Expression Mean (log10)", 
+             ylab = "Gene Expression Variance (log10)")
         points(log10(gene_expr_mean[genes.new]), log10(gene_expr_var[genes.new]), 
-                cex = cex.use, col = "green")
+               cex = cex.use, col = "green")
         abline(log10(nolan_constant), 1, col = "purple")
         legend("bottomright", paste0("Selected genes: ", 
-                                       length(genes.new)), pch = 20, col = "green")
+                                     length(genes.new)), pch = 20, col = "green")
         title(main = names(hdf5_files)[i])
       }
       if (combine == "union") {
