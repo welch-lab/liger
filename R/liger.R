@@ -395,8 +395,12 @@ normalize = function (object, chunk = 1000)
       safe_h5_create(fname,"/norm.data",dims=num_entries,mode = "double", chunk_size = chunk_size)
       safe_h5_create(fname,"/cell_sums",dims=num_cells,mode = "integer", chunk_size = chunk_size)
       
+      num_chunks = ceiling(num_cells/chunk_size)
+      pb = txtProgressBar(0,num_chunks,style = 3)
+      ind = 0
       while(prev_end_col < num_cells)
       {
+        ind = ind + 1
         if (num_cells - prev_end_col < chunk_size)
         {
           chunk_size = num_cells - prev_end_col
@@ -421,7 +425,10 @@ normalize = function (object, chunk = 1000)
         row_inds = row_sums$row
         gene_sum_sq[row_inds] = gene_sum_sq[row_inds] + row_sums$sum_sq
         gene_means[row_inds] = gene_means[row_inds] + row_sums$sum
+        setTxtProgressBar(pb,ind)
       }
+      setTxtProgressBar(pb,num_chunks)
+      cat("\n")
       gene_means = gene_means / num_cells
       safe_h5_create(fname,"/gene_means",dims=num_genes,mode="double")
       h5write(gene_means,name="/gene_means",file=fname)
