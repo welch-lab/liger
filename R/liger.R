@@ -743,62 +743,68 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
 
 scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
   if (class(object@raw.data[[1]]) == "character") {
-    hdf5_files = object@raw.data
-    vargenes = object@var.genes
-    for (i in 1:length(hdf5_files))
-    { 
-      print(names(hdf5_files)[i])
-      chunk_size = chunk
-      fname = hdf5_files[[i]]
-      file_info = h5ls(fname)
-      num_cells = as.numeric(file_info$dim[file_info$name == "barcodes"])
-      num_genes = as.numeric(file_info$dim[file_info$name == "name"])
-      num_entries = as.numeric(file_info$dim[file_info$name == "data"])
-      prev_end_col = 1
-      prev_end_data = 1
-      prev_end_ind = 1
-      genes = h5read(fname, "/matrix/features/name")
-      gene_inds = which(genes %in% vargenes)
-      gene_sum_sq = h5read(fname,"/gene_sum_sq")
-      gene_root_mean_sum_sq = sqrt(gene_sum_sq / num_cells)
-      safe_h5_create(fname,"/scale.data",dims=c(length(vargenes),num_cells),mode="double",chunk=c(length(vargenes),chunk_size))
-      #h5createDataset(fname,"/scale.data",dims=c(length(vargenes), num_cells),storage.mode="double", chunk=c(length(vargenes),chunk_size))
+      hdf5_files = object@raw.data
+      vargenes = object@var.genes
+      for (i in 1:length(hdf5_files))
+      { 
+        print(names(hdf5_files)[i])
+        chunk_size = chunk
+        fname = hdf5_files[[i]]
+        file_info = h5ls(fname)
+        num_cells = as.numeric(file_info$dim[file_info$name == "barcodes"])
+        num_genes = as.numeric(file_info$dim[file_info$name == "name"])
+        num_entries = as.numeric(file_info$dim[file_info$name == "data"])
+        prev_end_col = 1
+        prev_end_data = 1
+        prev_end_ind = 1
+        genes = h5read(fname, "/matrix/features/name")
+        gene_inds = which(genes %in% vargenes)
+        gene_sum_sq = h5read(fname,"/gene_sum_sq")
+        gene_root_mean_sum_sq = sqrt(gene_sum_sq / num_cells)
+        safe_h5_create(fname,"/scale.data",dims=c(length(vargenes),num_cells),mode="double",chunk=c(length(vargenes),chunk_size))
 
-      while(prev_end_col < num_cells)
-      {
-        if (num_cells - prev_end_col < chunk_size)
+        num_chunks = ceiling(num_cells/chunk_size)
+        pb = txtProgressBar(0,num_chunks,style = 3)
+        ind = 0
+        while(prev_end_col < num_cells)
         {
-          chunk_size = num_cells - prev_end_col
-        }
-        #print(paste(prev_end_col,prev_end_data,prev_end_ind))
-        start_inds = h5read(fname, "/matrix/indptr", index = list(prev_end_col:(prev_end_col+chunk_size+1)))
-        dt <- data.table(
-          row = h5read(fname, "/matrix/indices", index=list(prev_end_ind:(tail(start_inds, 1)))) + 1,
-          column = rep(seq_len(length(start_inds) - 1), diff(start_inds)),
-          norm = h5read(fname, "/norm.data", index=list(prev_end_ind:tail(start_inds, 1)))
-        )
-        #read normalized data as sparse matrix
-        scaled = sparseMatrix(i=dt$row,j=dt$column,x=c(dt$norm),dims=c(num_genes,chunk_size+1))
-        #subset to variable genes only
-        scaled = scaled[gene_inds,]
-        #convert to dense
-        scaled = as.matrix(scaled)
-        #divide each gene by the precomputed sum of squares across all cells
-        root_mean_sum_sq = gene_root_mean_sum_sq[gene_inds]
-        scaled = sweep(scaled,1,root_mean_sum_sq,"/")
-        rownames(scaled) = genes[gene_inds]
-        #need to subset by gene symbol to match liger default behavior with duplicate gene symbols
-        scaled = scaled[vargenes,]
-        scaled[is.na(scaled)]=0
-        scaled[scaled==Inf]=0
-        h5write(scaled,file=fname,name="/scale.data",index=list(NULL, prev_end_col:(prev_end_col+chunk_size)))
+          ind = ind + 1
+          if (num_cells - prev_end_col < chunk_size)
+          {
+            chunk_size = num_cells - prev_end_col
+          }
+          
+          start_inds = h5read(fname, "/matrix/indptr", index = list(prev_end_col:(prev_end_col+chunk_size+1)))
+          dt <- data.table(
+            row = h5read(fname, "/matrix/indices", index=list(prev_end_ind:(tail(start_inds, 1)))) + 1,
+            column = rep(seq_len(length(start_inds) - 1), diff(start_inds)),
+            norm = h5read(fname, "/norm.data", index=list(prev_end_ind:tail(start_inds, 1)))
+          )
+          #read normalized data as sparse matrix
+          scaled = sparseMatrix(i=dt$row,j=dt$column,x=c(dt$norm),dims=c(num_genes,chunk_size+1))
+          #subset to variable genes only
+          scaled = scaled[gene_inds,]
+          #convert to dense
+          scaled = as.matrix(scaled)
+          #divide each gene by the precomputed sum of squares across all cells
+          root_mean_sum_sq = gene_root_mean_sum_sq[gene_inds]
+          scaled = sweep(scaled,1,root_mean_sum_sq,"/")
+          rownames(scaled) = genes[gene_inds]
+          #need to subset by gene symbol to match liger default behavior with duplicate gene symbols
+          scaled = scaled[vargenes,]
+          scaled[is.na(scaled)]=0
+          scaled[scaled==Inf]=0
+          h5write(scaled,file=fname,name="/scale.data",index=list(NULL, prev_end_col:(prev_end_col+chunk_size)))
 
-        num_read = nrow(dt)
-        prev_end_col = prev_end_col + chunk_size + 1
-        prev_end_data = prev_end_data + num_read
-        prev_end_ind = tail(start_inds, 1) + 1
+          num_read = nrow(dt)
+          prev_end_col = prev_end_col + chunk_size + 1
+          prev_end_data = prev_end_data + num_read
+          prev_end_ind = tail(start_inds, 1) + 1
+          setTxtProgressBar(pb,ind)
+        }
+        setTxtProgressBar(pb,num_chunks)
+        cat("\n")
       }
-    }
   } else {
     if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
         class(object@raw.data[[1]])[1] == "dgCMatrix") {
