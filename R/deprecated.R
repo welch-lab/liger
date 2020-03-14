@@ -1,4 +1,5 @@
 #' @importFrom Matrix colSums rowSums rowMeans t sparseMatrix
+#' @importFrom igraph laplacian_matrix graph_from_adjacency_matrix
 NULL
 
 # These are deprecated functions likely to be removed in future versions. 
@@ -72,7 +73,7 @@ alignment_metric_per_factor<-function(object,k=NULL)
 clusterLouvainJaccard = function(object, resolution = 0.1, k.param=30, n.iter = 10, n.start = 10,
                                  print.output = F, ...)
 {
-  if (!require("Seurat", quietly = TRUE)) {
+  if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" needed for this function to work. Please install it.",
          call. = FALSE
     )
@@ -94,6 +95,7 @@ clusterLouvainJaccard = function(object, resolution = 0.1, k.param=30, n.iter = 
 #' @param object analogizer object. Should run quantile_norm and possibly clusterLouvainJaccard before calling.
 #' @return analogizer object with agg.data
 #' @export
+#' @importFrom stats dist
 #' @examples
 #' \dontrun{
 #' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
@@ -155,9 +157,9 @@ spectral_alignment=function(object,k=30,alpha=1,sigma=NULL,neigen=NULL)
   #knn1 = get.knn(object@H[[1]],k=k)
   #knn2 = get.knn(object@H[[2]],k=k)
   obj = CreateSeuratObject(t(analogy@scale.data[[1]]))
-  knn1 = BuildSNN(obj,distance.matrix=as.matrix(dist(analogy@H[[1]])),k.param=30)@snn
+  knn1 = FindNeighbors(obj,distance.matrix=as.matrix(dist(analogy@H[[1]])),k.param=30)@snn
   obj = CreateSeuratObject(t(analogy@scale.data[[2]]))
-  knn2 = BuildSNN(obj,distance.matrix=as.matrix(dist(analogy@H[[2]])),k.param=30)@snn
+  knn2 = FindNeighbors(obj,distance.matrix=as.matrix(dist(analogy@H[[2]])),k.param=30)@snn
   rm(obj)
   adj_mat = replicate(length(object@clusters),object@clusters)
   adj_mat = (adj_mat==t(adj_mat))
@@ -204,9 +206,9 @@ spectral_alignment=function(object,k=30,alpha=1,sigma=NULL,neigen=NULL)
   #knn1 = get.knn(object@H[[1]],k=k)
   #knn2 = get.knn(object@H[[2]],k=k)
   obj = CreateSeuratObject(t(object@scale.data[[1]]))
-  knn1 = BuildSNN(obj,distance.matrix=as.matrix(dist(object@H[[1]])),k.param=k)@snn
+  knn1 = FindNeighbors(obj,distance.matrix=as.matrix(dist(object@H[[1]])),k.param=k)@snn
   obj = CreateSeuratObject(t(object@scale.data[[2]]))
-  knn2 = BuildSNN(obj,distance.matrix=as.matrix(dist(object@H[[2]])),k.param=k)@snn
+  knn2 = FindNeighbors(obj,distance.matrix=as.matrix(dist(object@H[[2]])),k.param=k)@snn
   rm(obj)
   adj_mat = replicate(length(object@clusters),object@clusters)
   adj_mat = (adj_mat==t(adj_mat))

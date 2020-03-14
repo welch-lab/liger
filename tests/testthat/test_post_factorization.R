@@ -361,10 +361,23 @@ pmat.small <- Matrix(
   dimnames = list(c("chr1:1821507-1822007", "chr1:1850611-1851111"), paste0("cell_", seq(1:100))), sparse = T
 )
 
-regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", alpha = 0.05, path_to_coords = "../testdata/temp_coords.bed") # about 40 mins
+regnet <- linkGenesAndPeaks(gene_counts = gmat.small, peak_counts = pmat.small, dist = "spearman", 
+                            alpha = 0.05, path_to_coords = "../testdata/temp_coords.bed") # about 40 mins
 
 test_that("Testing linkage between gene and peaks", {
   expect_equivalent(regnet[1, 1], 0.6340474, tolerance = 1e-7)
   expect_equivalent(regnet[2, 2], 0.6929733, tolerance = 1e-7)
 })
 unlink("../testdata/temp_coords.bed")
+
+# Tests for runGSEA
+# Since this function depends on the cluster assignments, optimizeALS and quantil_norm
+# should be performed before this test
+####################################################################################
+context("GSEA testing on metagenes")
+gsea <- runGSEA(ligex)
+
+test_that("Tests top pathways and NES values", {
+  expect_equal(gsea[[1]][1, 1][[1]], "Axon guidance")
+  expect_equivalent(gsea[[1]][1, 2][[1]], 9.999e-05, tolerance = 1e-7)
+})

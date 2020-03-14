@@ -167,12 +167,26 @@ The expected run time is 1 - 4 hours depending on dataset size and downstream an
 ## Sample Datasets
 The `liger` package provides a small simulated dataset for basic demos of the functions, you can find it in folder `liger/tests/testdata/small_pbmc_data.RDS`.
 
-We also provide a set of scRNA-seq and scATAC-seq datasets for real-world style demos.  These matrices are provided [here](https://umich.app.box.com/s/5hkhpou4inrulo570yhc38ay8g3ont5b). More detailed tutorials can be found in section **Usage** above.
+We also provide a set of scRNA-seq and scATAC-seq datasets for real-world style demos. These datasets are as follows:
 
-The sources of these datasets are as follows:
+* scATAC and scRNA data provided by 10X Genomics, access the pre-processed data from [here](https://umich.app.box.com/s/5hkhpou4inrulo570yhc38ay8g3ont5b). The data sources are:
+    + `pbmc.atac.expression.mat.RDS`: raw data can be accessed [here](https://support.10xgenomics.com/single-cell-atac/datasets/1.1.0/atac_v1_pbmc_10k), created by Cell Ranger ATAC 1.1.0;
+    + `pbmc.rna.expression.mat.RDS`: raw data can be accessed [here](https://support.10xgenomics.com/single-cell-gene-expression/datasets/3.0.0/pbmc_10k_v3), created by Cell Ranger 3.0.0.
+  
+* scATAC and scRNA data provided by [GreenleafLab](https://github.com/GreenleafLab/MPAL-Single-Cell-2019); you can access the pre-processed data from [here](https://umich.box.com/s/wip2nzpktn6fdnlpc83o1u7anjn4ue2c):
+     + `GSM4138872_scRNA_BMMC_D1T1.RDS`;
+     + `GSM4138873_scRNA_BMMC_D1T2.RDS`;
+     + `GSM4138888_atac_gene_counts_D5T1.RDS`;
+     + `GSM4138888_atac_promoter_counts_D5T1.RDS`.
 
-* `pbmc.atac.expression.mat.RDS`: raw data provided by [10X Genomics](https://support.10xgenomics.com/single-cell-atac/datasets/1.1.0/atac_v1_pbmc_10k), created by Cell Ranger ATAC 1.1.0;
-* `pbmc.rna.expression.mat.RDS`: raw data provided by [10X Genomics](https://support.10xgenomics.com/single-cell-gene-expression/datasets/3.0.0/pbmc_10k_v3), created by Cell Ranger 3.0.0.
+* scRNA data composed of two datasets of interneurons and oligodendrocytes from the mouse frontal cortex, two distinct cell types that should not align if integrated. Provided by [Saunders, A. et.al., 2018](https://doi.org/10.1016/j.cell.2018.07.028); you can access the pre-processed data from [here](https://umich.box.com/s/n1xfpu9hplrknu6to6u9kvbktsqcql8t):
+     + `interneurons_and_oligo.RDS`;
+     
+* scRNA data from control and interferon-stimulated PBMCs. Raw data provided by [Kang, et.al., 2017](https://www.nature.com/articles/nbt.4042); The datasets were downsampled by applying the sample function without replacement yield 3000 cells for each matrix. You can download downsampled data from [here](https://umich.box.com/s/n1xfpu9hplrknu6to6u9kvbktsqcql8t):
+     + `PBMC_control.RDS`;
+     + `PBMC_interferon-stimulated.RDS`.
+
+Corresponding tutorials can be found in section **Usage** above.
 
 ## License
 This project is covered under the **GNU General Public License 3.0**.

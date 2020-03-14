@@ -67,8 +67,8 @@ plots produced.
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
 ligerex <- runTSNE(ligerex)
-pdf('word_clouds.pdf')
+# pdf('word_clouds.pdf')
 plotWordClouds(ligerex, num.genes = 20)
-dev.off()
+# dev.off()
 }
 }

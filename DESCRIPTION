@@ -7,12 +7,10 @@ Author: Joshua Welch
 Maintainer: Joshua Welch <jwelch@broadinstitute.org>,
         Velina Kozareva <vkozarev@broadinstitute.org>
 Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors
-License: GPL-3
+License: GPL-3 | file LICENSE
 SystemRequirements: Java (>= 6)
 Imports: Rcpp (>= 0.12.10),
      plyr,
-     Matrix,
-     cowplot,
      FNN,
      dplyr,
      grid,
@@ -27,13 +25,13 @@ Imports: Rcpp (>= 0.12.10),
      snow,
      doSNOW,
      mclust,
-     patchwork,
      stats,
      psych,
      RcppEigen,
-     RANN
-Remotes: thomasp85/patchwork,
-     jefferis/RANN@master-L1,
+     RANN,
+     uwot,
+     igraph
+Remotes: jefferis/RANN@master-L1,
      linxihui/NNLM
 biocViews:
 LazyData: true
@@ -55,5 +53,9 @@ Suggests:
     GenomicRanges,
     S4Vectors,
     IRanges,
-    RANN.L1
+    RANN.L1,
+    org.Hs.eg.db,
+    reactome.db,
+    fgsea,
+    AnnotationDbi
 VignetteBuilder: knitr

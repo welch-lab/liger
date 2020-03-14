@@ -35,8 +35,8 @@ ligerex <- quantileAlignSNF(ligerex)
 # get tsne.coords for normalized data
 ligerex <- runTSNE(ligerex)
 # factor plots into pdf file
-pdf("plot_factors.pdf")
+# pdf("plot_factors.pdf")
 plotFactors(ligerex)
-dev.off()
+# dev.off()
 }
 }

@@ -26,7 +26,7 @@ runUMAP(
 
 \item{distance}{Mtric used to measure distance in the input space. A wide variety of metrics are
 already coded, and a user defined function can be passed as long as it has been JITd by numba.
-(default "euclidean")}
+(default "euclidean", alternatives: "cosine", "manhattan", "hamming")}
 
 \item{n_neighbors}{Number of neighboring points used in local approximations of manifold
 structure. Larger values will result in more global structure being preserved at the loss of

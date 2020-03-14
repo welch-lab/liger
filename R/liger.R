@@ -1,4 +1,5 @@
 #' @importFrom Matrix colSums rowSums t
+#' @importFrom grDevices dev.off pdf
 NULL
 
 #' The LIGER Class
@@ -31,8 +32,8 @@ NULL
 #' @slot parameters List of parameters used throughout analysis
 #' @slot version Version of package used to create object
 #'
-#' @name liger
-#' @rdname liger
+#' @name liger-class
+#' @rdname liger-class
 #' @aliases liger-class
 #' @exportClass liger
 #' @importFrom Rcpp evalCpp
@@ -108,10 +109,13 @@ setMethod(
 #' @param reference For 10X V<3, specify which reference directory to use if sample.dir is outer
 #'   level 10X directory (only necessary if more than one reference used for sequencing).
 #'   (default NULL)
+#' @param data.type Indicates the protocol of the input data. If not specified, input data will be 
+#' considered scRNA-seq data (default 'rna', alternatives: 'atac'). 
 #' @return List of merged matrices across data types (returns sparse matrix if only one data type
 #'   detected), or nested list of matrices organized by sample if merge=F.
 #' @export
 #' @import Matrix
+#' @importFrom utils read.delim read.table
 #' @examples
 #' \dontrun{
 #' # 10X output directory V2 -- contains outs/raw_gene_bc_matrices/<reference>/...
@@ -123,7 +127,7 @@ setMethod(
 #' }
 
 read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.umis = 0,
-                    use.filtered = F, reference = NULL) {
+                    use.filtered = F, reference = NULL, data.type = "rna") {
   datalist <- list()
   datatypes <- c("Gene Expression")
   
@@ -158,9 +162,15 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
       is_v3 <- file.exists(paste0(sample.dir, "/features.tsv.gz"))
     }
     suffix <- ifelse(is_v3, ".gz", "")
-    features.file <- ifelse(is_v3, paste0(sample.dir, "/features.tsv.gz"),
-                            paste0(sample.dir, "/genes.tsv")
-    )
+    if (data.type == "rna") {
+      features.file <- ifelse(is_v3, paste0(sample.dir, "/features.tsv.gz"),
+                              paste0(sample.dir, "/genes.tsv")
+      )
+    } else if (data.type == "atac") {
+      features.file <- ifelse(is_v3, paste0(sample.dir, "/peaks.bed.gz"),
+                              paste0(sample.dir, "/peaks.bed")
+      )
+    }
     matrix.file <- paste0(sample.dir, "/matrix.mtx", suffix)
     barcodes.file <- paste0(sample.dir, "/barcodes.tsv", suffix)
     
@@ -184,15 +194,23 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
         strsplit(x, "-")[[1]][1]
       }))
     }
-    
-    features <- read.delim(features.file, header = F, stringsAsFactors = F)
+    if (data.type == "rna") {
+      features <- read.delim(features.file, header = F, stringsAsFactors = F)
+      rownames(rawdata) <- make.unique(features[, 2])
+    } else if (data.type == "atac") {
+      features <- read.table(features.file, header = F)
+      features <- paste0(features[, 1], ":", features[, 2], "-", features[, 3])
+      rownames(rawdata) <- features
+    }
     # since some genes are only differentiated by ENSMBL
-    rownames(rawdata) <- make.unique(features[, 2])
     colnames(rawdata) <- barcodes
     
     # split based on 10X datatype -- V3 has Gene Expression, Antibody Capture, CRISPR, CUSTOM
     # V2 has only Gene Expression by default and just two columns
-    if (ncol(features) < 3) {
+    if (is.null(ncol(features))) {
+      samplelist <- list(rawdata)
+      names(samplelist) <- c("Chromatin Accessibility")
+    } else if (ncol(features) < 3) {
       samplelist <- list(rawdata)
       names(samplelist) <- c("Gene Expression")
     } else {
@@ -208,23 +226,38 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
     
     # num.cells filter only for gene expression data
     if (!is.null(num.cells)) {
-      cs <- colSums(samplelist[["Gene Expression"]])
-      limit <- ncol(samplelist[["Gene Expression"]])
-      if (num.cells[i] > limit) {
-        print(paste0(
-          "You selected more cells than are in matrix ", i,
-          ". Returning all ", limit, " cells."
-        ))
-        num.cells[i] <- limit
+      if (names(samplelist) == "Gene Expression" | names(samplelist) == "Chromatin Accessibility") {
+        data_label <- names(samplelist)
+        cs <- colSums(samplelist[[data_label]])
+        limit <- ncol(samplelist[[data_label]])
+        if (num.cells[i] > limit) {
+          print(paste0(
+            "You selected more cells than are in matrix ", i,
+            ". Returning all ", limit, " cells."
+          ))
+          num.cells[i] <- limit
+        }
+        samplelist[[data_label]] <- samplelist[[data_label]][, order(cs, decreasing = T)
+                                                             [1:num.cells[i]]]
       }
-      samplelist[["Gene Expression"]] <- samplelist[["Gene Expression"]][, order(cs, decreasing = T)
-                                                                         [1:num.cells[i]]]
+      
+      # cs <- colSums(samplelist[["Gene Expression"]])
+      # limit <- ncol(samplelist[["Gene Expression"]])
+      # if (num.cells[i] > limit) {
+      #   print(paste0(
+      #     "You selected more cells than are in matrix ", i,
+      #     ". Returning all ", limit, " cells."
+      #   ))
+      #   num.cells[i] <- limit
+      # }
+      # samplelist[["Gene Expression"]] <- samplelist[["Gene Expression"]][, order(cs, decreasing = T)
+      #                                                                    [1:num.cells[i]]]
     }
     
     datalist[[i]] <- samplelist
   }
   if (merge) {
-    print('Merging samples')
+    print("Merging samples")
     return_dges <- lapply(datatypes, function(x) {
       mergelist <- lapply(datalist, function(d) {
         d[[x]]
@@ -246,6 +279,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
     return(datalist)
   }
 }
+
 
 #' Create a liger object.
 #'
@@ -408,6 +442,8 @@ normalize <- function(object) {
 #' @return \code{liger} object with var.genes slot set.
 #' @export
 #' @importFrom stats optimize
+#' @importFrom graphics abline plot points title
+#' @importFrom stats qnorm
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -475,16 +511,16 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
                                             log10(gene_expr_var) > basegenelower + var.thresh[i])]
     
     if (do.plot) {
-      plot(log10(gene_expr_mean), log10(gene_expr_var), cex = cex.use,
+      graphics::plot(log10(gene_expr_mean), log10(gene_expr_var), cex = cex.use,
            xlab='Gene Expression Mean (log10)',
            ylab='Gene Expression Variance (log10)')
       
-      points(log10(gene_expr_mean[genes.new]), log10(gene_expr_var[genes.new]),
+      graphics::points(log10(gene_expr_mean[genes.new]), log10(gene_expr_var[genes.new]),
              cex = cex.use, col = "green")
-      abline(log10(nolan_constant), 1, col = "purple")
+      graphics::abline(log10(nolan_constant), 1, col = "purple")
       
       legend("bottomright", paste0("Selected genes: ", length(genes.new)), pch = 20, col = "green")
-      title(main = names(object@raw.data)[i])
+      graphics::title(main = names(object@raw.data)[i])
     }
     if (combine == "union") {
       genes.use <- union(genes.use, genes.new)
@@ -677,6 +713,8 @@ optimizeALS <- function(
 
 #' @rdname optimizeALS
 #' @export
+#' @importFrom stats runif
+#' @importFrom utils setTxtProgressBar txtProgressBar
 #' @method optimizeALS list
 #'
 optimizeALS.list  <- function(
@@ -850,10 +888,10 @@ optimizeALS.list  <- function(
       ", ",
       iters,
       " iterations.\n",
-      "Max iterations: ",
+      "Max iterations set: ",
       max.iters,
       ".\n",
-      "Convergence loss: ",
+      "Final objective delta: ",
       delta,
       '.\n',
       sep = ""
@@ -1075,7 +1113,7 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
 #' # acquire new data from different cell type, we'll just add another dataset
 #' X <- matrix(35:46, nrow = 4, byrow = T)
 #' # it's probably most similar to y_set
-#' ligerex <- optimizeNewData(ligerex, new.data = list(x_set = X), which.datasets = list('y_set),
+#' ligerex <- optimizeNewData(ligerex, new.data = list(x_set = X), which.datasets = list('y_set'),
 #'                            add.to.existing = F)
 #' }
 
@@ -1570,6 +1608,7 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #'
 #' @return \code{liger} object with 'H.norm' and 'clusters' slot set.
 #' @export
+#' @importFrom stats approxfun
 #'
 #' @examples
 #' \dontrun{
@@ -1643,7 +1682,7 @@ quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells 
           new_vals <- rep(0, num_cells2)
         }
         else {
-          warp_func <- approxfun(q2, q1, rule = 2)
+          warp_func <- stats::approxfun(q2, q1, rule = 2)
           new_vals <- warp_func(Hs[[k]][cells2, i])
         }
         Hs[[k]][cells2, i] <- new_vals
@@ -1702,7 +1741,8 @@ louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps
     nIterations = nIterations, algorithm = 1, randomSeed = random.seed, printOutput = T,
     edgefilename = output_path
   )
-  object@clusters <- as.factor(clusts)
+  names(clusts) = names(object@clusters)
+  object@clusters = as.factor(clusts)
   unlink(output_path)
   return(object)
 }
@@ -2376,11 +2416,13 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
 #' @return a sparse matrix with peak names as rows and gene symbols as columns, with each element indicating the
 #' correlation between peak i and gene j (or 0 if the gene and peak are not significantly linked).
 #' @export
+#' @importFrom utils read.csv2
 #' @examples
 #' \dontrun{
 #' gmat.small <- readRDS("../testdata/small_gmat.RDS") # some gene counts matrix
 #' pmat.small <- readRDS("../testdata/small_pmat.RDS") # some peak counts matrix
-#' regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", alpha = 0.05, path_to_coords = 'some_path')
+#' regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", 
+#' alpha = 0.05, path_to_coords = 'some_path')
 #' }
 #'
 linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist = "spearman", 
@@ -2492,7 +2534,8 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
   # make final sparse matrix
   regnet <- sparseMatrix(
     i = i_index, p = p_index, x = value_list,
-    dim = c(ncol(peak_counts), length(genes.list)), dimnames = list(colnames(peak_counts), genes.list)
+    dims = c(ncol(peak_counts), length(genes.list)), 
+    dimnames = list(colnames(peak_counts), genes.list)
   )
 
   return(regnet)
@@ -2501,8 +2544,8 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
 
 #' Export predicted gene-pair interaction
 #'
-#' Export the predicted gene-pair interactions calculated by upstream function 'linkGenesAndPeaks' into an Interact Track file 
-#' which is compatible with UCSC Genome Browser. 
+#' Export the predicted gene-pair interactions calculated by upstream function 'linkGenesAndPeaks'
+#'  into an Interact Track file which is compatible with UCSC Genome Browser. 
 #'
 #' @param corr.mat A sparse matrix with peak names as rows and gene symbols as columns.
 #' @param genes.list A list of the genes symbols to be tested. If not specified,
@@ -2512,6 +2555,8 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
 #'
 #' @return An Interact Track file stored in the specified path.
 #' @export
+#' @importFrom stats complete.cases
+#' @importFrom utils write.table
 #' @examples
 #' \dontrun{
 #' regent <- readRDS("../testdata/small_gmat.RDS") # some gene-peak correlation matrix
@@ -2607,6 +2652,113 @@ makeInteractTrack <- function(corr.mat, genes.list, output_path, path_to_coords)
 }
 
 
+#' Analyze biological interpretations of metagene
+#'
+#' Identify the biological pathways (gene sets from Reactome) that each metagene (factor) might belongs to.
+#'
+#' @param object \code{liger} object.
+#' @param gene_sets A list of the Reactome gene sets names to be tested. If not specified,
+#' this function will use all the gene sets from the Reactome by default
+#' @param mat_w This indicates whether to use the shared factor loadings 'W' (default TRUE)
+#' @param mat_v This indicates which V matrix to be added to the analysis. It can be a numeric number or a list
+#' of the numerics.
+#' @param custom_gene_sets A named list of character vectors of entrez gene ids. If not specified,
+#' this function will use all the gene symbols from the input matrix by default
+#'
+#' @return A list of matrices with GSEA analysis for each factor
+#' @importFrom methods .hasSlot
+#' @export
+#' @examples
+#' \dontrun{
+#' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+#' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+#' X <- matrix(c(1, 2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 6), nrow = 4, byrow = T)
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z, x_set = X))
+#' ligerex <- normalize(ligerex)
+#' # select genes
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' ligerex <- optimizeALS(ligerex, k = 20)
+#' ligerex <- quantil_norm(ligerex)
+#' wilcox.results <- runGSEA(ligerex)
+#' wilcox.results <- runGSEA(ligerex, mat_v = c(1, 2))
+#' }
+#'
+runGSEA <- function(object, gene_sets = c(), mat_w = T, mat_v = 0, custom_gene_sets = c()) {
+  if (!requireNamespace("org.Hs.eg.db", quietly = TRUE)) {
+    stop("Package \"org.Hs.eg.db\" needed for this function to work. Please install it by command:\n",
+         "BiocManager::install('org.Hs.eg.db')",
+         call. = FALSE
+    )
+  }
+  
+  if (!requireNamespace("reactome.db", quietly = TRUE)) {
+    stop("Package \"reactome.db\" needed for this function to work. Please install it by command:\n",
+         "BiocManager::install('reactome.db')",
+         call. = FALSE
+    )
+  }
+  
+  if (!requireNamespace("fgsea", quietly = TRUE)) {
+    stop("Package \"fgsea\" needed for this function to work. Please install it by command:\n",
+         "BiocManager::install('fgsea')",
+         call. = FALSE
+    )
+  }
+  
+  if (length(mat_v) > length(object@V)) {
+    stop("The gene loading input is invalid.", call. = FALSE)
+  }
+  
+  if (!.hasSlot(object, "W") | !.hasSlot(object, "V")) {
+    stop("There is no W or V matrix. Please do iNMF first.", call. = FALSE)
+  }
+  
+  if (mat_w) {
+    gene_loadings <- object@W
+    if (mat_v) {
+      gene_loadings <- gene_loadings + Reduce("+", lapply(mat_v, function(v) {
+        object@V[[v]]
+      }))
+    }
+  } else {
+    gene_loadings <- Reduce("+", lapply(mat_v, function(v) {
+      object@V[[v]]
+    }))
+  }
+  
+  gene_ranks <- t(apply(gene_loadings, MARGIN = 1, function(x) {
+    rank(x)
+  }))
+  
+  colnames(gene_ranks) <- sapply(colnames(gene_ranks), toupper)
+  gene_id <- as.character(AnnotationDbi::mapIds(org.Hs.eg.db::org.Hs.eg.db, colnames(gene_ranks), "ENTREZID", "SYMBOL"))
+  colnames(gene_ranks) <- gene_id
+  gene_ranks <- gene_ranks[, !is.na(colnames(gene_ranks))]
+  if (inherits((custom_gene_sets)[1], "tbl_df")) {
+    pathways <- split(custom_gene_sets, x = custom_gene_sets$entrez_gene, f = custom_gene_sets$gs_name)
+    pathways <- lapply(pathways, function(x) {
+      as.character(x)
+    })
+  } else if (length(custom_gene_sets)) {
+    pathways <- custom_gene_sets
+  } else {
+    pathways <- fgsea::reactomePathways(colnames(gene_ranks))
+    if (length(gene_sets)) {
+      pathways <- pathways[intersect(gene_sets, names(pathways))]
+    }
+  }
+  # gsea <- list()
+  gsea <- apply(gene_ranks, MARGIN = 1, function(x) {
+    fgsea::fgsea(pathways, x, minSize = 15, maxSize = 500, nperm = 10000)
+  })
+  gsea <- lapply(gsea, function(x) {
+    as.matrix(x[order(x$pval), ])
+  })
+  return(gsea)
+}
+
+
 #######################################################################################
 #### Dimensionality Reduction
 
@@ -2698,7 +2850,7 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 #' @param k Number of dimensions to reduce to (default 2).
 #' @param distance Mtric used to measure distance in the input space. A wide variety of metrics are
 #'   already coded, and a user defined function can be passed as long as it has been JITd by numba.
-#'   (default "euclidean")
+#'   (default "euclidean", alternatives: "cosine", "manhattan", "hamming")
 #' @param n_neighbors Number of neighboring points used in local approximations of manifold
 #'   structure. Larger values will result in more global structure being preserved at the loss of
 #'   detailed local structure. In general this parameter should often be in the range 5 to 50, with
@@ -2723,36 +2875,30 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 #' ligerex <- runUMAP(ligerex, use.raw = T)
 #' }
 
-runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2,
+runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k = 2,
                     distance = "euclidean", n_neighbors = 10, min_dist = 0.1, rand.seed = 42) {
-  if (!requireNamespace("reticulate", quietly = TRUE)) {
-    stop(paste("Package \"reticulate\" needed for this function to work. Please install it.\n",
-               "Also ensure Python package umap (PyPI name umap-learn) is installed in python",
-               "version accesible to reticulate."),
-         call. = FALSE)
-  }
   set.seed(rand.seed)
-  reticulate::py_set_seed(rand.seed)
-  UMAP <- reticulate::import("umap")
-  umapper <- UMAP$UMAP(
-    n_components = as.integer(k), metric = distance,
-    n_neighbors = as.integer(n_neighbors), min_dist = min_dist
-  )
-  Rumap <- umapper$fit_transform
   if (use.raw) {
     raw.data <- do.call(rbind, object@H)
     # if H.norm not set yet
     if (identical(dims.use, 1:0)) {
       dims.use <- 1:ncol(raw.data)
     }
-    object@tsne.coords <- Rumap(raw.data[, dims.use])
+    object@tsne.coords <- uwot::umap(raw.data[, dims.use],
+      n_components = as.integer(k), metric = distance,
+      n_neighbors = as.integer(n_neighbors), min_dist = min_dist
+    )
     rownames(object@tsne.coords) <- rownames(raw.data)
   } else {
-    object@tsne.coords <- Rumap(object@H.norm[, dims.use])
+    object@tsne.coords <- uwot::umap(object@H.norm[, dims.use],
+      n_components = as.integer(k), metric = distance,
+      n_neighbors = as.integer(n_neighbors), min_dist = min_dist
+    )
     rownames(object@tsne.coords) <- rownames(object@H.norm)
   }
   return(object)
 }
+
 
 #######################################################################################
 #### Metrics
@@ -2772,6 +2918,7 @@ runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2,
 #'
 #' @return List containing three elements. First two elements are the norm of each metagene factor
 #' for each dataset. Last element is the vector of dataset specificity scores.
+#' @importFrom graphics barplot
 #' @export
 #' @examples
 #' \dontrun{
@@ -2798,7 +2945,7 @@ calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.
   # pct1 = pct1/sum(pct1)
   # pct2 = pct2/sum(pct2)
   if (do.plot) {
-    barplot(100 * (1 - (pct1 / pct2)),
+    graphics::barplot(100 * (1 - (pct1 / pct2)),
             xlab = "Factor",
             ylab = "Percent Specificity", main = "Dataset Specificity of Factors",
             names.arg = 1:k, cex.names = 0.75, mgp = c(2, 0.5, 0)
@@ -3311,6 +3458,7 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #' @importFrom ggplot2 ggplot geom_point geom_text ggtitle aes guides guide_legend labs 
 #' scale_color_viridis_c scale_color_gradientn theme xlab ylab
 #' @importFrom dplyr %>% group_by summarize
+#' @importFrom stats median
 #' @examples
 #' \dontrun{
 #'  # liger object with aligned factor loadings
@@ -3429,6 +3577,8 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
 #' @param plot.tsne Plot t-SNE coordinates for each factor (default FALSE).
 #'
 #' @return Plots to console (1-2 pages per factor)
+#' @importFrom graphics legend par plot
+#' @importFrom grDevices rainbow
 #' @export
 #' @examples
 #' \dontrun{
@@ -3438,9 +3588,9 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
 #' # get tsne.coords for normalized data
 #' ligerex <- runTSNE(ligerex)
 #' # factor plots into pdf file
-#' pdf("plot_factors.pdf")
+#' # pdf("plot_factors.pdf")
 #' plotFactors(ligerex)
-#' dev.off()
+#' # dev.off()
 #' }
 
 plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsne = F) {
@@ -3451,7 +3601,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
   rownames(W) <- colnames(object@scale.data[[1]])
   Hs_norm <- object@H.norm
   for (i in 1:k) {
-    par(mfrow = c(2, 1))
+    graphics::par(mfrow = c(2, 1))
     top_genes.W <- rownames(W)[order(W[, i], decreasing = T)[1:num.genes]]
     top_genes.W.string <- paste0(top_genes.W, collapse = ", ")
     factor_textstring <- paste0("Factor", i)
@@ -3459,7 +3609,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
     plot_title1 <- paste(factor_textstring, "\n", top_genes.W.string, "\n")
     cols <- rep("gray", times = nrow(Hs_norm))
     names(cols) <- rownames(Hs_norm)
-    cols.use <- rainbow(length(object@H))
+    cols.use <- grDevices::rainbow(length(object@H))
     
     for (cl in 1:length(object@H)) {
       cols[rownames(object@H[[cl]])] <- rep(cols.use[cl], times = nrow(object@H[[cl]]))
@@ -3467,17 +3617,17 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
     if (!is.null(cells.highlight)) {
       cols[cells.highlight] <- rep("black", times = length(cells.highlight))
     }
-    plot(1:nrow(Hs_norm), do.call(rbind, object@H)[, i],
+    graphics::plot(1:nrow(Hs_norm), do.call(rbind, object@H)[, i],
          cex = 0.2, pch = 20,
          col = cols, main = plot_title1, xlab = "Cell", ylab = "Raw H Score"
     )
-    legend("top", names(object@H), pch = 20, col = cols.use, horiz = T, cex = 0.75)
-    plot(1:nrow(Hs_norm), object@H.norm[, i],
+    graphics::legend("top", names(object@H), pch = 20, col = cols.use, horiz = T, cex = 0.75)
+    graphics::plot(1:nrow(Hs_norm), object@H.norm[, i],
          pch = 20, cex = 0.2,
          col = cols, xlab = "Cell", ylab = "H_norm Score"
     )
     if (plot.tsne) {
-      par(mfrow = c(1, 1))
+      graphics::par(mfrow = c(1, 1))
       fplot(object@tsne.coords, object@H.norm[, i], title = paste0("Factor ", i))
     }
     setTxtProgressBar(pb, i)
@@ -3525,9 +3675,9 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' ligerex
 #' ligerex <- quantileAlignSNF(ligerex)
 #' ligerex <- runTSNE(ligerex)
-#' pdf('word_clouds.pdf')
+#' # pdf('word_clouds.pdf')
 #' plotWordClouds(ligerex, num.genes = 20)
-#' dev.off()
+#' # dev.off()
 #' }
 
 plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1,
@@ -3650,6 +3800,8 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' ggtitle scale_color_viridis_c theme
 #' theme_bw
 #' @importFrom grid gpar unit
+#' @import patchwork
+#' @importFrom stats loadings
 #' @export
 #' @examples
 #' \dontrun{
@@ -3657,9 +3809,9 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' ligerex
 #' ligerex <- quantileAlignSNF(ligerex)
 #' ligerex <- runTSNE(ligerex)
-#' pdf("gene_loadings.pdf")
+#' # pdf("gene_loadings.pdf")
 #' plotGeneLoadings(ligerex, num.genes = 20)
-#' dev.off()
+#' # dev.off()
 #' }
 #'
 plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes.show = 12,
@@ -4133,9 +4285,9 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
 #' ligerex
 #' ligerex <- runTSNE(ligerex)
 #' # plot expression for CD4 and FCGR3A
-#' pdf("gene_plots.pdf")
+#' # pdf("gene_plots.pdf")
 #' plotGenes(ligerex, c("CD4", "FCGR3A"))
-#' dev.off()
+#' # dev.off()
 #' }
 
 plotGenes <- function(object, genes) {
@@ -4176,6 +4328,8 @@ plotGenes <- function(object, genes) {
 #' @importFrom plyr mapvalues
 #' @importFrom riverplot makeRiver
 #' @importFrom riverplot riverplot
+#' @importFrom grDevices hcl
+#' @importFrom utils capture.output 
 #' @examples
 #' \dontrun{
 #' # liger object, factorization done
@@ -4278,7 +4432,7 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
   ggplotColors <- function(g) {
     d <- 360 / g
     h <- cumsum(c(15, rep(d, g - 1)))
-    hcl(h = h, c = 100, l = 65)
+    grDevices::hcl(h = h, c = 100, l = 65)
   }
   pal <- ggplotColors(length(nodes1))
   for (i in 1:length(nodes1)) {
@@ -4386,6 +4540,8 @@ plotClusterProportions <- function(object, return.plot = F) {
 #' @param ... Additional parameters to pass on to heatmap()
 #'
 #' @export
+#' @importFrom grDevices colorRampPalette
+#' @importFrom stats heatmap
 #' @return If requested, matrix of size num_cluster x num_factor
 #' @examples
 #' \dontrun{
@@ -4416,13 +4572,13 @@ plotClusterFactors <- function(object, use.aligned = F, Rowv = NA, Colv = "Rowv"
   }
   cluster.bars <- Reduce(rbind, cluster.bars)
   if (is.null(col)) {
-    colfunc <- colorRampPalette(c("black", "red"))
+    colfunc <- grDevices::colorRampPalette(c("black", "red"))
     col <- colfunc(15)
   }
   rownames(cluster.bars) <- levels(object@clusters)
   colnames(cluster.bars) <- 1:ncol(cluster.bars)
   title <- ifelse(use.aligned, "H.norm", "raw H")
-  heatmap(cluster.bars,
+  stats::heatmap(cluster.bars,
           Rowv = Rowv, Colv = Rowv, col = col, xlab = "Factor", ylab = "Cluster",
           main = title, ...
   )
@@ -4460,6 +4616,7 @@ plotClusterFactors <- function(object, use.aligned = F, Rowv = NA, Colv = "Rowv"
 #'   specific, shared, and dataset2-specific markers. Last two elements are tables indicating the
 #'   number of factors in which marker appears.
 #' @export
+#' @importFrom stats wilcox.test
 #' @examples
 #' \dontrun{
 #' # liger object, factorization complete
@@ -4579,7 +4736,7 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
     top_genes <- list(top_genes_V1, top_genes_V2, top_genes_W)
     for (k in 1:length(top_genes)) {
       pvals[[k]] <- sapply(top_genes[[k]], function(x) {
-        suppressWarnings(wilcox.test(
+        suppressWarnings(stats::wilcox.test(
           as.numeric(gene_info[[dataset1]]$norm_counts[x, ]),
           as.numeric(gene_info[[dataset2]]$norm_counts[x, ])
         )$p.value)
@@ -4660,6 +4817,8 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #' @return Seurat object with raw.data, scale.data, dr$tsne, dr$inmf, and ident slots set.
 #' @export
 #' @import Matrix
+#' @importFrom methods new
+#' @importFrom utils packageVersion
 #' @examples
 #' \dontrun{
 #' # liger object
@@ -5128,6 +5287,7 @@ reorganizeLiger <- function(object, by.feature, keep.meta = T, new.label = "orig
 #'
 #' @return Updated \code{liger} object.
 #' @export
+#' @importFrom methods .hasSlot slot slotNames
 #' @examples
 #' \dontrun{
 #' # old Analogizer object
