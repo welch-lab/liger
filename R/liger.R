@@ -3110,32 +3110,25 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 #' ligerex <- runUMAP(ligerex, use.raw = T)
 #' }
 
-runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k=2,
-                    distance = "euclidean", n_neighbors = 10, min_dist = 0.1, rand.seed = 42) {
-  if (!requireNamespace("reticulate", quietly = TRUE)) {
-    stop(paste("Package \"reticulate\" needed for this function to work. Please install it.\n",
-               "Also ensure Python package umap (PyPI name umap-learn) is installed in python",
-               "version accesible to reticulate."),
-         call. = FALSE)
-  }
+runUMAP <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k = 2,
+                    distance = "euclidean", n_neighbors = 30, min_dist = 0.3, rand.seed = 42) {
   set.seed(rand.seed)
-  reticulate::py_set_seed(rand.seed)
-  UMAP <- reticulate::import("umap")
-  umapper <- UMAP$UMAP(
-    n_components = as.integer(k), metric = distance,
-    n_neighbors = as.integer(n_neighbors), min_dist = min_dist
-  )
-  Rumap <- umapper$fit_transform
   if (use.raw) {
     raw.data <- do.call(rbind, object@H)
     # if H.norm not set yet
     if (identical(dims.use, 1:0)) {
       dims.use <- 1:ncol(raw.data)
     }
-    object@tsne.coords <- Rumap(raw.data[, dims.use])
+    object@tsne.coords <- uwot::umap(raw.data[, dims.use],
+      n_components = as.integer(k), metric = distance,
+      n_neighbors = as.integer(n_neighbors), min_dist = min_dist
+    )
     rownames(object@tsne.coords) <- rownames(raw.data)
   } else {
-    object@tsne.coords <- Rumap(object@H.norm[, dims.use])
+    object@tsne.coords <- uwot::umap(object@H.norm[, dims.use],
+      n_components = as.integer(k), metric = distance,
+      n_neighbors = as.integer(n_neighbors), min_dist = min_dist
+    )
     rownames(object@tsne.coords) <- rownames(object@H.norm)
   }
   return(object)
