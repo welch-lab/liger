@@ -469,10 +469,12 @@ normalize = function (object, chunk = 1000)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
 #' }
-calcGeneVars = function(object,chunk = 1000) {
+calcGeneVars = function(object,chunk=1000)
+{
   hdf5_files = object@raw.data
   for (i in 1:length(hdf5_files))
   { 
+    print(names(hdf5_files)[i])
     chunk_size = chunk
     fname = hdf5_files[[i]]
     file_info = h5ls(fname)
@@ -512,7 +514,7 @@ calcGeneVars = function(object,chunk = 1000) {
     #add deviations for zero entries (not seen in above loop due to sparse matrix representation)
     gene_vars = gene_vars + (num_cells-gene_num_pos)*(gene_means*gene_means)
     gene_vars = gene_vars / (num_cells-1)
-    h5createDataset(fname,"/gene_vars",dims=num_genes,storage.mode="double")
+    safe_h5_create(fname,"/gene_vars",dims=num_genes,mode="double")
     h5write(gene_vars,name="/gene_vars",file=fname)
   }
   return(object)
