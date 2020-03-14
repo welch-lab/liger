@@ -745,7 +745,8 @@ scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
   if (class(object@raw.data[[1]]) == "character") {
     hdf5_files = object@raw.data
     vargenes = object@var.genes
-    for (i in 1:length(hdf5_files)) { 
+    for (i in 1:length(hdf5_files))
+    { 
       print(names(hdf5_files)[i])
       chunk_size = chunk
       fname = hdf5_files[[i]]
@@ -760,9 +761,9 @@ scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
       gene_inds = which(genes %in% vargenes)
       gene_sum_sq = h5read(fname,"/gene_sum_sq")
       gene_root_mean_sum_sq = sqrt(gene_sum_sq / num_cells)
-      #h5delete(fname,"/scale.data")
-      h5createDataset(fname,"/scale.data",dims=c(length(vargenes), num_cells),storage.mode="double", chunk=c(length(vargenes),chunk_size))
-      
+      safe_h5_create(fname,"/scale.data",dims=c(length(vargenes),num_cells),mode="double",chunk=c(length(vargenes),chunk_size))
+      #h5createDataset(fname,"/scale.data",dims=c(length(vargenes), num_cells),storage.mode="double", chunk=c(length(vargenes),chunk_size))
+
       while(prev_end_col < num_cells)
       {
         if (num_cells - prev_end_col < chunk_size)
@@ -791,7 +792,7 @@ scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
         scaled[is.na(scaled)]=0
         scaled[scaled==Inf]=0
         h5write(scaled,file=fname,name="/scale.data",index=list(NULL, prev_end_col:(prev_end_col+chunk_size)))
-        
+
         num_read = nrow(dt)
         prev_end_col = prev_end_col + chunk_size + 1
         prev_end_data = prev_end_data + num_read
