@@ -1159,7 +1159,7 @@ online_iNMF_h5 = function(object,
           object@V[[i]][, j] = object@V[[i]][, j] / sqrt(sum(object@V[[i]][, j]^2)) 
         }
       }
-    } else if (!is.null(X_new) & ){ # if previous Vs are provided 
+    } else { # if previous Vs are provided 
       object@V[file_idx_prev] = ifelse(!is.null(V.init), V.init, object@V)
       V_init_idx = list()
       for (i in file_idx_new){
