@@ -4,18 +4,9 @@
 \alias{quantile_norm}
 \title{Quantile align (normalize) factor loadings}
 \usage{
-quantile_norm(
-  object,
-  quantiles = 50,
-  ref_dataset = NULL,
-  min_cells = 20,
-  knn_k = 20,
-  dims.use = NULL,
-  do.center = F,
-  max_sample = 1000,
-  eps = 0.9,
-  refine.knn = T
-)
+quantile_norm(object, quantiles = 50, ref_dataset = NULL,
+  min_cells = 20, knn_k = 20, dims.use = NULL, do.center = F,
+  max_sample = 1000, eps = 0.9, refine.knn = T)
 }
 \arguments{
 \item{object}{\code{liger} object. Should run optimizeALS before calling.}
@@ -56,7 +47,7 @@ normalizes corresponding clusters.
 The first step, building the shared factor neighborhood graph, is performed in SNF(), and
 produces a graph representation where edge weights between cells (across all datasets)
 correspond to their similarity in the shared factor neighborhood space. An important parameter
-here is knn_k, the number of neighbors used to build the shared factor space. 
+here is knn_k, the number of neighbors used to build the shared factor space.
 
 Next we perform quantile alignment for each dataset, factor, and cluster (by
 stretching/compressing datasets' quantiles to better match those of the reference dataset). These

@@ -4,13 +4,8 @@
 \alias{ligerToSeurat}
 \title{Create a Seurat object containing the data from a liger object}
 \usage{
-ligerToSeurat(
-  object,
-  nms = names(object@H),
-  renormalize = T,
-  use.liger.genes = T,
-  by.dataset = F
-)
+ligerToSeurat(object, nms = names(object@H), renormalize = T,
+  use.liger.genes = T, by.dataset = F)
 }
 \arguments{
 \item{object}{\code{liger} object.}

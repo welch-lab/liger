@@ -4,13 +4,8 @@
 \alias{reorganizeLiger}
 \title{Construct a liger object organized by another feature}
 \usage{
-reorganizeLiger(
-  object,
-  by.feature,
-  keep.meta = T,
-  new.label = "orig.dataset",
-  ...
-)
+reorganizeLiger(object, by.feature, keep.meta = T,
+  new.label = "orig.dataset", ...)
 }
 \arguments{
 \item{object}{\code{liger} object.}

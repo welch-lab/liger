@@ -4,14 +4,8 @@
 \alias{getGeneValues}
 \title{Get gene expression values from list of expression matrices.}
 \usage{
-getGeneValues(
-  list,
-  gene,
-  use.cols = F,
-  methylation.indices = NULL,
-  log2scale = F,
-  scale.factor = 10000
-)
+getGeneValues(list, gene, use.cols = F, methylation.indices = NULL,
+  log2scale = F, scale.factor = 10000)
 }
 \arguments{
 \item{list}{List of gene x cell (or cell x gene) matrices}

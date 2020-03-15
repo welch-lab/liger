@@ -996,6 +996,7 @@ online_iNMF <- function(object,
                             h5_chunk_size=h5_chunk_size,
                             seed=seed)
   }
+  return(object)
 }
 
 #' Perform online iNMF on scaled datasets (hdf5 files)

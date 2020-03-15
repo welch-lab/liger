@@ -4,10 +4,12 @@
 \alias{normalize}
 \title{Normalize raw datasets to column sums}
 \usage{
-normalize(object)
+normalize(object, chunk = 1000)
 }
 \arguments{
 \item{object}{\code{liger} object.}
+
+\item{chunk}{size of chunks in hdf5 file. (default 1000)}
 }
 \value{
 \code{liger} object with norm.data slot set.

@@ -4,19 +4,10 @@
 \alias{getFactorMarkers}
 \title{Find shared and dataset-specific markers}
 \usage{
-getFactorMarkers(
-  object,
-  dataset1 = NULL,
-  dataset2 = NULL,
-  factor.share.thresh = 10,
-  dataset.specificity = NULL,
-  log.fc.thresh = 1,
-  umi.thresh = 30,
-  frac.thresh = 0,
-  pval.thresh = 0.05,
-  num.genes = 30,
-  print.genes = F
-)
+getFactorMarkers(object, dataset1 = NULL, dataset2 = NULL,
+  factor.share.thresh = 10, dataset.specificity = NULL,
+  log.fc.thresh = 1, umi.thresh = 30, frac.thresh = 0,
+  pval.thresh = 0.05, num.genes = 30, print.genes = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call optimizeALS before calling.}

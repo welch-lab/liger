@@ -4,13 +4,8 @@
 \alias{optimizeNewLambda}
 \title{Perform factorization for new lambda value}
 \usage{
-optimizeNewLambda(
-  object,
-  new.lambda,
-  thresh = 1e-04,
-  max.iters = 100,
-  rand.seed = 1
-)
+optimizeNewLambda(object, new.lambda, thresh = 1e-04, max.iters = 100,
+  rand.seed = 1)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call optimizeALS before calling.}

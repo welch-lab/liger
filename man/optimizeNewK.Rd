@@ -4,14 +4,8 @@
 \alias{optimizeNewK}
 \title{Perform factorization for new value of k}
 \usage{
-optimizeNewK(
-  object,
-  k.new,
-  lambda = NULL,
-  thresh = 1e-04,
-  max.iters = 100,
-  rand.seed = 1
-)
+optimizeNewK(object, k.new, lambda = NULL, thresh = 1e-04,
+  max.iters = 100, rand.seed = 1)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call optimizeALS before calling.}

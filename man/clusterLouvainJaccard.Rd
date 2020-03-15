@@ -6,15 +6,8 @@
 (Jaccard index) as a distance metric. Note that use of this function requires Seurat to be 
 loaded.}
 \usage{
-clusterLouvainJaccard(
-  object,
-  resolution = 0.1,
-  k.param = 30,
-  n.iter = 10,
-  n.start = 10,
-  print.output = F,
-  ...
-)
+clusterLouvainJaccard(object, resolution = 0.1, k.param = 30,
+  n.iter = 10, n.start = 10, print.output = F, ...)
 }
 \arguments{
 \item{object}{analogizer object. Should call quantile_norm before calling.}

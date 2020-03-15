@@ -4,15 +4,8 @@
 \alias{imputeKNN}
 \title{Impute the query cell expression matrix}
 \usage{
-imputeKNN(
-  object,
-  reference,
-  queries,
-  knn_k = 20,
-  weight = TRUE,
-  norm = TRUE,
-  scale = FALSE
-)
+imputeKNN(object, reference, queries, knn_k = 20, weight = TRUE,
+  norm = TRUE, scale = FALSE)
 }
 \arguments{
 \item{object}{\code{liger} object.}

@@ -4,19 +4,11 @@
 \alias{selectGenes}
 \title{Select a subset of informative genes}
 \usage{
-selectGenes(
-  object,
-  var.thresh = 0.1,
-  alpha.thresh = 0.99,
-  num.genes = NULL,
-  tol = 1e-04,
-  datasets.use = 1:length(object@raw.data),
-  combine = "union",
-  keep.unique = F,
-  capitalize = F,
-  do.plot = F,
-  cex.use = 0.3
-)
+selectGenes(object, var.thresh = 0.1, alpha.thresh = 0.99,
+  num.genes = NULL, tol = 1e-04,
+  datasets.use = 1:length(object@raw.data), combine = "union",
+  keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3,
+  chunk = 1000)
 }
 \arguments{
 \item{object}{\code{liger} object. Should have already called normalize.}
@@ -51,6 +43,8 @@ in one dataset (default FALSE)}
 Selected genes are plotted in green. (default FALSE)}
 
 \item{cex.use}{Point size for plot.}
+
+\item{chunk}{size of chunks in hdf5 file. (default 1000)}
 }
 \value{
 \code{liger} object with var.genes slot set.

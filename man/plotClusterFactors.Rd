@@ -4,15 +4,8 @@
 \alias{plotClusterFactors}
 \title{Plot heatmap of cluster/factor correspondence}
 \usage{
-plotClusterFactors(
-  object,
-  use.aligned = F,
-  Rowv = NA,
-  Colv = "Rowv",
-  col = NULL,
-  return.data = F,
-  ...
-)
+plotClusterFactors(object, use.aligned = F, Rowv = NA, Colv = "Rowv",
+  col = NULL, return.data = F, ...)
 }
 \arguments{
 \item{object}{\code{liger} object.}

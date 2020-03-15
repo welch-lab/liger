@@ -4,22 +4,10 @@
 \alias{makeRiverplot}
 \title{Generate a river (Sankey) plot}
 \usage{
-makeRiverplot(
-  object,
-  cluster1,
-  cluster2,
-  cluster_consensus = NULL,
-  min.frac = 0.05,
-  min.cells = 10,
-  river.yscale = 1,
-  river.lty = 0,
-  river.node_margin = 0.1,
-  label.cex = 1,
-  label.col = "black",
-  lab.srt = 0,
-  river.usr = NULL,
-  node.order = "auto"
-)
+makeRiverplot(object, cluster1, cluster2, cluster_consensus = NULL,
+  min.frac = 0.05, min.cells = 10, river.yscale = 1, river.lty = 0,
+  river.node_margin = 0.1, label.cex = 1, label.col = "black",
+  lab.srt = 0, river.usr = NULL, node.order = "auto")
 }
 \arguments{
 \item{object}{\code{liger} object. Should run quantileAlignSNF before calling.}

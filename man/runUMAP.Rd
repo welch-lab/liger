@@ -4,16 +4,9 @@
 \alias{runUMAP}
 \title{Perform UMAP dimensionality reduction}
 \usage{
-runUMAP(
-  object,
-  use.raw = F,
-  dims.use = 1:ncol(object@H.norm),
-  k = 2,
-  distance = "euclidean",
-  n_neighbors = 10,
-  min_dist = 0.1,
-  rand.seed = 42
-)
+runUMAP(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k = 2,
+  distance = "euclidean", n_neighbors = 30, min_dist = 0.3,
+  rand.seed = 42)
 }
 \arguments{
 \item{object}{\code{liger} object. Should run quantileAlignSNF before calling with defaults.}

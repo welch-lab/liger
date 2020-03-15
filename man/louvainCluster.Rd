@@ -4,16 +4,9 @@
 \alias{louvainCluster}
 \title{Louvain algorithm for community detection}
 \usage{
-louvainCluster(
-  object,
-  resolution = 1,
-  k = 20,
-  prune = 1/15,
-  eps = 0.1,
-  nRandomStarts = 10,
-  nIterations = 100,
-  random.seed = 1
-)
+louvainCluster(object, resolution = 1, k = 20, prune = 1/15,
+  eps = 0.1, nRandomStarts = 10, nIterations = 100,
+  random.seed = 1)
 }
 \arguments{
 \item{object}{\code{liger} object. Should run quantile_norm before calling.}

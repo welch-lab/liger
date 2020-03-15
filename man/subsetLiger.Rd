@@ -4,7 +4,8 @@
 \alias{subsetLiger}
 \title{Construct a liger object with a specified subset}
 \usage{
-subsetLiger(object, clusters.use = NULL, cells.use = NULL, remove.missing = T)
+subsetLiger(object, clusters.use = NULL, cells.use = NULL,
+  remove.missing = T)
 }
 \arguments{
 \item{object}{\code{liger} object. Should run quantileAlignSNF and runTSNE before calling.}

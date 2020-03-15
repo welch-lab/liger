@@ -4,20 +4,9 @@
 \alias{suggestK}
 \title{Visually suggest appropiate k value}
 \usage{
-suggestK(
-  object,
-  k.test = seq(5, 50, 5),
-  lambda = 5,
-  thresh = 1e-04,
-  max.iters = 100,
-  num.cores = 1,
-  rand.seed = 1,
-  gen.new = F,
-  nrep = 1,
-  plot.log2 = T,
-  return.data = F,
-  return.raw = F
-)
+suggestK(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-04,
+  max.iters = 100, num.cores = 1, rand.seed = 1, gen.new = F,
+  nrep = 1, plot.log2 = T, return.data = F, return.raw = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should normalize, select genes, and scale before calling.}

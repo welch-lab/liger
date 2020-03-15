@@ -4,7 +4,8 @@
 \alias{createLiger}
 \title{Create a liger object.}
 \usage{
-createLiger(raw.data, make.sparse = T, take.gene.union = F, remove.missing = T)
+createLiger(raw.data, make.sparse = T, take.gene.union = F,
+  remove.missing = T)
 }
 \arguments{
 \item{raw.data}{List of expression matrices (gene by cell). Should be named by dataset.}

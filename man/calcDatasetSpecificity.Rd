@@ -4,7 +4,8 @@
 \alias{calcDatasetSpecificity}
 \title{Calculate a dataset-specificity score for each factor}
 \usage{
-calcDatasetSpecificity(object, dataset1 = NULL, dataset2 = NULL, do.plot = T)
+calcDatasetSpecificity(object, dataset1 = NULL, dataset2 = NULL,
+  do.plot = T)
 }
 \arguments{
 \item{object}{\code{liger} object. Should run optimizeALS before calling.}

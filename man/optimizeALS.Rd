@@ -8,35 +8,13 @@
 \usage{
 optimizeALS(object, ...)
 
-\method{optimizeALS}{list}(
-  object,
-  k,
-  lambda = 5,
-  thresh = 1e-06,
-  max.iters = 30,
-  nrep = 1,
-  H.init = NULL,
-  W.init = NULL,
-  V.init = NULL,
-  rand.seed = 1,
-  print.obj = FALSE,
-  ...
-)
+\method{optimizeALS}{list}(object, k, lambda = 5, thresh = 1e-06,
+  max.iters = 30, nrep = 1, H.init = NULL, W.init = NULL,
+  V.init = NULL, rand.seed = 1, print.obj = FALSE, ...)
 
-\method{optimizeALS}{liger}(
-  object,
-  k,
-  lambda = 5,
-  thresh = 1e-06,
-  max.iters = 30,
-  nrep = 1,
-  H.init = NULL,
-  W.init = NULL,
-  V.init = NULL,
-  rand.seed = 1,
-  print.obj = FALSE,
-  ...
-)
+\method{optimizeALS}{liger}(object, k, lambda = 5, thresh = 1e-06,
+  max.iters = 30, nrep = 1, H.init = NULL, W.init = NULL,
+  V.init = NULL, rand.seed = 1, print.obj = FALSE, ...)
 }
 \arguments{
 \item{object}{\code{liger} object. Should normalize, select genes, and scale before calling.}

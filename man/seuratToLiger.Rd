@@ -4,21 +4,10 @@
 \alias{seuratToLiger}
 \title{Create liger object from one or more Seurat objects}
 \usage{
-seuratToLiger(
-  objects,
-  combined.seurat = F,
-  names = "use-projects",
-  meta.var = NULL,
-  assays.use = NULL,
-  raw.assay = "RNA",
-  remove.missing = T,
-  renormalize = T,
-  use.seurat.genes = T,
-  num.hvg.info = NULL,
-  use.idents = T,
-  use.tsne = T,
-  cca.to.H = F
-)
+seuratToLiger(objects, combined.seurat = F, names = "use-projects",
+  meta.var = NULL, assays.use = NULL, raw.assay = "RNA",
+  remove.missing = T, renormalize = T, use.seurat.genes = T,
+  num.hvg.info = NULL, use.idents = T, use.tsne = T, cca.to.H = F)
 }
 \arguments{
 \item{objects}{One or more Seurat v2 objects. If passing multiple objects, should be in list.}

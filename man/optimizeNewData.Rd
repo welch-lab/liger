@@ -4,15 +4,8 @@
 \alias{optimizeNewData}
 \title{Perform factorization for new data}
 \usage{
-optimizeNewData(
-  object,
-  new.data,
-  which.datasets,
-  add.to.existing = T,
-  lambda = NULL,
-  thresh = 1e-04,
-  max.iters = 100
-)
+optimizeNewData(object, new.data, which.datasets, add.to.existing = T,
+  lambda = NULL, thresh = 1e-04, max.iters = 100)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call optimizeALS before calling.}

@@ -4,14 +4,8 @@
 \alias{linkGenesAndPeaks}
 \title{Linking genes to putative regulatory elements}
 \usage{
-linkGenesAndPeaks(
-  gene_counts,
-  peak_counts,
-  genes.list = NULL,
-  dist = "spearman",
-  alpha = 0.05,
-  path_to_coords
-)
+linkGenesAndPeaks(gene_counts, peak_counts, genes.list = NULL,
+  dist = "spearman", alpha = 0.05, path_to_coords)
 }
 \arguments{
 \item{gene_counts}{A gene expression matrix (genes by cells) of normalized counts.

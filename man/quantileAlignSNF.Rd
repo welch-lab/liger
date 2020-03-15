@@ -8,42 +8,17 @@
 \usage{
 quantileAlignSNF(object, ...)
 
-\method{quantileAlignSNF}{list}(
-  object,
-  snf,
-  cell.names,
-  ref_dataset,
-  prune.thresh = 0.2,
-  min_cells = 2,
-  quantiles = 50,
-  nstart = 10,
-  resolution = 1,
-  center = FALSE,
-  id.number = NULL,
-  print.mod = FALSE,
-  print.align.summary = FALSE,
-  ...
-)
+\method{quantileAlignSNF}{list}(object, snf, cell.names, ref_dataset,
+  prune.thresh = 0.2, min_cells = 2, quantiles = 50, nstart = 10,
+  resolution = 1, center = FALSE, id.number = NULL,
+  print.mod = FALSE, print.align.summary = FALSE, ...)
 
-\method{quantileAlignSNF}{liger}(
-  object,
-  knn_k = 20,
-  k2 = 500,
-  prune.thresh = 0.2,
-  ref_dataset = NULL,
-  min_cells = 2,
-  quantiles = 50,
-  nstart = 10,
-  resolution = 1,
-  dims.use = 1:ncol(x = object@H[[1]]),
-  dist.use = "CR",
-  center = FALSE,
-  small.clust.thresh = 0,
-  id.number = NULL,
-  print.mod = FALSE,
-  print.align.summary = FALSE,
-  ...
-)
+\method{quantileAlignSNF}{liger}(object, knn_k = 20, k2 = 500,
+  prune.thresh = 0.2, ref_dataset = NULL, min_cells = 2,
+  quantiles = 50, nstart = 10, resolution = 1, dims.use = 1:ncol(x
+  = object@H[[1]]), dist.use = "CR", center = FALSE,
+  small.clust.thresh = 0, id.number = NULL, print.mod = FALSE,
+  print.align.summary = FALSE, ...)
 }
 \arguments{
 \item{object}{\code{liger} object. Should run optimizeALS before calling.}
@@ -54,7 +29,8 @@ quantileAlignSNF(object, ...)
 
 \item{cell.names}{A vector of cell names}
 
-\item{ref_dataset}{Name or index of reference dataset}
+\item{ref_dataset}{Name of dataset to use as a "reference" for normalization. By default,
+the dataset with the largest number of cells is used.}
 
 \item{prune.thresh}{Minimum allowed edge weight. Any edges below this are removed (given weight
 0) (default 0.2)}
@@ -91,6 +67,8 @@ neighbors are set to 0 (cuts down on memory usage for very large graphs). (defau
 
 \item{small.clust.thresh}{Extracts small clusters loading highly on single factor with fewer
 cells than this before regular alignment (default 0 -- no small cluster extraction).}
+
+\item{ref_dataset}{Name or index of reference dataset}
 }
 \value{
 \code{liger} object with H.norm slot set.
