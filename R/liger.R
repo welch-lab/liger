@@ -278,6 +278,12 @@ createLiger = function(raw.data, make.sparse = T, take.gene.union = F, remove.mi
   if (class(raw.data[[1]]) == "character") {#HDF5 filenames instead of in-memory matrices
     object <- methods::new(Class = "liger", raw.data = raw.data, 
                            version = packageVersion("liger"))
+    object@V = rep(list(NULL), length(raw.data))
+    object@H = rep(list(NULL), length(raw.data))
+    if (is.null(names(object@raw.data))){
+      names(object@raw.data) <- as.character(paste0("data",1:length(object@raw.data)))
+    }
+      names(object@H) <- names(object@V) <- names(object@raw.data)
     return(object)
   }
   
@@ -910,7 +916,7 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #' Perform online integrative non-negative matrix factorization to return factorized H, W, and V 
 #' matrices. It optimizes the iNMF objective function using online learning (alternating non-negative
 #' least squares for H matrix, Hierarchical alternating least squares for W and V matrices), where the 
-#' number of factors is set by k. TODO: include objective function equation here in documentation (using deqn)
+#' number of factors is set by k. 
 #'
 #' For each dataset, this factorization produces an H matrix (cells by k), a V matrix (k by genes),
 #' and a shared W matrix (k by genes). The H matrices represent the cell factor loadings.
@@ -918,27 +924,29 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #' across datasets. The V matrices represent the dataset-specific components of the metagenes.
 #'
 #' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
+#' @param X_new List of new datasets.
+#' @param projection Data integration by Metagene (W) projection. (default FALSE)
+#' @param W.init Previous H matrices. (default NULL)
+#' @param V.init Previous W matrix (default NULL)
+#' @param H.init Previous V matrices (default NULL)
+#' @param A.init Previous A matrix (default NULL)
+#' @param B.init Previous B matrices (default NULL)
 #' @param k Inner dimension of factorization (number of factors). Run suggestK to determine
 #'   appropriate value; a general rule of thumb is that a higher k will be needed for datasets with
-#'   more sub-structure.
+#'   more sub-structure. (default 20)
 #' @param lambda Regularization parameter. Larger values penalize dataset-specific effects more
 #'   strongly (ie. alignment should increase as lambda increases). Run suggestLambda to determine
 #'   most appropriate value for balancing dataset alignment and agreement (default 5.0).
+#' @param max.epochs Maximum number of epochs. (default 1)
+#' @param miniBatch_max_iters Maximum number of block coordinate descent (HALS algorithm) iterations to perform (default 1).
+#' @param miniBatch_size Total number of cells in each mini-batch (default 1000).
 #' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
 #'   (default 1e-6)
-#' @param max.iters Maximum number of block coordinate descent iterations to perform (default 30).
-#' @param nrep Number of restarts to perform (iNMF objective function is non-convex, so taking the
-#'   best objective from multiple successive initializations is recommended). For easier
-#'   reproducibility, this increments the random seed by 1 for each consecutive restart, so future
-#'   factorizations of the same dataset can be run with one rep if necessary. (default 1)
-#' @param H.init Initial values to use for H matrices. (default NULL)
-#' @param W.init Initial values to use for W matrix (default NULL)
-#' @param V.init Initial values to use for V matrices (default NULL)
-#' @param seed Random seed to allow reproducible results (default 1).
-#' @param print.obj Print objective function values after convergence (default FALSE).
-#' @param ... Arguments passed to other methods
+#'   (default 1e-4)
+#' @param h5_chunk_size Chunk size of input hdf5 files (default 1000). 
+#' @param seed Random seed to allow reproducible results (default 123).
 #'
-#' @return \code{liger} object with H, W, and V slots set.
+#' @return \code{liger} object with H, W, V, A and B slots set.
 #' @export
 #'
 #' @examples
@@ -956,32 +964,485 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #'
 
 online_iNMF <- function(object,
-                        W_project = FALSE,
-                        W_init=NULL,
-                        V_init=NULL,
-                        H_init=NULL,
-                        A_init=NULL,
-                        B_init=NULL,
-                        H_output=TRUE,
-                        k=40,
+                        X_new = NULL,
+                        projection = FALSE,
+                        W.init=NULL,
+                        V.init=NULL,
+                        H.init=NULL,
+                        A.init=NULL,
+                        B.init=NULL,
+                        k=20,
                         lambda=5,
-                        max_epoch=5,
+                        max.epochs=1,
                         miniBatch_max_iters=1,
                         miniBatch_size=1000,
                         thresh=1e-4,
                         h5_chunk_size=1000,
-                        seed=123) {
+                        seed=123){
   if (class(object@raw.data[[1]]) == "character") {
-    object = online_iNMF_h5(object,X,project,W_init,V_init,k,lambda,max_iters,max_epochs,miniBatch_max_iters,miniBatch_size,thresh,h5_chunk_size,seed)
+    object = online_iNMF_h5(object=object,
+                            X_new = X_new,
+                            projection = projection,
+                            W.init=W.init,
+                            V.init=V.init,
+                            H.init=H.init,
+                            A.init=A.init,
+                            B.init=B.init,
+                            k=k,
+                            lambda=lambda,
+                            max.epochs=max.epochs,
+                            miniBatch_max_iters=miniBatch_max_iters,
+                            miniBatch_size=miniBatch_size,
+                            thresh=thresh,
+                            h5_chunk_size=h5_chunk_size,
+                            seed=seed)
   }
 }
 
+#' Perform online iNMF on scaled datasets (hdf5 files)
+#'
+#' @description
+#' Perform online integrative non-negative matrix factorization to return factorized H, W, and V 
+#' matrices. It optimizes the iNMF objective function using online learning (alternating non-negative
+#' least squares for H matrix, Hierarchical alternating least squares for W and V matrices), where the 
+#' number of factors is set by k.
+#'
+#' For each dataset, this factorization produces an H matrix (cells by k), a V matrix (k by genes),
+#' and a shared W matrix (k by genes). The H matrices represent the cell factor loadings.
+#' W is held consistent among all datasets, as it represents the shared components of the metagenes
+#' across datasets. The V matrices represent the dataset-specific components of the metagenes.
+#'
+#' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
+#' @param X_new List of new datasets.
+#' @param projection Data integration by Metagene (W) projection. (default FALSE)
+#' @param W.init Previous H matrices. (default NULL)
+#' @param V.init Previous W matrix (default NULL)
+#' @param H.init Previous V matrices (default NULL)
+#' @param A.init Previous A matrix (default NULL)
+#' @param B.init Previous B matrices (default NULL)
+#' @param k Inner dimension of factorization (number of factors). Run suggestK to determine
+#'   appropriate value; a general rule of thumb is that a higher k will be needed for datasets with
+#'   more sub-structure. (default 20)
+#' @param lambda Regularization parameter. Larger values penalize dataset-specific effects more
+#'   strongly (ie. alignment should increase as lambda increases). Run suggestLambda to determine
+#'   most appropriate value for balancing dataset alignment and agreement (default 5.0).
+#' @param max.epochs Maximum number of epochs. (default 1)
+#' @param miniBatch_max_iters Maximum number of block coordinate descent (HALS algorithm) iterations to perform (default 1).
+#' @param miniBatch_size Total number of cells in each mini-batch (default 1000).
+#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
+#'   (default 1e-4)
+#' @param h5_chunk_size Chunk size of input hdf5 files (default 1000). 
+#' @param seed Random seed to allow reproducible results (default 123).
+#'
+#' @return \code{liger} object with H, W, V, A and B slots set.
+#'
+#' @examples
+#' \dontrun{
+#' 
+
+online_iNMF_h5 = function(object,
+                          X_new = NULL,
+                          projection = FALSE,
+                          W.init=NULL,
+                          V.init=NULL,
+                          H.init=NULL,
+                          A.init=NULL,
+                          B.init=NULL,
+                          k=40,
+                          lambda=5,
+                          max.epochs=5,
+                          miniBatch_max_iters=1,
+                          miniBatch_size=1000,
+                          thresh=1e-4,
+                          h5_chunk_size=1000,
+                          seed=123){ 
+                       
+                          
+  if (!is.null(X_new)){ # if there is new dataset
+    raw.data_prev = object@raw.data
+    names(raw.data_prev) = names(object@raw.data)
+    if (is.null(names(X_new))){
+      names(X_new) <- as.character(paste0("new_data",1:length(X_new)))
+    }
+    object@raw.data = X_new
+
+    # check whether X_new needs to be processed
+    for (i in 1:length(X_new)){
+      if ("scale.data" %in% h5ls(X_new[[i]])$name) {
+        cat("New dataset", i, "already preprocessed.", "\n")
+      } else {
+        cat("New dataset", i, "not preprocessed. Preprocessing...", "\n")
+        object = normalize(object, chunk = h5_chunk_size)
+        object = calcGeneVars(object, chunk = h5_chunk_size)
+        object = scaleNotCenter(object, remove.missing = T, chunk = h5_chunk_size)
+        cat("New dataset", i, "Processed.", "\n")
+      }
+    }
+    object@raw.data = c(raw.data_prev, X_new)
+    # k x gene -> gene x k & cell x k-> k x cell 
+    object@W = t(object@W)
+    object@V = lapply(object@V, t)
+    object@H = lapply(object@H, t)
+  }
+  ## extract required infomration and initialize algorithm
+  hdf5_files = object@raw.data
+  hdf5_files_info = list() # hdf5 file information
+  num_files = length(hdf5_files) # number of total input hdf5 files
+  num_prev_files = 0 # number of input hdf5 files processed in last step
+  num_new_files = 0 # number of new input hdf5 files since last step
+  if (is.null(V.init)) {
+    num_prev_files = 0 # start from scratch 
+    num_new_files = num_files
+  } else {
+    num_prev_files = length(V.init) # number of previous Vs
+    num_new_files = num_files - num_prev_files
+    cat(num_new_files, "new datasets detected.", "\n")
+  }
+
+  file_idx = 1:num_files # indices for all input files
+  file_idx_new = (num_prev_files+1):num_files # indices only for new input files
+  file_idx_prev = setdiff(file_idx,file_idx_new)
+
+  vargenes = object@var.genes
+  gene_names = vargenes # genes selected for analysis
+  num_genes = length(vargenes) # number of the selected genes
+
+  num_cells = c() # number of cells in each dataset
+  cell_barcodes = list() # cell barcodes for each dataset
+  for (i in file_idx){
+    hdf5_files_info[[i]] = h5ls(hdf5_files[[i]])
+    num_cells = c(num_cells, as.numeric(hdf5_files_info[[i]]$dim[hdf5_files_info[[i]]$name == "barcodes"]))
+    h5closeAll()
+    cell_barcodes[[i]] = h5read(hdf5_files[[i]], name="matrix/barcodes")
+  }
+  num_cells_new = num_cells[(num_prev_files+1):num_files]
+  minibatch_sizes = rep(0, num_files)
+
+  
+  #print("Set minibatch size proportional to the data size")
+  for (i in file_idx_new) {
+      minibatch_sizes[i] = round((num_cells[i]/sum(num_cells[file_idx_new])) * miniBatch_size)
+  }
+  minibatch_sizes_orig = minibatch_sizes
+  #print("Minibatch size for each dataset: ")
+  #print(minibatch_sizes)
+
+  if (!projection) {
+
+    if(!is.null(seed)){
+      set.seed(seed)
+    } 
+
+    # V_i matrix initialization
+    
+    if (is.null(W.init) & is.null(V.init)){
+      object@V = list()    
+      for (i in file_idx){
+        V_init_idx = sample(1:num_cells_new[i], k) # pick k sample from datasets as initial H matrix
+        h5closeAll()
+        object@V[[i]] = h5read(hdf5_files[[i]], "/scale.data", index=list(NULL,V_init_idx))
+      }
+
+      # W (shared) matrix initialization
+      object@W = matrix(abs(runif(num_genes * k, 0, 2)), num_genes, k)
+
+      # normalize the columns of H_i, H_s matrices
+      for (j in 1:k){
+        for (i in file_idx){ # normalize columns of dictionaries
+          object@V[[i]][, j] = object@V[[i]][, j] / sqrt(sum(object@V[[i]][, j]^2)) 
+        }
+        object@W[, j] = object@W[, j] / sqrt(sum(object@W[, j]^2))
+      }
+    } else { # if previous Vs are provided 
+      object@V[file_idx_prev] = lapply(V.init, t)
+      V_init_idx = list()
+      for (i in file_idx_new){
+        V_init_idx = sample(1:num_cells[i], k)
+        object@V[[i]] = h5read(hdf5_files[[i]], "/scale.data", index=list(NULL,V_init_idx)) # initialize the Vi for new dataset
+        for (j in 1:k){
+          object@V[[i]][, j] = object@V[[i]][, j] / sqrt(sum(object@V[[i]][, j]^2)) 
+        }
+      }
+      object@W = t(W.init)
+    }
+
+    # H_i matrices initialization
+    if (is.null(H.init)) {
+      object@H = rep(list(NULL),num_files)
+      H_minibatch = list()
+    } else { # if previous Hs are provided
+      object@H[file_idx_prev] = lapply(H.init,t)
+      object@H[file_idx_new] = rep(list(NULL),num_new_files)
+      H_minibatch = list()
+    }
+
+    # A = HiHi^t, B = XiHit
+    A_old = list() # only for new files
+    B_old = list()
+
+    if (is.null(A.init)) {
+      object@A = rep(list(matrix(0, k, k)), num_new_files)
+      object@B = rep(list(matrix(0, num_genes, k)), num_new_files)
+      A_old = rep(list(matrix(0, k, k)), num_new_files) # save information older than 2 epochs
+      B_old = rep(list(matrix(0, num_genes, k)), num_new_files) # save information older than 2 epochs
+      
+    } else {
+      object@A[file_idx_prev] = A.init
+      object@B[file_idx_prev] = B.init
+      A_old[file_idx_prev] = rep(list(NULL), num_prev_files)
+      B_old[file_idx_prev] = rep(list(NULL), num_prev_files)
+      object@A[(num_prev_files+1):num_files] = rep(list(matrix(0, k, k)), num_new_files)
+      object@B[(num_prev_files+1):num_files] = rep(list(matrix(0, num_genes, k)), num_new_files)
+      A_old[(num_prev_files+1):num_files] = rep(list(matrix(0, k, k)), num_new_files) # save information older than 2 epochs
+      B_old[(num_prev_files+1):num_files] = rep(list(matrix(0, k, k)), num_new_files) # save information older than 2 epochs
+    }
+
+    iter = 1
+    epoch = rep(0, num_files) # intialize the number of epoch for each dataset
+    epoch_prev = rep(0, num_files) # intialize the previous number of epoch for each dataset
+    epoch_next = rep(FALSE, num_files)
+    sqrt_lambda = sqrt(lambda)
+    total_time = 0 # track the total amount of time used for the online learning
 
 
+    num_chunks = rep(NULL, num_files)
+    chunk_idx = rep(list(NULL), num_files)
+    all_idx = rep(list(NULL), num_files)
+
+    # chunk permutation 
+    #print("Shuffle the input data...")
+    for (i in file_idx_new){
+      num_chunks[i] = ceiling(num_cells[i]/h5_chunk_size)
+      chunk_idx[[i]] = sample(1:num_chunks[i],num_chunks[i])
+      #print(paste("chunk_idx for new dataset ",i))
+      #print(chunk_idx[[i]])
+      # idx in the first chunk
+      if(chunk_idx[[i]][1]!=num_chunks[i]){
+        all_idx[[i]] = (1+h5_chunk_size*(chunk_idx[[i]][1]-1)):(chunk_idx[[i]][1]*h5_chunk_size)
+      } else {
+        all_idx[[i]] = (1+h5_chunk_size*(chunk_idx[[i]][1]-1)):(num_cells[i])
+      }
+        
+      for (j in chunk_idx[[i]][-1]){
+      #print(j)
+        if (j != num_chunks[i]){
+          #print(all_idx[[i]])
+          all_idx[[i]] = c(all_idx[[i]],(1+h5_chunk_size*(j-1)):(j*h5_chunk_size))
+        } else {
+          all_idx[[i]] = c(all_idx[[i]],(1+h5_chunk_size*(j-1)):num_cells[i])
+        }
+      }
+    }
+    
+    
+          
+
+    cat("Starting Online iNMF...", "\n")
+    total.iters = floor(sum(num_cells_new) * max.epochs / miniBatch_size)
+    pb <- txtProgressBar(min = 1, max = total.iters+1, style = 3)
+    while(epoch[file_idx_new[1]] < max.epochs) {
+      iter_start_time = Sys.time()
+      # track epochs
+      minibatch_idx = rep(list(NULL), num_files) # indices of samples in each dataest used for this iteration
+      if ((max.epochs * num_cells_new[1] - (iter-1) * minibatch_sizes[file_idx_new[1]]) >= minibatch_sizes[file_idx_new[1]]){ # check if the size of the last mini-batch == pre-specified mini-batch size
+        for (i in file_idx_new){
+          epoch[i] = (iter * minibatch_sizes[i]) %/% num_cells[i] # caculate the current epoch
+          if ((epoch_prev[i] != epoch[i]) & ((iter * minibatch_sizes[i]) %% num_cells[i] != 0)){ # if current iter cycles through the data and start a new cycle
+            epoch_next[i] = TRUE
+            epoch_prev[i] = epoch[i]
+            # shuffle dataset before the next epoch
+            minibatch_idx[[i]] = all_idx[[i]][c(((((iter - 1) * minibatch_sizes[i]) %% num_cells[i]) + 1):num_cells[i])]
+            chunk_idx[[i]] = sample(1:num_chunks[i],num_chunks[i])
+            all_idx[[i]] = 0
+            for (j in chunk_idx[[i]]){
+              if (j != num_chunks[i]){
+                all_idx[[i]] = c(all_idx[[i]],(1+h5_chunk_size*(j-1)):(j*h5_chunk_size))
+              }else{
+                all_idx[[i]] = c(all_idx[[i]],(1+h5_chunk_size*(j-1)):num_cells[i])
+              }
+            }
+            all_idx[[i]] = all_idx[[i]][-1] # remove the first element 0
+            minibatch_idx[[i]] = c(minibatch_idx[[i]],all_idx[[i]][1:((iter * minibatch_sizes[i]) %% num_cells[i])])      
+
+          } else if ((epoch_prev[i] != epoch[i]) & ((iter * minibatch_sizes[i]) %% num_cells[i] == 0)){ # if current iter finishes this cycle without start a a new cycle
+            epoch_next[i] = TRUE
+            epoch_prev[i] = epoch[i]
+      
+            minibatch_idx[[i]] = all_idx[[i]][((((iter-1) * minibatch_sizes[i]) %% num_cells[i]) + 1):num_cells[i]]
+            chunk_idx[[i]] = sample(1:num_chunks[i],num_chunks[i])
+            all_idx[[i]] = 0
+            for (j in chunk_idx[[i]]){
+              if (j != num_chunks[i]){
+                all_idx[[i]] = c(all_idx[[i]],(1+h5_chunk_size*(j-1)):(j*h5_chunk_size))
+              }else{
+                all_idx[[i]] = c(all_idx[[i]],(1+h5_chunk_size*(j-1)):num_cells[i])
+              }
+            }
+            all_idx[[i]] = all_idx[[i]][-1] # remove the first element 0 
+          } else {                                                                        # if current iter stays within a single cycle
+            minibatch_idx[[i]] = all_idx[[i]][(((iter-1) * minibatch_sizes[i]) %% num_cells[i] + 1):((iter * minibatch_sizes[i]) %% num_cells[i])]
+          }
+        }
+      } else {
+        for (i in file_idx_new){
+          minibatch_sizes[i] = max.epochs * num_cells[i] - (iter-1) * minibatch_sizes[i]
+          minibatch_idx[[i]] = (((iter-1) * minibatch_sizes_orig[i] + 1) %% num_cells[i]):num_cells[i]
+        }
+        epoch[file_idx_new[1]] = max.epochs # last epoch
+      }
 
 
+      if (length(minibatch_idx[[file_idx_new[1]]]) == minibatch_sizes_orig[file_idx_new[1]]){ 
+        X_minibatch = rep(list(NULL), num_files)
+        for (i in file_idx_new){
+          h5closeAll()
+          X_minibatch[[i]] = h5read(hdf5_files[[i]], "/scale.data", index=list(NULL, minibatch_idx[[i]]))
+        }
+      
+        # update H_i by ANLS Hi_minibatch[[i]]
+        H_minibatch = rep(list(NULL), num_files)
+        for (i in file_idx_new){
+          H_minibatch[[i]] = solveNNLS(rbind(object@W + object@V[[i]], sqrt_lambda * object@V[[i]]), rbind(X_minibatch[[i]], matrix(0, num_genes, minibatch_sizes[i])))
+        }
+ 
+        # updata A and B matrices 
+        if (iter == 1){
+          scale_param = c(rep(0, num_prev_files), rep(0, num_new_files))
+        } else if(iter == 2){
+          scale_param = c(rep(0, num_prev_files), rep(1, num_new_files) / minibatch_sizes[file_idx_new])  
+        } else {
+          scale_param = c(rep(0, num_prev_files), rep((iter - 2) / (iter - 1), num_new_files))
+        }
+      
+      
+        if (epoch[file_idx_new[1]] > 0 & epoch_next[file_idx_new[1]] == TRUE){ # remove information older than 2 epochs     
+          for (i in file_idx_new){
+            object@A[[i]] = object@A[[i]] - A_old[[i]]
+            A_old[[i]] = scale_param[i] * object@A[[i]]
+            object@B[[i]] = object@B[[i]] - B_old[[i]]
+            B_old[[i]] = scale_param[i] * object@B[[i]]
+          }
+        } else{ # otherwise scale the old information
+          for (i in file_idx_new){
+            A_old[[i]] = scale_param[i] * A_old[[i]]
+            B_old[[i]] = scale_param[i] * B_old[[i]]
+          }
+        }
+      
+        for (i in file_idx_new){
+          object@A[[i]] = scale_param[i] * object@A[[i]] + H_minibatch[[i]] %*% t(H_minibatch[[i]]) / minibatch_sizes[i]   # HiHit
+          diag(object@A[[i]])[diag(object@A[[i]])==0] = 1e-15
+          object@B[[i]] = scale_param[i] * object@B[[i]] + X_minibatch[[i]] %*% t(H_minibatch[[i]]) / minibatch_sizes[i]   # XiHit
+        }
 
-#' Perform online iNMF on scaled datasets
+
+        # update W, V_i by HALS
+        iter_miniBatch = 1
+        delta_miniBatch = Inf
+        max_iters_miniBatch = miniBatch_max_iters
+
+        while(delta_miniBatch > thresh & iter_miniBatch <= max_iters_miniBatch){
+          # update D
+          for (j in 1:k){
+            W_update_numerator = rep(0, num_genes)
+            W_update_denominator = 0
+            for (i in file_idx){
+              W_update_numerator = W_update_numerator + object@B[[i]][, j] - ((object@W + object@V[[i]]) %*% object@A[[i]])[, j]
+              W_update_denominator = W_update_denominator +  object@A[[i]][j,j]
+            }
+
+            object@W[, j] = nonneg(object@W[, j] + W_update_numerator / W_update_denominator)
+          }
+
+          # update (Di).k
+          for (j in 1:k){
+            for (i in file_idx_new){
+              object@V[[i]][, j] = nonneg(object@V[[i]][, j] / (1 + lambda) + (object@B[[i]][, j] - ((object@W + object@V[[i]]) %*% object@A[[i]])[, j]) / ((1 + lambda) * object@A[[i]][j, j]))
+            }
+          }
+
+          iter_miniBatch = iter_miniBatch + 1
+        }
+        epoch_next = rep(FALSE, num_files) # reset epoch change indicator 
+
+        #iter_end_time = Sys.time()
+        #iter_time = as.numeric(difftime(iter_end_time, iter_start_time, units = "secs"))
+        #total_time = total_time + iter_time
+        #print(paste("Epoch: ",epoch[1], "Iter: ",iter,", Total time: ", total_time, " seconds"))
+        iter = iter + 1
+        setTxtProgressBar(pb = pb, value = iter)
+      } #else {
+        #print("")
+        #print(paste0("Metagene updates completed. Time used = ", total_time, " seconds"))
+      #}
+    } 
+    cat("\nCalculate metagene loadings...")
+    object@H = rep(list(NULL), num_files)
+    for (i in file_idx){
+        num_batch = num_cells[i] %/% miniBatch_size + 1
+        if (num_batch == 1){
+          h5closeAll()
+          X_i = h5read(hdf5_files[[i]],"scale.data")
+          object@H[[i]] = solveNNLS(rbind(object@W + object@V[[i]],sqrt_lambda * object@V[[i]]), rbind(X_i, matrix(0, num_genes , num_cells[i])))
+        } else {
+          for (batch_idx in 1:num_batch){
+            if (batch_idx != num_batch){
+              cell_idx = ((batch_idx - 1) * miniBatch_size + 1):(batch_idx * miniBatch_size)
+            } else {
+              cell_idx = ((batch_idx - 1) * miniBatch_size + 1):num_cells[i]
+            }
+            X_i_batch = h5read(hdf5_files[[i]],"scale.data", index=list(NULL,cell_idx))
+            object@H[[i]] = cbind(object@H[[i]],solveNNLS(rbind(object@W + object@V[[i]], sqrt_lambda * object@V[[i]]), 
+                                                          rbind(X_i_batch, matrix(0, num_genes , length(cell_idx)))))
+          }
+        }
+        colnames(object@H[[i]]) = cell_barcodes[[i]]
+      }
+
+    rownames(object@W) = rownames(gene_names)
+    colnames(object@W) = NULL
+
+    for (i in file_idx){
+      rownames(object@V[[i]]) = gene_names
+      colnames(object@V[[i]]) = NULL 
+    }
+
+  } else {
+    cat("Metagene projection")
+    object@H[file_idx_new] = rep(list(NULL), num_new_files)
+    object@V[file_idx_new] = rep(list(NULL), num_new_files)
+    for (i in file_idx_new){
+      num_batch = num_cells[i] %/% miniBatch_size + 1
+      if (num_cells[i] <= miniBatch_size){
+        h5closeAll()
+        object@H[[i]] = solveNNLS(t(W.init), h5read(hdf5_files[[i]],"scale.data"))
+      } else {
+        for (batch_idx in 1:num_batch){
+          if (batch_idx != num_batch){
+            cell_idx = ((batch_idx - 1) * miniBatch_size + 1):(batch_idx * miniBatch_size)
+          } else {
+            cell_idx = ((batch_idx - 1) * miniBatch_size + 1):num_cells[i]
+          }
+          object@H[[i]] = cbind(object@H[[i]],solveNNLS(t(W.init), h5read(hdf5_files[[i]],"scale.data", index=list(NULL,cell_idx))))
+        }
+      }
+      colnames(object@H[[i]]) = h5read(hdf5_files[[i]],"matrix/barcodes")
+      object@V[[i]] = matrix(0, num_genes, k)
+    }
+  }
+
+  # gene x k -> k x gene & k x cell -> cell x k
+  object@W = t(object@W)
+  object@V = lapply(object@V, t)
+  object@H = lapply(object@H, t)
+  if (!is.null(X_new)){
+    names(object@raw.data) = c(names(raw.data_prev), names(X_new))
+  }
+  names(object@H) <- names(object@V) <- names(object@raw.data)
+  return(object)
+}
+
+#' Perform thresholding on dense matrix
 #'
 #' @description
 #' Perform thresholding on the input dense matrix. Remove any values samller than eps by eps.
