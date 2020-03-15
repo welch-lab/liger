@@ -1089,12 +1089,12 @@ online_iNMF_h5 = function(object,
   num_files = length(hdf5_files) # number of total input hdf5 files
   num_prev_files = 0 # number of input hdf5 files processed in last step
   num_new_files = 0 # number of new input hdf5 files since last step
-  if (is.null(V.init)) {
+  if (is.null(X_new)) {
     num_prev_files = 0 # start from scratch 
     num_new_files = num_files
   } else {
-    num_prev_files = length(V.init) # number of previous Vs
-    num_new_files = num_files - num_prev_files
+    num_new_files = length(X_new)
+    num_prev_files = num_files - num_new_files 
     cat(num_new_files, "new datasets detected.", "\n")
   }
 
@@ -1132,9 +1132,20 @@ online_iNMF_h5 = function(object,
       set.seed(seed)
     } 
 
-    # V_i matrix initialization
+    # W matrix initialization
+    if (is.null(X_new)) {
+      object@W = matrix(abs(runif(num_genes * k, 0, 2)), num_genes, k)
+      for (j in 1:k){
+        object@W[, j] = object@W[, j] / sqrt(sum(object@W[, j]^2))
+      }
+    } else {
+      object@W = ifelse(!is.null(W.init), W.init, object@W)
+    } 
     
-    if (is.null(W.init) & is.null(V.init)){
+
+
+    # V_i matrix initialization
+    if (is.null(X_new)) {
       object@V = list()    
       for (i in file_idx){
         V_init_idx = sample(1:num_cells_new[i], k) # pick k sample from datasets as initial H matrix
@@ -1142,18 +1153,14 @@ online_iNMF_h5 = function(object,
         object@V[[i]] = h5read(hdf5_files[[i]], "/scale.data", index=list(NULL,V_init_idx))
       }
 
-      # W (shared) matrix initialization
-      object@W = matrix(abs(runif(num_genes * k, 0, 2)), num_genes, k)
-
       # normalize the columns of H_i, H_s matrices
       for (j in 1:k){
         for (i in file_idx){ # normalize columns of dictionaries
           object@V[[i]][, j] = object@V[[i]][, j] / sqrt(sum(object@V[[i]][, j]^2)) 
         }
-        object@W[, j] = object@W[, j] / sqrt(sum(object@W[, j]^2))
       }
-    } else { # if previous Vs are provided 
-      object@V[file_idx_prev] = lapply(V.init, t)
+    } else if (!is.null(X_new) & ){ # if previous Vs are provided 
+      object@V[file_idx_prev] = ifelse(!is.null(V.init), V.init, object@V)
       V_init_idx = list()
       for (i in file_idx_new){
         V_init_idx = sample(1:num_cells[i], k)
@@ -1162,15 +1169,14 @@ online_iNMF_h5 = function(object,
           object@V[[i]][, j] = object@V[[i]][, j] / sqrt(sum(object@V[[i]][, j]^2)) 
         }
       }
-      object@W = t(W.init)
     }
 
     # H_i matrices initialization
-    if (is.null(H.init)) {
+    if (is.null(X_new)) {
       object@H = rep(list(NULL),num_files)
       H_minibatch = list()
     } else { # if previous Hs are provided
-      object@H[file_idx_prev] = lapply(H.init,t)
+      object@H[file_idx_prev] = ifelse(!is.null(H.init), H.init, object@H)
       object@H[file_idx_new] = rep(list(NULL),num_new_files)
       H_minibatch = list()
     }
@@ -1179,15 +1185,15 @@ online_iNMF_h5 = function(object,
     A_old = list() # only for new files
     B_old = list()
 
-    if (is.null(A.init)) {
+    if (is.null(X_new)) {
       object@A = rep(list(matrix(0, k, k)), num_new_files)
       object@B = rep(list(matrix(0, num_genes, k)), num_new_files)
       A_old = rep(list(matrix(0, k, k)), num_new_files) # save information older than 2 epochs
       B_old = rep(list(matrix(0, num_genes, k)), num_new_files) # save information older than 2 epochs
       
     } else {
-      object@A[file_idx_prev] = A.init
-      object@B[file_idx_prev] = B.init
+      object@A[file_idx_prev] = ifelse(!is.null(A.init), A.init, object@A)
+      object@B[file_idx_prev] = ifelse(!is.null(B.init), A.init, object@B)
       A_old[file_idx_prev] = rep(list(NULL), num_prev_files)
       B_old[file_idx_prev] = rep(list(NULL), num_prev_files)
       object@A[(num_prev_files+1):num_files] = rep(list(matrix(0, k, k)), num_new_files)
@@ -1408,13 +1414,14 @@ online_iNMF_h5 = function(object,
 
   } else {
     cat("Metagene projection")
+    object@W = ifelse(!is.null(W.init), object@W)
     object@H[file_idx_new] = rep(list(NULL), num_new_files)
     object@V[file_idx_new] = rep(list(NULL), num_new_files)
     for (i in file_idx_new){
       num_batch = num_cells[i] %/% miniBatch_size + 1
       if (num_cells[i] <= miniBatch_size){
         h5closeAll()
-        object@H[[i]] = solveNNLS(t(W.init), h5read(hdf5_files[[i]],"scale.data"))
+        object@H[[i]] = solveNNLS(object@W, h5read(hdf5_files[[i]],"scale.data"))
       } else {
         for (batch_idx in 1:num_batch){
           if (batch_idx != num_batch){
@@ -1422,7 +1429,7 @@ online_iNMF_h5 = function(object,
           } else {
             cell_idx = ((batch_idx - 1) * miniBatch_size + 1):num_cells[i]
           }
-          object@H[[i]] = cbind(object@H[[i]],solveNNLS(t(W.init), h5read(hdf5_files[[i]],"scale.data", index=list(NULL,cell_idx))))
+          object@H[[i]] = cbind(object@H[[i]],solveNNLS(object@W, h5read(hdf5_files[[i]],"scale.data", index=list(NULL,cell_idx))))
         }
       }
       colnames(object@H[[i]]) = h5read(hdf5_files[[i]],"matrix/barcodes")
