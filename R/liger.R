@@ -1073,7 +1073,6 @@ online_iNMF_h5 = function(object,
       } else {
         cat("New dataset", i, "not preprocessed. Preprocessing...", "\n")
         object = normalize(object, chunk = h5_chunk_size)
-        object = calcGeneVars(object, chunk = h5_chunk_size)
         object = scaleNotCenter(object, remove.missing = T, chunk = h5_chunk_size)
         cat("New dataset", i, "Processed.", "\n")
       }
