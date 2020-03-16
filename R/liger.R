@@ -1139,7 +1139,7 @@ online_iNMF_h5 = function(object,
         object@W[, j] = object@W[, j] / sqrt(sum(object@W[, j]^2))
       }
     } else {
-      object@W = ifelse(!is.null(W.init), W.init, object@W)
+      object@W = if(!is.null(W.init)) W.init else object@W
     } 
     
 
@@ -1160,7 +1160,7 @@ online_iNMF_h5 = function(object,
         }
       }
     } else { # if previous Vs are provided 
-      object@V[file_idx_prev] = ifelse(!is.null(V.init), V.init, object@V)
+      object@V[file_idx_prev] = if(!is.null(V.init)) V.init else object@V
       V_init_idx = list()
       for (i in file_idx_new){
         V_init_idx = sample(1:num_cells[i], k)
@@ -1176,7 +1176,7 @@ online_iNMF_h5 = function(object,
       object@H = rep(list(NULL),num_files)
       H_minibatch = list()
     } else { # if previous Hs are provided
-      object@H[file_idx_prev] = ifelse(!is.null(H.init), H.init, object@H)
+      object@H[file_idx_prev] = if(!is.null(H.init)) H.init else object@H
       object@H[file_idx_new] = rep(list(NULL),num_new_files)
       H_minibatch = list()
     }
@@ -1192,8 +1192,8 @@ online_iNMF_h5 = function(object,
       B_old = rep(list(matrix(0, num_genes, k)), num_new_files) # save information older than 2 epochs
       
     } else {
-      object@A[file_idx_prev] = ifelse(!is.null(A.init), A.init, object@A)
-      object@B[file_idx_prev] = ifelse(!is.null(B.init), A.init, object@B)
+      object@A[file_idx_prev] = if(!is.null(A.init)) A.init else object@A
+      object@B[file_idx_prev] = if(!is.null(B.init)) B.init else object@B
       A_old[file_idx_prev] = rep(list(NULL), num_prev_files)
       B_old[file_idx_prev] = rep(list(NULL), num_prev_files)
       object@A[(num_prev_files+1):num_files] = rep(list(matrix(0, k, k)), num_new_files)
@@ -1414,7 +1414,7 @@ online_iNMF_h5 = function(object,
 
   } else {
     cat("Metagene projection")
-    object@W = ifelse(!is.null(W.init), object@W)
+    object@W = if(!is.null(W.init)) W.init else object@W
     object@H[file_idx_new] = rep(list(NULL), num_new_files)
     object@V[file_idx_new] = rep(list(NULL), num_new_files)
     for (i in file_idx_new){
