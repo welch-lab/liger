@@ -10,6 +10,8 @@
 
 #include "parameters.h" 
 
+using std::endl;
+
 typedef struct DenseMatrix
 {
 	dtype **rowmajor,**colmajor;
@@ -140,7 +142,7 @@ std::ostream& operator<<(std::ostream& os, const DenseMatrix& X)
 		{
 			os << X.rowmajor[i][j] << " ";
 		}
-		os << std::endl;
+		os << endl;
 	}
 	return os;  
 }
