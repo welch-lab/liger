@@ -143,14 +143,8 @@ void generateCFTCF(LowerTriangularMatrix& CFTCF,LowerTriangularMatrix& CTC,Mask&
 			int oldrow = colmap[row];
 			int oldcol = colmap[col];
 			int oldindex = (oldcol > oldrow) ? ((oldcol*(oldcol+1))/2+oldrow) : ((oldrow*(oldrow+1))/2+oldcol);
-			// std::cout << "oldcol,oldrow,oldindex: " << oldcol<<","<<oldrow<<","<<oldindex<<std::endl;
-			// std::cout << "Press once" << std::endl;
-			// std::cin.ignore();
-			//std::cout << "CTC totalsize: " << CTC.totalsize << std::endl;
-			// std::cout << "pointer: " << CTC.rowmajor << std::endl;
 			CFTCF.rowmajor[index + col] = CTC.rowmajor[oldindex];
-			// std::cout << "Press twice" << std::endl;
-			// std::cin.ignore();
+
 		}
 	}
 }
