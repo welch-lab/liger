@@ -140,7 +140,7 @@ std::ostream& operator<<(std::ostream& os, const DenseMatrix& X)
 		{
 			os << X.rowmajor[i][j] << " ";
 		}
-		os << endl;
+		os << std::endl;
 	}
 	return os;  
 }
