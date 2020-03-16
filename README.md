@@ -42,6 +42,8 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 * [Running Liger directly on Seurat objects using Seurat wrappers](https://htmlpreview.github.io/?https://github.com/satijalab/seurat.wrappers/blob/master/docs/liger.html)
 
+* [Iterative Refinement of Cellular Identity Using Online iNMF](http://htmlpreview.github.io/?https://github.com/MacoskoLab/liger/blob/online/vignettes/online_iNMF_tutorial.html)
+
 ## System Requirements
 
 ### Hardware requirements
