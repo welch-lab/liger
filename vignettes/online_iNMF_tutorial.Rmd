@@ -9,10 +9,13 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 ## Scenario 1: sampling minibatches from fully observed datasets
-We first create a liger object by passing the filenames of HDF5 files containing the raw count data. The data can be downloaded [here](https://umich.box.com/s/m5cojytshxvk44pc4kki6clh6c9sv7ai).
-```{r create.object, message=FALSE, results='hide'}
+To perform online iNMF, we need to install the `online` branch. Please see the instruction below.
+```{r install, message=FALSE, results='hide'}
 library(devtools)
 install_github("MacoskoLab/liger", ref = "online")
+```
+We first create a liger object by passing the filenames of HDF5 files containing the raw count data. The data can be downloaded [here](https://umich.box.com/s/m5cojytshxvk44pc4kki6clh6c9sv7ai).
+```{r create.object, message=FALSE, results='hide'}
 library(liger)
 
 pbmcs = createLiger(list(stim="stim_PBMCs.h5",ctrl="ctrl_PBMCs.h5"))
