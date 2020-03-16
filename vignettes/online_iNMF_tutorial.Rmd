@@ -1,0 +1,104 @@
+---
+title: "Iterative Refinement of Cellular Identity Using Online iNMF"
+author: "Chao Gao and Joshua Welch"
+date: "March 13, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Scenario 1: sampling minibatches from fully observed datasets
+We first create a liger object by passing the filenames of HDF5 files containing the raw count data. The data can be downloaded [here](https://umich.box.com/s/m5cojytshxvk44pc4kki6clh6c9sv7ai).
+```{r create.object, message=FALSE, results='hide'}
+library(devtools)
+install_github("MacoskoLab/liger", ref = "online")
+library(liger)
+
+pbmcs = createLiger(list(stim="stim_PBMCs.h5",ctrl="ctrl_PBMCs.h5"))
+```
+We then perform the normalization, gene selection, and gene scaling in an online fashion, reading the data from disk in small batches.
+```{r preprocess, message=FALSE, results='hide'}
+pbmcs = normalize(pbmcs)
+pbmcs = selectGenes(pbmcs,var.thresh = 0.2,do.plot = F)
+pbmcs = scaleNotCenter(pbmcs)
+```
+## Online Integrative Nonnegative Matrix Factorization
+Now we can use online iNMF to factorize the data, again using only minibatches that we read from the HDF5 files on demand.
+```{r factorize, message=FALSE, results='hide'}
+pbmcs = online_iNMF(pbmcs, k=20, max.epochs = 5)
+```
+## Quantile Normalization and Downstream Analysis
+After performing the factorization, we can perform quantile normalization to align the datasets.
+```{r norm}
+pbmcs = quantile_norm(pbmcs)
+```
+We can also visualize the cell factor loadings in two dimensions using t-SNE or UMAP.
+```{r visualize}
+pbmcs = runUMAP(pbmcs)
+plotByDatasetAndCluster(pbmcs, axis.labels = c("UMAP1","UMAP2"))
+```
+
+##Scenario 2: iterative refinement by incorporating new datasets
+We can also perform online iNMF with continually arriving datasets.
+```{r prep1, message=FALSE, results='hide'}
+MOp = createLiger(list(cells="allen_smarter_cells.h5"))
+MOp = normalize(MOp)
+MOp = selectGenes(MOp,var.thresh = 2)
+MOp.vargenes = MOp@var.genes
+MOp = scaleNotCenter(MOp)
+```
+
+```{r fact1, message=FALSE, results='hide'}
+MOp = online_iNMF(MOp, k=40, max.epochs = 1)
+```
+
+```{r vis1}
+MOp = quantile_norm(MOp)
+MOp = runUMAP(MOp)
+plotByDatasetAndCluster(MOp, axis.labels = c("UMAP1","UMAP2"))
+```
+
+```{r prep2, message=FALSE, results='hide'}
+MOp2 = createLiger(list(nuclei="allen_smarter_nuclei.h5"))
+MOp2 = normalize(MOp2)
+MOp2@var.genes = MOp@var.genes
+MOp2 = scaleNotCenter(MOp2)
+```
+
+```{r fact2, message=FALSE, results='hide'}
+MOp = online_iNMF(MOp, X_new = list(nuclei = "allen_smarter_nuclei.h5"), k = 40, max.epochs = 1)
+```
+```{r vis2}
+MOp = quantile_norm(MOp)
+MOp = runUMAP(MOp)
+plotByDatasetAndCluster(MOp, axis.labels = c("UMAP1","UMAP2"))
+```
+
+##Scenario 3: projecting new datasets
+```{r prep3, message=FALSE, results='hide'}
+MOp = createLiger(list(cells="allen_smarter_cells.h5"))
+MOp@var.genes = MOp.vargenes
+MOp = online_iNMF(MOp, k = 40, max.epochs = 1)
+MOp = quantile_norm(MOp)
+MOp = runUMAP(MOp)
+plotByDatasetAndCluster(MOp, axis.labels = c("UMAP1","UMAP2"))
+```
+
+```{r project, message=FALSE, results='hide'}
+MOp = online_iNMF(MOp, X_new = list(nuclei = "allen_smarter_nuclei.h5"), k = 40, project = TRUE)
+```
+
+```{r vis3}
+MOp = quantile_norm(MOp)
+MOp = runUMAP(MOp)
+plotByDatasetAndCluster(MOp, axis.labels = c("UMAP1","UMAP2"))
+```
+
+
+
+
+
+
+
+
