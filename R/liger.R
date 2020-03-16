@@ -915,10 +915,10 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #' @description
 #' Perform online integrative non-negative matrix factorization to represent multiple single-cell datasets 
 #' in terms of H, W, and V matrices. It optimizes the iNMF objective function using online learning (non-negative
-#' least squares for H matrix, Hierarchical alternating least squares for W and V matrices), where the 
+#' least squares for H matrix, hierarchical alternating least squares for W and V matrices), where the 
 #' number of factors is set by k. The function allows online learning in 3 scenarios: (1) fully observed datasets;
 #' (2) iterative refinement using continually arriving datasets; and (3) projection of new datasets without updating
-#' the existing factorization.
+#' the existing factorization. All three scenarios require fixed memory independent of the number of cells.
 #'
 #' For each dataset, this factorization produces an H matrix (cells by k), a V matrix (k by genes),
 #' and a shared W matrix (k by genes). The H matrices represent the cell factor loadings.
@@ -1083,7 +1083,7 @@ online_iNMF_h5 = function(object,
     object@V = lapply(object@V, t)
     object@H = lapply(object@H, t)
   }
-  ## extract required infomration and initialize algorithm
+  ## extract required information and initialize algorithm
   hdf5_files = object@raw.data
   hdf5_files_info = list() # hdf5 file information
   num_files = length(hdf5_files) # number of total input hdf5 files
