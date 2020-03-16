@@ -913,36 +913,40 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #' Perform online iNMF on scaled datasets
 #'
 #' @description
-#' Perform online integrative non-negative matrix factorization to return factorized H, W, and V 
-#' matrices. It optimizes the iNMF objective function using online learning (alternating non-negative
+#' Perform online integrative non-negative matrix factorization to represent multiple single-cell datasets 
+#' in terms of H, W, and V matrices. It optimizes the iNMF objective function using online learning (non-negative
 #' least squares for H matrix, Hierarchical alternating least squares for W and V matrices), where the 
-#' number of factors is set by k. 
+#' number of factors is set by k. The function allows online learning in 3 scenarios: (1) fully observed datasets;
+#' (2) iterative refinement using continually arriving datasets; and (3) projection of new datasets without updating
+#' the existing factorization.
 #'
 #' For each dataset, this factorization produces an H matrix (cells by k), a V matrix (k by genes),
 #' and a shared W matrix (k by genes). The H matrices represent the cell factor loadings.
-#' W is held consistent among all datasets, as it represents the shared components of the metagenes
+#' W is identical among all datasets, as it represents the shared components of the metagenes
 #' across datasets. The V matrices represent the dataset-specific components of the metagenes.
 #'
-#' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
-#' @param X_new List of new datasets.
-#' @param projection Data integration by Metagene (W) projection. (default FALSE)
-#' @param W.init Previous H matrices. (default NULL)
-#' @param V.init Previous W matrix (default NULL)
-#' @param H.init Previous V matrices (default NULL)
-#' @param A.init Previous A matrix (default NULL)
-#' @param B.init Previous B matrices (default NULL)
-#' @param k Inner dimension of factorization (number of factors). Run suggestK to determine
-#'   appropriate value; a general rule of thumb is that a higher k will be needed for datasets with
-#'   more sub-structure. (default 20)
+#' @param object \code{liger} object with data stored in HDF5 files. Should normalize, select genes, and scale before calling.
+#' @param X_new List of new datasets for scenario 2 or scenario 3. Each list element should be the name of an HDF5 file.
+#' @param projection Perform data integration by shared metagene (W) projection (scenario 3). (default FALSE)
+#' @param W.init Optional initialization for W. (default NULL)
+#' @param V.init Optional initialization for V (default NULL)
+#' @param H.init Optional initialization for H (default NULL)
+#' @param A.init Optional initialization for A (default NULL)
+#' @param B.init Optional initialization for B (default NULL)
+#' @param k Inner dimension of factorization--number of metagenes (default 20). A value in the range 20-50 works well for most analyses.
 #' @param lambda Regularization parameter. Larger values penalize dataset-specific effects more
-#'   strongly (ie. alignment should increase as lambda increases). Run suggestLambda to determine
-#'   most appropriate value for balancing dataset alignment and agreement (default 5.0).
-#' @param max.epochs Maximum number of epochs. (default 1)
-#' @param miniBatch_max_iters Maximum number of block coordinate descent (HALS algorithm) iterations to perform (default 1).
-#' @param miniBatch_size Total number of cells in each mini-batch (default 1000).
+#'   strongly (ie. alignment should increase as lambda increases). We recommend always using the default value except 
+#'   possibly for analyses with relatively small differences (biological replicates, male/female comparisons, etc.) 
+#'   in which case a lower value such as 1.0 may improve reconstruction quality. (default 5.0).
+#' @param max.epochs Maximum number of epochs (complete passes through the data). (default 5)
+#' @param miniBatch_max_iters Maximum number of block coordinate descent (HALS algorithm) iterations to perform for 
+#' each update of W and V (default 1). Changing this parameter is not recommended.
+#' @param miniBatch_size Total number of cells in each minibatch (default 5000). This is a reasonable default, but a smaller value
+#' such as 1000 may be necessary for analyzing very small datasets. In general, minibatch size should be no larger than the number
+#' of cells in the smallest dataset.
 #' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
 #'   (default 1e-4)
-#' @param h5_chunk_size Chunk size of input hdf5 files (default 1000). 
+#' @param h5_chunk_size Chunk size of input hdf5 files (default 1000). The chunk size should be no larger than the batch size.
 #' @param seed Random seed to allow reproducible results (default 123).
 #'
 #' @return \code{liger} object with H, W, V, A and B slots set.
@@ -972,9 +976,9 @@ online_iNMF <- function(object,
                         B.init=NULL,
                         k=20,
                         lambda=5,
-                        max.epochs=1,
+                        max.epochs=5,
                         miniBatch_max_iters=1,
-                        miniBatch_size=1000,
+                        miniBatch_size=5000,
                         thresh=1e-4,
                         h5_chunk_size=1000,
                         seed=123){
@@ -996,21 +1000,17 @@ online_iNMF <- function(object,
                             h5_chunk_size=h5_chunk_size,
                             seed=seed)
   }
+  else
+  {
+    cat("Online iNMF is currently implemented using data stored in HDF5 files only.")
+  }
   return(object)
 }
 
 #' Perform online iNMF on scaled datasets (hdf5 files)
 #'
 #' @description
-#' Perform online integrative non-negative matrix factorization to return factorized H, W, and V 
-#' matrices. It optimizes the iNMF objective function using online learning (alternating non-negative
-#' least squares for H matrix, Hierarchical alternating least squares for W and V matrices), where the 
-#' number of factors is set by k.
-#'
-#' For each dataset, this factorization produces an H matrix (cells by k), a V matrix (k by genes),
-#' and a shared W matrix (k by genes). The H matrices represent the cell factor loadings.
-#' W is held consistent among all datasets, as it represents the shared components of the metagenes
-#' across datasets. The V matrices represent the dataset-specific components of the metagenes.
+#' Helper function to perform online iNMF using datasets stored in HDF5 files.
 #'
 #' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
 #' @param X_new List of new datasets.
@@ -1048,11 +1048,11 @@ online_iNMF_h5 = function(object,
                           H.init=NULL,
                           A.init=NULL,
                           B.init=NULL,
-                          k=40,
+                          k=20,
                           lambda=5,
                           max.epochs=5,
                           miniBatch_max_iters=1,
-                          miniBatch_size=1000,
+                          miniBatch_size=5000,
                           thresh=1e-4,
                           h5_chunk_size=1000,
                           seed=123){ 
