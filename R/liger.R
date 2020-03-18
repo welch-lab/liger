@@ -1029,8 +1029,6 @@ online_iNMF <- function(object,
 #' @param max.epochs Maximum number of epochs. (default 1)
 #' @param miniBatch_max_iters Maximum number of block coordinate descent (HALS algorithm) iterations to perform (default 1).
 #' @param miniBatch_size Total number of cells in each mini-batch (default 1000).
-#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
-#'   (default 1e-4)
 #' @param h5_chunk_size Chunk size of input hdf5 files (default 1000). 
 #' @param seed Random seed to allow reproducible results (default 123).
 #'
@@ -1053,7 +1051,6 @@ online_iNMF_h5 = function(object,
                           max.epochs=5,
                           miniBatch_max_iters=1,
                           miniBatch_size=5000,
-                          thresh=1e-4,
                           h5_chunk_size=1000,
                           seed=123){ 
                        
