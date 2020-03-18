@@ -979,7 +979,6 @@ online_iNMF <- function(object,
                         max.epochs=5,
                         miniBatch_max_iters=1,
                         miniBatch_size=5000,
-                        thresh=1e-4,
                         h5_chunk_size=1000,
                         seed=123){
   if (class(object@raw.data[[1]]) == "character") {
@@ -996,7 +995,6 @@ online_iNMF <- function(object,
                             max.epochs=max.epochs,
                             miniBatch_max_iters=miniBatch_max_iters,
                             miniBatch_size=miniBatch_size,
-                            thresh=thresh,
                             h5_chunk_size=h5_chunk_size,
                             seed=seed)
   }
