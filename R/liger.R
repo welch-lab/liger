@@ -944,8 +944,6 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #' @param miniBatch_size Total number of cells in each minibatch (default 5000). This is a reasonable default, but a smaller value
 #' such as 1000 may be necessary for analyzing very small datasets. In general, minibatch size should be no larger than the number
 #' of cells in the smallest dataset.
-#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
-#'   (default 1e-4)
 #' @param h5_chunk_size Chunk size of input hdf5 files (default 1000). The chunk size should be no larger than the batch size.
 #' @param seed Random seed to allow reproducible results (default 123).
 #'
@@ -1341,7 +1339,7 @@ online_iNMF_h5 = function(object,
         delta_miniBatch = Inf
         max_iters_miniBatch = miniBatch_max_iters
 
-        while(delta_miniBatch > thresh & iter_miniBatch <= max_iters_miniBatch){
+        while(iter_miniBatch <= max_iters_miniBatch){
           # update D
           for (j in 1:k){
             W_update_numerator = rep(0, num_genes)
