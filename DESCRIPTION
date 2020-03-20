@@ -6,7 +6,7 @@ Date: 2018-04-09
 Author: Joshua Welch
 Maintainer: Joshua Welch <jwelch@broadinstitute.org>,
         Velina Kozareva <vkozarev@broadinstitute.org>
-Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors
+Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors.
 License: GPL-3 | file LICENSE
 SystemRequirements: Java (>= 6)
 Imports: Rcpp (>= 0.12.10),
@@ -30,12 +30,10 @@ Imports: Rcpp (>= 0.12.10),
      RcppEigen,
      RANN,
      uwot,
-     igraph
-Remotes: jefferis/RANN@master-L1,
-     linxihui/NNLM
+     rlang
 biocViews:
 LazyData: true
-LinkingTo: Rcpp, RcppArmadillo, RcppEigen
+LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress
 Depends:
     cowplot,
     Matrix,

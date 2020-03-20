@@ -82,7 +82,7 @@ void matmatmult_colmajor_cpu(DenseMatrix& A,DenseMatrix& B,DenseMatrix& C)
 		matvecmult_colmajor_cpu(A,B.colmajor[bcol],C.colmajor[bcol]);
 	}
 }
-void randInit(dtype**colmajor,int rows,int cols,int max)
+/* void randInit(dtype**colmajor,int rows,int cols,int max)
 {
 	for(int col=0;col<cols;++col)
 	{
@@ -91,7 +91,7 @@ void randInit(dtype**colmajor,int rows,int cols,int max)
 			colmajor[col][row] = rand()%max;
 		}
 	}
-}
+} */
 
 dtype FrobeniusNorm(DenseMatrix* A)
 {

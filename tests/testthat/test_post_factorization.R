@@ -59,90 +59,83 @@ ligex <- quantileAlignSNF(ligex, knn_k = 20, k2 = 200, resolution = 1)
 
 test_that("Dimensions and lengths are correct", {
   expect_equal(dim(ligex@H.norm), c(494, 15))
-  expect_equal(length(ligex@alignment.clusters), 494)
+  # expect_equal(length(ligex@alignment.clusters), 494)
   expect_equal(length(ligex@clusters), 494)
-  expect_equal(levels(ligex@clusters), c("0", "1", "2", "3", "4"))
+  expect_equal(levels(ligex@clusters), c("1", "10", "11", "12", "13", "14", "15", "2", "3", "4",
+                                         "5", "6", "7", "8", "9"))
 })
 
 test_that("Alignment and clustering are correct", {
-  expect_equal(ligex@H.norm[5, 1:5], c(4.141647e-03, 0, 0.0020737469, 0, 0),
+  expect_equal(ligex@H.norm[5, 1:5], c(0.004141647, 0, 0.002073747, 0, 0),
                tolerance = 1e-6)
-  expect_equal(ligex@H.norm[405, 1:5], c(0.0016112599, 0.0037065406, 0.007530993, 1.360769e-04, 3.096619e-05),
+  expect_equal(ligex@H.norm[405, 1:5], c(0.0022715258, 0.0194911522, 0.0077549767, 0, 0.0003304383),
                tolerance = 1e-6)
-  expect_equal(as.character(ligex@alignment.clusters[3]), "1")
-  expect_equal(as.character(ligex@alignment.clusters[203]), "0")
+  expect_equal(as.character(ligex@clusters[3]), "13")
+  # expect_equal(as.character(ligex@alignment.clusters[203]), "0")
 })
 
 # TODO: Add tests for saving of SNF (once better parameter setting in place)
 # TODO: Add tests for different knn_k and k2 settings 
 
 #### Tests for new functions
-ligex <- quantileAlignSNF(ligex, knn_k = 20, k2 = 200, resolution = 1.5)
-
-test_that("Number of clusters increases to correct value", {
-  expect_equal(levels(ligex@clusters), c("0", "1", "2", "3", "4", "5", "6", "7"))
-})
-
-test_that("New alignment and clustering are correct", {
-  expect_equal(ligex@H.norm[5, 1:5], c(0.004141647, 0, 0.002073747, 0, 0),
-               tolerance = 1e-6)
-  expect_equal(ligex@H.norm[405, 1:5], c(1.875362e-03, 1.949115e-02, 7.738711e-03, 6.670009e-05, 6.529448e-04),
-               tolerance = 1e-6)
-  expect_equal(as.character(ligex@alignment.clusters[3]), "4")
-  expect_equal(as.character(ligex@alignment.clusters[203]), "0")
-})
+# ligex <- quantileAlignSNF(ligex, knn_k = 20, k2 = 200, resolution = 1.5)
+# 
+# test_that("Number of clusters increases to correct value", {
+#   expect_equal(levels(ligex@clusters), c("0", "1", "2", "3", "4", "5", "6", "7"))
+# })
+# 
+# test_that("New alignment and clustering are correct", {
+#   expect_equal(ligex@H.norm[5, 1:5], c(0.004141647, 0, 0.002073747, 0, 0),
+#                tolerance = 1e-6)
+#   expect_equal(ligex@H.norm[405, 1:5], c(1.875362e-03, 1.949115e-02, 7.738711e-03, 6.670009e-05, 6.529448e-04),
+#                tolerance = 1e-6)
+#   expect_equal(as.character(ligex@alignment.clusters[3]), "4")
+#   expect_equal(as.character(ligex@alignment.clusters[203]), "0")
+# })
 
 # Tests for shared factor neighborhood quantile alignment
 ####################################################################################
 context("Quantile alignment")
 
-ligex.ds <- ligex
-ligex.ds <- quantile_norm(ligex.ds)
+ligex <- quantile_norm(ligex, eps = 3, knn_k = 100)
+
+test_that("New alignment and clustering are correct", {
+  expect_equal(levels(ligex@clusters), c("1" ,"10","11","12","13","14","15","2","3","4","5","6","7","8","9" ))
+  expect_equal(sum(as.character(ligex@clusters) == "5"), 27)
+  expect_equal(ligex@H.norm[5, 1:5], c(0.004141647, 0, 0.002073747, 0, 0),
+               tolerance = 1e-6)
+  expect_equal(ligex@H.norm[405, 1:5], c(2.756442e-03, 6.151422e-02, 9.366456e-03, 4.043478e-07, 1.632740e-03),
+               tolerance = 1e-6)
+})
+
+ligex <- quantile_norm(ligex)
 
 test_that("Dimensions and lengths are correct", {
-  expect_equal(dim(ligex.ds@H.norm), c(494, 15))
-  expect_equal(length(ligex.ds@alignment.clusters), 494)
-  expect_equal(length(ligex.ds@clusters), 494)
-  expect_equal(levels(ligex.ds@clusters), c("1" ,"10","11","12","13","14","15","2","3","4","5","6","7","8","9" ))
+  expect_equal(dim(ligex@H.norm), c(494, 15))
+  expect_equal(length(ligex@clusters), 494)
+  expect_equal(sum(as.character(ligex@clusters) == "5"), 54)
+  expect_equal(levels(ligex@clusters), c("1" ,"10","11","12","13","14","15","2","3","4","5","6","7","8","9" ))
 })
 
 test_that("Alignment and clustering are correct", {
-  expect_equal(ligex.ds@H.norm[5, 1:5], c(0.004141647, 0, 0.002073747, 0, 0),
+  expect_equal(ligex@H.norm[5, 1:5], c(0.004141647, 0, 0.002073747, 0, 0),
                tolerance = 1e-6)
-  expect_equal(ligex.ds@H.norm[405, 1:5], c(0.0022715258, 0.0194911522, 0.0077549767, 0, 0.0003304383),
+  expect_equal(ligex@H.norm[405, 1:5], c(0.0022715258, 0.0194911522, 0.0077549767, 0, 0.0003304383),
                tolerance = 1e-6)
-  expect_equal(as.character(ligex.ds@alignment.clusters[3]), "4")
-  expect_equal(as.character(ligex.ds@alignment.clusters[203]), "0")
-})
-
-ligex.ds <- quantile_norm(ligex.ds, eps = 3, knn_k = 50)
-
-test_that("Number of clusters increases to correct value", {
-  expect_equal(levels(ligex.ds@clusters), c("1" ,"10","11","12","13","14","15","2","3","4","5","6","7","8","9" ))
-})
-
-test_that("New alignment and clustering are correct", {
-  expect_equal(ligex.ds@H.norm[5, 1:5], c(0.004141647, 0, 0.002073747, 0, 0),
-               tolerance = 1e-6)
-  expect_equal(ligex.ds@H.norm[405, 1:5], c(2.522757e-03, 8.402540e-03, 7.761288e-03, 1.924189e-05, 1.065345e-04),
-               tolerance = 1e-6)
-  expect_equal(as.character(ligex.ds@alignment.clusters[3]), "4")
-  expect_equal(as.character(ligex.ds@alignment.clusters[203]), "0")
 })
 
 # Tests for Louvain Community Detection
 ####################################################################################
 context("Louvain Community Detection")
 
-ligex.ds <- louvainCluster(ligex.ds)
+ligex <- louvainCluster(ligex)
 
 test_that("Dimensions and lengths are correct", {
-  expect_equal(dim(ligex.ds@H.norm), c(494, 15))
-  expect_equal(length(ligex.ds@alignment.clusters), 494)
-  expect_equal(length(ligex.ds@clusters), 494)
-  expect_equal(levels(ligex.ds@clusters), c("0", "1", "2", "3", "4", "5", "6", "7"))
+  expect_equal(dim(ligex@H.norm), c(494, 15))
+  expect_equal(length(ligex@clusters), 494)
+  expect_equal(levels(ligex@clusters), c("0", "1", "2", "3", "4", "5", "6", "7", "8"))
+  expect_equal(sum(as.character(ligex@clusters) == "5"), 50)
 })
-rm(ligex.ds)
 
 
 # Tests for dimensional reduction
@@ -235,19 +228,19 @@ context("Object subsetting and conversion")
 
 # Subsetting functionality
 # First add a new cell.data column
-ligex@cell.data[["clusters"]] <- ligex@alignment.clusters
+ligex@cell.data[["clusters"]] <- ligex@clusters
 ligex_subset <- subsetLiger(ligex, clusters.use = c(1, 2, 3, 4))
 
 test_that("Returns correct subsetted object", {
   expect_equal(names(ligex_subset@raw.data), c('tenx', 'seqwell'))
-  expect_equal(dim(ligex_subset@raw.data[[1]]), c(10982, 119))
+  expect_equal(dim(ligex_subset@raw.data[[1]]), c(10090, 116))
   expect_equal(colnames(ligex_subset@raw.data[[1]])[1:3], c("ATGCCAGACAGTCA", 
-                                                            "CCAAAGTGTGAGAA", "GACCAAACGACTAC"))
-  expect_equal(dim(ligex_subset@raw.data[[2]]), c(6705, 138))
-  expect_equal(colnames(ligex_subset@raw.data[[2]])[1:3], c("Myeloid_457", "Myeloid_671",
-                                                            "Myeloid_1040"))
+                                                            "CCAAAGTGTGAGAA", "TGATACCTCACTAG"))
+  expect_equal(dim(ligex_subset@raw.data[[2]]), c(6689, 115))
+  expect_equal(colnames(ligex_subset@raw.data[[2]])[1:3], c("Myeloid_457", "Myeloid_1683",
+                                                            "Myeloid_345"))
   expect_equal(levels(ligex_subset@clusters), c("1", "2", "3", "4"))
-  expect_equal(nrow(ligex_subset@cell.data), 257)
+  expect_equal(nrow(ligex_subset@cell.data), 231)
   expect_equal(rownames(ligex_subset@cell.data), rownames(ligex_subset@tsne.coords))
 })
 
@@ -256,19 +249,19 @@ test_that("Returns correct subsetted object", {
 
 # Reorganization
 # Make dummy grouping
-ligex@cell.data[["broad_type"]] <- ligex@alignment.clusters
+ligex@cell.data[["broad_type"]] <- ligex@clusters
 levels(ligex@cell.data[["broad_type"]]) <- c("non-myeloid", "non-myeloid", "myeloid", "non-myeloid",
-                                             "myeloid", "non-myeloid", "non-myeloid", "non-myeloid")
+                                             "myeloid", "non-myeloid", "non-myeloid", "non-myeloid", "myeloid")
 ligex_reorg <- reorganizeLiger(ligex, by.feature = "broad_type", new.label = "protocol",
                                remove.missing = F)
 gene_union <- length(union(rownames(ligex@raw.data[[1]]), rownames(ligex@raw.data[[2]])))
 
 test_that("Returns correctly organized object", {
   expect_equal(names(ligex_reorg@raw.data), c('non-myeloid', 'myeloid'))
-  expect_equal(dim(ligex_reorg@raw.data[[1]]), c(gene_union, 370))
+  expect_equal(dim(ligex_reorg@raw.data[[1]]), c(gene_union, 352))
   expect_equal(rownames(ligex@cell.data[ligex@cell.data$broad_type == "myeloid", ]),
                colnames(ligex_reorg@raw.data[["myeloid"]]))
-  expect_equal(dim(ligex_reorg@raw.data[[2]]), c(gene_union, 124))
+  expect_equal(dim(ligex_reorg@raw.data[[2]]), c(gene_union, 142))
   expect_equal(rownames(ligex@cell.data[ligex@cell.data$broad_type == "non-myeloid", ]),
                colnames(ligex_reorg@raw.data[["non-myeloid"]]))
 })
@@ -292,8 +285,13 @@ test_that("List names and dimensions correct", {
 })
 
 test_that("Imputation results correct", {
-  expect_equivalent(ligex.ds@raw.data[["tenx"]][1, 1:5], c(0.1010403803, 0.1480523653, 0.2882429284, 0.1549487361, 0.1010403803),
+  expect_equivalent(ligex.ds@raw.data[["tenx"]][1, 1:5], c(0.124664288, 0.167032324, 0.236469695, 
+                                                           0.124664288, 0.124664288),
     tolerance = 1e-8
+  )
+  expect_equivalent(ligex.ds@raw.data[["tenx"]][400, 1:5], c(0.222377206, 0.155470876, 0.239740853, 
+                                                             0.222377206, 0.222377206),
+                    tolerance = 1e-8
   )
 })
 
@@ -305,8 +303,13 @@ test_that("List names and dimensions correct", {
 })
 
 test_that("Imputation results correct", {
-  expect_equivalent(ligex.ds@raw.data[["tenx"]][1, 1:5], c(0.1010272982, 0.1480327620, 0.2882094083, 0.1549154381, 0.1010290263),
+  expect_equivalent(ligex.ds@raw.data[["tenx"]][1, 1:5], c(0.124636160, 0.167004123, 0.236442235, 
+                                                           0.124643728, 0.124640972),
     tolerance = 1e-8
+  )
+  expect_equivalent(ligex.ds@raw.data[["tenx"]][400, 1:5], c(0.222271152, 0.155450162, 0.239728702, 
+                                                             0.222305523, 0.222283342),
+                    tolerance = 1e-8
   )
 })
 
@@ -320,14 +323,14 @@ wilcox.results <- runWilcoxon(ligex, data.use = 2, compare.method = "clusters")
 
 test_that("Wilcoxon test for 'clusters' results correct", {
   expect_equal(wilcox.results[1, 1], "AAED1")
-  expect_equivalent(wilcox.results[1, 7], 0.6986961322, tolerance = 1e-8)
+  expect_equivalent(wilcox.results[1, 7], 0.526369034, tolerance = 1e-8)
 })
 
 wilcox.results <- runWilcoxon(ligex, compare.method = "datasets")
 
 test_that("Wilcoxon test for 'datasets' results correct", {
   expect_equal(wilcox.results[1, 1], "ISG15")
-  expect_equivalent(wilcox.results[1, 7], 0.6557919528, tolerance = 1e-8)
+  expect_equivalent(wilcox.results[1, 7], 0.390391202, tolerance = 1e-8)
 })
 
 # Tests for Creating gene-peak regulation network

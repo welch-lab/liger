@@ -33,6 +33,9 @@ plotGeneLoadings(
 
 \item{dataset2}{Name of second dataset}
 
+\item{num.genes.show}{Number of genes displayed as y-axis labels in the gene loading plots at 
+the bottom (default 12)}
+
 \item{num.genes}{Number of genes to show in word clouds (default 30).}
 
 \item{mark.top.genes}{Plot points corresponding to top loading genes in different color (default
