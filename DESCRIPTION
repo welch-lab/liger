@@ -46,7 +46,6 @@ Suggests:
     knitr,
     reticulate,
     rmarkdown,
-    NNLM,
     testthat,
     GenomicRanges,
     S4Vectors,

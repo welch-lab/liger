@@ -42,8 +42,6 @@ and factor. (default 1000)}
 accurate nearest neighbor graphs but take much longer to computer.}
 
 \item{refine.knn}{whether to increase robustness of cluster assignments using KNN graph.(default TRUE)}
-
-\item{...}{Arguments passed to other methods}
 }
 \value{
 \code{liger} object with 'H.norm' and 'clusters' slot set.

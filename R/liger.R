@@ -1382,6 +1382,7 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
     # define progress bar function
     progress <- function(n) setTxtProgressBar(pb, n)
     opts <- list(progress = progress)
+    i <- 0
     data_matrix <- foreach(i = 1:length(lambda.test), .combine = "rbind", .options.snow = opts,
                            .packages = 'liger') %dopar% {
                              if (i != 1) {
@@ -1422,7 +1423,7 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
   # make dataframe
   df_al <- data.frame(align = mean_aligns, lambda = lambda.test)
   
-  p1 <- ggplot(df_al, aes(x = lambda, y = mean_aligns)) + geom_line(size=1) +
+  p1 <- ggplot(df_al, aes_string(x = 'lambda', y = 'mean_aligns')) + geom_line(size=1) +
     geom_point() +
     theme_classic() + labs(y = 'Alignment', x = 'Lambda') +
     guides(col = guide_legend(title = "", override.aes = list(size = 2))) +
@@ -1511,6 +1512,7 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
     # define progress bar function
     progress <- function(n) setTxtProgressBar(pb, n)
     opts <- list(progress = progress)
+    i <- 0
     data_matrix <- foreach(i = length(k.test):1, .combine = "rbind", .options.snow = opts,
                            .packages = 'liger') %dopar% {
                              if (i != length(k.test)) {
@@ -1552,7 +1554,7 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
     df_kl <- df_kl[df_kl$calc == 'KL_div', ]
   }
   
-  p1 <- ggplot(df_kl, aes(x = k, y = median_kl, col = calc)) + geom_line(size=1) +
+  p1 <- ggplot(df_kl, aes_string(x = 'k', y = 'median_kl', col = 'calc')) + geom_line(size=1) +
     geom_point() +
     theme_classic() + labs(y='Median KL divergence (across all cells)', x = 'K') +
     guides(col=guide_legend(title="", override.aes = list(size = 2))) +
@@ -2051,8 +2053,8 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
   genes.coords <- genes.coords[genes.list]
 
   print("Calculating correlation for gene-peak pairs...")
-  # each.len <<- 0
-  assign('each.len', 0, envir = globalenv())
+  each.len <- 0
+  # assign('each.len', 0, envir = globalenv())
 
   elements <- lapply(seq(length(genes.list)), function(pos) {
     gene.use <- genes.list[pos]
@@ -2083,7 +2085,7 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
       peaks.use <- peaks.use[pick]
     }
     # each.len <<- each.len + length(peaks.use)
-    assign('each.len', each.len + length(peaks.use), envir = globalenv())
+    assign('each.len', each.len + length(peaks.use), envir = parent.frame(2))
     return(list(as.numeric(peaks.use), as.numeric(each.len), res.corr))
   })
 
@@ -2938,7 +2940,7 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
                                     return.plots = F) {
   tsne_df <- data.frame(object@tsne.coords)
   colnames(tsne_df) <- c("tsne1", "tsne2")
-  tsne_df$Dataset <- unlist(lapply(1:length(object@H), function(x) {
+  tsne_df[['Dataset']] <- unlist(lapply(1:length(object@H), function(x) {
     rep(names(object@H)[x], nrow(object@H[[x]]))
   }))
   c_names <- names(object@clusters)
@@ -2952,23 +2954,23 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
       c_names <- names(object@clusters)
     }
   }
-  tsne_df$Cluster <- clusters[c_names]
+  tsne_df[['Cluster']] <- clusters[c_names]
   if (do.shuffle) {
     set.seed(rand.seed)
     idx <- sample(1:nrow(tsne_df))
     tsne_df <- tsne_df[idx, ]
   }
   
-  p1 <- ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Dataset)) +
+  p1 <- ggplot(tsne_df, aes_string(x = 'tsne1', y = 'tsne2', color = 'Dataset')) +
     geom_point(size = pt.size) +
     guides(color = guide_legend(override.aes = list(size = legend.size)))
   
-  centers <- tsne_df %>% group_by(Cluster) %>% summarize(
-    tsne1 = median(x = tsne1),
-    tsne2 = median(x = tsne2)
+  centers <- tsne_df %>% group_by(.data[['Cluster']]) %>% summarize(
+    tsne1 = median(x = .data[['tsne1']]),
+    tsne2 = median(x = .data[['tsne2']])
   )
-  p2 <- ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(size = pt.size) +
-    geom_text(data = centers, mapping = aes(label = Cluster), colour = "black", size = text.size) +
+  p2 <- ggplot(tsne_df, aes_string(x = 'tsne1', y = 'tsne2', color = 'Cluster')) + geom_point(size = pt.size) +
+    geom_text(data = centers, mapping = aes_string(label = 'Cluster'), colour = "black", size = text.size) +
     guides(color = guide_legend(override.aes = list(size = legend.size)))
   
   if (!is.null(title)) {
@@ -3067,7 +3069,7 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
   }
   p_list <- list()
   for (sub_df in split(dr_df, f = dr_df$dataset)) {
-    ggp <- ggplot(sub_df, aes(x = dr1, y = dr2, color = feature)) + geom_point(size = pt.size)
+    ggp <- ggplot(sub_df, aes_string(x = 'dr1', y = 'dr2', color = 'feature')) + geom_point(size = pt.size)
     
     # if data is discrete
     if (discrete) {
@@ -3075,8 +3077,8 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
         labs(col = feature)
       if (do.labels) {
         centers <- sub_df %>% group_by(feature) %>% summarize(
-          dr1 = median(x = dr1),
-          dr2 = median(x = dr2)
+          dr1 = median(x = sub_df[['dr1']]),
+          dr2 = median(x = sub_df[['dr2']])
         )
         ggp <- ggp + geom_text(data = centers, mapping = aes(label = feature),
                                colour = "black", size = text.size)
@@ -3232,6 +3234,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' scale_x_continuous scale_y_continuous coord_fixed labs
 #' @importFrom grid roundrectGrob
 #' @importFrom grid gpar
+#' @importFrom cowplot draw_grob
 #' @export
 #' @examples
 #' \dontrun{
@@ -3299,7 +3302,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
       if (length(top_genes) == 0) {
         gene_df <- data.frame(genes = c("no genes"), loadings = c(1))
       }
-      out_plot <- ggplot(gene_df, aes(x = 1, y = 1, size = loadings, label = genes)) +
+      out_plot <- ggplot(gene_df, aes(x = 1, y = 1, size = loadings, label = gene_df[['genes']])) +
         geom_text_repel(force = 100, segment.color = NA) +
         scale_size(range = c(min.size, max.size), guide = FALSE) +
         scale_y_continuous(breaks = NULL) +
@@ -3368,6 +3371,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' @importFrom grid gpar unit
 #' @import patchwork
 #' @importFrom stats loadings
+#' @importFrom cowplot theme_cowplot
 #' @export
 #' @examples
 #' \dontrun{
@@ -3487,7 +3491,7 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
       )
       y_lim_text <- max(gene_df$loadings)
       # plot and annotate with top genes
-      out_plot <- ggplot(gene_df, aes(x = xpos, y = loadings)) +
+      out_plot <- ggplot(gene_df, aes_string(x = 'xpos', y = 'loadings')) +
         geom_point(size = 0.4) +
         theme_bw() +
         theme(
@@ -3511,8 +3515,8 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
         theme(plot.margin = unit(c(1, 4, 1, 1), "lines"))
       if (mark.top.genes) {
         out_plot <- out_plot + geom_point(
-          data = subset(gene_df, top_k == TRUE),
-          aes(xpos, loadings),
+          data = subset(gene_df, gene_df[['top_k']] == TRUE),
+          aes_string('xpos', 'loadings'),
           col = "#8227A0", size = 0.5
         )
       }
@@ -3658,7 +3662,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #'   list of ggplot objects.
 #' @export
 #' @importFrom dplyr %>% group_by mutate_at vars group_cols
-#' @importFrom ggplot2 ggplot geom_point aes_string element_blank ggtitle labs 
+#' @importFrom ggplot2 ggplot geom_point aes_string element_blank ggtitle labs xlim ylim
 #' scale_color_viridis_c scale_color_gradientn theme
 #' @importFrom stats quantile
 #' @examples
@@ -3705,7 +3709,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
         gene_df[['scaleby']] = factor(object@cell.data[[scale.by]])
       }
       gene_df1 <- gene_df %>%
-        group_by(scaleby) %>%
+        group_by(.data[['scaleby']]) %>%
         # scale by selected feature
         mutate_at(vars(-group_cols()), function(x) { scale(x, center = F)})
       gene_vals <- gene_df1$gene
@@ -3777,7 +3781,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
     sub_df$gene[sub_df$gene < min_v & !is.na(sub_df$gene)] <- min_v
     sub_df$gene[sub_df$gene > max_v & !is.na(sub_df$gene)] <- max_v
     
-    ggp <- ggplot(sub_df, aes(x = dr1, y = dr2, color = gene)) + geom_point(size = pt.size) +
+    ggp <- ggplot(sub_df, aes_string(x = 'dr1', y = 'dr2', color = 'gene')) + geom_point(size = pt.size) +
       labs(col = gene)
     
     if (!is.null(cols.use)) {
@@ -4056,16 +4060,16 @@ plotClusterProportions <- function(object, return.plot = F) {
   sample_names <- unlist(lapply(seq_along(object@scale.data), function(i) {
     rep(names(object@scale.data)[i], nrow(object@scale.data[[i]]))
   }))
-  freq_table <- data.frame(Clust = rep(object@clusters, length(object@scale.data)),
+  freq_table <- data.frame(Cluster = rep(object@clusters, length(object@scale.data)),
                            Sample = sample_names)
-  freq_table <- table(freq_table$Clust, freq_table$Sample)
+  freq_table <- table(freq_table[['Cluster']], freq_table[['Sample']])
   for (i in 1:ncol(freq_table)) {
     freq_table[, i] <- freq_table[, i] / sum(freq_table[, i])
   }
   freq_table <- data.frame(freq_table)
-  colnames(freq_table) <- c("Clust", "Sample", "Proportion")
-  p1 <- ggplot(freq_table, aes(x = Clust, y = Sample)) +
-    geom_point(aes(size = Proportion, fill = Clust, color = Clust)) +
+  colnames(freq_table) <- c("Cluster", "Sample", "Proportion")
+  p1 <- ggplot(freq_table, aes(x = freq_table[['Cluster']], y = freq_table[['Sample']])) +
+    geom_point(aes_string(size = 'Proportion', fill = 'Cluster', color = 'Cluster')) +
     scale_size(guide = "none") + theme(
       axis.line = element_blank(),
       axis.text.x = element_blank(),
@@ -4402,7 +4406,7 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
   # get Seurat version
   maj_version <- packageVersion('Seurat')$major
   if (class(object@raw.data[[1]])[1] != 'dgCMatrix') {
-    mat <- as(x, 'CsparseMatrix')
+    # mat <- as(x, 'CsparseMatrix')
     object@raw.data <- lapply(object@raw.data, function(x) {
       as(x, 'CsparseMatrix')
     })
@@ -4571,7 +4575,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
       # using meta.var column as division split
       if (version > 2) {
         # if integrated assay present, want to make sure to use original raw data
-        object.raw <- GetAssayData(objects, assay = raw.assay, slot = "counts")
+        object.raw <- Seurat::GetAssayData(objects, assay = raw.assay, slot = "counts")
       } else {
         object.raw <- objects@raw.data
       }
@@ -4588,13 +4592,13 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
     } else {
       # using different assays in v3 object
       raw.data <- lapply(assays.use, function(x) {
-        GetAssayData(objects, assay = x, slot = "counts")
+        Seurat::GetAssayData(objects, assay = x, slot = "counts")
       })
       names(raw.data) <- assays.use
     }
     
     if (version > 2) {
-      var.genes <- VariableFeatures(objects)
+      var.genes <- Seurat::VariableFeatures(objects)
       idents <- Seurat::Idents(objects)
       if (is.null(objects@reductions$tsne)) {
         cat("Warning: no t-SNE coordinates available for this Seurat object.\n")
@@ -4620,7 +4624,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
     raw.data <- lapply(objects, function(x) {
       if (version > 2) {
         # assuming default assays have been set for each v3 object
-        GetAssayData(x, slot = "counts")
+        Seurat::GetAssayData(x, slot = "counts")
       } else {
         x@raw.data
       }
@@ -4645,7 +4649,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
     
     if (version > 2) {
       var.genes <- Reduce(union, lapply(objects, function(x) {
-        VariableFeatures(x)
+        Seurat::VariableFeatures(x)
       }))
       # Get idents, label by dataset
       idents <- unlist(lapply(seq_along(objects), function(x) {
