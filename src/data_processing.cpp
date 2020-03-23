@@ -89,3 +89,23 @@ NumericVector sumSquaredDeviations(arma::sp_mat x, NumericVector means) {
   return ssd;
 }
 
+// [[Rcpp::export]]
+arma::sp_mat normColumns(arma::sp_mat x) {
+  int ncol = x.n_cols;
+
+  NumericVector col_sums(ncol);
+  for(arma::sp_mat::iterator i = x.begin(); i != x.end(); ++i)
+  {
+    col_sums(i.col()) += *i;
+  }
+  
+  for(arma::sp_mat::iterator i = x.begin(); i != x.end(); ++i)
+  {
+    if (col_sums(i.col()) > 0)
+    {
+      *i = *i / col_sums(i.col());  
+    }
+  }
+  
+  return x;
+}

@@ -41,6 +41,29 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// sumSquaredDeviations
+NumericVector sumSquaredDeviations(arma::sp_mat x, NumericVector means);
+RcppExport SEXP _liger_sumSquaredDeviations(SEXP xSEXP, SEXP meansSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type means(meansSEXP);
+    rcpp_result_gen = Rcpp::wrap(sumSquaredDeviations(x, means));
+    return rcpp_result_gen;
+END_RCPP
+}
+// normColumns
+arma::sp_mat normColumns(arma::sp_mat x);
+RcppExport SEXP _liger_normColumns(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(normColumns(x));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_sumGroups_dgc
 arma::mat cpp_sumGroups_dgc(const arma::vec& x, const arma::uvec& p, const arma::vec& i, unsigned ncol, const arma::uvec& groups, unsigned ngroups);
 RcppExport SEXP _liger_cpp_sumGroups_dgc(SEXP xSEXP, SEXP pSEXP, SEXP iSEXP, SEXP ncolSEXP, SEXP groupsSEXP, SEXP ngroupsSEXP) {
@@ -262,6 +285,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_liger_scaleNotCenterFast", (DL_FUNC) &_liger_scaleNotCenterFast, 1},
     {"_liger_rowMeansFast", (DL_FUNC) &_liger_rowMeansFast, 1},
     {"_liger_rowVarsFast", (DL_FUNC) &_liger_rowVarsFast, 2},
+    {"_liger_sumSquaredDeviations", (DL_FUNC) &_liger_sumSquaredDeviations, 2},
+    {"_liger_normColumns", (DL_FUNC) &_liger_normColumns, 1},
     {"_liger_cpp_sumGroups_dgc", (DL_FUNC) &_liger_cpp_sumGroups_dgc, 6},
     {"_liger_cpp_sumGroups_dgc_T", (DL_FUNC) &_liger_cpp_sumGroups_dgc_T, 7},
     {"_liger_cpp_sumGroups_dense", (DL_FUNC) &_liger_cpp_sumGroups_dense, 3},
