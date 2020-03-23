@@ -1055,7 +1055,7 @@ online_iNMF_h5 = function(object,
 
     # check whether X_new needs to be processed
     for (i in 1:length(X_new)){
-      if ("scale.data" %in% h5ls(X_new[[i]])$name) {
+      if (file.h5$exists("scale.data")) {
         cat("New dataset", i, "already preprocessed.", "\n")
       } else {
         cat("New dataset", i, "not preprocessed. Preprocessing...", "\n")
@@ -1411,10 +1411,10 @@ online_iNMF_h5 = function(object,
     object@H[file_idx_new] = rep(list(NULL), num_new_files)
     object@V[file_idx_new] = rep(list(NULL), num_new_files)
     for (i in file_idx_new){
+      file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
       num_batch = num_cells[i] %/% miniBatch_size + 1
       if (num_cells[i] <= miniBatch_size){
-        h5closeAll()
-        object@H[[i]] = solveNNLS(object@W, h5read(hdf5_files[[i]],"scale.data"))
+        object@H[[i]] = solveNNLS(object@W, file.h5[["scale.data"]][])
       } else {
         for (batch_idx in 1:num_batch){
           if (batch_idx != num_batch){
@@ -1422,10 +1422,10 @@ online_iNMF_h5 = function(object,
           } else {
             cell_idx = ((batch_idx - 1) * miniBatch_size + 1):num_cells[i]
           }
-          object@H[[i]] = cbind(object@H[[i]],solveNNLS(object@W, h5read(hdf5_files[[i]],"scale.data", index=list(NULL,cell_idx))))
+          object@H[[i]] = cbind(object@H[[i]],solveNNLS(object@W, file.h5[["scale.data"]][,cell_idx]))
         }
       }
-      colnames(object@H[[i]]) = h5read(hdf5_files[[i]],"matrix/barcodes")
+      colnames(object@H[[i]]) = file.h5[["matrix/barcodes"]][]
       object@V[[i]] = matrix(0, num_genes, k)
     }
   }
