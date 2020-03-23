@@ -44,6 +44,7 @@ Depends:
     Matrix,
     methods,
     patchwork,
+    rhdf5,
     hdf5r,
     data.table
 RoxygenNote: 7.0.2
