@@ -1,7 +1,7 @@
 ---
 title: "Iterative Refinement of Cellular Identity Using Online iNMF"
 author: "Chao Gao and Joshua Welch"
-date: "March 13, 2020"
+date: "March 23, 2020"
 output: html_document
 ---
 
@@ -47,7 +47,7 @@ We can also perform online iNMF with continually arriving datasets.
 ```{r prep1, message=FALSE, results='hide'}
 MOp = createLiger(list(cells="allen_smarter_cells.h5"))
 MOp = normalize(MOp)
-MOp = selectGenes(MOp,var.thresh = 2)
+MOp = selectGenes(MOp, var.thresh = 2)
 MOp.vargenes = MOp@var.genes
 MOp = scaleNotCenter(MOp)
 ```
