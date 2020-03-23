@@ -351,15 +351,13 @@ createLiger = function(raw.data, make.sparse = T, take.gene.union = F, remove.mi
 #create new dataset, first deleting existing record if dataset already exists
 safe_h5_create = function(filename,dataset_name,dims,mode="double",chunk_size=dims)
 {
-  fid = H5Fopen(filename)
-  fexists = H5Lexists(fid,dataset_name)
-  H5Fclose(fid)
-  if (fexists)
+  file.h5 = H5File$new(filename, mode="r+")
+  if (file.h5$exists(dataset_name))
   {
-    h5delete(filename,dataset_name) 
+    file.h5$link_delete(dataset_name) 
   }
-  h5createDataset(filename,dataset_name,dims=dims,storage.mode=mode, chunk = chunk_size)  
-  h5closeAll()
+  file.h5$create_dataset(name = dataset_name,dims = dims,dtype = mode, chunk_dims = chunk_size)  
+  file.h5$close_all()
 }
 
 #' Normalize raw datasets to column sums
@@ -378,7 +376,6 @@ safe_h5_create = function(filename,dataset_name,dims,mode="double",chunk_size=di
 #' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' }
-
 normalize = function (object, chunk = 1000) 
 {
   if (class(object@raw.data[[1]]) == "character") {
@@ -388,19 +385,22 @@ normalize = function (object, chunk = 1000)
       print(names(hdf5_files)[i])
       chunk_size = chunk
       fname = hdf5_files[[i]]
-      file_info = h5ls(fname)
-      num_cells = as.numeric(file_info$dim[file_info$name == "barcodes"])
-      num_genes = as.numeric(file_info$dim[file_info$name == "name"])
-      num_entries = as.numeric(file_info$dim[file_info$name == "data"])
+      file.h5 = H5File$new(fname, mode="r+")
+      file_info = file.h5$ls(recursive = T)
+      num_cells = file.h5[["matrix/barcodes"]]$dims
+      num_genes = file.h5[["matrix/features/name"]]$dims
+      num_entries = file.h5[["matrix/data"]]$dims
       prev_end_col = 1
       prev_end_data = 1
-      prev_end_ind = 1
+      prev_end_ind = 0
       gene_sum_sq = rep(0,num_genes)
       gene_means = rep(0,num_genes)
+      file.h5$close_all()
       
-      safe_h5_create(fname,"/norm.data",dims=num_entries,mode = "double", chunk_size = chunk_size)
-      safe_h5_create(fname,"/cell_sums",dims=num_cells,mode = "integer", chunk_size = chunk_size)
+      safe_h5_create(fname,"/norm.data",dims=num_entries,mode = h5types$double, chunk_size = chunk_size)
+      safe_h5_create(fname,"/cell_sums",dims=num_cells,mode = h5types$int, chunk_size = chunk_size)
       
+      file.h5 = H5File$new(fname, mode="r+")
       num_chunks = ceiling(num_cells/chunk_size)
       pb = txtProgressBar(0,num_chunks,style = 3)
       ind = 0
@@ -409,42 +409,43 @@ normalize = function (object, chunk = 1000)
         ind = ind + 1
         if (num_cells - prev_end_col < chunk_size)
         {
-          chunk_size = num_cells - prev_end_col
+          chunk_size = num_cells - prev_end_col + 1
         }
-        start_inds = h5read(fname, "/matrix/indptr", index = list(prev_end_col:(prev_end_col+chunk_size+1)))
-        dt <- data.table(
-          row = h5read(fname, "/matrix/indices", index=list(prev_end_ind:(tail(start_inds, 1)))) + 1, # zero-based index in H5 file, so + 1 in R
-          column = rep(seq_len(length(start_inds) - 1), diff(start_inds)), # (length(start_inds) - 1) columns
-          count = h5read(fname, "/matrix/data", index=list(prev_end_ind:tail(start_inds, 1))) # count data from the selected chunk
-        )
-        norm_data = dt[ ,list(norm=count/sum(count),row), by=column] 
-        col_sums = dt[ ,list(sum=sum(count)), by=column]
-        num_read = nrow(norm_data) # number of total reads in the given chunk
-        h5write(norm_data$norm,file=fname,name="/norm.data",index=list(prev_end_ind:tail(start_inds, 1)))
-        h5write(col_sums$sum,file=fname,name="/cell_sums",index=list(prev_end_col:(prev_end_col+chunk_size)))
-        prev_end_col = prev_end_col + chunk_size + 1
-        prev_end_data = prev_end_data + num_read 
-        prev_end_ind = tail(start_inds, 1)+1
+        start_inds = file.h5[["matrix/indptr"]][prev_end_col:(prev_end_col+chunk_size)]
+        row_inds = file.h5[["matrix/indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
+        counts = file.h5[["matrix/data"]][(prev_end_ind+1):(tail(start_inds, 1))]
+        raw.data = sparseMatrix(i=row_inds[1:length(counts)]+1,p=start_inds[1:(chunk_size+1)]-prev_end_ind,x=counts,dims=c(num_genes,chunk_size))
+        norm.data = Matrix.column_norm(raw.data)
+        file.h5[["norm.data"]][(prev_end_ind+1):(tail(start_inds, 1))] = norm.data@x
+        file.h5[["cell_sums"]][prev_end_col:(prev_end_col+chunk_size-1)] = Matrix::colSums(raw.data)
+        #h5write(norm.data,file=fname,name="/norm.data",index=list(prev_end_ind:tail(start_inds, 1)))
+        #h5write(colSums(raw.data),file=fname,name="/cell_sums",index=list(prev_end_col:(prev_end_col+chunk_size)))
+        prev_end_col = prev_end_col + chunk_size
+        prev_end_data = prev_end_data + length(norm.data@x)
+        prev_end_ind = tail(start_inds, 1)
         
         # calculate row sum and sum of squares using normalized data
-        row_sums = norm_data[ ,list(sum = sum(norm),sum_sq = sum(norm*norm)), by=row]
-        row_inds = row_sums$row
-        gene_sum_sq[row_inds] = gene_sum_sq[row_inds] + row_sums$sum_sq
-        gene_means[row_inds] = gene_means[row_inds] + row_sums$sum
+        row_sums = Matrix::rowSums(norm.data)
+        gene_sum_sq = gene_sum_sq + rowSums(norm.data*norm.data)
+        gene_means = gene_means + row_sums
         setTxtProgressBar(pb,ind)
       }
       setTxtProgressBar(pb,num_chunks)
       cat("\n")
       gene_means = gene_means / num_cells
-      safe_h5_create(fname,"/gene_means",dims=num_genes,mode="double")
-      h5write(gene_means,name="/gene_means",file=fname)
-      safe_h5_create(fname,"/gene_sum_sq",dims=num_genes,mode="double")
-      h5write(gene_sum_sq,name="/gene_sum_sq",file=fname)
-      
-      rm(dt)
-      rm(col_sums)
+      file.h5$close_all()
+      safe_h5_create(fname,"gene_means",dims=num_genes,mode=h5types$double)
+      #h5write(gene_means,name="/gene_means",file=fname)
+      safe_h5_create(fname,"gene_sum_sq",dims=num_genes,mode=h5types$double)
+      #h5write(gene_sum_sq,name="/gene_sum_sq",file=fname)
+      file.h5 = H5File$new(fname, mode="r+")
+      file.h5[["gene_means"]][1:length(gene_means)] = gene_means
+      file.h5[["gene_sum_sq"]][1:length(gene_sum_sq)] = gene_sum_sq
+      file.h5$close_all()
       rm(row_sums)
+      rm(raw.data)
     }
+    
   }
   else {
     object <- removeMissingObs(object, slot.use = "raw.data", 
@@ -455,7 +456,7 @@ normalize = function (object, chunk = 1000)
     }
     else {
       object@norm.data <- lapply(object@raw.data, function(x) {
-        sweep(x, 2, colSums(x), "/")
+        sweep(x, 2, Matrix::colSums(x), "/")
       })
     }
   }
@@ -482,61 +483,54 @@ normalize = function (object, chunk = 1000)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
 #' }
-calcGeneVars = function(object,chunk=1000)
+calcGeneVars = function (object, chunk = 1000) 
 {
   hdf5_files = object@raw.data
-  for (i in 1:length(hdf5_files))
-  { 
+  for (i in 1:length(hdf5_files)) {
     print(names(hdf5_files)[i])
     chunk_size = chunk
     fname = hdf5_files[[i]]
-    file_info = h5ls(fname)
-    num_cells = as.numeric(file_info$dim[file_info$name == "barcodes"])
-    num_genes = as.numeric(file_info$dim[file_info$name == "name"])
+    file.h5 = H5File$new(fname, mode="r+")
+    file_info = file.h5$ls(recursive = T)
+    num_cells = file.h5[["matrix/barcodes"]]$dims
+    num_genes = file.h5[["matrix/features/name"]]$dims
+    num_entries = file.h5[["matrix/data"]]$dims
     prev_end_col = 1
     prev_end_data = 1
-    prev_end_ind = 1
+    prev_end_ind = 0
     gene_vars = rep(0,num_genes)
-    gene_means = h5read(hdf5_files[[i]],"/gene_means")
+    gene_means = file.h5[["gene_means"]][1:num_genes]
     gene_num_pos = rep(0,num_genes)
-    
+  
     num_chunks = ceiling(num_cells/chunk_size)
-    pb = txtProgressBar(0,num_chunks,style = 3)
+    pb = txtProgressBar(0, num_chunks, style = 3)
     ind = 0
-    while(prev_end_col < num_cells)
-    {
+    while (prev_end_col < num_cells) {
       ind = ind + 1
-      if (num_cells - prev_end_col < chunk_size)
-      {
-        chunk_size = num_cells - prev_end_col
+      if (num_cells - prev_end_col < chunk_size) {
+        chunk_size = num_cells - prev_end_col + 1
       }
-      start_inds = h5read(fname, "/matrix/indptr", index = list(prev_end_col:(prev_end_col+chunk_size+1)))
-      row_inds = h5read(fname, "/matrix/indices", index=list(prev_end_ind:(tail(start_inds, 1)))) + 1
-      dt <- data.table(
-        row = row_inds,
-        column = rep(seq_len(length(start_inds) - 1), diff(start_inds)),
-        norm = h5read(fname, "/norm.data", index=list(prev_end_ind:tail(start_inds, 1))),
-        means = gene_means[row_inds]
-      )
-      num_read = nrow(dt)
-      prev_end_col = prev_end_col + chunk_size + 1
-      prev_end_data = prev_end_data + num_read
-      prev_end_ind = tail(start_inds, 1)+1
+      start_inds = file.h5[["matrix/indptr"]][prev_end_col:(prev_end_col+chunk_size)]
+      row_inds = file.h5[["matrix/indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
+      counts = file.h5[["norm.data"]][(prev_end_ind+1):(tail(start_inds, 1))]
+      norm.data = sparseMatrix(i=row_inds[1:length(counts)]+1,p=start_inds[1:(chunk_size+1)]-prev_end_ind,x=counts,dims=c(num_genes,chunk_size))
       
-      # calculate row sum and sum of squares using normalized data
-      row_sums = dt[ ,list(num_pos=.N,var = sum((norm-means)*(norm-means))), by=row]
-      row_inds = row_sums$row
-      gene_vars[row_inds] = gene_vars[row_inds] + row_sums$var
-      gene_num_pos[row_inds] = gene_num_pos[row_inds] + row_sums$num_pos
-      setTxtProgressBar(pb,ind)
+      num_read = length(counts)
+      prev_end_col = prev_end_col + chunk_size
+      prev_end_data = prev_end_data + num_read
+      prev_end_ind = tail(start_inds, 1)
+      gene_vars = gene_vars + sumSquaredDeviations(norm.data,gene_means)
+      setTxtProgressBar(pb, ind)
     }
-    setTxtProgressBar(pb,num_chunks)
+    setTxtProgressBar(pb, num_chunks)
     cat("\n")
-    #add deviations for zero entries (not seen in above loop due to sparse matrix representation)
-    gene_vars = gene_vars + (num_cells-gene_num_pos)*(gene_means*gene_means)
-    gene_vars = gene_vars / (num_cells-1)
-    safe_h5_create(fname,"/gene_vars",dims=num_genes,mode="double")
-    h5write(gene_vars,name="/gene_vars",file=fname)
+    gene_vars = gene_vars/(num_cells - 1)
+    file.h5$close_all()
+    safe_h5_create(fname, "/gene_vars", dims = num_genes, 
+                   mode = h5types$double)
+    file.h5 = H5File$new(fname, mode="r+")
+    file.h5[["gene_vars"]][1:num_genes]=gene_vars
+    file.h5$close_all()
   }
   return(object)
 }
@@ -591,7 +585,8 @@ calcGeneVars = function(object,chunk=1000)
 
 selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes = NULL,
                         tol = 0.0001, datasets.use = 1:length(object@raw.data), combine = "union",
-                        keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3, chunk=1000) {
+                        keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3, chunk=1000) 
+{
   if (class(object@raw.data[[1]]) == "character") {
     object = calcGeneVars(object,chunk)
     hdf5_files = object@raw.data
@@ -600,13 +595,15 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
     }
     genes.use <- c()
     for (i in 1:length(hdf5_files)) {
-      genes = h5read(hdf5_files[[i]], "/matrix/features/name")
+      fname = hdf5_files[[i]]
+      file.h5 = H5File$new(fname, mode="r+")
+      genes = file.h5[["/matrix/features/name"]][]
       if (capitalize) {
         genes = toupper(genes)
       }
-      trx_per_cell = h5read(hdf5_files[[i]],"/cell_sums")
-      gene_expr_mean = h5read(hdf5_files[[i]],"/gene_means")
-      gene_expr_var = h5read(hdf5_files[[i]],"/gene_vars")
+      trx_per_cell = file.h5[["cell_sums"]][]
+      gene_expr_mean = file.h5[["gene_means"]][]
+      gene_expr_var = file.h5[["gene_vars"]][]
 
       names(gene_expr_mean) <- names(gene_expr_var) <- genes # assign gene names
       nolan_constant <- mean((1/trx_per_cell))
@@ -636,11 +633,16 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
         }
         genes.use <- intersect(genes.use, genes.new)
       }
+      file.h5$close_all()
     }
+
     if (!keep.unique) {
       for (i in 1:length(hdf5_files)) {
-        genes = h5read(hdf5_files[[i]], "/matrix/features/name")
+        fname = hdf5_files[[i]]
+        file.h5 = H5File$new(fname, mode="r+")
+        genes = file.h5[["matrix/features/name"]][]
         genes.use <- genes.use[genes.use %in% genes]
+        file.h5$close_all()
       }
     }
     if (length(genes.use) == 0) {
@@ -763,68 +765,60 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
 
 scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
   if (class(object@raw.data[[1]]) == "character") {
-      hdf5_files = object@raw.data
-      vargenes = object@var.genes
-      for (i in 1:length(hdf5_files))
-      { 
-        print(names(hdf5_files)[i])
-        chunk_size = chunk
-        fname = hdf5_files[[i]]
-        file_info = h5ls(fname)
-        num_cells = as.numeric(file_info$dim[file_info$name == "barcodes"])
-        num_genes = as.numeric(file_info$dim[file_info$name == "name"])
-        num_entries = as.numeric(file_info$dim[file_info$name == "data"])
-        prev_end_col = 1
-        prev_end_data = 1
-        prev_end_ind = 1
-        genes = h5read(fname, "/matrix/features/name")
-        gene_inds = which(genes %in% vargenes)
-        gene_sum_sq = h5read(fname,"/gene_sum_sq")
-        gene_root_mean_sum_sq = sqrt(gene_sum_sq / num_cells)
-        safe_h5_create(fname,"/scale.data",dims=c(length(vargenes),num_cells),mode="double",chunk=c(length(vargenes),chunk_size))
-
-        num_chunks = ceiling(num_cells/chunk_size)
-        pb = txtProgressBar(0,num_chunks,style = 3)
-        ind = 0
-        while(prev_end_col < num_cells)
-        {
-          ind = ind + 1
-          if (num_cells - prev_end_col < chunk_size)
-          {
-            chunk_size = num_cells - prev_end_col
-          }
-          
-          start_inds = h5read(fname, "/matrix/indptr", index = list(prev_end_col:(prev_end_col+chunk_size+1)))
-          dt <- data.table(
-            row = h5read(fname, "/matrix/indices", index=list(prev_end_ind:(tail(start_inds, 1)))) + 1,
-            column = rep(seq_len(length(start_inds) - 1), diff(start_inds)),
-            norm = h5read(fname, "/norm.data", index=list(prev_end_ind:tail(start_inds, 1)))
-          )
-          #read normalized data as sparse matrix
-          scaled = sparseMatrix(i=dt$row,j=dt$column,x=c(dt$norm),dims=c(num_genes,chunk_size+1))
-          #subset to variable genes only
-          scaled = scaled[gene_inds,]
-          #convert to dense
-          scaled = as.matrix(scaled)
-          #divide each gene by the precomputed sum of squares across all cells
-          root_mean_sum_sq = gene_root_mean_sum_sq[gene_inds]
-          scaled = sweep(scaled,1,root_mean_sum_sq,"/")
-          rownames(scaled) = genes[gene_inds]
-          #need to subset by gene symbol to match liger default behavior with duplicate gene symbols
-          scaled = scaled[vargenes,]
-          scaled[is.na(scaled)]=0
-          scaled[scaled==Inf]=0
-          h5write(scaled,file=fname,name="/scale.data",index=list(NULL, prev_end_col:(prev_end_col+chunk_size)))
-
-          num_read = nrow(dt)
-          prev_end_col = prev_end_col + chunk_size + 1
-          prev_end_data = prev_end_data + num_read
-          prev_end_ind = tail(start_inds, 1) + 1
-          setTxtProgressBar(pb,ind)
+    hdf5_files = object@raw.data
+    vargenes = object@var.genes
+    for (i in 1:length(hdf5_files)) {
+      print(names(hdf5_files)[i])
+      chunk_size = chunk
+      fname = hdf5_files[[i]]
+      file.h5 = H5File$new(fname, mode="r+")
+      #file_info = file.h5$ls(recursive = T)
+      num_cells = file.h5[["matrix/barcodes"]]$dims
+      num_genes = file.h5[["matrix/features/name"]]$dims
+      num_entries = file.h5[["matrix/data"]]$dims
+      prev_end_col = 1
+      prev_end_data = 1
+      prev_end_ind = 0
+      gene_vars = rep(0,num_genes)
+      gene_means = file.h5[["gene_means"]][1:num_genes]
+      gene_sum_sq = file.h5[["gene_sum_sq"]][1:num_genes]
+      genes = file.h5[["matrix/features/name"]][1:num_genes]
+      gene_inds = which(genes %in% vargenes)
+      gene_root_mean_sum_sq = sqrt(gene_sum_sq/num_cells)
+      file.h5$close_all()
+      safe_h5_create(fname, "scale.data", dims = c(length(vargenes), num_cells), mode = h5types$double, chunk = c(length(vargenes), chunk_size))
+      num_chunks = ceiling(num_cells/chunk_size)
+      pb = txtProgressBar(0, num_chunks, style = 3)
+      ind = 0
+      file.h5 = H5File$new(fname, mode="r+")
+      while (prev_end_col < num_cells) {
+        ind = ind + 1
+        if (num_cells - prev_end_col < chunk_size) {
+          chunk_size = num_cells - prev_end_col + 1
         }
-        setTxtProgressBar(pb,num_chunks)
-        cat("\n")
+        start_inds = file.h5[["matrix/indptr"]][prev_end_col:(prev_end_col+chunk_size)]
+        row_inds = file.h5[["matrix/indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
+        counts = file.h5[["norm.data"]][(prev_end_ind+1):(tail(start_inds, 1))]
+        scaled = sparseMatrix(i=row_inds[1:length(counts)]+1,p=start_inds[1:(chunk_size+1)]-prev_end_ind,x=counts,dims=c(num_genes,chunk_size))
+        scaled = scaled[gene_inds, ]
+        scaled = as.matrix(scaled)
+        root_mean_sum_sq = gene_root_mean_sum_sq[gene_inds]
+        scaled = sweep(scaled, 1, root_mean_sum_sq, "/")
+        rownames(scaled) = genes[gene_inds]
+        scaled = scaled[vargenes, ]
+        scaled[is.na(scaled)] = 0
+        scaled[scaled == Inf] = 0
+        file.h5[["scale.data"]][,prev_end_col:(prev_end_col+chunk_size-1)] = scaled
+        num_read = length(counts)
+        prev_end_col = prev_end_col + chunk_size
+        prev_end_data = prev_end_data + num_read
+        prev_end_ind = tail(start_inds, 1)
+        setTxtProgressBar(pb, ind)
       }
+      file.h5$close_all()
+      setTxtProgressBar(pb, num_chunks)
+      cat("\n")
+    }
   } else {
     if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
         class(object@raw.data[[1]])[1] == "dgCMatrix") {
@@ -1061,7 +1055,8 @@ online_iNMF_h5 = function(object,
 
     # check whether X_new needs to be processed
     for (i in 1:length(X_new)){
-      if ("scale.data" %in% h5ls(X_new[[i]])$name) {
+      file.h5 = H5File$new(X_new[[i]], mode="r+")
+      if (file.h5$exists("scale.data")) {
         cat("New dataset", i, "already preprocessed.", "\n")
       } else {
         cat("New dataset", i, "not preprocessed. Preprocessing...", "\n")
@@ -1069,6 +1064,7 @@ online_iNMF_h5 = function(object,
         object = scaleNotCenter(object, remove.missing = T, chunk = h5_chunk_size)
         cat("New dataset", i, "Processed.", "\n")
       }
+      file.h5$close_all()
     }
     object@raw.data = c(raw.data_prev, X_new)
     # k x gene -> gene x k & cell x k-> k x cell 
@@ -1102,10 +1098,10 @@ online_iNMF_h5 = function(object,
   num_cells = c() # number of cells in each dataset
   cell_barcodes = list() # cell barcodes for each dataset
   for (i in file_idx){
-    hdf5_files_info[[i]] = h5ls(hdf5_files[[i]])
-    num_cells = c(num_cells, as.numeric(hdf5_files_info[[i]]$dim[hdf5_files_info[[i]]$name == "barcodes"]))
-    h5closeAll()
-    cell_barcodes[[i]] = h5read(hdf5_files[[i]], name="matrix/barcodes")
+    file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
+    cell_barcodes[[i]] = file.h5[["matrix/barcodes"]][]
+    num_cells = c(num_cells, length(cell_barcodes[[i]]))
+    file.h5$close_all()
   }
   num_cells_new = num_cells[(num_prev_files+1):num_files]
   minibatch_sizes = rep(0, num_files)
@@ -1141,9 +1137,10 @@ online_iNMF_h5 = function(object,
     if (is.null(X_new)) {
       object@V = list()    
       for (i in file_idx){
+        file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
         V_init_idx = sample(1:num_cells_new[i], k) # pick k sample from datasets as initial H matrix
-        h5closeAll()
-        object@V[[i]] = h5read(hdf5_files[[i]], "/scale.data", index=list(NULL,V_init_idx))
+        object@V[[i]] = file.h5[["scale.data"]][,V_init_idx]
+        file.h5$close_all()
       }
 
       # normalize the columns of H_i, H_s matrices
@@ -1156,11 +1153,13 @@ online_iNMF_h5 = function(object,
       object@V[file_idx_prev] = if(!is.null(V.init)) V.init else object@V
       V_init_idx = list()
       for (i in file_idx_new){
+        file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
         V_init_idx = sample(1:num_cells[i], k)
-        object@V[[i]] = h5read(hdf5_files[[i]], "/scale.data", index=list(NULL,V_init_idx)) # initialize the Vi for new dataset
+        object@V[[i]] = file.h5[["scale.data"]][,V_init_idx] # initialize the Vi for new dataset
         for (j in 1:k){
           object@V[[i]][, j] = object@V[[i]][, j] / sqrt(sum(object@V[[i]][, j]^2)) 
         }
+        file.h5$close_all()
       }
     }
 
@@ -1293,14 +1292,16 @@ online_iNMF_h5 = function(object,
       if (length(minibatch_idx[[file_idx_new[1]]]) == minibatch_sizes_orig[file_idx_new[1]]){ 
         X_minibatch = rep(list(NULL), num_files)
         for (i in file_idx_new){
-          h5closeAll()
-          X_minibatch[[i]] = h5read(hdf5_files[[i]], "/scale.data", index=list(NULL, minibatch_idx[[i]]))
+          file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
+          X_minibatch[[i]] = file.h5[["scale.data"]][ ,minibatch_idx[[i]]]
+          file.h5$close_all()
         }
       
         # update H_i by ANLS Hi_minibatch[[i]]
         H_minibatch = rep(list(NULL), num_files)
         for (i in file_idx_new){
-          H_minibatch[[i]] = solveNNLS(rbind(object@W + object@V[[i]], sqrt_lambda * object@V[[i]]), rbind(X_minibatch[[i]], matrix(0, num_genes, minibatch_sizes[i])))
+          H_minibatch[[i]] = solveNNLS(rbind(object@W + object@V[[i]], sqrt_lambda * object@V[[i]]), 
+                                       rbind(X_minibatch[[i]], matrix(0, num_genes, minibatch_sizes[i])))
         }
  
         # updata A and B matrices 
@@ -1355,7 +1356,8 @@ online_iNMF_h5 = function(object,
           # update (Di).k
           for (j in 1:k){
             for (i in file_idx_new){
-              object@V[[i]][, j] = nonneg(object@V[[i]][, j] / (1 + lambda) + (object@B[[i]][, j] - ((object@W + object@V[[i]]) %*% object@A[[i]])[, j]) / ((1 + lambda) * object@A[[i]][j, j]))
+              object@V[[i]][, j] = nonneg(object@V[[i]][, j] / (1 + lambda) + (object@B[[i]][, j] - ((object@W + object@V[[i]]) %*% object@A[[i]])[, j]) / 
+                                          ((1 + lambda) * object@A[[i]][j, j]))
             }
           }
 
@@ -1377,25 +1379,26 @@ online_iNMF_h5 = function(object,
     cat("\nCalculate metagene loadings...")
     object@H = rep(list(NULL), num_files)
     for (i in file_idx){
-        num_batch = num_cells[i] %/% miniBatch_size + 1
-        if (num_batch == 1){
-          h5closeAll()
-          X_i = h5read(hdf5_files[[i]],"scale.data")
-          object@H[[i]] = solveNNLS(rbind(object@W + object@V[[i]],sqrt_lambda * object@V[[i]]), rbind(X_i, matrix(0, num_genes , num_cells[i])))
-        } else {
-          for (batch_idx in 1:num_batch){
-            if (batch_idx != num_batch){
-              cell_idx = ((batch_idx - 1) * miniBatch_size + 1):(batch_idx * miniBatch_size)
-            } else {
-              cell_idx = ((batch_idx - 1) * miniBatch_size + 1):num_cells[i]
-            }
-            X_i_batch = h5read(hdf5_files[[i]],"scale.data", index=list(NULL,cell_idx))
-            object@H[[i]] = cbind(object@H[[i]],solveNNLS(rbind(object@W + object@V[[i]], sqrt_lambda * object@V[[i]]), 
-                                                          rbind(X_i_batch, matrix(0, num_genes , length(cell_idx)))))
+      file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
+      num_batch = num_cells[i] %/% miniBatch_size + 1
+      if (num_batch == 1){
+        X_i = file.h5[["scale.data"]][,]
+        object@H[[i]] = solveNNLS(rbind(object@W + object@V[[i]],sqrt_lambda * object@V[[i]]), rbind(X_i, matrix(0, num_genes , num_cells[i])))
+      } else {
+        for (batch_idx in 1:num_batch){
+          if (batch_idx != num_batch){
+            cell_idx = ((batch_idx - 1) * miniBatch_size + 1):(batch_idx * miniBatch_size)
+          } else {
+            cell_idx = ((batch_idx - 1) * miniBatch_size + 1):num_cells[i]
           }
-        }
-        colnames(object@H[[i]]) = cell_barcodes[[i]]
+          X_i_batch = file.h5[["scale.data"]][,cell_idx]
+          object@H[[i]] = cbind(object@H[[i]],solveNNLS(rbind(object@W + object@V[[i]], sqrt_lambda * object@V[[i]]), 
+                                                          rbind(X_i_batch, matrix(0, num_genes , length(cell_idx)))))
+        }        
       }
+      file.h5$close_all()
+      colnames(object@H[[i]]) = cell_barcodes[[i]]
+    }
 
     rownames(object@W) = rownames(gene_names)
     colnames(object@W) = NULL
@@ -1411,10 +1414,10 @@ online_iNMF_h5 = function(object,
     object@H[file_idx_new] = rep(list(NULL), num_new_files)
     object@V[file_idx_new] = rep(list(NULL), num_new_files)
     for (i in file_idx_new){
+      file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
       num_batch = num_cells[i] %/% miniBatch_size + 1
       if (num_cells[i] <= miniBatch_size){
-        h5closeAll()
-        object@H[[i]] = solveNNLS(object@W, h5read(hdf5_files[[i]],"scale.data"))
+        object@H[[i]] = solveNNLS(object@W, file.h5[["scale.data"]][])
       } else {
         for (batch_idx in 1:num_batch){
           if (batch_idx != num_batch){
@@ -1422,11 +1425,12 @@ online_iNMF_h5 = function(object,
           } else {
             cell_idx = ((batch_idx - 1) * miniBatch_size + 1):num_cells[i]
           }
-          object@H[[i]] = cbind(object@H[[i]],solveNNLS(object@W, h5read(hdf5_files[[i]],"scale.data", index=list(NULL,cell_idx))))
+          object@H[[i]] = cbind(object@H[[i]],solveNNLS(object@W, file.h5[["scale.data"]][,cell_idx]))
         }
       }
-      colnames(object@H[[i]]) = h5read(hdf5_files[[i]],"matrix/barcodes")
+      colnames(object@H[[i]]) = file.h5[["matrix/barcodes"]][]
       object@V[[i]] = matrix(0, num_genes, k)
+      file.h5$close_all()
     }
   }
 
