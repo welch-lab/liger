@@ -49,9 +49,6 @@ threshold (default 10).}
 \item{do.spec.plot}{Include dataset specificity plot in printout (default TRUE).}
 
 \item{return.plots}{Return ggplot objects instead of printing directly (default FALSE).}
-
-\item{dataset.specificity}{Pre-calculated dataset specificity if available. Will calculate if not
-available.}
 }
 \description{
 Plots t-SNE coordinates of all cells by their loadings on each factor. Underneath it displays the

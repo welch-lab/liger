@@ -1382,6 +1382,7 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
     # define progress bar function
     progress <- function(n) setTxtProgressBar(pb, n)
     opts <- list(progress = progress)
+    i <- 0
     data_matrix <- foreach(i = 1:length(lambda.test), .combine = "rbind", .options.snow = opts,
                            .packages = 'liger') %dopar% {
                              if (i != 1) {
@@ -1422,7 +1423,7 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
   # make dataframe
   df_al <- data.frame(align = mean_aligns, lambda = lambda.test)
   
-  p1 <- ggplot(df_al, aes(x = lambda, y = mean_aligns)) + geom_line(size=1) +
+  p1 <- ggplot(df_al, aes_string(x = 'lambda', y = 'mean_aligns')) + geom_line(size=1) +
     geom_point() +
     theme_classic() + labs(y = 'Alignment', x = 'Lambda') +
     guides(col = guide_legend(title = "", override.aes = list(size = 2))) +
@@ -1511,6 +1512,7 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
     # define progress bar function
     progress <- function(n) setTxtProgressBar(pb, n)
     opts <- list(progress = progress)
+    i <- 0
     data_matrix <- foreach(i = length(k.test):1, .combine = "rbind", .options.snow = opts,
                            .packages = 'liger') %dopar% {
                              if (i != length(k.test)) {
@@ -1552,7 +1554,7 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
     df_kl <- df_kl[df_kl$calc == 'KL_div', ]
   }
   
-  p1 <- ggplot(df_kl, aes(x = k, y = median_kl, col = calc)) + geom_line(size=1) +
+  p1 <- ggplot(df_kl, aes_string(x = 'k', y = 'median_kl', col = 'calc')) + geom_line(size=1) +
     geom_point() +
     theme_classic() + labs(y='Median KL divergence (across all cells)', x = 'K') +
     guides(col=guide_legend(title="", override.aes = list(size = 2))) +
@@ -1604,7 +1606,6 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #' @param max_sample Maximum number of cells used for quantile normalization of each cluster 
 #' and factor. (default 1000)
 #' @param refine.knn whether to increase robustness of cluster assignments using KNN graph.(default TRUE)
-#' @param ... Arguments passed to other methods
 #'
 #' @return \code{liger} object with 'H.norm' and 'clusters' slot set.
 #' @export
@@ -1732,11 +1733,11 @@ louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps
       call. = FALSE
     )
   }
-  output_path <- paste0(getwd(), '/edge_test.txt')
+  output_path <- paste0(getwd(), '/edge_', sub('\\s', '_', Sys.time()), '.txt')
   knn <- RANN::nn2(object@H.norm, k = k, eps = eps)
-  snn <- Seurat:::ComputeSNN(knn$nn.idx, prune = prune)
-  Seurat:::WriteEdgeFile(snn, output_path, display_progress = T)
-  clusts <- Seurat:::RunModularityClusteringCpp(snn,
+  snn <- ComputeSNN(knn$nn.idx, prune = prune)
+  WriteEdgeFile(snn, output_path, display_progress = T)
+  clusts <- RunModularityClusteringCpp(snn,
     modularityFunction = 1, resolution = resolution, nRandomStarts = nRandomStarts,
     nIterations = nIterations, algorithm = 1, randomSeed = random.seed, printOutput = T,
     edgefilename = output_path
@@ -1744,443 +1745,6 @@ louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps
   names(clusts) = names(object@clusters)
   object@clusters = as.factor(clusts)
   unlink(output_path)
-  return(object)
-}
-
-#' Quantile align (normalize) factor loadings
-#'
-#' This process builds a shared factor neighborhood graph to jointly cluster cells, then quantile
-#' normalizes corresponding clusters.
-#'
-#' The first step, building the shared factor neighborhood graph, is performed in SNF(), and
-#' produces a graph representation where edge weights between cells (across all datasets)
-#' correspond to their similarity in the shared factor neighborhood space. An important parameter
-#' here is knn_k, the number of neighbors used to build the shared factor space (see SNF()). Afterwards,
-#' modularity-based community detection is performed on this graph (Louvain clustering) in order
-#' to identify shared clusters across datasets. The method was first developed by Waltman and van Eck
-#' (2013) and source code is available at http://www.ludowaltman.nl/slm/. The most important parameter
-#' here is resolution, which corresponds to the number of communities detected.
-#'
-#' Next we perform quantile alignment for each dataset, factor, and cluster (by
-#' stretching/compressing datasets' quantiles to better match those of the reference dataset). These
-#' aligned factor loadings are combined into a single matrix and returned as H.norm.
-#'
-#' @param object \code{liger} object. Should run optimizeALS before calling.
-#' @param knn_k Number of nearest neighbors for within-dataset knn graph (default 20).
-#' @param k2 Horizon parameter for shared nearest factor graph. Distances to all but the k2 nearest
-#'   neighbors are set to 0 (cuts down on memory usage for very large graphs). (default 500)
-#' @param prune.thresh Minimum allowed edge weight. Any edges below this are removed (given weight
-#'  0) (default 0.2)
-#' @param ref_dataset Name of dataset to use as a "reference" for normalization. By default,
-#'   the dataset with the largest number of cells is used.
-#' @param min_cells Minimum number of cells to consider a cluster shared across datasets (default 2)
-#' @param quantiles Number of quantiles to use for quantile normalization (default 50).
-#' @param nstart Number of times to perform Louvain community detection with different random
-#'   starts (default 10).
-#' @param resolution Controls the number of communities detected. Higher resolution -> more
-#'   communities. (default 1)
-#' @param dims.use Indices of factors to use for shared nearest factor determination (default
-#'   1:ncol(H[[1]])).
-#' @param dist.use Distance metric to use in calculating nearest neighbors (default "CR").
-#' @param center Centers the data when scaling factors (useful for less sparse modalities like
-#'   methylation data). (default FALSE)
-#' @param small.clust.thresh Extracts small clusters loading highly on single factor with fewer
-#'   cells than this before regular alignment (default 0 -- no small cluster extraction).
-#' @param id.number Number to use for identifying edge file (when running in parallel)
-#'   (generates random value by default).
-#' @param print.mod Print modularity output from clustering algorithm (default FALSE).
-#' @param print.align.summary Print summary of clusters which did not align normally (default FALSE).
-#' @param ... Arguments passed to other methods
-#'
-#' @return \code{liger} object with H.norm slot set.
-#' @export
-#'
-#' @examples
-#' \dontrun{
-#' # liger object, factorization complete
-#' ligerex
-#' # do basic quantile alignment
-#' ligerex <- quantileAlignSNF(ligerex)
-#' # higher resolution for more clusters (note that SNF is conserved)
-#' ligerex <- quantileAlignSNF(ligerex, resolution = 1.2)
-#' # change knn_k for more fine-grained local clustering
-#' ligerex <- quantileAlignSNF(ligerex, knn_k = 15, resolution = 1.2)
-#' }
-#'
-quantileAlignSNF <- function(
-  object,
-  ...
-) {
-  warning(paste0("This is a deprecated function likely to be removed in future versions.\n",
-                 "Use 'quantile_norm' instead."),
-          immediate. = T)
-  UseMethod(generic = 'quantileAlignSNF', object = object)
-}
-
-#' @param snf Output from \code{\link{SNF}}
-#' @param cell.names A vector of cell names
-#' @param ref_dataset Name or index of reference dataset
-#'
-#' @rdname quantileAlignSNF
-#' @export
-#' @method quantileAlignSNF list
-#'
-quantileAlignSNF.list <- function(
-  object,
-  snf,
-  cell.names,
-  ref_dataset,
-  prune.thresh = 0.2,
-  min_cells = 2,
-  quantiles = 50,
-  nstart = 10,
-  resolution = 1,
-  center = FALSE,
-  id.number = NULL,
-  print.mod = FALSE,
-  print.align.summary = FALSE,
-  ...
-) {
-  if (!all(sapply(X = object, FUN = is.matrix))) {
-    stop("All values in 'object' must be a matrix")
-  }
-  if (is.null(x = names(x = object))) {
-    stop("'objec' must be a named list of matrices")
-  }
-  if (!(is.list(x = snf) && !is.data.frame(x = snf))) {
-    stop("'snf' must be a list")
-  }
-  snf.names <- c('cells.cl', 'idents', 'out.summary')
-  if (!all(sort(x = names(x = snf)) %in% sort(x = snf.names))) {
-    stop("'snf' must have the following names: ", paste(snf.names, collapse = ','))
-  }
-  if (is.character(x = ref_dataset) && !ref_dataset %in% names(x = object)) {
-    stop("Cannot find reference dataset")
-  } else if (!inherits(x = 'stim', what = c('character', 'numeric'))) {
-    stop("'ref_dataset' must be a character or integer specifying which dataset is the reference")
-  }
-  if (is.null(x = id.number)) {
-    set.seed(seed = NULL)
-    id.number <- sample(x = 1000000:9999999, size = 1)
-  }
-  idents <- snf$idents
-  Hs <- object
-  idents.rest <- SLMCluster(
-    edge = snf$out.summary,
-    nstart = nstart,
-    R = resolution,
-    prune.thresh = prune.thresh,
-    id.number = id.number,
-    print.mod = print.mod
-  )
-  names(x = idents.rest) <- setdiff(x = cell.names, y = snf$cells.cl)
-  # Especially when datasets are large, SLM generates a fair number of singletons.
-  # To assign these to a cluster, take mode of the cluster assignments of within-dataset neighbors
-  if (min(table(idents.rest)) == 1) {
-    idents.rest <- assign.singletons.list(
-      object = object,
-      idents = idents.rest,
-      center = center
-    )
-  }
-  idents[names(x = idents.rest)] <- as.character(x = idents.rest)
-  idents <- factor(x = idents)
-  names(x = idents) <- cell.names
-  cs <- cumsum(x = c(0, sapply(X = Hs, FUN = nrow)))
-  clusters <- lapply(
-    X = 1:length(x = Hs),
-    FUN = function(i) {
-      idx <- cs[i] + 1:nrow(x = Hs[[i]])
-      return(idents[idx])
-    }
-  )
-  names(x = clusters) <- names(x = Hs)
-  dims <- ncol(x = Hs[[ref_dataset]])
-  too.few <- vector(mode = 'list', length = length(x = Hs))
-  names(x = too.few) <- names(x = Hs)
-  for (k in 1:length(x = Hs)) {
-    for (i in 1:dims) {
-      for (j in levels(x = idents)) {
-        if (sum(clusters[[ref_dataset]] == j, na.rm = TRUE) < min_cells || sum(clusters[[k]] == j, na.rm = TRUE) < min_cells) {
-          too.few[[names(x = Hs)[k]]] <- c(too.few[[names(x = Hs)[k]]], j)
-          next
-        } else if (sum(clusters[[k]] == j, na.rm = TRUE) == 1) {
-          Hs[[k]][clusters[[k]] == j, i] <- mean(x = Hs[[ref_dataset]][clusters[[ref_dataset]] == j, i])
-          too.few[[names(x = Hs)[k]]] <- c(too.few[[names(x = Hs)[k]]], j)
-          next
-        }
-        q2 <- quantile(
-          x = Hs[[k]][clusters[[k]] == j, i],
-          probs = seq(0, 1, by = 1 / quantiles),
-          na.rm = T
-        )
-        q1 <- quantile(
-          x = Hs[[ref_dataset]][clusters[[ref_dataset]] == j, i],
-          probs = seq(from = 0, to = 1, by = 1 / quantiles),
-          na.rm = TRUE
-        )
-        if (sum(q1) == 0 | sum(q2) == 0 | length(x = unique(x = q1)) < 2 | length(x = unique(x = q2)) < 2) {
-          new_vals <- rep(0, sum(clusters[[k]] == j))
-        } else {
-          warp_func <- approxfun(x = q2, y = q1)
-          new_vals <- warp_func(Hs[[k]][clusters[[k]] == j, i])
-        }
-        if (anyNA(x = new_vals)) {
-          stop("Select lower resolution; too many communities detected.")
-        }
-        Hs[[k]][clusters[[k]] == j, i] <- new_vals
-      }
-    }
-  }
-  if (print.align.summary && length(x = unlist(x = too.few)) > 0) {
-    print("Summary:")
-    for (i in 1:length(x = Hs)) {
-      print(paste(
-        "In dataset",
-        names(x = Hs)[i],
-        "these clusters did not align normally (too few cells):"
-      ))
-      print(x = unique(x = too.few[[names(x = Hs)[i]]]))
-    }
-  }
-  out <- list(
-    'H.norm' = Reduce(f = rbind, x = Hs),
-    'alignment.clusters' = idents,
-    'clusters' = idents
-  )
-  return(out)
-}
-
-#' @rdname quantileAlignSNF
-#' @export
-#' @method quantileAlignSNF liger
-#'
-quantileAlignSNF.liger <- function(
-  object,
-  knn_k = 20,
-  k2 = 500,
-  prune.thresh = 0.2,
-  ref_dataset = NULL,
-  min_cells = 2,
-  quantiles = 50,
-  nstart = 10,
-  resolution = 1,
-  dims.use = 1:ncol(x = object@H[[1]]),
-  dist.use = 'CR',
-  center = FALSE,
-  small.clust.thresh = 0,
-  id.number = NULL,
-  print.mod = FALSE,
-  print.align.summary = FALSE,
-  ...
-) {
-  if (is.null(x = ref_dataset)) {
-    ns <- sapply(X = object@scale.data, FUN = nrow)
-    ref_dataset <- names(x = object@scale.data)[which.max(x = ns)]
-  }
-  if (!isTRUE(object@parameters[["knn_k"]] == knn_k) |
-      !isTRUE(object@parameters[["k2"]] == k2) |
-      !isTRUE(object@parameters[["dist.use"]] == dist.use) |
-      !isTRUE(object@parameters[["SNF_center"]] == center) |
-      !isTRUE(identical(object@parameters[["dims.use"]], dims.use)) |
-      !isTRUE(object@parameters[["small.clust.thresh"]] == small.clust.thresh)) {
-    print("Recomputing shared nearest factor space")
-    object <- SNF(
-      object = object,
-      knn_k = knn_k,
-      k2 = k2,
-      dist.use = dist.use,
-      center = center,
-      dims.use = dims.use,
-      small.clust.thresh = small.clust.thresh
-    )
-  }
-  out <- quantileAlignSNF(
-    object = object@H,
-    snf = object@snf,
-    cell.names = unlist(x = lapply(X = object@scale.data, FUN = rownames)),
-    ref_dataset = ref_dataset,
-    prune.thresh = prune.thresh,
-    min_cells = min_cells,
-    quantiles = quantiles,
-    nstart = nstart,
-    resolution = resolution,
-    center = center,
-    id.number = id.number,
-    print.mod = print.mod,
-    print.align.summary = print.align.summary
-  )
-  for (i in names(x = out)) {
-    slot(object = object, name = i) <- out[[i]]
-  }
-  object@parameters$ref_dataset <- ref_dataset
-  object@parameters$knn_k <- knn_k
-  object@parameters$k2 <- k2
-  object@parameters$prune.thresh <- prune.thresh
-  object@parameters$min_cells <- min_cells
-  object@parameters$dims.use <- dims.use
-  object@parameters$dist.use <- dist.use
-  object@parameters$SNF_center <- center
-  object@parameters$small.clust.thresh <- small.clust.thresh
-  object@parameters$resolution <- resolution
-  return(object)
-}
-
-#' Generate shared factor neighborhood graph
-#'
-#' @description
-#' Builds shared factor neighborhood graph representation of all cells in analysis. The first step
-#' is to scale factor loadings across each cell for each factor. This corresponds to scaling (by L2
-#' norm or similar) the columns of the H matrices, and allows us for subsequent comparison across
-#' factors in a cell's loadings. The max factor for each cell is computed.
-#'
-#' The next step is to determine the knn_k nearest neighbors (within the same dataset) for each cell
-#' based on the cells' factor loadings. For each cell, we count the number of neighbors with max
-#' factor loadings for each factor.
-#'
-#' This creates a shared space across datasets based on the max factor neighborhoods -- we now find
-#' the nearest k2 neighbors and their corresponding distances across all datasets. We rescale these
-#' distances into edge weights where an edge weight of 1 corresponds to minimal distance and 0
-#' corresponds to the max distance.
-#'
-#' @param dims.use Indices of factors to use for shared nearest factor determination (default
-#'   1:ncol(H[[1]])).
-#' @param dist.use Distance metric to use in calculating nearest neighbors (default "CR").
-#' @param center Centers the data when scaling factors (useful for less sparse modalities like
-#'   methylation data). (default FALSE)
-#' @param knn_k Number of nearest neighbors for within-dataset knn graph (default 20).
-#' @param k2 Horizon parameter for shared nearest factor graph. Distances to all but the k2 nearest
-#'   neighbors are set to 0 (cuts down on memory usage for very large graphs). (default 500)
-#' @param small.clust.thresh Extracts small clusters loading highly on single factor with fewer
-#'   cells than this before regular alignment (default 0 -- no small cluster extraction).
-#' @param ... Arguments passed to and from other methods
-#'
-#' @return List of three values. First is names of cells identified in small cluster extraction,
-#'   second is vector of cluster identities where only small cluster identities are not "NA", third
-#'   is the edge weight representation of the shared factor neighborhood graph.
-#'
-#' @export
-#' @importFrom FNN get.knn
-#'
-#' @examples
-#' \dontrun{
-#' # liger object, factorization complete
-#' ligerex
-#' # get SNF graph (third element)
-#' SNF_graph <- SNF(ligerex, knn_k = 15)[[3]]
-#' }
-#'
-SNF <- function(object, ...) {
-  UseMethod(generic = 'SNF', object = object)
-}
-
-#' @rdname SNF
-#' @export
-#' @method SNF list
-#'
-SNF.list <- function(
-  object,
-  dims.use = 1:ncol(x = object[[1]]),
-  dist.use = "CR",
-  center = FALSE,
-  knn_k = 20,
-  k2 = 500,
-  small.clust.thresh = knn_k,
-  ...
-) {
-  NN.maxes <- do.call(
-    what = rbind,
-    args = lapply(
-      X = 1:length(x = object),
-      FUN = function(i) {
-        sc <- scale(x = object[[i]], center = center, scale = TRUE)
-        maxes <- factor(
-          x = apply(X = sc[, dims.use], MARGIN = 1, FUN = which.max),
-          levels = 1:ncol(sc)
-        )
-        if (dist.use == "CR") {
-          norm <- t(x = apply(X = object[[i]][, dims.use], MARGIN = 1, FUN = scaleL2norm))
-          if (any(is.na(x = norm))) {
-            stop(paste(
-              "Unable to normalize loadings for all cells; some cells",
-              "loading on no selected factors."
-            ))
-          }
-        } else {
-          norm <- object[[i]][, dims.use]
-        }
-        knn.idx <- get.knn(data = norm, k = knn_k, algorithm = dist.use)$nn.index
-        t(x = apply(
-          X = knn.idx,
-          MARGIN = 1,
-          FUN = function(q) {
-            return(table(maxes[q]))
-          }
-        ))
-      }
-    ))
-  rownames(x = NN.maxes) <- unlist(x = lapply(X = object, FUN = rownames))
-  # extract small clusters
-  if (small.clust.thresh > 0) {
-    print(paste0(
-      "Isolating small clusters with fewer than ", small.clust.thresh,
-      " members"
-    ))
-  }
-  max.val <- factor(x = apply(X = NN.maxes, MARGIN = 1, FUN = which.max))
-  names(x = max.val) <- rownames(x = NN.maxes)
-  idents <- rep.int(x = "NA", times = nrow(x = NN.maxes))
-  names(x = idents) <- rownames(x = NN.maxes)
-  cl <- levels(x = max.val)[which(x = table(max.val) < small.clust.thresh)]
-  cells.cl <- names(x = max.val)[which(x = max.val %in% cl)]
-  idents[cells.cl] <- paste0("F", as.character(x = max.val[cells.cl]))
-  nn.obj <- RANN.L1::nn2(
-    data = NN.maxes[setdiff(x = rownames(x = NN.maxes), y = cells.cl), ],
-    k = k2
-  )
-  out.snn <- 1 - (nn.obj$nn.dists / (2 * knn_k))
-  out.summary <- matrix(ncol = 3, nrow = (ncol(x = out.snn) * nrow(x = out.snn)))
-  counter <- 1
-  for (i in 1:nrow(x = out.snn)) {
-    for (j in 1:ncol(x = out.snn)) {
-      out.summary[counter, ] <- c(
-        i, nn.obj$nn.idx[i, j],
-        out.snn[i, j]
-      )
-      counter <- counter + 1
-    }
-  }
-  out.summary[out.summary[, 1] == out.summary[, 2], 3] <- 0
-  out.summary[, 1] <- out.summary[, 1] - 1
-  out.summary[, 2] <- out.summary[, 2] - 1
-  # idents returned here only contain values for small clusters
-  return(list(cells.cl = cells.cl, idents = idents, out.summary = out.summary))
-}
-
-#' @rdname SNF
-#' @export
-#' @method SNF liger
-#'
-SNF.liger <- function(
-  object,
-  dims.use = 1:ncol(x = object@H[[1]]),
-  dist.use = "CR",
-  center = FALSE,
-  knn_k = 20,
-  k2 = 500,
-  small.clust.thresh = knn_k,
-  ...
-) {
-  object@snf <- SNF(
-    object = object@H,
-    dims.use = dims.use,
-    dist.use = dist.use,
-    center = center,
-    knn_k = knn_k,
-    k2 = k2,
-    small.clust.thresh = small.clust.thresh,
-    ...
-  )
   return(object)
 }
 
@@ -2218,7 +1782,9 @@ SNF.liger <- function(
 #' }
 
 imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, norm = TRUE, scale = FALSE) {
-  cat("Warning:\nThis function will discard the raw data previously stored in the liger object and replace the raw.data slot with the imputed data.\n\n")
+  cat("NOTE: This function will discard the raw data previously stored in the liger object and",
+  "replace the raw.data slot with the imputed data.\n\n")
+  
   if (length(reference) > 1) {
     stop("Can only have ONE reference dataset")
   }
@@ -2487,7 +2053,8 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
   genes.coords <- genes.coords[genes.list]
 
   print("Calculating correlation for gene-peak pairs...")
-  each.len <<- 0
+  each.len <- 0
+  # assign('each.len', 0, envir = globalenv())
 
   elements <- lapply(seq(length(genes.list)), function(pos) {
     gene.use <- genes.list[pos]
@@ -2517,7 +2084,8 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
       res.corr <- as.numeric(res[["r"]][pick])
       peaks.use <- peaks.use[pick]
     }
-    each.len <<- each.len + length(peaks.use)
+    # each.len <<- each.len + length(peaks.use)
+    assign('each.len', each.len + length(peaks.use), envir = parent.frame(2))
     return(list(as.numeric(peaks.use), as.numeric(each.len), res.corr))
   })
 
@@ -2995,18 +2563,18 @@ calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.
 
 calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.aligned = TRUE,
                           rand.seed = 42, by.dataset = FALSE) {
-  if (!requireNamespace("NNLM", quietly = TRUE) & dr.method == "NMF") {
-    stop("Package \"NNLM\" needed for this function to perform NMF. Please install it.",
-         call. = FALSE
-    )
-  }
+  # if (!requireNamespace("NNLM", quietly = TRUE) & dr.method == "NMF") {
+  #   stop("Package \"NNLM\" needed for this function to perform NMF. Please install it.",
+  #        call. = FALSE
+  #   )
+  # }
   
   print(paste("Reducing dimensionality using", dr.method))
   set.seed(rand.seed)
   dr <- list()
   if (dr.method == "NMF") {
     dr <- lapply(object@scale.data, function(x) {
-      nnmf(x, k = ndims)$W
+      nmf_hals(x, k = ndims)[[1]]
     })
   }
   else if (dr.method == "ICA") {
@@ -3372,7 +2940,7 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
                                     return.plots = F) {
   tsne_df <- data.frame(object@tsne.coords)
   colnames(tsne_df) <- c("tsne1", "tsne2")
-  tsne_df$Dataset <- unlist(lapply(1:length(object@H), function(x) {
+  tsne_df[['Dataset']] <- unlist(lapply(1:length(object@H), function(x) {
     rep(names(object@H)[x], nrow(object@H[[x]]))
   }))
   c_names <- names(object@clusters)
@@ -3386,23 +2954,23 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
       c_names <- names(object@clusters)
     }
   }
-  tsne_df$Cluster <- clusters[c_names]
+  tsne_df[['Cluster']] <- clusters[c_names]
   if (do.shuffle) {
     set.seed(rand.seed)
     idx <- sample(1:nrow(tsne_df))
     tsne_df <- tsne_df[idx, ]
   }
   
-  p1 <- ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Dataset)) +
+  p1 <- ggplot(tsne_df, aes_string(x = 'tsne1', y = 'tsne2', color = 'Dataset')) +
     geom_point(size = pt.size) +
     guides(color = guide_legend(override.aes = list(size = legend.size)))
   
-  centers <- tsne_df %>% group_by(Cluster) %>% summarize(
-    tsne1 = median(x = tsne1),
-    tsne2 = median(x = tsne2)
+  centers <- tsne_df %>% group_by(.data[['Cluster']]) %>% summarize(
+    tsne1 = median(x = .data[['tsne1']]),
+    tsne2 = median(x = .data[['tsne2']])
   )
-  p2 <- ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(size = pt.size) +
-    geom_text(data = centers, mapping = aes(label = Cluster), colour = "black", size = text.size) +
+  p2 <- ggplot(tsne_df, aes_string(x = 'tsne1', y = 'tsne2', color = 'Cluster')) + geom_point(size = pt.size) +
+    geom_text(data = centers, mapping = aes_string(label = 'Cluster'), colour = "black", size = text.size) +
     guides(color = guide_legend(override.aes = list(size = legend.size)))
   
   if (!is.null(title)) {
@@ -3501,7 +3069,7 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
   }
   p_list <- list()
   for (sub_df in split(dr_df, f = dr_df$dataset)) {
-    ggp <- ggplot(sub_df, aes(x = dr1, y = dr2, color = feature)) + geom_point(size = pt.size)
+    ggp <- ggplot(sub_df, aes_string(x = 'dr1', y = 'dr2', color = 'feature')) + geom_point(size = pt.size)
     
     # if data is discrete
     if (discrete) {
@@ -3509,8 +3077,8 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
         labs(col = feature)
       if (do.labels) {
         centers <- sub_df %>% group_by(feature) %>% summarize(
-          dr1 = median(x = dr1),
-          dr2 = median(x = dr2)
+          dr1 = median(x = sub_df[['dr1']]),
+          dr2 = median(x = sub_df[['dr2']])
         )
         ggp <- ggp + geom_text(data = centers, mapping = aes(label = feature),
                                colour = "black", size = text.size)
@@ -3652,8 +3220,6 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' @param max.size Size of largest gene symbol in word cloud (default 4).
 #' @param factor.share.thresh Use only factors with a dataset specificity less than or equalt to
 #'   threshold (default 10).
-#' @param dataset.specificity Pre-calculated dataset specificity if available. Will calculate if not
-#'   available.
 #' @param log.fc.thresh Lower log-fold change threshold for differential expression in markers
 #'   (default 1).
 #' @param umi.thresh Lower UMI threshold for markers (default 30).
@@ -3668,6 +3234,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' scale_x_continuous scale_y_continuous coord_fixed labs
 #' @importFrom grid roundrectGrob
 #' @importFrom grid gpar
+#' @importFrom cowplot draw_grob
 #' @export
 #' @examples
 #' \dontrun{
@@ -3735,7 +3302,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
       if (length(top_genes) == 0) {
         gene_df <- data.frame(genes = c("no genes"), loadings = c(1))
       }
-      out_plot <- ggplot(gene_df, aes(x = 1, y = 1, size = loadings, label = genes)) +
+      out_plot <- ggplot(gene_df, aes(x = 1, y = 1, size = loadings, label = gene_df[['genes']])) +
         geom_text_repel(force = 100, segment.color = NA) +
         scale_size(range = c(min.size, max.size), guide = FALSE) +
         scale_y_continuous(breaks = NULL) +
@@ -3778,6 +3345,8 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' @param dataset1 Name of first dataset (by default takes first two datasets for dataset1 and 2)
 #' @param dataset2 Name of second dataset
 #' @param num.genes Number of genes to show in word clouds (default 30).
+#' @param num.genes.show Number of genes displayed as y-axis labels in the gene loading plots at 
+#' the bottom (default 12)
 #' @param mark.top.genes Plot points corresponding to top loading genes in different color (default
 #'   TRUE).
 #' @param factor.share.thresh Use only factors with a dataset specificity less than or equal to
@@ -3802,6 +3371,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' @importFrom grid gpar unit
 #' @import patchwork
 #' @importFrom stats loadings
+#' @importFrom cowplot theme_cowplot
 #' @export
 #' @examples
 #' \dontrun{
@@ -3921,7 +3491,7 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
       )
       y_lim_text <- max(gene_df$loadings)
       # plot and annotate with top genes
-      out_plot <- ggplot(gene_df, aes(x = xpos, y = loadings)) +
+      out_plot <- ggplot(gene_df, aes_string(x = 'xpos', y = 'loadings')) +
         geom_point(size = 0.4) +
         theme_bw() +
         theme(
@@ -3945,8 +3515,8 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
         theme(plot.margin = unit(c(1, 4, 1, 1), "lines"))
       if (mark.top.genes) {
         out_plot <- out_plot + geom_point(
-          data = subset(gene_df, top_k == TRUE),
-          aes(xpos, loadings),
+          data = subset(gene_df, gene_df[['top_k']] == TRUE),
+          aes_string('xpos', 'loadings'),
           col = "#8227A0", size = 0.5
         )
       }
@@ -4092,7 +3662,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #'   list of ggplot objects.
 #' @export
 #' @importFrom dplyr %>% group_by mutate_at vars group_cols
-#' @importFrom ggplot2 ggplot geom_point aes_string element_blank ggtitle labs 
+#' @importFrom ggplot2 ggplot geom_point aes_string element_blank ggtitle labs xlim ylim
 #' scale_color_viridis_c scale_color_gradientn theme
 #' @importFrom stats quantile
 #' @examples
@@ -4139,7 +3709,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
         gene_df[['scaleby']] = factor(object@cell.data[[scale.by]])
       }
       gene_df1 <- gene_df %>%
-        group_by(scaleby) %>%
+        group_by(.data[['scaleby']]) %>%
         # scale by selected feature
         mutate_at(vars(-group_cols()), function(x) { scale(x, center = F)})
       gene_vals <- gene_df1$gene
@@ -4211,7 +3781,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
     sub_df$gene[sub_df$gene < min_v & !is.na(sub_df$gene)] <- min_v
     sub_df$gene[sub_df$gene > max_v & !is.na(sub_df$gene)] <- max_v
     
-    ggp <- ggplot(sub_df, aes(x = dr1, y = dr2, color = gene)) + geom_point(size = pt.size) +
+    ggp <- ggplot(sub_df, aes_string(x = 'dr1', y = 'dr2', color = 'gene')) + geom_point(size = pt.size) +
       labs(col = gene)
     
     if (!is.null(cols.use)) {
@@ -4492,14 +4062,14 @@ plotClusterProportions <- function(object, return.plot = F) {
   }))
   freq_table <- data.frame(Cluster = rep(object@clusters, length(object@scale.data)),
                            Sample = sample_names)
-  freq_table <- table(freq_table$Cluster, freq_table$Sample)
+  freq_table <- table(freq_table[['Cluster']], freq_table[['Sample']])
   for (i in 1:ncol(freq_table)) {
     freq_table[, i] <- freq_table[, i] / sum(freq_table[, i])
   }
   freq_table <- data.frame(freq_table)
   colnames(freq_table) <- c("Cluster", "Sample", "Proportion")
-  p1 <- ggplot(freq_table, aes(x = Cluster, y = Sample)) +
-    geom_point(aes(size = Proportion, fill = Cluster, color = Cluster)) +
+  p1 <- ggplot(freq_table, aes(x = freq_table[['Cluster']], y = freq_table[['Sample']])) +
+    geom_point(aes_string(size = 'Proportion', fill = 'Cluster', color = 'Cluster')) +
     scale_size(guide = "none") + theme(
       axis.line = element_blank(),
       axis.text.x = element_blank(),
@@ -4777,10 +4347,10 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
     df <- output_list[[x]]
     colnames(df) <- df_cols
     df <- transform(df,
-                    factor_num = as.numeric(factor_num), gene = as.character(gene),
-                    counts1 = as.numeric(counts1), counts2 = as.numeric(counts2),
-                    fracs1 = as.numeric(fracs1), fracs2 = as.numeric(fracs2),
-                    log2fc = as.numeric(log2fc), p_value = as.numeric(p_value)
+                    factor_num = as.numeric(df$'factor_num'), gene = as.character(df$'gene'),
+                    counts1 = as.numeric(df$'counts1'), counts2 = as.numeric(df$'counts2'),
+                    fracs1 = as.numeric(df$'fracs1'), fracs2 = as.numeric(df$'fracs2'),
+                    log2fc = as.numeric(df$'log2fc'), p_value = as.numeric(df$'p_value')
     )
     # Cutoff only applies to dataset-specific dfs
     if (x != 2) {
@@ -4790,8 +4360,8 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
     }
   })
   names(output_list) <- c(dataset1, "shared", dataset2)
-  output_list[["num_factors_V1"]] <- table(output_list[[dataset1]]$gene)
-  output_list[["num_factors_V2"]] <- table(output_list[[dataset2]]$gene)
+  output_list[["num_factors_V1"]] <- table(output_list[[dataset1]]$'gene')
+  output_list[["num_factors_V2"]] <- table(output_list[[dataset2]]$'gene')
   return(output_list)
 }
 
@@ -4836,7 +4406,7 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
   # get Seurat version
   maj_version <- packageVersion('Seurat')$major
   if (class(object@raw.data[[1]])[1] != 'dgCMatrix') {
-    mat <- as(x, 'CsparseMatrix')
+    # mat <- as(x, 'CsparseMatrix')
     object@raw.data <- lapply(object@raw.data, function(x) {
       as(x, 'CsparseMatrix')
     })
@@ -4894,7 +4464,7 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
     new.seurat@scale.data <- t(scale.data)
     new.seurat@dr$tsne <- tsne.obj
     new.seurat@dr$inmf <- inmf.obj
-    new.seurat <- SetIdent(new.seurat, ident.use = ident.use)
+    new.seurat <- Seurat::SetIdent(new.seurat, ident.use = ident.use)
     
   } else {
     if (use.liger.genes) {
@@ -4904,7 +4474,7 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
     new.seurat@reductions$tsne <- tsne.obj
     new.seurat@reductions$inmf <- inmf.obj
     
-    Idents(new.seurat) <- ident.use
+    Seurat::Idents(new.seurat) <- ident.use
   }
   
   return(new.seurat)
@@ -4972,6 +4542,11 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
                           assays.use = NULL, raw.assay = "RNA", remove.missing = T, renormalize = T,
                           use.seurat.genes = T, num.hvg.info = NULL, use.idents = T, use.tsne = T,
                           cca.to.H = F) {
+  if (!requireNamespace("Seurat", quietly = TRUE)) {
+    stop("Package \"Seurat\" needed for this function to work. Please install it.",
+         call. = FALSE
+    )
+  }
   
   # Remind to set combined.seurat
   if ((typeof(objects) != "list") & (!combined.seurat)) {
@@ -5000,7 +4575,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
       # using meta.var column as division split
       if (version > 2) {
         # if integrated assay present, want to make sure to use original raw data
-        object.raw <- GetAssayData(objects, assay = raw.assay, slot = "counts")
+        object.raw <- Seurat::GetAssayData(objects, assay = raw.assay, slot = "counts")
       } else {
         object.raw <- objects@raw.data
       }
@@ -5017,14 +4592,14 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
     } else {
       # using different assays in v3 object
       raw.data <- lapply(assays.use, function(x) {
-        GetAssayData(objects, assay = x, slot = "counts")
+        Seurat::GetAssayData(objects, assay = x, slot = "counts")
       })
       names(raw.data) <- assays.use
     }
     
     if (version > 2) {
-      var.genes <- VariableFeatures(objects)
-      idents <- Idents(objects)
+      var.genes <- Seurat::VariableFeatures(objects)
+      idents <- Seurat::Idents(objects)
       if (is.null(objects@reductions$tsne)) {
         cat("Warning: no t-SNE coordinates available for this Seurat object.\n")
         tsne.coords <- NULL
@@ -5049,7 +4624,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
     raw.data <- lapply(objects, function(x) {
       if (version > 2) {
         # assuming default assays have been set for each v3 object
-        GetAssayData(x, slot = "counts")
+        Seurat::GetAssayData(x, slot = "counts")
       } else {
         x@raw.data
       }
@@ -5074,13 +4649,13 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
     
     if (version > 2) {
       var.genes <- Reduce(union, lapply(objects, function(x) {
-        VariableFeatures(x)
+        Seurat::VariableFeatures(x)
       }))
       # Get idents, label by dataset
       idents <- unlist(lapply(seq_along(objects), function(x) {
         idents <- rep("NA", ncol(raw.data[[x]]))
         names(idents) <- colnames(raw.data[[x]])
-        idents[names(Idents(objects[[x]]))] <- as.character(Idents(objects[[x]]))
+        idents[names(Seurat::Idents(objects[[x]]))] <- as.character(Seurat::Idents(objects[[x]]))
         idents <- paste0(names(raw.data)[x], idents)
       }))
       idents <- factor(idents)

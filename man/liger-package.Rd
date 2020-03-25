@@ -1,6 +1,5 @@
 \name{liger-package}
 \alias{liger-package}
-\alias{liger}
 \docType{package}
 \title{
 \packageTitle{liger}

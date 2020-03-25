@@ -1,6 +1,7 @@
 #' @importFrom Matrix colSums rowSums rowMeans t sparseMatrix
 #' @importFrom grDevices heat.colors
 #' @importFrom methods as is
+#' @importFrom rlang .data
 NULL
 
 # Utility functions for iiger methods. Some published, some not.
@@ -603,4 +604,78 @@ nnzeroGroups.matrix <- function(X, y, MARGIN=2) {
   } else {
     cpp_nnzeroGroups_dense(X, as.integer(y) - 1, length(unique(y)))
   }
+}
+
+
+# helper function of nmf_hals
+nonneg <- function(x, eps = 1e-16) {
+  x[x < eps] <- eps
+  return(x)
+}
+
+frobenius_prod <- function(X, Y) {
+  sum(X * Y)
+}
+
+# Hierarchical alternating least squares for regular NMF
+nmf_hals <- function(A, k, max_iters = 500, thresh = 1e-4, reps = 20, W0 = NULL, H0 = NULL) {
+  m <- nrow(A)
+  n <- ncol(A)
+  if (is.null(W0)) {
+    W0 <- matrix(abs(runif(m * k, min = 0, max = 2)), m, k)
+  }
+  if (is.null(H0)) {
+    H0 <- matrix(abs(runif(n * k, min = 0, max = 2)), n, k)
+  }
+  W <- W0
+  rownames(W) <- rownames(A)
+  H <- H0
+  rownames(H) <- colnames(A)
+
+  # alpha = frobenius_prod(A %*% H, W)/frobenius_prod(t(W)%*%W,t(H)%*%H)
+  # W = alpha*W
+
+  for (i in 1:k)
+  {
+    W[, i] <- W[, i] / sum(W[, i]^2)
+  }
+
+  delta <- 1
+  iters <- 0
+  # pb <- txtProgressBar(min=0,max=max_iters,style=3)
+  iter_times <- rep(0, length(max_iters))
+  objs <- rep(0, length(max_iters))
+  obj <- norm(A - W %*% t(H), "F")^2
+  # print(obj)
+  while (delta > thresh & iters < max_iters) {
+    start_time <- Sys.time()
+    obj0 <- obj
+    HtH <- t(H) %*% H
+    AH <- A %*% H
+    for (i in 1:k)
+    {
+      W[, i] <- nonneg(W[, i] + (AH[, i] - (W %*% HtH[, i])) / (HtH[i, i]))
+      W[, i] <- W[, i] / sqrt(sum(W[, i]^2))
+    }
+
+    AtW <- t(A) %*% W
+    WtW <- t(W) %*% W
+    for (i in 1:k)
+    {
+      H[, i] <- nonneg(H[, i] + (AtW[, i] - (H %*% WtW[, i])) / (WtW[i, i]))
+    }
+
+    obj <- norm(A - W %*% t(H), "F")^2
+    # print(obj)
+    delta <- abs(obj0 - obj) / (mean(obj0, obj))
+    iters <- iters + 1
+    end_time <- Sys.time()
+    iter_times[iters] <- end_time - start_time
+    objs[iters] <- obj
+    # setTxtProgressBar(pb,iters)
+  }
+  cat("\nConverged in", end_time - start_time, "seconds,", iters, "iterations. Objective:", obj, "\n")
+  # boxplot(iter_times)
+
+  return(list(W, H, cumsum(iter_times), objs))
 }
