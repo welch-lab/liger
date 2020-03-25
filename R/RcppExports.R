@@ -13,6 +13,10 @@ rowVarsFast <- function(x, means) {
     .Call('_liger_rowVarsFast', PACKAGE = 'liger', x, means)
 }
 
+sumSquaredDeviations <- function(x, means) {
+    .Call('_liger_sumSquaredDeviations', PACKAGE = 'liger', x, means)
+}
+
 cpp_sumGroups_dgc <- function(x, p, i, ncol, groups, ngroups) {
     .Call('_liger_cpp_sumGroups_dgc', PACKAGE = 'liger', x, p, i, ncol, groups, ngroups)
 }
