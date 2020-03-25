@@ -3104,14 +3104,170 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
   return(object)
 }
 
+#helper function for read_subset
+#Samples cell barcodes from specified datasets 
+#balance=NULL (default) means that max_cells are sampled from among all cells. 
+#balance="cluster" samples up to max_cells from each cluster in each dataset
+#balance="dataset" samples up to max_cells from each dataset
+#datasets.use uses only the specified datasets for sampling. Default is NULL (all datasets)
+#Returns: vector of cell barcodes
+downsample = function(object,balance=NULL,max_cells=1000,datasets.use=NULL)
+{
+  if(is.null(datasets.use))
+  {
+    datasets.use=names(object@H)
+  }
+  inds = c()
+  if (is.null(balance))
+  {
+    for (ds in datasets.use)
+    {
+      inds = c(inds,rownames(object@H[[ds]])) 
+    }
+    num_to_samp = min(max_cells,length(inds))
+    inds = sample(inds,num_to_samp)
+  }
+  else if (balance == "dataset")
+  {
+    for (ds in datasets.use)
+    {
+      num_to_samp = min(max_cells,nrow(object@H[[ds]]))
+      inds = c(inds,rownames(object@H[[ds]])[sample(1:nrow(object@H[[ds]]),num_to_samp)])
+    }
+  }
+  else #balance clusters
+  {
+    if (nrow(object@cell.data)==0)
+    {
+      dataset <- unlist(lapply(seq_along(object@H), function(i) {
+        rep(names(object@H)[i], nrow(object@H[[i]]))
+      }), use.names = F)
+      object@cell.data <- data.frame(dataset)
+      rownames(object@cell.data) <- unlist(lapply(object@H, 
+                                                  function(x) {
+                                                    rownames(x)
+                                                  }), use.names = F)
+    }
+    for (ds in datasets.use)
+    {
+      for (i in levels(object@clusters))
+      {
+        inds_to_samp = names(object@clusters)[object@clusters==i & object@cell.data[["dataset"]] == ds]
+        num_to_samp = min(max_cells,length(inds_to_samp))
+        inds = c(inds,sample(inds_to_samp,num_to_samp))  
+      }
+    }
+  }
+  return(inds)
+}
+
+#Helper function for runWilcoxon. 
+#Samples cells from "slot". balance=NULL means that max_cells are sampled from among all cells. 
+#balance="cluster" samples up to max_cells from each cluster
+#balance="dataset" samples up to max_cells from each dataset
+#chunk is the max number of cells at a time to read from disk
+#datasets.use uses only the specified datasets for sampling. Default is NULL (all datasets)
+#genes.use samples from only the specified genes. Default is NULL (all genes)
+#Returns: sparse matrix containing sampled data
+#Note: This function assumes that the cell barcodes are unique across all datasets.
+read_subset = function(object,slot.use="norm.data",balance=NULL,max_cells=1000,chunk=1000,datasets.use=NULL,genes.use=NULL)
+{
+  if (class(object@raw.data[[1]]) == "character") {
+    cat("Sampling\n")
+    if(is.null(datasets.use))
+    {
+      datasets.use=names(object@H)
+    }
+    cell_inds = downsample(object,balance=balance,max_cells=max_cells,datasets.use=datasets.use)
+    
+    hdf5_files = object@raw.data
+    vargenes = object@var.genes
+    
+    file.h5 = H5File$new(hdf5_files[[1]], mode="r+")
+    num_genes = file.h5[["matrix/features/name"]]$dims
+    genes = file.h5[["matrix/features/name"]][1:num_genes]
+    if(is.null(genes.use))
+    {
+      genes.use = genes
+    }
+    file.h5$close_all()
+    
+    data.subset = Matrix(nrow=num_genes,ncol=0,sparse=T)
+    for (i in 1:length(hdf5_files)) {
+      print(names(hdf5_files)[i])
+      chunk_size = chunk
+      fname = hdf5_files[[i]]
+      file.h5 = H5File$new(fname, mode="r+")
+      file_info = file.h5$ls(recursive = T)
+      num_cells = file.h5[["matrix/barcodes"]]$dims
+      num_genes = file.h5[["matrix/features/name"]]$dims
+      num_entries = file.h5[["matrix/data"]]$dims
+      prev_end_col = 1
+      prev_end_data = 1
+      prev_end_ind = 0
+      
+      genes = file.h5[["matrix/features/name"]][1:num_genes]
+      barcodes = file.h5[["matrix/barcodes"]][1:num_cells]
+      gene_inds = which(genes %in% vargenes)
+      
+      num_chunks = ceiling(num_cells/chunk_size)
+      pb = txtProgressBar(0, num_chunks, style = 3)
+      ind = 0
+      while (prev_end_col < num_cells) {
+        ind = ind + 1
+        if (num_cells - prev_end_col < chunk_size) {
+          chunk_size = num_cells - prev_end_col + 1
+        }
+        
+        start_inds = file.h5[["matrix/indptr"]][prev_end_col:(prev_end_col+chunk_size)]
+        row_inds = file.h5[["matrix/indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
+        if (slot.use=="raw.data")
+        {
+          counts = file.h5[["matrix/counts"]][(prev_end_ind+1):(tail(start_inds, 1))]  
+        }
+        if (slot.use=="norm.data")
+        {
+          counts = file.h5[["norm.data"]][(prev_end_ind+1):(tail(start_inds, 1))]  
+        }
+        if(slot.use=="scale.data")
+        {
+          counts = file.h5[["scale.data"]][,(prev_end_ind+1):(tail(start_inds, 1))]  
+        }
+        
+        one_chunk = sparseMatrix(i=row_inds[1:length(counts)]+1,p=start_inds[1:(chunk_size+1)]-prev_end_ind,x=counts,dims=c(num_genes,chunk_size))
+        rownames(one_chunk) = genes
+        colnames(one_chunk) = barcodes[(prev_end_col):(prev_end_col+chunk_size-1)]
+        use_these = intersect(colnames(one_chunk),cell_inds)
+        one_chunk = one_chunk[genes.use,use_these]
+        data.subset = cbind(data.subset,one_chunk)
+        
+        num_read = length(counts)
+        prev_end_col = prev_end_col + chunk_size
+        prev_end_data = prev_end_data + num_read
+        prev_end_ind = tail(start_inds, 1)
+        setTxtProgressBar(pb, ind)
+      }
+      setTxtProgressBar(pb, num_chunks)
+      file.h5$close_all()
+      cat("\n")
+    }
+  }
+  return(data.subset)
+}
+
 #' Perform Wilcoxon rank-sum test
 #'
 #' Perform Wilcoxon rank-sum tests on specified dataset using given method.
 #'
 #' @param object \code{liger} object.
-#' @param data.use This selects which dataset(s) to use. (default 'all')
-#' @param compare.method This indicates the metric of the test. Either 'clusters' or 'datasets'.
-#'
+#' @param data.use This selects which dataset(s) to use. (default NULL, which uses all datasets)
+#' @param compare.method Compare genes across \code{clusters} (using all datasets) or across \code{datasets} (within each cluster).
+#' @param balance.by Sample from all datasets proportional to dataset size (default), balance the sample by \code{cluster} or 
+#' balance the sample by \code{dataset}
+#' @param max.sample Maximum number of cells to sample from either all datasets, each cluster, or each dataset
+#' (depending on the value of \code{balance.by}). Default 1000.
+#' @param chunk Number of cells at a time to read when constructing subset of data. Default 1000.
+#' 
 #' @return A 10-columns data.frame with test results.
 #' @export
 #' @examples
@@ -3130,8 +3286,8 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
 #' wilcox.results <- runWilcoxon(ligerex, compare.method = "datastes", data.use = c(1, 2))
 #' }
 #'
-runWilcoxon <- function(object, data.use = "all", compare.method) {
-  # check parameter inputs
+runWilcoxon = function (object, data.use = NULL, compare.method,balance.by=NULL,max.sample=1000,chunk=1000) 
+{
   if (missing(compare.method)) {
     stop("Parameter *compare.method* cannot be empty!")
   }
@@ -3146,62 +3302,83 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
       stop("Should have at least TWO inputs to compare between datasets")
     }
   }
-
-  ### create feature x sample matrix
-  if (data.use == "all" | length(data.use) > 1) { # at least two datasets
-    if (data.use == "all") {
-      print(paste0("Performing Wilcoxon test on ALL datasets: ", toString(names(object@norm.data))))
+  if (nrow(object@cell.data)==0)
+  {
+    dataset <- unlist(lapply(seq_along(object@H), function(i) {
+      rep(names(object@H)[i], nrow(object@H[[i]]))
+    }), use.names = F)
+    object@cell.data <- data.frame(dataset)
+    rownames(object@cell.data) <- unlist(lapply(object@H, 
+                                                function(x) {
+                                                  rownames(x)
+                                                }), use.names = F)
+  }
+  if (is.null(data.use) | length(data.use) > 1) {
+    if (is.null(data.use)) {
+      print(paste0("Performing Wilcoxon test on ALL datasets: ", 
+                   toString(names(object@norm.data))))
       sample.list <- attributes(object@norm.data)$names
     }
     else {
-      print(paste0("Performing Wilcoxon test on GIVEN datasets: ", toString(data.use)))
+      print(paste0("Performing Wilcoxon test on GIVEN datasets: ", 
+                   toString(data.use)))
       sample.list <- data.use
     }
     genes <- Reduce(intersect, lapply(sample.list, function(sample) {
-      object@norm.data[[sample]]@Dimnames[[1]]
-    })) # get all shared genes of every datasets
-
-    feature_matrix <- Reduce(cbind, lapply(sample.list, function(sample) {
-      object@norm.data[[sample]][genes, ]
-    })) # get feature matrix, shared genes as rows and all barcodes as columns
-
-    # get labels of clusters and datasets
-    cell_source <- object@cell.data[["dataset"]] # from which dataset
+      if (is.matrix(object@norm.data[[sample]]))
+      {
+        return(object@norm.data[[sample]]@Dimnames[[1]])
+      }
+      else
+      {
+        file.h5 = H5File$new(object@norm.data[[sample]], mode="r+")
+        return(file.h5[["matrix/features/name"]][])
+      }
+    }))
+    feature_matrix <- read_subset(object,"norm.data",balance=balance.by,max_cells = max.sample,chunk=chunk,datasets.use=data.use,genes.use=genes)
+    cell_source <- object@cell.data[["dataset"]]
     names(cell_source) <- names(object@clusters)
-    cell_source <- cell_source[colnames(feature_matrix), drop = TRUE]
-    clusters <- object@clusters[colnames(feature_matrix), drop = TRUE] # from which cluster
-  } else { # for one dataset only
-    print(paste0("Performing Wilcoxon test on GIVEN dataset: ", data.use))
-    feature_matrix <- object@norm.data[[data.use]]
-    clusters <- object@clusters[object@norm.data[[data.use]]@Dimnames[[2]], drop = TRUE] # from which cluster
+    cell_source <- cell_source[colnames(feature_matrix), 
+                               drop = TRUE]
+    clusters <- object@clusters[colnames(feature_matrix), 
+                                drop = TRUE]
   }
-
-  ### perform wilcoxon test
-  if (compare.method == "clusters") { # compare between clusters across datasets
+  else {
+    print(paste0("Performing Wilcoxon test on GIVEN datasets: ", 
+                 data.use))
+    feature_matrix <- read_subset(object,"norm.data",balance=balance.by,max_cells = max.sample,chunk=chunk,datasets.use=data.use,genes.use=genes)
+    clusters <- object@clusters[object@norm.data[[data.use]]@Dimnames[[2]], 
+                                drop = TRUE]
+  }
+  if (compare.method == "clusters") {
     len <- nrow(feature_matrix)
-    if (len > 100000) {
+    if (len > 1e+05) {
       print("Calculating Large-scale Input...")
-      results <- Reduce(rbind, lapply(suppressWarnings(split(seq(len), seq(len / 100000))), function(index) {
-        wilcoxauc(log(feature_matrix[index, ] + 1e-10), clusters)
-      }))
-    } else {
-      results <- wilcoxauc(log(feature_matrix + 1e-10), clusters)
+      results <- Reduce(rbind, lapply(suppressWarnings(split(seq(len), 
+                                                             seq(len/1e+05))), function(index) {
+                                                               wilcoxauc(log(feature_matrix[index, ] + 1e-10), 
+                                                                         clusters)
+                                                             }))
+    }
+    else {
+      results <- wilcoxauc(log(feature_matrix + 1e-10), 
+                           clusters)
     }
   }
-
-  if (compare.method == "datasets") { # compare between datasets within each cluster
+  if (compare.method == "datasets") {
     results <- Reduce(rbind, lapply(levels(clusters), function(cluster) {
-      sub_barcodes <- names(clusters[clusters == cluster]) # every barcode within this cluster
-      sub_label <- paste0(cluster, "-", cell_source[sub_barcodes]) # data source for each cell
+      sub_barcodes <- names(clusters[clusters == cluster])
+      sub_label <- paste0(cluster, "-", cell_source[sub_barcodes])
       sub_matrix <- feature_matrix[, sub_barcodes]
-      if (length(unique(cell_source[sub_barcodes])) == 1) { # if cluster has only 1 data source
-        print(paste0("Note: Skip Cluster ", cluster, " since it has only ONE data source."))
+      if (length(unique(cell_source[sub_barcodes])) == 
+          1) {
+        print(paste0("Note: Skip Cluster ", cluster, 
+                     " since it has only ONE data source."))
         return()
       }
       return(wilcoxauc(log(sub_matrix + 1e-10), sub_label))
     }))
   }
-
   return(results)
 }
 
