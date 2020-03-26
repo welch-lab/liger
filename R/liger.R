@@ -2980,6 +2980,8 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
     p1 <- p1 + theme(legend.position = "none")
     p2 <- p2 + theme(legend.position = "none")
   }
+  p1 <- p1 + theme_cowplot(12)
+  p2 <- p2 + theme_cowplot(12)
   if (return.plots) {
     return(list(p1, p2))
   } else {
@@ -3815,7 +3817,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
         plot.background = element_blank(), plot.title = element_blank()
       )
     }
-    p_list[[as.character(sub_df$plotby[1])]] <- ggp
+    p_list[[as.character(sub_df$plotby[1])]] <- ggp + theme_cowplot(12)
   }
   if (plot.by == 'dataset') {
     p_list <- p_list[names(object@raw.data)]
