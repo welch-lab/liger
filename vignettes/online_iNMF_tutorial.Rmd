@@ -49,7 +49,8 @@ performs differential expression analysis by sampling a specified number of cell
 de_genes = runWilcoxon(pbmcs, compare.method = "clusters", max.sample = 5000)
 ```
 ```{r wilcox 2}
-head(de_genes)
+de_genes = de_genes[order(de_genes$padj), ]
+head(de_genes[de_genes$group == 1,], n = 10)
 ```
 ##Scenario 2: iterative refinement by incorporating new datasets
 We can also perform online iNMF with continually arriving datasets.
