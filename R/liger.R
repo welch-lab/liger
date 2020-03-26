@@ -1729,12 +1729,14 @@ quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells 
 louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps = 0.1, nRandomStarts = 10,
                            nIterations = 100, random.seed = 1) {
   output_path <- paste0('edge_', sub('\\s', '_', Sys.time()), '.txt')
+  output_path = sub(":","_",output_path)
+  output_path = sub(":","_",output_path)
   knn <- RANN::nn2(object@H.norm, k = k, eps = eps)
   snn <- ComputeSNN(knn$nn.idx, prune = prune)
-  WriteEdgeFile(snn, output_path, display_progress = T)
+  WriteEdgeFile(snn, output_path, display_progress = F)
   clusts <- RunModularityClusteringCpp(snn,
     modularityFunction = 1, resolution = resolution, nRandomStarts = nRandomStarts,
-    nIterations = nIterations, algorithm = 1, randomSeed = random.seed, printOutput = T,
+    nIterations = nIterations, algorithm = 1, randomSeed = random.seed, printOutput = F,
     edgefilename = output_path
   )
   names(clusts) = names(object@clusters)
