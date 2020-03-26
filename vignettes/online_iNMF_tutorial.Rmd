@@ -1,7 +1,7 @@
 ---
 title: "Iterative Refinement of Cellular Identity Using Online iNMF"
 author: "Chao Gao and Joshua Welch"
-date: "March 23, 2020"
+date: "March 26, 2020"
 output: html_document
 ---
 
@@ -17,35 +17,44 @@ install_github("MacoskoLab/liger", ref = "online")
 We first create a liger object by passing the filenames of HDF5 files containing the raw count data. The data can be downloaded [here](https://umich.box.com/s/m5cojytshxvk44pc4kki6clh6c9sv7ai).
 ```{r create.object, message=FALSE, results='hide'}
 library(liger)
-
-pbmcs = createLiger(list(stim="stim_PBMCs.h5",ctrl="ctrl_PBMCs.h5"))
+pbmcs = createLiger(list(stim = "stim_PBMCs.h5", ctrl = "ctrl_PBMCs.h5"))
 ```
+
 We then perform the normalization, gene selection, and gene scaling in an online fashion, reading the data from disk in small batches.
 ```{r preprocess, message=FALSE, results='hide'}
 pbmcs = normalize(pbmcs)
-pbmcs = selectGenes(pbmcs,var.thresh = 0.2,do.plot = F)
+pbmcs = selectGenes(pbmcs, var.thresh = 0.2, do.plot = F)
 pbmcs = scaleNotCenter(pbmcs)
 ```
 ## Online Integrative Nonnegative Matrix Factorization
-Now we can use online iNMF to factorize the data, again using only minibatches that we read from the HDF5 files on demand.
+Now we can use online iNMF to factorize the data, again using only minibatches that we read from the HDF5 files on demand (default mini-batch size = 5000).
 ```{r factorize, message=FALSE, results='hide'}
-pbmcs = online_iNMF(pbmcs, k=20, max.epochs = 5)
+pbmcs = online_iNMF(pbmcs, k = 20, max.epochs = 5)
 ```
 ## Quantile Normalization and Downstream Analysis
 After performing the factorization, we can perform quantile normalization to align the datasets.
 ```{r norm}
 pbmcs = quantile_norm(pbmcs)
 ```
+
 We can also visualize the cell factor loadings in two dimensions using t-SNE or UMAP.
 ```{r visualize}
 pbmcs = runUMAP(pbmcs)
 plotByDatasetAndCluster(pbmcs, axis.labels = c("UMAP1","UMAP2"))
 ```
 
+We can also compare clusters or datasets (within each cluster) to identify differentially expressed genes. The runWilcoxon function
+performs differential expression analysis by sampling a specified number of cells from the dataset on disk, then performing an in-memory Wilcoxon rank-sum test on this subset. Thus, users can still analyze large datasets with a fixed amount of memory.
+```{r wilcox 1, results='hide'}
+de_genes = runWilcoxon(pbmcs, compare.method = "clusters", max.sample = 5000)
+```
+```{r wilcox 2}
+head(de_genes)
+```
 ##Scenario 2: iterative refinement by incorporating new datasets
 We can also perform online iNMF with continually arriving datasets.
 ```{r prep1, message=FALSE, results='hide'}
-MOp = createLiger(list(cells="allen_smarter_cells.h5"))
+MOp = createLiger(list(cells = "allen_smarter_cells.h5"))
 MOp = normalize(MOp)
 MOp = selectGenes(MOp, var.thresh = 2)
 MOp.vargenes = MOp@var.genes
@@ -53,7 +62,7 @@ MOp = scaleNotCenter(MOp)
 ```
 
 ```{r fact1, message=FALSE, results='hide'}
-MOp = online_iNMF(MOp, k=40, max.epochs = 1)
+MOp = online_iNMF(MOp, k = 40, max.epochs = 1)
 ```
 
 ```{r vis1}
@@ -63,7 +72,7 @@ plotByDatasetAndCluster(MOp, axis.labels = c("UMAP1","UMAP2"))
 ```
 
 ```{r prep2, message=FALSE, results='hide'}
-MOp2 = createLiger(list(nuclei="allen_smarter_nuclei.h5"))
+MOp2 = createLiger(list(nuclei = "allen_smarter_nuclei.h5"))
 MOp2 = normalize(MOp2)
 MOp2@var.genes = MOp@var.genes
 MOp2 = scaleNotCenter(MOp2)
@@ -80,7 +89,7 @@ plotByDatasetAndCluster(MOp, axis.labels = c("UMAP1","UMAP2"))
 
 ##Scenario 3: projecting new datasets
 ```{r prep3, message=FALSE, results='hide'}
-MOp = createLiger(list(cells="allen_smarter_cells.h5"))
+MOp = createLiger(list(cells = "allen_smarter_cells.h5"))
 MOp@var.genes = MOp.vargenes
 MOp = online_iNMF(MOp, k = 40, max.epochs = 1)
 MOp = quantile_norm(MOp)

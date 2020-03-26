@@ -1449,6 +1449,7 @@ online_iNMF_h5 = function(object,
 #'
 #' @description
 #' Perform thresholding on the input dense matrix. Remove any values samller than eps by eps.
+#' Helper function for online_iNMF
 #'
 #' @param x Dense matrix.
 #' @param eps Threshold. Should be a small positive value. (default 1e-16)
