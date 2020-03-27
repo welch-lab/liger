@@ -8,6 +8,9 @@
 #include <iomanip>
 
 using namespace Rcpp;
+
+// Codes from Seurat (https://github.com/satijalab/seurat)
+
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::depends(RcppProgress)]]
 

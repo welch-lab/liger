@@ -36,7 +36,7 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 * [Integrating Multiple Single-Cell RNA-seq Datasets](https://macoskolab.github.io/liger/walkthrough_pbmc.html)
 
-* [Jointly Defining Cell Types from scRNA-seq and snATAC-seq](https://macoskolab.github.io/liger/walkthrough_rna_atac.html)
+* [Jointly Defining Cell Types from scRNA-seq and scATAC-seq](http://htmlpreview.github.io/?https://github.com/MacoskoLab/liger/blob/master/vignettes/Integrating_scRNA_and_scATAC_data.html)
 
 * [Jointly Defining Cell Types from Single-Cell RNA-seq and DNA Methylation](https://macoskolab.github.io/liger/rna-methylation.html)
 
@@ -178,8 +178,8 @@ We also provide a set of scRNA-seq and scATAC-seq datasets for real-world style 
 * scATAC and scRNA data provided by [GreenleafLab](https://github.com/GreenleafLab/MPAL-Single-Cell-2019); you can access the pre-processed data from [here](https://umich.box.com/s/wip2nzpktn6fdnlpc83o1u7anjn4ue2c):
      + `GSM4138872_scRNA_BMMC_D1T1.RDS`;
      + `GSM4138873_scRNA_BMMC_D1T2.RDS`;
-     + `GSM4138888_atac_gene_counts_D5T1.RDS`;
-     + `GSM4138888_atac_promoter_counts_D5T1.RDS`.
+     + `GSM4138888_scATAC_BMMC_D5T1_peak_counts.RDS`;
+     + `GSM4138888_scATAC_BMMC_D5T1.RDS`.
 
 * scRNA data composed of two datasets of interneurons and oligodendrocytes from the mouse frontal cortex, two distinct cell types that should not align if integrated. Provided by [Saunders, A. et.al., 2018](https://doi.org/10.1016/j.cell.2018.07.028); you can access the pre-processed data from [here](https://umich.box.com/s/n1xfpu9hplrknu6to6u9kvbktsqcql8t):
      + `interneurons_and_oligo.RDS`;

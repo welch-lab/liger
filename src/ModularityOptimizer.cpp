@@ -1,3 +1,5 @@
+// Codes from Seurat (https://github.com/satijalab/seurat)
+//
 // This code is a translation of the Java package, ModularityOptimizer.jar,
 // available from http://www.ludowaltman.nl/slm/ that performs clustering and was
 // used by an earlier version of Seurat.
