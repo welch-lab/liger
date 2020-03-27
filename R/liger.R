@@ -280,10 +280,17 @@ createLiger = function(raw.data, make.sparse = T, take.gene.union = F, remove.mi
                            version = packageVersion("liger"))
     object@V = rep(list(NULL), length(raw.data))
     object@H = rep(list(NULL), length(raw.data))
+    for (i in 1:length(raw.data)){
+      file.h5 = H5File$new(raw.data[[i]], mode="r+")
+      if (file.h5$exists("scale.data")){
+        object@scale.data[[i]] = file.h5[["scale.data"]]
+        names(object@scale.data)[[i]] = names(object@raw.data)[[i]]
+      }
+    }
     if (is.null(names(object@raw.data))){
       names(object@raw.data) <- as.character(paste0("data",1:length(object@raw.data)))
     }
-      names(object@H) <- names(object@V) <- names(object@raw.data)
+    names(object@H) <- names(object@V) <- names(object@raw.data)
     return(object)
   }
   
@@ -816,9 +823,11 @@ scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
         setTxtProgressBar(pb, ind)
       }
       file.h5$close_all()
+      object@scale.data[[i]] = H5File$new(fname, mode="r+")[["scale.data"]]
       setTxtProgressBar(pb, num_chunks)
       cat("\n")
     }
+    names(object@scale.data) <- names(object@raw.data)
   } else {
     if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
         class(object@raw.data[[1]])[1] == "dgCMatrix") {
@@ -1047,6 +1056,7 @@ online_iNMF_h5 = function(object,
                           
   if (!is.null(X_new)){ # if there is new dataset
     raw.data_prev = object@raw.data
+    scale.data_prev = object@scale.data
     names(raw.data_prev) = names(object@raw.data)
     if (is.null(names(X_new))){
       names(X_new) <- as.character(paste0("new_data",1:length(X_new)))
@@ -1064,9 +1074,10 @@ online_iNMF_h5 = function(object,
         object = scaleNotCenter(object, remove.missing = T, chunk = h5_chunk_size)
         cat("New dataset", i, "Processed.", "\n")
       }
-      file.h5$close_all()
+      #file.h5$close_all()
     }
     object@raw.data = c(raw.data_prev, X_new)
+    object@scale.data = c(scale.data_prev, object@scale.data)
     # k x gene -> gene x k & cell x k-> k x cell 
     object@W = t(object@W)
     object@V = lapply(object@V, t)
@@ -1101,7 +1112,7 @@ online_iNMF_h5 = function(object,
     file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
     cell_barcodes[[i]] = file.h5[["matrix/barcodes"]][]
     num_cells = c(num_cells, length(cell_barcodes[[i]]))
-    file.h5$close_all()
+    #file.h5$close_all()
   }
   num_cells_new = num_cells[(num_prev_files+1):num_files]
   minibatch_sizes = rep(0, num_files)
@@ -1130,17 +1141,15 @@ online_iNMF_h5 = function(object,
     } else {
       object@W = if(!is.null(W.init)) W.init else object@W
     } 
-    
-
 
     # V_i matrix initialization
     if (is.null(X_new)) {
       object@V = list()    
       for (i in file_idx){
-        file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
+        #file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
         V_init_idx = sample(1:num_cells_new[i], k) # pick k sample from datasets as initial H matrix
-        object@V[[i]] = file.h5[["scale.data"]][,V_init_idx]
-        file.h5$close_all()
+        object@V[[i]] = object@scale.data[[i]][, V_init_idx]
+        #file.h5$close_all()
       }
 
       # normalize the columns of H_i, H_s matrices
@@ -1153,16 +1162,15 @@ online_iNMF_h5 = function(object,
       object@V[file_idx_prev] = if(!is.null(V.init)) V.init else object@V
       V_init_idx = list()
       for (i in file_idx_new){
-        file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
+        #file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
         V_init_idx = sample(1:num_cells[i], k)
-        object@V[[i]] = file.h5[["scale.data"]][,V_init_idx] # initialize the Vi for new dataset
+        object@V[[i]] = object@scale.data[[i]][, V_init_idx] # initialize the Vi for new dataset
         for (j in 1:k){
           object@V[[i]][, j] = object@V[[i]][, j] / sqrt(sum(object@V[[i]][, j]^2)) 
         }
-        file.h5$close_all()
+        #file.h5$close_all()
       }
     }
-
     # H_i matrices initialization
     if (is.null(X_new)) {
       object@H = rep(list(NULL),num_files)
@@ -1230,10 +1238,7 @@ online_iNMF_h5 = function(object,
         }
       }
     }
-    
-    
-          
-
+ 
     cat("Starting Online iNMF...", "\n")
     total.iters = floor(sum(num_cells_new) * max.epochs / miniBatch_size)
     pb <- txtProgressBar(min = 1, max = total.iters+1, style = 3)
@@ -1292,9 +1297,9 @@ online_iNMF_h5 = function(object,
       if (length(minibatch_idx[[file_idx_new[1]]]) == minibatch_sizes_orig[file_idx_new[1]]){ 
         X_minibatch = rep(list(NULL), num_files)
         for (i in file_idx_new){
-          file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
-          X_minibatch[[i]] = file.h5[["scale.data"]][ ,minibatch_idx[[i]]]
-          file.h5$close_all()
+          #file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
+          X_minibatch[[i]] = object@scale.data[[i]][ ,minibatch_idx[[i]]]
+          #file.h5$close_all()
         }
       
         # update H_i by ANLS Hi_minibatch[[i]]
@@ -1379,10 +1384,10 @@ online_iNMF_h5 = function(object,
     cat("\nCalculate metagene loadings...")
     object@H = rep(list(NULL), num_files)
     for (i in file_idx){
-      file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
+      #file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
       num_batch = num_cells[i] %/% miniBatch_size + 1
       if (num_batch == 1){
-        X_i = file.h5[["scale.data"]][,]
+        X_i = object@scale.data[[i]][,]
         object@H[[i]] = solveNNLS(rbind(object@W + object@V[[i]],sqrt_lambda * object@V[[i]]), rbind(X_i, matrix(0, num_genes , num_cells[i])))
       } else {
         for (batch_idx in 1:num_batch){
@@ -1391,12 +1396,12 @@ online_iNMF_h5 = function(object,
           } else {
             cell_idx = ((batch_idx - 1) * miniBatch_size + 1):num_cells[i]
           }
-          X_i_batch = file.h5[["scale.data"]][,cell_idx]
-          object@H[[i]] = cbind(object@H[[i]],solveNNLS(rbind(object@W + object@V[[i]], sqrt_lambda * object@V[[i]]), 
-                                                          rbind(X_i_batch, matrix(0, num_genes , length(cell_idx)))))
+          X_i_batch = object@scale.data[[i]][,cell_idx]
+          object@H[[i]] = cbind(object@H[[i]], solveNNLS(rbind(object@W + object@V[[i]], sqrt_lambda * object@V[[i]]), 
+                                                         rbind(X_i_batch, matrix(0, num_genes , length(cell_idx)))))
         }        
       }
-      file.h5$close_all()
+      #file.h5$close_all()
       colnames(object@H[[i]]) = cell_barcodes[[i]]
     }
 
@@ -1414,10 +1419,10 @@ online_iNMF_h5 = function(object,
     object@H[file_idx_new] = rep(list(NULL), num_new_files)
     object@V[file_idx_new] = rep(list(NULL), num_new_files)
     for (i in file_idx_new){
-      file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
+      #file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
       num_batch = num_cells[i] %/% miniBatch_size + 1
       if (num_cells[i] <= miniBatch_size){
-        object@H[[i]] = solveNNLS(object@W, file.h5[["scale.data"]][])
+        object@H[[i]] = solveNNLS(object@W, object@scale.data[[i]][,])
       } else {
         for (batch_idx in 1:num_batch){
           if (batch_idx != num_batch){
@@ -1425,12 +1430,12 @@ online_iNMF_h5 = function(object,
           } else {
             cell_idx = ((batch_idx - 1) * miniBatch_size + 1):num_cells[i]
           }
-          object@H[[i]] = cbind(object@H[[i]],solveNNLS(object@W, file.h5[["scale.data"]][,cell_idx]))
+          object@H[[i]] = cbind(object@H[[i]],solveNNLS(object@W, object@scale.data[[i]][,cell_idx]))
         }
       }
       colnames(object@H[[i]]) = file.h5[["matrix/barcodes"]][]
       object@V[[i]] = matrix(0, num_genes, k)
-      file.h5$close_all()
+      #file.h5$close_all()
     }
   }
 
@@ -1438,8 +1443,9 @@ online_iNMF_h5 = function(object,
   object@W = t(object@W)
   object@V = lapply(object@V, t)
   object@H = lapply(object@H, t)
+
   if (!is.null(X_new)){
-    names(object@raw.data) = c(names(raw.data_prev), names(X_new))
+    names(object@scale.data) <- names(object@raw.data) <- c(names(raw.data_prev), names(X_new))
   }
   names(object@H) <- names(object@V) <- names(object@raw.data)
   return(object)
