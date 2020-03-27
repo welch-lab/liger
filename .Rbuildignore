@@ -4,3 +4,4 @@
 ^_config\.yml$
 ^vignettes/walkthrough_pbmc\.Rmd$
 ^docs$
+^vignettes/Integrating_scRNA_and_scATAC_data\.Rmd$

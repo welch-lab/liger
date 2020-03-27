@@ -679,3 +679,204 @@ nmf_hals <- function(A, k, max_iters = 500, thresh = 1e-4, reps = 20, W0 = NULL,
 
   return(list(W, H, cumsum(iter_times), objs))
 }
+
+
+# FIt-SNE helper function for calling fast_tsne from R
+#
+# Codes from Seurat (https://github.com/satijalab/seurat)
+#
+# Originally Based on Kluger Lab FIt-SNE v1.1.0 code on https://github.com/KlugerLab/FIt-SNE/blob/master/fast_tsne.R
+# commit d2cf403 on Feb 8, 2019
+#
+#' @importFrom utils file_test
+#
+fftRtsne <- function(X,
+                     dims = 2,
+                     perplexity = 30,
+                     theta = 0.5,
+                     check_duplicates = TRUE,
+                     max_iter = 1000,
+                     fft_not_bh = TRUE,
+                     ann_not_vptree = TRUE,
+                     stop_early_exag_iter = 250,
+                     exaggeration_factor = 12.0,
+                     no_momentum_during_exag = FALSE,
+                     start_late_exag_iter = -1.0,
+                     late_exag_coeff = 1.0,
+                     mom_switch_iter = 250,
+                     momentum = 0.5,
+                     final_momentum = 0.8,
+                     learning_rate = 200,
+                     n_trees = 50,
+                     search_k = -1,
+                     rand_seed = -1,
+                     nterms = 3,
+                     intervals_per_integer = 1,
+                     min_num_intervals = 50,
+                     K = -1,
+                     sigma = -30,
+                     initialization = NULL,
+                     data_path = NULL,
+                     result_path = NULL,
+                     load_affinities = NULL,
+                     fast_tsne_path = NULL,
+                     nthreads = getOption("mc.cores", default = 1),
+                     perplexity_list = NULL,
+                     get_costs = FALSE,
+                     df = 1.0,
+                     ...) {
+  if (is.null(fast_tsne_path)) {
+    stop("Please pass in path to FIt-SNE directory as fitsne.path.")
+  }
+  else {
+    if (.Platform$OS.type == "unix") {
+      fast_tsne_path <- file.path(fast_tsne_path, "bin", "fast_tsne")
+    } else {
+      fast_tsne_path <- file.path(fast_tsne_path, "bin", "FItSNE.exe")
+    }
+  }
+
+  if (is.null(x = data_path)) {
+    data_path <- tempfile(pattern = "fftRtsne_data_", fileext = ".dat")
+  }
+  if (is.null(x = result_path)) {
+    result_path <- tempfile(pattern = "fftRtsne_result_", fileext = ".dat")
+  }
+
+  fast_tsne_path <- normalizePath(path = fast_tsne_path)
+  if (!file_test(op = "-x", x = fast_tsne_path)) {
+    stop("fast_tsne_path '", fast_tsne_path, "' does not exist or is not executable")
+  }
+  # check fast_tsne version
+  ft.out <- suppressWarnings(expr = system2(command = fast_tsne_path, stdout = TRUE))
+  if (grepl(pattern = "= t-SNE v1.1", x = ft.out[1])) {
+    version_number <- "1.1.0"
+  } else if (grepl(pattern = "= t-SNE v1.0", x = ft.out[1])) {
+    version_number <- "1.0"
+  } else {
+    message("First line of fast_tsne output is")
+    message(ft.out[1])
+    stop("Our FIt-SNE wrapper requires FIt-SNE v1.X.X, please install the appropriate version from github.com/KlugerLab/FIt-SNE and have fast_tsne_path point to it if it's not in your path")
+  }
+  is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
+    return(abs(x = x - round(x = x)) < tol)
+  }
+  if (version_number == "1.0" && df != 1.0) {
+    stop("This version of FIt-SNE does not support df!=1. Please install the appropriate version from github.com/KlugerLab/FIt-SNE")
+  }
+  if (!is.numeric(x = theta) || (theta < 0.0) || (theta > 1.0)) {
+    stop("Incorrect theta.")
+  }
+  if (nrow(x = X) - 1 < 3 * perplexity) {
+    stop("Perplexity is too large.")
+  }
+  if (!is.matrix(x = X)) {
+    stop("Input X is not a matrix")
+  }
+  if (!(max_iter > 0)) {
+    stop("Incorrect number of iterations.")
+  }
+  if (!is.wholenumber(x = stop_early_exag_iter) || stop_early_exag_iter < 0) {
+    stop("stop_early_exag_iter should be a positive integer")
+  }
+  if (!is.numeric(x = exaggeration_factor)) {
+    stop("exaggeration_factor should be numeric")
+  }
+  if (!is.wholenumber(x = dims) || dims <= 0) {
+    stop("Incorrect dimensionality.")
+  }
+  if (search_k == -1) {
+    if (perplexity > 0) {
+      search_k <- n_trees * perplexity * 3
+    } else if (perplexity == 0) {
+      search_k <- n_trees * max(perplexity_list) * 3
+    } else {
+      search_k <- n_trees * K * 3
+    }
+  }
+  nbody_algo <- ifelse(test = fft_not_bh, yes = 2, no = 1)
+  if (is.null(load_affinities)) {
+    load_affinities <- 0
+  } else {
+    if (load_affinities == "load") {
+      load_affinities <- 1
+    } else if (load_affinities == "save") {
+      load_affinities <- 2
+    } else {
+      load_affinities <- 0
+    }
+  }
+  knn_algo <- ifelse(test = ann_not_vptree, yes = 1, no = 2)
+  f <- file(description = data_path, open = "wb")
+  n <- nrow(x = X)
+  D <- ncol(x = X)
+  writeBin(object = as.integer(x = n), con = f, size = 4)
+  writeBin(object = as.integer(x = D), con = f, size = 4)
+  writeBin(object = as.numeric(x = theta), con = f, size = 8) # theta
+  writeBin(object = as.numeric(x = perplexity), con = f, size = 8) # theta
+  if (perplexity == 0) {
+    writeBin(object = as.integer(x = length(x = perplexity_list)), con = f, size = 4)
+    writeBin(object = perplexity_list, con = f)
+  }
+  writeBin(object = as.integer(x = dims), con = f, size = 4) # theta
+  writeBin(object = as.integer(x = max_iter), con = f, size = 4)
+  writeBin(object = as.integer(x = stop_early_exag_iter), con = f, size = 4)
+  writeBin(object = as.integer(x = mom_switch_iter), con = f, size = 4)
+  writeBin(object = as.numeric(x = momentum), con = f, size = 8)
+  writeBin(object = as.numeric(x = final_momentum), con = f, size = 8)
+  writeBin(object = as.numeric(x = learning_rate), con = f, size = 8)
+  writeBin(object = as.integer(x = K), con = f, size = 4) # K
+  writeBin(object = as.numeric(x = sigma), con = f, size = 8) # sigma
+  writeBin(object = as.integer(x = nbody_algo), con = f, size = 4) # not barnes hut
+  writeBin(object = as.integer(x = knn_algo), con = f, size = 4)
+  writeBin(object = as.numeric(x = exaggeration_factor), con = f, size = 8) # compexag
+  writeBin(object = as.integer(x = no_momentum_during_exag), con = f, size = 4)
+  writeBin(object = as.integer(x = n_trees), con = f, size = 4)
+  writeBin(object = as.integer(x = search_k), con = f, size = 4)
+  writeBin(object = as.integer(x = start_late_exag_iter), con = f, size = 4)
+  writeBin(object = as.numeric(x = late_exag_coeff), con = f, size = 8)
+  writeBin(object = as.integer(x = nterms), con = f, size = 4)
+  writeBin(object = as.numeric(x = intervals_per_integer), con = f, size = 8)
+  writeBin(object = as.integer(x = min_num_intervals), con = f, size = 4)
+  tX <- c(t(X))
+  writeBin(object = tX, con = f)
+  writeBin(object = as.integer(x = rand_seed), con = f, size = 4)
+  if (version_number != "1.0") {
+    writeBin(object = as.numeric(x = df), con = f, size = 8)
+  }
+  writeBin(object = as.integer(x = load_affinities), con = f, size = 4)
+  if (!is.null(x = initialization)) {
+    writeBin(object = c(t(x = initialization)), con = f)
+  }
+  close(con = f)
+  if (version_number == "1.0") {
+    flag <- system2(
+      command = fast_tsne_path,
+      args = c(data_path, result_path, nthreads)
+    )
+  } else {
+    flag <- system2(
+      command = fast_tsne_path,
+      args = c(version_number, data_path, result_path, nthreads)
+    )
+  }
+  if (flag != 0) {
+    stop("tsne call failed")
+  }
+  f <- file(description = result_path, open = "rb")
+  n <- readBin(con = f, what = integer(), n = 1, size = 4)
+  d <- readBin(con = f, what = integer(), n = 1, size = 4)
+  Y <- readBin(con = f, what = numeric(), n = n * d)
+  Y <- t(x = matrix(Y, nrow = d))
+  if (get_costs) {
+    tmp <- readBin(con = f, what = integer(), n = 1, size = 4)
+    costs <- readBin(con = f, what = numeric(), n = max_iter, size = 8)
+    Yout <- list(Y = Y, costs = costs)
+  } else {
+    Yout <- Y
+  }
+  close(con = f)
+  file.remove(data_path)
+  file.remove(result_path)
+  return(Yout)
+}

@@ -2368,7 +2368,7 @@ runGSEA <- function(object, gene_sets = c(), mat_w = T, mat_v = 0, custom_gene_s
 #' }
 
 runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.pca = F,
-                    perplexity = 30, theta = 0.5, method = 'Rtsne', fitsne.path = NULL,
+                    perplexity = 30, theta = 0.5, method = "Rtsne", fitsne.path = NULL,
                     rand.seed = 42) {
   if (use.raw) {
     data.use <- do.call(rbind, object@H)
@@ -2378,21 +2378,28 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
   } else {
     data.use <- object@H.norm
   }
-  if (method == 'Rtsne') {
+  if (method == "Rtsne") {
     set.seed(rand.seed)
-    object@tsne.coords <- Rtsne(data.use[, dims.use], pca = use.pca, check_duplicates = F,
-                                theta = theta, perplexity = perplexity)$Y
-  } else if (method == 'fftRtsne') {
-    if (!exists('fftRtsne')) {
-      if (is.null(fitsne.path)) {
-        stop('Please pass in path to FIt-SNE directory as fitsne.path.')
-      }
-      source(paste0(fitsne.path, '/fast_tsne.R'), chdir = T)
-    }
-    object@tsne.coords <- fftRtsne(data.use[, dims.use], rand_seed = rand.seed,
-                                   theta = theta, perplexity = perplexity)
+    object@tsne.coords <- Rtsne(data.use[, dims.use],
+      pca = use.pca, check_duplicates = F,
+      theta = theta, perplexity = perplexity
+    )$Y
+  } else if (method == "fftRtsne") {
+    # if (!exists('fftRtsne')) {
+    #   if (is.null(fitsne.path)) {
+    #     stop('Please pass in path to FIt-SNE directory as fitsne.path.')
+    #   }
+    # source(paste0(fitsne.path, '/fast_tsne.R'), chdir = T)
+    # }
+    # object@tsne.coords <- fftRtsne(data.use[, dims.use], rand_seed = rand.seed,
+    #                                theta = theta, perplexity = perplexity)
+    object@tsne.coords <- fftRtsne(
+      X = data.use[, dims.use], rand_seed = rand.seed,
+      fast_tsne_path = fitsne.path, theta = theta,
+      perplexity = perplexity
+    )
   } else {
-    stop('Invalid method: Please choose Rtsne or fftRtsne')
+    stop("Invalid method: Please choose Rtsne or fftRtsne")
   }
   rownames(object@tsne.coords) <- rownames(data.use)
   return(object)
