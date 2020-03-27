@@ -82,6 +82,7 @@ MOp2 = scaleNotCenter(MOp2)
 ```{r fact2, message=FALSE, results='hide'}
 MOp = online_iNMF(MOp, X_new = list(nuclei = "allen_smarter_nuclei.h5"), k = 40, max.epochs = 1)
 ```
+
 ```{r vis2}
 MOp = quantile_norm(MOp)
 MOp = runUMAP(MOp)
