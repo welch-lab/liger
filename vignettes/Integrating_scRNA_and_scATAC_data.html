@@ -12,7 +12,7 @@
 <meta name="author" content="Jialin Liu and Joshua Welch" />
 
 
-<title>Integrating scRNA-seq and scATAC-seq data</title>
+<title>Joint definition of cell types from single-cell gene expression and chromatin accessibility data (human bone marrow mononuclear cells)</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -375,7 +375,7 @@ summary {
 
 
 
-<h1 class="title toc-ignore">Integrating scRNA-seq and scATAC-seq data</h1>
+<h1 class="title toc-ignore">Joint definition of cell types from single-cell gene expression and chromatin accessibility data (human bone marrow mononuclear cells)</h1>
 <h4 class="author">Jialin Liu and Joshua Welch</h4>
 <h4 class="date">2/20/2020</h4>
 
@@ -384,9 +384,6 @@ summary {
 
 <div id="note-the-old-version-of-this-tutorial-has-been-archived.-the-users-can-access-it-from-here." class="section level4">
 <h4>NOTE: The old version of this tutorial has been archived. The users can access it from <a href="https://macoskolab.github.io/liger/walkthrough_rna_atac.html">here</a>.</h4>
-</div>
-<div id="joint-definition-of-cell-types-from-single-cell-gene-expression-and-chromatin-accessibility-data-human-bone-marrow-mononuclear-cells" class="section level3">
-<h3>Joint definition of cell types from single-cell gene expression and chromatin accessibility data (human bone marrow mononuclear cells)</h3>
 <p>In this tutorial, we will demonstrate LIGER’s ability to jointly define cell types by leveraging multiple single-cell modalities. For example, the integration of single-cell RNA-seq and single-cell ATAC-seq enables cell type definitions that incorporate both gene expression and chromatin accessibility data. Such joint analysis allows not only the taxonomic categorization of cell types, but also a deeper understanding of their underlying regulatory networks. The pipeline for jointly analyzing scRNA-seq and scATAC-seq is similar to that for integrating multiple scRNA-seq datasets in that both rely on joint matrix factorization and quantile normalization. The main differences are: (1) scATAC-seq data needs to be processed into gene-level values; (2) gene selection is performed on the scRNA-seq data only; and (3) downstream analyses can use both gene-level and intergenic information.</p>
 </div>
 <div id="stage-i-preprocessing-and-normalization-40---50-minutes" class="section level3">
@@ -576,7 +573,8 @@ View(S100A9[order(abs(S100A9), decreasing = TRUE)])</code></pre>
 <pre class="r"><code>makeInteractTrack(regnet, genes.list = &#39;S100A9&#39;, path_to_coords = &#39;some_path/gene_coords.bed&#39;)</code></pre>
 <p>Important parameters of makeInteractTrack are as follows:</p>
 <ul>
-<li><em>corr.mat</em>. A peaks x genes sparse matrix containing inferred gene-peak links (as output by linkGenesAndPeaks). <em>　</em>genes.list*. A vector of the gene symbols to be included in the output Interact Track file. If not specified, this function will use all the gene symbols from the matrix passed to corr.mat by default.</li>
+<li><em>corr.mat</em>. A peaks x genes sparse matrix containing inferred gene-peak links (as output by linkGenesAndPeaks).</li>
+<li><em>genes.list</em>. A vector of the gene symbols to be included in the output Interact Track file. If not specified, this function will use all the gene symbols from the matrix passed to corr.mat by default.</li>
 <li><em>path_to_coords</em>. The path to the gene coordinates file (in .bed format). We recommend passing in the same bed file used for making barcodes list in Step 1.</li>
 <li><em>output_path</em>. The path to the directory in which the Interact Track file will be stored. The default is the working directory.</li>
 </ul>

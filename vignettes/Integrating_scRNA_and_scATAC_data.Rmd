@@ -1,5 +1,5 @@
 ---
-title: "Integrating scRNA-seq and scATAC-seq data"
+title: "Joint definition of cell types from single-cell gene expression and chromatin accessibility data (human bone marrow mononuclear cells)"
 author: "Jialin Liu and Joshua Welch"
 date: "2/20/2020"
 output: html_document
@@ -9,7 +9,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Joint definition of cell types from single-cell gene expression and chromatin accessibility data (human bone marrow mononuclear cells)
 
 #### NOTE: The old version of this tutorial has been archived. The users can access it from [here](https://macoskolab.github.io/liger/walkthrough_rna_atac.html).
 
@@ -333,7 +332,7 @@ makeInteractTrack(regnet, genes.list = 'S100A9', path_to_coords = 'some_path/gen
 Important parameters of makeInteractTrack are as follows:
 
 * *corr.mat*. A peaks x genes sparse matrix containing inferred gene-peak links (as output by linkGenesAndPeaks).
-*　*genes.list*. A vector of the gene symbols to be included in the output Interact Track file. If not specified, this function will use all the gene symbols from the matrix passed to corr.mat by default. 
+* *genes.list*. A vector of the gene symbols to be included in the output Interact Track file. If not specified, this function will use all the gene symbols from the matrix passed to corr.mat by default. 
 * *path_to_coords*. The path to the gene coordinates file (in .bed format). We recommend passing in the same bed file used for making barcodes list in Step 1.
 * *output_path*. The path to the directory in which the Interact Track file will be stored. The default is the working directory.
 
