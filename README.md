@@ -32,8 +32,6 @@ We have also designed LIGER to interface with existing single-cell analysis pack
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
-* [Basic commands tutorial](http://htmlpreview.github.io/?https://github.com/MacoskoLab/liger/blob/master/vignettes/liger-vignette.html)
-
 * [Integrating Multiple Single-Cell RNA-seq Datasets](https://macoskolab.github.io/liger/walkthrough_pbmc.html)
 
 * [Jointly Defining Cell Types from scRNA-seq and scATAC-seq](http://htmlpreview.github.io/?https://github.com/MacoskoLab/liger/blob/master/vignettes/Integrating_scRNA_and_scATAC_data.html)

@@ -1,7 +1,7 @@
 ---
 title: "Joint definition of cell types from single-cell gene expression and chromatin accessibility data (human bone marrow mononuclear cells)"
 author: "Jialin Liu and Joshua Welch"
-date: "2/20/2020"
+date: "3/27/2020"
 output: html_document
 ---
 
