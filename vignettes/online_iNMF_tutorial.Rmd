@@ -1,7 +1,7 @@
 ---
 title: "Iterative Refinement of Cellular Identity Using Online iNMF"
 author: "Chao Gao and Joshua Welch"
-date: "March 26, 2020"
+date: "April 1, 2020"
 output: html_document
 ---
 
@@ -17,7 +17,7 @@ install_github("MacoskoLab/liger", ref = "online")
 We first create a liger object by passing the filenames of HDF5 files containing the raw count data. The data can be downloaded [here](https://umich.box.com/s/m5cojytshxvk44pc4kki6clh6c9sv7ai).
 ```{r create.object, message=FALSE, results='hide'}
 library(liger)
-pbmcs = createLiger(list(stim = "stim_PBMCs.h5", ctrl = "ctrl_PBMCs.h5"))
+pbmcs = createLiger(list(stim = "pbmcs_stim.h5", ctrl = "pbmcs_ctrl.h5"))
 ```
 
 We then perform the normalization, gene selection, and gene scaling in an online fashion, reading the data from disk in small batches.
@@ -52,6 +52,23 @@ de_genes = runWilcoxon(pbmcs, compare.method = "clusters", max.sample = 5000)
 de_genes = de_genes[order(de_genes$padj), ]
 head(de_genes[de_genes$group == 1,], n = 10)
 ```
+The online algorithm can be implemented on datasets loaded in memory as well. The same analysis is performed on the PBMCs, shown below.  
+```{r , message=FALSE, results='hide'}
+stim = readRDS("pbmcs_stim.RDS")
+ctrl = readRDS("pbmcs_ctrl.RDS")
+pbmcs_mem = createLiger(list(stim = stim, ctrl = ctrl), remove.missing = F)
+pbmcs_mem = normalize(pbmcs_mem)
+pbmcs_mem = selectGenes(pbmcs_mem, var.thresh = 0.2, do.plot = F)
+pbmcs_mem = scaleNotCenter(pbmcs_mem)
+pbmcs_mem = online_iNMF(pbmcs_mem, k = 20, max.epochs = 5)
+```
+
+```{r ,message=FALSE}
+pbmcs_mem = quantile_norm(pbmcs_mem)
+pbmcs_mem = runUMAP(pbmcs_mem)
+plotByDatasetAndCluster(pbmcs_mem, axis.labels = c("UMAP1","UMAP2"))
+```
+
 ##Scenario 2: iterative refinement by incorporating new datasets
 We can also perform online iNMF with continually arriving datasets.
 ```{r prep1, message=FALSE, results='hide'}
@@ -80,7 +97,7 @@ MOp2 = scaleNotCenter(MOp2)
 ```
 
 ```{r fact2, message=FALSE, results='hide'}
-MOp = online_iNMF(MOp, X_new = list(nuclei = "allen_smarter_nuclei.h5"), k = 40, max.epochs = 1)
+MOp = online_iNMF(MOp, X_new = list(nuclei = MOp2), k = 40, max.epochs = 1)
 ```
 
 ```{r vis2}
@@ -100,7 +117,7 @@ plotByDatasetAndCluster(MOp, axis.labels = c("UMAP1","UMAP2"))
 ```
 
 ```{r project, message=FALSE, results='hide'}
-MOp = online_iNMF(MOp, X_new = list(nuclei = "allen_smarter_nuclei.h5"), k = 40, project = TRUE)
+MOp = online_iNMF(MOp, X_new = list(nuclei = MOp2), k = 40, project = TRUE)
 ```
 
 ```{r vis3}
