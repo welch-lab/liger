@@ -2534,6 +2534,7 @@ louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps
     edgefilename = output_path
   )
   object@clusters <- as.factor(clusts)
+  names(object@clusters) = rownames(object@H.norm)
   unlink(output_path)
   return(object)
 }
