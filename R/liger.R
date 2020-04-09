@@ -4776,10 +4776,6 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   nms <- names(object@raw.data)[!missing]
   names(raw.data) <- nms
   a <- createLiger(raw.data, remove.missing = remove.missing)
-  # Add back additional cell.data
-  if (ncol(a@cell.data) < ncol(object@cell.data)) {
-    a@cell.data <- droplevels(data.frame(object@cell.data[cells.use, ]))
-  }
   a@norm.data <- lapply(1:length(a@raw.data), function(i) {
     object@norm.data[[nms[i]]][, colnames(a@raw.data[[i]])]
   })
@@ -4793,6 +4789,11 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   a@clusters <- droplevels(a@clusters)
   a@tsne.coords <- object@tsne.coords[names(a@clusters), ]
   a@H.norm <- object@H.norm[names(a@clusters), ]
+  # Add back additional cell.data
+  if (ncol(a@cell.data) < ncol(object@cell.data)) {
+    a@cell.data <- droplevels(data.frame(object@cell.data[names(a@clusters), ]))
+  }
+  
   a@W <- object@W
   a@V <- object@V
   a@var.genes <- object@var.genes
