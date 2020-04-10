@@ -244,6 +244,27 @@ test_that("Returns correct subsetted object", {
   expect_equal(rownames(ligex_subset@cell.data), rownames(ligex_subset@tsne.coords))
 })
 
+# create "pseudorandom" set of cells to downsample
+cells.use = c('CACTGAGACAGTCA', 'CD8_124', 'Bcell_103', 'Bcell_17', 'Bcell_236', 'GGGCCAACCTTGGA', 
+              'ACCTCCGATATGCG', 'Bcell_242', 'CD4_407', 'CD8_265', 'GACAGTACGAGCTT', 'GACCCTACTAAAGG', 
+              'DC_37', 'CD4_35', 'ATACTCTGGTATGC', 'CAAAGCTGAAAGTG', 'AGCACTGATGCTTT', 'Bcell_280', 
+              'CD4_503', 'DC_97', 'NK_192', 'GGCACGTGGCTTAG', 'CGTTTAACTGGTCA', 'TATGCGGATAACCG', 
+              'TGTGATCTGACACT', 'CD4_500', 'GGCGGACTTGAACC', 'ATGTAAACACCTCC', 'CD4_539', 'DC_12')
+ligex_subset <- subsetLiger(ligex, cells.use = cells.use)
+
+test_that("Returns correct subsetted object", {
+  expect_equal(names(ligex_subset@raw.data), c('tenx', 'seqwell'))
+  expect_equal(dim(ligex_subset@raw.data[[1]]), c(5233, 14))
+  expect_equal(colnames(ligex_subset@raw.data[[1]])[1:3], c("CACTGAGACAGTCA", 
+                                                            "GGGCCAACCTTGGA", "ACCTCCGATATGCG"))
+  expect_equal(dim(ligex_subset@raw.data[[2]]), c(4670, 16))
+  expect_equal(colnames(ligex_subset@raw.data[[2]])[1:3], c("CD8_124", "Bcell_103",
+                                                            "Bcell_17"))
+  expect_equal(levels(ligex_subset@clusters), c("0", "1", "2", "3", "4", "5", "6", "7"))
+  expect_equal(nrow(ligex_subset@cell.data), 30)
+  expect_equal(rownames(ligex_subset@cell.data), rownames(ligex_subset@tsne.coords))
+})
+
 # TODO: Add tests for ligerToSeurat and seuratToLiger functions 
 # after including functionality related to new cell.data slot 
 
