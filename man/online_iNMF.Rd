@@ -6,45 +6,43 @@
 \usage{
 online_iNMF(object, X_new = NULL, projection = FALSE, W.init = NULL,
   V.init = NULL, H.init = NULL, A.init = NULL, B.init = NULL,
-  k = 20, lambda = 5, max.epochs = 1, miniBatch_max_iters = 1,
-  miniBatch_size = 1000, thresh = 1e-04, h5_chunk_size = 1000,
-  seed = 123)
+  k = 20, lambda = 5, max.epochs = 5, miniBatch_max_iters = 1,
+  miniBatch_size = 5000, h5_chunk_size = 1000, seed = 123)
 }
 \arguments{
-\item{object}{\code{liger} object. Should normalize, select genes, and scale before calling.}
+\item{object}{\code{liger} object with data stored in HDF5 files. Should normalize, select genes, and scale before calling.}
 
-\item{X_new}{List of new datasets.}
+\item{X_new}{List of new datasets for scenario 2 or scenario 3. Each list element should be the name of an HDF5 file.}
 
-\item{projection}{Data integration by Metagene (W) projection. (default FALSE)}
+\item{projection}{Perform data integration by shared metagene (W) projection (scenario 3). (default FALSE)}
 
-\item{W.init}{Previous H matrices. (default NULL)}
+\item{W.init}{Optional initialization for W. (default NULL)}
 
-\item{V.init}{Previous W matrix (default NULL)}
+\item{V.init}{Optional initialization for V (default NULL)}
 
-\item{H.init}{Previous V matrices (default NULL)}
+\item{H.init}{Optional initialization for H (default NULL)}
 
-\item{A.init}{Previous A matrix (default NULL)}
+\item{A.init}{Optional initialization for A (default NULL)}
 
-\item{B.init}{Previous B matrices (default NULL)}
+\item{B.init}{Optional initialization for B (default NULL)}
 
-\item{k}{Inner dimension of factorization (number of factors). Run suggestK to determine
-appropriate value; a general rule of thumb is that a higher k will be needed for datasets with
-more sub-structure. (default 20)}
+\item{k}{Inner dimension of factorization--number of metagenes (default 20). A value in the range 20-50 works well for most analyses.}
 
 \item{lambda}{Regularization parameter. Larger values penalize dataset-specific effects more
-strongly (ie. alignment should increase as lambda increases). Run suggestLambda to determine
-most appropriate value for balancing dataset alignment and agreement (default 5.0).}
+strongly (ie. alignment should increase as lambda increases). We recommend always using the default value except 
+possibly for analyses with relatively small differences (biological replicates, male/female comparisons, etc.) 
+in which case a lower value such as 1.0 may improve reconstruction quality. (default 5.0).}
 
-\item{max.epochs}{Maximum number of epochs. (default 1)}
+\item{max.epochs}{Maximum number of epochs (complete passes through the data). (default 5)}
 
-\item{miniBatch_max_iters}{Maximum number of block coordinate descent (HALS algorithm) iterations to perform (default 1).}
+\item{miniBatch_max_iters}{Maximum number of block coordinate descent (HALS algorithm) iterations to perform for 
+each update of W and V (default 1). Changing this parameter is not recommended.}
 
-\item{miniBatch_size}{Total number of cells in each mini-batch (default 1000).}
+\item{miniBatch_size}{Total number of cells in each minibatch (default 5000). This is a reasonable default, but a smaller value
+such as 1000 may be necessary for analyzing very small datasets. In general, minibatch size should be no larger than the number
+of cells in the smallest dataset.}
 
-\item{thresh}{Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
-(default 1e-4)}
-
-\item{h5_chunk_size}{Chunk size of input hdf5 files (default 1000).}
+\item{h5_chunk_size}{Chunk size of input hdf5 files (default 1000). The chunk size should be no larger than the batch size.}
 
 \item{seed}{Random seed to allow reproducible results (default 123).}
 }
@@ -52,14 +50,16 @@ most appropriate value for balancing dataset alignment and agreement (default 5.
 \code{liger} object with H, W, V, A and B slots set.
 }
 \description{
-Perform online integrative non-negative matrix factorization to return factorized H, W, and V 
-matrices. It optimizes the iNMF objective function using online learning (alternating non-negative
-least squares for H matrix, Hierarchical alternating least squares for W and V matrices), where the 
-number of factors is set by k. 
+Perform online integrative non-negative matrix factorization to represent multiple single-cell datasets 
+in terms of H, W, and V matrices. It optimizes the iNMF objective function using online learning (non-negative
+least squares for H matrix, hierarchical alternating least squares for W and V matrices), where the 
+number of factors is set by k. The function allows online learning in 3 scenarios: (1) fully observed datasets;
+(2) iterative refinement using continually arriving datasets; and (3) projection of new datasets without updating
+the existing factorization. All three scenarios require fixed memory independent of the number of cells.
 
 For each dataset, this factorization produces an H matrix (cells by k), a V matrix (k by genes),
 and a shared W matrix (k by genes). The H matrices represent the cell factor loadings.
-W is held consistent among all datasets, as it represents the shared components of the metagenes
+W is identical among all datasets, as it represents the shared components of the metagenes
 across datasets. The V matrices represent the dataset-specific components of the metagenes.
 }
 \examples{

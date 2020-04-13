@@ -4,14 +4,23 @@
 \alias{runWilcoxon}
 \title{Perform Wilcoxon rank-sum test}
 \usage{
-runWilcoxon(object, data.use = "all", compare.method)
+runWilcoxon(object, data.use = NULL, compare.method, balance.by = NULL,
+  max.sample = 1000, chunk = 1000)
 }
 \arguments{
 \item{object}{\code{liger} object.}
 
-\item{data.use}{This selects which dataset(s) to use. (default 'all')}
+\item{data.use}{This selects which dataset(s) to use. (default NULL, which uses all datasets)}
 
-\item{compare.method}{This indicates the metric of the test. Either 'clusters' or 'datasets'.}
+\item{compare.method}{Compare genes across \code{clusters} (using all datasets) or across \code{datasets} (within each cluster).}
+
+\item{balance.by}{Sample from all datasets proportional to dataset size (default), balance the sample by \code{cluster} or 
+balance the sample by \code{dataset}}
+
+\item{max.sample}{Maximum number of cells to sample from either all datasets, each cluster, or each dataset
+(depending on the value of \code{balance.by}). Default 1000.}
+
+\item{chunk}{Number of cells at a time to read when constructing subset of data. Default 1000.}
 }
 \value{
 A 10-columns data.frame with test results.

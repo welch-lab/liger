@@ -16,4 +16,5 @@ Dense matrix with smallest values equal to eps.
 }
 \description{
 Perform thresholding on the input dense matrix. Remove any values samller than eps by eps.
+Helper function for online_iNMF
 }
