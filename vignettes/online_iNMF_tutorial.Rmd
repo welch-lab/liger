@@ -1,7 +1,7 @@
 ---
 title: "Iterative Refinement of Cellular Identity Using Online iNMF"
 author: "Chao Gao and Joshua Welch"
-date: "April 1, 2020"
+date: "April 13, 2020"
 output: html_document
 ---
 
@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 ## Scenario 1: sampling minibatches from fully observed datasets
-To perform online iNMF, we need to install the `online` branch. Please see the instruction below.
+To perform online iNMF, we need to install the `online` branch. The `mergeH5` function enables users to merge multiple HDF5 outputs from 10x Cell Ranger. Please see the instruction below.
 ```{r install, message=FALSE, results='hide'}
 library(devtools)
 install_github("MacoskoLab/liger", ref = "online")
@@ -67,6 +67,13 @@ pbmcs_mem = online_iNMF(pbmcs_mem, k = 20, max.epochs = 5)
 pbmcs_mem = quantile_norm(pbmcs_mem)
 pbmcs_mem = runUMAP(pbmcs_mem)
 plotByDatasetAndCluster(pbmcs_mem, axis.labels = c("UMAP1","UMAP2"))
+```
+
+Moreover, the package allows the user to merge multiple HDF5 files. The code snippet below shows how it works (only for demonstration).  
+```{r merge,message=FALSE}
+mergeH5(file.list = list("allen_smarter_cells.h5", "allen_smarter_nuclei.h5"), 
+        library.names = c("cells","nuclei"),
+        new.filename = "cells_nuclei.h5")
 ```
 
 ##Scenario 2: iterative refinement by incorporating new datasets
