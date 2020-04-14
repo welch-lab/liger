@@ -9,12 +9,13 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 ## Scenario 1: sampling minibatches from fully observed datasets
-To perform online iNMF, we need to install the `online` branch. The `mergeH5` function enables users to merge multiple HDF5 outputs from 10x Cell Ranger. Please see the instruction below.
+To perform online iNMF, we need to install the `online` branch. Please see the instruction below.
 ```{r install, message=FALSE, results='hide'}
 library(devtools)
 install_github("MacoskoLab/liger", ref = "online")
 ```
-We first create a liger object by passing the filenames of HDF5 files containing the raw count data. The data can be downloaded [here](https://umich.box.com/s/m5cojytshxvk44pc4kki6clh6c9sv7ai).
+We first create a liger object by passing the filenames of HDF5 files containing the raw count data. The data can be downloaded [here](https://umich.box.com/s/m5cojytshxvk44pc4kki6clh6c9sv7ai). Liger assumes by default that the HDF5 files are formatted by the 10X CellRanger pipeline. Large datasets are often generated over multiple 10X runs (for example, multiple biological replicates). In such cases it may be necessary to merge the HDF5 files from each run into a single HDF5 file. We provide the `mergeH5` function for this purpose (see below for details).
+
 ```{r create.object, message=FALSE, results='hide'}
 library(liger)
 pbmcs = createLiger(list(stim = "pbmcs_stim.h5", ctrl = "pbmcs_ctrl.h5"))
@@ -69,11 +70,11 @@ pbmcs_mem = runUMAP(pbmcs_mem)
 plotByDatasetAndCluster(pbmcs_mem, axis.labels = c("UMAP1","UMAP2"))
 ```
 
-Moreover, the package allows the user to merge multiple HDF5 files. The code snippet below shows how it works (only for demonstration).  
+As mentioned above, it is sometimes necessary to merge multiple HDF5 files (such as multiple 10X runs from the same tissue or condition) into a single file. We provide the `mergeH5` function for this purpose. The function takes as input a list of filenames to merge (file.list), a vector of sample names that are prepended to the cell barcodes (library.names), and the name of the merged HDF5 file. The function requires that all files to be merged include exactly the same set of genes. For example, we can merge the cells and nuclei datasets used in the examples below (note that merging these particular two datasets is not something you would like to do, and is purely to demonstrate the `mergeH5` function).
 ```{r merge,message=FALSE}
 mergeH5(file.list = list("allen_smarter_cells.h5", "allen_smarter_nuclei.h5"), 
         library.names = c("cells","nuclei"),
-        new.filename = "cells_nuclei.h5")
+        new.filename = "cells_nuclei")
 ```
 
 ##Scenario 2: iterative refinement by incorporating new datasets
