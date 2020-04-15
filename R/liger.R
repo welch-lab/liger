@@ -901,7 +901,6 @@ scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
         as.matrix(x)
       })
     } else {
-      print(2)
       object@scale.data <- lapply(1:length(object@norm.data), function(i) {
         scale(t(object@norm.data[[i]][object@var.genes, ]), center = F, scale = T)
       })
