@@ -1376,22 +1376,22 @@ online_iNMF <- function(object,
         max_iters_miniBatch = miniBatch_max_iters
 
         while(iter_miniBatch <= max_iters_miniBatch){
-          # update D
+          # update W
           for (j in 1:k){
             W_update_numerator = rep(0, num_genes)
             W_update_denominator = 0
             for (i in file_idx){
-              W_update_numerator = W_update_numerator + object@B[[i]][, j] - ((object@W + object@V[[i]]) %*% object@A[[i]])[, j]
+              W_update_numerator = W_update_numerator + object@B[[i]][, j] - (object@W + object@V[[i]]) %*% object@A[[i]][, j]
               W_update_denominator = W_update_denominator +  object@A[[i]][j,j]
             }
 
             object@W[, j] = nonneg(object@W[, j] + W_update_numerator / W_update_denominator)
           }
 
-          # update (Di).k
+          # update V_i
           for (j in 1:k){
             for (i in file_idx_new){
-              object@V[[i]][, j] = nonneg(object@V[[i]][, j] / (1 + lambda) + (object@B[[i]][, j] - ((object@W + object@V[[i]]) %*% object@A[[i]])[, j]) / 
+              object@V[[i]][, j] = nonneg(object@V[[i]][, j] / (1 + lambda) + (object@B[[i]][, j] - (object@W + object@V[[i]]) %*% object@A[[i]][, j]) / 
                                           ((1 + lambda) * object@A[[i]][j, j]))
             }
           }
