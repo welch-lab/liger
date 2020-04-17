@@ -313,6 +313,10 @@ mergeH5 = function(file.list, library.names, new.filename = "new.h5"){
 #' It initializes cell.data with nUMI and nGene calculated for every cell.
 #'
 #' @param raw.data List of expression matrices (gene by cell). Should be named by dataset.
+#' @param format.type string of HDF5 format (10X CellRanger by default).
+#' @param data.name string of path to the data values stored in HDF5 file.
+#' @param indices.name string of path to the indices of data points stored in HDF5 file.
+#' @param indptr.name string of path to the pointers stored in HDF5 file.
 #' @param make.sparse Whether to convert raw data into sparse matrices (default TRUE).
 #' @param take.gene.union Whether to fill out raw.data matrices with union of genes across all
 #'   datasets (filling in 0 for missing data) (requires make.sparse=T) (default FALSE).
@@ -352,7 +356,7 @@ createLiger = function(raw.data,
       num_cells = c(num_cells, file.h5[["matrix/barcodes"]]$dims)
       if (format.type == "10X"){
         object@h5file.info[[i]] = list(data = file.h5[["matrix/data"]],
-                                       indicies = file.h5[["matrix/indices"]],
+                                       indices = file.h5[["matrix/indices"]],
                                        indptr = file.h5[["matrix/indptr"]])
 
       } else {
@@ -1084,7 +1088,6 @@ online_iNMF <- function(object,
         object = scaleNotCenter(object, remove.missing = T, chunk = h5_chunk_size)
         cat("New dataset", i, "Processed.", "\n")
       }
-      #file.h5$close_all()
     }
 
 
@@ -1124,25 +1127,18 @@ online_iNMF <- function(object,
   gene_names = vargenes # genes selected for analysis
   num_genes = length(vargenes) # number of the selected genes
 
-
-  
   cell_barcodes = list() # cell barcodes for each dataset
   for (i in file_idx){
     cell_barcodes[[i]] = rownames(object@cell.data)[object@cell.data$dataset == file_names[i]]
-    #file.h5$close_all()
   }
   num_cells = unlist(lapply(cell_barcodes, length)) # number of cells in each dataset
   num_cells_new = num_cells[(num_prev_files+1):num_files]
   minibatch_sizes = rep(0, num_files)
 
-  
-  #print("Set minibatch size proportional to the data size")
-  for (i in file_idx_new) {
+    for (i in file_idx_new) {
       minibatch_sizes[i] = round((num_cells[i]/sum(num_cells[file_idx_new])) * miniBatch_size)
   }
   minibatch_sizes_orig = minibatch_sizes
-  #print("Minibatch size for each dataset: ")
-  #print(minibatch_sizes)
 
   if (!projection) {
 
@@ -1164,10 +1160,9 @@ online_iNMF <- function(object,
     if (is.null(X_new)) {
       object@V = list()    
       for (i in file_idx){
-        #file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
         V_init_idx = sample(1:num_cells_new[i], k) # pick k sample from datasets as initial H matrix
         object@V[[i]] = object@scale.data[[i]][, V_init_idx]
-        #file.h5$close_all()
+
       }
 
       # normalize the columns of H_i, H_s matrices
@@ -1180,13 +1175,11 @@ online_iNMF <- function(object,
       object@V[file_idx_prev] = if(!is.null(V.init)) V.init else object@V
       V_init_idx = list()
       for (i in file_idx_new){
-        #file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
         V_init_idx = sample(1:num_cells[i], k)
         object@V[[i]] = object@scale.data[[i]][, V_init_idx] # initialize the Vi for new dataset
         for (j in 1:k){
           object@V[[i]][, j] = object@V[[i]][, j] / sqrt(sum(object@V[[i]][, j]^2)) 
         }
-        #file.h5$close_all()
       }
     }
     # H_i matrices initialization
@@ -1200,7 +1193,7 @@ online_iNMF <- function(object,
     }
 
     # A = HiHi^t, B = XiHit
-    A_old = list() # only for new files
+    A_old = list() 
     B_old = list()
 
     if (is.null(X_new)) {
@@ -1234,11 +1227,8 @@ online_iNMF <- function(object,
 
     # chunk permutation
     for (i in file_idx_new){
-      #if (class(object@raw.data[[i]]) == "character"){ # shuffle chunks if the input is hdf5 file
       num_chunks[i] = ceiling(num_cells[i]/h5_chunk_size)
       chunk_idx[[i]] = sample(1:num_chunks[i],num_chunks[i])
-      #print(paste("chunk_idx for new dataset ",i))
-      #print(chunk_idx[[i]])
       # idx in the first chunk
       if(chunk_idx[[i]][1]!=num_chunks[i]){
         all_idx[[i]] = (1+h5_chunk_size*(chunk_idx[[i]][1]-1)):(chunk_idx[[i]][1]*h5_chunk_size)
@@ -1247,24 +1237,18 @@ online_iNMF <- function(object,
       }
         
       for (j in chunk_idx[[i]][-1]){
-      #print(j)
         if (j != num_chunks[i]){
-          #print(all_idx[[i]])
           all_idx[[i]] = c(all_idx[[i]],(1+h5_chunk_size*(j-1)):(j*h5_chunk_size))
         } else {
           all_idx[[i]] = c(all_idx[[i]],(1+h5_chunk_size*(j-1)):num_cells[i])
         }
       }
-      #} else { # shuffle all cells if the input is loaded in memory
-      #  all_idx[[i]] = sample(1:num_cells[i], num_cells[i])
-      #}
     } 
     
     cat("Starting Online iNMF...", "\n")
     total.iters = floor(sum(num_cells_new) * max.epochs / miniBatch_size)
     pb <- txtProgressBar(min = 1, max = total.iters+1, style = 3)
     while(epoch[file_idx_new[1]] < max.epochs) {
-      #iter_start_time = Sys.time()
       # track epochs
       minibatch_idx = rep(list(NULL), num_files) # indices of samples in each dataest used for this iteration
       if ((max.epochs * num_cells_new[1] - (iter-1) * minibatch_sizes[file_idx_new[1]]) >= minibatch_sizes[file_idx_new[1]]){ # check if the size of the last mini-batch == pre-specified mini-batch size
@@ -1275,7 +1259,6 @@ online_iNMF <- function(object,
             epoch_prev[i] = epoch[i]
             # shuffle dataset before the next epoch
             minibatch_idx[[i]] = all_idx[[i]][c(((((iter - 1) * minibatch_sizes[i]) %% num_cells[i]) + 1):num_cells[i])]
-            #if (class(object@raw.data[[i]]) == "character"){
             chunk_idx[[i]] = sample(1:num_chunks[i],num_chunks[i])
             all_idx[[i]] = 0
             for (j in chunk_idx[[i]]){
@@ -1286,9 +1269,6 @@ online_iNMF <- function(object,
               }
             }
             all_idx[[i]] = all_idx[[i]][-1] # remove the first element 0  
-            #} else {
-            #  all_idx[[i]] = sample(1:num_cells[i], num_cells[i])
-            #}
             minibatch_idx[[i]] = c(minibatch_idx[[i]],all_idx[[i]][1:((iter * minibatch_sizes[i]) %% num_cells[i])])      
 
           } else if ((epoch_prev[i] != epoch[i]) & ((iter * minibatch_sizes[i]) %% num_cells[i] == 0)){ # if current iter finishes this cycle without start a a new cycle
@@ -1296,7 +1276,6 @@ online_iNMF <- function(object,
             epoch_prev[i] = epoch[i]
       
             minibatch_idx[[i]] = all_idx[[i]][((((iter-1) * minibatch_sizes[i]) %% num_cells[i]) + 1):num_cells[i]]
-            #if (class(object@raw.data[[i]]) == "character"){
             chunk_idx[[i]] = sample(1:num_chunks[i],num_chunks[i])
             all_idx[[i]] = 0
             for (j in chunk_idx[[i]]){
@@ -1307,9 +1286,6 @@ online_iNMF <- function(object,
               }
             }
             all_idx[[i]] = all_idx[[i]][-1] # remove the first element 0 
-            #} else {
-            #  all_idx[[i]] = sample(1:num_cells[i], num_cells[i])
-            #}
           } else {                                                                        # if current iter stays within a single cycle
             minibatch_idx[[i]] = all_idx[[i]][(((iter-1) * minibatch_sizes[i]) %% num_cells[i] + 1):((iter * minibatch_sizes[i]) %% num_cells[i])]
           }
@@ -1326,9 +1302,7 @@ online_iNMF <- function(object,
       if (length(minibatch_idx[[file_idx_new[1]]]) == minibatch_sizes_orig[file_idx_new[1]]){ 
         X_minibatch = rep(list(NULL), num_files)
         for (i in file_idx_new){
-          #file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
           X_minibatch[[i]] = object@scale.data[[i]][ ,minibatch_idx[[i]]]
-          #file.h5$close_all()
         }
       
         # update H_i by ANLS Hi_minibatch[[i]]
@@ -1398,22 +1372,13 @@ online_iNMF <- function(object,
           iter_miniBatch = iter_miniBatch + 1
         }
         epoch_next = rep(FALSE, num_files) # reset epoch change indicator 
-
-        #iter_end_time = Sys.time()
-        #iter_time = as.numeric(difftime(iter_end_time, iter_start_time, units = "secs"))
-        #total_time = total_time + iter_time
-        #print(paste("Epoch: ",epoch[1], "Iter: ",iter,", Total time: ", total_time, " seconds"))
         iter = iter + 1
         setTxtProgressBar(pb = pb, value = iter)
-      } #else {
-        #print("")
-        #print(paste0("Metagene updates completed. Time used = ", total_time, " seconds"))
-      #}
+      } 
     } 
     cat("\nCalculate metagene loadings...", "\n")
     object@H = rep(list(NULL), num_files)
     for (i in file_idx){
-      #file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
       num_batch = num_cells[i] %/% miniBatch_size + 1
       if (num_batch == 1){
         X_i = object@scale.data[[i]][,]
@@ -1430,7 +1395,6 @@ online_iNMF <- function(object,
                                                          rbind(X_i_batch, matrix(0, num_genes , length(cell_idx)))))
         }        
       }
-      #file.h5$close_all()
       colnames(object@H[[i]]) = cell_barcodes[[i]]
     }
 
@@ -1448,7 +1412,6 @@ online_iNMF <- function(object,
     object@H[file_idx_new] = rep(list(NULL), num_new_files)
     object@V[file_idx_new] = rep(list(NULL), num_new_files)
     for (i in file_idx_new){
-      #file.h5 = H5File$new(hdf5_files[[i]], mode="r+")
       num_batch = num_cells[i] %/% miniBatch_size + 1
       if (num_cells[i] <= miniBatch_size){
         object@H[[i]] = solveNNLS(object@W, object@scale.data[[i]][,])
@@ -1464,7 +1427,6 @@ online_iNMF <- function(object,
       }
       colnames(object@H[[i]]) = cell_barcodes[[i]]
       object@V[[i]] = matrix(0, num_genes, k)
-      #file.h5$close_all()
     }
   }
 

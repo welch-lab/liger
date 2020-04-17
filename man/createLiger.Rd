@@ -11,6 +11,14 @@ createLiger(raw.data, format.type = "10X", data.name = "matrix/data",
 \arguments{
 \item{raw.data}{List of expression matrices (gene by cell). Should be named by dataset.}
 
+\item{format.type}{string of HDF5 format (10X CellRanger by default).}
+
+\item{data.name}{string of path to the data values stored in HDF5 file.}
+
+\item{indices.name}{string of path to the indices of data points stored in HDF5 file.}
+
+\item{indptr.name}{string of path to the pointers stored in HDF5 file.}
+
 \item{make.sparse}{Whether to convert raw data into sparse matrices (default TRUE).}
 
 \item{take.gene.union}{Whether to fill out raw.data matrices with union of genes across all

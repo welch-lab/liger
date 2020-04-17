@@ -4,14 +4,14 @@
 \alias{mergeH5}
 \title{Merge hdf5 files}
 \usage{
-mergeH5(file.list, library.names, new.filename = "merged.h5")
+mergeH5(file.list, library.names, new.filename = "new.h5")
 }
 \arguments{
 \item{file.list}{List of path to hdf5 files.}
 
 \item{library.names}{Vector of library names (corresponding to file.list)}
 
-\item{new.filename}{String of new hdf5 file name after merging (default merged.h5).}
+\item{new.filename}{String of new hdf5 file name after merging (default new.h5).}
 }
 \value{
 Directly generates newly merged hdf5 file.
