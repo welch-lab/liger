@@ -2,9 +2,13 @@
 % Please edit documentation in R/liger.R
 \name{quantile_norm}
 \alias{quantile_norm}
+\alias{quantile_norm.list}
+\alias{quantile_norm.liger}
 \title{Quantile align (normalize) factor loadings}
 \usage{
-quantile_norm(
+quantile_norm(object, ...)
+
+\method{quantile_norm}{list}(
   object,
   quantiles = 50,
   ref_dataset = NULL,
@@ -14,11 +18,28 @@ quantile_norm(
   do.center = F,
   max_sample = 1000,
   eps = 0.9,
-  refine.knn = T
+  refine.knn = T,
+  ...
+)
+
+\method{quantile_norm}{liger}(
+  object,
+  quantiles = 50,
+  ref_dataset = NULL,
+  min_cells = 20,
+  knn_k = 20,
+  dims.use = NULL,
+  do.center = F,
+  max_sample = 1000,
+  eps = 0.9,
+  refine.knn = T,
+  ...
 )
 }
 \arguments{
 \item{object}{\code{liger} object. Should run optimizeALS before calling.}
+
+\item{...}{Arguments passed to other methods}
 
 \item{quantiles}{Number of quantiles to use for quantile normalization (default 50).}
 

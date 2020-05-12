@@ -2,6 +2,8 @@
 
 S3method(optimizeALS,liger)
 S3method(optimizeALS,list)
+S3method(quantile_norm,liger)
+S3method(quantile_norm,list)
 export(Matrix.column_norm)
 export(calcARI)
 export(calcAgreement)

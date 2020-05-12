@@ -1606,6 +1606,7 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #' @param max_sample Maximum number of cells used for quantile normalization of each cluster 
 #' and factor. (default 1000)
 #' @param refine.knn whether to increase robustness of cluster assignments using KNN graph.(default TRUE)
+#' @param ... Arguments passed to other methods
 #'
 #' @return \code{liger} object with 'H.norm' and 'clusters' slot set.
 #' @export
@@ -1623,40 +1624,69 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #' ligerex <- quantile_norm(ligerex, knn_k = 15, resolution = 1.2)
 #' }
 #'
-quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells = 20, knn_k = 20, 
-                          dims.use = NULL, do.center = F, max_sample = 1000, eps = 0.9, refine.knn = T) {
-  if (is.null(ref_dataset)) {
-    ns <- sapply(object@H, nrow)
-    ref_dataset <- names(object@H)[which.max(ns)]
+quantile_norm <- function(
+    object,
+    ...
+) {
+    UseMethod(generic = 'quantile_norm', object = object)
+}
+
+#' @rdname quantile_norm
+#' @export
+#' @method quantile_norm list
+#'
+quantile_norm.list <- function(
+    object,
+    quantiles = 50,
+    ref_dataset = NULL,
+    min_cells = 20,
+    knn_k = 20,
+    dims.use = NULL,
+    do.center = F,
+    max_sample = 1000,
+    eps = 0.9,
+    refine.knn = T,
+    ...
+) {
+  if (!all(sapply(X = object, FUN = is.matrix))) {
+    stop("All values in 'object' must be a matrix")
+  }
+  if (is.null(x = names(x = object))) {
+    stop("'object' must be a named list of matrices")
+  }
+  if (is.character(x = ref_dataset) && !ref_dataset %in% names(x = object)) {
+    stop("Cannot find reference dataset")
+  } else if (!inherits(x = ref_dataset, what = c('character', 'numeric'))) {
+    stop("'ref_dataset' must be a character or integer specifying which dataset is the reference")
   }
   labels <- list()
   if (is.null(dims.use)) {
-    use_these_factors <- 1:ncol(object@H[[1]])
-  }
-  else {
+    use_these_factors <- 1:ncol(object[[1]])
+  } else {
     use_these_factors <- dims.use
   }
   # fast max factor assignment with Rcpp code
-  labels <- lapply(object@H, max_factor, dims_use = use_these_factors, center_cols = do.center)
-  object@clusters <- as.factor(unlist(lapply(labels, as.character)))
-  names(object@clusters) <- unlist(lapply(object@scale.data, rownames))
+  labels <- lapply(object, max_factor, dims_use = use_these_factors, center_cols = do.center)
+  clusters <- as.factor(unlist(lapply(labels, as.character)))
+  names(clusters) <- unlist(lapply(object, rownames))
 
   # increase robustness of cluster assignments using knn graph
   if (refine.knn) {
-    object@clusters <- refine_clusts_knn(object@H, object@clusters, k = knn_k, eps = eps)
+    clusters <- refine_clusts_knn(object, clusters, k = knn_k, eps = eps)
   }
-  clusters <- lapply(object@H, function(x) {
-    object@clusters[rownames(x)]
+  cluster_assignments <- clusters
+  clusters <- lapply(object, function(x) {
+    clusters[rownames(x)]
   })
-  names(clusters) <- names(object@H)
-  dims <- ncol(object@H[[ref_dataset]])
+  names(clusters) <- names(object)
+  dims <- ncol(object[[ref_dataset]])
 
-  dataset <- unlist(lapply(1:length(object@H), function(i) {
-    rep(names(object@H)[i], nrow(object@H[[i]]))
+  dataset <- unlist(lapply(1:length(object), function(i) {
+    rep(names(object)[i], nrow(object[[i]]))
   }))
-  Hs <- object@H
+  Hs <- object
   num_clusters <- dims
-  for (k in 1:length(object@H)) {
+  for (k in 1:length(object)) {
     for (j in 1:num_clusters) {
       cells2 <- which(clusters[[k]] == j)
       cells1 <- which(clusters[[ref_dataset]] == j)
@@ -1690,7 +1720,49 @@ quantile_norm <- function(object, quantiles = 50, ref_dataset = NULL, min_cells 
       }
     }
   }
-  object@H.norm <- Reduce(rbind, Hs)
+  out <- list(
+    'H.norm' = Reduce(rbind, Hs),
+    'clusters' = cluster_assignments
+  )
+  return(out)
+}
+
+#' @rdname quantile_norm
+#' @export
+#' @method quantile_norm liger
+#'
+quantile_norm.liger <- function(
+    object,
+    quantiles = 50,
+    ref_dataset = NULL,
+    min_cells = 20,
+    knn_k = 20,
+    dims.use = NULL,
+    do.center = F,
+    max_sample = 1000,
+    eps = 0.9,
+    refine.knn = T,
+    ...
+) {
+  if (is.null(x = ref_dataset)) {
+    ns <- sapply(X = object@scale.data, FUN = nrow)
+    ref_dataset <- names(x = object@scale.data)[which.max(x = ns)]
+  }
+  out <- quantile_norm(
+    object = object@H,
+    quantiles = quantiles,
+    ref_dataset = ref_dataset,
+    min_cells = min_cells,
+    knn_k = knn_k,
+    dims.use = dims.use,
+    do.center = do.center,
+    max_sample = max_sample,
+    eps = eps,
+    refine.knn = refine.knn
+  )
+  for (i in names(x = out)) {
+      slot(object = object, name = i) <- out[[i]]
+  }
   return(object)
 }
 
