@@ -1,14 +1,18 @@
 # R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
 
-language: R
+language: r
 sudo: required
 cache: packages
 
 os:
   - linux
-#  - osx
+  - osx
 # add back osx later with clean solution for openmp/rcpparmadillo
 
 r: release
+
+env:
+  global:
+    - _R_CHECK_FORCE_SUGGESTS_=FALSE
 
 warnings_are_errors: false
