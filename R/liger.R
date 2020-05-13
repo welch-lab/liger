@@ -2095,6 +2095,7 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
 
   ### make Granges object for genes
   gene.names <- read.csv2(path_to_coords, sep = "\t", header = FALSE, stringsAsFactors = F)
+  gene.names <- gene.names[complete.cases(gene.names), ]
   genes.coords <- GenomicRanges::GRanges(
     seqnames = gene.names$V1,
     ranges = IRanges::IRanges(as.numeric(gene.names$V2), end = as.numeric(gene.names$V3))
@@ -2110,7 +2111,7 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
     genes.list <- colnames(gene_counts)
   }
   missing_genes <- !genes.list %in% names(genes.coords)
-  if (missing_genes!=0){
+  if (sum(missing_genes)!=0){
     print(
       paste0(
         "Removing ", sum(missing_genes),
@@ -2118,7 +2119,7 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
       )
     )
   }
-  genes.list <- genes.list[!missing_genes]
+  genes.list <- genes.list[!missing_genes] 
   genes.coords <- genes.coords[genes.list]
 
   print("Calculating correlation for gene-peak pairs...")
