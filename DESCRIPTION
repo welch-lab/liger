@@ -51,7 +51,6 @@ Suggests:
     GenomicRanges,
     S4Vectors,
     IRanges,
-    RANN.L1,
     org.Hs.eg.db,
     reactome.db,
     fgsea,
