@@ -19,6 +19,7 @@ quantile_norm(object, ...)
   max_sample = 1000,
   eps = 0.9,
   refine.knn = T,
+  rand.seed = 1,
   ...
 )
 
@@ -63,6 +64,8 @@ and factor. (default 1000)}
 accurate nearest neighbor graphs but take much longer to computer.}
 
 \item{refine.knn}{whether to increase robustness of cluster assignments using KNN graph.(default TRUE)}
+
+\item{rand.seed}{Random seed to allow reproducible results (default 1)}
 }
 \value{
 \code{liger} object with 'H.norm' and 'clusters' slot set.

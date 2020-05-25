@@ -1606,6 +1606,7 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #' @param max_sample Maximum number of cells used for quantile normalization of each cluster 
 #' and factor. (default 1000)
 #' @param refine.knn whether to increase robustness of cluster assignments using KNN graph.(default TRUE)
+#' @param rand.seed Random seed to allow reproducible results (default 1)
 #' @param ... Arguments passed to other methods
 #'
 #' @return \code{liger} object with 'H.norm' and 'clusters' slot set.
@@ -1646,8 +1647,10 @@ quantile_norm.list <- function(
     max_sample = 1000,
     eps = 0.9,
     refine.knn = T,
+    rand.seed = 1,
     ...
 ) {
+  set.seed(rand.seed)
   if (!all(sapply(X = object, FUN = is.matrix))) {
     stop("All values in 'object' must be a matrix")
   }
