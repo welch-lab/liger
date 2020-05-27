@@ -1703,14 +1703,8 @@ quantile_norm.list <- function(
           Hs[[k]][cells2, i] <- mean(Hs[[ref_dataset]][cells1, i])
           next
         }
-        if (num_cells2 > max_sample | num_cells1 > max_sample) {
-          q2 <- quantile(sample(Hs[[k]][cells2, i], min(num_cells2, max_sample)), seq(0, 1, by = 1 / quantiles))
-          q1 <- quantile(sample(Hs[[ref_dataset]][cells1, i], min(num_cells1, max_sample)), seq(0, 1, by = 1 / quantiles))
-        }
-        else {
-          q2 <- quantile(sample(Hs[[k]][cells2, i], min(num_cells2, max_sample)), seq(0, 1, by = 1 / quantiles))
-          q1 <- quantile(sample(Hs[[ref_dataset]][cells1, i], min(num_cells1, max_sample)), seq(0, 1, by = 1 / quantiles))
-        }
+        q2 <- quantile(sample(Hs[[k]][cells2, i], min(num_cells2, max_sample)), seq(0, 1, by = 1 / quantiles))
+        q1 <- quantile(sample(Hs[[ref_dataset]][cells1, i], min(num_cells1, max_sample)), seq(0, 1, by = 1 / quantiles))
         if (sum(q1) == 0 | sum(q2) == 0 | length(unique(q1)) <
           2 | length(unique(q2)) < 2) {
           new_vals <- rep(0, num_cells2)
