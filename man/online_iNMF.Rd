@@ -71,8 +71,8 @@ ligerex <- normalize(ligerex)
 # select genes
 ligerex <- selectGenes(ligerex)
 ligerex <- scaleNotCenter(ligerex)
-# get factorization using three restarts and 20 factors
-ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
+# get factorization using 20 factors from scratch
+ligerex <- online(ligerex, k = 20, lambda = 5, miniBatch_size = 5000)
 }
 
 }

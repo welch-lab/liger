@@ -47,5 +47,9 @@ it is usually no higher than 0.2-0.3 (particularly for non-deterministic approac
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
 agreement <- calcAgreement(ligerex, dr.method = "NMF")
+# HDF5 input
+ligerex <- quantile_norm(ligerex)
+ligerex <- readSubset(ligerex, slot.use = "scale.data", max.cells = 5000)
+agreement <- calcAgreement(ligerex, dr.method = "NMF")
 }
 }

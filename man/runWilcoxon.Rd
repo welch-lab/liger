@@ -4,8 +4,7 @@
 \alias{runWilcoxon}
 \title{Perform Wilcoxon rank-sum test}
 \usage{
-runWilcoxon(object, data.use = NULL, compare.method, balance.by = NULL,
-  max.sample = 1000, chunk = 1000)
+runWilcoxon(object, data.use = NULL, compare.method, balance.by = NULL)
 }
 \arguments{
 \item{object}{\code{liger} object.}
@@ -16,9 +15,6 @@ runWilcoxon(object, data.use = NULL, compare.method, balance.by = NULL,
 
 \item{balance.by}{Sample from all datasets proportional to dataset size (default), balance the sample by \code{cluster} or 
 balance the sample by \code{dataset}}
-
-\item{max.sample}{Maximum number of cells to sample from either all datasets, each cluster, or each dataset
-(depending on the value of \code{balance.by}). Default 1000.}
 
 \item{chunk}{Number of cells at a time to read when constructing subset of data. Default 1000.}
 }
@@ -42,6 +38,12 @@ ligerex <- optimizeALS(ligerex, k = 20)
 ligerex <- quantileAlignSNF(ligerex)
 wilcox.results <- runWilcoxon(ligerex, compare.method = "cluster")
 wilcox.results <- runWilcoxon(ligerex, compare.method = "datastes", data.use = c(1, 2))
+# HDF5 input
+ligerex <- online_iNMF(ligerex, k = 20)
+ligerex <- quantile_norm(ligerex)
+ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 1000)
+de_genes <- runWilcoxon(ligerex, compare.method = "clusters")
+
 }
 
 }

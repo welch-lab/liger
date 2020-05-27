@@ -44,6 +44,7 @@ liger <- methods::setClass(
     raw.data = "list",
     norm.data = "list",
     scale.data = "list",
+    sample.data = "list",
     h5file.info = "list",
     cell.data = "data.frame",
     var.genes = "vector",
@@ -257,6 +258,13 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
 #' @param file.list List of path to hdf5 files.
 #' @param library.names Vector of library names (corresponding to file.list)
 #' @param new.filename String of new hdf5 file name after merging (default new.h5).
+#' @param format.type string of HDF5 format (10X CellRanger by default).
+#' @param data.name Path to the data values stored in HDF5 file.
+#' @param indices.name Path to the indices of data points stored in HDF5 file.
+#' @param indptr.name Path to the pointers stored in HDF5 file.
+#' @param genes.name Path to the gene names stored in HDF5 file.
+#' @param barcodes.name Path to the barcodes stored in HDF5 file.
+#'
 #' @return Directly generates newly merged hdf5 file.
 #' @export
 #' @examples
@@ -264,7 +272,15 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
 #' mergeH5(list("library1.h5","library2.h5"), c("lib1","lib2"), "merged.h5")
 #' }
 
-mergeH5 = function(file.list, library.names, new.filename = "new.h5"){
+mergeH5 = function(file.list, 
+                   library.names, 
+                   new.filename, 
+                   format.type = "10X",
+                   data.name = NULL,
+                   indices.name = NULL,
+                   indptr.name = NULL,
+                   genes.name = NULL,
+                   barcodes.name = NULL){
   h5_merged = H5File$new(paste0(new.filename,".h5"), mode = "w")
   h5_merged$create_group("matrix")
   h5_merged$create_group("matrix/features")
@@ -274,11 +290,27 @@ mergeH5 = function(file.list, library.names, new.filename = "new.h5"){
   last_inptr = 0
   for (i in 1:length(file.list)){
     h5file = H5File$new(file.list[[i]], mode = "r")
-    data = h5file[["matrix/data"]][]
-    indices = h5file[["matrix/indices"]][]
-    barcodes = paste0(library.names[i], "_", h5file[["matrix/barcodes"]][])
-    genes = h5file[["matrix/features/name"]][]
-    indptr = h5file[["matrix/indptr"]][]
+    if (format.type == "10X"){
+      data = h5file[["matrix/data"]][]
+      indices = h5file[["matrix/indices"]][]
+      indptr = h5file[["matrix/indptr"]][] 
+      barcodes = paste0(library.names[i], "_", h5file[["matrix/barcodes"]][])
+      genes = h5file[["matrix/features/name"]][]
+    } else if (format.type == "AnnData"){
+      data = h5file[["raw.X/data"]][]
+      indices = h5file[["raw.X/indices"]][]
+      indptr = h5file[["raw.X/indptr"]][]
+      barcodes = paste0(library.names[i], "_", h5file[["obs"]][]$cell)
+      genes = h5file[["raw.var"]][]$index
+       
+    } else {
+      data = h5file[[data.name]][]
+      indices = h5file[[indices.name]][]
+      indptr = h5file[[indptr.name]][] 
+      barcodes = paste0(library.names[i], "_", h5file[[barcodes.name]][])
+      genes = h5file[[genes.name]][]
+    }
+    
     if (i != 1) indptr = indptr[2:length(indptr)]
     num_data = length(data)
     num_indptr = length(indptr)
@@ -313,16 +345,18 @@ mergeH5 = function(file.list, library.names, new.filename = "new.h5"){
 #' It initializes cell.data with nUMI and nGene calculated for every cell.
 #'
 #' @param raw.data List of expression matrices (gene by cell). Should be named by dataset.
-#' @param format.type string of HDF5 format (10X CellRanger by default).
-#' @param data.name string of path to the data values stored in HDF5 file.
-#' @param indices.name string of path to the indices of data points stored in HDF5 file.
-#' @param indptr.name string of path to the pointers stored in HDF5 file.
 #' @param make.sparse Whether to convert raw data into sparse matrices (default TRUE).
 #' @param take.gene.union Whether to fill out raw.data matrices with union of genes across all
 #'   datasets (filling in 0 for missing data) (requires make.sparse=T) (default FALSE).
 #' @param remove.missing Whether to remove cells not expressing any measured genes, and genes not
 #'   expressed in any cells (if take.gene.union = T, removes only genes not expressed in any
 #'   dataset) (default TRUE).
+#' @param format.type HDF5 format (10X CellRanger by default).
+#' @param data.name Path to the data values stored in HDF5 file.
+#' @param indices.name Path to the indices of data points stored in HDF5 file.
+#' @param indptr.name Path to the pointers stored in HDF5 file.
+#' @param genes.name Path to the gene names stored in HDF5 file.
+#' @param barcodes.name Path to the barcodes stored in HDF5 file.
 #'
 #' @return \code{liger} object with raw.data slot set.
 #' @export
@@ -334,14 +368,16 @@ mergeH5 = function(file.list, library.names, new.filename = "new.h5"){
 #' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' }
 
-createLiger = function(raw.data, 
-                       format.type = "10X",
-                       data.name = "matrix/data",
-                       indices.name = "matrix/indices",
-                       indptr.name = "matrix/indptr",
+createLiger = function(raw.data,
                        make.sparse = T, 
                        take.gene.union = F, 
-                       remove.missing = T) {
+                       remove.missing = T,
+                       format.type = "10X",
+                       data.name = NULL,
+                       indices.name = NULL,
+                       indptr.name = NULL,
+                       genes.name = NULL,
+                       barcodes.name = NULL) {
   if (class(raw.data[[1]]) == "character") { #HDF5 filenames instead of in-memory matrices
     object <- methods::new(Class = "liger", raw.data = raw.data, 
                            version = packageVersion("liger"))
@@ -349,21 +385,40 @@ createLiger = function(raw.data,
     object@H = rep(list(NULL), length(raw.data))
     barcodes = c()
     num_cells = c()
+    if (length(format.type) == 1) format.type.list = rep(format.type, length(raw.data))
     for (i in 1:length(raw.data)){
       file.h5 = H5File$new(raw.data[[i]], mode="r+")
       object@raw.data[[i]] = file.h5
-      barcodes = c(barcodes, file.h5[["matrix/barcodes"]][])
-      num_cells = c(num_cells, file.h5[["matrix/barcodes"]]$dims)
-      if (format.type == "10X"){
-        object@h5file.info[[i]] = list(data = file.h5[["matrix/data"]],
-                                       indices = file.h5[["matrix/indices"]],
-                                       indptr = file.h5[["matrix/indptr"]])
-
+      if (format.type.list[i] == "10X"){
+        barcodes.name = "matrix/barcodes"
+        barcodes = c(barcodes, file.h5[[barcodes.name]][])
+        num_cells = c(num_cells, file.h5[[barcodes.name]]$dims)
+        data.name = "matrix/data"
+        indices.name = "matrix/indices"
+        indptr.name = "matrix/indptr"
+        genes.name = "matrix/features/name"
+      } else if (format.type.list[i] == "AnnData"){
+        barcodes.name = "obs"
+        barcodes = c(barcodes, file.h5[[barcodes.name]][]$cell)
+        num_cells = c(num_cells, length(file.h5[[barcodes.name]][]$cell))
+        data.name = "raw.X/data"
+        indices.name = "raw.X/indices"
+        indptr.name = "raw.X/indptr"
+        genes.name = "raw.var"
       } else {
-        object@h5file.info[[i]] = list(data = file.h5[[data.name]],
-                                       indices = file.h5[[indices.name]],
-                                       indptr = file.h5[[indptr.name]])
+        barcodes = c(barcodes, file.h5[[barcodes.name]][])
+        num_cells = c(num_cells, length(file.h5[[barcodes.name]][]))
+        data.name = data.name
+        indices.name = indices.name
+        indptr.name = indptr.name
       }
+      object@h5file.info[[i]] = list(data = file.h5[[data.name]],
+                                     indices = file.h5[[indices.name]],
+                                     indptr = file.h5[[indptr.name]],
+                                     barcodes = file.h5[[barcodes.name]],
+                                     genes = file.h5[[genes.name]],
+                                     format.type = format.type.list[i],
+                                     sample.data.type = NULL)
       
       if (file.h5$exists("scale.data")){
         object@scale.data[[i]] = file.h5[["scale.data"]]
@@ -442,24 +497,29 @@ createLiger = function(raw.data,
 }
 
 #create new dataset, first deleting existing record if dataset already exists
-safe_h5_create = function(h5_object,dataset_name,dims,mode="double",chunk_size=dims)
+safe_h5_create = function(h5_object,dataset_name,dims,mode="double",chunk_size=dims, liger_object = object)
 {
-  #file.h5 = H5File$new(filename, mode="r+")
-  if (h5_object$exists(dataset_name))
-  {
-    h5_object$link_delete(dataset_name) 
+  if (!h5_object$exists(dataset_name)) {
+    h5_object$create_dataset(name = dataset_name,dims = dims,dtype = mode, chunk_dims = chunk_size)  
+  } else {
+    if (h5_object$exists("scale.data")) { 
+      if (h5_object[["scale.data"]]$dims[1] < length(liger_object@var.genes)){
+          extendDataSet(h5_object[["scale.data"]], c(length(liger_object@var.genes), h5_object[["scale.data"]]$dims[2]))
+      }
+    } else if (h5_object$exists("gene_vars")) {
+      if (h5_object[["gene_vars"]]$dims[1] < length(liger_object@var.genes)){
+          extendDataSet(h5_object[["gene_vars"]], length(liger_object@var.genes))
+      }
+    }
   }
-  h5_object$create_dataset(name = dataset_name,dims = dims,dtype = mode, chunk_dims = chunk_size)  
-  #file.h5$close_all()
 }
-
 #' Normalize raw datasets to column sums
 #'
 #' This function normalizes data to account for total gene expression across a cell.
 #'
 #' @param object \code{liger} object.
 #' @param chunk size of chunks in hdf5 file. (default 1000)
-#'
+#' @param format.type string of HDF5 format (10X CellRanger by default).
 #' @return \code{liger} object with norm.data slot set.
 #' @export
 #' @examples
@@ -469,18 +529,24 @@ safe_h5_create = function(h5_object,dataset_name,dims,mode="double",chunk_size=d
 #' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
 #' }
-normalize = function (object, chunk = 1000) 
+normalize = function (object, 
+                      chunk = 1000, 
+                      format.type = "10X") 
 {
   if (class(object@raw.data[[1]])[1] == "H5File") {
     hdf5_files = names(object@raw.data)
+    nUMI = c()
+    nGene = c()
     for (i in 1:length(hdf5_files))
     {
       print(hdf5_files[i])
       chunk_size = chunk
-      fname = hdf5_files[[i]]
-      num_cells = object@raw.data[[i]][["matrix/barcodes"]]$dims
-      num_genes = object@raw.data[[i]][["matrix/features/name"]]$dims
-      num_entries = object@raw.data[[i]][["matrix/data"]]$dims
+      #fname = hdf5_files[[i]]
+      num_entries = object@h5file.info[[i]][["data"]]$dims
+      num_cells = object@h5file.info[[i]][["barcodes"]]$dims
+      num_genes = object@h5file.info[[i]][["genes"]]$dims
+      
+
       prev_end_col = 1
       prev_end_data = 1
       prev_end_ind = 0
@@ -488,8 +554,8 @@ normalize = function (object, chunk = 1000)
       gene_means = rep(0,num_genes)
       #file.h5$close_all()
       
-      safe_h5_create(object@raw.data[[i]],"/norm.data",dims=num_entries,mode = h5types$double, chunk_size = chunk_size)
-      safe_h5_create(object@raw.data[[i]],"/cell_sums",dims=num_cells,mode = h5types$int, chunk_size = chunk_size)
+      safe_h5_create(object@raw.data[[i]],"/norm.data",dims=num_entries,mode = h5types$double, chunk_size = chunk_size, liger_object = object)
+      safe_h5_create(object@raw.data[[i]],"/cell_sums",dims=num_cells,mode = h5types$int, chunk_size = chunk_size, liger_object = object)
       
       #file.h5 = H5File$new(fname, mode="r+")
       num_chunks = ceiling(num_cells/chunk_size)
@@ -502,10 +568,12 @@ normalize = function (object, chunk = 1000)
         {
           chunk_size = num_cells - prev_end_col + 1
         }
-        start_inds = object@raw.data[[i]][["matrix/indptr"]][prev_end_col:(prev_end_col+chunk_size)]
-        row_inds = object@raw.data[[i]][["matrix/indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
-        counts = object@raw.data[[i]][["matrix/data"]][(prev_end_ind+1):(tail(start_inds, 1))]
+        start_inds = object@h5file.info[[i]][["indptr"]][prev_end_col:(prev_end_col+chunk_size)]
+        row_inds = object@h5file.info[[i]][["indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
+        counts = object@h5file.info[[i]][["data"]][(prev_end_ind+1):(tail(start_inds, 1))]
         raw.data = sparseMatrix(i=row_inds[1:length(counts)]+1,p=start_inds[1:(chunk_size+1)]-prev_end_ind,x=counts,dims=c(num_genes,chunk_size))
+        nUMI = c(nUMI, colSums(raw.data))
+        nGene = c(nGene, colSums(raw.data > 0))
         norm.data = Matrix.column_norm(raw.data)
         object@raw.data[[i]][["norm.data"]][(prev_end_ind+1):(tail(start_inds, 1))] = norm.data@x
         object@raw.data[[i]][["cell_sums"]][prev_end_col:(prev_end_col+chunk_size-1)] = Matrix::colSums(raw.data)
@@ -524,19 +592,17 @@ normalize = function (object, chunk = 1000)
       setTxtProgressBar(pb,num_chunks)
       cat("\n")
       gene_means = gene_means / num_cells
-      #file.h5$close_all()
-      safe_h5_create(object@raw.data[[i]],"gene_means",dims=num_genes,mode=h5types$double)
-      #h5write(gene_means,name="/gene_means",file=fname)
-      safe_h5_create(object@raw.data[[i]],"gene_sum_sq",dims=num_genes,mode=h5types$double)
-      #h5write(gene_sum_sq,name="/gene_sum_sq",file=fname)
-      #file.h5 = H5File$new(fname, mode="r+")
+      safe_h5_create(object@raw.data[[i]],"gene_means",dims=num_genes,mode=h5types$double, liger_object = object)
+      safe_h5_create(object@raw.data[[i]],"gene_sum_sq",dims=num_genes,mode=h5types$double, liger_object = object)
       object@raw.data[[i]][["gene_means"]][1:length(gene_means)] = gene_means
       object@raw.data[[i]][["gene_sum_sq"]][1:length(gene_sum_sq)] = gene_sum_sq
-      #file.h5$close_all()
+      object@norm.data[[i]] = object@raw.data[[i]][["norm.data"]]
       rm(row_sums)
       rm(raw.data)
     }
-    
+    object@cell.data$nUMI = nUMI
+    object@cell.data$nGene = nGene
+    names(object@norm.data) = names(object@raw.data)
   }
   else {
     object <- removeMissingObs(object, slot.use = "raw.data", 
@@ -561,7 +627,6 @@ normalize = function (object, chunk = 1000)
 #' @param object \code{liger} object. The input raw.data should be a list of hdf5 files. 
 #'    Should call normalize and selectGenes before calling.
 #' @param chunk size of chunks in hdf5 file. (default 1000)
-#'
 #' @return \code{liger} object with scale.data slot set.
 #' @export
 #' @examples
@@ -580,14 +645,15 @@ calcGeneVars = function (object, chunk = 1000)
   for (i in 1:length(hdf5_files)) {
     print(hdf5_files[i])
     chunk_size = chunk
-    num_cells = object@raw.data[[i]][["matrix/barcodes"]]$dims
-    num_genes = object@raw.data[[i]][["matrix/features/name"]]$dims
-    num_entries = object@raw.data[[i]][["matrix/data"]]$dims
+    num_cells = object@h5file.info[[i]][["barcodes"]]$dims
+    num_genes = object@h5file.info[[i]][["genes"]]$dims
+    num_entries = object@h5file.info[[i]][["data"]]$dims
+
     prev_end_col = 1
     prev_end_data = 1
     prev_end_ind = 0
     gene_vars = rep(0,num_genes)
-    gene_means = object@raw.data[[i]][["gene_means"]][1:num_genes]
+    gene_means = object@raw.data[[i]][["gene_means"]][]
     gene_num_pos = rep(0,num_genes)
   
     num_chunks = ceiling(num_cells/chunk_size)
@@ -598,9 +664,9 @@ calcGeneVars = function (object, chunk = 1000)
       if (num_cells - prev_end_col < chunk_size) {
         chunk_size = num_cells - prev_end_col + 1
       }
-      start_inds = object@raw.data[[i]][["matrix/indptr"]][prev_end_col:(prev_end_col+chunk_size)]
-      row_inds = object@raw.data[[i]][["matrix/indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
-      counts = object@raw.data[[i]][["norm.data"]][(prev_end_ind+1):(tail(start_inds, 1))]
+      start_inds = object@h5file.info[[i]][["indptr"]][prev_end_col:(prev_end_col+chunk_size)]
+      row_inds = object@h5file.info[[i]][["indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
+      counts = object@norm.data[[i]][(prev_end_ind+1):(tail(start_inds, 1))]
       norm.data = sparseMatrix(i=row_inds[1:length(counts)]+1,p=start_inds[1:(chunk_size+1)]-prev_end_ind,x=counts,dims=c(num_genes,chunk_size))
       
       num_read = length(counts)
@@ -614,7 +680,7 @@ calcGeneVars = function (object, chunk = 1000)
     cat("\n")
     gene_vars = gene_vars/(num_cells - 1)
     safe_h5_create(object@raw.data[[i]], "/gene_vars", dims = num_genes, 
-                   mode = h5types$double)
+                   mode = h5types$double, liger_object = object)
     object@raw.data[[i]][["gene_vars"]][1:num_genes]=gene_vars
   }
   return(object)
@@ -680,7 +746,12 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
     }
     genes.use <- c()
     for (i in 1:length(hdf5_files)) {
-      genes = object@raw.data[[i]][["/matrix/features/name"]][]
+      if (object@h5file.info[[i]][["format.type"]] == "AnnData"){
+        genes = object@h5file.info[[i]][["genes"]][]$index
+      } else {
+        genes = object@h5file.info[[i]][["genes"]][]
+      }
+      
       if (capitalize) {
         genes = toupper(genes)
       }
@@ -720,7 +791,11 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
 
     if (!keep.unique) {
       for (i in 1:length(hdf5_files)) {
-        genes = object@raw.data[[i]][["matrix/features/name"]][]
+        if (object@h5file.info[[i]][["format.type"]] == "AnnData"){
+          genes = object@h5file.info[[i]][["genes"]][]$index
+        } else {
+          genes = object@h5file.info[[i]][["genes"]][]
+        }
         genes.use <- genes.use[genes.use %in% genes]
       }
     }
@@ -849,19 +924,26 @@ scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
     for (i in 1:length(hdf5_files)) {
       print(hdf5_files[i])
       chunk_size = chunk
-      num_cells = object@raw.data[[i]][["matrix/barcodes"]]$dims
-      num_genes = object@raw.data[[i]][["matrix/features/name"]]$dims
-      num_entries = object@raw.data[[i]][["matrix/data"]]$dims
+
+      if (object@h5file.info[[i]][["format.type"]] == "AnnData"){
+        genes = object@raw.data[[i]][["raw.var"]][]$index
+      } else {
+        genes = object@h5file.info[[i]][["genes"]][]
+      }
+      num_cells = object@h5file.info[[i]][["barcodes"]]$dims
+      num_genes = length(genes)
+      num_entries = object@h5file.info[[i]][["data"]]$dims
+      
       prev_end_col = 1
       prev_end_data = 1
       prev_end_ind = 0
       gene_vars = rep(0,num_genes)
       gene_means = object@raw.data[[i]][["gene_means"]][1:num_genes]
       gene_sum_sq = object@raw.data[[i]][["gene_sum_sq"]][1:num_genes]
-      genes = object@raw.data[[i]][["matrix/features/name"]][1:num_genes]
+      
       gene_inds = which(genes %in% vargenes)
-      gene_root_mean_sum_sq = sqrt(gene_sum_sq/num_cells)
-      safe_h5_create(object@raw.data[[i]], "scale.data", dims = c(length(vargenes), num_cells), mode = h5types$double, chunk = c(length(vargenes), chunk_size))
+      gene_root_mean_sum_sq = sqrt(gene_sum_sq/(num_cells-1))
+      safe_h5_create(object@raw.data[[i]], "scale.data", dims = c(length(vargenes), num_cells), mode = h5types$double, chunk = c(length(vargenes), chunk_size), liger_object = object)
       num_chunks = ceiling(num_cells/chunk_size)
       pb = txtProgressBar(0, num_chunks, style = 3)
       ind = 0
@@ -870,9 +952,9 @@ scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
         if (num_cells - prev_end_col < chunk_size) {
           chunk_size = num_cells - prev_end_col + 1
         }
-        start_inds = object@raw.data[[i]][["matrix/indptr"]][prev_end_col:(prev_end_col+chunk_size)]
-        row_inds = object@raw.data[[i]][["matrix/indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
-        counts = object@raw.data[[i]][["norm.data"]][(prev_end_ind+1):(tail(start_inds, 1))]
+        start_inds = object@h5file.info[[i]][["indptr"]][prev_end_col:(prev_end_col+chunk_size)]
+        row_inds = object@h5file.info[[i]][["indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
+        counts = object@norm.data[[i]][(prev_end_ind+1):(tail(start_inds, 1))]
         scaled = sparseMatrix(i=row_inds[1:length(counts)]+1,p=start_inds[1:(chunk_size+1)]-prev_end_ind,x=counts,dims=c(num_genes,chunk_size))
         scaled = scaled[gene_inds, ]
         scaled = as.matrix(scaled)
@@ -882,7 +964,7 @@ scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
         scaled = scaled[vargenes, ]
         scaled[is.na(scaled)] = 0
         scaled[scaled == Inf] = 0
-        object@raw.data[[i]][["scale.data"]][,prev_end_col:(prev_end_col+chunk_size-1)] = scaled
+        object@raw.data[[i]][["scale.data"]][1:length(vargenes),prev_end_col:(prev_end_col+chunk_size-1)] = scaled
         num_read = length(counts)
         prev_end_col = prev_end_col + chunk_size
         prev_end_data = prev_end_data + num_read
@@ -977,6 +1059,256 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
   return(object)
 }
 
+#helper function for readSubset
+#Samples cell barcodes from specified datasets 
+#balance=NULL (default) means that max_cells are sampled from among all cells. 
+#balance="cluster" samples up to max_cells from each cluster in each dataset
+#balance="dataset" samples up to max_cells from each dataset
+#datasets.use uses only the specified datasets for sampling. Default is NULL (all datasets)
+#rand.seed for reproducibility (default 1).
+#Returns: vector of cell barcodes
+downsample = function(object,balance=NULL,max_cells=1000,datasets.use=NULL,rand.seed=1)
+{
+  set.seed(rand.seed)
+  if(is.null(datasets.use))
+  {
+    datasets.use=names(object@H)
+    print(datasets.use)
+  }
+  inds = c()
+  inds_ds = list()
+  if (is.null(balance))
+  {
+    for (ds in 1:length(datasets.use))
+    {
+      inds = c(inds,rownames(object@H[[ds]]))
+    }
+    num_to_samp = min(max_cells,length(inds))
+    inds = sample(inds,num_to_samp)
+    for (ds in 1:length(datasets.use))
+    {
+      inds_ds[[ds]] = intersect(inds, rownames(object@H[[ds]]))
+    }
+  }
+  else if (balance == "dataset")
+  {
+    for (ds in 1:length(datasets.use))
+    {
+      num_to_samp = min(max_cells,nrow(object@H[[ds]]))
+      inds_ds[[ds]] = rownames(object@H[[ds]])[sample(1:nrow(object@H[[ds]]),num_to_samp)]
+    }
+  }
+  else #balance clusters
+  {
+    if (nrow(object@cell.data)==0)
+    {
+      dataset <- unlist(lapply(seq_along(object@H), function(i) {
+        rep(names(object@H)[i], nrow(object@H[[i]]))
+      }), use.names = F)
+      object@cell.data <- data.frame(dataset)
+      rownames(object@cell.data) <- unlist(lapply(object@H, 
+                                                  function(x) {
+                                                    rownames(x)
+                                                  }), use.names = F)
+    }
+    for (ds in 1:length(datasets.use))
+    {
+      for (i in levels(object@clusters))
+      {
+        inds_to_samp = names(object@clusters)[object@clusters==i & object@cell.data[["dataset"]] == ds]
+        num_to_samp = min(max_cells,length(inds_to_samp))
+        inds_ds[[ds]] = sample(inds_to_samp,num_to_samp)
+      }
+    }
+  }
+  return(inds_ds)
+}
+
+#' Sample data for plotting
+#'
+#' This function samples raw/normalized/scaled data from on-disk HDF5 files for plotting. 
+#' This function assumes that the cell barcodes are unique across all datasets.
+#'
+#' @param object \code{liger} object. Should call normalize and selectGenes before calling.
+#' @param slot.use Type of data for sampling (raw.data, norm.data(default), scale.data).
+#' @param balance Type of sampling. NULL means that max_cells are sampled from among all cells;
+#'                balance="dataset" samples up to max_cells from each dataset;
+#'                balance="cluster" samples up to max_cells from each cluster.
+#' @param chunk is the max number of cells at a time to read from disk (default 1000).
+#' @param max.cells Total number of cell to sample (default 5000).
+#' @param rand.seed  (default 1).
+#' @param datasets.use uses only the specified datasets for sampling. Default is NULL (all datasets)
+#' @param genes.use samples from only the specified genes. Default is NULL (all genes)
+#' @param rand.seed for reproducibility (default 1).
+#' #Note: 
+#'
+#' @return \code{liger} object with sample.data slot set.
+#' @export
+#' @examples
+#' \dontrun{
+#' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+#' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
+#' # select genes
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+#' }
+
+readSubset = function(object,slot.use="norm.data",balance=NULL,max.cells=1000,chunk=1000,datasets.use=NULL,genes.use=NULL, rand.seed=1)
+{
+  if (class(object@raw.data[[1]])[1] == "H5File") {
+    cat("Sampling\n")
+    if(is.null(datasets.use))
+    {
+      datasets.use=names(object@H)
+    }
+    cell_inds = downsample(object,balance=balance,max_cells=max.cells,datasets.use=datasets.use, rand.seed=rand.seed)
+    
+    hdf5_files = names(object@raw.data)
+    #vargenes = object@var.genes
+
+    # find the intersect of genes from each input datasets
+    genes = c()
+    if (slot.use != "scale.data"){
+      for (i in 1:length(hdf5_files)) {
+        if (object@h5file.info[[i]][["format.type"]] == "AnnData"){
+          genes_i = object@h5file.info[[i]][["genes"]][]$index
+        } else {
+          genes_i = object@h5file.info[[i]][["genes"]][]
+        }
+        if (i == 1) genes = genes_i else genes = intersect(genes, genes_i)
+      }
+    } else {
+      genes = object@var.genes
+    }
+
+    if(is.null(genes.use))
+    {
+      genes.use = genes
+    }
+
+    for (i in 1:length(hdf5_files)) {
+      print(hdf5_files[i])
+      if (slot.use == "scale.data") {
+        data.subset = c()
+      } else {
+        data.subset = Matrix(nrow=length(genes.use),ncol=0,sparse=T)
+      }
+      chunk_size = chunk
+      if (object@h5file.info[[i]][["format.type"]] == "AnnData"){
+        barcodes = object@h5file.info[[i]][["barcodes"]][]$cell
+        genes = object@h5file.info[[i]][["genes"]][]$index
+      } else {
+        barcodes = object@h5file.info[[i]][["barcodes"]][]
+        genes = object@h5file.info[[i]][["genes"]][]
+      }
+      num_cells = length(barcodes)
+      num_genes = length(genes)
+      
+      prev_end_col = 1
+      prev_end_data = 1
+      prev_end_ind = 0
+      
+    
+      #gene_inds = which(genes %in% vargenes)
+      
+      num_chunks = ceiling(num_cells/chunk_size)
+      pb = txtProgressBar(0, num_chunks, style = 3)
+      ind = 0
+      
+      while (prev_end_col < num_cells) {
+        ind = ind + 1
+        if (num_cells - prev_end_col < chunk_size) {
+          chunk_size = num_cells - prev_end_col + 1
+        }
+        if (slot.use != "scale.data"){
+          start_inds = object@h5file.info[[i]][["indptr"]][prev_end_col:(prev_end_col+chunk_size)]
+          row_inds = object@h5file.info[[i]][["indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
+          if (slot.use=="raw.data")
+          {
+            counts = object@h5file.info[[i]][["data"]][(prev_end_ind+1):(tail(start_inds, 1))]  
+          }
+          if (slot.use=="norm.data")
+          {
+            counts = object@norm.data[[i]][(prev_end_ind+1):(tail(start_inds, 1))]
+          }
+          one_chunk = sparseMatrix(i=row_inds[1:length(counts)]+1,p=start_inds[1:(chunk_size+1)]-prev_end_ind,x=counts,dims=c(num_genes,chunk_size))
+          rownames(one_chunk) = genes
+          colnames(one_chunk) = barcodes[(prev_end_col):(prev_end_col+chunk_size-1)]
+          use_these = intersect(colnames(one_chunk),cell_inds[[i]])
+          one_chunk = one_chunk[genes.use,use_these]
+          data.subset = cbind(data.subset,one_chunk)
+
+          num_read = length(counts)
+          prev_end_col = prev_end_col + chunk_size
+          prev_end_data = prev_end_data + num_read
+          prev_end_ind = tail(start_inds, 1)
+          setTxtProgressBar(pb, ind)
+        } else {
+          one_chunk = object@scale.data[[i]][,prev_end_col:(prev_end_col + chunk_size - 1)]
+          rownames(one_chunk) = object@var.genes
+          colnames(one_chunk) = barcodes[(prev_end_col):(prev_end_col+chunk_size-1)]
+          use_these = intersect(colnames(one_chunk),cell_inds[[i]])
+          one_chunk = one_chunk[genes.use,use_these]
+          data.subset = cbind(data.subset,one_chunk)
+
+          prev_end_col = prev_end_col + chunk_size
+          setTxtProgressBar(pb, ind)
+        }
+        if (class(object@raw.data[[i]])[1] == "H5File") {
+          object@sample.data[[i]] = data.subset
+        } else if (class(object@raw.data[[i]])[1] != "H5File" & slot.use == "scale.data") {
+          object@sample.data[[i]] = t(data.subset)
+        }
+        object@h5file.info[[i]][["sample.data.type"]] = slot.use
+      }
+      setTxtProgressBar(pb, num_chunks)
+      cat("\n")
+    }
+  } else {
+    cat("Sampling\n")
+    if(is.null(datasets.use))
+    {
+      datasets.use=names(object@H)
+    }
+    cell_inds = downsample(object,balance=balance,max_cells=max_cells,datasets.use=datasets.use)
+    
+    files = names(object@raw.data)
+    # find the intersect of genes from each input datasets
+    genes = c()
+    for (i in 1:length(files)) {
+      genes_i = rownames(object@raw.data[[i]])
+      if (i == 1) genes = genes_i else genes = intersect(genes, genes_i)
+    }
+    if(is.null(genes.use))
+    {
+      genes.use = genes
+    }
+    pb = txtProgressBar(0, length(files), style = 3)
+    for (i in 1:length(files)){
+      if (slot.use=="raw.data")
+        {
+          data.subset_i = object@raw.data[[i]][genes.use, cell_inds[[i]]]  
+        }
+        if (slot.use=="norm.data")
+        {
+          data.subset_i = object@norm.data[[i]][genes.use, cell_inds[[i]]]  
+        }
+        if(slot.use=="scale.data")
+        {
+          data.subset_i = t(object@scale.data[[i]][cell_inds[[i]], genes.use])  
+        }
+      setTxtProgressBar(pb, i)
+    }
+    cat("\n")
+    object@sample.data[[i]] = data.subset_i
+    object@h5file.info[[i]][["sample.data.type"]] = slot.use
+  }
+  names(object@sample.data) = names(object@raw.data)
+  return(object)
+}
 #######################################################################################
 #### Factorization
 #' Perform online iNMF on scaled datasets
@@ -1028,8 +1360,8 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #' # select genes
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
-#' # get factorization using three restarts and 20 factors
-#' ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
+#' # get factorization using 20 factors from scratch
+#' ligerex <- online(ligerex, k = 20, lambda = 5, miniBatch_size = 5000)
 #' }
 #'
 
@@ -1135,8 +1467,8 @@ online_iNMF <- function(object,
   num_cells_new = num_cells[(num_prev_files+1):num_files]
   minibatch_sizes = rep(0, num_files)
 
-    for (i in file_idx_new) {
-      minibatch_sizes[i] = round((num_cells[i]/sum(num_cells[file_idx_new])) * miniBatch_size)
+  for (i in file_idx_new) {
+    minibatch_sizes[i] = round((num_cells[i]/sum(num_cells[file_idx_new])) * miniBatch_size)
   }
   minibatch_sizes_orig = minibatch_sizes
 
@@ -1161,7 +1493,7 @@ online_iNMF <- function(object,
       object@V = list()    
       for (i in file_idx){
         V_init_idx = sample(1:num_cells_new[i], k) # pick k sample from datasets as initial H matrix
-        object@V[[i]] = object@scale.data[[i]][, V_init_idx]
+        object@V[[i]] = object@scale.data[[i]][1:num_genes, V_init_idx]
 
       }
 
@@ -1176,7 +1508,7 @@ online_iNMF <- function(object,
       V_init_idx = list()
       for (i in file_idx_new){
         V_init_idx = sample(1:num_cells[i], k)
-        object@V[[i]] = object@scale.data[[i]][, V_init_idx] # initialize the Vi for new dataset
+        object@V[[i]] = object@scale.data[[i]][1:num_genes, V_init_idx] # initialize the Vi for new dataset
         for (j in 1:k){
           object@V[[i]][, j] = object@V[[i]][, j] / sqrt(sum(object@V[[i]][, j]^2)) 
         }
@@ -1302,7 +1634,7 @@ online_iNMF <- function(object,
       if (length(minibatch_idx[[file_idx_new[1]]]) == minibatch_sizes_orig[file_idx_new[1]]){ 
         X_minibatch = rep(list(NULL), num_files)
         for (i in file_idx_new){
-          X_minibatch[[i]] = object@scale.data[[i]][ ,minibatch_idx[[i]]]
+          X_minibatch[[i]] = object@scale.data[[i]][1:num_genes ,minibatch_idx[[i]]]
         }
       
         # update H_i by ANLS Hi_minibatch[[i]]
@@ -1364,8 +1696,8 @@ online_iNMF <- function(object,
           # update V_i
           for (j in 1:k){
             for (i in file_idx_new){
-              object@V[[i]][, j] = nonneg(object@V[[i]][, j] / (1 + lambda) + (object@B[[i]][, j] - (object@W + object@V[[i]]) %*% object@A[[i]][, j]) / 
-                                          ((1 + lambda) * object@A[[i]][j, j]))
+              object@V[[i]][, j] = nonneg(object@V[[i]][, j] + (object@B[[i]][, j] - (object@W + (1 + lambda) * object@V[[i]]) %*% object@A[[i]][, j]) / 
+                ((1 + lambda) * object@A[[i]][j, j]))
             }
           }
 
@@ -1381,7 +1713,7 @@ online_iNMF <- function(object,
     for (i in file_idx){
       num_batch = num_cells[i] %/% miniBatch_size + 1
       if (num_batch == 1){
-        X_i = object@scale.data[[i]][,]
+        X_i = object@scale.data[[i]][1:num_genes,]
         object@H[[i]] = solveNNLS(rbind(object@W + object@V[[i]],sqrt_lambda * object@V[[i]]), rbind(X_i, matrix(0, num_genes , num_cells[i])))
       } else {
         for (batch_idx in 1:num_batch){
@@ -1390,7 +1722,7 @@ online_iNMF <- function(object,
           } else {
             cell_idx = ((batch_idx - 1) * miniBatch_size + 1):num_cells[i]
           }
-          X_i_batch = object@scale.data[[i]][,cell_idx]
+          X_i_batch = object@scale.data[[i]][1:num_genes,cell_idx]
           object@H[[i]] = cbind(object@H[[i]], solveNNLS(rbind(object@W + object@V[[i]], sqrt_lambda * object@V[[i]]), 
                                                          rbind(X_i_batch, matrix(0, num_genes , length(cell_idx)))))
         }        
@@ -1414,7 +1746,7 @@ online_iNMF <- function(object,
     for (i in file_idx_new){
       num_batch = num_cells[i] %/% miniBatch_size + 1
       if (num_cells[i] <= miniBatch_size){
-        object@H[[i]] = solveNNLS(object@W, object@scale.data[[i]][,])
+        object@H[[i]] = solveNNLS(object@W, object@scale.data[[i]][1:num_genes,])
       } else {
         for (batch_idx in 1:num_batch){
           if (batch_idx != num_batch){
@@ -1422,7 +1754,7 @@ online_iNMF <- function(object,
           } else {
             cell_idx = ((batch_idx - 1) * miniBatch_size + 1):num_cells[i]
           }
-          object@H[[i]] = cbind(object@H[[i]],solveNNLS(object@W, object@scale.data[[i]][,cell_idx]))
+          object@H[[i]] = cbind(object@H[[i]],solveNNLS(object@W, object@scale.data[[i]][1:num_genes,cell_idx]))
         }
       }
       colnames(object@H[[i]]) = cell_barcodes[[i]]
@@ -3111,150 +3443,7 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
   return(object)
 }
 
-#helper function for read_subset
-#Samples cell barcodes from specified datasets 
-#balance=NULL (default) means that max_cells are sampled from among all cells. 
-#balance="cluster" samples up to max_cells from each cluster in each dataset
-#balance="dataset" samples up to max_cells from each dataset
-#datasets.use uses only the specified datasets for sampling. Default is NULL (all datasets)
-#Returns: vector of cell barcodes
-downsample = function(object,balance=NULL,max_cells=1000,datasets.use=NULL)
-{
-  if(is.null(datasets.use))
-  {
-    datasets.use=names(object@H)
-  }
-  inds = c()
-  if (is.null(balance))
-  {
-    for (ds in datasets.use)
-    {
-      inds = c(inds,rownames(object@H[[ds]])) 
-    }
-    num_to_samp = min(max_cells,length(inds))
-    inds = sample(inds,num_to_samp)
-  }
-  else if (balance == "dataset")
-  {
-    for (ds in datasets.use)
-    {
-      num_to_samp = min(max_cells,nrow(object@H[[ds]]))
-      inds = c(inds,rownames(object@H[[ds]])[sample(1:nrow(object@H[[ds]]),num_to_samp)])
-    }
-  }
-  else #balance clusters
-  {
-    if (nrow(object@cell.data)==0)
-    {
-      dataset <- unlist(lapply(seq_along(object@H), function(i) {
-        rep(names(object@H)[i], nrow(object@H[[i]]))
-      }), use.names = F)
-      object@cell.data <- data.frame(dataset)
-      rownames(object@cell.data) <- unlist(lapply(object@H, 
-                                                  function(x) {
-                                                    rownames(x)
-                                                  }), use.names = F)
-    }
-    for (ds in datasets.use)
-    {
-      for (i in levels(object@clusters))
-      {
-        inds_to_samp = names(object@clusters)[object@clusters==i & object@cell.data[["dataset"]] == ds]
-        num_to_samp = min(max_cells,length(inds_to_samp))
-        inds = c(inds,sample(inds_to_samp,num_to_samp))  
-      }
-    }
-  }
-  return(inds)
-}
 
-#Helper function for runWilcoxon. 
-#Samples cells from "slot". balance=NULL means that max_cells are sampled from among all cells. 
-#balance="cluster" samples up to max_cells from each cluster
-#balance="dataset" samples up to max_cells from each dataset
-#chunk is the max number of cells at a time to read from disk
-#datasets.use uses only the specified datasets for sampling. Default is NULL (all datasets)
-#genes.use samples from only the specified genes. Default is NULL (all genes)
-#Returns: sparse matrix containing sampled data
-#Note: This function assumes that the cell barcodes are unique across all datasets.
-read_subset = function(object,slot.use="norm.data",balance=NULL,max_cells=1000,chunk=1000,datasets.use=NULL,genes.use=NULL)
-{
-  if (class(object@raw.data[[1]])[1] == "H5File") {
-    cat("Sampling\n")
-    if(is.null(datasets.use))
-    {
-      datasets.use=names(object@H)
-    }
-    cell_inds = downsample(object,balance=balance,max_cells=max_cells,datasets.use=datasets.use)
-    
-    hdf5_files = names(object@raw.data)
-    vargenes = object@var.genes
-    
-    num_genes = object@raw.data[[1]][["matrix/features/name"]]$dims
-    genes = object@raw.data[[1]][["matrix/features/name"]][1:num_genes]
-    if(is.null(genes.use))
-    {
-      genes.use = genes
-    }
-    
-    data.subset = Matrix(nrow=num_genes,ncol=0,sparse=T)
-    for (i in 1:length(hdf5_files)) {
-      print(hdf5_files[i])
-      chunk_size = chunk
-      num_cells = object@raw.data[[i]][["matrix/barcodes"]]$dims
-      num_genes = object@raw.data[[i]][["matrix/features/name"]]$dims
-      num_entries = object@raw.data[[i]][["matrix/data"]]$dims
-      prev_end_col = 1
-      prev_end_data = 1
-      prev_end_ind = 0
-      
-      genes = object@raw.data[[i]][["matrix/features/name"]][1:num_genes]
-      barcodes = object@raw.data[[i]][["matrix/barcodes"]][1:num_cells]
-      gene_inds = which(genes %in% vargenes)
-      
-      num_chunks = ceiling(num_cells/chunk_size)
-      pb = txtProgressBar(0, num_chunks, style = 3)
-      ind = 0
-      while (prev_end_col < num_cells) {
-        ind = ind + 1
-        if (num_cells - prev_end_col < chunk_size) {
-          chunk_size = num_cells - prev_end_col + 1
-        }
-        
-        start_inds = object@raw.data[[i]][["matrix/indptr"]][prev_end_col:(prev_end_col+chunk_size)]
-        row_inds = object@raw.data[[i]][["matrix/indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
-        if (slot.use=="raw.data")
-        {
-          counts = object@raw.data[[i]][["matrix/counts"]][(prev_end_ind+1):(tail(start_inds, 1))]  
-        }
-        if (slot.use=="norm.data")
-        {
-          counts = object@raw.data[[i]][["norm.data"]][(prev_end_ind+1):(tail(start_inds, 1))]  
-        }
-        if(slot.use=="scale.data")
-        {
-          counts = object@raw.data[[i]][["scale.data"]][,(prev_end_ind+1):(tail(start_inds, 1))]  
-        }
-        
-        one_chunk = sparseMatrix(i=row_inds[1:length(counts)]+1,p=start_inds[1:(chunk_size+1)]-prev_end_ind,x=counts,dims=c(num_genes,chunk_size))
-        rownames(one_chunk) = genes
-        colnames(one_chunk) = barcodes[(prev_end_col):(prev_end_col+chunk_size-1)]
-        use_these = intersect(colnames(one_chunk),cell_inds)
-        one_chunk = one_chunk[genes.use,use_these]
-        data.subset = cbind(data.subset,one_chunk)
-        
-        num_read = length(counts)
-        prev_end_col = prev_end_col + chunk_size
-        prev_end_data = prev_end_data + num_read
-        prev_end_ind = tail(start_inds, 1)
-        setTxtProgressBar(pb, ind)
-      }
-      setTxtProgressBar(pb, num_chunks)
-      cat("\n")
-    }
-  }
-  return(data.subset)
-}
 
 #' Perform Wilcoxon rank-sum test
 #'
@@ -3265,8 +3454,6 @@ read_subset = function(object,slot.use="norm.data",balance=NULL,max_cells=1000,c
 #' @param compare.method Compare genes across \code{clusters} (using all datasets) or across \code{datasets} (within each cluster).
 #' @param balance.by Sample from all datasets proportional to dataset size (default), balance the sample by \code{cluster} or 
 #' balance the sample by \code{dataset}
-#' @param max.sample Maximum number of cells to sample from either all datasets, each cluster, or each dataset
-#' (depending on the value of \code{balance.by}). Default 1000.
 #' @param chunk Number of cells at a time to read when constructing subset of data. Default 1000.
 #' 
 #' @return A 10-columns data.frame with test results.
@@ -3285,9 +3472,15 @@ read_subset = function(object,slot.use="norm.data",balance=NULL,max_cells=1000,c
 #' ligerex <- quantileAlignSNF(ligerex)
 #' wilcox.results <- runWilcoxon(ligerex, compare.method = "cluster")
 #' wilcox.results <- runWilcoxon(ligerex, compare.method = "datastes", data.use = c(1, 2))
+#' # HDF5 input
+#' ligerex <- online_iNMF(ligerex, k = 20)
+#' ligerex <- quantile_norm(ligerex)
+#' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 1000)
+#' de_genes <- runWilcoxon(ligerex, compare.method = "clusters")
+#'
 #' }
 #'
-runWilcoxon = function (object, data.use = NULL, compare.method,balance.by=NULL,max.sample=1000,chunk=1000) 
+runWilcoxon = function (object,data.use=NULL,compare.method,balance.by=NULL) 
 {
   if (missing(compare.method)) {
     stop("Parameter *compare.method* cannot be empty!")
@@ -3303,6 +3496,13 @@ runWilcoxon = function (object, data.use = NULL, compare.method,balance.by=NULL,
       stop("Should have at least TWO inputs to compare between datasets")
     }
   }
+  if (class(object@raw.data[[1]])[1] == "H5File" & is.null(object@h5file.info[[1]][["sample.data.type"]])){
+    print("Need to sample data before Wilcoxon test for HDF5 input.")
+  } else {
+    print(paste0("Running Wilcoxon test on ", object@h5file.info[[1]][["sample.data.type"]]))
+  }
+  
+
   if (nrow(object@cell.data)==0)
   {
     dataset <- unlist(lapply(seq_along(object@H), function(i) {
@@ -3326,28 +3526,31 @@ runWilcoxon = function (object, data.use = NULL, compare.method,balance.by=NULL,
       sample.list <- data.use
     }
     genes <- Reduce(intersect, lapply(sample.list, function(sample) {
-      if (is.matrix(object@norm.data[[sample]]))
+      if (class(object@norm.data[[sample]])[[1]] == "dgCMatrix")
       {
-        return(object@norm.data[[sample]]@Dimnames[[1]])
+        return(rownames(object@norm.data[[sample]]))
       }
       else
       {
-        return(object@norm.data[[sample]][["matrix/features/name"]][])
+        return(rownames(object@sample.data[[sample]]))
       }
     }))
-    feature_matrix <- read_subset(object,"norm.data",balance=balance.by,max_cells = max.sample,chunk=chunk,datasets.use=data.use,genes.use=genes)
+    feature_matrix <- Reduce(cbind, object@sample.data)
     cell_source <- object@cell.data[["dataset"]]
     names(cell_source) <- names(object@clusters)
     cell_source <- cell_source[colnames(feature_matrix), 
                                drop = TRUE]
     clusters <- object@clusters[colnames(feature_matrix), 
                                 drop = TRUE]
-  }
-  else {
+  } else {
     print(paste0("Performing Wilcoxon test on GIVEN datasets: ", 
                  data.use))
-    feature_matrix <- read_subset(object,"norm.data",balance=balance.by,max_cells = max.sample,chunk=chunk,datasets.use=data.use,genes.use=genes)
-    clusters <- object@clusters[object@norm.data[[data.use]]@Dimnames[[2]], 
+    feature_matrix <- Reduce(cbind, object@sample.data[[data.use]])
+    cell_source <- object@cell.data[["dataset"]]
+    names(cell_source) <- names(object@clusters)
+    cell_source <- cell_source[colnames(feature_matrix), 
+                               drop = TRUE]
+    clusters <- object@clusters[colnames(feature_matrix), 
                                 drop = TRUE]
   }
   if (compare.method == "clusters") {
@@ -3861,6 +4064,10 @@ calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.
 #' ligerex
 #' ligerex <- quantileAlignSNF(ligerex)
 #' agreement <- calcAgreement(ligerex, dr.method = "NMF")
+#' # HDF5 input
+#' ligerex <- quantile_norm(ligerex)
+#' ligerex <- readSubset(ligerex, slot.use = "scale.data", max.cells = 5000)
+#' agreement <- calcAgreement(ligerex, dr.method = "NMF")
 #' }
 
 calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.aligned = TRUE,
@@ -3870,31 +4077,60 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
          call. = FALSE
     )
   }
+
+  if (class(object@raw.data[[1]])[1] == "H5File" & object@h5file.info[[1]][["sample.data.type"]] != "scale.data"){
+    stop("scale.data should be sampled for calculating agreement.")
+  }
   
   print(paste("Reducing dimensionality using", dr.method))
   set.seed(rand.seed)
-  dr <- list()
   if (dr.method == "NMF") {
-    dr <- lapply(object@scale.data, function(x) {
-      nnmf(x, k = ndims)$W
-    })
-  }
-  else if (dr.method == "ICA") {
-    dr <- lapply(object@scale.data, function(x) {
-      icafast(x, nc = ndims)$S
-    })
+    if (class(object@raw.data[[1]])[1] == "H5File") {
+      dr <- list()
+      for (i in 1:length(object@H)){
+        dr[[i]] = NNLM::nnmf(t(object@sample.data[[i]]), k = ndims)$W
+      }
+
+    } else {
+      dr <- lapply(object@scale.data, function(x) {
+        NNLM::nnmf(x, k = ndims)$W
+      })
+    }
+  } else if (dr.method == "ICA") {
+    if (class(object@raw.data[[1]])[1] == "H5File") {
+      dr <- list()
+      for (i in 1:length(object@H)){
+        dr[[i]] = icafast(t(object@sample.data[[i]]), nc = ndims)$S
+      }
+
+    } else {
+      dr <- lapply(object@scale.data, function(x) {
+        icafast(x, nc = ndims)$S
+      })
+    }
+    
   } else {
-    dr <- lapply(object@scale.data, function(x) {
-      suppressWarnings(prcomp_irlba(t(x),
-                                    n = ndims,
-                                    scale. = (colSums(x) > 0), center = F
-      )$rotation)
-    })
-    for (i in 1:length(dr)) {
-      rownames(dr[[i]]) <- rownames(object@scale.data[[i]])
+    if (class(object@raw.data[[1]])[1] == "H5File") {
+      dr <- list()
+      for (i in 1:length(object@H)){
+        dr[[i]] = suppressWarnings(prcomp_irlba(object@sample.data[[i]], n = ndims,
+                                      scale. = (colSums(t(object@sample.data[[i]])) > 0), center = F)$rotation)
+        rownames(dr[[i]]) = colnames(object@sample.data[[i]])
+      }
+
+    } else {
+      dr <- lapply(object@scale.data, function(x) {
+        suppressWarnings(prcomp_irlba(t(x),
+                                      n = ndims,
+                                      scale. = (colSums(x) > 0), center = F
+        )$rotation)
+      })
+      for (i in 1:length(dr)) {
+        rownames(dr[[i]]) = rownames(object@H[[i]])
+      }
     }
   }
-  ns <- sapply(object@scale.data, nrow)
+  ns <- sapply(dr, nrow)
   n <- sum(ns)
   jaccard_inds <- c()
   distorts <- c()
@@ -4465,7 +4701,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
   pb <- txtProgressBar(min = 0, max = k, style = 3)
   
   W <- t(object@W)
-  rownames(W) <- colnames(object@scale.data[[1]])
+  rownames(W) <- colnames(object@H[[1]])
   Hs_norm <- object@H.norm
   for (i in 1:k) {
     par(mfrow = c(2, 1))
@@ -4523,8 +4759,6 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #'   available.
 #' @param log.fc.thresh Lower log-fold change threshold for differential expression in markers
 #'   (default 1).
-#' @param umi.thresh Lower UMI threshold for markers (default 30).
-#' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
 #' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
 #'   (default 0.05).
 #' @param do.spec.plot Include dataset specificity plot in printout (default TRUE).
@@ -4545,18 +4779,27 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' pdf('word_clouds.pdf')
 #' plotWordClouds(ligerex, num.genes = 20)
 #' dev.off()
+#' # HDF5 input
+#' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+#' plotWordClouds(ligerex, num.genes = 20)
 #' }
 
 plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1,
-                           max.size = 4, factor.share.thresh = 10, log.fc.thresh = 1,
-                           umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05,
+                           max.size = 4, factor.share.thresh = 10, log.fc.thresh = 1, pval.thresh = 0.05,
                            do.spec.plot = T, return.plots = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
   }
+  if(class(object@raw.data[[1]])[1] == "H5File"){
+    sample.idx = unlist(lapply(object@sample.data, colnames))
+    H_aligned = object@H.norm[sample.idx, ]
+    tsne_coords <- object@tsne.coords[sample.idx, ]      
+  } else {
+    H_aligned <- object@H.norm
+    tsne_coords <- object@tsne.coords
+  }
   
-  H_aligned <- object@H.norm
   W <- t(object@W)
   V1 <- t(object@V[[dataset1]])
   V2 <- t(object@V[[dataset2]])
@@ -4569,7 +4812,6 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
   markers <- getFactorMarkers(object, dataset1 = dataset1, dataset2 = dataset2,
                               factor.share.thresh = factor.share.thresh,
                               num.genes = num.genes, log.fc.thresh = log.fc.thresh,
-                              umi.thresh = umi.thresh, frac.thresh = frac.thresh,
                               pval.thresh = pval.thresh,
                               dataset.specificity = dataset.specificity
   )
@@ -4577,7 +4819,6 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
   rownames(W) <- rownames(V1) <- rownames(V2) <- object@var.genes
   loadings_list <- list(V1, W, V2)
   names_list <- list(dataset1, "Shared", dataset2)
-  tsne_coords <- object@tsne.coords
   pb <- txtProgressBar(min = 0, max = length(factors.use), style = 3)
   return_plots <- list()
   for (i in factors.use) {
@@ -4587,7 +4828,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
     factor_ds <- paste("Factor", i, "Dataset Specificity:", dataset.specificity[[3]][i])
     p1 <- ggplot(tsne_df, aes_string(x = "tSNE1", y = "tSNE2", color = factorlab)) + geom_point() +
       scale_color_gradient(low = "yellow", high = "red") + ggtitle(label = factor_ds)
-    
+
     top_genes_V1 <- markers[[1]]$gene[markers[[1]]$factor_num == i]
     top_genes_W <- markers[[2]]$gene[markers[[2]]$factor_num == i]
     top_genes_V2 <- markers[[3]]$gene[markers[[3]]$factor_num == i]
@@ -4651,8 +4892,6 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #'   threshold (default 10).
 #' @param log.fc.thresh Lower log-fold change threshold for differential expression in markers
 #'   (default 1).
-#' @param umi.thresh Lower UMI threshold for markers (default 30).
-#' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
 #' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
 #'   (default 0.05).
 #' @param do.spec.plot Include dataset specificity plot in printout (default TRUE).
@@ -4681,16 +4920,22 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #'
 plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes.show = 12,
                              num.genes = 30, mark.top.genes = T, factor.share.thresh = 10,
-                             log.fc.thresh = 1, umi.thresh = 30, frac.thresh = 0,
-                             pval.thresh = 0.05, do.spec.plot = T, max.val = 0.1, pt.size = 0.1,
-                             option = "plasma", zero.color = "#F5F5F5", return.plots = F,
+                             log.fc.thresh = 1, pval.thresh = 0.05, do.spec.plot = T, max.val = 0.1, 
+                             pt.size = 0.1, option = "plasma", zero.color = "#F5F5F5", return.plots = F,
                              axis.labels = NULL, do.title = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
   }
 
-  H_aligned <- object@H.norm
+  if(class(object@raw.data[[1]])[1] == "H5File"){
+    sample.idx = unlist(lapply(object@sample.data, colnames))
+    H_aligned = object@H.norm[sample.idx, ]
+    tsne_coords <- object@tsne.coords[sample.idx, ]
+  } else {
+    H_aligned <- object@H.norm
+    tsne_coords <- object@tsne.coords
+  }
   W_orig <- t(object@W)
   V1 <- t(object@V[[dataset1]])
   V2 <- t(object@V[[dataset2]])
@@ -4708,7 +4953,6 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
     dataset1 = dataset1, dataset2 = dataset2,
     factor.share.thresh = factor.share.thresh,
     num.genes = num.genes, log.fc.thresh = log.fc.thresh,
-    umi.thresh = umi.thresh, frac.thresh = frac.thresh,
     pval.thresh = pval.thresh,
     dataset.specificity = dataset.specificity
   )
@@ -4716,7 +4960,6 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
   rownames(W) <- rownames(V1) <- rownames(V2) <- rownames(W_orig) <- object@var.genes
   loadings_list <- list(V1, W, V2)
   names_list <- list(dataset1, "Shared", dataset2)
-  tsne_coords <- object@tsne.coords
   pb <- txtProgressBar(min = 0, max = length(factors.use), style = 3)
   return_plots <- list()
   for (i in factors.use) {
@@ -4855,35 +5098,61 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
 #' ligerex
 #' # plot expression for CD4 and return plots
 #' violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = T)
+#' HDF5 input
+#' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+#' violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = T)
 #' }
 
 plotGeneViolin <- function(object, gene, methylation.indices = NULL,
                            by.dataset = T, return.plots = F) {
-  gene_vals <- c()
-  for (i in 1:length(object@norm.data)) {
-    if (i %in% methylation.indices) {
-      gene_vals <- c(gene_vals, object@norm.data[[i]][gene, ])
-    } else {
-      if (gene %in% rownames(object@norm.data[[i]])) {
-        gene_vals_int <- log2(10000 * object@norm.data[[i]][gene, ] + 1)
-      }
-      else {
-        gene_vals_int <- rep(list(0), ncol(object@norm.data[[i]]))
-        names(gene_vals_int) <- colnames(object@norm.data[[i]])
-      }
-      gene_vals <- c(gene_vals, gene_vals_int)
-    }
+  if (class(object@raw.data[[1]])[1] == "H5File" & object@h5file.info[[1]][["sample.data.type"]] != "norm.data"){
+    stop("norm.data should be sampled for calculating agreement.")
   }
+
+  gene_vals <- c()
   
   gene_df <- data.frame(object@tsne.coords)
   rownames(gene_df) <- names(object@clusters)
+  
+  
+  for (i in 1:length(object@raw.data)) {
+    if (class(object@raw.data[[i]])[1] == "H5File"){ 
+      if (i %in% methylation.indices) {
+        gene_vals <- c(gene_vals, object@sample.data[[i]][gene, ])
+      } else {
+        if (gene %in% rownames(object@sample.data[[i]])) {
+          gene_vals_int <- log2(10000 * object@sample.data[[i]][gene, ] + 1)
+        }
+        else {
+          gene_vals_int <- rep(list(0), ncol(object@sample.data[[i]]))
+          names(gene_vals_int) <- colnames(object@sample.data[[i]])
+        }
+        gene_vals <- c(gene_vals, gene_vals_int)
+      }
+    } else {
+      if (i %in% methylation.indices) {
+        gene_vals <- c(gene_vals, object@norm.data[[i]][gene, ])
+      } else {
+        if (gene %in% rownames(object@norm.data[[i]])) {
+          gene_vals_int <- log2(10000 * object@norm.data[[i]][gene, ] + 1)
+        }
+        else {
+          gene_vals_int <- rep(list(0), ncol(object@norm.data[[i]]))
+          names(gene_vals_int) <- colnames(object@norm.data[[i]])
+        }
+        gene_vals <- c(gene_vals, gene_vals_int)
+      }
+    }
+  }
+  
+
   gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])
   colnames(gene_df) <- c("tSNE1", "tSNE2", "gene")
   gene_plots <- list()
   for (i in 1:length(object@scale.data)) {
     if (by.dataset) {
-      gene_df.sub <- gene_df[rownames(object@scale.data[[i]]), ]
-      gene_df.sub$Cluster <- object@clusters[rownames(object@scale.data[[i]])]
+      gene_df.sub <- gene_df[rownames(object@H[[i]]), ]
+      gene_df.sub$Cluster <- object@clusters[rownames(object@H[[i]])]
       title <- names(object@scale.data)[i]
     } else {
       gene_df.sub <- gene_df
@@ -4967,6 +5236,9 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' ligerex <- runTSNE(ligerex)
 #' # plot expression for CD4 and return plots
 #' gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
+#' HDF5 input
+#' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+#' gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
 #' }
 
 plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'dataset', 
@@ -4982,8 +5254,14 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
     if (is.null(log2scale)) {
       log2scale <- FALSE
     }
-    # drop only outer level names
-    gene_vals <- getGeneValues(object@raw.data, gene, log2scale = log2scale)
+    if (class(object@raw.data[[1]])[1] == "H5File") {
+      if (object@h5file.info[[1]][["sample.data.type"]] != "raw.data"){
+        stop("raw.data should be sampled for this plot.")
+      }
+      gene_vals <- getGeneValues(object@sample.data, gene, log2scale = log2scale)
+    } else {
+      gene_vals <- getGeneValues(object@raw.data, gene, log2scale = log2scale)
+    }
   } else {
     if (is.null(log2scale)) {
       log2scale <- TRUE
@@ -4994,7 +5272,14 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
       if (!(scale.by %in% colnames(object@cell.data)) & scale.by != 'none') {
         stop("Please select existing feature in cell.data to scale.by, or add it before calling.")
       }
-      gene_vals <- getGeneValues(object@norm.data, gene)
+      if (class(object@raw.data[[1]])[1] == "H5File") {
+        if (object@h5file.info[[1]][["sample.data.type"]] != "norm.data"){
+          stop("norm.data should be sampled for this plot.")
+        }
+        gene_vals <- getGeneValues(object@sample.data, gene, log2scale = log2scale)
+      } else {
+        gene_vals <- getGeneValues(object@norm.data, gene, log2scale = log2scale)
+      }
       cellnames <- names(gene_vals)
       # set up dataframe with groups
       gene_df <- data.frame(gene = gene_vals)
@@ -5015,13 +5300,30 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
     } else {
       # using normalized data
       # indicate methylation indices here 
-      gene_vals <- getGeneValues(object@norm.data, gene, methylation.indices = methylation.indices,
+      if (class(object@raw.data[[1]])[1] == "H5File") {
+        if (object@h5file.info[[1]][["sample.data.type"]] != "norm.data"){
+          stop("norm.data should be sampled for this plot.")
+        }
+        gene_vals <- getGeneValues(object@sample.data, gene, methylation.indices = methylation.indices,
                                  log2scale = log2scale)
+      } else {
+        gene_vals <- getGeneValues(object@norm.data, gene, methylation.indices = methylation.indices,
+                                 log2scale = log2scale)
+      }
     }
   }
+
   gene_vals[gene_vals == 0] <- NA
-  dr_df <- data.frame(object@tsne.coords)
-  rownames(dr_df) <- rownames(object@cell.data)
+  if (class(object@raw.data[[1]])[1] == "H5File") {
+    dr_df <- data.frame(object@tsne.coords)
+    rownames(dr_df) <- rownames(object@cell.data)
+  } else {
+    sample_cell_barcodes = unlist(lapply(object@sample.data, colnames))
+    dr_df <- data.frame(object@tsne.coords[sample_cell_barcodes,])
+    print(head(dr_df))
+  }
+  
+  
   dr_df$gene <- as.numeric(gene_vals[rownames(dr_df)])
   colnames(dr_df) <- c("dr1", "dr2", "gene")
   # get dr limits for later
@@ -5350,11 +5652,20 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
 #' }
 
 plotClusterProportions <- function(object, return.plot = F) {
-  sample_names <- unlist(lapply(seq_along(object@scale.data), function(i) {
-    rep(names(object@scale.data)[i], nrow(object@scale.data[[i]]))
-  }))
-  freq_table <- data.frame(Cluster = rep(object@clusters, length(object@scale.data)),
-                           Sample = sample_names)
+  if (class(object@raw.data[[1]])[1] == "H5File") {
+    sample_names <- unlist(lapply(seq_along(object@h5file.info), function(i) {
+      rep(names(object@raw.data)[i], length(object@h5file.info[[i]][["barcodes"]][]))
+    }))
+    freq_table <- data.frame(Cluster = rep(object@clusters, length(object@raw.data)),
+                             Sample = sample_names)
+  } else {
+    sample_names <- unlist(lapply(seq_along(object@scale.data), function(i) {
+      rep(names(object@scale.data)[i], nrow(object@scale.data[[i]]))
+    }))
+    freq_table <- data.frame(Cluster = rep(object@clusters, length(object@scale.data)),
+                             Sample = sample_names)
+  }
+  
   freq_table <- table(freq_table$Cluster, freq_table$Sample)
   for (i in 1:ncol(freq_table)) {
     freq_table[, i] <- freq_table[, i] / sum(freq_table[, i])
@@ -5466,8 +5777,6 @@ plotClusterFactors <- function(object, use.aligned = F, Rowv = NA, Colv = "Rowv"
 #'   available.
 #' @param log.fc.thresh Lower log-fold change threshold for differential expression in markers
 #'   (default 1).
-#' @param umi.thresh Lower UMI threshold for markers (default 30).
-#' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
 #' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
 #'   (default 0.05).
 #' @param num.genes Max number of genes to report for each dataset (default 30).
@@ -5482,13 +5791,15 @@ plotClusterFactors <- function(object, use.aligned = F, Rowv = NA, Colv = "Rowv"
 #' # liger object, factorization complete
 #' ligerex
 #' markers <- getFactorMarkers(ligerex, num.genes = 10)
+#' HDF5 input
+#' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+#' markers <- getFactorMarkers(ligerex, num.genes = 10)
 #' # look at shared markers
 #' head(markers[[2]])
 #' }
 
 getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.share.thresh = 10,
-                             dataset.specificity = NULL, log.fc.thresh = 1, umi.thresh = 30,
-                             frac.thresh = 0, pval.thresh = 0.05, num.genes = 30, print.genes = F) {
+                             dataset.specificity = NULL, log.fc.thresh = 1, pval.thresh = 0.05, num.genes = 30, print.genes = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
@@ -5509,12 +5820,22 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
     ))
   }
   
+
   Hs_scaled <- lapply(object@H, function(x) {
-    scale(x, scale = T, center = T)
+      scale(x, scale = T, center = T)
   })
+
+  # max factor assignment
   labels <- list()
   for (i in 1:length(Hs_scaled)) {
-    labels[[i]] <- factors.use[as.factor(apply(Hs_scaled[[i]][, factors.use], 1, which.max))]
+    if (class(object@raw.data[[1]])[1] == "H5File"){
+      if (class(object@raw.data[[1]])[1] == "H5File" & object@h5file.info[[1]][["sample.data.type"]] != "norm.data"){
+        stop("norm.data should be sampled for obtaining factor markers.")
+      }
+      labels[[i]] <- factors.use[as.factor(apply(Hs_scaled[[i]][colnames(object@sample.data[[i]]), factors.use], 1, which.max))]
+    } else {
+      labels[[i]] <- factors.use[as.factor(apply(Hs_scaled[[i]][, factors.use], 1, which.max))]
+    }
   }
   names(labels) <- names(object@H)
   
@@ -5534,54 +5855,46 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
       next
     }
     # filter genes by gene_count and cell_frac thresholds
-    gene_info <- list()
-    for (dset in c(dataset1, dataset2)) {
-      gene_info[[dset]]$gene_counts <- rowSums(object@raw.data[[dset]][
-        object@var.genes,
-        labels[[dset]] == i
-        ])
-      gene_info[[dset]]$cell_fracs <- rowSums(object@raw.data[[dset]][object@var.genes,
-                                                                      labels[[dset]] == i] > 0) /
-        sum(labels[[dset]] == i)
-      gene_info[[dset]]$norm_counts <- object@norm.data[[dset]][object@var.genes,
-                                                                labels[[dset]] == i]
-      gene_info[[dset]]$mean <- rowMeans(object@norm.data[[dset]][
-        object@var.genes,
-        labels[[dset]] == i
-        ])
-      names(gene_info[[dset]]$gene_counts) <- names(gene_info[[dset]]$mean) <- object@var.genes
-      rownames(gene_info[[dset]]$norm_counts) <- object@var.genes
+    if (class(object@raw.data[[1]])[1] == "H5File") {
+      if (object@h5file.info[[1]][["sample.data.type"]] != "norm.data"){
+        stop("Sampled norm.data are required for this analysis.")
+      }
+      expr_mat = Reduce(cbind, object@sample.data[c(dataset1,dataset2)])[object@var.genes, c(labels[[dataset1]] == i, labels[[dataset2]] == i)]
+      cell_label = rep(c(dataset1, dataset2), c(sum(labels[[dataset1]] == i), sum(labels[[dataset2]] == i)))
+      wilcoxon_result = wilcoxauc(log(expr_mat + 1e-10), cell_label)
+      
+    } else {
+      expr_mat = Reduce(cbind, object@norm.data[c(dataset1,dataset2)])[object@var.genes, c(labels[[dataset1]] == i, labels[[dataset2]] == i)]
+      cell_label = rep(c(dataset1, dataset2), c(sum(labels[[dataset1]] == i), sum(labels[[dataset2]] == i)))
+      wilcoxon_result = wilcoxauc(log(expr_mat + 1e-10), cell_label)
     }
-    log2fc <- log2(gene_info[[dataset1]]$mean / gene_info[[dataset2]]$mean)
-    initial_filtered <- object@var.genes[(gene_info[[dataset1]]$gene_counts > umi.thresh |
-                                            gene_info[[dataset2]]$gene_counts > umi.thresh) &
-                                           (gene_info[[dataset1]]$cell_fracs > frac.thresh |
-                                              gene_info[[dataset2]]$cell_fracs > frac.thresh)]
-    filtered_genes_V1 <- initial_filtered[log2fc[initial_filtered] > log.fc.thresh]
-    filtered_genes_V2 <- initial_filtered[(-1 * log2fc)[initial_filtered] > log.fc.thresh]
-    
+    log2fc = wilcoxon_result[wilcoxon_result$group == dataset1, ]$logFC
+    names(log2fc) = wilcoxon_result[wilcoxon_result$group == dataset1, ]$feature
+    filtered_genes_V1 = wilcoxon_result[wilcoxon_result$logFC > log.fc.thresh & wilcoxon_result$pval < pval.thresh, ]$feature
+    filtered_genes_V2 = wilcoxon_result[wilcoxon_result$logFC < log.fc.thresh & wilcoxon_result$pval < pval.thresh, ]$feature
+
     W <- pmin(W + V1, W + V2)
     V1 <- V1[filtered_genes_V1, , drop = F]
     V2 <- V2[filtered_genes_V2, , drop = F]
-    
+
     if (length(filtered_genes_V1) == 0) {
       top_genes_V1 <- character(0)
     } else {
-      top_genes_V1 <- row.names(V1)[ order(V1[, i], decreasing = T)[1:num.genes] ]
+      top_genes_V1 <- row.names(V1)[order(V1[, i], decreasing = T)[1:num.genes]]
       top_genes_V1 <- top_genes_V1[!is.na(top_genes_V1)]
       top_genes_V1 <- top_genes_V1[which(V1[top_genes_V1, i] > 0)]
     }
     if (length(filtered_genes_V2) == 0) {
       top_genes_V2 <- character(0)
     } else {
-      top_genes_V2 <- row.names(V2)[ order(V2[, i], decreasing = T)[1:num.genes] ]
+      top_genes_V2 <- row.names(V2)[order(V2[, i], decreasing = T)[1:num.genes]]
       top_genes_V2 <- top_genes_V2[!is.na(top_genes_V2)]
       top_genes_V2 <- top_genes_V2[which(V2[top_genes_V2, i] > 0)]
     }
-    top_genes_W <- row.names(W)[ order(W[, i], decreasing = T)[1:num.genes] ]
+    top_genes_W <- row.names(W)[order(W[, i], decreasing = T)[1:num.genes]]
     top_genes_W <- top_genes_W[!is.na(top_genes_W)]
     top_genes_W <- top_genes_W[which(W[top_genes_W, i] > 0)]
-    
+
     if (print.genes) {
       print(paste("Factor", i))
       print('Dataset 1')
@@ -5591,55 +5904,51 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
       print('Dataset 2')
       print(top_genes_V2)
     }
-    
     pvals <- list() # order is V1, V2, W
     top_genes <- list(top_genes_V1, top_genes_V2, top_genes_W)
+
     for (k in 1:length(top_genes)) {
-      pvals[[k]] <- sapply(top_genes[[k]], function(x) {
-        suppressWarnings(wilcox.test(
-          as.numeric(gene_info[[dataset1]]$norm_counts[x, ]),
-          as.numeric(gene_info[[dataset2]]$norm_counts[x, ])
-        )$p.value)
-      })
+      pvals[[k]] <- wilcoxon_result[wilcoxon_result$feature %in% top_genes[[k]] & wilcoxon_result$group == dataset1, ]$pval
     }
     # bind values in matrices
     V1_matrices[[j]] <- Reduce(cbind, list(
       rep(i, length(top_genes_V1)), top_genes_V1,
-      gene_info[[dataset1]]$gene_counts[top_genes_V1],
-      gene_info[[dataset2]]$gene_counts[top_genes_V1],
-      gene_info[[dataset1]]$cell_fracs[top_genes_V1],
-      gene_info[[dataset2]]$cell_fracs[top_genes_V1],
+      #gene_info[[dataset1]]$gene_counts[top_genes_V1],
+      #gene_info[[dataset2]]$gene_counts[top_genes_V1],
+      #gene_info[[dataset1]]$cell_fracs[top_genes_V1],
+      #gene_info[[dataset2]]$cell_fracs[top_genes_V1],
       log2fc[top_genes_V1], pvals[[1]]
     ))
     V2_matrices[[j]] <- Reduce(cbind, list(
       rep(i, length(top_genes_V2)), top_genes_V2,
-      gene_info[[dataset1]]$gene_counts[top_genes_V2],
-      gene_info[[dataset2]]$gene_counts[top_genes_V2],
-      gene_info[[dataset1]]$cell_fracs[top_genes_V2],
-      gene_info[[dataset2]]$cell_fracs[top_genes_V2],
+      #gene_info[[dataset1]]$gene_counts[top_genes_V2],
+      #gene_info[[dataset2]]$gene_counts[top_genes_V2],
+      #gene_info[[dataset1]]$cell_fracs[top_genes_V2],
+      #gene_info[[dataset2]]$cell_fracs[top_genes_V2],
       log2fc[top_genes_V2], pvals[[2]]
     ))
     W_matrices[[j]] <- Reduce(cbind, list(
       rep(i, length(top_genes_W)), top_genes_W,
-      gene_info[[dataset1]]$gene_counts[top_genes_W],
-      gene_info[[dataset2]]$gene_counts[top_genes_W],
-      gene_info[[dataset1]]$cell_fracs[top_genes_W],
-      gene_info[[dataset2]]$cell_fracs[top_genes_W],
+      #gene_info[[dataset1]]$gene_counts[top_genes_W],
+      #gene_info[[dataset2]]$gene_counts[top_genes_W],
+      #gene_info[[dataset1]]$cell_fracs[top_genes_W],
+      #gene_info[[dataset2]]$cell_fracs[top_genes_W],
       log2fc[top_genes_W], pvals[[3]]
     ))
   }
   V1_genes <- data.frame(Reduce(rbind, V1_matrices), stringsAsFactors = F)
   V2_genes <- data.frame(Reduce(rbind, V2_matrices), stringsAsFactors = F)
   W_genes <- data.frame(Reduce(rbind, W_matrices), stringsAsFactors = F)
-  df_cols <- c("factor_num", "gene", "counts1", "counts2", "fracs1", "fracs2", "log2fc", "p_value")
+  #df_cols <- c("factor_num", "gene", "counts1", "counts2", "fracs1", "fracs2", "log2fc", "p_value")
+  df_cols <- c("factor_num", "gene", "log2fc", "p_value")
   output_list <- list(V1_genes, W_genes, V2_genes)
   output_list <- lapply(seq_along(output_list), function(x) {
     df <- output_list[[x]]
     colnames(df) <- df_cols
     df <- transform(df,
                     factor_num = as.numeric(factor_num), gene = as.character(gene),
-                    counts1 = as.numeric(counts1), counts2 = as.numeric(counts2),
-                    fracs1 = as.numeric(fracs1), fracs2 = as.numeric(fracs2),
+                    #counts1 = as.numeric(counts1), counts2 = as.numeric(counts2),
+                    #fracs1 = as.numeric(fracs1), fracs2 = as.numeric(fracs2),
                     log2fc = as.numeric(log2fc), p_value = as.numeric(p_value)
     )
     # Cutoff only applies to dataset-specific dfs
@@ -5686,6 +5995,10 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 
 ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.liger.genes = T,
                           by.dataset = F) {
+  if (class(object@raw.data[[1]])[1] == "H5File") {
+    print("Conversion of Liger object with HDF5 files to Seurat object is not supported at this moment") 
+  }
+
   if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" needed for this function to work. Please install it.",
          call. = FALSE

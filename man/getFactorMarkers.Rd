@@ -6,8 +6,8 @@
 \usage{
 getFactorMarkers(object, dataset1 = NULL, dataset2 = NULL,
   factor.share.thresh = 10, dataset.specificity = NULL,
-  log.fc.thresh = 1, umi.thresh = 30, frac.thresh = 0,
-  pval.thresh = 0.05, num.genes = 30, print.genes = F)
+  log.fc.thresh = 1, pval.thresh = 0.05, num.genes = 30,
+  print.genes = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call optimizeALS before calling.}
@@ -24,10 +24,6 @@ available.}
 
 \item{log.fc.thresh}{Lower log-fold change threshold for differential expression in markers
 (default 1).}
-
-\item{umi.thresh}{Lower UMI threshold for markers (default 30).}
-
-\item{frac.thresh}{Lower threshold for fraction of cells expressing marker (default 0).}
 
 \item{pval.thresh}{Upper p-value threshold for Wilcoxon rank test for gene expression
 (default 0.05).}
@@ -50,6 +46,9 @@ or dataset-specific way).
 \dontrun{
 # liger object, factorization complete
 ligerex
+markers <- getFactorMarkers(ligerex, num.genes = 10)
+HDF5 input
+ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
 markers <- getFactorMarkers(ligerex, num.genes = 10)
 # look at shared markers
 head(markers[[2]])

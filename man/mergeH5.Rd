@@ -4,7 +4,9 @@
 \alias{mergeH5}
 \title{Merge hdf5 files}
 \usage{
-mergeH5(file.list, library.names, new.filename = "new.h5")
+mergeH5(file.list, library.names, new.filename, format.type = "10X",
+  data.name = NULL, indices.name = NULL, indptr.name = NULL,
+  genes.name = NULL, barcodes.name = NULL)
 }
 \arguments{
 \item{file.list}{List of path to hdf5 files.}
@@ -12,6 +14,18 @@ mergeH5(file.list, library.names, new.filename = "new.h5")
 \item{library.names}{Vector of library names (corresponding to file.list)}
 
 \item{new.filename}{String of new hdf5 file name after merging (default new.h5).}
+
+\item{format.type}{string of HDF5 format (10X CellRanger by default).}
+
+\item{data.name}{Path to the data values stored in HDF5 file.}
+
+\item{indices.name}{Path to the indices of data points stored in HDF5 file.}
+
+\item{indptr.name}{Path to the pointers stored in HDF5 file.}
+
+\item{genes.name}{Path to the gene names stored in HDF5 file.}
+
+\item{barcodes.name}{Path to the barcodes stored in HDF5 file.}
 }
 \value{
 Directly generates newly merged hdf5 file.
