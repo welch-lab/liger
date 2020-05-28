@@ -3733,6 +3733,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' @param axis.labels Vector of two strings to use as x and y labels respectively. (default NULL)
 #' @param do.legend Display legend on plots (default TRUE).
 #' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
+#' @param keep.scale Maintain min/max color scale across all plots when using plot.by (default FALSE)
 #'
 #' @return If returning single plot, returns ggplot object; if returning multiple plots; returns
 #'   list of ggplot objects.
@@ -3751,10 +3752,11 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' }
 
 plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'dataset', 
-                     log2scale = NULL, methylation.indices = NULL, plot.by = 'dataset', 
-                     set.dr.lims = F, pt.size = 0.1, min.clip = NULL, max.clip = NULL, 
-                     clip.absolute = F, points.only = F, option = 'plasma', cols.use = NULL, 
-                     zero.color = '#F5F5F5', axis.labels = NULL, do.legend = T, return.plots = F) {
+                                 log2scale = NULL, methylation.indices = NULL, plot.by = 'dataset', 
+                                 set.dr.lims = F, pt.size = 0.1, min.clip = NULL, max.clip = NULL, 
+                                 clip.absolute = F, points.only = F, option = 'plasma', cols.use = NULL, 
+                                 zero.color = '#F5F5F5', axis.labels = NULL, do.legend = T, return.plots = F,
+                                 keep.scale = F) {
   if ((plot.by != scale.by) & (use.scaled)) {
     warning("Provided values for plot.by and scale.by do not match; results may not be very
             interpretable.")
@@ -3801,6 +3803,12 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
     }
   }
   gene_vals[gene_vals == 0] <- NA
+  # Extract min and max expression values for plot scaling if keep.scale = T
+  if (keep.scale){
+    max_exp_val <- max(gene_vals, na.rm = TRUE)
+    min_exp_val <- min(gene_vals, na.rm = TRUE)
+  }
+  
   dr_df <- data.frame(object@tsne.coords)
   rownames(dr_df) <- rownames(object@cell.data)
   dr_df$gene <- as.numeric(gene_vals[rownames(dr_df)])
@@ -3834,7 +3842,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
               prevent this.")
     }
     names(min.clip) <- levels(dr_df$plotby)
-    }
+  }
   if (!is.null(max.clip) & is.null(names(max.clip))) {
     if (num_levels > 1) {
       message("Adding names to max.clip according to levels in plot.by group; order may not be 
@@ -3842,7 +3850,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
               prevent this.")
     }
     names(max.clip) <- levels(dr_df$plotby)
-    }
+  }
   p_list <- list()
   for (sub_df in split(dr_df, f = dr_df$plotby)) {
     # maybe do quantile cutoff here
@@ -3861,12 +3869,25 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
       labs(col = gene)
     
     if (!is.null(cols.use)) {
-      ggp <- ggp + scale_color_gradientn(colors = cols.use,
-                                         na.value = zero.color)
+      if (keep.scale) {
+        ggp <- ggp + scale_color_gradientn(colors = cols.use,
+                                           na.value = zero.color,
+                                           limits = c(min_exp_val, max_exp_val))
+      } else {
+        ggp <- ggp + scale_color_gradientn(colors = cols.use,
+                                           na.value = zero.color)
+      }
     } else {
-      ggp <- ggp + scale_color_viridis_c(option = option,
-                                         direction = -1,
-                                         na.value = zero.color)
+      if (keep.scale) {
+        ggp <- ggp + scale_color_viridis_c(option = option,
+                                           direction = -1,
+                                           na.value = zero.color,
+                                           limits = c(min_exp_val, max_exp_val))
+      } else {
+        ggp <- ggp + scale_color_viridis_c(option = option,
+                                           direction = -1,
+                                           na.value = zero.color)
+      }
     }
     if (set.dr.lims) {
       ggp <- ggp + xlim(lim1) + ylim(lim2)
@@ -3922,6 +3943,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
 #'
 #' @param object \code{liger} object. Should call runTSNE before calling.
 #' @param genes Vector of gene names.
+#' @param ... arguments passed from \code{\link[liger]{plotGene}}
 #'
 #' @export
 #' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
@@ -3936,10 +3958,10 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
 #' # dev.off()
 #' }
 
-plotGenes <- function(object, genes) {
+plotGenes <- function(object, genes, ...) {
   for (i in 1:length(genes)) {
     print(genes[i])
-    plotGene(object, genes[i])
+    plotGene(object, genes[i], ...)
   }
 }
 
