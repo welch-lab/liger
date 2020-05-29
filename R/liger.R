@@ -4500,8 +4500,8 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
   }
   
   p1 <- ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Dataset)) +
-    geom_point(size = pt.size) +
-    guides(color = guide_legend(override.aes = list(size = legend.size)))
+    geom_point(size = pt.size) + 
+    guides(color = guide_legend(override.aes = list(size = legend.size))) + theme_cowplot(12)
   
   centers <- tsne_df %>% group_by(Cluster) %>% summarize(
     tsne1 = median(x = tsne1),
@@ -4509,7 +4509,7 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
   )
   p2 <- ggplot(tsne_df, aes(x = tsne1, y = tsne2, color = Cluster)) + geom_point(size = pt.size) +
     geom_text(data = centers, mapping = aes(label = Cluster), colour = "black", size = text.size) +
-    guides(color = guide_legend(override.aes = list(size = legend.size)))
+    guides(color = guide_legend(override.aes = list(size = legend.size))) + theme_cowplot(12)
   
   if (!is.null(title)) {
     p1 <- p1 + ggtitle(title[1])
@@ -4520,8 +4520,8 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
     p2 <- p2 + xlab(axis.labels[1]) + ylab(axis.labels[2])
   }
   if (!do.legend) {
-    p1 <- p1 + theme(legend.position = "none") + theme_cowplot(12)
-    p2 <- p2 + theme(legend.position = "none") + theme_cowplot(12)
+    p1 <- p1 + theme(legend.position = "none")
+    p2 <- p2 + theme(legend.position = "none")
   }
   if (return.plots) {
     return(list(p1, p2))
