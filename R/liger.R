@@ -383,31 +383,30 @@ createLiger = function(raw.data,
                            version = packageVersion("liger"))
     object@V = rep(list(NULL), length(raw.data))
     object@H = rep(list(NULL), length(raw.data))
-    barcodes = c()
-    num_cells = c()
+    cell.data = list()
     if (length(format.type) == 1) format.type.list = rep(format.type, length(raw.data))
     for (i in 1:length(raw.data)){
       file.h5 = H5File$new(raw.data[[i]], mode="r+")
       object@raw.data[[i]] = file.h5
       if (format.type.list[i] == "10X"){
         barcodes.name = "matrix/barcodes"
-        barcodes = c(barcodes, file.h5[[barcodes.name]][])
-        num_cells = c(num_cells, file.h5[[barcodes.name]]$dims)
+        barcodes = file.h5[[barcodes.name]][]
+        num_cells = file.h5[[barcodes.name]]$dims
         data.name = "matrix/data"
         indices.name = "matrix/indices"
         indptr.name = "matrix/indptr"
         genes.name = "matrix/features/name"
       } else if (format.type.list[i] == "AnnData"){
         barcodes.name = "obs"
-        barcodes = c(barcodes, file.h5[[barcodes.name]][]$cell)
-        num_cells = c(num_cells, length(file.h5[[barcodes.name]][]$cell))
+        barcodes = file.h5[[barcodes.name]][]$cell
+        num_cells = length(file.h5[[barcodes.name]][]$cell)
         data.name = "raw.X/data"
         indices.name = "raw.X/indices"
         indptr.name = "raw.X/indptr"
         genes.name = "raw.var"
       } else {
-        barcodes = c(barcodes, file.h5[[barcodes.name]][])
-        num_cells = c(num_cells, length(file.h5[[barcodes.name]][]))
+        barcodes = file.h5[[barcodes.name]][]
+        num_cells = length(file.h5[[barcodes.name]][])
         data.name = data.name
         indices.name = indices.name
         indptr.name = indptr.name
@@ -419,19 +418,29 @@ createLiger = function(raw.data,
                                      genes = file.h5[[genes.name]],
                                      format.type = format.type.list[i],
                                      sample.data.type = NULL)
-      
+      if (file.h5$exists("norm.data")){
+        object@norm.data[[i]] = file.h5[["norm.data"]]
+        names(object@norm.data)[[i]] = names(object@raw.data)[[i]]
+      }
+
       if (file.h5$exists("scale.data")){
         object@scale.data[[i]] = file.h5[["scale.data"]]
         names(object@scale.data)[[i]] = names(object@raw.data)[[i]]
+      }
+
+      if (file.h5$exists("cell.data")){
+        cell.data[[i]] = file.h5[["cell.data"]][]
+      } else {
+        dataset = rep(names(object@raw.data)[i], num_cells)
+        cell.data[[i]] = data.frame(dataset)
+        rownames(cell.data[[i]]) = barcodes
       }
     }
     if (is.null(names(object@raw.data))){
       names(object@raw.data) <- as.character(paste0("data",1:length(object@raw.data)))
     }
+    object@cell.data = Reduce(rbind, cell.data)
     names(object@H) <- names(object@V) <- names(object@h5file.info) <- names(object@raw.data)
-    dataset = rep(names(object@raw.data), num_cells)
-    object@cell.data = data.frame(dataset)
-    rownames(object@cell.data) = barcodes
     return(object)
   }
   
@@ -602,6 +611,14 @@ normalize = function (object,
     }
     object@cell.data$nUMI = nUMI
     object@cell.data$nGene = nGene
+     
+    for (i in 1:length(object@raw.data)){
+      if (!object@raw.data[[i]]$exists("cell.data")) {
+        object@raw.data[[i]][["cell.data"]] = object@cell.data[object@cell.data$dataset == names(object@raw.data)[i], ]
+      }
+    } 
+
+    
     names(object@norm.data) = names(object@raw.data)
   }
   else {
@@ -4844,12 +4861,11 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
         gene_df <- data.frame(genes = c("no genes"), loadings = c(1))
       }
       out_plot <- ggplot(gene_df, aes(x = 1, y = 1, size = loadings, label = genes)) +
-        theme_cowplot(12) +
         geom_text_repel(force = 100, segment.color = NA) +
         scale_size(range = c(min.size, max.size), guide = FALSE) +
         scale_y_continuous(breaks = NULL) +
         scale_x_continuous(breaks = NULL) +
-        labs(x = "", y = "") + ggtitle(label = names_list[[x]]) + coord_fixed()
+        labs(x = "", y = "") + ggtitle(label = names_list[[x]]) + coord_fixed() + ggplot2::theme_void()
       return(out_plot)
     })
     

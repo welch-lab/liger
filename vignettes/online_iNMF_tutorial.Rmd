@@ -1,19 +1,21 @@
 ---
 title: "Iterative Refinement of Cellular Identity Using Online iNMF"
 author: "Chao Gao and Joshua Welch"
-date: "April 13, 2020"
+date: "May 29, 2020"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
 ## Scenario 1: sampling minibatches from fully observed datasets
 To perform online iNMF, we need to install the `online` branch. Please see the instruction below.
-```{r install, message=FALSE, results='hide'}
+```{r install, message=FALSE, results='hide', eval=FALSE}
 library(devtools)
 install_github("MacoskoLab/liger", ref = "online")
 ```
+
 We first create a liger object by passing the filenames of HDF5 files containing the raw count data. The data can be downloaded [here](https://umich.box.com/s/m5cojytshxvk44pc4kki6clh6c9sv7ai). Liger assumes by default that the HDF5 files are formatted by the 10X CellRanger pipeline. Large datasets are often generated over multiple 10X runs (for example, multiple biological replicates). In such cases it may be necessary to merge the HDF5 files from each run into a single HDF5 file. We provide the `mergeH5` function for this purpose (see below for details).
 
 ```{r create.object, message=FALSE, results='hide'}
@@ -44,15 +46,45 @@ pbmcs = runUMAP(pbmcs)
 plotByDatasetAndCluster(pbmcs, axis.labels = c("UMAP1","UMAP2"))
 ```
 
-We can also compare clusters or datasets (within each cluster) to identify differentially expressed genes. The runWilcoxon function
-performs differential expression analysis by sampling a specified number of cells from the dataset on disk, then performing an in-memory Wilcoxon rank-sum test on this subset. Thus, users can still analyze large datasets with a fixed amount of memory.
-```{r wilcox 1, results='hide'}
-de_genes = runWilcoxon(pbmcs, compare.method = "clusters", max.sample = 5000)
+Let's first evaluate the quality of data alignment. The alignment score ranges from 0 (no alignment) to 1 (perfect alignment).
+```{r alignmentScore}
+calcAlignment(pbmcs)
 ```
+
+With HDF5 files as input, we need to sample the raw, normalized, or scaled data from the full dataset on disk and load them in memory. Some plotting functions and downstream analyses are designed to operate on a subset of cells sampled from the full dataset. This enables rapid analysis using limited memory. The readSubset function allows either uniform random sampling or sampling balanced by cluster. Here we extract the normalized count data of 5000 sampled cells.
+```{r subset, results='hide'}
+pbmcs = readSubset(pbmcs, slot.use = "norm.data", max.cells = 5000)
+```
+
+Using the sampled data stored in memory, we can now compare clusters or datasets (within each cluster) to identify differentially expressed genes. The runWilcoxon function
+performs differential expression analysis by performing an in-memory Wilcoxon rank-sum test on this subset. Thus, users can still analyze large datasets with a fixed amount of memory.
+```{r wilcox 1, results='hide'}
+de_genes = runWilcoxon(pbmcs, compare.method = "datasets")
+```
+
+Here we show the top 10 genes in cluster 1 whose expression level significantly differ between two dataset.
 ```{r wilcox 2}
 de_genes = de_genes[order(de_genes$padj), ]
-head(de_genes[de_genes$group == 1,], n = 10)
+head(de_genes[de_genes$group == "1-stim",], n = 10)
 ```
+
+We can show UMAP coordinates of sampled cells by their loadings on each factor (Factor 1 as an example). Underneath it displays the
+most highly loading shared and dataset-specific genes, with the size of the marker indicating the magnitude of the loading.
+```{r wordClouds, warning=FALSE, results='hide', fig.keep = 'last'}
+p_wordClouds = plotWordClouds(pbmcs, num.genes = 5, return.plots = T)
+p_wordClouds[[1]]
+```
+
+We can generate plots of dimensional reduction coordinates colored by expression of specified gene. The first two UMAP dimensions and gene ISG15 (identified by Wilcoxon test in the previous step) is used as an example here.
+```{r gene}
+plotGene(pbmcs, "ISG15", return.plots = F)
+```
+
+Furthermore, we can make violin plots of expression of specified gene for each dataset (IFI6 as an example).
+```{r violin, warning=FALSE}
+plotGeneViolin(pbmcs, "ISG15", return.plots = F)
+```
+
 The online algorithm can be implemented on datasets loaded in memory as well. The same analysis is performed on the PBMCs, shown below.  
 ```{r , message=FALSE, results='hide'}
 stim = readRDS("pbmcs_stim.RDS")
@@ -117,7 +149,9 @@ plotByDatasetAndCluster(MOp, axis.labels = c("UMAP1","UMAP2"))
 ##Scenario 3: projecting new datasets
 ```{r prep3, message=FALSE, results='hide'}
 MOp = createLiger(list(cells = "allen_smarter_cells.h5"))
+MOp = normalize(MOp)
 MOp@var.genes = MOp.vargenes
+MOp = scaleNotCenter(MOp)
 MOp = online_iNMF(MOp, k = 40, max.epochs = 1)
 MOp = quantile_norm(MOp)
 MOp = runUMAP(MOp)
