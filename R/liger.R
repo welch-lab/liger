@@ -4520,8 +4520,8 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
     p2 <- p2 + xlab(axis.labels[1]) + ylab(axis.labels[2])
   }
   if (!do.legend) {
-    p1 <- p1 + theme(legend.position = "none")
-    p2 <- p2 + theme(legend.position = "none")
+    p1 <- p1 + theme(legend.position = "none") + theme_cowplot(12)
+    p2 <- p2 + theme(legend.position = "none") + theme_cowplot(12)
   }
   if (return.plots) {
     return(list(p1, p2))
@@ -4827,7 +4827,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
     colnames(tsne_df) <- c(factorlab, "tSNE1", "tSNE2")
     factor_ds <- paste("Factor", i, "Dataset Specificity:", dataset.specificity[[3]][i])
     p1 <- ggplot(tsne_df, aes_string(x = "tSNE1", y = "tSNE2", color = factorlab)) + geom_point() +
-      scale_color_gradient(low = "yellow", high = "red") + ggtitle(label = factor_ds)
+      scale_color_gradient(low = "yellow", high = "red") + ggtitle(label = factor_ds) + theme_cowplot(12)
 
     top_genes_V1 <- markers[[1]]$gene[markers[[1]]$factor_num == i]
     top_genes_W <- markers[[2]]$gene[markers[[2]]$factor_num == i]
@@ -4844,6 +4844,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
         gene_df <- data.frame(genes = c("no genes"), loadings = c(1))
       }
       out_plot <- ggplot(gene_df, aes(x = 1, y = 1, size = loadings, label = genes)) +
+        theme_cowplot(12) +
         geom_text_repel(force = 100, segment.color = NA) +
         scale_size(range = c(min.size, max.size), guide = FALSE) +
         scale_y_continuous(breaks = NULL) +
@@ -5163,6 +5164,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
     min_v <- min(gene_df.sub["gene"], na.rm = T)
     midpoint <- (max_v - min_v) / 2
     plot_i <- ggplot(gene_df.sub, aes_string(x = "Cluster", y = "gene", fill = "Cluster")) +
+      theme_cowplot(12) +
       geom_boxplot(position = "dodge", width = 0.4, outlier.shape = NA, alpha = 0.7) +
       geom_violin(position = "dodge", alpha = 0.7) +
       ggtitle(title)
@@ -5379,7 +5381,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
     sub_df$gene[sub_df$gene > max_v & !is.na(sub_df$gene)] <- max_v
     
     ggp <- ggplot(sub_df, aes(x = dr1, y = dr2, color = gene)) + geom_point(size = pt.size) +
-      labs(col = gene)
+      labs(col = gene) + theme_cowplot(12)
     
     if (!is.null(cols.use)) {
       ggp <- ggp + scale_color_gradientn(colors = cols.use,
