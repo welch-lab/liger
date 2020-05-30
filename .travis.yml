@@ -11,4 +11,9 @@ os:
 
 r: release
 
+env:
+  global:
+    - HDF5_VERSION=1.10.2
+    - HDF5_RELEASE_URL="https://support.hdfgroup.org/ftp/HDF5/releases"
+
 warnings_are_errors: false
