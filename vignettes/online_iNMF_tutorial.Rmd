@@ -80,7 +80,7 @@ We can generate plots of dimensional reduction coordinates colored by expression
 plotGene(pbmcs, "ISG15", return.plots = F)
 ```
 
-Furthermore, we can make violin plots of expression of specified gene for each dataset (IFI6 as an example).
+Furthermore, we can make violin plots of expression of specified gene for each dataset (ISG15 as an example).
 ```{r violin, warning=FALSE}
 plotGeneViolin(pbmcs, "ISG15", return.plots = F)
 ```
@@ -149,9 +149,7 @@ plotByDatasetAndCluster(MOp, axis.labels = c("UMAP1","UMAP2"))
 ##Scenario 3: projecting new datasets
 ```{r prep3, message=FALSE, results='hide'}
 MOp = createLiger(list(cells = "allen_smarter_cells.h5"))
-MOp = normalize(MOp)
 MOp@var.genes = MOp.vargenes
-MOp = scaleNotCenter(MOp)
 MOp = online_iNMF(MOp, k = 40, max.epochs = 1)
 MOp = quantile_norm(MOp)
 MOp = runUMAP(MOp)
