@@ -3518,11 +3518,14 @@ runWilcoxon = function (object,data.use=NULL,compare.method,balance.by=NULL)
       stop("Should have at least TWO inputs to compare between datasets")
     }
   }
-  if (class(object@raw.data[[1]])[1] == "H5File" & is.null(object@h5file.info[[1]][["sample.data.type"]])){
-    print("Need to sample data before Wilcoxon test for HDF5 input.")
-  } else {
-    print(paste0("Running Wilcoxon test on ", object@h5file.info[[1]][["sample.data.type"]]))
-  }
+  if (class(object@raw.data[[1]])[1] == "H5File"){
+    if (is.null(object@h5file.info[[1]][["sample.data.type"]])){
+      print("Need to sample data before Wilcoxon test for HDF5 input.")
+    } else {
+      print(paste0("Running Wilcoxon test on ", object@h5file.info[[1]][["sample.data.type"]]))
+    }
+  }  
+
   
 
   if (nrow(object@cell.data)==0)
@@ -3557,7 +3560,13 @@ runWilcoxon = function (object,data.use=NULL,compare.method,balance.by=NULL)
         return(rownames(object@sample.data[[sample]]))
       }
     }))
-    feature_matrix <- Reduce(cbind, object@sample.data)
+    if (class(object@norm.data[[sample.list[1]]])[[1]] == "dgCMatrix") {
+      feature_matrix <- Reduce(cbind, lapply(sample.list, function(sample) {
+      object@norm.data[[sample]][genes, ]}))
+    } else {
+      feature_matrix <- Reduce(cbind, object@sample.data[[data.use]])
+    }
+    
     cell_source <- object@cell.data[["dataset"]]
     names(cell_source) <- names(object@clusters)
     cell_source <- cell_source[colnames(feature_matrix), 
@@ -3567,7 +3576,11 @@ runWilcoxon = function (object,data.use=NULL,compare.method,balance.by=NULL)
   } else {
     print(paste0("Performing Wilcoxon test on GIVEN datasets: ", 
                  data.use))
-    feature_matrix <- Reduce(cbind, object@sample.data[[data.use]])
+    if (class(object@norm.data[[data.use]])[[1]] == "dgCMatrix") {
+      feature_matrix <- object@norm.data[[data.use]]
+    } else {
+      feature_matrix <- object@sample.data[[data.use]]
+    }
     cell_source <- object@cell.data[["dataset"]]
     names(cell_source) <- names(object@clusters)
     cell_source <- cell_source[colnames(feature_matrix), 
@@ -5338,12 +5351,11 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
 
   gene_vals[gene_vals == 0] <- NA
   if (class(object@raw.data[[1]])[1] == "H5File") {
-    dr_df <- data.frame(object@tsne.coords)
-    rownames(dr_df) <- rownames(object@cell.data)
-  } else {
     sample_cell_barcodes = unlist(lapply(object@sample.data, colnames))
     dr_df <- data.frame(object@tsne.coords[sample_cell_barcodes,])
-    print(head(dr_df))
+  } else {
+    dr_df <- data.frame(object@tsne.coords)
+    rownames(dr_df) <- rownames(object@cell.data)
   }
   
   
