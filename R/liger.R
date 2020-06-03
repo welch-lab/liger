@@ -253,7 +253,8 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
 
 #' Merge hdf5 files 
 #'
-#' This function merges hdf5 files generated from different libraries (cell ranger by default).
+#' This function merges hdf5 files generated from different libraries (cell ranger by default) 
+#' before they are preprocessed through Liger pipeline.
 #'
 #' @param file.list List of path to hdf5 files.
 #' @param library.names Vector of library names (corresponding to file.list)
@@ -1084,9 +1085,9 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #datasets.use uses only the specified datasets for sampling. Default is NULL (all datasets)
 #rand.seed for reproducibility (default 1).
 #Returns: vector of cell barcodes
-downsample = function(object,balance=NULL,max_cells=1000,datasets.use=NULL,rand.seed=1)
+downsample = function(object,balance=NULL,max_cells=1000,datasets.use=NULL,seed=1)
 {
-  set.seed(rand.seed)
+  set.seed(seed)
   if(is.null(datasets.use))
   {
     datasets.use=names(object@H)
@@ -1181,7 +1182,7 @@ readSubset = function(object,slot.use="norm.data",balance=NULL,max.cells=1000,ch
     {
       datasets.use=names(object@H)
     }
-    cell_inds = downsample(object,balance=balance,max_cells=max.cells,datasets.use=datasets.use, rand.seed=rand.seed)
+    cell_inds = downsample(object,balance=balance,max_cells=max.cells,datasets.use=datasets.use, seed=rand.seed)
     
     hdf5_files = names(object@raw.data)
     #vargenes = object@var.genes
@@ -1399,6 +1400,7 @@ online_iNMF <- function(object,
                         seed=123){
   if (!is.null(X_new)){ # if there is new dataset
     raw.data_prev = object@raw.data
+    norm.data_prev = object@norm.data
     h5file.info_prev = object@h5file.info
     scale.data_prev = object@scale.data
     cell.data_prev = object@cell.data
@@ -1407,16 +1409,19 @@ online_iNMF <- function(object,
 
     # assuming only one new dataset arrives at a time
     raw.data = c()
+    norm.data = c()
     h5file.info = c()
     scale.data = c()
     cell.data = c()
     for (i in 1:length(X_new)){
       raw.data = c(raw.data, X_new[[i]]@raw.data)
+      norm.data = c(norm.data, X_new[[i]]@norm.data)
       h5file.info = c(h5file.info, X_new[[i]]@h5file.info)
       scale.data = c(scale.data, X_new[[i]]@scale.data)
       cell.data = rbind(cell.data, X_new[[i]]@cell.data)
     }
     object@raw.data = raw.data
+    object@norm.data = norm.data
     object@h5file.info = h5file.info
     object@scale.data = scale.data
     object@cell.data = cell.data
@@ -1441,6 +1446,7 @@ online_iNMF <- function(object,
 
 
     object@raw.data = c(raw.data_prev, object@raw.data)
+    object@norm.data = c(norm.data_prev, object@norm.data)
     object@h5file.info = c(h5file.info_prev, object@h5file.info)
     object@scale.data = c(scale.data_prev, object@scale.data)
     object@cell.data = rbind(cell.data_prev, object@cell.data)
@@ -3471,7 +3477,6 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
 #' @param compare.method Compare genes across \code{clusters} (using all datasets) or across \code{datasets} (within each cluster).
 #' @param balance.by Sample from all datasets proportional to dataset size (default), balance the sample by \code{cluster} or 
 #' balance the sample by \code{dataset}
-#' @param chunk Number of cells at a time to read when constructing subset of data. Default 1000.
 #' 
 #' @return A 10-columns data.frame with test results.
 #' @export
@@ -4772,8 +4777,6 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' @param max.size Size of largest gene symbol in word cloud (default 4).
 #' @param factor.share.thresh Use only factors with a dataset specificity less than or equalt to
 #'   threshold (default 10).
-#' @param dataset.specificity Pre-calculated dataset specificity if available. Will calculate if not
-#'   available.
 #' @param log.fc.thresh Lower log-fold change threshold for differential expression in markers
 #'   (default 1).
 #' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
@@ -4903,6 +4906,8 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' @param dataset1 Name of first dataset (by default takes first two datasets for dataset1 and 2)
 #' @param dataset2 Name of second dataset
 #' @param num.genes Number of genes to show in word clouds (default 30).
+#' @param num.genes.show Number of genes displayed as y-axis labels in the gene loading plots at 
+#' the bottom (default 12)
 #' @param mark.top.genes Plot points corresponding to top loading genes in different color (default
 #'   TRUE).
 #' @param factor.share.thresh Use only factors with a dataset specificity less than or equal to
@@ -5882,7 +5887,8 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
       wilcoxon_result = wilcoxauc(log(expr_mat + 1e-10), cell_label)
       
     } else {
-      expr_mat = Reduce(cbind, object@norm.data[c(dataset1,dataset2)])[object@var.genes, c(labels[[dataset1]] == i, labels[[dataset2]] == i)]
+      expr_mat = cbind(object@norm.data[[dataset1]][object@var.genes, labels[[dataset1]] == i],
+                       object@norm.data[[dataset2]][object@var.genes, labels[[dataset2]] == i])
       cell_label = rep(c(dataset1, dataset2), c(sum(labels[[dataset1]] == i), sum(labels[[dataset2]] == i)))
       wilcoxon_result = wilcoxauc(log(expr_mat + 1e-10), cell_label)
     }
