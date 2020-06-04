@@ -430,7 +430,10 @@ createLiger = function(raw.data,
       }
 
       if (file.h5$exists("cell.data")){
-        cell.data[[i]] = file.h5[["cell.data"]][]
+        cell.data[[i]] = data.frame(dataset = file.h5[["cell.data"]][]$dataset,
+                                    nUMI = file.h5[["cell.data"]][]$nUMI,
+                                    nGene = file.h5[["cell.data"]][]$nGene)
+        rownames(cell.data[[i]]) = file.h5[["cell.data"]][]$barcode
       } else {
         dataset = rep(names(object@raw.data)[i], num_cells)
         cell.data[[i]] = data.frame(dataset)
@@ -615,11 +618,12 @@ normalize = function (object,
      
     for (i in 1:length(object@raw.data)){
       if (!object@raw.data[[i]]$exists("cell.data")) {
-        object@raw.data[[i]][["cell.data"]] = object@cell.data[object@cell.data$dataset == names(object@raw.data)[i], ]
+        cell.data.i = object@cell.data[object@cell.data$dataset == names(object@raw.data)[i], ]
+        cell.data.i$barcode = rownames(cell.data.i)
+        object@raw.data[[i]][["cell.data"]] = cell.data.i
       }
     } 
 
-    
     names(object@norm.data) = names(object@raw.data)
   }
   else {
@@ -3564,7 +3568,7 @@ runWilcoxon = function (object,data.use=NULL,compare.method,balance.by=NULL)
       feature_matrix <- Reduce(cbind, lapply(sample.list, function(sample) {
       object@norm.data[[sample]][genes, ]}))
     } else {
-      feature_matrix <- Reduce(cbind, object@sample.data[[data.use]])
+      feature_matrix <- Reduce(cbind, object@sample.data[sample.list])
     }
     
     cell_source <- object@cell.data[["dataset"]]
@@ -5140,8 +5144,10 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
 
 plotGeneViolin <- function(object, gene, methylation.indices = NULL,
                            by.dataset = T, return.plots = F) {
-  if (class(object@raw.data[[1]])[1] == "H5File" & object@h5file.info[[1]][["sample.data.type"]] != "norm.data"){
-    stop("norm.data should be sampled for calculating agreement.")
+  if (class(object@raw.data[[1]])[1] == "H5File"){
+    if (object@h5file.info[[1]][["sample.data.type"]] != "norm.data"){
+      stop("norm.data should be sampled for calculating agreement.")
+    }
   }
 
   gene_vals <- c()
@@ -5312,9 +5318,9 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
         if (object@h5file.info[[1]][["sample.data.type"]] != "norm.data"){
           stop("norm.data should be sampled for this plot.")
         }
-        gene_vals <- getGeneValues(object@sample.data, gene, log2scale = log2scale)
+        gene_vals <- getGeneValues(object@sample.data, gene)
       } else {
-        gene_vals <- getGeneValues(object@norm.data, gene, log2scale = log2scale)
+        gene_vals <- getGeneValues(object@norm.data, gene)
       }
       cellnames <- names(gene_vals)
       # set up dataframe with groups
@@ -5358,7 +5364,6 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
     rownames(dr_df) <- rownames(object@cell.data)
   }
   
-  
   dr_df$gene <- as.numeric(gene_vals[rownames(dr_df)])
   colnames(dr_df) <- c("dr1", "dr2", "gene")
   # get dr limits for later
@@ -5369,7 +5374,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
     if (!(plot.by %in% colnames(object@cell.data))) {
       stop("Please select existing feature in cell.data to plot.by, or add it before calling.")
     }
-    dr_df$plotby <- factor(object@cell.data[[plot.by]])
+    dr_df$plotby <- factor(object@cell.data[rownames(dr_df),][[plot.by]])
   } else {
     dr_df$plotby <- factor("none")
   }
