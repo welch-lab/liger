@@ -1739,6 +1739,7 @@ quantile_norm.liger <- function(
     max_sample = 1000,
     eps = 0.9,
     refine.knn = T,
+    rand.seed = 1
     ...
 ) {
   if (is.null(x = ref_dataset)) {
@@ -1755,7 +1756,8 @@ quantile_norm.liger <- function(
     do.center = do.center,
     max_sample = max_sample,
     eps = eps,
-    refine.knn = refine.knn
+    refine.knn = refine.knn,
+    rand.seed = rand.seed
   )
   for (i in names(x = out)) {
       slot(object = object, name = i) <- out[[i]]
