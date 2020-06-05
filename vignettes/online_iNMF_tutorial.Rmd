@@ -1,7 +1,7 @@
 ---
 title: "Iterative Refinement of Cellular Identity Using Online iNMF"
 author: "Chao Gao and Joshua Welch"
-date: "May 29, 2020"
+date: "June 4, 2020"
 output: html_document
 ---
 
