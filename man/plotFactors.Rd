@@ -4,8 +4,7 @@
 \alias{plotFactors}
 \title{Plot scatter plots of unaligned and aligned factor loadings}
 \usage{
-plotFactors(object, num.genes = 10, cells.highlight = NULL,
-  plot.tsne = F)
+plotFactors(object, num.genes = 10, cells.highlight = NULL, plot.tsne = F)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call quantileAlignSNF before calling.}
@@ -36,8 +35,8 @@ ligerex <- quantileAlignSNF(ligerex)
 # get tsne.coords for normalized data
 ligerex <- runTSNE(ligerex)
 # factor plots into pdf file
-pdf("plot_factors.pdf")
+# pdf("plot_factors.pdf")
 plotFactors(ligerex)
-dev.off()
+# dev.off()
 }
 }

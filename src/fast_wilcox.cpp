@@ -5,6 +5,8 @@
 #include <algorithm>
 using namespace Rcpp;
 
+// Codes from Presto (https://github.com/immunogenomics/presto)
+
 // [[Rcpp::depends(RcppArmadillo)]]
 
 using namespace std;

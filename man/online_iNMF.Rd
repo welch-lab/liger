@@ -4,10 +4,23 @@
 \alias{online_iNMF}
 \title{Perform online iNMF on scaled datasets}
 \usage{
-online_iNMF(object, X_new = NULL, projection = FALSE, W.init = NULL,
-  V.init = NULL, H.init = NULL, A.init = NULL, B.init = NULL,
-  k = 20, lambda = 5, max.epochs = 5, miniBatch_max_iters = 1,
-  miniBatch_size = 5000, h5_chunk_size = 1000, seed = 123)
+online_iNMF(
+  object,
+  X_new = NULL,
+  projection = FALSE,
+  W.init = NULL,
+  V.init = NULL,
+  H.init = NULL,
+  A.init = NULL,
+  B.init = NULL,
+  k = 20,
+  lambda = 5,
+  max.epochs = 5,
+  miniBatch_max_iters = 1,
+  miniBatch_size = 5000,
+  h5_chunk_size = 1000,
+  seed = 123
+)
 }
 \arguments{
 \item{object}{\code{liger} object with data stored in HDF5 files. Should normalize, select genes, and scale before calling.}

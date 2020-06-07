@@ -1,6 +1,5 @@
 \name{liger-package}
 \alias{liger-package}
-\alias{liger}
 \docType{package}
 \title{
 \packageTitle{liger}
@@ -24,7 +23,3 @@ Maintainer: \packageMaintainer{liger}
 Literature or other references for background information 
 }
 \keyword{ package }
-\seealso{
- Optional links to other man pages, e.g. 
- \code{\link[<pkg>:<pkg>-package]{<pkg>}} 
-}

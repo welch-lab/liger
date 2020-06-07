@@ -112,14 +112,16 @@ void determineCholeskyFactors_cpu(NNLS_Multiple_Input& input,NNLS_Multiple_State
 			{
 				generateCFTCF(*state.CFTCF[i],*input.CTC,*state.xmasks[i]);
 				LowerTriangularMatrix* G = new LowerTriangularMatrix(state.CFTCF[i]->dim);
-				// printf("state.CFTCF[i]->dim: %d\n",state.CFTCF[i]->dim);
-				// printf("G dim,totalsize: %d,%d\n",G->dim,G->totalsize);
-				// std::cout << "G key: " << key << std::endl;
+
 				cholesky_lowertriangular_cpu(*G,*state.CFTCF[i]);
 				state.G[i] = G;
 				std::pair<CholeskyMap::iterator,bool> ret = 
 					state.choleskyMap.insert ( std::pair<std::string,LowerTriangularMatrix*>(key,G) );
-				if ( not ret.second ) std::cout << "ERROR! Duplicate Cholesky factor was inserted." << std::endl;
+				if ( not ret.second ) 
+				{
+					//ERROR! Duplicate Cholesky factor was inserted
+				}
+				
 			}
 		}
 	}
@@ -158,10 +160,6 @@ void determineCholeskyFactors_cpu_profile(NNLS_Multiple_Input& input,NNLS_Multip
 				start = std::clock();
 				LowerTriangularMatrix* G = new LowerTriangularMatrix(state.CFTCF[i]->dim);
 				input.choleskyAllocate_time += ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-
-				// printf("state.CFTCF[i]->dim: %d\n",state.CFTCF[i]->dim);
-				// printf("G dim,totalsize: %d,%d\n",G->dim,G->totalsize);
-				// std::cout << "G key: " << key << std::endl;
 				
 				start = std::clock();
 				cholesky_lowertriangular_cpu(*G,*state.CFTCF[i]);
@@ -173,7 +171,10 @@ void determineCholeskyFactors_cpu_profile(NNLS_Multiple_Input& input,NNLS_Multip
 					state.choleskyMap.insert ( std::pair<std::string,LowerTriangularMatrix*>(key,G) );
 				// std::pair<CholeskyMap2::iterator,bool> ret = 
 				// 	state.choleskyMap2.insert ( std::pair<std::vector<int>,LowerTriangularMatrix*>(key,G) );
-				if ( not ret.second ) std::cout << "ERROR! Duplicate Cholesky factor was inserted." << std::endl;
+				if ( not ret.second ) 
+				{
+					//ERROR! Duplicate Cholesky factor was inserted
+				}
 				input.choleskyMapInsert_time += ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 			}
 		}

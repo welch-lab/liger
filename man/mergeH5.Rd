@@ -4,9 +4,17 @@
 \alias{mergeH5}
 \title{Merge hdf5 files}
 \usage{
-mergeH5(file.list, library.names, new.filename, format.type = "10X",
-  data.name = NULL, indices.name = NULL, indptr.name = NULL,
-  genes.name = NULL, barcodes.name = NULL)
+mergeH5(
+  file.list,
+  library.names,
+  new.filename,
+  format.type = "10X",
+  data.name = NULL,
+  indices.name = NULL,
+  indptr.name = NULL,
+  genes.name = NULL,
+  barcodes.name = NULL
+)
 }
 \arguments{
 \item{file.list}{List of path to hdf5 files.}
@@ -31,7 +39,8 @@ mergeH5(file.list, library.names, new.filename, format.type = "10X",
 Directly generates newly merged hdf5 file.
 }
 \description{
-This function merges hdf5 files generated from different libraries (cell ranger by default).
+This function merges hdf5 files generated from different libraries (cell ranger by default) 
+before they are preprocessed through Liger pipeline.
 }
 \examples{
 \dontrun{

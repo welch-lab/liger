@@ -4,10 +4,19 @@
 \alias{plotWordClouds}
 \title{Generate word clouds and t-SNE plots}
 \usage{
-plotWordClouds(object, dataset1 = NULL, dataset2 = NULL,
-  num.genes = 30, min.size = 1, max.size = 4,
-  factor.share.thresh = 10, log.fc.thresh = 1, pval.thresh = 0.05,
-  do.spec.plot = T, return.plots = F)
+plotWordClouds(
+  object,
+  dataset1 = NULL,
+  dataset2 = NULL,
+  num.genes = 30,
+  min.size = 1,
+  max.size = 4,
+  factor.share.thresh = 10,
+  log.fc.thresh = 1,
+  pval.thresh = 0.05,
+  do.spec.plot = T,
+  return.plots = F
+)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call runTSNE before calling.}
@@ -35,8 +44,9 @@ threshold (default 10).}
 
 \item{return.plots}{Return ggplot objects instead of printing directly (default FALSE).}
 
-\item{dataset.specificity}{Pre-calculated dataset specificity if available. Will calculate if not
-available.}
+\item{umi.thresh}{Lower UMI threshold for markers (default 30).}
+
+\item{frac.thresh}{Lower threshold for fraction of cells expressing marker (default 0).}
 }
 \description{
 Plots t-SNE coordinates of all cells by their loadings on each factor. Underneath it displays the
@@ -52,9 +62,9 @@ plots produced.
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
 ligerex <- runTSNE(ligerex)
-pdf('word_clouds.pdf')
+# pdf('word_clouds.pdf')
 plotWordClouds(ligerex, num.genes = 20)
-dev.off()
+# dev.off()
 # HDF5 input
 ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
 plotWordClouds(ligerex, num.genes = 20)

@@ -4,9 +4,16 @@
 \alias{runUMAP}
 \title{Perform UMAP dimensionality reduction}
 \usage{
-runUMAP(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k = 2,
-  distance = "euclidean", n_neighbors = 30, min_dist = 0.3,
-  rand.seed = 42)
+runUMAP(
+  object,
+  use.raw = F,
+  dims.use = 1:ncol(object@H.norm),
+  k = 2,
+  distance = "euclidean",
+  n_neighbors = 10,
+  min_dist = 0.1,
+  rand.seed = 42
+)
 }
 \arguments{
 \item{object}{\code{liger} object. Should run quantileAlignSNF before calling with defaults.}
@@ -19,7 +26,7 @@ runUMAP(object, use.raw = F, dims.use = 1:ncol(object@H.norm), k = 2,
 
 \item{distance}{Mtric used to measure distance in the input space. A wide variety of metrics are
 already coded, and a user defined function can be passed as long as it has been JITd by numba.
-(default "euclidean")}
+(default "euclidean", alternatives: "cosine", "manhattan", "hamming")}
 
 \item{n_neighbors}{Number of neighboring points used in local approximations of manifold
 structure. Larger values will result in more global structure being preserved at the loss of

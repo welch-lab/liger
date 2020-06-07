@@ -10,7 +10,6 @@
 
 #include "parameters.h" 
 
-using std::cout;
 using std::endl;
 
 typedef struct DenseMatrix
@@ -22,35 +21,6 @@ typedef struct DenseMatrix
 	DenseMatrix();
 	//DenseMatrix() : rows(0),cols(0),totalsize(0),dependent(false),rowmajor(NULL),colmajor(NULL) {}
 	
-	/*DenseMatrix(const DenseMatrix& X)
-	{
-		cout << "copy c-tor 0" << endl;
-		rows = X.rows;
-		cols = X.cols;
-		dependent = X.dependent;
-		originalrows = X.originalrows;
-		originalcols = X.originalcols;
-		rowmajor = new dtype*[rows];
-		colmajor = new dtype*[cols];
-		cout << "copy c-tor 1" << endl;
-		if (not dependent)
-		{//std::cout << "DenseMatrix allocation.\n" << std::endl;
-			for(int row=0;row<rows;++row) { rowmajor[row] = new dtype[cols](); }
-			for(int col=0;col<cols;++col) { colmajor[col] = new dtype[rows](); }
-		}
-		cout << "copy c-tor 2" << endl;
-		for(int row=0;row<rows;++row)
-		{
-			for(int col=0;col<cols;++col)
-			{
-				rowmajor[row][col] = X.rowmajor[row][col];
-			}
-		}
-		cout << "copy c-tor 3" << endl;
-		copyRowToColumn();
-		cout << "copy c-tor 4" << endl;
-	}*/
-	
 	DenseMatrix(int rows_,int cols_,bool dependent_=false) : 
 		rows(rows_),cols(cols_),totalsize(rows*cols),dependent(dependent_),
 		originalrows(rows_),originalcols(cols_)
@@ -58,7 +28,7 @@ typedef struct DenseMatrix
 		rowmajor = new dtype*[rows];
 		colmajor = new dtype*[cols];
 		if (not dependent)
-		{//std::cout << "DenseMatrix allocation.\n" << std::endl;
+		{
 			for(int row=0;row<rows;++row) { rowmajor[row] = new dtype[cols](); }
 			for(int col=0;col<cols;++col) { colmajor[col] = new dtype[rows](); }
 		}
@@ -69,7 +39,7 @@ typedef struct DenseMatrix
 	{
 		rowmajor = new dtype*[rows];
 		if (not dependent)
-		{//std::cout << "DenseMatrix allocation.\n" << std::endl;
+		{
 			for(int row=0;row<rows;++row) { rowmajor[row] = new dtype[cols](); }
 		}
 	}
@@ -102,7 +72,7 @@ typedef struct DenseMatrix
 	~DenseMatrix()
 	{
 		if(not dependent)
-		{//std::cout << "DenseMatrix deletion.\n" << std::endl;
+		{
 			for(int row=0;row<originalrows;++row) { delete[] rowmajor[row]; }
 			for(int col=0;col<originalcols;++col) { delete[] colmajor[col]; }
 		}
@@ -112,10 +82,9 @@ typedef struct DenseMatrix
 } DenseMatrix;
 
 DenseMatrix operator +(const DenseMatrix& X, const DenseMatrix& Y) {
-	cout << "+" << endl;
 	if (X.rows != Y.rows || X.cols != Y.cols)
 	{
-		std::cout << "Error: mismatched dimensions in matrix addition. Returning X.\n";
+		//mismatched dimensions in matrix addition. Returning X
 		return X;
 	}
 	DenseMatrix Z = DenseMatrix(X.rows,X.cols,true);
@@ -131,10 +100,9 @@ DenseMatrix operator +(const DenseMatrix& X, const DenseMatrix& Y) {
 }
 
 DenseMatrix operator -(const DenseMatrix& X, const DenseMatrix& Y) {
- cout << "-" << endl;
 	if (X.rows != Y.rows || X.cols != Y.cols)
 	{
-		std::cout << "Error: mismatched dimensions in matrix substraction. Returning X.\n";
+		//Error: mismatched dimensions in matrix substraction. Returning X
 		return X;
 	}
 	DenseMatrix Z = DenseMatrix(X.rows,X.cols,true);
@@ -150,10 +118,9 @@ DenseMatrix operator -(const DenseMatrix& X, const DenseMatrix& Y) {
 }
 
 DenseMatrix operator *(const DenseMatrix& X, const DenseMatrix& Y) {
-	cout << "*" << endl;
 	if (X.cols != Y.rows)
 	{
-		std::cout << "Error: mismatched dimensions in matrix multiplication. Returning X.\n";
+		//Error: mismatched dimensions in matrix multiplication. Returning X.
 		return X;
 	}
 	DenseMatrix Z = DenseMatrix(X.rows,Y.cols,true);
@@ -372,7 +339,7 @@ typedef struct NNLS_Multiple_State
 		for(int i=0;i<cols_rhs;++i)
 		{
 			delete CFTCF[i];
-			delete CGTCF[i];//std::cout << "CGTCF[" << i << "] deleted.\n" << std::endl;
+			delete CGTCF[i];
 			delete xmasks[i];
 			delete infeasiblemasks[i];
 			delete[] x_masked[i];

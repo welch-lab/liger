@@ -19,8 +19,6 @@
 
 using namespace Rcpp;
 using namespace arma;
-using std::cout;
-using std::endl;
 
 DenseMatrix r_to_cpp(const NumericMatrix& A)
 {
@@ -45,7 +43,7 @@ LowerTriangularMatrix r_to_cpp_lower_triangular(const NumericMatrix& A)
 	int m = A.ncol();
 	if (n != m)
 	{
-		cout << "Warning: Asymmetric matrix in r_to_cpp_lower_triangular" << endl;
+		//uh oh
 	}
 	LowerTriangularMatrix X = LowerTriangularMatrix(n);
 	int ind = 0;
@@ -81,7 +79,7 @@ void arma_to_cpp_lower_triangular(const mat& A, LowerTriangularMatrix& X)
 	int m = A.n_cols;
 	if (n != m)
 	{
-		cout << "Warning: Non-square matrix in r_to_cpp_lower_triangular" << endl;
+		//oh no
 	}
 	int ind = 0;
 	for (int i = 0; i < n; ++i)

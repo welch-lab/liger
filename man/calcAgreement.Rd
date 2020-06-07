@@ -4,8 +4,15 @@
 \alias{calcAgreement}
 \title{Calculate agreement metric}
 \usage{
-calcAgreement(object, dr.method = "NMF", ndims = 40, k = 15,
-  use.aligned = TRUE, rand.seed = 42, by.dataset = FALSE)
+calcAgreement(
+  object,
+  dr.method = "NMF",
+  ndims = 40,
+  k = 15,
+  use.aligned = TRUE,
+  rand.seed = 42,
+  by.dataset = FALSE
+)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call quantileAlignSNF before calling.}

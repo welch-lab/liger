@@ -4,12 +4,27 @@
 \alias{plotGeneLoadings}
 \title{Generate t-SNE plots and gene loading plots}
 \usage{
-plotGeneLoadings(object, dataset1 = NULL, dataset2 = NULL,
-  num.genes.show = 12, num.genes = 30, mark.top.genes = T,
-  factor.share.thresh = 10, log.fc.thresh = 1, pval.thresh = 0.05,
-  do.spec.plot = T, max.val = 0.1, pt.size = 0.1,
-  option = "plasma", zero.color = "#F5F5F5", return.plots = F,
-  axis.labels = NULL, do.title = F)
+plotGeneLoadings(
+  object,
+  dataset1 = NULL,
+  dataset2 = NULL,
+  num.genes.show = 12,
+  num.genes = 30,
+  mark.top.genes = T,
+  factor.share.thresh = 10,
+  log.fc.thresh = 1,
+  umi.thresh = 30,
+  frac.thresh = 0,
+  pval.thresh = 0.05,
+  do.spec.plot = T,
+  max.val = 0.1,
+  pt.size = 0.1,
+  option = "plasma",
+  zero.color = "#F5F5F5",
+  return.plots = F,
+  axis.labels = NULL,
+  do.title = F
+)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call runTSNE before calling.}
@@ -17,6 +32,9 @@ plotGeneLoadings(object, dataset1 = NULL, dataset2 = NULL,
 \item{dataset1}{Name of first dataset (by default takes first two datasets for dataset1 and 2)}
 
 \item{dataset2}{Name of second dataset}
+
+\item{num.genes.show}{Number of genes displayed as y-axis labels in the gene loading plots at 
+the bottom (default 12)}
 
 \item{num.genes}{Number of genes to show in word clouds (default 30).}
 
@@ -28,6 +46,10 @@ threshold (default 10).}
 
 \item{log.fc.thresh}{Lower log-fold change threshold for differential expression in markers
 (default 1).}
+
+\item{umi.thresh}{Lower UMI threshold for markers (default 30).}
+
+\item{frac.thresh}{Lower threshold for fraction of cells expressing marker (default 0).}
 
 \item{pval.thresh}{Upper p-value threshold for Wilcoxon rank test for gene expression
 (default 0.05).}
@@ -63,9 +85,12 @@ plots produced.
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
 ligerex <- runTSNE(ligerex)
-pdf("gene_loadings.pdf")
+# pdf("gene_loadings.pdf")
 plotGeneLoadings(ligerex, num.genes = 20)
-dev.off()
+# dev.off()
 }
+# HDF5 input
+ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+plotGeneLoadings(ligerex, num.genes = 20)
 
 }

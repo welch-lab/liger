@@ -4,10 +4,17 @@
 \alias{getFactorMarkers}
 \title{Find shared and dataset-specific markers}
 \usage{
-getFactorMarkers(object, dataset1 = NULL, dataset2 = NULL,
-  factor.share.thresh = 10, dataset.specificity = NULL,
-  log.fc.thresh = 1, pval.thresh = 0.05, num.genes = 30,
-  print.genes = F)
+getFactorMarkers(
+  object,
+  dataset1 = NULL,
+  dataset2 = NULL,
+  factor.share.thresh = 10,
+  dataset.specificity = NULL,
+  log.fc.thresh = 1,
+  pval.thresh = 0.05,
+  num.genes = 30,
+  print.genes = F
+)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call optimizeALS before calling.}
@@ -31,6 +38,10 @@ available.}
 \item{num.genes}{Max number of genes to report for each dataset (default 30).}
 
 \item{print.genes}{Print ordered markers passing logfc, umi and frac thresholds (default FALSE).}
+
+\item{umi.thresh}{Lower UMI threshold for markers (default 30).}
+
+\item{frac.thresh}{Lower threshold for fraction of cells expressing marker (default 0).}
 }
 \value{
 List of shared and specific factors. First three elements are dataframes of dataset1-
@@ -46,9 +57,6 @@ or dataset-specific way).
 \dontrun{
 # liger object, factorization complete
 ligerex
-markers <- getFactorMarkers(ligerex, num.genes = 10)
-HDF5 input
-ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
 markers <- getFactorMarkers(ligerex, num.genes = 10)
 # look at shared markers
 head(markers[[2]])

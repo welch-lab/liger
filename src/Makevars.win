@@ -10,6 +10,7 @@
 ## support within Armadillo prefers / requires it
 ##
 ## Ensure support for 64bit int sparse matrices with -DARMA_64BIT_WORD=1 
+
 CXX_STD = CXX11
 
 PKG_CXXFLAGS = -DARMA_DONT_USE_OPENMP 

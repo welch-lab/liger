@@ -4,19 +4,14 @@
 \alias{runWilcoxon}
 \title{Perform Wilcoxon rank-sum test}
 \usage{
-runWilcoxon(object, data.use = NULL, compare.method, balance.by = NULL)
+runWilcoxon(object, data.use = "all", compare.method)
 }
 \arguments{
 \item{object}{\code{liger} object.}
 
-\item{data.use}{This selects which dataset(s) to use. (default NULL, which uses all datasets)}
+\item{data.use}{This selects which dataset(s) to use. (default 'all')}
 
-\item{compare.method}{Compare genes across \code{clusters} (using all datasets) or across \code{datasets} (within each cluster).}
-
-\item{balance.by}{Sample from all datasets proportional to dataset size (default), balance the sample by \code{cluster} or 
-balance the sample by \code{dataset}}
-
-\item{chunk}{Number of cells at a time to read when constructing subset of data. Default 1000.}
+\item{compare.method}{This indicates the metric of the test. Either 'clusters' or 'datasets'.}
 }
 \value{
 A 10-columns data.frame with test results.
@@ -43,7 +38,6 @@ ligerex <- online_iNMF(ligerex, k = 20)
 ligerex <- quantile_norm(ligerex)
 ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 1000)
 de_genes <- runWilcoxon(ligerex, compare.method = "clusters")
-
 }
 
 }

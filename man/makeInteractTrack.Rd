@@ -20,8 +20,8 @@ this function will use all the gene symbols from the matrix passed to gmat by de
 An Interact Track file stored in the specified path.
 }
 \description{
-Export the predicted gene-pair interactions calculated by upstream function 'linkGenesAndPeaks' into an Interact Track file 
-which is compatible with UCSC Genome Browser.
+Export the predicted gene-pair interactions calculated by upstream function 'linkGenesAndPeaks'
+ into an Interact Track file which is compatible with UCSC Genome Browser.
 }
 \examples{
 \dontrun{

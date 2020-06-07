@@ -4,8 +4,15 @@
 \alias{optimizeNewData}
 \title{Perform factorization for new data}
 \usage{
-optimizeNewData(object, new.data, which.datasets, add.to.existing = T,
-  lambda = NULL, thresh = 1e-04, max.iters = 100)
+optimizeNewData(
+  object,
+  new.data,
+  which.datasets,
+  add.to.existing = T,
+  lambda = NULL,
+  thresh = 1e-04,
+  max.iters = 100
+)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call optimizeALS before calling.}
@@ -33,4 +40,26 @@ optimizeALS.}
 \description{
 Uses an efficient strategy for updating that takes advantage of the information in the existing
 factorization. Assumes that selected genes (var.genes) are represented in the new datasets.
+}
+\examples{
+\dontrun{
+Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+ligerex <- createLiger(list(y_set = Y, z_set = Z))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+# get factorization using three restarts and 20 factors
+ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
+# acquire new data from the same cell type, let's add it to existing datasets
+Y_new <- matrix(41:52, nrow = 4, byrow = T)
+Z_new <- matrix(c(51:57, 56:52), nrow = 4, byrow = T)
+new_data <- list(Y_set = Y_new, Z_set = Z_new)
+ligerex2 <- optimizeNewData(ligerex, new.data = new_data, which.datasets = list('y_set', 'z_set'))
+# acquire new data from different cell type, we'll just add another dataset
+X <- matrix(35:46, nrow = 4, byrow = T)
+# it's probably most similar to y_set
+ligerex <- optimizeNewData(ligerex, new.data = list(x_set = X), which.datasets = list('y_set'),
+                           add.to.existing = F)
+}
 }

@@ -60,33 +60,29 @@ void matvecmult_transpose_cpu(DenseMatrix& A,dtype*x,dtype*b,int factor=1)
 		b[brow] = factor*vectordot(A.colmajor[brow],x,A.rows);
 	}
 }
-// void printv(dtype*a,dtype*b,int size)
-// {
-// 	for(int i=0;i<size;++i)
-// 	{
-// 		printf("%f, %f\n",a[i],b[i]);
-// 	}
-// }
+
 void matvecmult_colmajor_cpu(DenseMatrix& A,dtype*x,dtype*b,int factor=1)
 {//Multiplies A * x = b, column-major on A.
 	for(int row=0;row<A.rows;++row) b[row] = 0;
 	for(int col=0;col<A.cols;++col)
 	{
-		// printv(A.colmajor[col],b,A.rows);
 		vectoradd(A.colmajor[col],b,A.rows,factor*x[col]);
 		// std::cin.ignore();
 	}
 }
 void matmatmult_colmajor_cpu(DenseMatrix& A,DenseMatrix& B,DenseMatrix& C)
 {//Multiplies A * x = b, column-major on A.
-	if( A.rows != C.rows or B.cols != C.cols or A.cols != B.rows ) printf("Error! Dimension mismatch in matmatmult_colmajor_cpu!\n");
+	if( A.rows != C.rows or B.cols != C.cols or A.cols != B.rows ) 
+	{
+		//error	
+	}
 	for(int bcol=0;bcol<B.cols;++bcol)
 	{
 		for(int crow=0;crow<C.rows;++crow) C.colmajor[bcol][crow] = 0;
 		matvecmult_colmajor_cpu(A,B.colmajor[bcol],C.colmajor[bcol]);
 	}
 }
-void randInit(dtype**colmajor,int rows,int cols,int max)
+/* void randInit(dtype**colmajor,int rows,int cols,int max)
 {
 	for(int col=0;col<cols;++col)
 	{
@@ -95,7 +91,7 @@ void randInit(dtype**colmajor,int rows,int cols,int max)
 			colmajor[col][row] = rand()%max;
 		}
 	}
-}
+} */
 
 dtype FrobeniusNorm(DenseMatrix* A)
 {
@@ -137,11 +133,11 @@ void check_colmajor(dtype**standard,dtype**check,int cols,int rows,dtype tol=1e-
 	}
 	if(numwrong > 0)
 	{
-		std::cout << "Error! " << numwrong*100.0/(double)(rows*cols) << " percent wrong." << std::endl;
+		//uh oh 
 	}
 	else
 	{
-		std::cout << "Passed the matrix match check." << std::endl;
+		//ok
 	}
 }
 void copy_colmajor(dtype**from,dtype**to,int cols,int rows)

@@ -4,8 +4,14 @@
 \alias{linkGenesAndPeaks}
 \title{Linking genes to putative regulatory elements}
 \usage{
-linkGenesAndPeaks(gene_counts, peak_counts, genes.list = NULL,
-  dist = "spearman", alpha = 0.05, path_to_coords)
+linkGenesAndPeaks(
+  gene_counts,
+  peak_counts,
+  genes.list = NULL,
+  dist = "spearman",
+  alpha = 0.05,
+  path_to_coords
+)
 }
 \arguments{
 \item{gene_counts}{A gene expression matrix (genes by cells) of normalized counts.
@@ -35,7 +41,8 @@ Evaluate the relationships between pairs of genes and peaks based on specified d
 \dontrun{
 gmat.small <- readRDS("../testdata/small_gmat.RDS") # some gene counts matrix
 pmat.small <- readRDS("../testdata/small_pmat.RDS") # some peak counts matrix
-regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", alpha = 0.05, path_to_coords = 'some_path')
+regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", 
+alpha = 0.05, path_to_coords = 'some_path')
 }
 
 }

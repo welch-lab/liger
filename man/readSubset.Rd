@@ -4,9 +4,16 @@
 \alias{readSubset}
 \title{Sample data for plotting}
 \usage{
-readSubset(object, slot.use = "norm.data", balance = NULL,
-  max.cells = 1000, chunk = 1000, datasets.use = NULL,
-  genes.use = NULL, rand.seed = 1)
+readSubset(
+  object,
+  slot.use = "norm.data",
+  balance = NULL,
+  max.cells = 1000,
+  chunk = 1000,
+  datasets.use = NULL,
+  genes.use = NULL,
+  rand.seed = 1
+)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call normalize and selectGenes before calling.}
@@ -24,8 +31,6 @@ balance="cluster" samples up to max_cells from each cluster.}
 \item{datasets.use}{uses only the specified datasets for sampling. Default is NULL (all datasets)}
 
 \item{genes.use}{samples from only the specified genes. Default is NULL (all genes)}
-
-\item{rand.seed}{(default 1).}
 
 \item{rand.seed}{for reproducibility (default 1).
 #Note:}
