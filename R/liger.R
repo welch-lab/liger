@@ -4238,19 +4238,7 @@ calcPurity <- function(object, classes.compare) {
 #' }
 
 getProportionMito <- function(object, use.norm = F) {
-  if (class(object@raw.data[[1]])[1] == "H5File"){
-    if (!use.norm & object@h5file.info[[1]][["sample.data.type"]] != "raw.data"){
-      stop("Need to sample raw.data for HDF5 input.")
-    } else if (use.norm & object@h5file.info[[1]][["sample.data.type"]] != "norm.data"){
-      stop("Need to sample norm.data for HDF5 input.")
-    }
-  }  
-  
-  if (class(object@raw.data[[1]])[1] == "H5File") {
-    all.genes <- Reduce(union, object@h5file.info)
-  } else {
-    all.genes <- Reduce(union, lapply(object@raw.data, rownames))
-  }
+  all.genes <- Reduce(union, lapply(object@raw.data, rownames))
   mito.genes <- grep(pattern = "^mt-", x = all.genes, value = TRUE)
   data.use <- object@raw.data
   if (use.norm) {

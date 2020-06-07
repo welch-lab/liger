@@ -1,7 +1,7 @@
 ---
 title: "Iterative Refinement of Cellular Identity Using Online iNMF"
 author: "Chao Gao and Joshua Welch"
-date: "June 4, 2020"
+date: "June 6, 2020"
 output: html_document
 ---
 
@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Scenario 1: sampling minibatches from fully observed datasets
 To perform online iNMF, we need to install the `online` branch. Please see the instruction below.
-```{r install, message=FALSE, results='hide', eval=FALSE}
+```{r install, message=FALSE, results='hide', eval=TRUE}
 library(devtools)
 install_github("MacoskoLab/liger", ref = "online")
 ```
