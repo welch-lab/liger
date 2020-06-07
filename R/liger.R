@@ -1739,7 +1739,7 @@ quantile_norm.liger <- function(
     max_sample = 1000,
     eps = 0.9,
     refine.knn = T,
-    rand.seed = 1
+    rand.seed = 1,
     ...
 ) {
   if (is.null(x = ref_dataset)) {
