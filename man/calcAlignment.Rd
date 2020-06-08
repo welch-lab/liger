@@ -12,7 +12,8 @@ calcAlignment(
   cells.comp = NULL,
   clusters.use = NULL,
   by.cell = F,
-  by.dataset = F
+  by.dataset = F,
+  do.kbet = F
 )
 }
 \arguments{
@@ -35,6 +36,8 @@ alignment (instead of dataset designations). These can be from the same dataset 
 \item{by.cell}{Return alignment calculated individually for each cell (default FALSE).}
 
 \item{by.dataset}{Return alignment calculated for each dataset (default FALSE).}
+
+\item{do.kbet}{Return kBET metric (default FALSE).}
 }
 \value{
 Alignment metric.

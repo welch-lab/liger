@@ -34,6 +34,7 @@ quantile_norm(object, ...)
   max_sample = 1000,
   eps = 0.9,
   refine.knn = T,
+  rand.seed = 1,
   ...
 )
 }

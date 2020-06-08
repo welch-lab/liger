@@ -4002,6 +4002,7 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #' @param clusters.use Names of clusters to use in calculating alignment (default NULL).
 #' @param by.cell Return alignment calculated individually for each cell (default FALSE).
 #' @param by.dataset Return alignment calculated for each dataset (default FALSE).
+#' @param do.kbet Return kBET metric (default FALSE).
 #'
 #' @return Alignment metric.
 #' @importFrom FNN get.knn
@@ -4015,7 +4016,7 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #' }
 
 calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL, cells.comp = NULL,
-                          clusters.use = NULL, by.cell = F, by.dataset = F) {
+                          clusters.use = NULL, by.cell = F, by.dataset = F, do.kbet = F) {
   if (is.null(cells.use)) {
     cells.use <- rownames(object@H.norm)
   }
@@ -4075,6 +4076,14 @@ calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL, cel
   }
   names(dataset) <- rownames(nmf_factors)
   dataset <- dataset[sampled_cells]
+
+  if(do.kbet)
+  {
+    kBET_res = kBET::kBET(nmf_factors[sampled_cells, 1:num_factors],dataset,k=k,
+                          knn=knn_graph,heuristic=F,n_repeat=100,do.pca=F,testSize=1000)
+    return(kBET_res)
+  }
+
   num_sampled <- N * min_cells
   num_same_dataset <- rep(k, num_sampled)
   
