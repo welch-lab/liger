@@ -40,7 +40,7 @@ Depends:
     Matrix,
     methods,
     patchwork
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0
 Encoding: UTF-8
 Suggests:
     Seurat,

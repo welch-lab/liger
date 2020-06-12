@@ -1883,9 +1883,9 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
     }
   }
   
-  reference_cells <- rownames(object@scale.data[[reference]]) # cells by genes
+  reference_cells <- colnames(object@raw.data[[reference]]) # cells by genes
   for (query in queries) {
-    query_cells <- rownames(object@scale.data[[query]])
+    query_cells <- colnames(object@raw.data[[query]])
     
     # creating a (reference cell numbers X query cell numbers) weights matrix for knn weights and unit weights
     nn.k <- get.knnx(object@H.norm[reference_cells, ], object@H.norm[query_cells, ], k = knn_k, algorithm = "CR")
