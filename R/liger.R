@@ -1574,7 +1574,9 @@ online_iNMF <- function(object,
       for (i in file_idx){
         V_init_idx = sample(1:num_cells_new[i], k) # pick k sample from datasets as initial H matrix
         object@V[[i]] = object@scale.data[[i]][1:num_genes, V_init_idx]
-
+        #object@V[[i]] = matrix(data = abs(x = runif(n = num_genes * k, min = 0, max = 2)),
+        #                       nrow = num_genes,
+        #                       ncol = k)
       }
 
       # normalize the columns of H_i, H_s matrices
@@ -1810,7 +1812,7 @@ online_iNMF <- function(object,
       colnames(object@H[[i]]) = cell_barcodes[[i]]
     }
 
-    rownames(object@W) = rownames(gene_names)
+    rownames(object@W) = gene_names
     colnames(object@W) = NULL
 
     for (i in file_idx){
@@ -1989,6 +1991,7 @@ optimizeALS.list  <- function(
       nrow = k,
       ncol = g
     )
+
     V <- lapply(
       X = 1:N,
       FUN = function(i) {
@@ -1999,6 +2002,7 @@ optimizeALS.list  <- function(
         ))
       }
     )
+
     H <- lapply(
       X = ns,
       FUN = function(n) {
