@@ -300,7 +300,7 @@ getGeneValues <- function(list, gene, use.cols = F, methylation.indices = NULL, 
     if (gene %in% rownames(mtx)) {
       gene_vals_int <- mtx[gene, ]
     } else {
-      gene_vals_int <- rep(list(0), ncol(mtx))
+      gene_vals_int <- rep(0, ncol(mtx))
       names(gene_vals_int) <- colnames(mtx)
     }
     if (log2scale & !(i %in% methylation.indices)) {
