@@ -3791,10 +3791,10 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
         # scale by selected feature
         mutate_at(vars(-group_cols()), function(x) { scale(x, center = F)})
       gene_vals <- gene_df1$gene
-      names(gene_vals) <- cellnames
       if (log2scale) {
         gene_vals <- log2(10000 * gene_vals + 1)
       }
+      names(gene_vals) <- cellnames
     } else {
       # using normalized data
       # indicate methylation indices here 
