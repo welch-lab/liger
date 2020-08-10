@@ -1793,7 +1793,7 @@ online_iNMF <- function(object,
     cat("\nCalculate metagene loadings...", "\n")
     object@H = rep(list(NULL), num_files)
     for (i in file_idx){
-      num_batch = num_cells[i] %/% miniBatch_size + 1
+      if (num_cells[i] %% miniBatch_size == 0) num_batch = num_cells[i] %/% miniBatch_size else num_batch = num_cells[i] %/% miniBatch_size + 1
       if (num_batch == 1){
         X_i = object@scale.data[[i]][1:num_genes,]
         object@H[[i]] = solveNNLS(rbind(object@W + object@V[[i]],sqrt_lambda * object@V[[i]]), rbind(X_i, matrix(0, num_genes , num_cells[i])))
@@ -1826,7 +1826,7 @@ online_iNMF <- function(object,
     object@H[file_idx_new] = rep(list(NULL), num_new_files)
     object@V[file_idx_new] = rep(list(NULL), num_new_files)
     for (i in file_idx_new){
-      num_batch = num_cells[i] %/% miniBatch_size + 1
+      if (num_cells[i] %% miniBatch_size == 0) num_batch = num_cells[i] %/% miniBatch_size else num_batch = num_cells[i] %/% miniBatch_size + 1
       if (num_cells[i] <= miniBatch_size){
         object@H[[i]] = solveNNLS(object@W, object@scale.data[[i]][1:num_genes,])
       } else {
