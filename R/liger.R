@@ -3010,7 +3010,7 @@ getProportionMito <- function(object, use.norm = F) {
 #' plots <- plotByDatasetAndCluster(ligerex, return.plots = T)
 #' }
 
-plotByDatasetAndCluster_new <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
+plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
                                         text.size = 3, do.shuffle = T, rand.seed = 1,
                                         axis.labels = NULL, do.legend = T, legend.size = 5,
                                         reorder.idents = F, new.order = NULL,
