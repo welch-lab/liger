@@ -2989,6 +2989,8 @@ getProportionMito <- function(object, use.norm = F) {
 #' @param axis.labels Vector of two strings to use as x and y labels respectively.
 #' @param do.legend Display legend on plots (default TRUE).
 #' @param legend.size Size of legend on plots (default 5).
+#' @param reorder.idents logical whether to reorder the datasets from default order before plotting (default FALSE).
+#' @param new.order new dataset factor order for plotting.  must set reorder.idents = TRUE.
 #' @param return.plots Return ggplot plot objects instead of printing directly (default FALSE).
 #'
 #' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
@@ -3008,15 +3010,19 @@ getProportionMito <- function(object, use.norm = F) {
 #' plots <- plotByDatasetAndCluster(ligerex, return.plots = T)
 #' }
 
-plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
-                                    text.size = 3, do.shuffle = T, rand.seed = 1,
-                                    axis.labels = NULL, do.legend = T, legend.size = 5,
-                                    return.plots = F) {
+plotByDatasetAndCluster_new <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
+                                        text.size = 3, do.shuffle = T, rand.seed = 1,
+                                        axis.labels = NULL, do.legend = T, legend.size = 5,
+                                        reorder.idents = F, new.order = NULL,
+                                        return.plots = F) {
   tsne_df <- data.frame(object@tsne.coords)
   colnames(tsne_df) <- c("tsne1", "tsne2")
   tsne_df[['Dataset']] <- unlist(lapply(1:length(object@H), function(x) {
     rep(names(object@H)[x], nrow(object@H[[x]]))
   }))
+  if (reorder.idents == TRUE){
+    tsne_df$Dataset <- factor(tsne_df$Dataset, levels = new.order)
+  }
   c_names <- names(object@clusters)
   if (is.null(clusters)) {
     # if clusters have not been set yet
