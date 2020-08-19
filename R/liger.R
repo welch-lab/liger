@@ -4083,7 +4083,7 @@ calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL, cel
 
   if(do.kbet)
   {
-    kBET_res = kBET::kBET(nmf_factors[sampled_cells, 1:num_factors],dataset,k=k,
+    kBET_res = kBET::kBET(nmf_factors[sampled_cells, 1:num_factors],dataset,k0=k,
                           knn=knn_graph,heuristic=F,n_repeat=100,do.pca=F,testSize=1000)
     return(kBET_res)
   }
