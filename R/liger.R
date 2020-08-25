@@ -3025,7 +3025,6 @@ louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps
                            nIterations = 100, random.seed = 1) {
   output_path <- paste0('edge_', sub('\\s', '_', Sys.time()), '.txt')
   output_path = sub(":","_",output_path)
-  output_path = sub(":","_",output_path)
   knn <- RANN::nn2(object@H.norm, k = k, eps = eps)
   snn <- ComputeSNN(knn$nn.idx, prune = prune)
   WriteEdgeFile(snn, output_path, display_progress = F)
