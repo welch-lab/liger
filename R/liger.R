@@ -3035,10 +3035,66 @@ louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps
     edgefilename = output_path
   )
   names(clusts) = names(object@clusters)
+  clusts <- GroupSingletons(ids = clusts, SNN = snn, verbose = F)
   object@clusters = as.factor(clusts)
   unlink(output_path)
   return(object)
 }
+
+# Group single cells that make up their own cluster in with the cluster they are
+# most connected to. (Adopted from Seurat v3)
+#
+# @param ids Named vector of cluster ids
+# @param SNN SNN graph used in clustering
+# @param group.singletons Group singletons into nearest cluster (TRUE by default). If FALSE, assign all singletons to
+# a "singleton" group
+#
+# @return Returns updated cluster assignment with all singletons merged with most connected cluster
+#
+GroupSingletons <- function(ids, SNN, group.singletons = TRUE, verbose = FALSE) {
+  # identify singletons
+  singletons <- c()
+  singletons <- names(x = which(x = table(ids) == 1))
+  singletons <- intersect(x = unique(x = ids), singletons)
+  if (!group.singletons) {
+    ids[which(ids %in% singletons)] <- "singleton"
+    return(ids)
+  }
+  # calculate connectivity of singletons to other clusters, add singleton
+  # to cluster it is most connected to
+  cluster_names <- as.character(x = unique(x = ids))
+  cluster_names <- setdiff(x = cluster_names, y = singletons)
+  connectivity <- vector(mode = "numeric", length = length(x = cluster_names))
+  names(x = connectivity) <- cluster_names
+  new.ids <- ids
+  for (i in singletons) {
+    i.cells <- names(which(ids == i))
+    for (j in cluster_names) {
+      j.cells <- names(which(ids == j))
+      subSNN <- SNN[i.cells, j.cells]
+      set.seed(1) # to match previous behavior, random seed being set in WhichCells
+      if (is.object(x = subSNN)) {
+        connectivity[j] <- sum(subSNN) / (nrow(x = subSNN) * ncol(x = subSNN))
+      } else {
+        connectivity[j] <- mean(x = subSNN)
+      }
+    }
+    m <- max(connectivity, na.rm = T)
+    mi <- which(x = connectivity == m, arr.ind = TRUE)
+    closest_cluster <- sample(x = names(x = connectivity[mi]), 1)
+    ids[i.cells] <- closest_cluster
+  }
+  if (length(x = singletons) > 0 && verbose) {
+    message(paste(
+      length(x = singletons),
+      "singletons identified.",
+      length(x = unique(x = ids)),
+      "final clusters."
+    ))
+  }
+  return(ids)
+}
+
 
 #' Impute the query cell expression matrix
 #'
