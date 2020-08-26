@@ -672,6 +672,8 @@ normalize <- function(object,
         cell.data.i = object@cell.data[object@cell.data$dataset == names(object@raw.data)[i], ]
         cell.data.i$barcode = rownames(cell.data.i)
         object@raw.data[[i]][["cell.data"]] = cell.data.i
+      } else {
+        object@raw.data[[i]][["cell.data"]][]$dataset = rep(names(object@raw.data)[i], length(object@raw.data[[i]][["cell.data"]][]$dataset))
       }
     } 
 
@@ -1567,7 +1569,6 @@ online_iNMF <- function(object,
     } else {
       object@W = if(!is.null(W.init)) W.init else object@W
     } 
-
     # V_i matrix initialization
     if (is.null(X_new)) {
       object@V = list()    
@@ -1605,7 +1606,6 @@ online_iNMF <- function(object,
       object@H[file_idx_new] = rep(list(NULL),num_new_files)
       H_minibatch = list()
     }
-
     # A = HiHi^t, B = XiHit
     A_old = list() 
     B_old = list()
@@ -3024,6 +3024,7 @@ quantile_norm.liger <- function(
 louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps = 0.1, nRandomStarts = 10,
                            nIterations = 100, random.seed = 1) {
   output_path <- paste0('edge_', sub('\\s', '_', Sys.time()), '.txt')
+  output_path = sub(":","_",output_path)
   output_path = sub(":","_",output_path)
   knn <- RANN::nn2(object@H.norm, k = k, eps = eps)
   snn <- ComputeSNN(knn$nn.idx, prune = prune)
