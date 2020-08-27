@@ -672,9 +672,7 @@ normalize <- function(object,
         cell.data.i = object@cell.data[object@cell.data$dataset == names(object@raw.data)[i], ]
         cell.data.i$barcode = rownames(cell.data.i)
         object@raw.data[[i]][["cell.data"]] = cell.data.i
-      } else {
-        object@raw.data[[i]][["cell.data"]][]$dataset = rep(names(object@raw.data)[i], length(object@raw.data[[i]][["cell.data"]][]$dataset))
-      }
+      } 
     } 
 
     names(object@norm.data) = names(object@raw.data)
