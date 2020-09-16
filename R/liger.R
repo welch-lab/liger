@@ -4890,8 +4890,9 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   a@tsne.coords <- object@tsne.coords[names(a@clusters), ]
   a@H.norm <- object@H.norm[names(a@clusters), ]
   # Add back additional cell.data
+  cell.nms <- unname(unlist(lapply(a@raw.data, colnames)))
   if (ncol(a@cell.data) < ncol(object@cell.data)) {
-    a@cell.data <- droplevels(data.frame(object@cell.data[names(a@clusters), ]))
+    a@cell.data <- droplevels(data.frame(object@cell.data[cell.nms, ]))
   }
   
   a@W <- object@W
