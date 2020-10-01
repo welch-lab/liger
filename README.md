@@ -29,6 +29,9 @@ analysis, and visualization. Users can:
 We have also designed LIGER to interface with existing single-cell analysis packages, including 
 [Seurat](https://satijalab.org/seurat/).
 
+## Feedback
+Consider filling out our [feedback form](https://forms.gle/bhvp3K6tiHwf976r8) to help us improve the functionality and accesibility of LIGER.
+
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
