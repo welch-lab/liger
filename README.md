@@ -28,6 +28,9 @@ We have also designed LIGER to interface with existing single-cell analysis pack
 
 The development of LIGER was supported by the [Chan Zuckerburg Initiative](https://chanzuckerberg.com/) and the [NIH Brain Initiative Cell Census Network](https://braininitiative.nih.gov/brain-programs/cell-census-network-biccn).
 
+## Feedback
+Consider filling out our [feedback form](https://forms.gle/bhvp3K6tiHwf976r8) to help us improve the functionality and accesibility of LIGER.
+
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
