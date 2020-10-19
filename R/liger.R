@@ -4870,7 +4870,7 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   raw.data <- lapply(seq_along(object@raw.data), function(q) {
     cells <- intersect(cells.use, colnames(object@raw.data[[q]]))
     if (length(cells) > 0) {
-      object@raw.data[[q]][, cells]
+      object@raw.data[[q]][, cells, drop = F]
     } else {
       warning(paste0("Selected subset eliminates dataset ", names(object@raw.data)[q]))
       return(NULL)
@@ -4933,6 +4933,9 @@ reorganizeLiger <- function(object, by.feature, keep.meta = T, new.label = "orig
                             ...) {
   if (!(by.feature %in% colnames(object@cell.data))) {
     stop("Please select existing feature in cell.data to reorganize by, or add it before calling.")
+  }
+  if(class(object@cell.data[, by.feature]) != "factor"){
+    stop("Error: cell.data feature must be of class 'factor' to reorganize object.  Please change column to factor and re-run reorganizeLiger")
   }
   if (!is.null(object@clusters)) {
     object@cell.data[['orig.clusters']] <- object@clusters
