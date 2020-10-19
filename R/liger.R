@@ -4537,19 +4537,25 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
       print("Warning: Seurat v3 genes cannot have underscores, replacing with dashes ('-')")
       var.genes <- gsub("_", replacement = "-", var.genes)
     }
-    inmf.obj <- new(
-      Class = "DimReduc", feature.loadings = t(object@W),
-      cell.embeddings = object@H.norm, key = "iNMF_"
+    inmf.loadings <- t(x = object@W)
+    inmf.embeddings <- object@H.norm
+    tsne.embeddings <- object@tsne.coords
+    rownames(x = inmf.loadings) <- var.genes
+    rownames(x = inmf.embeddings) <- 
+      rownames(x = tsne.embeddings) <- 
+      rownames(x = scale.data)
+    inmf.obj <- Seurat::CreateDimReducObject(
+      embeddings = inmf.embeddings,
+      loadings = inmf.loadings,
+      key = "iNMF_",
+      global = TRUE
     )
-    rownames(inmf.obj@feature.loadings) <- var.genes
-    tsne.obj <- new(
-      Class = "DimReduc", cell.embeddings = object@tsne.coords,
-      key = "tSNE_"
+    tsne.obj <- Seurat::CreateDimReducObject(
+      embeddings = tsne.embeddings,
+      key = "tSNE_",
+      global = TRUE
     )
   }
-  rownames(tsne.obj@cell.embeddings) <- rownames(scale.data)
-  rownames(inmf.obj@cell.embeddings) <- rownames(scale.data)
-  colnames(tsne.obj@cell.embeddings) <- paste0("tSNE_", 1:2)
   new.seurat <- Seurat::CreateSeuratObject(raw.data)
   if (renormalize) {
     new.seurat <- Seurat::NormalizeData(new.seurat)
@@ -4574,12 +4580,11 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
     
   } else {
     if (use.liger.genes) {
-      new.seurat@assays$RNA@var.features <- var.genes
+      Seurat::VariableFeatures(new.seurat) <- var.genes
     }
     Seurat::SetAssayData(new.seurat, slot = "scale.data",  t(scale.data), assay = "RNA")
-    new.seurat@reductions$tsne <- tsne.obj
-    new.seurat@reductions$inmf <- inmf.obj
-    
+    new.seurat[['tsne']] <- tsne.obj
+    new.seurat[['inmf']] <- inmf.obj
     Seurat::Idents(new.seurat) <- ident.use
   }
   
