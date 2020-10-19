@@ -4870,6 +4870,9 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   raw.data <- lapply(seq_along(object@raw.data), function(q) {
     cells <- intersect(cells.use, colnames(object@raw.data[[q]]))
     if (length(cells) > 0) {
+      if (length(cells < 50)) {
+        warning("Number of subsetted cells too small (less than 50), please check cells.use!")
+      }
       object@raw.data[[q]][, cells, drop = F]
     } else {
       warning(paste0("Selected subset eliminates dataset ", names(object@raw.data)[q]))

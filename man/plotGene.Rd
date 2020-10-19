@@ -24,7 +24,8 @@ plotGene(
   zero.color = "#F5F5F5",
   axis.labels = NULL,
   do.legend = T,
-  return.plots = F
+  return.plots = F,
+  keep.scale = F
 )
 }
 \arguments{
@@ -82,6 +83,8 @@ mismatches in order (default NULL).}
 \item{do.legend}{Display legend on plots (default TRUE).}
 
 \item{return.plots}{Return ggplot objects instead of printing directly (default FALSE).}
+
+\item{keep.scale}{Maintain min/max color scale across all plots when using plot.by (default FALSE)}
 }
 \value{
 If returning single plot, returns ggplot object; if returning multiple plots; returns
