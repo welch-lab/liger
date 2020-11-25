@@ -3032,9 +3032,9 @@ louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps
     nIterations = nIterations, algorithm = 1, randomSeed = random.seed, printOutput = F,
     edgefilename = output_path
   )
-  names(clusts) = names(object@clusters)
-  rownames(snn) = names(object@clusters)
-  colnames(snn) = names(object@clusters)
+  names(clusts) = rownames(object@cell.data)
+  rownames(snn) = rownames(object@cell.data)
+  colnames(snn) = rownames(object@cell.data)
   clusts <- GroupSingletons(ids = clusts, SNN = snn, verbose = F)
   object@clusters = as.factor(clusts)
   unlink(output_path)
