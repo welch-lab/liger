@@ -39,7 +39,7 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 * [Jointly Defining Cell Types from scRNA-seq and scATAC-seq](http://htmlpreview.github.io/?https://github.com/MacoskoLab/liger/blob/master/vignettes/Integrating_scRNA_and_scATAC_data.html)
 
-* [Jointly Defining Cell Types from Single-Cell RNA-seq and DNA Methylation](https://macoskolab.github.io/liger/rna-methylation.html)
+* [Jointly Defining Cell Types from Single-Cell RNA-seq and DNA Methylation](https://welch-lab.github.io/liger/rna-methylation.html)
 
 * [Running Liger directly on Seurat objects using Seurat wrappers](https://htmlpreview.github.io/?https://github.com/satijalab/seurat.wrappers/blob/master/docs/liger.html)
 
