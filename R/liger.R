@@ -3024,7 +3024,11 @@ louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps
   output_path <- paste0('edge_', sub('\\s', '_', Sys.time()), '.txt')
   output_path = sub(":","_",output_path)
   output_path = sub(":","_",output_path)
-  knn <- RANN::nn2(object@H.norm, k = k, eps = eps)
+  if (dim(object@H.norm)[1] == 0){
+    knn <- RANN::nn2(Reduce(rbind, object@H), k = k, eps = eps)
+  } else {
+    knn <- RANN::nn2(object@H.norm, k = k, eps = eps)
+  }
   snn <- ComputeSNN(knn$nn.idx, prune = prune)
   WriteEdgeFile(snn, output_path, display_progress = F)
   clusts <- RunModularityClusteringCpp(snn,
