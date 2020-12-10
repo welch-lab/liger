@@ -39,7 +39,7 @@ as number of datasets (optional, default=NULL).}
 \item{datasets.use}{List of datasets to include for discovery of highly variable genes. 
 (default 1:length(object@raw.data))}
 
-\item{combine}{How to combine variable genes across experiments. Either "union" or "intersect".
+\item{combine}{How to combine variable genes across experiments. Either "union" or "intersection".
 (default "union")}
 
 \item{keep.unique}{Keep genes that occur (i.e., there is a corresponding column in raw.data) only

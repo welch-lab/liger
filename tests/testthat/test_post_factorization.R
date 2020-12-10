@@ -190,9 +190,9 @@ plotgenes_plots <- plotGene(ligex, gene = 'CD8A', use.scaled = T, return.plots =
 test_that("plotGene scales correctly", {
   expect_equal(length(plotgenes_plots), length(ligex@raw.data))
   expect_equal(unname(plotgenes_plots[[1]]$data$gene[45:50]), 
-               c(NA, NA, 14.69475989, 14.46124833, NA, NA))
+               c(NA, NA, 14.69475989, 14.46124833, NA, NA), tolerance = 1e-5)
   expect_equal(unname(plotgenes_plots[[2]]$data$gene[45:50]), 
-               c(NA, NA, NA, 13.61593681, NA, NA))
+               c(NA, NA, NA, 13.61593681, NA, NA), tolerance = 1e-5)
 })
 
 plotgenes_plots <- plotGene(ligex, gene = 'CD8A', plot.by = 'none', 

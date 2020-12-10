@@ -15,6 +15,8 @@ plotByDatasetAndCluster(
   axis.labels = NULL,
   do.legend = T,
   legend.size = 5,
+  reorder.idents = F,
+  new.order = NULL,
   return.plots = F
 )
 }
@@ -40,6 +42,10 @@ one after the other (default TRUE).}
 \item{do.legend}{Display legend on plots (default TRUE).}
 
 \item{legend.size}{Size of legend on plots (default 5).}
+
+\item{reorder.idents}{logical whether to reorder the datasets from default order before plotting (default FALSE).}
+
+\item{new.order}{new dataset factor order for plotting.  must set reorder.idents = TRUE.}
 
 \item{return.plots}{Return ggplot plot objects instead of printing directly (default FALSE).}
 }

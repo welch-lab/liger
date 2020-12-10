@@ -4,7 +4,7 @@
 
 # LIGER (Linked Inference of Genomic Experimental Relationships)
 
-LIGER (`liger`) is a package for integrating and analyzing multiple single-cell datasets, developed and maintained by the Macosko lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors. 
+LIGER (`liger`) is a package for integrating and analyzing multiple single-cell datasets, developed by the Macosko lab and maintained/extended by the Welch lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors. 
 
 Check out our [Cell paper](https://www.cell.com/cell/fulltext/S0092-8674%2819%2930504-5) for a more complete description of the methods and analyses. To access data used in our SN and BNST analyses, visit our [study](https://portals.broadinstitute.org/single_cell/study/SCP466) on the
 Single Cell Portal. 
@@ -29,6 +29,9 @@ analysis, and visualization. Users can:
 We have also designed LIGER to interface with existing single-cell analysis packages, including 
 [Seurat](https://satijalab.org/seurat/).
 
+## Feedback
+Consider filling out our [feedback form](https://forms.gle/bhvp3K6tiHwf976r8) to help us improve the functionality and accesibility of LIGER.
+
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
@@ -36,7 +39,7 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 * [Jointly Defining Cell Types from scRNA-seq and scATAC-seq](http://htmlpreview.github.io/?https://github.com/MacoskoLab/liger/blob/master/vignettes/Integrating_scRNA_and_scATAC_data.html)
 
-* [Jointly Defining Cell Types from Single-Cell RNA-seq and DNA Methylation](https://macoskolab.github.io/liger/rna-methylation.html)
+* [Jointly Defining Cell Types from Single-Cell RNA-seq and DNA Methylation](https://welch-lab.github.io/liger/rna-methylation.html)
 
 * [Running Liger directly on Seurat objects using Seurat wrappers](https://htmlpreview.github.io/?https://github.com/satijalab/seurat.wrappers/blob/master/docs/liger.html)
 

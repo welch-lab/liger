@@ -595,8 +595,7 @@ safe_h5_create = function(h5_object,dataset_name,dims,mode="double",chunk_size=d
 
 normalize <- function(object,
                       chunk = 1000, 
-                      format.type = "10X") 
-{
+                      format.type = "10X") {
   if (class(object@raw.data[[1]])[1] == "H5File") {
     hdf5_files = names(object@raw.data)
     nUMI = c()
@@ -778,7 +777,7 @@ calcGeneVars = function (object, chunk = 1000)
 #' @param tol Tolerance to use for optimization if num.genes values passed in (default 0.0001).
 #' @param datasets.use List of datasets to include for discovery of highly variable genes. 
 #'   (default 1:length(object@raw.data))
-#' @param combine How to combine variable genes across experiments. Either "union" or "intersect".
+#' @param combine How to combine variable genes across experiments. Either "union" or "intersection".
 #'   (default "union")
 #' @param keep.unique Keep genes that occur (i.e., there is a corresponding column in raw.data) only
 #'    in one dataset (default FALSE)
@@ -1140,7 +1139,7 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
 #datasets.use uses only the specified datasets for sampling. Default is NULL (all datasets)
 #rand.seed for reproducibility (default 1).
 #Returns: vector of cell barcodes
-downsample = function(object,balance=NULL,max_cells=1000,datasets.use=NULL,seed=1)
+downsample <- function(object,balance=NULL,max_cells=1000,datasets.use=NULL,seed=1)
 {
   set.seed(seed)
   if(is.null(datasets.use))
@@ -1229,8 +1228,14 @@ downsample = function(object,balance=NULL,max_cells=1000,datasets.use=NULL,seed=
 #' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
 #' }
 
-readSubset = function(object,slot.use="norm.data",balance=NULL,max.cells=1000,chunk=1000,datasets.use=NULL,genes.use=NULL, rand.seed=1)
-{
+readSubset <- function(object,
+                       slot.use="norm.data",
+                       balance=NULL,
+                       max.cells=1000,
+                       chunk=1000,
+                       datasets.use=NULL,
+                       genes.use=NULL,
+                       rand.seed=1) {
   if (class(object@raw.data[[1]])[1] == "H5File") {
     cat("Sampling\n")
     if(is.null(datasets.use))
@@ -1868,8 +1873,8 @@ online_iNMF <- function(object,
 #' @param eps Threshold. Should be a small positive value. (default 1e-16)
 #' @return Dense matrix with smallest values equal to eps.
 
-nonneg <- function(x,eps=1e-16) {
-  x[x<eps]=eps
+nonneg <- function(x, eps=1e-16) {
+  x[x < eps] = eps
   return(x)
 }
 
@@ -1937,7 +1942,7 @@ optimizeALS <- function(
 #' @importFrom utils setTxtProgressBar txtProgressBar
 #' @method optimizeALS list
 #'
-optimizeALS.list  <- function(
+optimizeALS.list <- function(
   object,
   k,
   lambda = 5.0,
@@ -2121,7 +2126,7 @@ optimizeALS.list  <- function(
     if (print.obj) {
       cat("Objective:", obj, "\n")
     }
-    }
+  }
   cat("Best results with seed ", best_seed, ".\n", sep = "")
   out <- list()
   out$H <- H_m
@@ -2132,7 +2137,7 @@ optimizeALS.list  <- function(
   names(x = out$V) <- names(x = out$H) <- names(x = object)
   out$W <- W_m
   return(out)
-  }
+}
 
 #' @importFrom methods slot<-
 #'
@@ -2932,7 +2937,7 @@ quantile_norm.list <- function(
           new_vals <- rep(0, num_cells2)
         }
         else {
-          warp_func <- stats::approxfun(q2, q1, rule = 2)
+          warp_func <- withCallingHandlers(stats::approxfun(q2, q1, rule = 2), warning=function(w){invokeRestart("muffleWarning")})
           new_vals <- warp_func(Hs[[k]][cells2, i])
         }
         Hs[[k]][cells2, i] <- new_vals
@@ -3167,9 +3172,9 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
     }
   }
   
-  reference_cells <- rownames(object@scale.data[[reference]]) # cells by genes
+  reference_cells <- colnames(object@raw.data[[reference]]) # cells by genes
   for (query in queries) {
-    query_cells <- rownames(object@scale.data[[query]])
+    query_cells <- colnames(object@raw.data[[query]])
     
     # creating a (reference cell numbers X query cell numbers) weights matrix for knn weights and unit weights
     nn.k <- get.knnx(object@H.norm[reference_cells, ], object@H.norm[query_cells, ], k = knn_k, algorithm = "CR")
@@ -3722,7 +3727,7 @@ runGSEA <- function(object, gene_sets = c(), mat_w = T, mat_v = 0, custom_gene_s
 #' FIt-SNE directory as the fitsne.path parameter, though this is only necessary for the first call
 #' to runTSNE. For more detailed FIt-SNE installation instructions, see the liger repo README.
 #'
-#' @param object \code{liger} object. Should run quantileAlignSNF before calling with defaults.
+#' @param object \code{liger} object. Should run quantile_norm before calling with defaults.
 #' @param use.raw Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).
 #' @param dims.use Factors to use for computing tSNE embedding (default 1:ncol(H.norm)).
 #' @param use.pca Whether to perform initial PCA step for Rtsne (default FALSE).
@@ -3797,10 +3802,10 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 #' Note that running multiple times will overwrite tsne.coords values. It is generally
 #' recommended to use this method for dimensionality reduction with extremely large datasets.
 #'
-#' Note that this method requires that the package reticulate is installed, along with the Python
-#' package umap-learn.
+#' Note that this method requires that the package uwot is installed. It does not depend
+#' on reticulate or python umap-learn.
 #'
-#' @param object \code{liger} object. Should run quantileAlignSNF before calling with defaults.
+#' @param object \code{liger} object. Should run quantile_norm before calling with defaults.
 #' @param use.raw Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).
 #' @param dims.use Factors to use for computing tSNE embedding (default 1:ncol(H.norm)).
 #' @param k Number of dimensions to reduce to (default 2).
@@ -4347,6 +4352,8 @@ getProportionMito <- function(object, use.norm = F) {
 #' @param axis.labels Vector of two strings to use as x and y labels respectively.
 #' @param do.legend Display legend on plots (default TRUE).
 #' @param legend.size Size of legend on plots (default 5).
+#' @param reorder.idents logical whether to reorder the datasets from default order before plotting (default FALSE).
+#' @param new.order new dataset factor order for plotting.  must set reorder.idents = TRUE.
 #' @param return.plots Return ggplot plot objects instead of printing directly (default FALSE).
 #'
 #' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
@@ -4369,12 +4376,16 @@ getProportionMito <- function(object, use.norm = F) {
 plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
                                     text.size = 3, do.shuffle = T, rand.seed = 1,
                                     axis.labels = NULL, do.legend = T, legend.size = 5,
+                                    reorder.idents = F, new.order = NULL,
                                     return.plots = F) {
   tsne_df <- data.frame(object@tsne.coords)
   colnames(tsne_df) <- c("tsne1", "tsne2")
   tsne_df[['Dataset']] <- unlist(lapply(1:length(object@H), function(x) {
     rep(names(object@H)[x], nrow(object@H[[x]]))
   }))
+  if (reorder.idents == TRUE){
+    tsne_df$Dataset <- factor(tsne_df$Dataset, levels = new.order)
+  }
   c_names <- names(object@clusters)
   if (is.null(clusters)) {
     # if clusters have not been set yet
@@ -5133,6 +5144,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' @param axis.labels Vector of two strings to use as x and y labels respectively. (default NULL)
 #' @param do.legend Display legend on plots (default TRUE).
 #' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
+#' @param keep.scale Maintain min/max color scale across all plots when using plot.by (default FALSE)
 #'
 #' @return If returning single plot, returns ggplot object; if returning multiple plots; returns
 #'   list of ggplot objects.
@@ -5157,7 +5169,8 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
                      log2scale = NULL, methylation.indices = NULL, plot.by = 'dataset', 
                      set.dr.lims = F, pt.size = 0.1, min.clip = NULL, max.clip = NULL, 
                      clip.absolute = F, points.only = F, option = 'plasma', cols.use = NULL, 
-                     zero.color = '#F5F5F5', axis.labels = NULL, do.legend = T, return.plots = F) {
+                     zero.color = '#F5F5F5', axis.labels = NULL, do.legend = T, return.plots = F,
+                     keep.scale = F) {
   if ((plot.by != scale.by) & (use.scaled)) {
     warning("Provided values for plot.by and scale.by do not match; results may not be very
             interpretable.")
@@ -5208,10 +5221,10 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
         # scale by selected feature
         mutate_at(vars(-group_cols()), function(x) { scale(x, center = F)})
       gene_vals <- gene_df1$gene
-      names(gene_vals) <- cellnames
       if (log2scale) {
         gene_vals <- log2(10000 * gene_vals + 1)
       }
+      names(gene_vals) <- cellnames
     } else {
       # using normalized data
       # indicate methylation indices here 
@@ -5228,6 +5241,12 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
     }
   }
   gene_vals[gene_vals == 0] <- NA
+  # Extract min and max expression values for plot scaling if keep.scale = T
+  if (keep.scale){
+    max_exp_val <- max(gene_vals, na.rm = TRUE)
+    min_exp_val <- min(gene_vals, na.rm = TRUE)
+  }
+
   if (class(object@raw.data[[1]])[1] == "H5File") {
     cells <- unlist(lapply(object@sample.data, colnames))
     dr_df <- data.frame(object@tsne.coords[cells,])
@@ -5266,7 +5285,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
               prevent this.")
     }
     names(min.clip) <- levels(dr_df$plotby)
-    }
+  }
   if (!is.null(max.clip) & is.null(names(max.clip))) {
     if (num_levels > 1) {
       message("Adding names to max.clip according to levels in plot.by group; order may not be 
@@ -5274,7 +5293,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
               prevent this.")
     }
     names(max.clip) <- levels(dr_df$plotby)
-    }
+  }
   p_list <- list()
   for (sub_df in split(dr_df, f = dr_df$plotby)) {
     # maybe do quantile cutoff here
@@ -5293,12 +5312,25 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
       labs(col = gene)
     
     if (!is.null(cols.use)) {
-      ggp <- ggp + scale_color_gradientn(colors = cols.use,
-                                         na.value = zero.color)
+      if (keep.scale) {
+        ggp <- ggp + scale_color_gradientn(colors = cols.use,
+                                           na.value = zero.color,
+                                           limits = c(min_exp_val, max_exp_val))
+      } else {
+        ggp <- ggp + scale_color_gradientn(colors = cols.use,
+                                           na.value = zero.color)
+      }
     } else {
-      ggp <- ggp + scale_color_viridis_c(option = option,
-                                         direction = -1,
-                                         na.value = zero.color)
+      if (keep.scale) {
+        ggp <- ggp + scale_color_viridis_c(option = option,
+                                           direction = -1,
+                                           na.value = zero.color,
+                                           limits = c(min_exp_val, max_exp_val))
+      } else {
+        ggp <- ggp + scale_color_viridis_c(option = option,
+                                           direction = -1,
+                                           na.value = zero.color)
+      }
     }
     if (set.dr.lims) {
       ggp <- ggp + xlim(lim1) + ylim(lim2)
@@ -5354,6 +5386,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
 #'
 #' @param object \code{liger} object. Should call runTSNE before calling.
 #' @param genes Vector of gene names.
+#' @param ... arguments passed from \code{\link[liger]{plotGene}}
 #'
 #' @export
 #' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
@@ -5368,10 +5401,10 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
 #' # dev.off()
 #' }
 
-plotGenes <- function(object, genes) {
+plotGenes <- function(object, genes, ...) {
   for (i in 1:length(genes)) {
     print(genes[i])
-    plotGene(object, genes[i])
+    plotGene(object, genes[i], ...)
   }
 }
 
@@ -5920,19 +5953,25 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
       print("Warning: Seurat v3 genes cannot have underscores, replacing with dashes ('-')")
       var.genes <- gsub("_", replacement = "-", var.genes)
     }
-    inmf.obj <- new(
-      Class = "DimReduc", feature.loadings = t(object@W),
-      cell.embeddings = object@H.norm, key = "iNMF_"
+    inmf.loadings <- t(x = object@W)
+    inmf.embeddings <- object@H.norm
+    tsne.embeddings <- object@tsne.coords
+    rownames(x = inmf.loadings) <- var.genes
+    rownames(x = inmf.embeddings) <- 
+      rownames(x = tsne.embeddings) <- 
+      rownames(x = scale.data)
+    inmf.obj <- Seurat::CreateDimReducObject(
+      embeddings = inmf.embeddings,
+      loadings = inmf.loadings,
+      key = "iNMF_",
+      global = TRUE
     )
-    rownames(inmf.obj@feature.loadings) <- var.genes
-    tsne.obj <- new(
-      Class = "DimReduc", cell.embeddings = object@tsne.coords,
-      key = "tSNE_"
+    tsne.obj <- Seurat::CreateDimReducObject(
+      embeddings = tsne.embeddings,
+      key = "tSNE_",
+      global = TRUE
     )
   }
-  rownames(tsne.obj@cell.embeddings) <- rownames(scale.data)
-  rownames(inmf.obj@cell.embeddings) <- rownames(scale.data)
-  colnames(tsne.obj@cell.embeddings) <- paste0("tSNE_", 1:2)
   new.seurat <- Seurat::CreateSeuratObject(raw.data)
   if (renormalize) {
     new.seurat <- Seurat::NormalizeData(new.seurat)
@@ -5957,12 +5996,11 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
     
   } else {
     if (use.liger.genes) {
-      new.seurat@assays$RNA@var.features <- var.genes
+      Seurat::VariableFeatures(new.seurat) <- var.genes
     }
     Seurat::SetAssayData(new.seurat, slot = "scale.data",  t(scale.data), assay = "RNA")
-    new.seurat@reductions$tsne <- tsne.obj
-    new.seurat@reductions$inmf <- inmf.obj
-    
+    new.seurat[['tsne']] <- tsne.obj
+    new.seurat[['inmf']] <- inmf.obj
     Seurat::Idents(new.seurat) <- ident.use
   }
   
@@ -6248,7 +6286,10 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   raw.data <- lapply(seq_along(object@raw.data), function(q) {
     cells <- intersect(cells.use, colnames(object@raw.data[[q]]))
     if (length(cells) > 0) {
-      object@raw.data[[q]][, cells]
+      if (length(cells < 50)) {
+        warning("Number of subsetted cells too small (less than 50), please check cells.use!")
+      }
+      object@raw.data[[q]][, cells, drop = F]
     } else {
       warning(paste0("Selected subset eliminates dataset ", names(object@raw.data)[q]))
       return(NULL)
@@ -6311,6 +6352,9 @@ reorganizeLiger <- function(object, by.feature, keep.meta = T, new.label = "orig
                             ...) {
   if (!(by.feature %in% colnames(object@cell.data))) {
     stop("Please select existing feature in cell.data to reorganize by, or add it before calling.")
+  }
+  if(class(object@cell.data[, by.feature]) != "factor"){
+    stop("Error: cell.data feature must be of class 'factor' to reorganize object.  Please change column to factor and re-run reorganizeLiger")
   }
   if (!is.null(object@clusters)) {
     object@cell.data[['orig.clusters']] <- object@clusters

@@ -6,7 +6,7 @@ cache: packages
 
 os:
   - linux
-# - osx
+  - osx
 # add back osx later with clean solution for openmp/rcpparmadillo
 
 r: release

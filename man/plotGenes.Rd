@@ -4,12 +4,14 @@
 \alias{plotGenes}
 \title{Plot expression of multiple genes}
 \usage{
-plotGenes(object, genes)
+plotGenes(object, genes, ...)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call runTSNE before calling.}
 
 \item{genes}{Vector of gene names.}
+
+\item{...}{arguments passed from \code{\link[liger]{plotGene}}}
 }
 \description{
 Uses plotGene to plot each gene (and dataset) on a separate page. It is recommended to call this

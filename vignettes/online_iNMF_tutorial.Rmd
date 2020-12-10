@@ -1,7 +1,7 @@
 ---
-title: "Iterative Refinement of Cellular Identity Using Online iNMF"
+title: "Iterative single-cell multi-omic integration using online learning"
 author: "Chao Gao and Joshua Welch"
-date: "June 6, 2020"
+date: "Dec 10, 2020"
 output: html_document
 ---
 
@@ -11,9 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Scenario 1: sampling minibatches from fully observed datasets
 To perform online iNMF, we need to install the `online` branch. Please see the instruction below.
-```{r install, message=FALSE, results='hide', eval=TRUE}
+```{r install, message=FALSE, results='hide', eval=FALSE}
 library(devtools)
-install_github("MacoskoLab/liger", ref = "online")
+install_github("welch-lab/liger", ref = "online")
 ```
 
 We first create a liger object by passing the filenames of HDF5 files containing the raw count data. The data can be downloaded [here](https://umich.box.com/s/m5cojytshxvk44pc4kki6clh6c9sv7ai). Liger assumes by default that the HDF5 files are formatted by the 10X CellRanger pipeline. Large datasets are often generated over multiple 10X runs (for example, multiple biological replicates). In such cases it may be necessary to merge the HDF5 files from each run into a single HDF5 file. We provide the `mergeH5` function for this purpose (see below for details).
@@ -36,7 +36,7 @@ pbmcs = online_iNMF(pbmcs, k = 20, max.epochs = 5)
 ```
 ## Quantile Normalization and Downstream Analysis
 After performing the factorization, we can perform quantile normalization to align the datasets.
-```{r norm}
+```{r norm, message=FALSE, results='hide'}
 pbmcs = quantile_norm(pbmcs)
 ```
 

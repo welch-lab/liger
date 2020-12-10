@@ -16,7 +16,7 @@ runUMAP(
 )
 }
 \arguments{
-\item{object}{\code{liger} object. Should run quantileAlignSNF before calling with defaults.}
+\item{object}{\code{liger} object. Should run quantile_norm before calling with defaults.}
 
 \item{use.raw}{Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).}
 
@@ -49,8 +49,8 @@ visualization (or general dimensionality reduction). Has option to run on subset
 Note that running multiple times will overwrite tsne.coords values. It is generally
 recommended to use this method for dimensionality reduction with extremely large datasets.
 
-Note that this method requires that the package reticulate is installed, along with the Python
-package umap-learn.
+Note that this method requires that the package uwot is installed. It does not depend
+on reticulate or python umap-learn.
 }
 \examples{
 \dontrun{
