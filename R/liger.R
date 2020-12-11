@@ -4830,15 +4830,15 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' \dontrun{
 #' # liger object, factorization complete
 #' ligerex
-#' ligerex <- quantileAlignSNF(ligerex)
-#' ligerex <- runTSNE(ligerex)
+#' ligerex <- quantile_norm(ligerex)
+#' ligerex <- runUMAP(ligerex)
 #' # pdf("gene_loadings.pdf")
 #' plotGeneLoadings(ligerex, num.genes = 20)
 #' # dev.off()
-#' }
 #' # HDF5 input
 #' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
 #' plotGeneLoadings(ligerex, num.genes = 20)
+#' }
 #'
 plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes.show = 12,
                              num.genes = 30, mark.top.genes = T, factor.share.thresh = 10,
