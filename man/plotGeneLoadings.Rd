@@ -83,14 +83,14 @@ plots produced.
 \dontrun{
 # liger object, factorization complete
 ligerex
-ligerex <- quantileAlignSNF(ligerex)
-ligerex <- runTSNE(ligerex)
+ligerex <- quantile_norm(ligerex)
+ligerex <- runUMAP(ligerex)
 # pdf("gene_loadings.pdf")
 plotGeneLoadings(ligerex, num.genes = 20)
 # dev.off()
-}
 # HDF5 input
 ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
 plotGeneLoadings(ligerex, num.genes = 20)
+}
 
 }
