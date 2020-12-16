@@ -377,6 +377,38 @@ mergeH5 <- function(file.list,
   h5_merged$close_all()
 }
 
+
+#' Restore links (to hdf5 files) for reloaded online Liger object
+#'
+#' When loading the saved online Liger object in a new R session, the links to hdf5 files may be corrupted. This functions enables 
+#' the restoration of those links so that new analyses can be carried out.
+#'
+#' @param object \code{liger} object.
+#' @param file.path List of paths to hdf5 files.
+#'
+#' @return \code{liger} object with restored links.
+#' @export
+#' @examples
+#' \dontrun{
+#' ligerex = restoreOnlineLiger(ligerex, file.path = list("path_to_file1/library1.h5", "path_to_file2/library2.h5"))
+#' }
+restoreOnlineLiger <- function(object, file.path = NULL) {
+  if (is.null(file.path) & is.null(object@h5file.info[["file.path"]])) { # file path is not provided by file.path param or liger object
+    stop('File path information is not stored in the liger object. Please provide a list of file paths through file.path parameter.')
+  }
+    
+  if (!is.null(file.path)) { # if new file path is provided, update liger object h5file.info
+    for (i in 1:length(object@h5file.info)) {
+      object@h5file.info[[i]][["file.path"]] = file.path[[i]]
+    }
+  }
+  # restore access to corresponding h5 files
+  object@raw.data = lapply(object@h5file.info, function(x) H5File$new(x[["file.path"]], mode="r+"))
+  object@norm.data = lapply(object@raw.data, function(x) x[["norm.data"]])
+  object@scale.data = lapply(object@raw.data, function(x) x[["scale.data"]])
+  return(object)
+}
+
 #' Create a liger object.
 #'
 #' This function initializes a liger object with the raw data passed in. It requires a list of
@@ -750,7 +782,7 @@ calcGeneVars = function (object, chunk = 1000)
     gene_vars = gene_vars/(num_cells - 1)
     safe_h5_create(object@raw.data[[i]], "/gene_vars", dims = num_genes, 
                    mode = h5types$double, liger_object = object)
-    object@raw.data[[i]][["gene_vars"]][1:num_genes]=gene_vars
+    object@raw.data[[i]][["gene_vars"]][1:num_genes] = gene_vars
   }
   return(object)
 }
@@ -810,7 +842,9 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
                         keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3, chunk=1000) 
 {
   if (class(object@raw.data[[1]])[1] == "H5File") {
-    object = calcGeneVars(object,chunk)
+    if (!object@raw.data[[1]]$exists("gene_vars")) {
+      object = calcGeneVars(object,chunk)
+    }
     hdf5_files = names(object@raw.data)
     if (length(var.thresh) == 1) {
       var.thresh <- rep(var.thresh, length(hdf5_files))
