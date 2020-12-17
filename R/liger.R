@@ -4389,6 +4389,7 @@ getProportionMito <- function(object, use.norm = F) {
 #' @param reorder.idents logical whether to reorder the datasets from default order before plotting (default FALSE).
 #' @param new.order new dataset factor order for plotting.  must set reorder.idents = TRUE.
 #' @param return.plots Return ggplot plot objects instead of printing directly (default FALSE).
+#' @param legend.fonts.size Controls the font size of the legend.
 #'
 #' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
 #'   console).
@@ -4411,7 +4412,7 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
                                     text.size = 3, do.shuffle = T, rand.seed = 1,
                                     axis.labels = NULL, do.legend = T, legend.size = 5,
                                     reorder.idents = F, new.order = NULL,
-                                    return.plots = F) {
+                                    return.plots = F, legend.fonts.size = 12) {
   tsne_df <- data.frame(object@tsne.coords)
   colnames(tsne_df) <- c("tsne1", "tsne2")
   tsne_df[['Dataset']] <- unlist(lapply(1:length(object@H), function(x) {
@@ -4438,15 +4439,16 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
     tsne_df <- tsne_df[idx, ]
   }
   
-  p1 <- ggplot(tsne_df, aes_string(x = 'tsne1', y = 'tsne2', color = 'Dataset')) +
-    geom_point(size = pt.size) +
+  p1 <- ggplot(tsne_df, aes_string(x = 'tsne1', y = 'tsne2', color = 'Dataset')) + theme_bw() +
+    theme_cowplot(legend.fonts.size) + geom_point(size = pt.size, stroke = 0.2) +
     guides(color = guide_legend(override.aes = list(size = legend.size)))
   
   centers <- tsne_df %>% group_by(.data[['Cluster']]) %>% summarize(
     tsne1 = median(x = .data[['tsne1']]),
     tsne2 = median(x = .data[['tsne2']])
   )
-  p2 <- ggplot(tsne_df, aes_string(x = 'tsne1', y = 'tsne2', color = 'Cluster')) + geom_point(size = pt.size) +
+  p2 <- ggplot(tsne_df, aes_string(x = 'tsne1', y = 'tsne2', color = 'Cluster')) + 
+    theme_cowplot(legend.fonts.size) + geom_point(size = pt.size, stroke = 0.2) +
     geom_text(data = centers, mapping = aes_string(label = 'Cluster'), colour = "black", size = text.size) +
     guides(color = guide_legend(override.aes = list(size = legend.size)))
   
@@ -4462,8 +4464,6 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
     p1 <- p1 + theme(legend.position = "none")
     p2 <- p2 + theme(legend.position = "none")
   }
-  p1 <- p1 + theme_cowplot(12)
-  p2 <- p2 + theme_cowplot(12)
   if (return.plots) {
     return(list(p1, p2))
   } else {
@@ -5342,7 +5342,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
     sub_df$gene[sub_df$gene < min_v & !is.na(sub_df$gene)] <- min_v
     sub_df$gene[sub_df$gene > max_v & !is.na(sub_df$gene)] <- max_v
     
-    ggp <- ggplot(sub_df, aes_string(x = 'dr1', y = 'dr2', color = 'gene')) + geom_point(size = pt.size) +
+    ggp <- ggplot(sub_df, aes_string(x = 'dr1', y = 'dr2', color = 'gene')) + geom_point(size = pt.size, stroke = 0.2) +
       labs(col = gene)
     
     if (!is.null(cols.use)) {
