@@ -307,6 +307,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
 #'
 #' @return Directly generates newly merged hdf5 file.
 #' @export
+#' @import hdf5r
 #' @examples
 #' \dontrun{
 #' mergeH5(list("library1.h5","library2.h5"), c("lib1","lib2"), "merged.h5")
@@ -321,7 +322,7 @@ mergeH5 <- function(file.list,
                     indptr.name = NULL,
                     genes.name = NULL,
                     barcodes.name = NULL){
-  h5_merged = H5File$new(paste0(new.filename,".h5"), mode = "w")
+  h5_merged = hdf5r::H5File$new(paste0(new.filename,".h5"), mode = "w")
   h5_merged$create_group("matrix")
   h5_merged$create_group("matrix/features")
   num_data_prev = 0
@@ -329,7 +330,7 @@ mergeH5 <- function(file.list,
   num_cells_prev = 0
   last_inptr = 0
   for (i in 1:length(file.list)){
-    h5file = H5File$new(file.list[[i]], mode = "r")
+    h5file = hdf5r::H5File$new(file.list[[i]], mode = "r")
     if (format.type == "10X"){
       data = h5file[["matrix/data"]][]
       indices = h5file[["matrix/indices"]][]
@@ -388,6 +389,7 @@ mergeH5 <- function(file.list,
 #'
 #' @return \code{liger} object with restored links.
 #' @export
+#' @import hdf5r
 #' @examples
 #' \dontrun{
 #' ligerex = restoreOnlineLiger(ligerex, file.path = list("path_to_file1/library1.h5", "path_to_file2/library2.h5"))
@@ -403,7 +405,7 @@ restoreOnlineLiger <- function(object, file.path = NULL) {
     }
   }
   # restore access to corresponding h5 files
-  object@raw.data = lapply(object@h5file.info, function(x) H5File$new(x[["file.path"]], mode="r+"))
+  object@raw.data = lapply(object@h5file.info, function(x) hdf5r::H5File$new(x[["file.path"]], mode="r+"))
   object@norm.data = lapply(object@raw.data, function(x) x[["norm.data"]])
   object@scale.data = lapply(object@raw.data, function(x) x[["scale.data"]])
   return(object)
@@ -432,7 +434,8 @@ restoreOnlineLiger <- function(object, file.path = NULL) {
 #'
 #' @return \code{liger} object with raw.data slot set.
 #' @export
-#' @import Matrix
+#' @import Matrix 
+#' @import hdf5r
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -458,7 +461,7 @@ createLiger <- function(raw.data,
     cell.data = list()
     if (length(format.type) == 1) format.type.list = rep(format.type, length(raw.data))
     for (i in 1:length(raw.data)){
-      file.h5 = H5File$new(raw.data[[i]], mode="r+")
+      file.h5 = hdf5r::H5File$new(raw.data[[i]], mode="r+")
       object@raw.data[[i]] = file.h5
       if (format.type.list[i] == "10X"){
         barcodes.name = "matrix/barcodes"
@@ -489,7 +492,8 @@ createLiger <- function(raw.data,
                                      barcodes = file.h5[[barcodes.name]],
                                      genes = file.h5[[genes.name]],
                                      format.type = format.type.list[i],
-                                     sample.data.type = NULL)
+                                     sample.data.type = NULL,
+                                     file.path = raw.data[[i]])
       if (file.h5$exists("norm.data")){
         object@norm.data[[i]] = file.h5[["norm.data"]]
         names(object@norm.data)[[i]] = names(object@raw.data)[[i]]
@@ -617,6 +621,7 @@ safe_h5_create = function(h5_object,dataset_name,dims,mode="double",chunk_size=d
 #'
 #' @return \code{liger} object with norm.data slot set.
 #' @export
+#' @import hdf5r
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -730,6 +735,7 @@ normalize <- function(object,
 #' @param chunk size of chunks in hdf5 file. (default 1000)
 #' @return \code{liger} object with scale.data slot set.
 #' @export
+#' @import hdf5r
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -822,6 +828,7 @@ calcGeneVars = function (object, chunk = 1000)
 
 #' @return \code{liger} object with var.genes slot set.
 #' @export
+#' @import hdf5r
 #' @importFrom stats optimize
 #' @importFrom graphics abline plot points title
 #' @importFrom stats qnorm
@@ -1011,6 +1018,7 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
 #'
 #' @return \code{liger} object with scale.data slot set.
 #' @export
+#' @import hdf5r
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -1250,6 +1258,7 @@ downsample <- function(object,balance=NULL,max_cells=1000,datasets.use=NULL,seed
 #'
 #' @return \code{liger} object with sample.data slot set.
 #' @export
+#' @import hdf5r
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -1464,6 +1473,7 @@ readSubset <- function(object,
 #'
 #' @return \code{liger} object with H, W, V, A and B slots set.
 #' @export
+#' @import hdf5r
 #'
 #' @examples
 #' \dontrun{
@@ -3064,8 +3074,10 @@ louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps
   output_path = sub(":","_",output_path)
   output_path = sub(":","_",output_path)
   if (dim(object@H.norm)[1] == 0){
+    print("Louvain Clustering on unnormalized cell factor loadings.")
     knn <- RANN::nn2(Reduce(rbind, object@H), k = k, eps = eps)
   } else {
+    print("Louvain Clustering on quantile normalized cell factor loadings.")
     knn <- RANN::nn2(object@H.norm, k = k, eps = eps)
   }
   snn <- ComputeSNN(knn$nn.idx, prune = prune)
