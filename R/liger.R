@@ -395,7 +395,7 @@ mergeH5 <- function(file.list,
 #' ligerex = restoreOnlineLiger(ligerex, file.path = list("path_to_file1/library1.h5", "path_to_file2/library2.h5"))
 #' }
 restoreOnlineLiger <- function(object, file.path = NULL) {
-  if (is.null(file.path) & is.null(object@h5file.info[["file.path"]])) { # file path is not provided by file.path param or liger object
+  if (is.null(file.path) & is.null(object@h5file.info[[1]][["file.path"]])) { # file path is not provided by file.path param or liger object
     stop('File path information is not stored in the liger object. Please provide a list of file paths through file.path parameter.')
   }
     
