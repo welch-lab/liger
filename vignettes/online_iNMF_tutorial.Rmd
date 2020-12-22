@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 To perform online iNMF, we need to install the `online` branch. Please see the instruction below.
 ```{r install, message=FALSE, results='hide', eval=FALSE}
 library(devtools)
-install_github("welch-lab/liger", ref = "online")
+install_github("welch-lab/liger")
 ```
 
 We first create a liger object by passing the filenames of HDF5 files containing the raw count data. The data can be downloaded [here](https://umich.box.com/s/m5cojytshxvk44pc4kki6clh6c9sv7ai). Liger assumes by default that the HDF5 files are formatted by the 10X CellRanger pipeline. Large datasets are often generated over multiple 10X runs (for example, multiple biological replicates). In such cases it may be necessary to merge the HDF5 files from each run into a single HDF5 file. We provide the `mergeH5` function for this purpose (see below for details).
@@ -109,7 +109,7 @@ mergeH5(file.list = list("allen_smarter_cells.h5", "allen_smarter_nuclei.h5"),
         new.filename = "cells_nuclei")
 ```
 
-##Scenario 2: iterative refinement by incorporating new datasets
+## Scenario 2: iterative refinement by incorporating new datasets
 We can also perform online iNMF with continually arriving datasets.
 ```{r prep1, message=FALSE, results='hide'}
 MOp = createLiger(list(cells = "allen_smarter_cells.h5"))
@@ -146,7 +146,7 @@ MOp = runUMAP(MOp)
 plotByDatasetAndCluster(MOp, axis.labels = c("UMAP1","UMAP2"))
 ```
 
-##Scenario 3: projecting new datasets
+## Scenario 3: projecting new datasets
 ```{r prep3, message=FALSE, results='hide'}
 MOp = createLiger(list(cells = "allen_smarter_cells.h5"))
 MOp@var.genes = MOp.vargenes
