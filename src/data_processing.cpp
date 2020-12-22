@@ -67,3 +67,25 @@ NumericVector rowVarsFast(arma::sp_mat x, NumericVector means) {
   }
   return vars;
 }
+
+// [[Rcpp::export]]
+NumericVector sumSquaredDeviations(arma::sp_mat x, NumericVector means) {
+  int nrow = x.n_rows, ncol = x.n_cols;
+  
+  NumericVector ssd(nrow);
+  NumericVector nonzero_vals(nrow);
+  
+  for(arma::sp_mat::const_iterator i = x.begin(); i != x.end(); ++i)
+  {
+    ssd(i.row()) += (*i-means(i.row()))*(*i-means(i.row())); 
+    nonzero_vals(i.row()) += 1;
+  }
+  // Add back square mean error for zero elements
+  // const_iterator only loops over nonzero elements 
+  for (int i = 0; i < nrow; ++i)
+  {
+    ssd(i) += (ncol - nonzero_vals(i))*(means(i)*means(i));
+  }
+  return ssd;
+}
+

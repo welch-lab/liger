@@ -34,5 +34,8 @@ Generates violin plots of expression of specified gene for each dataset.
 ligerex
 # plot expression for CD4 and return plots
 violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = T)
+HDF5 input
+ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = T)
 }
 }

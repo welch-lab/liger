@@ -14,6 +14,10 @@ NULL
 #' @slot raw.data List of raw data matrices, one per experiment/dataset (genes by cells)
 #' @slot norm.data List of normalized matrices (genes by cells)
 #' @slot scale.data List of scaled matrices (cells by genes)
+#' @slot sample.data List of sampled matrices (gene by cells)
+#' @slot h5file.info List of HDF5-related information for each input dataset. Paths to raw data, indices,
+#'       indptr, barcodes, genes and  the pipeline through which the HDF5 file is formated (10X, AnnData, etc),
+#'       type of sampled data (raw, normalized or scaled).
 #' @slot cell.data Dataframe of cell attributes across all datasets (nrows equal to total number
 #'   cells across all datasets)
 #' @slot var.genes Subset of informative genes shared across datasets to be used in matrix
@@ -23,6 +27,8 @@ NULL
 #'   matrix)
 #' @slot W Shared gene loading factors (k by genes)
 #' @slot V Dataset-specific gene loading factors (one matrix per dataset, dimensions k by genes)
+#' @slot A Matrices used for online learning (XH)
+#' @slot B Matrices used for online learning (HTH)
 #' @slot tsne.coords Matrix of 2D coordinates obtained from running t-SNE on H.norm or H matrices
 #' @slot alignment.clusters Initial joint cluster assignments from shared factor alignment
 #' @slot clusters Joint cluster assignments for cells
@@ -45,12 +51,16 @@ liger <- methods::setClass(
     raw.data = "list",
     norm.data = "list",
     scale.data = "list",
+    sample.data = "list",
+    h5file.info = "list",
     cell.data = "data.frame",
     var.genes = "vector",
     H = "list",
     H.norm = "matrix",
     W = "matrix",
     V = "list",
+    A = "list",
+    B = "list",
     tsne.coords = "matrix",
     alignment.clusters = 'factor',
     clusters= "factor",
@@ -109,8 +119,8 @@ setMethod(
 #' @param reference For 10X V<3, specify which reference directory to use if sample.dir is outer
 #'   level 10X directory (only necessary if more than one reference used for sequencing).
 #'   (default NULL)
-#' @param data.type Indicates the protocol of the input data. If not specified, input data will be 
-#' considered scRNA-seq data (default 'rna', alternatives: 'atac'). 
+#' @param data.type Indicates the protocol of the input data. If not specified, input data will be
+#' considered scRNA-seq data (default 'rna', alternatives: 'atac').
 #' @return List of merged matrices across data types (returns sparse matrix if only one data type
 #'   detected), or nested list of matrices organized by sample if merge=F.
 #' @export
@@ -130,7 +140,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
                     use.filtered = F, reference = NULL, data.type = "rna") {
   datalist <- list()
   datatypes <- c("Gene Expression")
-  
+
   if (length(num.cells) == 1) {
     num.cells <- rep(num.cells, length(sample.dirs))
   }
@@ -173,20 +183,20 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
     }
     matrix.file <- paste0(sample.dir, "/matrix.mtx", suffix)
     barcodes.file <- paste0(sample.dir, "/barcodes.tsv", suffix)
-    
+
     rawdata <- readMM(matrix.file)
     # convert to dgc matrix
     if (class(rawdata)[1] == "dgTMatrix") {
       rawdata <- as(rawdata, "CsparseMatrix")
     }
-    
+
     # filter for UMIs first to increase speed
     umi.pass <- which(colSums(rawdata) > min.umis)
     if (length(umi.pass) == 0) {
       print("No cells pass UMI cutoff. Please lower it.")
     }
     rawdata <- rawdata[, umi.pass, drop = F]
-    
+
     barcodes <- readLines(barcodes.file)[umi.pass]
     # Remove -1 tag from barcodes
     if (all(grepl(barcodes, pattern = "\\-1$"))) {
@@ -204,7 +214,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
     }
     # since some genes are only differentiated by ENSMBL
     colnames(rawdata) <- barcodes
-    
+
     # split based on 10X datatype -- V3 has Gene Expression, Antibody Capture, CRISPR, CUSTOM
     # V2 has only Gene Expression by default and just two columns
     if (is.null(ncol(features))) {
@@ -223,7 +233,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
       })
       names(samplelist) <- sam.datatypes.unique
     }
-    
+
     # num.cells filter only for gene expression data
     if (!is.null(num.cells)) {
       if (names(samplelist) == "Gene Expression" | names(samplelist) == "Chromatin Accessibility") {
@@ -240,7 +250,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
         samplelist[[data_label]] <- samplelist[[data_label]][, order(cs, decreasing = T)
                                                              [1:num.cells[i]]]
       }
-      
+
       # cs <- colSums(samplelist[["Gene Expression"]])
       # limit <- ncol(samplelist[["Gene Expression"]])
       # if (num.cells[i] > limit) {
@@ -253,7 +263,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
       # samplelist[["Gene Expression"]] <- samplelist[["Gene Expression"]][, order(cs, decreasing = T)
       #                                                                    [1:num.cells[i]]]
     }
-    
+
     datalist[[i]] <- samplelist
   }
   if (merge) {
@@ -267,7 +277,7 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
       MergeSparseDataAll(mergelist, sample.names)
     })
     names(return_dges) <- datatypes
-    
+
     # if only one type of data present
     if (length(return_dges) == 1) {
       print(paste0("Returning ", datatypes, " data matrix"))
@@ -280,6 +290,126 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
   }
 }
 
+#' Merge hdf5 files
+#'
+#' This function merges hdf5 files generated from different libraries (cell ranger by default)
+#' before they are preprocessed through Liger pipeline.
+#'
+#' @param file.list List of path to hdf5 files.
+#' @param library.names Vector of library names (corresponding to file.list)
+#' @param new.filename String of new hdf5 file name after merging (default new.h5).
+#' @param format.type string of HDF5 format (10X CellRanger by default).
+#' @param data.name Path to the data values stored in HDF5 file.
+#' @param indices.name Path to the indices of data points stored in HDF5 file.
+#' @param indptr.name Path to the pointers stored in HDF5 file.
+#' @param genes.name Path to the gene names stored in HDF5 file.
+#' @param barcodes.name Path to the barcodes stored in HDF5 file.
+#'
+#' @return Directly generates newly merged hdf5 file.
+#' @export
+#' @import hdf5r
+#' @examples
+#' \dontrun{
+#' mergeH5(list("library1.h5","library2.h5"), c("lib1","lib2"), "merged.h5")
+#' }
+
+mergeH5 <- function(file.list,
+                    library.names,
+                    new.filename,
+                    format.type = "10X",
+                    data.name = NULL,
+                    indices.name = NULL,
+                    indptr.name = NULL,
+                    genes.name = NULL,
+                    barcodes.name = NULL){
+  h5_merged = hdf5r::H5File$new(paste0(new.filename,".h5"), mode = "w")
+  h5_merged$create_group("matrix")
+  h5_merged$create_group("matrix/features")
+  num_data_prev = 0
+  num_indptr_prev = 0
+  num_cells_prev = 0
+  last_inptr = 0
+  for (i in 1:length(file.list)){
+    h5file = hdf5r::H5File$new(file.list[[i]], mode = "r")
+    if (format.type == "10X"){
+      data = h5file[["matrix/data"]][]
+      indices = h5file[["matrix/indices"]][]
+      indptr = h5file[["matrix/indptr"]][]
+      barcodes = paste0(library.names[i], "_", h5file[["matrix/barcodes"]][])
+      genes = h5file[["matrix/features/name"]][]
+    } else if (format.type == "AnnData"){
+      data = h5file[["raw.X/data"]][]
+      indices = h5file[["raw.X/indices"]][]
+      indptr = h5file[["raw.X/indptr"]][]
+      barcodes = paste0(library.names[i], "_", h5file[["obs"]][]$cell)
+      genes = h5file[["raw.var"]][]$index
+
+    } else {
+      data = h5file[[data.name]][]
+      indices = h5file[[indices.name]][]
+      indptr = h5file[[indptr.name]][]
+      barcodes = paste0(library.names[i], "_", h5file[[barcodes.name]][])
+      genes = h5file[[genes.name]][]
+    }
+
+    if (i != 1) indptr = indptr[2:length(indptr)]
+    num_data = length(data)
+    num_indptr = length(indptr)
+    num_cells = length(barcodes)
+    indptr = indptr + last_inptr
+    last_inptr = indptr[num_indptr]
+    if (i == 1) {
+      h5_merged[["matrix/data"]] = data
+      h5_merged[["matrix/indices"]] = indices
+      h5_merged[["matrix/indptr"]] = indptr
+      h5_merged[["matrix/barcodes"]] = barcodes
+      h5_merged[["matrix/features/name"]] = genes
+    } else {
+      h5_merged[["matrix/data"]][(num_data_prev + 1):(num_data_prev + num_data)] = data
+      h5_merged[["matrix/indices"]][(num_data_prev + 1):(num_data_prev + num_data)] = indices
+      h5_merged[["matrix/indptr"]][(num_indptr_prev + 1):(num_indptr_prev + num_indptr)] = indptr
+      h5_merged[["matrix/barcodes"]][(num_cells_prev + 1):(num_cells_prev + num_cells)] = barcodes
+    }
+    num_data_prev = num_data_prev + num_data
+    num_indptr_prev = num_indptr_prev + num_indptr
+    num_cells_prev = num_cells_prev + num_cells
+    h5file$close_all()
+  }
+  h5_merged$close_all()
+}
+
+
+#' Restore links (to hdf5 files) for reloaded online Liger object
+#'
+#' When loading the saved online Liger object in a new R session, the links to hdf5 files may be corrupted. This functions enables
+#' the restoration of those links so that new analyses can be carried out.
+#'
+#' @param object \code{liger} object.
+#' @param file.path List of paths to hdf5 files.
+#'
+#' @return \code{liger} object with restored links.
+#' @export
+#' @import hdf5r
+#' @examples
+#' \dontrun{
+#' ligerex = restoreOnlineLiger(ligerex, file.path = list("path1/library1.h5", "path2/library2.h5"))
+#' }
+restoreOnlineLiger <- function(object, file.path = NULL) {
+  if (is.null(file.path) & is.null(object@h5file.info[[1]][["file.path"]])) { # file path is not provided by file.path param or liger object
+    stop('File path information is not stored in the liger object. Please provide a list of file paths through file.path parameter.')
+  }
+
+  if (!is.null(file.path)) { # if new file path is provided, update liger object h5file.info
+    for (i in 1:length(object@h5file.info)) {
+      object@h5file.info[[i]][["file.path"]] = file.path[[i]]
+    }
+  }
+  # restore access to corresponding h5 files
+  object@raw.data = lapply(object@h5file.info, function(x) hdf5r::H5File$new(x[["file.path"]], mode="r+"))
+  object@norm.data = lapply(object@raw.data, function(x) x[["norm.data"]])
+  object@scale.data = lapply(object@raw.data, function(x) x[["scale.data"]])
+  return(object)
+}
 
 #' Create a liger object.
 #'
@@ -295,10 +425,17 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
 #' @param remove.missing Whether to remove cells not expressing any measured genes, and genes not
 #'   expressed in any cells (if take.gene.union = T, removes only genes not expressed in any
 #'   dataset) (default TRUE).
+#' @param format.type HDF5 format (10X CellRanger by default).
+#' @param data.name Path to the data values stored in HDF5 file.
+#' @param indices.name Path to the indices of data points stored in HDF5 file.
+#' @param indptr.name Path to the pointers stored in HDF5 file.
+#' @param genes.name Path to the gene names stored in HDF5 file.
+#' @param barcodes.name Path to the barcodes stored in HDF5 file.
 #'
 #' @return \code{liger} object with raw.data slot set.
 #' @export
 #' @import Matrix
+#' @import hdf5r
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -306,8 +443,86 @@ read10X <- function(sample.dirs, sample.names, merge = T, num.cells = NULL, min.
 #' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' }
 
-createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
-                        remove.missing = T) {
+createLiger <- function(raw.data,
+                        make.sparse = T,
+                        take.gene.union = F,
+                        remove.missing = T,
+                        format.type = "10X",
+                        data.name = NULL,
+                        indices.name = NULL,
+                        indptr.name = NULL,
+                        genes.name = NULL,
+                        barcodes.name = NULL) {
+  if (class(raw.data[[1]]) == "character") { #HDF5 filenames instead of in-memory matrices
+    object <- methods::new(Class = "liger", raw.data = raw.data,
+                           version = packageVersion("liger"))
+    object@V = rep(list(NULL), length(raw.data))
+    object@H = rep(list(NULL), length(raw.data))
+    cell.data = list()
+    if (length(format.type) == 1) format.type.list = rep(format.type, length(raw.data))
+    for (i in 1:length(raw.data)){
+      file.h5 = hdf5r::H5File$new(raw.data[[i]], mode="r+")
+      object@raw.data[[i]] = file.h5
+      if (format.type.list[i] == "10X"){
+        barcodes.name = "matrix/barcodes"
+        barcodes = file.h5[[barcodes.name]][]
+        num_cells = file.h5[[barcodes.name]]$dims
+        data.name = "matrix/data"
+        indices.name = "matrix/indices"
+        indptr.name = "matrix/indptr"
+        genes.name = "matrix/features/name"
+      } else if (format.type.list[i] == "AnnData"){
+        barcodes.name = "obs"
+        barcodes = file.h5[[barcodes.name]][]$cell
+        num_cells = length(file.h5[[barcodes.name]][]$cell)
+        data.name = "raw.X/data"
+        indices.name = "raw.X/indices"
+        indptr.name = "raw.X/indptr"
+        genes.name = "raw.var"
+      } else {
+        barcodes = file.h5[[barcodes.name]][]
+        num_cells = length(file.h5[[barcodes.name]][])
+        data.name = data.name
+        indices.name = indices.name
+        indptr.name = indptr.name
+      }
+      object@h5file.info[[i]] = list(data = file.h5[[data.name]],
+                                     indices = file.h5[[indices.name]],
+                                     indptr = file.h5[[indptr.name]],
+                                     barcodes = file.h5[[barcodes.name]],
+                                     genes = file.h5[[genes.name]],
+                                     format.type = format.type.list[i],
+                                     sample.data.type = NULL,
+                                     file.path = raw.data[[i]])
+      if (file.h5$exists("norm.data")){
+        object@norm.data[[i]] = file.h5[["norm.data"]]
+        names(object@norm.data)[[i]] = names(object@raw.data)[[i]]
+      }
+
+      if (file.h5$exists("scale.data")){
+        object@scale.data[[i]] = file.h5[["scale.data"]]
+        names(object@scale.data)[[i]] = names(object@raw.data)[[i]]
+      }
+
+      if (file.h5$exists("cell.data")){
+        cell.data[[i]] = data.frame(dataset = file.h5[["cell.data"]][]$dataset,
+                                    nUMI = file.h5[["cell.data"]][]$nUMI,
+                                    nGene = file.h5[["cell.data"]][]$nGene)
+        rownames(cell.data[[i]]) = file.h5[["cell.data"]][]$barcode
+      } else {
+        dataset = rep(names(object@raw.data)[i], num_cells)
+        cell.data[[i]] = data.frame(dataset)
+        rownames(cell.data[[i]]) = barcodes
+      }
+    }
+    if (is.null(names(object@raw.data))){
+      names(object@raw.data) <- as.character(paste0("data",1:length(object@raw.data)))
+    }
+    object@cell.data = Reduce(rbind, cell.data)
+    names(object@H) <- names(object@V) <- names(object@h5file.info) <- names(object@raw.data)
+    return(object)
+  }
+
   if (make.sparse) {
     raw.data <- lapply(raw.data, function(x) {
       if (class(x)[1] == "dgTMatrix" | class(x)[1] == 'dgCMatrix') {
@@ -359,7 +574,7 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
       object <- removeMissingObs(object, use.cols = F)
     }
   }
-  
+
   # Initialize cell.data for object with nUMI, nGene, and dataset
   nUMI <- unlist(lapply(object@raw.data, function(x) {
     colSums(x)
@@ -374,18 +589,39 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
   rownames(object@cell.data) <- unlist(lapply(object@raw.data, function(x) {
     colnames(x)
   }), use.names = F)
-  
+
   return(object)
+}
+
+#create new dataset, first deleting existing record if dataset already exists
+safe_h5_create = function(h5_object,dataset_name,dims,mode="double",chunk_size=dims, liger_object = object)
+{
+  if (!h5_object$exists(dataset_name)) {
+    h5_object$create_dataset(name = dataset_name,dims = dims,dtype = mode, chunk_dims = chunk_size)
+  } else {
+    if (h5_object$exists("scale.data")) {
+      if (h5_object[["scale.data"]]$dims[1] < length(liger_object@var.genes)){
+          extendDataSet(h5_object[["scale.data"]], c(length(liger_object@var.genes), h5_object[["scale.data"]]$dims[2]))
+      }
+    } else if (h5_object$exists("gene_vars")) {
+      if (h5_object[["gene_vars"]]$dims[1] < length(liger_object@var.genes)){
+          extendDataSet(h5_object[["gene_vars"]], length(liger_object@var.genes))
+      }
+    }
   }
+}
 
 #' Normalize raw datasets to column sums
 #'
 #' This function normalizes data to account for total gene expression across a cell.
 #'
 #' @param object \code{liger} object.
+#' @param chunk size of chunks in hdf5 file. (default 1000)
+#' @param format.type string of HDF5 format (10X CellRanger by default).
 #'
 #' @return \code{liger} object with norm.data slot set.
 #' @export
+#' @import hdf5r
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -394,15 +630,165 @@ createLiger <- function(raw.data, make.sparse = T, take.gene.union = F,
 #' ligerex <- normalize(ligerex)
 #' }
 
-normalize <- function(object) {
-  object <- removeMissingObs(object, slot.use = "raw.data", use.cols = T)
-  if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
-      class(object@raw.data[[1]])[1] == "dgCMatrix") {
-    object@norm.data <- lapply(object@raw.data, Matrix.column_norm)
+normalize <- function(object,
+                      chunk = 1000,
+                      format.type = "10X") {
+  if (class(object@raw.data[[1]])[1] == "H5File") {
+    hdf5_files = names(object@raw.data)
+    nUMI = c()
+    nGene = c()
+    for (i in 1:length(hdf5_files))
+    {
+      print(hdf5_files[i])
+      chunk_size = chunk
+      #fname = hdf5_files[[i]]
+      num_entries = object@h5file.info[[i]][["data"]]$dims
+      num_cells = object@h5file.info[[i]][["barcodes"]]$dims
+      num_genes = object@h5file.info[[i]][["genes"]]$dims
+
+
+      prev_end_col = 1
+      prev_end_data = 1
+      prev_end_ind = 0
+      gene_sum_sq = rep(0,num_genes)
+      gene_means = rep(0,num_genes)
+      #file.h5$close_all()
+
+      safe_h5_create(object@raw.data[[i]],"/norm.data",dims=num_entries,mode = h5types$double, chunk_size = chunk_size, liger_object = object)
+      safe_h5_create(object@raw.data[[i]],"/cell_sums",dims=num_cells,mode = h5types$int, chunk_size = chunk_size, liger_object = object)
+
+      #file.h5 = H5File$new(fname, mode="r+")
+      num_chunks = ceiling(num_cells/chunk_size)
+      pb = txtProgressBar(0,num_chunks,style = 3)
+      ind = 0
+      while(prev_end_col < num_cells)
+      {
+        ind = ind + 1
+        if (num_cells - prev_end_col < chunk_size)
+        {
+          chunk_size = num_cells - prev_end_col + 1
+        }
+        start_inds = object@h5file.info[[i]][["indptr"]][prev_end_col:(prev_end_col+chunk_size)]
+        row_inds = object@h5file.info[[i]][["indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
+        counts = object@h5file.info[[i]][["data"]][(prev_end_ind+1):(tail(start_inds, 1))]
+        raw.data = sparseMatrix(i=row_inds[1:length(counts)]+1,p=start_inds[1:(chunk_size+1)]-prev_end_ind,x=counts,dims=c(num_genes,chunk_size))
+        nUMI = c(nUMI, colSums(raw.data))
+        nGene = c(nGene, colSums(raw.data > 0))
+        norm.data = Matrix.column_norm(raw.data)
+        object@raw.data[[i]][["norm.data"]][(prev_end_ind+1):(tail(start_inds, 1))] = norm.data@x
+        object@raw.data[[i]][["cell_sums"]][prev_end_col:(prev_end_col+chunk_size-1)] = Matrix::colSums(raw.data)
+        #h5write(norm.data,file=fname,name="/norm.data",index=list(prev_end_ind:tail(start_inds, 1)))
+        #h5write(colSums(raw.data),file=fname,name="/cell_sums",index=list(prev_end_col:(prev_end_col+chunk_size)))
+        prev_end_col = prev_end_col + chunk_size
+        prev_end_data = prev_end_data + length(norm.data@x)
+        prev_end_ind = tail(start_inds, 1)
+
+        # calculate row sum and sum of squares using normalized data
+        row_sums = Matrix::rowSums(norm.data)
+        gene_sum_sq = gene_sum_sq + rowSums(norm.data*norm.data)
+        gene_means = gene_means + row_sums
+        setTxtProgressBar(pb,ind)
+      }
+      setTxtProgressBar(pb,num_chunks)
+      cat("\n")
+      gene_means = gene_means / num_cells
+      safe_h5_create(object@raw.data[[i]],"gene_means",dims=num_genes,mode=h5types$double, liger_object = object)
+      safe_h5_create(object@raw.data[[i]],"gene_sum_sq",dims=num_genes,mode=h5types$double, liger_object = object)
+      object@raw.data[[i]][["gene_means"]][1:length(gene_means)] = gene_means
+      object@raw.data[[i]][["gene_sum_sq"]][1:length(gene_sum_sq)] = gene_sum_sq
+      object@norm.data[[i]] = object@raw.data[[i]][["norm.data"]]
+      rm(row_sums)
+      rm(raw.data)
+    }
+    object@cell.data$nUMI = nUMI
+    object@cell.data$nGene = nGene
+
+    for (i in 1:length(object@raw.data)){
+      if (!object@raw.data[[i]]$exists("cell.data")) {
+        cell.data.i = object@cell.data[object@cell.data$dataset == names(object@raw.data)[i], ]
+        cell.data.i$barcode = rownames(cell.data.i)
+        object@raw.data[[i]][["cell.data"]] = cell.data.i
+      }
+    }
+
+    names(object@norm.data) = names(object@raw.data)
   } else {
-    object@norm.data <- lapply(object@raw.data, function(x) {
-      sweep(x, 2, colSums(x), "/")
-    })
+    object <- removeMissingObs(object, slot.use = "raw.data", use.cols = T)
+    if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
+        class(object@raw.data[[1]])[1] == "dgCMatrix") {
+      object@norm.data <- lapply(object@raw.data, Matrix.column_norm)
+    } else {
+      object@norm.data <- lapply(object@raw.data, function(x) {
+        sweep(x, 2, colSums(x), "/")
+      })
+    }
+  }
+  return(object)
+}
+
+#' Calculate variance of gene expression across cells in an online fashion
+#'
+#' This function calculates the variance of gene expression values across cells for hdf5 files.
+#'
+#' @param object \code{liger} object. The input raw.data should be a list of hdf5 files.
+#'    Should call normalize and selectGenes before calling.
+#' @param chunk size of chunks in hdf5 file. (default 1000)
+#' @return \code{liger} object with scale.data slot set.
+#' @export
+#' @import hdf5r
+#' @examples
+#' \dontrun{
+#' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+#' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
+#' # select genes
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' }
+calcGeneVars = function (object, chunk = 1000)
+{
+  hdf5_files = names(object@raw.data)
+  for (i in 1:length(hdf5_files)) {
+    print(hdf5_files[i])
+    chunk_size = chunk
+    num_cells = object@h5file.info[[i]][["barcodes"]]$dims
+    num_genes = object@h5file.info[[i]][["genes"]]$dims
+    num_entries = object@h5file.info[[i]][["data"]]$dims
+
+    prev_end_col = 1
+    prev_end_data = 1
+    prev_end_ind = 0
+    gene_vars = rep(0,num_genes)
+    gene_means = object@raw.data[[i]][["gene_means"]][]
+    gene_num_pos = rep(0,num_genes)
+
+    num_chunks = ceiling(num_cells/chunk_size)
+    pb = txtProgressBar(0, num_chunks, style = 3)
+    ind = 0
+    while (prev_end_col < num_cells) {
+      ind = ind + 1
+      if (num_cells - prev_end_col < chunk_size) {
+        chunk_size = num_cells - prev_end_col + 1
+      }
+      start_inds = object@h5file.info[[i]][["indptr"]][prev_end_col:(prev_end_col+chunk_size)]
+      row_inds = object@h5file.info[[i]][["indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
+      counts = object@norm.data[[i]][(prev_end_ind+1):(tail(start_inds, 1))]
+      norm.data = sparseMatrix(i=row_inds[1:length(counts)]+1,p=start_inds[1:(chunk_size+1)]-prev_end_ind,x=counts,dims=c(num_genes,chunk_size))
+
+      num_read = length(counts)
+      prev_end_col = prev_end_col + chunk_size
+      prev_end_data = prev_end_data + num_read
+      prev_end_ind = tail(start_inds, 1)
+      gene_vars = gene_vars + sumSquaredDeviations(norm.data,gene_means)
+      setTxtProgressBar(pb, ind)
+    }
+    setTxtProgressBar(pb, num_chunks)
+    cat("\n")
+    gene_vars = gene_vars/(num_cells - 1)
+    safe_h5_create(object@raw.data[[i]], "/gene_vars", dims = num_genes,
+                   mode = h5types$double, liger_object = object)
+    object@raw.data[[i]][["gene_vars"]][1:num_genes] = gene_vars
   }
   return(object)
 }
@@ -427,9 +813,9 @@ normalize <- function(object) {
 #'   for each dataset to get this number of genes. Accepts single value or vector with same length
 #'   as number of datasets (optional, default=NULL).
 #' @param tol Tolerance to use for optimization if num.genes values passed in (default 0.0001).
-#' @param datasets.use List of datasets to include for discovery of highly variable genes. 
+#' @param datasets.use List of datasets to include for discovery of highly variable genes.
 #'   (default 1:length(object@raw.data))
-#' @param combine How to combine variable genes across experiments. Either "union" or "intersect".
+#' @param combine How to combine variable genes across experiments. Either "union" or "intersection".
 #'   (default "union")
 #' @param keep.unique Keep genes that occur (i.e., there is a corresponding column in raw.data) only
 #'    in one dataset (default FALSE)
@@ -438,9 +824,11 @@ normalize <- function(object) {
 #' @param do.plot Display log plot of gene variance vs. gene expression for each dataset.
 #'   Selected genes are plotted in green. (default FALSE)
 #' @param cex.use Point size for plot.
+#' @param chunk size of chunks in hdf5 file. (default 1000)
 
 #' @return \code{liger} object with var.genes slot set.
 #' @export
+#' @import hdf5r
 #' @importFrom stats optimize
 #' @importFrom graphics abline plot points title
 #' @importFrom stats qnorm
@@ -458,90 +846,161 @@ normalize <- function(object) {
 
 selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes = NULL,
                         tol = 0.0001, datasets.use = 1:length(object@raw.data), combine = "union",
-                        keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3) {
-  # Expand if only single var.thresh passed
-  if (length(var.thresh) == 1) {
-    var.thresh <- rep(var.thresh, length(object@raw.data))
-  }
-  if (length(num.genes) == 1) {
-    num.genes <- rep(num.genes, length(object@raw.data))
-  }
-  if (!identical(intersect(datasets.use, 1:length(object@raw.data)),datasets.use)) {
-    datasets.use = intersect(datasets.use, 1:length(object@raw.data))
-  }
-  genes.use <- c()
-  for (i in datasets.use) {
-    if (capitalize) {
-      rownames(object@raw.data[[i]]) <- toupper(rownames(object@raw.data[[i]]))
-      rownames(object@norm.data[[i]]) <- toupper(rownames(object@norm.data[[i]]))
+                        keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3, chunk=1000)
+{
+  if (class(object@raw.data[[1]])[1] == "H5File") {
+    if (!object@raw.data[[1]]$exists("gene_vars")) {
+      object = calcGeneVars(object,chunk)
     }
-    trx_per_cell <- colSums(object@raw.data[[i]])
-    # Each gene's mean expression level (across all cells)
-    gene_expr_mean <- rowMeansFast(object@norm.data[[i]])
-    # Each gene's expression variance (across all cells)
-    gene_expr_var <- rowVarsFast(object@norm.data[[i]], gene_expr_mean)
-    names(gene_expr_mean) <- names(gene_expr_var) <- rownames(object@norm.data[[i]])
-    nolan_constant <- mean((1 / trx_per_cell))
-    alphathresh.corrected <- alpha.thresh / nrow(object@raw.data[[i]])
-    genemeanupper <- gene_expr_mean + qnorm(1 - alphathresh.corrected / 2) *
-      sqrt(gene_expr_mean * nolan_constant / ncol(object@raw.data[[i]]))
-    basegenelower <- log10(gene_expr_mean * nolan_constant)
-    
-    num_varGenes <- function(x, num.genes.des){
-      # This function returns the difference between the desired number of genes and
-      # the number actually obtained when thresholded on x
-      y <- length(which(gene_expr_var / nolan_constant > genemeanupper &
-                        log10(gene_expr_var) > basegenelower + x))
-      return(abs(num.genes.des - y))
+    hdf5_files = names(object@raw.data)
+    if (length(var.thresh) == 1) {
+      var.thresh <- rep(var.thresh, length(hdf5_files))
     }
-    
-    if (!is.null(num.genes)) {
-      # Optimize to find value of x which gives the desired number of genes for this dataset
-      # if very small number of genes requested, var.thresh may need to exceed 1
-      optimized <- optimize(num_varGenes, c(0, 1.5), tol = tol, 
-                            num.genes.des = num.genes[i])
-      var.thresh[i] <- optimized$minimum
-      if (optimized$objective > 1) {
-        warning(paste0("Returned number of genes for dataset ", i, " differs from requested by ",
-                       optimized$objective, ". Lower tol or alpha.thresh for better results."))
+    genes.use <- c()
+    for (i in 1:length(hdf5_files)) {
+      if (object@h5file.info[[i]][["format.type"]] == "AnnData"){
+        genes = object@h5file.info[[i]][["genes"]][]$index
+      } else {
+        genes = object@h5file.info[[i]][["genes"]][]
+      }
+
+      if (capitalize) {
+        genes = toupper(genes)
+      }
+      trx_per_cell = object@raw.data[[i]][["cell_sums"]][]
+      gene_expr_mean = object@raw.data[[i]][["gene_means"]][]
+      gene_expr_var = object@raw.data[[i]][["gene_vars"]][]
+
+      names(gene_expr_mean) <- names(gene_expr_var) <- genes # assign gene names
+      nolan_constant <- mean((1/trx_per_cell))
+      alphathresh.corrected <- alpha.thresh/length(genes)
+      genemeanupper <- gene_expr_mean + qnorm(1 - alphathresh.corrected/2) *
+        sqrt(gene_expr_mean * nolan_constant/length(trx_per_cell))
+      genes.new <- names(gene_expr_var)[which(gene_expr_var/nolan_constant >
+                                                genemeanupper & log10(gene_expr_var) > log10(gene_expr_mean) +
+                                                (log10(nolan_constant) + var.thresh[i]))]
+      if (do.plot) {
+        plot(log10(gene_expr_mean), log10(gene_expr_var),
+             cex = cex.use, xlab = "Gene Expression Mean (log10)",
+             ylab = "Gene Expression Variance (log10)")
+        points(log10(gene_expr_mean[genes.new]), log10(gene_expr_var[genes.new]),
+               cex = cex.use, col = "green")
+        abline(log10(nolan_constant), 1, col = "purple")
+        legend("bottomright", paste0("Selected genes: ",
+                                     length(genes.new)), pch = 20, col = "green")
+        title(main = hdf5_files[i])
+      }
+      if (combine == "union") {
+        genes.use <- union(genes.use, genes.new)
+      }
+      if (combine == "intersection") {
+        if (length(genes.use) == 0) {
+          genes.use <- genes.new
+        }
+        genes.use <- intersect(genes.use, genes.new)
       }
     }
-    
-    genes.new <- names(gene_expr_var)[which(gene_expr_var / nolan_constant > genemeanupper &
-                                            log10(gene_expr_var) > basegenelower + var.thresh[i])]
-    
-    if (do.plot) {
-      graphics::plot(log10(gene_expr_mean), log10(gene_expr_var), cex = cex.use,
-           xlab='Gene Expression Mean (log10)',
-           ylab='Gene Expression Variance (log10)')
-      
-      graphics::points(log10(gene_expr_mean[genes.new]), log10(gene_expr_var[genes.new]),
-             cex = cex.use, col = "green")
-      graphics::abline(log10(nolan_constant), 1, col = "purple")
-      
-      legend("bottomright", paste0("Selected genes: ", length(genes.new)), pch = 20, col = "green")
-      graphics::title(main = names(object@raw.data)[i])
-    }
-    if (combine == "union") {
-      genes.use <- union(genes.use, genes.new)
-    }
-    if (combine == "intersection") {
-      if (length(genes.use) == 0) {
-        genes.use <- genes.new
+
+    if (!keep.unique) {
+      for (i in 1:length(hdf5_files)) {
+        if (object@h5file.info[[i]][["format.type"]] == "AnnData"){
+          genes = object@h5file.info[[i]][["genes"]][]$index
+        } else {
+          genes = object@h5file.info[[i]][["genes"]][]
+        }
+        genes.use <- genes.use[genes.use %in% genes]
       }
-      genes.use <- intersect(genes.use, genes.new)
     }
-  }
-  if (!keep.unique) {
-    for (i in 1:length(object@raw.data)) {
-      genes.use <- genes.use[genes.use %in% rownames(object@raw.data[[i]])]
+    if (length(genes.use) == 0) {
+      warning("No genes were selected; lower var.thresh values or choose 'union' for combine parameter",
+              immediate. = T)
     }
+    object@var.genes = genes.use
+  } else {
+    # Expand if only single var.thresh passed
+    if (length(var.thresh) == 1) {
+      var.thresh <- rep(var.thresh, length(object@raw.data))
+    }
+    if (length(num.genes) == 1) {
+      num.genes <- rep(num.genes, length(object@raw.data))
+    }
+    if (!identical(intersect(datasets.use, 1:length(object@raw.data)),datasets.use)) {
+      datasets.use = intersect(datasets.use, 1:length(object@raw.data))
+    }
+    genes.use <- c()
+    for (i in datasets.use) {
+      if (capitalize) {
+        rownames(object@raw.data[[i]]) <- toupper(rownames(object@raw.data[[i]]))
+        rownames(object@norm.data[[i]]) <- toupper(rownames(object@norm.data[[i]]))
+      }
+      trx_per_cell <- colSums(object@raw.data[[i]])
+      # Each gene's mean expression level (across all cells)
+      gene_expr_mean <- rowMeansFast(object@norm.data[[i]])
+      # Each gene's expression variance (across all cells)
+      gene_expr_var <- rowVarsFast(object@norm.data[[i]], gene_expr_mean)
+      names(gene_expr_mean) <- names(gene_expr_var) <- rownames(object@norm.data[[i]])
+      nolan_constant <- mean((1 / trx_per_cell))
+      alphathresh.corrected <- alpha.thresh / nrow(object@raw.data[[i]])
+      genemeanupper <- gene_expr_mean + qnorm(1 - alphathresh.corrected / 2) *
+        sqrt(gene_expr_mean * nolan_constant / ncol(object@raw.data[[i]]))
+      basegenelower <- log10(gene_expr_mean * nolan_constant)
+
+      num_varGenes <- function(x, num.genes.des){
+        # This function returns the difference between the desired number of genes and
+        # the number actually obtained when thresholded on x
+        y <- length(which(gene_expr_var / nolan_constant > genemeanupper &
+                          log10(gene_expr_var) > basegenelower + x))
+        return(abs(num.genes.des - y))
+      }
+
+      if (!is.null(num.genes)) {
+        # Optimize to find value of x which gives the desired number of genes for this dataset
+        # if very small number of genes requested, var.thresh may need to exceed 1
+        optimized <- optimize(num_varGenes, c(0, 1.5), tol = tol,
+                              num.genes.des = num.genes[i])
+        var.thresh[i] <- optimized$minimum
+        if (optimized$objective > 1) {
+          warning(paste0("Returned number of genes for dataset ", i, " differs from requested by ",
+                         optimized$objective, ". Lower tol or alpha.thresh for better results."))
+        }
+      }
+
+      genes.new <- names(gene_expr_var)[which(gene_expr_var / nolan_constant > genemeanupper &
+                                              log10(gene_expr_var) > basegenelower + var.thresh[i])]
+
+      if (do.plot) {
+        graphics::plot(log10(gene_expr_mean), log10(gene_expr_var), cex = cex.use,
+             xlab='Gene Expression Mean (log10)',
+             ylab='Gene Expression Variance (log10)')
+
+        graphics::points(log10(gene_expr_mean[genes.new]), log10(gene_expr_var[genes.new]),
+               cex = cex.use, col = "green")
+        graphics::abline(log10(nolan_constant), 1, col = "purple")
+
+        legend("bottomright", paste0("Selected genes: ", length(genes.new)), pch = 20, col = "green")
+        graphics::title(main = names(object@raw.data)[i])
+      }
+      if (combine == "union") {
+        genes.use <- union(genes.use, genes.new)
+      }
+      if (combine == "intersection") {
+        if (length(genes.use) == 0) {
+          genes.use <- genes.new
+        }
+        genes.use <- intersect(genes.use, genes.new)
+      }
+    }
+    if (!keep.unique) {
+      for (i in 1:length(object@raw.data)) {
+        genes.use <- genes.use[genes.use %in% rownames(object@raw.data[[i]])]
+      }
+    }
+    if (length(genes.use) == 0) {
+      warning("No genes were selected; lower var.thresh values or choose 'union' for combine parameter",
+              immediate. = T)
+    }
+    object@var.genes <- genes.use
   }
-  if (length(genes.use) == 0) {
-    warning("No genes were selected; lower var.thresh values or choose 'union' for combine parameter",
-            immediate. = T)
-  }
-  object@var.genes <- genes.use
   return(object)
 }
 
@@ -555,9 +1014,11 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
 #' @param object \code{liger} object. Should call normalize and selectGenes before calling.
 #' @param remove.missing Whether to remove cells from scale.data with no gene expression
 #'   (default TRUE).
+#' @param chunk size of chunks in hdf5 file. (default 1000)
 #'
 #' @return \code{liger} object with scale.data slot set.
 #' @export
+#' @import hdf5r
 #' @examples
 #' \dontrun{
 #' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
@@ -569,31 +1030,92 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
 #' ligerex <- scaleNotCenter(ligerex)
 #' }
 
-scaleNotCenter <- function(object, remove.missing = T) {
-  if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
-      class(object@raw.data[[1]])[1] == "dgCMatrix") {
-    object@scale.data <- lapply(1:length(object@norm.data), function(i) {
-      scaleNotCenterFast(t(object@norm.data[[i]][object@var.genes, ]))
-    })
-    # TODO: Preserve sparseness later on (convert inside optimizeALS)
-    object@scale.data <- lapply(object@scale.data, function(x) {
-      as.matrix(x)
-    })
+scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
+  if (class(object@raw.data[[1]])[1] == "H5File") {
+    hdf5_files = names(object@raw.data)
+    vargenes = object@var.genes
+    for (i in 1:length(hdf5_files)) {
+      print(hdf5_files[i])
+      chunk_size = chunk
+
+      if (object@h5file.info[[i]][["format.type"]] == "AnnData"){
+        genes = object@raw.data[[i]][["raw.var"]][]$index
+      } else {
+        genes = object@h5file.info[[i]][["genes"]][]
+      }
+      num_cells = object@h5file.info[[i]][["barcodes"]]$dims
+      num_genes = length(genes)
+      num_entries = object@h5file.info[[i]][["data"]]$dims
+
+      prev_end_col = 1
+      prev_end_data = 1
+      prev_end_ind = 0
+      gene_vars = rep(0,num_genes)
+      gene_means = object@raw.data[[i]][["gene_means"]][1:num_genes]
+      gene_sum_sq = object@raw.data[[i]][["gene_sum_sq"]][1:num_genes]
+
+      gene_inds = which(genes %in% vargenes)
+      gene_root_mean_sum_sq = sqrt(gene_sum_sq/(num_cells-1))
+      safe_h5_create(object@raw.data[[i]], "scale.data", dims = c(length(vargenes), num_cells), mode = h5types$double, chunk_size = c(length(vargenes), chunk_size), liger_object = object)
+      num_chunks = ceiling(num_cells/chunk_size)
+      pb = txtProgressBar(0, num_chunks, style = 3)
+      ind = 0
+      while (prev_end_col < num_cells) {
+        ind = ind + 1
+        if (num_cells - prev_end_col < chunk_size) {
+          chunk_size = num_cells - prev_end_col + 1
+        }
+        start_inds = object@h5file.info[[i]][["indptr"]][prev_end_col:(prev_end_col+chunk_size)]
+        row_inds = object@h5file.info[[i]][["indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
+        counts = object@norm.data[[i]][(prev_end_ind+1):(tail(start_inds, 1))]
+        scaled = sparseMatrix(i=row_inds[1:length(counts)]+1,p=start_inds[1:(chunk_size+1)]-prev_end_ind,x=counts,dims=c(num_genes,chunk_size))
+        scaled = scaled[gene_inds, ]
+        scaled = as.matrix(scaled)
+        root_mean_sum_sq = gene_root_mean_sum_sq[gene_inds]
+        scaled = sweep(scaled, 1, root_mean_sum_sq, "/")
+        rownames(scaled) = genes[gene_inds]
+        scaled = scaled[vargenes, ]
+        scaled[is.na(scaled)] = 0
+        scaled[scaled == Inf] = 0
+        object@raw.data[[i]][["scale.data"]][1:length(vargenes),prev_end_col:(prev_end_col+chunk_size-1)] = scaled
+        num_read = length(counts)
+        prev_end_col = prev_end_col + chunk_size
+        prev_end_data = prev_end_data + num_read
+        prev_end_ind = tail(start_inds, 1)
+        setTxtProgressBar(pb, ind)
+      }
+      object@scale.data[[i]] = object@raw.data[[i]][["scale.data"]]
+      setTxtProgressBar(pb, num_chunks)
+      cat("\n")
+    }
+    names(object@scale.data) <- names(object@raw.data)
   } else {
-    object@scale.data <- lapply(1:length(object@norm.data), function(i) {
-      scale(t(object@norm.data[[i]][object@var.genes, ]), center = F, scale = T)
-    })
+    if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
+        class(object@raw.data[[1]])[1] == "dgCMatrix") {
+      object@scale.data <- lapply(1:length(object@norm.data), function(i) {
+        scaleNotCenterFast(t(object@norm.data[[i]][object@var.genes, ]))
+      })
+      # TODO: Preserve sparseness later on (convert inside optimizeALS)
+      object@scale.data <- lapply(object@scale.data, function(x) {
+        as.matrix(x)
+      })
+    } else {
+      object@scale.data <- lapply(1:length(object@norm.data), function(i) {
+        scale(t(object@norm.data[[i]][object@var.genes, ]), center = F, scale = T)
+      })
+    }
+    names(object@scale.data) <- names(object@norm.data)
+    for (i in 1:length(object@scale.data)) {
+      object@scale.data[[i]][is.na(object@scale.data[[i]])] <- 0
+      rownames(object@scale.data[[i]]) <- colnames(object@raw.data[[i]])
+      colnames(object@scale.data[[i]]) <- object@var.genes
+    }
+    # may want to remove such cells before scaling -- should not matter for large datasets?
+    if (remove.missing) {
+      object <- removeMissingObs(object, slot.use = "scale.data", use.cols = F)
+    }
   }
-  names(object@scale.data) <- names(object@norm.data)
-  for (i in 1:length(object@scale.data)) {
-    object@scale.data[[i]][is.na(object@scale.data[[i]])] <- 0
-    rownames(object@scale.data[[i]]) <- colnames(object@raw.data[[i]])
-    colnames(object@scale.data[[i]]) <- object@var.genes
-  }
-  # may want to remove such cells before scaling -- should not matter for large datasets?
-  if (remove.missing) {
-    object <- removeMissingObs(object, slot.use = "scale.data", use.cols = F)
-  }
+
   return(object)
 }
 
@@ -651,8 +1173,755 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
   return(object)
 }
 
+#helper function for readSubset
+#Samples cell barcodes from specified datasets
+#balance=NULL (default) means that max_cells are sampled from among all cells.
+#balance="cluster" samples up to max_cells from each cluster in each dataset
+#balance="dataset" samples up to max_cells from each dataset
+#datasets.use uses only the specified datasets for sampling. Default is NULL (all datasets)
+#rand.seed for reproducibility (default 1).
+#Returns: vector of cell barcodes
+downsample <- function(object,balance=NULL,max_cells=1000,datasets.use=NULL,seed=1)
+{
+  set.seed(seed)
+  if(is.null(datasets.use))
+  {
+    datasets.use=names(object@H)
+    print(datasets.use)
+  }
+  inds = c()
+  inds_ds = list()
+  if (is.null(balance))
+  {
+    for (ds in 1:length(datasets.use))
+    {
+      inds = c(inds,rownames(object@H[[ds]]))
+    }
+    num_to_samp = min(max_cells,length(inds))
+    inds = sample(inds,num_to_samp)
+    for (ds in 1:length(datasets.use))
+    {
+      inds_ds[[ds]] = intersect(inds, rownames(object@H[[ds]]))
+    }
+  }
+  else if (balance == "dataset")
+  {
+    for (ds in 1:length(datasets.use))
+    {
+      num_to_samp = min(max_cells,nrow(object@H[[ds]]))
+      inds_ds[[ds]] = rownames(object@H[[ds]])[sample(1:nrow(object@H[[ds]]),num_to_samp)]
+    }
+  }
+  else #balance clusters
+  {
+    if (nrow(object@cell.data)==0)
+    {
+      dataset <- unlist(lapply(seq_along(object@H), function(i) {
+        rep(names(object@H)[i], nrow(object@H[[i]]))
+      }), use.names = F)
+      object@cell.data <- data.frame(dataset)
+      rownames(object@cell.data) <- unlist(lapply(object@H,
+                                                  function(x) {
+                                                    rownames(x)
+                                                  }), use.names = F)
+    }
+    for (ds in 1:length(datasets.use))
+    {
+      for (i in levels(object@clusters))
+      {
+        inds_to_samp = names(object@clusters)[object@clusters==i & object@cell.data[["dataset"]] == ds]
+        num_to_samp = min(max_cells,length(inds_to_samp))
+        inds_ds[[ds]] = sample(inds_to_samp,num_to_samp)
+      }
+    }
+  }
+  return(inds_ds)
+}
+
+#' Sample data for plotting
+#'
+#' This function samples raw/normalized/scaled data from on-disk HDF5 files for plotting.
+#' This function assumes that the cell barcodes are unique across all datasets.
+#'
+#' @param object \code{liger} object. Should call normalize and selectGenes before calling.
+#' @param slot.use Type of data for sampling (raw.data, norm.data(default), scale.data).
+#' @param balance Type of sampling. NULL means that max_cells are sampled from among all cells;
+#'                balance="dataset" samples up to max_cells from each dataset;
+#'                balance="cluster" samples up to max_cells from each cluster.
+#' @param chunk is the max number of cells at a time to read from disk (default 1000).
+#' @param max.cells Total number of cell to sample (default 5000).
+#' @param rand.seed  (default 1).
+#' @param datasets.use uses only the specified datasets for sampling. Default is NULL (all datasets)
+#' @param genes.use samples from only the specified genes. Default is NULL (all genes)
+#' @param rand.seed for reproducibility (default 1).
+#' #Note:
+#'
+#' @return \code{liger} object with sample.data slot set.
+#' @export
+#' @import hdf5r
+#' @examples
+#' \dontrun{
+#' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+#' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
+#' # select genes
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+#' }
+
+readSubset <- function(object,
+                       slot.use = "norm.data",
+                       balance = NULL,
+                       max.cells = 1000,
+                       chunk = 1000,
+                       datasets.use = NULL,
+                       genes.use = NULL,
+                       rand.seed = 1) {
+  if (class(object@raw.data[[1]])[1] == "H5File") {
+    cat("Sampling\n")
+    if(is.null(datasets.use))
+    {
+      datasets.use=names(object@H)
+    }
+    cell_inds = downsample(object,balance=balance,max_cells=max.cells,datasets.use=datasets.use, seed=rand.seed)
+
+    hdf5_files = names(object@raw.data)
+    #vargenes = object@var.genes
+
+    # find the intersect of genes from each input datasets
+    genes = c()
+    if (slot.use != "scale.data"){
+      for (i in 1:length(hdf5_files)) {
+        if (object@h5file.info[[i]][["format.type"]] == "AnnData"){
+          genes_i = object@h5file.info[[i]][["genes"]][]$index
+        } else {
+          genes_i = object@h5file.info[[i]][["genes"]][]
+        }
+        if (i == 1) genes = genes_i else genes = intersect(genes, genes_i)
+      }
+    } else {
+      genes = object@var.genes
+    }
+
+    if(is.null(genes.use))
+    {
+      genes.use = genes
+    }
+
+    for (i in 1:length(hdf5_files)) {
+      print(hdf5_files[i])
+      if (slot.use == "scale.data") {
+        data.subset = c()
+      } else {
+        data.subset = Matrix(nrow=length(genes.use),ncol=0,sparse=T)
+      }
+      chunk_size = chunk
+      if (object@h5file.info[[i]][["format.type"]] == "AnnData"){
+        barcodes = object@h5file.info[[i]][["barcodes"]][]$cell
+        genes = object@h5file.info[[i]][["genes"]][]$index
+      } else {
+        barcodes = object@h5file.info[[i]][["barcodes"]][]
+        genes = object@h5file.info[[i]][["genes"]][]
+      }
+      num_cells = length(barcodes)
+      num_genes = length(genes)
+
+      prev_end_col = 1
+      prev_end_data = 1
+      prev_end_ind = 0
+
+
+      #gene_inds = which(genes %in% vargenes)
+
+      num_chunks = ceiling(num_cells/chunk_size)
+      pb = txtProgressBar(0, num_chunks, style = 3)
+      ind = 0
+
+      while (prev_end_col < num_cells) {
+        ind = ind + 1
+        if (num_cells - prev_end_col < chunk_size) {
+          chunk_size = num_cells - prev_end_col + 1
+        }
+        if (slot.use != "scale.data"){
+          start_inds = object@h5file.info[[i]][["indptr"]][prev_end_col:(prev_end_col+chunk_size)]
+          row_inds = object@h5file.info[[i]][["indices"]][(prev_end_ind+1):(tail(start_inds, 1))]
+          if (slot.use=="raw.data")
+          {
+            counts = object@h5file.info[[i]][["data"]][(prev_end_ind+1):(tail(start_inds, 1))]
+          }
+          if (slot.use=="norm.data")
+          {
+            counts = object@norm.data[[i]][(prev_end_ind+1):(tail(start_inds, 1))]
+          }
+          one_chunk = sparseMatrix(i=row_inds[1:length(counts)]+1,p=start_inds[1:(chunk_size+1)]-prev_end_ind,x=counts,dims=c(num_genes,chunk_size))
+          rownames(one_chunk) = genes
+          colnames(one_chunk) = barcodes[(prev_end_col):(prev_end_col+chunk_size-1)]
+          use_these = intersect(colnames(one_chunk),cell_inds[[i]])
+          one_chunk = one_chunk[genes.use,use_these]
+          data.subset = cbind(data.subset,one_chunk)
+
+          num_read = length(counts)
+          prev_end_col = prev_end_col + chunk_size
+          prev_end_data = prev_end_data + num_read
+          prev_end_ind = tail(start_inds, 1)
+          setTxtProgressBar(pb, ind)
+        } else {
+          one_chunk = object@scale.data[[i]][,prev_end_col:(prev_end_col + chunk_size - 1)]
+          rownames(one_chunk) = object@var.genes
+          colnames(one_chunk) = barcodes[(prev_end_col):(prev_end_col+chunk_size-1)]
+          use_these = intersect(colnames(one_chunk),cell_inds[[i]])
+          one_chunk = one_chunk[genes.use,use_these]
+          data.subset = cbind(data.subset,one_chunk)
+
+          prev_end_col = prev_end_col + chunk_size
+          setTxtProgressBar(pb, ind)
+        }
+        if (class(object@raw.data[[i]])[1] == "H5File") {
+          object@sample.data[[i]] = data.subset
+        } else if (class(object@raw.data[[i]])[1] != "H5File" & slot.use == "scale.data") {
+          object@sample.data[[i]] = t(data.subset)
+        }
+        object@h5file.info[[i]][["sample.data.type"]] = slot.use
+      }
+      setTxtProgressBar(pb, num_chunks)
+      cat("\n")
+    }
+  } else {
+    cat("Sampling\n")
+    if(is.null(datasets.use))
+    {
+      datasets.use=names(object@H)
+    }
+    cell_inds = downsample(object,balance=balance,max_cells=max.cells,datasets.use=datasets.use)
+
+    files = names(object@raw.data)
+    # find the intersect of genes from each input datasets
+    genes = c()
+    for (i in 1:length(files)) {
+      genes_i = rownames(object@raw.data[[i]])
+      if (i == 1) genes = genes_i else genes = intersect(genes, genes_i)
+    }
+    if(is.null(genes.use))
+    {
+      genes.use = genes
+    }
+    pb = txtProgressBar(0, length(files), style = 3)
+    for (i in 1:length(files)){
+      if (slot.use=="raw.data")
+        {
+          data.subset_i = object@raw.data[[i]][genes.use, cell_inds[[i]]]
+        }
+        if (slot.use=="norm.data")
+        {
+          data.subset_i = object@norm.data[[i]][genes.use, cell_inds[[i]]]
+        }
+        if(slot.use=="scale.data")
+        {
+          data.subset_i = t(object@scale.data[[i]][cell_inds[[i]], genes.use])
+        }
+      setTxtProgressBar(pb, i)
+    }
+    cat("\n")
+    object@sample.data[[i]] = data.subset_i
+    object@h5file.info[[i]][["sample.data.type"]] = slot.use
+  }
+  names(object@sample.data) = names(object@raw.data)
+  return(object)
+}
+
 #######################################################################################
 #### Factorization
+
+#' Perform online iNMF on scaled datasets
+#'
+#' @description
+#' Perform online integrative non-negative matrix factorization to represent multiple single-cell datasets
+#' in terms of H, W, and V matrices. It optimizes the iNMF objective function using online learning (non-negative
+#' least squares for H matrix, hierarchical alternating least squares for W and V matrices), where the
+#' number of factors is set by k. The function allows online learning in 3 scenarios: (1) fully observed datasets;
+#' (2) iterative refinement using continually arriving datasets; and (3) projection of new datasets without updating
+#' the existing factorization. All three scenarios require fixed memory independent of the number of cells.
+#'
+#' For each dataset, this factorization produces an H matrix (cells by k), a V matrix (k by genes),
+#' and a shared W matrix (k by genes). The H matrices represent the cell factor loadings.
+#' W is identical among all datasets, as it represents the shared components of the metagenes
+#' across datasets. The V matrices represent the dataset-specific components of the metagenes.
+#'
+#' @param object \code{liger} object with data stored in HDF5 files. Should normalize, select genes, and scale before calling.
+#' @param X_new List of new datasets for scenario 2 or scenario 3. Each list element should be the name of an HDF5 file.
+#' @param projection Perform data integration by shared metagene (W) projection (scenario 3). (default FALSE)
+#' @param W.init Optional initialization for W. (default NULL)
+#' @param V.init Optional initialization for V (default NULL)
+#' @param H.init Optional initialization for H (default NULL)
+#' @param A.init Optional initialization for A (default NULL)
+#' @param B.init Optional initialization for B (default NULL)
+#' @param k Inner dimension of factorization--number of metagenes (default 20). A value in the range 20-50 works well for most analyses.
+#' @param lambda Regularization parameter. Larger values penalize dataset-specific effects more
+#'   strongly (ie. alignment should increase as lambda increases). We recommend always using the default value except
+#'   possibly for analyses with relatively small differences (biological replicates, male/female comparisons, etc.)
+#'   in which case a lower value such as 1.0 may improve reconstruction quality. (default 5.0).
+#' @param max.epochs Maximum number of epochs (complete passes through the data). (default 5)
+#' @param miniBatch_max_iters Maximum number of block coordinate descent (HALS algorithm) iterations to perform for
+#' each update of W and V (default 1). Changing this parameter is not recommended.
+#' @param miniBatch_size Total number of cells in each minibatch (default 5000). This is a reasonable default, but a smaller value
+#' such as 1000 may be necessary for analyzing very small datasets. In general, minibatch size should be no larger than the number
+#' of cells in the smallest dataset.
+#' @param h5_chunk_size Chunk size of input hdf5 files (default 1000). The chunk size should be no larger than the batch size.
+#' @param seed Random seed to allow reproducible results (default 123).
+#'
+#' @return \code{liger} object with H, W, V, A and B slots set.
+#' @export
+#' @import hdf5r
+#'
+#' @examples
+#' \dontrun{
+#' Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
+#' Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- normalize(ligerex)
+#' # select genes
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' # get factorization using 20 factors from scratch
+#' ligerex <- online(ligerex, k = 20, lambda = 5, miniBatch_size = 5000)
+#' }
+#'
+
+online_iNMF <- function(object,
+                        X_new = NULL,
+                        projection = FALSE,
+                        W.init=NULL,
+                        V.init=NULL,
+                        H.init=NULL,
+                        A.init=NULL,
+                        B.init=NULL,
+                        k=20,
+                        lambda=5,
+                        max.epochs=5,
+                        miniBatch_max_iters=1,
+                        miniBatch_size=5000,
+                        h5_chunk_size=1000,
+                        seed=123){
+  if (!is.null(X_new)){ # if there is new dataset
+    raw.data_prev = object@raw.data
+    norm.data_prev = object@norm.data
+    h5file.info_prev = object@h5file.info
+    scale.data_prev = object@scale.data
+    cell.data_prev = object@cell.data
+    names(raw.data_prev) = names(object@raw.data)
+
+
+    # assuming only one new dataset arrives at a time
+    raw.data = c()
+    norm.data = c()
+    h5file.info = c()
+    scale.data = c()
+    cell.data = c()
+    for (i in 1:length(X_new)){
+      raw.data = c(raw.data, X_new[[i]]@raw.data)
+      norm.data = c(norm.data, X_new[[i]]@norm.data)
+      h5file.info = c(h5file.info, X_new[[i]]@h5file.info)
+      scale.data = c(scale.data, X_new[[i]]@scale.data)
+      cell.data = rbind(cell.data, X_new[[i]]@cell.data)
+    }
+    object@raw.data = raw.data
+    object@norm.data = norm.data
+    object@h5file.info = h5file.info
+    object@scale.data = scale.data
+    object@cell.data = cell.data
+
+    # check whether X_new needs to be processed
+    for (i in 1:length(object@raw.data)){
+      if (class(object@raw.data[[i]])[1] == "H5File"){
+        processed = object@raw.data[[i]]$exists("scale.data")
+      } else {
+        processed = !is.null(X_new[[i]]@scale.data)
+      }
+
+      if (processed) {
+        cat("New dataset", i, "already preprocessed.", "\n")
+      } else {
+        cat("New dataset", i, "not preprocessed. Preprocessing...", "\n")
+        object = normalize(object, chunk = h5_chunk_size)
+        object = scaleNotCenter(object, remove.missing = T, chunk = h5_chunk_size)
+        cat("New dataset", i, "Processed.", "\n")
+      }
+    }
+
+
+    object@raw.data = c(raw.data_prev, object@raw.data)
+    object@norm.data = c(norm.data_prev, object@norm.data)
+    object@h5file.info = c(h5file.info_prev, object@h5file.info)
+    object@scale.data = c(scale.data_prev, object@scale.data)
+    object@cell.data = rbind(cell.data_prev, object@cell.data)
+    # k x gene -> gene x k & cell x k-> k x cell
+    object@W = t(object@W)
+    object@V = lapply(object@V, t)
+    object@H = lapply(object@H, t)
+  }
+
+  for (i in 1:length(object@raw.data)){
+    if (class(object@raw.data[[i]])[1] != "H5File") object@scale.data[[i]] = t(object@scale.data[[i]])
+  }
+
+  ## extract required information and initialize algorithm
+  num_files = length(object@raw.data) # number of total input hdf5 files
+  num_prev_files = 0 # number of input hdf5 files processed in last step
+  num_new_files = 0 # number of new input hdf5 files since last step
+  if (is.null(X_new)) {
+    num_prev_files = 0 # start from scratch
+    num_new_files = num_files
+  } else {
+    num_new_files = length(X_new)
+    num_prev_files = num_files - num_new_files
+    cat(num_new_files, "new datasets detected.", "\n")
+  }
+
+  file_idx = 1:num_files # indices for all input files
+  file_idx_new = (num_prev_files+1):num_files # indices only for new input files
+  file_idx_prev = setdiff(file_idx,file_idx_new)
+
+  vargenes = object@var.genes
+  file_names = names(object@raw.data)
+  gene_names = vargenes # genes selected for analysis
+  num_genes = length(vargenes) # number of the selected genes
+
+  cell_barcodes = list() # cell barcodes for each dataset
+  for (i in file_idx){
+    cell_barcodes[[i]] = rownames(object@cell.data)[object@cell.data$dataset == file_names[i]]
+  }
+  num_cells = unlist(lapply(cell_barcodes, length)) # number of cells in each dataset
+  num_cells_new = num_cells[(num_prev_files+1):num_files]
+  minibatch_sizes = rep(0, num_files)
+
+  for (i in file_idx_new) {
+    minibatch_sizes[i] = round((num_cells[i]/sum(num_cells[file_idx_new])) * miniBatch_size)
+  }
+  minibatch_sizes_orig = minibatch_sizes
+
+  if (!projection) {
+
+    if(!is.null(seed)){
+      set.seed(seed)
+    }
+
+    # W matrix initialization
+    if (is.null(X_new)) {
+      object@W = matrix(abs(runif(num_genes * k, 0, 2)), num_genes, k)
+      for (j in 1:k){
+        object@W[, j] = object@W[, j] / sqrt(sum(object@W[, j]^2))
+      }
+    } else {
+      object@W = if(!is.null(W.init)) W.init else object@W
+    }
+    # V_i matrix initialization
+    if (is.null(X_new)) {
+      object@V = list()
+      for (i in file_idx){
+        V_init_idx = sample(1:num_cells_new[i], k) # pick k sample from datasets as initial H matrix
+        object@V[[i]] = object@scale.data[[i]][1:num_genes, V_init_idx]
+        #object@V[[i]] = matrix(data = abs(x = runif(n = num_genes * k, min = 0, max = 2)),
+        #                       nrow = num_genes,
+        #                       ncol = k)
+      }
+
+      # normalize the columns of H_i, H_s matrices
+      for (j in 1:k){
+        for (i in file_idx){ # normalize columns of dictionaries
+          object@V[[i]][, j] = object@V[[i]][, j] / sqrt(sum(object@V[[i]][, j]^2))
+        }
+      }
+    } else { # if previous Vs are provided
+      object@V[file_idx_prev] = if(!is.null(V.init)) V.init else object@V
+      V_init_idx = list()
+      for (i in file_idx_new){
+        V_init_idx = sample(1:num_cells[i], k)
+        object@V[[i]] = object@scale.data[[i]][1:num_genes, V_init_idx] # initialize the Vi for new dataset
+        for (j in 1:k){
+          object@V[[i]][, j] = object@V[[i]][, j] / sqrt(sum(object@V[[i]][, j]^2))
+        }
+      }
+    }
+    # H_i matrices initialization
+    if (is.null(X_new)) {
+      object@H = rep(list(NULL),num_files)
+      H_minibatch = list()
+    } else { # if previous Hs are provided
+      object@H[file_idx_prev] = if(!is.null(H.init)) H.init else object@H
+      object@H[file_idx_new] = rep(list(NULL),num_new_files)
+      H_minibatch = list()
+    }
+    # A = HiHi^t, B = XiHit
+    A_old = list()
+    B_old = list()
+
+    if (is.null(X_new)) {
+      object@A = rep(list(matrix(0, k, k)), num_new_files)
+      object@B = rep(list(matrix(0, num_genes, k)), num_new_files)
+      A_old = rep(list(matrix(0, k, k)), num_new_files) # save information older than 2 epochs
+      B_old = rep(list(matrix(0, num_genes, k)), num_new_files) # save information older than 2 epochs
+
+    } else {
+      object@A[file_idx_prev] = if(!is.null(A.init)) A.init else object@A
+      object@B[file_idx_prev] = if(!is.null(B.init)) B.init else object@B
+      A_old[file_idx_prev] = rep(list(NULL), num_prev_files)
+      B_old[file_idx_prev] = rep(list(NULL), num_prev_files)
+      object@A[(num_prev_files+1):num_files] = rep(list(matrix(0, k, k)), num_new_files)
+      object@B[(num_prev_files+1):num_files] = rep(list(matrix(0, num_genes, k)), num_new_files)
+      A_old[(num_prev_files+1):num_files] = rep(list(matrix(0, k, k)), num_new_files) # save information older than 2 epochs
+      B_old[(num_prev_files+1):num_files] = rep(list(matrix(0, k, k)), num_new_files) # save information older than 2 epochs
+    }
+
+    iter = 1
+    epoch = rep(0, num_files) # intialize the number of epoch for each dataset
+    epoch_prev = rep(0, num_files) # intialize the previous number of epoch for each dataset
+    epoch_next = rep(FALSE, num_files)
+    sqrt_lambda = sqrt(lambda)
+    total_time = 0 # track the total amount of time used for the online learning
+
+
+    num_chunks = rep(NULL, num_files)
+    chunk_idx = rep(list(NULL), num_files)
+    all_idx = rep(list(NULL), num_files)
+
+    # chunk permutation
+    for (i in file_idx_new){
+      num_chunks[i] = ceiling(num_cells[i]/h5_chunk_size)
+      chunk_idx[[i]] = sample(1:num_chunks[i],num_chunks[i])
+      # idx in the first chunk
+      if(chunk_idx[[i]][1]!=num_chunks[i]){
+        all_idx[[i]] = (1+h5_chunk_size*(chunk_idx[[i]][1]-1)):(chunk_idx[[i]][1]*h5_chunk_size)
+      } else {
+        all_idx[[i]] = (1+h5_chunk_size*(chunk_idx[[i]][1]-1)):(num_cells[i])
+      }
+
+      for (j in chunk_idx[[i]][-1]){
+        if (j != num_chunks[i]){
+          all_idx[[i]] = c(all_idx[[i]],(1+h5_chunk_size*(j-1)):(j*h5_chunk_size))
+        } else {
+          all_idx[[i]] = c(all_idx[[i]],(1+h5_chunk_size*(j-1)):num_cells[i])
+        }
+      }
+    }
+
+    cat("Starting Online iNMF...", "\n")
+    total.iters = floor(sum(num_cells_new) * max.epochs / miniBatch_size)
+    pb <- txtProgressBar(min = 1, max = total.iters+1, style = 3)
+    while(epoch[file_idx_new[1]] < max.epochs) {
+      # track epochs
+      minibatch_idx = rep(list(NULL), num_files) # indices of samples in each dataest used for this iteration
+      if ((max.epochs * num_cells_new[1] - (iter-1) * minibatch_sizes[file_idx_new[1]]) >= minibatch_sizes[file_idx_new[1]]){ # check if the size of the last mini-batch == pre-specified mini-batch size
+        for (i in file_idx_new){
+          epoch[i] = (iter * minibatch_sizes[i]) %/% num_cells[i] # caculate the current epoch
+          if ((epoch_prev[i] != epoch[i]) & ((iter * minibatch_sizes[i]) %% num_cells[i] != 0)){ # if current iter cycles through the data and start a new cycle
+            epoch_next[i] = TRUE
+            epoch_prev[i] = epoch[i]
+            # shuffle dataset before the next epoch
+            minibatch_idx[[i]] = all_idx[[i]][c(((((iter - 1) * minibatch_sizes[i]) %% num_cells[i]) + 1):num_cells[i])]
+            chunk_idx[[i]] = sample(1:num_chunks[i],num_chunks[i])
+            all_idx[[i]] = 0
+            for (j in chunk_idx[[i]]){
+              if (j != num_chunks[i]){
+                all_idx[[i]] = c(all_idx[[i]],(1+h5_chunk_size*(j-1)):(j*h5_chunk_size))
+              }else{
+                all_idx[[i]] = c(all_idx[[i]],(1+h5_chunk_size*(j-1)):num_cells[i])
+              }
+            }
+            all_idx[[i]] = all_idx[[i]][-1] # remove the first element 0
+            minibatch_idx[[i]] = c(minibatch_idx[[i]],all_idx[[i]][1:((iter * minibatch_sizes[i]) %% num_cells[i])])
+
+          } else if ((epoch_prev[i] != epoch[i]) & ((iter * minibatch_sizes[i]) %% num_cells[i] == 0)){ # if current iter finishes this cycle without start a a new cycle
+            epoch_next[i] = TRUE
+            epoch_prev[i] = epoch[i]
+
+            minibatch_idx[[i]] = all_idx[[i]][((((iter-1) * minibatch_sizes[i]) %% num_cells[i]) + 1):num_cells[i]]
+            chunk_idx[[i]] = sample(1:num_chunks[i],num_chunks[i])
+            all_idx[[i]] = 0
+            for (j in chunk_idx[[i]]){
+              if (j != num_chunks[i]){
+                all_idx[[i]] = c(all_idx[[i]],(1+h5_chunk_size*(j-1)):(j*h5_chunk_size))
+              }else{
+                all_idx[[i]] = c(all_idx[[i]],(1+h5_chunk_size*(j-1)):num_cells[i])
+              }
+            }
+            all_idx[[i]] = all_idx[[i]][-1] # remove the first element 0
+          } else {                                                                        # if current iter stays within a single cycle
+            minibatch_idx[[i]] = all_idx[[i]][(((iter-1) * minibatch_sizes[i]) %% num_cells[i] + 1):((iter * minibatch_sizes[i]) %% num_cells[i])]
+          }
+        }
+      } else {
+        for (i in file_idx_new){
+          minibatch_sizes[i] = max.epochs * num_cells[i] - (iter-1) * minibatch_sizes[i]
+          minibatch_idx[[i]] = (((iter-1) * minibatch_sizes_orig[i] + 1) %% num_cells[i]):num_cells[i]
+        }
+        epoch[file_idx_new[1]] = max.epochs # last epoch
+      }
+
+
+      if (length(minibatch_idx[[file_idx_new[1]]]) == minibatch_sizes_orig[file_idx_new[1]]){
+        X_minibatch = rep(list(NULL), num_files)
+        for (i in file_idx_new){
+          X_minibatch[[i]] = object@scale.data[[i]][1:num_genes ,minibatch_idx[[i]]]
+        }
+
+        # update H_i by ANLS Hi_minibatch[[i]]
+        H_minibatch = rep(list(NULL), num_files)
+        for (i in file_idx_new){
+          H_minibatch[[i]] = solveNNLS(rbind(object@W + object@V[[i]], sqrt_lambda * object@V[[i]]),
+                                       rbind(X_minibatch[[i]], matrix(0, num_genes, minibatch_sizes[i])))
+        }
+
+        # updata A and B matrices
+        if (iter == 1){
+          scale_param = c(rep(0, num_prev_files), rep(0, num_new_files))
+        } else if(iter == 2){
+          scale_param = c(rep(0, num_prev_files), rep(1, num_new_files) / minibatch_sizes[file_idx_new])
+        } else {
+          scale_param = c(rep(0, num_prev_files), rep((iter - 2) / (iter - 1), num_new_files))
+        }
+
+
+        if (epoch[file_idx_new[1]] > 0 & epoch_next[file_idx_new[1]] == TRUE){ # remove information older than 2 epochs
+          for (i in file_idx_new){
+            object@A[[i]] = object@A[[i]] - A_old[[i]]
+            A_old[[i]] = scale_param[i] * object@A[[i]]
+            object@B[[i]] = object@B[[i]] - B_old[[i]]
+            B_old[[i]] = scale_param[i] * object@B[[i]]
+          }
+        } else{ # otherwise scale the old information
+          for (i in file_idx_new){
+            A_old[[i]] = scale_param[i] * A_old[[i]]
+            B_old[[i]] = scale_param[i] * B_old[[i]]
+          }
+        }
+
+        for (i in file_idx_new){
+          object@A[[i]] = scale_param[i] * object@A[[i]] + H_minibatch[[i]] %*% t(H_minibatch[[i]]) / minibatch_sizes[i]   # HiHit
+          diag(object@A[[i]])[diag(object@A[[i]])==0] = 1e-15
+          object@B[[i]] = scale_param[i] * object@B[[i]] + X_minibatch[[i]] %*% t(H_minibatch[[i]]) / minibatch_sizes[i]   # XiHit
+        }
+
+
+        # update W, V_i by HALS
+        iter_miniBatch = 1
+        delta_miniBatch = Inf
+        max_iters_miniBatch = miniBatch_max_iters
+
+        while(iter_miniBatch <= max_iters_miniBatch){
+          # update W
+          for (j in 1:k){
+            W_update_numerator = rep(0, num_genes)
+            W_update_denominator = 0
+            for (i in file_idx){
+              W_update_numerator = W_update_numerator + object@B[[i]][, j] - (object@W + object@V[[i]]) %*% object@A[[i]][, j]
+              W_update_denominator = W_update_denominator +  object@A[[i]][j,j]
+            }
+
+            object@W[, j] = nonneg(object@W[, j] + W_update_numerator / W_update_denominator)
+          }
+
+          # update V_i
+          for (j in 1:k){
+            for (i in file_idx_new){
+              object@V[[i]][, j] = nonneg(object@V[[i]][, j] + (object@B[[i]][, j] - (object@W + (1 + lambda) * object@V[[i]]) %*% object@A[[i]][, j]) /
+                ((1 + lambda) * object@A[[i]][j, j]))
+            }
+          }
+
+          iter_miniBatch = iter_miniBatch + 1
+        }
+        epoch_next = rep(FALSE, num_files) # reset epoch change indicator
+        iter = iter + 1
+        setTxtProgressBar(pb = pb, value = iter)
+      }
+    }
+    cat("\nCalculate metagene loadings...", "\n")
+    object@H = rep(list(NULL), num_files)
+    for (i in file_idx){
+      if (num_cells[i] %% miniBatch_size == 0) num_batch = num_cells[i] %/% miniBatch_size else num_batch = num_cells[i] %/% miniBatch_size + 1
+      if (num_batch == 1){
+        X_i = object@scale.data[[i]][1:num_genes,]
+        object@H[[i]] = solveNNLS(rbind(object@W + object@V[[i]],sqrt_lambda * object@V[[i]]), rbind(X_i, matrix(0, num_genes , num_cells[i])))
+      } else {
+        for (batch_idx in 1:num_batch){
+          if (batch_idx != num_batch){
+            cell_idx = ((batch_idx - 1) * miniBatch_size + 1):(batch_idx * miniBatch_size)
+          } else {
+            cell_idx = ((batch_idx - 1) * miniBatch_size + 1):num_cells[i]
+          }
+          X_i_batch = object@scale.data[[i]][1:num_genes,cell_idx]
+          object@H[[i]] = cbind(object@H[[i]], solveNNLS(rbind(object@W + object@V[[i]], sqrt_lambda * object@V[[i]]),
+                                                         rbind(X_i_batch, matrix(0, num_genes , length(cell_idx)))))
+        }
+      }
+      colnames(object@H[[i]]) = cell_barcodes[[i]]
+    }
+
+    rownames(object@W) = gene_names
+    colnames(object@W) = NULL
+
+    for (i in file_idx){
+      rownames(object@V[[i]]) = gene_names
+      colnames(object@V[[i]]) = NULL
+    }
+
+  } else {
+    cat("Metagene projection", "\n")
+    object@W = if(!is.null(W.init)) W.init else object@W
+    object@H[file_idx_new] = rep(list(NULL), num_new_files)
+    object@V[file_idx_new] = rep(list(NULL), num_new_files)
+    for (i in file_idx_new){
+      if (num_cells[i] %% miniBatch_size == 0) num_batch = num_cells[i] %/% miniBatch_size else num_batch = num_cells[i] %/% miniBatch_size + 1
+      if (num_cells[i] <= miniBatch_size){
+        object@H[[i]] = solveNNLS(object@W, object@scale.data[[i]][1:num_genes,])
+      } else {
+        for (batch_idx in 1:num_batch){
+          if (batch_idx != num_batch){
+            cell_idx = ((batch_idx - 1) * miniBatch_size + 1):(batch_idx * miniBatch_size)
+          } else {
+            cell_idx = ((batch_idx - 1) * miniBatch_size + 1):num_cells[i]
+          }
+          object@H[[i]] = cbind(object@H[[i]],solveNNLS(object@W, object@scale.data[[i]][1:num_genes,cell_idx]))
+        }
+      }
+      colnames(object@H[[i]]) = cell_barcodes[[i]]
+      object@V[[i]] = matrix(0, num_genes, k)
+    }
+  }
+
+  # gene x k -> k x gene & k x cell -> cell x k
+  object@W = t(object@W)
+  object@V = lapply(object@V, t)
+  object@H = lapply(object@H, t)
+  for (i in 1:length(object@raw.data)){
+    if (class(object@raw.data[[i]])[1] != "H5File") object@scale.data[[i]] = t(object@scale.data[[i]])
+  }
+
+  if (!is.null(X_new)){
+    names(object@scale.data) <- names(object@raw.data) <- c(names(raw.data_prev), names(X_new))
+  }
+  names(object@H) <- names(object@V) <- names(object@raw.data)
+  return(object)
+}
+
+
+#' Perform thresholding on dense matrix
+#'
+#' @description
+#' Perform thresholding on the input dense matrix. Remove any values samller than eps by eps.
+#' Helper function for online_iNMF
+#'
+#' @param x Dense matrix.
+#' @param eps Threshold. Should be a small positive value. (default 1e-16)
+#' @return Dense matrix with smallest values equal to eps.
+
+nonneg <- function(x, eps=1e-16) {
+  x[x < eps] = eps
+  return(x)
+}
+
 
 #' Perform iNMF on scaled datasets
 #'
@@ -717,7 +1986,7 @@ optimizeALS <- function(
 #' @importFrom utils setTxtProgressBar txtProgressBar
 #' @method optimizeALS list
 #'
-optimizeALS.list  <- function(
+optimizeALS.list <- function(
   object,
   k,
   lambda = 5.0,
@@ -737,9 +2006,9 @@ optimizeALS.list  <- function(
   E <- object
   N <- length(x = E)
   ns <- sapply(X = E, FUN = nrow)
-  if (k >= min(ns)) {
-    stop('Select k lower than the number of cells in smallest dataset: ', min(ns))
-  }
+  #if (k >= min(ns)) {
+  #  stop('Select k lower than the number of cells in smallest dataset: ', min(ns))
+  #}
   tmp <- gc()
   g <- ncol(x = E[[1]])
   if (k >= g) {
@@ -769,6 +2038,7 @@ optimizeALS.list  <- function(
       nrow = k,
       ncol = g
     )
+
     V <- lapply(
       X = 1:N,
       FUN = function(i) {
@@ -779,6 +2049,7 @@ optimizeALS.list  <- function(
         ))
       }
     )
+
     H <- lapply(
       X = ns,
       FUN = function(n) {
@@ -899,7 +2170,7 @@ optimizeALS.list  <- function(
     if (print.obj) {
       cat("Objective:", obj, "\n")
     }
-    }
+  }
   cat("Best results with seed ", best_seed, ".\n", sep = "")
   out <- list()
   out$H <- H_m
@@ -910,7 +2181,7 @@ optimizeALS.list  <- function(
   names(x = out$V) <- names(x = out$H) <- names(x = object)
   out$W <- W_m
   return(out)
-  }
+}
 
 #' @importFrom methods slot<-
 #'
@@ -1006,7 +2277,7 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
   H <- object@H
   W <- object@W
   V <- object@V
-  
+
   if (k.new > k) {
     set.seed(rand.seed)
     sqrt_lambda <- sqrt(lambda)
@@ -1259,7 +2530,7 @@ optimizeSubset <- function(object, cell.subset = NULL, cluster.subset = NULL, la
     }
     print(dim(object@scale.data[[i]]))
   }
-  
+
   names(object@raw.data) <- names(object@norm.data) <- names(object@H) <- old_names
   k <- ncol(H[[1]])
   object <- optimizeALS(object, k = k, lambda = lambda, thresh = thresh, max.iters = max.iters,
@@ -1411,24 +2682,24 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
     stopCluster(cl)
     rep_data[[r]] <- data_matrix
   }
-  
+
   aligns <- Reduce(cbind, rep_data)
   if (is.null(dim(aligns))) {
     aligns <- matrix(aligns, ncol = 1)
   }
   mean_aligns <- apply(aligns, 1, mean)
-  
+
   time_elapsed <- difftime(Sys.time(), time_start, units = "auto")
   cat(paste("\nCompleted in:", as.double(time_elapsed), units(time_elapsed)))
   # make dataframe
   df_al <- data.frame(align = mean_aligns, lambda = lambda.test)
-  
+
   p1 <- ggplot(df_al, aes_string(x = 'lambda', y = 'mean_aligns')) + geom_line(size=1) +
     geom_point() +
     theme_classic() + labs(y = 'Alignment', x = 'Lambda') +
     guides(col = guide_legend(title = "", override.aes = list(size = 2))) +
     theme(legend.position = 'top')
-  
+
   if (return.data) {
     print(p1)
     if (return.raw) {
@@ -1538,13 +2809,13 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
     data_matrix <- data_matrix[nrow(data_matrix):1, ]
     rep_data[[r]] <- data_matrix
   }
-  
+
   medians <- Reduce(cbind, lapply(rep_data, function(x) {apply(x, 1, median)}))
   if (is.null(dim(medians))) {
     medians <- matrix(medians, ncol = 1)
   }
   mean_kls <- apply(medians, 1, mean)
-  
+
   time_elapsed <- difftime(Sys.time(), time_start, units = "auto")
   cat(paste("\nCompleted in:", as.double(time_elapsed), units(time_elapsed)))
   # make dataframe
@@ -1553,13 +2824,13 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
   if (!plot.log2) {
     df_kl <- df_kl[df_kl$calc == 'KL_div', ]
   }
-  
+
   p1 <- ggplot(df_kl, aes_string(x = 'k', y = 'median_kl', col = 'calc')) + geom_line(size=1) +
     geom_point() +
     theme_classic() + labs(y='Median KL divergence (across all cells)', x = 'K') +
     guides(col=guide_legend(title="", override.aes = list(size = 2))) +
     theme(legend.position = 'top')
-  
+
   if (return.data) {
     print(p1)
     if (return.raw) {
@@ -1585,7 +2856,7 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #' The first step, building the shared factor neighborhood graph, is performed in SNF(), and
 #' produces a graph representation where edge weights between cells (across all datasets)
 #' correspond to their similarity in the shared factor neighborhood space. An important parameter
-#' here is knn_k, the number of neighbors used to build the shared factor space. 
+#' here is knn_k, the number of neighbors used to build the shared factor space.
 #'
 #' Next we perform quantile alignment for each dataset, factor, and cluster (by
 #' stretching/compressing datasets' quantiles to better match those of the reference dataset). These
@@ -1597,13 +2868,13 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #'   the dataset with the largest number of cells is used.
 #' @param min_cells Minimum number of cells to consider a cluster shared across datasets (default 20)
 #' @param quantiles Number of quantiles to use for quantile normalization (default 50).
-#' @param eps  The error bound of the nearest neighbor search. (default 0.9) Lower values give more 
+#' @param eps  The error bound of the nearest neighbor search. (default 0.9) Lower values give more
 #' accurate nearest neighbor graphs but take much longer to computer.
 #' @param dims.use Indices of factors to use for shared nearest factor determination (default
 #'   1:ncol(H[[1]])).
 #' @param do.center Centers the data when scaling factors (useful for less sparse modalities like
 #'   methylation data). (default FALSE)
-#' @param max_sample Maximum number of cells used for quantile normalization of each cluster 
+#' @param max_sample Maximum number of cells used for quantile normalization of each cluster
 #' and factor. (default 1000)
 #' @param refine.knn whether to increase robustness of cluster assignments using KNN graph.(default TRUE)
 #' @param rand.seed Random seed to allow reproducible results (default 1)
@@ -1710,7 +2981,7 @@ quantile_norm.list <- function(
           new_vals <- rep(0, num_cells2)
         }
         else {
-          warp_func <- stats::approxfun(q2, q1, rule = 2)
+          warp_func <- withCallingHandlers(stats::approxfun(q2, q1, rule = 2), warning=function(w){invokeRestart("muffleWarning")})
           new_vals <- warp_func(Hs[[k]][cells2, i])
         }
         Hs[[k]][cells2, i] <- new_vals
@@ -1743,8 +3014,8 @@ quantile_norm.liger <- function(
     ...
 ) {
   if (is.null(x = ref_dataset)) {
-    ns <- sapply(X = object@scale.data, FUN = nrow)
-    ref_dataset <- names(x = object@scale.data)[which.max(x = ns)]
+    ns <- sapply(X = object@H, FUN = nrow)
+    ref_dataset <- names(x = object@H)[which.max(x = ns)]
   }
   out <- quantile_norm(
     object = object@H,
@@ -1768,13 +3039,13 @@ quantile_norm.liger <- function(
 #' Louvain algorithm for community detection
 #'
 #' @description
-#' After quantile normalization, users can additionally run the Louvain algorithm 
-#' for community detection, which is widely used in single-cell analysis and excels at merging 
+#' After quantile normalization, users can additionally run the Louvain algorithm
+#' for community detection, which is widely used in single-cell analysis and excels at merging
 #' small clusters into broad cell classes.
 #'
 #' @param object \code{liger} object. Should run quantile_norm before calling.
 #' @param k The maximum number of nearest neighbours to compute. (default 20)
-#' @param resolution Value of the resolution parameter, use a value above (below) 1.0 if you want 
+#' @param resolution Value of the resolution parameter, use a value above (below) 1.0 if you want
 #' to obtain a larger (smaller) number of communities. (default 1.0)
 #' @param prune Sets the cutoff for acceptable Jaccard index when
 #' computing the neighborhood overlap for the SNN construction. Any edges with
@@ -1802,7 +3073,13 @@ louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps
   output_path <- paste0('edge_', sub('\\s', '_', Sys.time()), '.txt')
   output_path = sub(":","_",output_path)
   output_path = sub(":","_",output_path)
-  knn <- RANN::nn2(object@H.norm, k = k, eps = eps)
+  if (dim(object@H.norm)[1] == 0){
+    print("Louvain Clustering on unnormalized cell factor loadings.")
+    knn <- RANN::nn2(Reduce(rbind, object@H), k = k, eps = eps)
+  } else {
+    print("Louvain Clustering on quantile normalized cell factor loadings.")
+    knn <- RANN::nn2(object@H.norm, k = k, eps = eps)
+  }
   snn <- ComputeSNN(knn$nn.idx, prune = prune)
   WriteEdgeFile(snn, output_path, display_progress = F)
   clusts <- RunModularityClusteringCpp(snn,
@@ -1810,11 +3087,69 @@ louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps
     nIterations = nIterations, algorithm = 1, randomSeed = random.seed, printOutput = F,
     edgefilename = output_path
   )
-  names(clusts) = names(object@clusters)
+  names(clusts) = rownames(object@cell.data)
+  rownames(snn) = rownames(object@cell.data)
+  colnames(snn) = rownames(object@cell.data)
+  clusts <- GroupSingletons(ids = clusts, SNN = snn, verbose = F)
   object@clusters = as.factor(clusts)
   unlink(output_path)
   return(object)
 }
+
+# Group single cells that make up their own cluster in with the cluster they are
+# most connected to. (Adopted from Seurat v3)
+#
+# @param ids Named vector of cluster ids
+# @param SNN SNN graph used in clustering
+# @param group.singletons Group singletons into nearest cluster (TRUE by default). If FALSE, assign all singletons to
+# a "singleton" group
+#
+# @return Returns updated cluster assignment with all singletons merged with most connected cluster
+#
+GroupSingletons <- function(ids, SNN, group.singletons = TRUE, verbose = FALSE) {
+  # identify singletons
+  singletons <- c()
+  singletons <- names(x = which(x = table(ids) == 1))
+  singletons <- intersect(x = unique(x = ids), singletons)
+  if (!group.singletons) {
+    ids[which(ids %in% singletons)] <- "singleton"
+    return(ids)
+  }
+  # calculate connectivity of singletons to other clusters, add singleton
+  # to cluster it is most connected to
+  cluster_names <- as.character(x = unique(x = ids))
+  cluster_names <- setdiff(x = cluster_names, y = singletons)
+  connectivity <- vector(mode = "numeric", length = length(x = cluster_names))
+  names(x = connectivity) <- cluster_names
+  new.ids <- ids
+  for (i in singletons) {
+    i.cells <- names(which(ids == i))
+    for (j in cluster_names) {
+      j.cells <- names(which(ids == j))
+      subSNN <- SNN[i.cells, j.cells]
+      set.seed(1) # to match previous behavior, random seed being set in WhichCells
+      if (is.object(x = subSNN)) {
+        connectivity[j] <- sum(subSNN) / (nrow(x = subSNN) * ncol(x = subSNN))
+      } else {
+        connectivity[j] <- mean(x = subSNN)
+      }
+    }
+    m <- max(connectivity, na.rm = T)
+    mi <- which(x = connectivity == m, arr.ind = TRUE)
+    closest_cluster <- sample(x = names(x = connectivity[mi]), 1)
+    ids[i.cells] <- closest_cluster
+  }
+  if (length(x = singletons) > 0 && verbose) {
+    message(paste(
+      length(x = singletons),
+      "singletons identified.",
+      length(x = unique(x = ids)),
+      "final clusters."
+    ))
+  }
+  return(ids)
+}
+
 
 #' Impute the query cell expression matrix
 #'
@@ -1852,7 +3187,7 @@ louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps
 imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, norm = TRUE, scale = FALSE) {
   cat("NOTE: This function will discard the raw data previously stored in the liger object and",
   "replace the raw.data slot with the imputed data.\n\n")
-  
+
   if (length(reference) > 1) {
     stop("Can only have ONE reference dataset")
   }
@@ -1882,11 +3217,11 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
       )
     }
   }
-  
+
   reference_cells <- colnames(object@raw.data[[reference]]) # cells by genes
   for (query in queries) {
     query_cells <- colnames(object@raw.data[[query]])
-    
+
     # creating a (reference cell numbers X query cell numbers) weights matrix for knn weights and unit weights
     nn.k <- get.knnx(object@H.norm[reference_cells, ], object@H.norm[query_cells, ], k = knn_k, algorithm = "CR")
     weights <- Matrix(0, nrow = ncol(object@raw.data[[reference]]), ncol = nrow(nn.k$nn.index), sparse = TRUE)
@@ -1901,13 +3236,13 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
         weights[nn.k$nn.index[n, ], n] <- 1/knn_k # simply count the mean
       }
     }
-    
+
     # (genes by ref cell num) multiply by the weight matrix (ref cell num by query cell num)
     imputed_vals <- object@raw.data[[reference]] %*% weights
     # assigning dimnames
     colnames(imputed_vals) <- query_cells
     rownames(imputed_vals) <- rownames(object@raw.data[[reference]])
-    
+
     # formatiing the matrix
     if (class(object@raw.data[[reference]])[1] == "dgTMatrix" |
         class(object@raw.data[[reference]])[1] == "dgCMatrix") {
@@ -1915,10 +3250,10 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
     } else {
       imputed_vals <- as.matrix(imputed_vals)
     }
-    
+
     object@raw.data[[query]] <- imputed_vals
   }
-  
+
   if (norm) {
     cat('\nNormalizing data...\n')
     object <- liger::normalize(object)
@@ -1927,7 +3262,7 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
     cat('Scaling (but not centering) data...')
     object <- liger::scaleNotCenter(object)
   }
-  
+
   return(object)
 }
 
@@ -1955,6 +3290,11 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
 #' ligerex <- quantileAlignSNF(ligerex)
 #' wilcox.results <- runWilcoxon(ligerex, compare.method = "cluster")
 #' wilcox.results <- runWilcoxon(ligerex, compare.method = "datastes", data.use = c(1, 2))
+#' # HDF5 input
+#' ligerex <- online_iNMF(ligerex, k = 20)
+#' ligerex <- quantile_norm(ligerex)
+#' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 1000)
+#' de_genes <- runWilcoxon(ligerex, compare.method = "clusters")
 #' }
 #'
 runWilcoxon <- function(object, data.use = "all", compare.method) {
@@ -1974,6 +3314,14 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
     }
   }
 
+  if (class(object@raw.data[[1]])[1] == "H5File"){
+    if (is.null(object@h5file.info[[1]][["sample.data.type"]])){
+      print("Need to sample data before Wilcoxon test for HDF5 input.")
+    } else {
+      print(paste0("Running Wilcoxon test on ", object@h5file.info[[1]][["sample.data.type"]]))
+    }
+  }
+
   ### create feature x sample matrix
   if (data.use == "all" | length(data.use) > 1) { # at least two datasets
     if (data.use == "all") {
@@ -1984,14 +3332,24 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
       print(paste0("Performing Wilcoxon test on GIVEN datasets: ", toString(data.use)))
       sample.list <- data.use
     }
+    # get all shared genes of every datasets
     genes <- Reduce(intersect, lapply(sample.list, function(sample) {
-      object@norm.data[[sample]]@Dimnames[[1]]
-    })) # get all shared genes of every datasets
-
-    feature_matrix <- Reduce(cbind, lapply(sample.list, function(sample) {
-      object@norm.data[[sample]][genes, ]
-    })) # get feature matrix, shared genes as rows and all barcodes as columns
-
+      if (class(object@norm.data[[sample]])[[1]] == "dgCMatrix")
+      {
+        return(object@norm.data[[sample]]@Dimnames[[1]])
+      }
+      else
+      {
+        return(rownames(object@sample.data[[sample]]))
+      }
+    }))
+    if (class(object@norm.data[[sample.list[1]]])[[1]] == "dgCMatrix") {
+      feature_matrix <- Reduce(cbind, lapply(sample.list, function(sample) {
+        object@norm.data[[sample]][genes, ]
+      })) # get feature matrix, shared genes as rows and all barcodes as columns
+    } else {
+      feature_matrix <- Reduce(cbind, object@sample.data[sample.list])
+    }
     # get labels of clusters and datasets
     cell_source <- object@cell.data[["dataset"]] # from which dataset
     names(cell_source) <- names(object@clusters)
@@ -1999,8 +3357,13 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
     clusters <- object@clusters[colnames(feature_matrix), drop = TRUE] # from which cluster
   } else { # for one dataset only
     print(paste0("Performing Wilcoxon test on GIVEN dataset: ", data.use))
-    feature_matrix <- object@norm.data[[data.use]]
-    clusters <- object@clusters[object@norm.data[[data.use]]@Dimnames[[2]], drop = TRUE] # from which cluster
+    if (class(object@norm.data[[data.use]])[[1]] == "dgCMatrix") {
+      feature_matrix <- object@norm.data[[data.use]]
+      clusters <- object@clusters[object@norm.data[[data.use]]@Dimnames[[2]], drop = TRUE] # from which cluster
+    } else {
+      feature_matrix <- object@sample.data[[data.use]]
+      clusters <- object@clusters[colnames(object@sample.data[[data.use]]), drop = TRUE] # from which cluster
+    }
   }
 
   ### perform wilcoxon test
@@ -2055,11 +3418,11 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
 #' \dontrun{
 #' gmat.small <- readRDS("../testdata/small_gmat.RDS") # some gene counts matrix
 #' pmat.small <- readRDS("../testdata/small_pmat.RDS") # some peak counts matrix
-#' regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman", 
+#' regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman",
 #' alpha = 0.05, path_to_coords = 'some_path')
 #' }
 #'
-linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist = "spearman", 
+linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist = "spearman",
                               alpha = 0.05, path_to_coords) {
   ## check dependency
   if (!requireNamespace("GenomicRanges", quietly = TRUE)) {
@@ -2068,14 +3431,14 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
          call. = FALSE
     )
   }
-  
+
   if (!requireNamespace("IRanges", quietly = TRUE)) {
     stop("Package \"IRanges\" needed for this function to work. Please install it by command:\n",
          "BiocManager::install('IRanges')",
          call. = FALSE
     )
   }
-  
+
   ### make Granges object for peaks
   peak.names <- strsplit(rownames(peak_counts), "[:-]")
   chrs <- Reduce(append, lapply(peak.names, function(peak) {
@@ -2118,7 +3481,7 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
       )
     )
   }
-  genes.list <- genes.list[!missing_genes] 
+  genes.list <- genes.list[!missing_genes]
   genes.coords <- genes.coords[genes.list]
 
   print("Calculating correlation for gene-peak pairs...")
@@ -2171,7 +3534,7 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
   # make final sparse matrix
   regnet <- sparseMatrix(
     i = i_index, p = p_index, x = value_list,
-    dims = c(ncol(peak_counts), length(genes.list)), 
+    dims = c(ncol(peak_counts), length(genes.list)),
     dimnames = list(colnames(peak_counts), genes.list)
   )
 
@@ -2182,7 +3545,7 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
 #' Export predicted gene-pair interaction
 #'
 #' Export the predicted gene-pair interactions calculated by upstream function 'linkGenesAndPeaks'
-#'  into an Interact Track file which is compatible with UCSC Genome Browser. 
+#'  into an Interact Track file which is compatible with UCSC Genome Browser.
 #'
 #' @param corr.mat A sparse matrix with peak names as rows and gene symbols as columns.
 #' @param genes.list A list of the genes symbols to be tested. If not specified,
@@ -2328,29 +3691,29 @@ runGSEA <- function(object, gene_sets = c(), mat_w = T, mat_v = 0, custom_gene_s
          call. = FALSE
     )
   }
-  
+
   if (!requireNamespace("reactome.db", quietly = TRUE)) {
     stop("Package \"reactome.db\" needed for this function to work. Please install it by command:\n",
          "BiocManager::install('reactome.db')",
          call. = FALSE
     )
   }
-  
+
   if (!requireNamespace("fgsea", quietly = TRUE)) {
     stop("Package \"fgsea\" needed for this function to work. Please install it by command:\n",
          "BiocManager::install('fgsea')",
          call. = FALSE
     )
   }
-  
+
   if (length(mat_v) > length(object@V)) {
     stop("The gene loading input is invalid.", call. = FALSE)
   }
-  
+
   if (!.hasSlot(object, "W") | !.hasSlot(object, "V")) {
     stop("There is no W or V matrix. Please do iNMF first.", call. = FALSE)
   }
-  
+
   if (mat_w) {
     gene_loadings <- object@W
     if (mat_v) {
@@ -2363,11 +3726,11 @@ runGSEA <- function(object, gene_sets = c(), mat_w = T, mat_v = 0, custom_gene_s
       object@V[[v]]
     }))
   }
-  
+
   gene_ranks <- t(apply(gene_loadings, MARGIN = 1, function(x) {
     rank(x)
   }))
-  
+
   colnames(gene_ranks) <- sapply(colnames(gene_ranks), toupper)
   gene_id <- as.character(AnnotationDbi::mapIds(org.Hs.eg.db::org.Hs.eg.db, colnames(gene_ranks), "ENTREZID", "SYMBOL"))
   colnames(gene_ranks) <- gene_id
@@ -2410,7 +3773,7 @@ runGSEA <- function(object, gene_sets = c(), mat_w = T, mat_v = 0, custom_gene_s
 #' FIt-SNE directory as the fitsne.path parameter, though this is only necessary for the first call
 #' to runTSNE. For more detailed FIt-SNE installation instructions, see the liger repo README.
 #'
-#' @param object \code{liger} object. Should run quantileAlignSNF before calling with defaults.
+#' @param object \code{liger} object. Should run quantile_norm before calling with defaults.
 #' @param use.raw Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).
 #' @param dims.use Factors to use for computing tSNE embedding (default 1:ncol(H.norm)).
 #' @param use.pca Whether to perform initial PCA step for Rtsne (default FALSE).
@@ -2488,7 +3851,7 @@ runTSNE <- function(object, use.raw = F, dims.use = 1:ncol(object@H.norm), use.p
 #' Note that this method requires that the package uwot is installed. It does not depend
 #' on reticulate or python umap-learn.
 #'
-#' @param object \code{liger} object. Should run quantileAlignSNF before calling with defaults.
+#' @param object \code{liger} object. Should run quantile_norm before calling with defaults.
 #' @param use.raw Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).
 #' @param dims.use Factors to use for computing tSNE embedding (default 1:ncol(H.norm)).
 #' @param k Number of dimensions to reduce to (default 2).
@@ -2613,7 +3976,7 @@ calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.
 #' expected to be most similar to iNMF. Although agreement can theoretically approach 1, in practice
 #' it is usually no higher than 0.2-0.3 (particularly for non-deterministic approaches like NMF).
 #'
-#' @param object \code{liger} object. Should call quantileAlignSNF before calling.
+#' @param object \code{liger} object. Should call quantile_norm before calling.
 #' @param dr.method Dimensionality reduction method to use for assessing pre-alignment geometry
 #'   (either "PCA", "NMF", or "ICA"). (default "NMF")
 #' @param ndims Number of dimensions to use in dimensionality reduction (recommended to use the
@@ -2635,6 +3998,10 @@ calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.
 #' ligerex
 #' ligerex <- quantileAlignSNF(ligerex)
 #' agreement <- calcAgreement(ligerex, dr.method = "NMF")
+#' # HDF5 input
+#' ligerex <- quantile_norm(ligerex)
+#' ligerex <- readSubset(ligerex, slot.use = "scale.data", max.cells = 5000)
+#' agreement <- calcAgreement(ligerex, dr.method = "NMF")
 #' }
 
 calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.aligned = TRUE,
@@ -2644,35 +4011,66 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
   #        call. = FALSE
   #   )
   # }
-  
+  if (class(object@raw.data[[1]])[1] == "H5File") {
+    if (object@h5file.info[[1]][["sample.data.type"]] != "scale.data"){
+      stop("HDF5-based Liger object requires sampled scale.data for calculating agreement.")
+    }
+  }
+
   print(paste("Reducing dimensionality using", dr.method))
   set.seed(rand.seed)
   dr <- list()
   if (dr.method == "NMF") {
-    dr <- lapply(object@scale.data, function(x) {
-      nmf_hals(x, k = ndims)[[1]]
-    })
-  }
-  else if (dr.method == "ICA") {
-    dr <- lapply(object@scale.data, function(x) {
-      icafast(x, nc = ndims)$S
-    })
-  } else {
-    dr <- lapply(object@scale.data, function(x) {
-      suppressWarnings(prcomp_irlba(t(x),
-                                    n = ndims,
-                                    scale. = (colSums(x) > 0), center = F
-      )$rotation)
-    })
-    for (i in 1:length(dr)) {
-      rownames(dr[[i]]) <- rownames(object@scale.data[[i]])
+    if (class(object@raw.data[[1]])[1] == "H5File") {
+      dr <- lapply(object@sample.data, function(x) {
+        nmf_hals(t(x), k = ndims)[[1]]
+      })
+    } else {
+      dr <- lapply(object@scale.data, function(x) {
+        nmf_hals(x, k = ndims)[[1]]
+      })
     }
   }
-  ns <- sapply(object@scale.data, nrow)
+  else if (dr.method == "ICA") {
+    if (class(object@raw.data[[1]])[1] == "H5File") {
+      dr <- list()
+      for (i in 1:length(object@H)){
+        dr[[i]] = icafast(t(object@sample.data[[i]]), nc = ndims)$S
+      }
+
+    } else {
+      dr <- lapply(object@scale.data, function(x) {
+        icafast(x, nc = ndims)$S
+      })
+    }
+  } else {
+    if (class(object@raw.data[[1]])[1] == "H5File") {
+      dr <- list()
+      for (i in 1:length(object@H)){
+        dr[[i]] = suppressWarnings(prcomp_irlba(object@sample.data[[i]],
+                                                n = ndims,
+                                                scale. = (colSums(t(object@sample.data[[i]])) > 0), center = F
+        )$rotation)
+        rownames(dr[[i]]) = colnames(object@sample.data[[i]])
+      }
+
+    } else {
+      dr <- lapply(object@scale.data, function(x) {
+        suppressWarnings(prcomp_irlba(t(x),
+                                      n = ndims,
+                                      scale. = (colSums(x) > 0), center = F
+        )$rotation)
+      })
+      for (i in 1:length(dr)) {
+        rownames(dr[[i]]) <- rownames(object@scale.data[[i]])
+      }
+    }
+  }
+  ns <- sapply(dr, nrow)
   n <- sum(ns)
   jaccard_inds <- c()
   distorts <- c()
-  
+
   for (i in 1:length(dr)) {
     jaccard_inds_i <- c()
     if (use.aligned) {
@@ -2689,7 +4087,7 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
     }))
     jaccard_inds_i <- jaccard_inds_i[is.finite(jaccard_inds_i)]
     jaccard_inds <- c(jaccard_inds, jaccard_inds_i)
-    
+
     distorts <- c(distorts, mean(jaccard_inds_i))
   }
   if (by.dataset) {
@@ -2707,7 +4105,7 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #' value for perfectly mixed datasets, and scale the value from 0 to 1. Note that in practice,
 #' alignment can be greater than 1 occasionally.
 #'
-#' @param object \code{liger} object. Should call quantileAlignSNF before calling.
+#' @param object \code{liger} object. Should call quantile_norm before calling.
 #' @param k Number of nearest neighbors to use in calculating alignment. By default, this will be
 #'   floor(0.01 * total number of cells), with a lower bound of 10 in all cases except where the
 #'   total number of sampled cells is less than 10.
@@ -2719,6 +4117,7 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #' @param clusters.use Names of clusters to use in calculating alignment (default NULL).
 #' @param by.cell Return alignment calculated individually for each cell (default FALSE).
 #' @param by.dataset Return alignment calculated for each dataset (default FALSE).
+#' @param do.kbet Return kBET metric (default FALSE).
 #'
 #' @return Alignment metric.
 #' @importFrom FNN get.knn
@@ -2727,12 +4126,12 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #' \dontrun{
 #' # liger object, factorization complete
 #' ligerex
-#' ligerex <- quantileAlignSNF(ligerex)
+#' ligerex <- quantile_norm(ligerex)
 #' alignment <- calcAlignment(ligerex)
 #' }
 
 calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL, cells.comp = NULL,
-                          clusters.use = NULL, by.cell = F, by.dataset = F) {
+                          clusters.use = NULL, by.cell = F, by.dataset = F, do.kbet = F) {
   if (is.null(cells.use)) {
     cells.use <- rownames(object@H.norm)
   }
@@ -2792,9 +4191,17 @@ calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL, cel
   }
   names(dataset) <- rownames(nmf_factors)
   dataset <- dataset[sampled_cells]
+
+  if(do.kbet)
+  {
+    kBET_res = kBET::kBET(nmf_factors[sampled_cells, 1:num_factors],dataset,k0=k,
+                          knn=knn_graph,heuristic=F,n_repeat=100,do.pca=F,testSize=1000)
+    return(kBET_res)
+  }
+
   num_sampled <- N * min_cells
   num_same_dataset <- rep(k, num_sampled)
-  
+
   alignment_per_cell <- c()
   for (i in 1:num_sampled) {
     inds <- knn_graph$nn.index[i, ]
@@ -2935,7 +4342,7 @@ calcPurity <- function(object, classes.compare) {
   }
   clusters <- object@clusters[names(classes.compare)]
   purity <- sum(apply(table(classes.compare, clusters), 2, max)) / length(clusters)
-  
+
   return(purity)
 }
 
@@ -2964,7 +4371,7 @@ getProportionMito <- function(object, use.norm = F) {
   percent_mito <- unlist(lapply(unname(data.use), function(x) {
     colSums(x[mito.genes, ]) / colSums(x)
   }), use.names = T)
-  
+
   return(percent_mito)
 }
 
@@ -2994,11 +4401,12 @@ getProportionMito <- function(object, use.norm = F) {
 #' @param reorder.idents logical whether to reorder the datasets from default order before plotting (default FALSE).
 #' @param new.order new dataset factor order for plotting.  must set reorder.idents = TRUE.
 #' @param return.plots Return ggplot plot objects instead of printing directly (default FALSE).
+#' @param legend.fonts.size Controls the font size of the legend.
 #'
 #' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
 #'   console).
 #' @export
-#' @importFrom ggplot2 ggplot geom_point geom_text ggtitle guides guide_legend aes theme xlab ylab 
+#' @importFrom ggplot2 ggplot geom_point geom_text ggtitle guides guide_legend aes theme xlab ylab
 #' @importFrom dplyr %>% group_by summarize
 #' @examples
 #' \dontrun{
@@ -3013,10 +4421,10 @@ getProportionMito <- function(object, use.norm = F) {
 #' }
 
 plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
-                                        text.size = 3, do.shuffle = T, rand.seed = 1,
-                                        axis.labels = NULL, do.legend = T, legend.size = 5,
-                                        reorder.idents = F, new.order = NULL,
-                                        return.plots = F) {
+                                    text.size = 3, do.shuffle = T, rand.seed = 1,
+                                    axis.labels = NULL, do.legend = T, legend.size = 5,
+                                    reorder.idents = F, new.order = NULL,
+                                    return.plots = F, legend.fonts.size = 12) {
   tsne_df <- data.frame(object@tsne.coords)
   colnames(tsne_df) <- c("tsne1", "tsne2")
   tsne_df[['Dataset']] <- unlist(lapply(1:length(object@H), function(x) {
@@ -3042,19 +4450,20 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
     idx <- sample(1:nrow(tsne_df))
     tsne_df <- tsne_df[idx, ]
   }
-  
-  p1 <- ggplot(tsne_df, aes_string(x = 'tsne1', y = 'tsne2', color = 'Dataset')) +
-    geom_point(size = pt.size) +
+
+  p1 <- ggplot(tsne_df, aes_string(x = 'tsne1', y = 'tsne2', color = 'Dataset')) + theme_bw() +
+    theme_cowplot(legend.fonts.size) + geom_point(size = pt.size, stroke = 0.2) +
     guides(color = guide_legend(override.aes = list(size = legend.size)))
-  
+
   centers <- tsne_df %>% group_by(.data[['Cluster']]) %>% summarize(
     tsne1 = median(x = .data[['tsne1']]),
     tsne2 = median(x = .data[['tsne2']])
   )
-  p2 <- ggplot(tsne_df, aes_string(x = 'tsne1', y = 'tsne2', color = 'Cluster')) + geom_point(size = pt.size) +
+  p2 <- ggplot(tsne_df, aes_string(x = 'tsne1', y = 'tsne2', color = 'Cluster')) +
+    theme_cowplot(legend.fonts.size) + geom_point(size = pt.size, stroke = 0.2) +
     geom_text(data = centers, mapping = aes_string(label = 'Cluster'), colour = "black", size = text.size) +
     guides(color = guide_legend(override.aes = list(size = legend.size)))
-  
+
   if (!is.null(title)) {
     p1 <- p1 + ggtitle(title[1])
     p2 <- p2 + ggtitle(title[2])
@@ -3100,14 +4509,14 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #' @param legend.size Size of legend spots for discrete data (default 5).
 #' @param option Colormap option to use for ggplot2's scale_color_viridis (default 'plasma').
 #' @param cols.use Vector of colors to form gradient over instead of viridis colormap (low to high).
-#'   Only applies to continuous features (default NULL). 
+#'   Only applies to continuous features (default NULL).
 #' @param zero.color Color to use for zero values (no expression) (default '#F5F5F5').
 #' @param return.plots Return ggplot plot objects instead of printing directly (default FALSE).
 #'
 #' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
 #'   console).
 #' @export
-#' @importFrom ggplot2 ggplot geom_point geom_text ggtitle aes guides guide_legend labs 
+#' @importFrom ggplot2 ggplot geom_point geom_text ggtitle aes guides guide_legend labs
 #' scale_color_viridis_c scale_color_gradientn theme xlab ylab
 #' @importFrom dplyr %>% group_by summarize
 #' @importFrom stats median
@@ -3121,9 +4530,9 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #' plotFeature(ligerex, feature = 'nUMI')
 #' }
 
-plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title = NULL, 
+plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title = NULL,
                         pt.size = 0.3, text.size = 3, do.shuffle = T, rand.seed = 1, do.labels = F,
-                        axis.labels = NULL, do.legend = T, legend.size = 5, option = 'plasma', 
+                        axis.labels = NULL, do.legend = T, legend.size = 5, option = 'plasma',
                         cols.use = NULL, zero.color = '#F5F5F5', return.plots = F) {
   dr_df <- data.frame(object@tsne.coords)
   colnames(dr_df) <- c("dr1", "dr2")
@@ -3154,7 +4563,7 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
   p_list <- list()
   for (sub_df in split(dr_df, f = dr_df$dataset)) {
     ggp <- ggplot(sub_df, aes_string(x = 'dr1', y = 'dr2', color = 'feature')) + geom_point(size = pt.size)
-    
+
     # if data is discrete
     if (discrete) {
       ggp <- ggp + guides(color = guide_legend(override.aes = list(size = legend.size))) +
@@ -3176,7 +4585,7 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
         ggp <- ggp + scale_color_gradientn(colors = cols.use,
                                            na.value = zero.color) + labs(col = feature)
       }
-      
+
     }
     if (by.dataset) {
       base <- as.character(sub_df$dataset[1])
@@ -3198,7 +4607,7 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
   if (by.dataset) {
     p_list <- p_list[names(object@raw.data)]
   }
-  
+
   if (return.plots){
     if (length(p_list) == 1) {
       return(p_list[[1]])
@@ -3248,21 +4657,21 @@ plotFeature <- function(object, feature, by.dataset = T, discrete = NULL, title 
 plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsne = F) {
   k <- ncol(object@H.norm)
   pb <- txtProgressBar(min = 0, max = k, style = 3)
-  
+
   W <- t(object@W)
-  rownames(W) <- colnames(object@scale.data[[1]])
+  rownames(W) <- colnames(object@H[[1]])
   Hs_norm <- object@H.norm
   for (i in 1:k) {
     graphics::par(mfrow = c(2, 1))
     top_genes.W <- rownames(W)[order(W[, i], decreasing = T)[1:num.genes]]
     top_genes.W.string <- paste0(top_genes.W, collapse = ", ")
     factor_textstring <- paste0("Factor", i)
-    
+
     plot_title1 <- paste(factor_textstring, "\n", top_genes.W.string, "\n")
     cols <- rep("gray", times = nrow(Hs_norm))
     names(cols) <- rownames(Hs_norm)
     cols.use <- grDevices::rainbow(length(object@H))
-    
+
     for (cl in 1:length(object@H)) {
       cols[rownames(object@H[[cl]])] <- rep(cols.use[cl], times = nrow(object@H[[cl]]))
     }
@@ -3306,8 +4715,6 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #'   threshold (default 10).
 #' @param log.fc.thresh Lower log-fold change threshold for differential expression in markers
 #'   (default 1).
-#' @param umi.thresh Lower UMI threshold for markers (default 30).
-#' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
 #' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
 #'   (default 0.05).
 #' @param do.spec.plot Include dataset specificity plot in printout (default TRUE).
@@ -3329,39 +4736,47 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' # pdf('word_clouds.pdf')
 #' plotWordClouds(ligerex, num.genes = 20)
 #' # dev.off()
+#' # HDF5 input
+#' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+#' plotWordClouds(ligerex, num.genes = 20)
 #' }
 
 plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1,
-                           max.size = 4, factor.share.thresh = 10, log.fc.thresh = 1,
-                           umi.thresh = 30, frac.thresh = 0, pval.thresh = 0.05,
+                           max.size = 4, factor.share.thresh = 10, log.fc.thresh = 1, pval.thresh = 0.05,
                            do.spec.plot = T, return.plots = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
   }
-  
-  H_aligned <- object@H.norm
+
+  if(class(object@raw.data[[1]])[1] == "H5File"){
+    sample.idx = unlist(lapply(object@sample.data, colnames))
+    H_aligned = object@H.norm[sample.idx, ]
+    tsne_coords <- object@tsne.coords[sample.idx, ]
+  } else {
+    H_aligned <- object@H.norm
+    tsne_coords <- object@tsne.coords
+  }
+
   W <- t(object@W)
   V1 <- t(object@V[[dataset1]])
   V2 <- t(object@V[[dataset2]])
   W <- pmin(W + V1, W + V2)
-  
+
   dataset.specificity <- calcDatasetSpecificity(object, dataset1 = dataset1,
                                                 dataset2 = dataset2, do.plot = do.spec.plot)
   factors.use <- which(abs(dataset.specificity[[3]]) <= factor.share.thresh)
-  
+
   markers <- getFactorMarkers(object, dataset1 = dataset1, dataset2 = dataset2,
                               factor.share.thresh = factor.share.thresh,
                               num.genes = num.genes, log.fc.thresh = log.fc.thresh,
-                              umi.thresh = umi.thresh, frac.thresh = frac.thresh,
                               pval.thresh = pval.thresh,
                               dataset.specificity = dataset.specificity
   )
-  
+
   rownames(W) <- rownames(V1) <- rownames(V2) <- object@var.genes
   loadings_list <- list(V1, W, V2)
   names_list <- list(dataset1, "Shared", dataset2)
-  tsne_coords <- object@tsne.coords
   pb <- txtProgressBar(min = 0, max = length(factors.use), style = 3)
   return_plots <- list()
   for (i in factors.use) {
@@ -3371,11 +4786,11 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
     factor_ds <- paste("Factor", i, "Dataset Specificity:", dataset.specificity[[3]][i])
     p1 <- ggplot(tsne_df, aes_string(x = "tSNE1", y = "tSNE2", color = factorlab)) + geom_point() +
       scale_color_gradient(low = "yellow", high = "red") + ggtitle(label = factor_ds)
-    
+
     top_genes_V1 <- markers[[1]]$gene[markers[[1]]$factor_num == i]
     top_genes_W <- markers[[2]]$gene[markers[[2]]$factor_num == i]
     top_genes_V2 <- markers[[3]]$gene[markers[[3]]$factor_num == i]
-    
+
     top_genes_list <- list(top_genes_V1, top_genes_W, top_genes_V2)
     plot_list <- lapply(seq_along(top_genes_list), function(x) {
       top_genes <- top_genes_list[[x]]
@@ -3391,10 +4806,10 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
         scale_size(range = c(min.size, max.size), guide = FALSE) +
         scale_y_continuous(breaks = NULL) +
         scale_x_continuous(breaks = NULL) +
-        labs(x = "", y = "") + ggtitle(label = names_list[[x]]) + coord_fixed()
+        labs(x = "", y = "") + ggtitle(label = names_list[[x]]) + coord_fixed() + ggplot2::theme_void()
       return(out_plot)
     })
-    
+
     p2 <- (plot_grid(plotlist = plot_list, align = "hv", nrow = 1)
            + draw_grob(roundrectGrob(
              x = 0.33, y = 0.5, width = 0.67, height = 0.70,
@@ -3429,7 +4844,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' @param dataset1 Name of first dataset (by default takes first two datasets for dataset1 and 2)
 #' @param dataset2 Name of second dataset
 #' @param num.genes Number of genes to show in word clouds (default 30).
-#' @param num.genes.show Number of genes displayed as y-axis labels in the gene loading plots at 
+#' @param num.genes.show Number of genes displayed as y-axis labels in the gene loading plots at
 #' the bottom (default 12)
 #' @param mark.top.genes Plot points corresponding to top loading genes in different color (default
 #'   TRUE).
@@ -3461,11 +4876,14 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' \dontrun{
 #' # liger object, factorization complete
 #' ligerex
-#' ligerex <- quantileAlignSNF(ligerex)
-#' ligerex <- runTSNE(ligerex)
+#' ligerex <- quantile_norm(ligerex)
+#' ligerex <- runUMAP(ligerex)
 #' # pdf("gene_loadings.pdf")
 #' plotGeneLoadings(ligerex, num.genes = 20)
 #' # dev.off()
+#' # HDF5 input
+#' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+#' plotGeneLoadings(ligerex, num.genes = 20)
 #' }
 #'
 plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes.show = 12,
@@ -3479,7 +4897,15 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
     dataset2 <- names(object@H)[2]
   }
 
-  H_aligned <- object@H.norm
+  if(class(object@raw.data[[1]])[1] == "H5File"){
+    sample.idx = unlist(lapply(object@sample.data, colnames))
+    H_aligned = object@H.norm[sample.idx, ]
+    tsne_coords <- object@tsne.coords[sample.idx, ]
+  } else {
+    H_aligned <- object@H.norm
+    tsne_coords <- object@tsne.coords
+  }
+
   W_orig <- t(object@W)
   V1 <- t(object@V[[dataset1]])
   V2 <- t(object@V[[dataset2]])
@@ -3497,7 +4923,6 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
     dataset1 = dataset1, dataset2 = dataset2,
     factor.share.thresh = factor.share.thresh,
     num.genes = num.genes, log.fc.thresh = log.fc.thresh,
-    umi.thresh = umi.thresh, frac.thresh = frac.thresh,
     pval.thresh = pval.thresh,
     dataset.specificity = dataset.specificity
   )
@@ -3505,7 +4930,6 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
   rownames(W) <- rownames(V1) <- rownames(V2) <- rownames(W_orig) <- object@var.genes
   loadings_list <- list(V1, W, V2)
   names_list <- list(dataset1, "Shared", dataset2)
-  tsne_coords <- object@tsne.coords
   pb <- txtProgressBar(min = 0, max = length(factors.use), style = 3)
   return_plots <- list()
   for (i in factors.use) {
@@ -3637,42 +5061,67 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
 #' @export
 #' @importFrom cowplot plot_grid
 #' @importFrom ggplot2 aes_string ggplot geom_point geom_boxplot geom_violin ggtitle labs
-#' scale_color_gradient2 theme 
+#' scale_color_gradient2 theme
 #' @examples
 #' \dontrun{
 #' # liger object, factorization complete
 #' ligerex
 #' # plot expression for CD4 and return plots
 #' violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = T)
+#' HDF5 input
+#' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+#' violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = T)
 #' }
 
 plotGeneViolin <- function(object, gene, methylation.indices = NULL,
                            by.dataset = T, return.plots = F) {
-  gene_vals <- c()
-  for (i in 1:length(object@norm.data)) {
-    if (i %in% methylation.indices) {
-      gene_vals <- c(gene_vals, object@norm.data[[i]][gene, ])
-    } else {
-      if (gene %in% rownames(object@norm.data[[i]])) {
-        gene_vals_int <- log2(10000 * object@norm.data[[i]][gene, ] + 1)
-      }
-      else {
-        gene_vals_int <- rep(list(0), ncol(object@norm.data[[i]]))
-        names(gene_vals_int) <- colnames(object@norm.data[[i]])
-      }
-      gene_vals <- c(gene_vals, gene_vals_int)
+  if (class(object@raw.data[[1]])[1] == "H5File"){
+    if (object@h5file.info[[1]][["sample.data.type"]] != "norm.data"){
+      stop("norm.data should be sampled for making violin plots.")
     }
   }
-  
+
+  gene_vals <- c()
   gene_df <- data.frame(object@tsne.coords)
   rownames(gene_df) <- names(object@clusters)
+
+  for (i in 1:length(object@raw.data)) {
+    if (class(object@raw.data[[i]])[1] == "H5File"){
+      if (i %in% methylation.indices) {
+        gene_vals <- c(gene_vals, object@sample.data[[i]][gene, ])
+      } else {
+        if (gene %in% rownames(object@sample.data[[i]])) {
+          gene_vals_int <- log2(10000 * object@sample.data[[i]][gene, ] + 1)
+        }
+        else {
+          gene_vals_int <- rep(list(0), ncol(object@sample.data[[i]]))
+          names(gene_vals_int) <- colnames(object@sample.data[[i]])
+        }
+        gene_vals <- c(gene_vals, gene_vals_int)
+      }
+    } else {
+      if (i %in% methylation.indices) {
+        gene_vals <- c(gene_vals, object@norm.data[[i]][gene, ])
+      } else {
+        if (gene %in% rownames(object@norm.data[[i]])) {
+          gene_vals_int <- log2(10000 * object@norm.data[[i]][gene, ] + 1)
+        }
+        else {
+          gene_vals_int <- rep(list(0), ncol(object@norm.data[[i]]))
+          names(gene_vals_int) <- colnames(object@norm.data[[i]])
+        }
+        gene_vals <- c(gene_vals, gene_vals_int)
+      }
+    }
+  }
+
   gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])
   colnames(gene_df) <- c("tSNE1", "tSNE2", "gene")
   gene_plots <- list()
   for (i in 1:length(object@scale.data)) {
     if (by.dataset) {
-      gene_df.sub <- gene_df[rownames(object@scale.data[[i]]), ]
-      gene_df.sub$Cluster <- object@clusters[rownames(object@scale.data[[i]])]
+      gene_df.sub <- gene_df[rownames(object@H[[i]]), ]
+      gene_df.sub$Cluster <- object@clusters[rownames(object@H[[i]])]
       title <- names(object@scale.data)[i]
     } else {
       gene_df.sub <- gene_df
@@ -3702,9 +5151,9 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 
 #' Plot gene expression on dimensional reduction (t-SNE) coordinates
 #'
-#' Generates plot of dimensional reduction coordinates (default t-SNE) colored by expression of 
+#' Generates plot of dimensional reduction coordinates (default t-SNE) colored by expression of
 #' specified gene. Data can be scaled by dataset or selected feature column from cell.data (or across
-#' all cells). Data plots can be split by feature. 
+#' all cells). Data plots can be split by feature.
 #'
 #' @param object \code{liger} object. Should call runTSNE before calling.
 #' @param gene Gene for which to plot expression.
@@ -3713,30 +5162,30 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #'   (default FALSE).
 #' @param scale.by Grouping of cells by which to scale gene (can be any factor column in cell.data
 #'   or 'none' for scaling across all cells) (default 'dataset').
-#' @param log2scale Whether to show log2 transformed values or original normalized, raw, or scaled 
+#' @param log2scale Whether to show log2 transformed values or original normalized, raw, or scaled
 #'   values (as stored in object). Default value is FALSE if use.raw = T, otherwise TRUE.
 #' @param methylation.indices Indices of datasets in object with methylation data (this data is not
 #'   log transformed and must use normalized values). (default NULL)
-#' @param plot.by How to group cells for plotting (can be any factor column in cell.data or 'none' 
+#' @param plot.by How to group cells for plotting (can be any factor column in cell.data or 'none'
 #'   for plotting all cells in a single plot). Note that this can result in large number of plots.
 #'   Users are encouraged to use same value as for scale.by (default 'dataset').
-#' @param set.dr.lims Whether to keep dimensional reduction coordinates consistent when multiple 
+#' @param set.dr.lims Whether to keep dimensional reduction coordinates consistent when multiple
 #'   plots created (default FALSE).
 #' @param pt.size Point size for plots (default 0.1).
-#' @param min.clip Minimum value for expression values plotted. Can pass in quantile (0-1) or 
+#' @param min.clip Minimum value for expression values plotted. Can pass in quantile (0-1) or
 #'   absolute cutoff (set clip.absolute = T). Can also pass in vector if expecting multiple plots;
-#'   users are encouraged to pass in named vector (from levels of desired feature) to avoid 
+#'   users are encouraged to pass in named vector (from levels of desired feature) to avoid
 #'   mismatches in order (default NULL).
-#' @param max.clip Maximum value for expression values plotted. Can pass in quantile (0-1) or 
+#' @param max.clip Maximum value for expression values plotted. Can pass in quantile (0-1) or
 #'   absolute cutoff (set clip.absolute = T). Can also pass in vector if expecting multiple plots;
-#'   users are encouraged to pass in named vector (from levels of desired feature) to avoid 
+#'   users are encouraged to pass in named vector (from levels of desired feature) to avoid
 #'   mismatches in order (default NULL).
-#' @param clip.absolute Whether to treat clip values as absolute cutoffs instead of quantiles 
+#' @param clip.absolute Whether to treat clip values as absolute cutoffs instead of quantiles
 #'   (default FALSE).
 #' @param points.only Remove axes, background, and legend when plotting coordinates (default FALSE).
 #' @param option Colormap option to use for ggplot2's scale_color_viridis (default 'plasma').
 #' @param cols.use Vector of colors to form gradient over instead of viridis colormap (low to high).
-#'   (default NULL).  
+#'   (default NULL).
 #' @param zero.color Color to use for zero values (no expression) (default '#F5F5F5').
 #' @param axis.labels Vector of two strings to use as x and y labels respectively. (default NULL)
 #' @param do.legend Display legend on plots (default TRUE).
@@ -3757,14 +5206,17 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' ligerex <- runTSNE(ligerex)
 #' # plot expression for CD4 and return plots
 #' gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
+#' HDF5 input
+#' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+#' gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
 #' }
 
-plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'dataset', 
-                                 log2scale = NULL, methylation.indices = NULL, plot.by = 'dataset', 
-                                 set.dr.lims = F, pt.size = 0.1, min.clip = NULL, max.clip = NULL, 
-                                 clip.absolute = F, points.only = F, option = 'plasma', cols.use = NULL, 
-                                 zero.color = '#F5F5F5', axis.labels = NULL, do.legend = T, return.plots = F,
-                                 keep.scale = F) {
+plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'dataset',
+                     log2scale = NULL, methylation.indices = NULL, plot.by = 'dataset',
+                     set.dr.lims = F, pt.size = 0.1, min.clip = NULL, max.clip = NULL,
+                     clip.absolute = F, points.only = F, option = 'plasma', cols.use = NULL,
+                     zero.color = '#F5F5F5', axis.labels = NULL, do.legend = T, return.plots = F,
+                     keep.scale = F) {
   if ((plot.by != scale.by) & (use.scaled)) {
     warning("Provided values for plot.by and scale.by do not match; results may not be very
             interpretable.")
@@ -3774,25 +5226,41 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
       log2scale <- FALSE
     }
     # drop only outer level names
-    gene_vals <- getGeneValues(object@raw.data, gene, log2scale = log2scale)
+    if (class(object@raw.data[[1]])[1] == "H5File") {
+      if (object@h5file.info[[1]][["sample.data.type"]] != "raw.data"){
+        stop("raw.data should be sampled for this plot.")
+      }
+      gene_vals <- getGeneValues(object@sample.data, gene, log2scale = log2scale)
+    } else {
+      gene_vals <- getGeneValues(object@raw.data, gene, log2scale = log2scale)
+    }
   } else {
     if (is.null(log2scale)) {
       log2scale <- TRUE
     }
     # rescale in case requested gene not highly variable
     if (use.scaled) {
-      # check for feature 
+      # check for feature
       if (!(scale.by %in% colnames(object@cell.data)) & scale.by != 'none') {
         stop("Please select existing feature in cell.data to scale.by, or add it before calling.")
       }
-      gene_vals <- getGeneValues(object@norm.data, gene)
+      if (class(object@raw.data[[1]])[1] == "H5File") {
+        if (object@h5file.info[[1]][["sample.data.type"]] != "norm.data"){
+          stop("norm.data should be sampled for this plot.")
+        }
+        gene_vals <- getGeneValues(object@sample.data, gene)
+        cells <- unlist(lapply(object@sample.data, colnames))
+      } else {
+        gene_vals <- getGeneValues(object@norm.data, gene)
+        cells <- unlist(lapply(object@norm.data, colnames))
+      }
       cellnames <- names(gene_vals)
       # set up dataframe with groups
       gene_df <- data.frame(gene = gene_vals)
       if (scale.by == 'none') {
         gene_df[['scaleby']] = 'none'
       } else {
-        gene_df[['scaleby']] = factor(object@cell.data[[scale.by]])
+        gene_df[['scaleby']] = factor(object@cell.data[cells,][[scale.by]])
       }
       gene_df1 <- gene_df %>%
         group_by(.data[['scaleby']]) %>%
@@ -3805,9 +5273,17 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
       names(gene_vals) <- cellnames
     } else {
       # using normalized data
-      # indicate methylation indices here 
-      gene_vals <- getGeneValues(object@norm.data, gene, methylation.indices = methylation.indices,
+      # indicate methylation indices here
+      if (class(object@raw.data[[1]])[1] == "H5File") {
+        if (object@h5file.info[[1]][["sample.data.type"]] != "norm.data"){
+          stop("norm.data should be sampled for this plot.")
+        }
+        gene_vals <- getGeneValues(object@sample.data, gene, methylation.indices = methylation.indices,
                                  log2scale = log2scale)
+      } else {
+        gene_vals <- getGeneValues(object@norm.data, gene, methylation.indices = methylation.indices,
+                                 log2scale = log2scale)
+      }
     }
   }
   gene_vals[gene_vals == 0] <- NA
@@ -3816,20 +5292,25 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
     max_exp_val <- max(gene_vals, na.rm = TRUE)
     min_exp_val <- min(gene_vals, na.rm = TRUE)
   }
-  
-  dr_df <- data.frame(object@tsne.coords)
-  rownames(dr_df) <- rownames(object@cell.data)
+
+  if (class(object@raw.data[[1]])[1] == "H5File") {
+    cells <- unlist(lapply(object@sample.data, colnames))
+    dr_df <- data.frame(object@tsne.coords[cells,])
+  } else {
+    dr_df <- data.frame(object@tsne.coords)
+    rownames(dr_df) <- rownames(object@cell.data)
+  }
   dr_df$gene <- as.numeric(gene_vals[rownames(dr_df)])
   colnames(dr_df) <- c("dr1", "dr2", "gene")
   # get dr limits for later
   lim1 <- c(min(dr_df$dr1), max(dr_df$dr1))
   lim2 <- c(min(dr_df$dr2), max(dr_df$dr2))
-  
+
   if (plot.by != 'none') {
     if (!(plot.by %in% colnames(object@cell.data))) {
       stop("Please select existing feature in cell.data to plot.by, or add it before calling.")
     }
-    dr_df$plotby <- factor(object@cell.data[[plot.by]])
+    dr_df$plotby <- factor(object@cell.data[rownames(dr_df),][[plot.by]])
   } else {
     dr_df$plotby <- factor("none")
   }
@@ -3845,16 +5326,16 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
   }
   if (!is.null(min.clip) & is.null(names(min.clip))) {
     if (num_levels > 1) {
-      message("Adding names to min.clip according to levels in plot.by group; order may not be 
-              preserved as intended if multiple clip values passed in. Pass in named vector to 
+      message("Adding names to min.clip according to levels in plot.by group; order may not be
+              preserved as intended if multiple clip values passed in. Pass in named vector to
               prevent this.")
     }
     names(min.clip) <- levels(dr_df$plotby)
   }
   if (!is.null(max.clip) & is.null(names(max.clip))) {
     if (num_levels > 1) {
-      message("Adding names to max.clip according to levels in plot.by group; order may not be 
-              preserved as intended if multiple clip values passed in. Pass in named vector to 
+      message("Adding names to max.clip according to levels in plot.by group; order may not be
+              preserved as intended if multiple clip values passed in. Pass in named vector to
               prevent this.")
     }
     names(max.clip) <- levels(dr_df$plotby)
@@ -3872,10 +5353,10 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
     }
     sub_df$gene[sub_df$gene < min_v & !is.na(sub_df$gene)] <- min_v
     sub_df$gene[sub_df$gene > max_v & !is.na(sub_df$gene)] <- max_v
-    
-    ggp <- ggplot(sub_df, aes_string(x = 'dr1', y = 'dr2', color = 'gene')) + geom_point(size = pt.size) +
+
+    ggp <- ggplot(sub_df, aes_string(x = 'dr1', y = 'dr2', color = 'gene')) + geom_point(size = pt.size, stroke = 0.2) +
       labs(col = gene)
-    
+
     if (!is.null(cols.use)) {
       if (keep.scale) {
         ggp <- ggp + scale_color_gradientn(colors = cols.use,
@@ -3900,14 +5381,14 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
     if (set.dr.lims) {
       ggp <- ggp + xlim(lim1) + ylim(lim2)
     }
-    
+
     if (plot.by != 'none') {
       base <- as.character(sub_df$plotby[1])
     } else {
       base <- ""
     }
     ggp <- ggp + ggtitle(base)
-    
+
     if (!is.null(axis.labels)) {
       ggp <- ggp + xlab(axis.labels[1]) + ylab(axis.labels[2])
     }
@@ -3930,7 +5411,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
   if (plot.by == 'dataset') {
     p_list <- p_list[names(object@raw.data)]
   }
-  
+
   if (return.plots){
     if (length(p_list) == 1) {
       return(p_list[[1]])
@@ -4005,7 +5486,7 @@ plotGenes <- function(object, genes, ...) {
 #' @importFrom riverplot makeRiver
 #' @importFrom riverplot riverplot
 #' @importFrom grDevices hcl
-#' @importFrom utils capture.output 
+#' @importFrom utils capture.output
 #' @examples
 #' \dontrun{
 #' # liger object, factorization done
@@ -4071,7 +5552,7 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
     rep(1, length(nodes1)), rep(2, length(nodes_middle)),
     rep(3, length(nodes2))
   )
-  
+
   # first set of edges
   edge_list <- list()
   for (i in 1:length(nodes1)) {
@@ -4128,7 +5609,7 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
   # create nodes and riverplot object
   nodes <- list(nodes1, nodes_middle, nodes2)
   node.limit <- max(unlist(lapply(nodes, length)))
-  
+
   node_Ys <- lapply(1:length(nodes), function(i) {
     seq(1, node.limit, by = node.limit / length(nodes[[i]]))
   })
@@ -4151,7 +5632,7 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
 #'
 #' @export
 #' @importFrom grid unit
-#' @importFrom ggplot2 ggplot aes coord_fixed element_blank geom_point guides guide_legend 
+#' @importFrom ggplot2 ggplot aes coord_fixed element_blank geom_point guides guide_legend
 #' scale_size scale_y_discrete theme
 #' @examples
 #' \dontrun{
@@ -4163,8 +5644,8 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
 #' }
 
 plotClusterProportions <- function(object, return.plot = F) {
-  sample_names <- unlist(lapply(seq_along(object@scale.data), function(i) {
-    rep(names(object@scale.data)[i], nrow(object@scale.data[[i]]))
+  sample_names <- unlist(lapply(seq_along(object@H), function(i) {
+    rep(names(object@H)[i], nrow(object@H[[i]]))
   }))
   freq_table <- data.frame(Cluster = rep(object@clusters, length(object@scale.data)),
                            Sample = sample_names)
@@ -4174,7 +5655,7 @@ plotClusterProportions <- function(object, return.plot = F) {
   }
   freq_table <- data.frame(freq_table)
   colnames(freq_table) <- c("Cluster", "Sample", "Proportion")
-  p1 <- ggplot(freq_table, aes(x = freq_table[['Cluster']], y = freq_table[['Sample']])) +
+  p1 <- ggplot(freq_table, aes(x = Cluster, y = Sample)) +
     geom_point(aes_string(size = 'Proportion', fill = 'Cluster', color = 'Cluster')) +
     scale_size(guide = "none") + theme(
       axis.line = element_blank(),
@@ -4244,7 +5725,7 @@ plotClusterFactors <- function(object, use.aligned = F, Rowv = NA, Colv = "Rowv"
   for (cluster in levels(object@clusters)) {
     cluster.bars[[cluster]] <- colSums(row.scaled[names(object@clusters)
                                                   [which(object@clusters == cluster)], ])
-    
+
   }
   cluster.bars <- Reduce(rbind, cluster.bars)
   if (is.null(col)) {
@@ -4281,8 +5762,6 @@ plotClusterFactors <- function(object, use.aligned = F, Rowv = NA, Colv = "Rowv"
 #'   available.
 #' @param log.fc.thresh Lower log-fold change threshold for differential expression in markers
 #'   (default 1).
-#' @param umi.thresh Lower UMI threshold for markers (default 30).
-#' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
 #' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
 #'   (default 0.05).
 #' @param num.genes Max number of genes to report for each dataset (default 30).
@@ -4303,8 +5782,8 @@ plotClusterFactors <- function(object, use.aligned = F, Rowv = NA, Colv = "Rowv"
 #' }
 
 getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.share.thresh = 10,
-                             dataset.specificity = NULL, log.fc.thresh = 1, umi.thresh = 30,
-                             frac.thresh = 0, pval.thresh = 0.05, num.genes = 30, print.genes = F) {
+                             dataset.specificity = NULL, log.fc.thresh = 1, pval.thresh = 0.05,
+                             num.genes = 30, print.genes = F) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
@@ -4317,29 +5796,36 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
                                                   dataset2 = dataset2, do.plot = F)
   }
   factors.use <- which(abs(dataset.specificity[[3]]) <= factor.share.thresh)
-  
+
   if (length(factors.use) < 2) {
     print(paste(
       "Warning: only", length(factors.use),
       "factors passed the dataset specificity threshold."
     ))
   }
-  
+
   Hs_scaled <- lapply(object@H, function(x) {
     scale(x, scale = T, center = T)
   })
   labels <- list()
   for (i in 1:length(Hs_scaled)) {
-    labels[[i]] <- factors.use[as.factor(apply(Hs_scaled[[i]][, factors.use], 1, which.max))]
+    if (class(object@raw.data[[1]])[1] == "H5File"){
+      if (object@h5file.info[[1]][["sample.data.type"]] != "norm.data"){
+        stop("norm.data should be sampled for obtaining factor markers.")
+      }
+      labels[[i]] <- factors.use[as.factor(apply(Hs_scaled[[i]][colnames(object@sample.data[[i]]), factors.use], 1, which.max))]
+    } else {
+      labels[[i]] <- factors.use[as.factor(apply(Hs_scaled[[i]][, factors.use], 1, which.max))]
+    }
   }
   names(labels) <- names(object@H)
-  
+
   V1_matrices <- list()
   V2_matrices <- list()
   W_matrices <- list()
   for (j in 1:length(factors.use)) {
     i <- factors.use[j]
-    
+
     W <- t(object@W)
     V1 <- t(object@V[[dataset1]])
     V2 <- t(object@V[[dataset2]])
@@ -4350,54 +5836,47 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
       next
     }
     # filter genes by gene_count and cell_frac thresholds
-    gene_info <- list()
-    for (dset in c(dataset1, dataset2)) {
-      gene_info[[dset]]$gene_counts <- rowSums(object@raw.data[[dset]][
-        object@var.genes,
-        labels[[dset]] == i
-        ])
-      gene_info[[dset]]$cell_fracs <- rowSums(object@raw.data[[dset]][object@var.genes,
-                                                                      labels[[dset]] == i] > 0) /
-        sum(labels[[dset]] == i)
-      gene_info[[dset]]$norm_counts <- object@norm.data[[dset]][object@var.genes,
-                                                                labels[[dset]] == i]
-      gene_info[[dset]]$mean <- rowMeans(object@norm.data[[dset]][
-        object@var.genes,
-        labels[[dset]] == i
-        ])
-      names(gene_info[[dset]]$gene_counts) <- names(gene_info[[dset]]$mean) <- object@var.genes
-      rownames(gene_info[[dset]]$norm_counts) <- object@var.genes
+    if (class(object@raw.data[[1]])[1] == "H5File") {
+      if (object@h5file.info[[1]][["sample.data.type"]] != "norm.data"){
+        stop("Sampled norm.data are required for this analysis.")
+      }
+      expr_mat = Reduce(cbind, object@sample.data[c(dataset1,dataset2)])[object@var.genes, c(labels[[dataset1]] == i, labels[[dataset2]] == i)]
+      cell_label = rep(c(dataset1, dataset2), c(sum(labels[[dataset1]] == i), sum(labels[[dataset2]] == i)))
+      wilcoxon_result = wilcoxauc(log(expr_mat + 1e-10), cell_label)
+
+    } else {
+      expr_mat = cbind(object@norm.data[[dataset1]][object@var.genes, labels[[dataset1]] == i],
+                       object@norm.data[[dataset2]][object@var.genes, labels[[dataset2]] == i])
+      cell_label = rep(c(dataset1, dataset2), c(sum(labels[[dataset1]] == i), sum(labels[[dataset2]] == i)))
+      wilcoxon_result = wilcoxauc(log(expr_mat + 1e-10), cell_label)
     }
-    log2fc <- log2(gene_info[[dataset1]]$mean / gene_info[[dataset2]]$mean)
-    initial_filtered <- object@var.genes[(gene_info[[dataset1]]$gene_counts > umi.thresh |
-                                            gene_info[[dataset2]]$gene_counts > umi.thresh) &
-                                           (gene_info[[dataset1]]$cell_fracs > frac.thresh |
-                                              gene_info[[dataset2]]$cell_fracs > frac.thresh)]
-    filtered_genes_V1 <- initial_filtered[log2fc[initial_filtered] > log.fc.thresh]
-    filtered_genes_V2 <- initial_filtered[(-1 * log2fc)[initial_filtered] > log.fc.thresh]
-    
+    log2fc = wilcoxon_result[wilcoxon_result$group == dataset1, ]$logFC
+    names(log2fc) = wilcoxon_result[wilcoxon_result$group == dataset1, ]$feature
+    filtered_genes_V1 = wilcoxon_result[wilcoxon_result$logFC > log.fc.thresh & wilcoxon_result$pval < pval.thresh, ]$feature
+    filtered_genes_V2 = wilcoxon_result[-wilcoxon_result$logFC > log.fc.thresh & wilcoxon_result$pval < pval.thresh, ]$feature
+
     W <- pmin(W + V1, W + V2)
     V1 <- V1[filtered_genes_V1, , drop = F]
     V2 <- V2[filtered_genes_V2, , drop = F]
-    
+
     if (length(filtered_genes_V1) == 0) {
       top_genes_V1 <- character(0)
     } else {
-      top_genes_V1 <- row.names(V1)[ order(V1[, i], decreasing = T)[1:num.genes] ]
+      top_genes_V1 <- row.names(V1)[order(V1[, i], decreasing = T)[1:num.genes] ]
       top_genes_V1 <- top_genes_V1[!is.na(top_genes_V1)]
       top_genes_V1 <- top_genes_V1[which(V1[top_genes_V1, i] > 0)]
     }
     if (length(filtered_genes_V2) == 0) {
       top_genes_V2 <- character(0)
     } else {
-      top_genes_V2 <- row.names(V2)[ order(V2[, i], decreasing = T)[1:num.genes] ]
+      top_genes_V2 <- row.names(V2)[order(V2[, i], decreasing = T)[1:num.genes] ]
       top_genes_V2 <- top_genes_V2[!is.na(top_genes_V2)]
       top_genes_V2 <- top_genes_V2[which(V2[top_genes_V2, i] > 0)]
     }
-    top_genes_W <- row.names(W)[ order(W[, i], decreasing = T)[1:num.genes] ]
+    top_genes_W <- row.names(W)[order(W[, i], decreasing = T)[1:num.genes] ]
     top_genes_W <- top_genes_W[!is.na(top_genes_W)]
     top_genes_W <- top_genes_W[which(W[top_genes_W, i] > 0)]
-    
+
     if (print.genes) {
       print(paste("Factor", i))
       print('Dataset 1')
@@ -4407,55 +5886,36 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
       print('Dataset 2')
       print(top_genes_V2)
     }
-    
+
     pvals <- list() # order is V1, V2, W
     top_genes <- list(top_genes_V1, top_genes_V2, top_genes_W)
     for (k in 1:length(top_genes)) {
-      pvals[[k]] <- sapply(top_genes[[k]], function(x) {
-        suppressWarnings(stats::wilcox.test(
-          as.numeric(gene_info[[dataset1]]$norm_counts[x, ]),
-          as.numeric(gene_info[[dataset2]]$norm_counts[x, ])
-        )$p.value)
-      })
+      pvals[[k]] <- wilcoxon_result[wilcoxon_result$feature %in% top_genes[[k]] & wilcoxon_result$group == dataset1, ]$pval
     }
     # bind values in matrices
     V1_matrices[[j]] <- Reduce(cbind, list(
       rep(i, length(top_genes_V1)), top_genes_V1,
-      gene_info[[dataset1]]$gene_counts[top_genes_V1],
-      gene_info[[dataset2]]$gene_counts[top_genes_V1],
-      gene_info[[dataset1]]$cell_fracs[top_genes_V1],
-      gene_info[[dataset2]]$cell_fracs[top_genes_V1],
       log2fc[top_genes_V1], pvals[[1]]
     ))
     V2_matrices[[j]] <- Reduce(cbind, list(
       rep(i, length(top_genes_V2)), top_genes_V2,
-      gene_info[[dataset1]]$gene_counts[top_genes_V2],
-      gene_info[[dataset2]]$gene_counts[top_genes_V2],
-      gene_info[[dataset1]]$cell_fracs[top_genes_V2],
-      gene_info[[dataset2]]$cell_fracs[top_genes_V2],
       log2fc[top_genes_V2], pvals[[2]]
     ))
     W_matrices[[j]] <- Reduce(cbind, list(
       rep(i, length(top_genes_W)), top_genes_W,
-      gene_info[[dataset1]]$gene_counts[top_genes_W],
-      gene_info[[dataset2]]$gene_counts[top_genes_W],
-      gene_info[[dataset1]]$cell_fracs[top_genes_W],
-      gene_info[[dataset2]]$cell_fracs[top_genes_W],
       log2fc[top_genes_W], pvals[[3]]
     ))
   }
   V1_genes <- data.frame(Reduce(rbind, V1_matrices), stringsAsFactors = F)
   V2_genes <- data.frame(Reduce(rbind, V2_matrices), stringsAsFactors = F)
   W_genes <- data.frame(Reduce(rbind, W_matrices), stringsAsFactors = F)
-  df_cols <- c("factor_num", "gene", "counts1", "counts2", "fracs1", "fracs2", "log2fc", "p_value")
+  df_cols <- c("factor_num", "gene", "log2fc", "p_value")
   output_list <- list(V1_genes, W_genes, V2_genes)
   output_list <- lapply(seq_along(output_list), function(x) {
     df <- output_list[[x]]
     colnames(df) <- df_cols
     df <- transform(df,
                     factor_num = as.numeric(df$'factor_num'), gene = as.character(df$'gene'),
-                    counts1 = as.numeric(df$'counts1'), counts2 = as.numeric(df$'counts2'),
-                    fracs1 = as.numeric(df$'fracs1'), fracs2 = as.numeric(df$'fracs2'),
                     log2fc = as.numeric(df$'log2fc'), p_value = as.numeric(df$'p_value')
     )
     # Cutoff only applies to dataset-specific dfs
@@ -4541,8 +6001,8 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
     inmf.embeddings <- object@H.norm
     tsne.embeddings <- object@tsne.coords
     rownames(x = inmf.loadings) <- var.genes
-    rownames(x = inmf.embeddings) <- 
-      rownames(x = tsne.embeddings) <- 
+    rownames(x = inmf.embeddings) <-
+      rownames(x = tsne.embeddings) <-
       rownames(x = scale.data)
     inmf.obj <- Seurat::CreateDimReducObject(
       embeddings = inmf.embeddings,
@@ -4568,7 +6028,7 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
   } else {
     ident.use <- as.character(object@clusters)
   }
-  
+
   if (maj_version < 3) {
     if (use.liger.genes) {
       new.seurat@var.genes <- var.genes
@@ -4577,7 +6037,7 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
     new.seurat@dr$tsne <- tsne.obj
     new.seurat@dr$inmf <- inmf.obj
     new.seurat <- Seurat::SetIdent(new.seurat, ident.use = ident.use)
-    
+
   } else {
     if (use.liger.genes) {
       Seurat::VariableFeatures(new.seurat) <- var.genes
@@ -4587,7 +6047,7 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
     new.seurat[['inmf']] <- inmf.obj
     Seurat::Idents(new.seurat) <- ident.use
   }
-  
+
   return(new.seurat)
 }
 
@@ -4658,7 +6118,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
          call. = FALSE
     )
   }
-  
+
   # Remind to set combined.seurat
   if ((typeof(objects) != "list") & (!combined.seurat)) {
     stop("Please pass a list of objects or set combined.seurat = T")
@@ -4676,7 +6136,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
       version <- version[1]
     }
   }
-  
+
   # Only a single seurat object expected if combined.seurat
   if (combined.seurat) {
     if ((is.null(meta.var)) & (is.null(assays.use))) {
@@ -4707,7 +6167,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
       })
       names(raw.data) <- assays.use
     }
-    
+
     if (version > 2) {
       var.genes <- Seurat::VariableFeatures(objects)
       idents <- Seurat::Idents(objects)
@@ -4757,7 +6217,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
     })
     # tsne coords not very meaningful for separate objects
     tsne.coords <- NULL
-    
+
     if (version > 2) {
       var.genes <- Reduce(union, lapply(objects, function(x) {
         Seurat::VariableFeatures(x)
@@ -4801,7 +6261,7 @@ seuratToLiger <- function(objects, combined.seurat = F, names = "use-projects", 
       var.genes <- var.genes[rowSums(new.liger@raw.data[[i]][var.genes, ]) > 0]
       var.genes <- var.genes[!is.na(var.genes)]
     }
-    
+
     new.liger@var.genes <- var.genes
   }
   if (use.idents) {
@@ -4870,8 +6330,8 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   raw.data <- lapply(seq_along(object@raw.data), function(q) {
     cells <- intersect(cells.use, colnames(object@raw.data[[q]]))
     if (length(cells) > 0) {
-      if (length(cells < 50)) {
-        warning("Number of subsetted cells too small (less than 50), please check cells.use!")
+      if (length(cells < 25)) {
+        warning("Number of subsetted cells too small (less than 25), please check cells.use!")
       }
       object@raw.data[[q]][, cells, drop = F]
     } else {
@@ -4901,7 +6361,7 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   if (ncol(a@cell.data) < ncol(object@cell.data)) {
     a@cell.data <- droplevels(data.frame(object@cell.data[names(a@clusters), ]))
   }
-  
+
   a@W <- object@W
   a@V <- object@V
   a@var.genes <- object@var.genes
@@ -4912,14 +6372,14 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
 #' Construct a liger object organized by another feature
 #'
 #' Using the same data, rearrange functional datasets using another discrete feature in cell.data.
-#' This removes most computed data slots, though cell.data and current clustering can be retained. 
+#' This removes most computed data slots, though cell.data and current clustering can be retained.
 #'
-#' @param object \code{liger} object. 
-#' @param by.feature Column in cell.data to use in reorganizing raw data. 
-#' @param keep.meta Whether to carry over all existing data in cell.data slot (default TRUE). 
+#' @param object \code{liger} object.
+#' @param by.feature Column in cell.data to use in reorganizing raw data.
+#' @param keep.meta Whether to carry over all existing data in cell.data slot (default TRUE).
 #' @param new.label If cell.data is to be retained, new column name for original organizing feature
 #'   (previously labeled as dataset) (default "orig.dataset")
-#' @param ... Additional parameters passed on to createLiger. 
+#' @param ... Additional parameters passed on to createLiger.
 #'
 #' @return \code{liger} object with rearranged raw.data slot.
 #' @export
@@ -4945,10 +6405,10 @@ reorganizeLiger <- function(object, by.feature, keep.meta = T, new.label = "orig
   }
   orig.data <- object@cell.data
   colnames(orig.data)[colnames(orig.data) == "dataset"] <- new.label
-  
+
   # make this less memory intensive for large datasets
   all.data <- MergeSparseDataAll(object@raw.data)
-  
+
   new.raw <- lapply(levels(orig.data[[by.feature]]), function(x) {
     cells.keep <- rownames(orig.data)[which(orig.data[[by.feature]] == x)]
     all.data[, cells.keep]
@@ -4957,7 +6417,7 @@ reorganizeLiger <- function(object, by.feature, keep.meta = T, new.label = "orig
   rm(all.data)
   gc()
   new.object <- createLiger(raw.data = new.raw, ...)
-  
+
   if (keep.meta) {
     cols.to.add <- setdiff(colnames(orig.data), colnames(new.object@cell.data))
     cols.to.add <- cols.to.add[which(cols.to.add != by.feature)]
@@ -4996,7 +6456,7 @@ convertOldLiger = function(object, override.raw = F) {
   slots_exist <- sapply(slots_new, function(x) {
     .hasSlot(object, x)
   })
-  
+
   slots <- slots_new[slots_exist]
   for (slotname in slots) {
     if (!(slotname %in% c('raw.data')) | (override.raw)) {

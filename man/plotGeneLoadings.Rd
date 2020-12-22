@@ -33,7 +33,7 @@ plotGeneLoadings(
 
 \item{dataset2}{Name of second dataset}
 
-\item{num.genes.show}{Number of genes displayed as y-axis labels in the gene loading plots at 
+\item{num.genes.show}{Number of genes displayed as y-axis labels in the gene loading plots at
 the bottom (default 12)}
 
 \item{num.genes}{Number of genes to show in word clouds (default 30).}
@@ -83,11 +83,14 @@ plots produced.
 \dontrun{
 # liger object, factorization complete
 ligerex
-ligerex <- quantileAlignSNF(ligerex)
-ligerex <- runTSNE(ligerex)
+ligerex <- quantile_norm(ligerex)
+ligerex <- runUMAP(ligerex)
 # pdf("gene_loadings.pdf")
 plotGeneLoadings(ligerex, num.genes = 20)
 # dev.off()
+# HDF5 input
+ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+plotGeneLoadings(ligerex, num.genes = 20)
 }
 
 }

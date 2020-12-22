@@ -107,6 +107,17 @@ nano Makevars
 ``` 
 Paste in the required text above and save with `Ctrl-X`.
 
+### Additional Installation Steps for Online Learning using Liger
+The HDF5 library is required for implementing online learning in Liger on data files in HDF5 format. It can be installed via one of the following commands:
+
+| System                                    | Command
+|:------------------------------------------|:---------------------------------|
+|**OS X (using Homebrew or Conda)**                  | `brew install hdf5` or `conda install -c anaconda hdf5`
+|**Debian-based systems (including Ubuntu)**| `sudo apt-get install libhdf5-dev` 
+|**Systems supporting yum and RPMs**        | `sudo yum install hdf5-devel`
+
+For Windows, the latest HDF5 1.12.0 is available at https://www.hdfgroup.org/downloads/hdf5/.
+
 ### Running `liger` with Docker
 If installing natively is difficult, you can run `liger` through our Docker image (available
 publically), which also comes with Rstudio and Seurat (v2) installed.

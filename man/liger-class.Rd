@@ -23,6 +23,12 @@ The key slots used in the liger object are described below.
 
 \item{\code{scale.data}}{List of scaled matrices (cells by genes)}
 
+\item{\code{sample.data}}{List of sampled matrices (gene by cells)}
+
+\item{\code{h5file.info}}{List of HDF5-related information for each input dataset. Paths to raw data, indices,
+indptr, barcodes, genes and  the pipeline through which the HDF5 file is formated (10X, AnnData, etc),
+type of sampled data (raw, normalized or scaled).}
+
 \item{\code{cell.data}}{Dataframe of cell attributes across all datasets (nrows equal to total number
 cells across all datasets)}
 
@@ -37,6 +43,10 @@ matrix)}
 \item{\code{W}}{Shared gene loading factors (k by genes)}
 
 \item{\code{V}}{Dataset-specific gene loading factors (one matrix per dataset, dimensions k by genes)}
+
+\item{\code{A}}{Matrices used for online learning (XH)}
+
+\item{\code{B}}{Matrices used for online learning (HTH)}
 
 \item{\code{tsne.coords}}{Matrix of 2D coordinates obtained from running t-SNE on H.norm or H matrices}
 

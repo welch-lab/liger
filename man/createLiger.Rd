@@ -4,7 +4,18 @@
 \alias{createLiger}
 \title{Create a liger object.}
 \usage{
-createLiger(raw.data, make.sparse = T, take.gene.union = F, remove.missing = T)
+createLiger(
+  raw.data,
+  make.sparse = T,
+  take.gene.union = F,
+  remove.missing = T,
+  format.type = "10X",
+  data.name = NULL,
+  indices.name = NULL,
+  indptr.name = NULL,
+  genes.name = NULL,
+  barcodes.name = NULL
+)
 }
 \arguments{
 \item{raw.data}{List of expression matrices (gene by cell). Should be named by dataset.}
@@ -17,6 +28,18 @@ datasets (filling in 0 for missing data) (requires make.sparse=T) (default FALSE
 \item{remove.missing}{Whether to remove cells not expressing any measured genes, and genes not
 expressed in any cells (if take.gene.union = T, removes only genes not expressed in any
 dataset) (default TRUE).}
+
+\item{format.type}{HDF5 format (10X CellRanger by default).}
+
+\item{data.name}{Path to the data values stored in HDF5 file.}
+
+\item{indices.name}{Path to the indices of data points stored in HDF5 file.}
+
+\item{indptr.name}{Path to the pointers stored in HDF5 file.}
+
+\item{genes.name}{Path to the gene names stored in HDF5 file.}
+
+\item{barcodes.name}{Path to the barcodes stored in HDF5 file.}
 }
 \value{
 \code{liger} object with raw.data slot set.

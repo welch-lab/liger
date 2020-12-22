@@ -5,7 +5,8 @@ Version: 0.5.0
 Date: 2018-04-09
 Author: Joshua Welch
 Maintainer: Joshua Welch <jwelch@broadinstitute.org>,
-        Velina Kozareva <vkozarev@broadinstitute.org>
+            Jialin Liu <alanliu@umich.edu>,
+            Chao Gao <alanliu@umich.edu>
 Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors.
 License: GPL-3 | file LICENSE
 SystemRequirements: Java (>= 6)
@@ -31,7 +32,8 @@ Imports: Rcpp (>= 0.12.10),
      RANN,
      uwot,
      rlang,
-     utils
+     utils,
+     hdf5r
 biocViews:
 LazyData: true
 LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress
@@ -54,5 +56,6 @@ Suggests:
     org.Hs.eg.db,
     reactome.db,
     fgsea,
-    AnnotationDbi
+    AnnotationDbi,
+    kBET
 VignetteBuilder: knitr

@@ -17,7 +17,7 @@ runTSNE(
 )
 }
 \arguments{
-\item{object}{\code{liger} object. Should run quantileAlignSNF before calling with defaults.}
+\item{object}{\code{liger} object. Should run quantile_norm before calling with defaults.}
 
 \item{use.raw}{Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).}
 

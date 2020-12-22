@@ -15,7 +15,7 @@ calcAgreement(
 )
 }
 \arguments{
-\item{object}{\code{liger} object. Should call quantileAlignSNF before calling.}
+\item{object}{\code{liger} object. Should call quantile_norm before calling.}
 
 \item{dr.method}{Dimensionality reduction method to use for assessing pre-alignment geometry
 (either "PCA", "NMF", or "ICA"). (default "NMF")}
@@ -53,6 +53,10 @@ it is usually no higher than 0.2-0.3 (particularly for non-deterministic approac
 # liger object, factorization complete
 ligerex
 ligerex <- quantileAlignSNF(ligerex)
+agreement <- calcAgreement(ligerex, dr.method = "NMF")
+# HDF5 input
+ligerex <- quantile_norm(ligerex)
+ligerex <- readSubset(ligerex, slot.use = "scale.data", max.cells = 5000)
 agreement <- calcAgreement(ligerex, dr.method = "NMF")
 }
 }

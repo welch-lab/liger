@@ -4,13 +4,15 @@
 \alias{scaleNotCenter}
 \title{Scale genes by root-mean-square across cells}
 \usage{
-scaleNotCenter(object, remove.missing = T)
+scaleNotCenter(object, remove.missing = T, chunk = 1000)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call normalize and selectGenes before calling.}
 
 \item{remove.missing}{Whether to remove cells from scale.data with no gene expression
 (default TRUE).}
+
+\item{chunk}{size of chunks in hdf5 file. (default 1000)}
 }
 \value{
 \code{liger} object with scale.data slot set.

@@ -11,8 +11,6 @@ getFactorMarkers(
   factor.share.thresh = 10,
   dataset.specificity = NULL,
   log.fc.thresh = 1,
-  umi.thresh = 30,
-  frac.thresh = 0,
   pval.thresh = 0.05,
   num.genes = 30,
   print.genes = F
@@ -33,10 +31,6 @@ available.}
 
 \item{log.fc.thresh}{Lower log-fold change threshold for differential expression in markers
 (default 1).}
-
-\item{umi.thresh}{Lower UMI threshold for markers (default 30).}
-
-\item{frac.thresh}{Lower threshold for fraction of cells expressing marker (default 0).}
 
 \item{pval.thresh}{Upper p-value threshold for Wilcoxon rank test for gene expression
 (default 0.05).}

@@ -102,5 +102,8 @@ ligerex
 ligerex <- runTSNE(ligerex)
 # plot expression for CD4 and return plots
 gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
+HDF5 input
+ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
 }
 }

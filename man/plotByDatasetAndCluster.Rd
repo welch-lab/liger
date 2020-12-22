@@ -17,7 +17,8 @@ plotByDatasetAndCluster(
   legend.size = 5,
   reorder.idents = F,
   new.order = NULL,
-  return.plots = F
+  return.plots = F,
+  legend.fonts.size = 12
 )
 }
 \arguments{
@@ -48,6 +49,8 @@ one after the other (default TRUE).}
 \item{new.order}{new dataset factor order for plotting.  must set reorder.idents = TRUE.}
 
 \item{return.plots}{Return ggplot plot objects instead of printing directly (default FALSE).}
+
+\item{legend.fonts.size}{Controls the font size of the legend.}
 }
 \value{
 List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to

@@ -33,6 +33,11 @@ ligerex <- optimizeALS(ligerex, k = 20)
 ligerex <- quantileAlignSNF(ligerex)
 wilcox.results <- runWilcoxon(ligerex, compare.method = "cluster")
 wilcox.results <- runWilcoxon(ligerex, compare.method = "datastes", data.use = c(1, 2))
+# HDF5 input
+ligerex <- online_iNMF(ligerex, k = 20)
+ligerex <- quantile_norm(ligerex)
+ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 1000)
+de_genes <- runWilcoxon(ligerex, compare.method = "clusters")
 }
 
 }
