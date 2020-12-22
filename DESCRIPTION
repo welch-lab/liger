@@ -56,5 +56,6 @@ Suggests:
     org.Hs.eg.db,
     reactome.db,
     fgsea,
-    AnnotationDbi
+    AnnotationDbi,
+    kBET
 VignetteBuilder: knitr

@@ -20,6 +20,6 @@ the restoration of those links so that new analyses can be carried out.
 }
 \examples{
 \dontrun{
-ligerex = restoreOnlineLiger(ligerex, file.path = list("path_to_file1/library1.h5", "path_to_file2/library2.h5"))
+ligerex = restoreOnlineLiger(ligerex, file.path = list("path1/library1.h5", "path2/library2.h5"))
 }
 }

@@ -43,10 +43,6 @@ threshold (default 10).}
 \item{do.spec.plot}{Include dataset specificity plot in printout (default TRUE).}
 
 \item{return.plots}{Return ggplot objects instead of printing directly (default FALSE).}
-
-\item{umi.thresh}{Lower UMI threshold for markers (default 30).}
-
-\item{frac.thresh}{Lower threshold for fraction of cells expressing marker (default 0).}
 }
 \description{
 Plots t-SNE coordinates of all cells by their loadings on each factor. Underneath it displays the

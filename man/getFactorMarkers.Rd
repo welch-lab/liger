@@ -38,10 +38,6 @@ available.}
 \item{num.genes}{Max number of genes to report for each dataset (default 30).}
 
 \item{print.genes}{Print ordered markers passing logfc, umi and frac thresholds (default FALSE).}
-
-\item{umi.thresh}{Lower UMI threshold for markers (default 30).}
-
-\item{frac.thresh}{Lower threshold for fraction of cells expressing marker (default 0).}
 }
 \value{
 List of shared and specific factors. First three elements are dataframes of dataset1-

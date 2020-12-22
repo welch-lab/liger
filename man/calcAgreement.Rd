@@ -15,7 +15,7 @@ calcAgreement(
 )
 }
 \arguments{
-\item{object}{\code{liger} object. Should call quantileAlignSNF before calling.}
+\item{object}{\code{liger} object. Should call quantile_norm before calling.}
 
 \item{dr.method}{Dimensionality reduction method to use for assessing pre-alignment geometry
 (either "PCA", "NMF", or "ICA"). (default "NMF")}

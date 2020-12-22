@@ -392,7 +392,7 @@ mergeH5 <- function(file.list,
 #' @import hdf5r
 #' @examples
 #' \dontrun{
-#' ligerex = restoreOnlineLiger(ligerex, file.path = list("path_to_file1/library1.h5", "path_to_file2/library2.h5"))
+#' ligerex = restoreOnlineLiger(ligerex, file.path = list("path1/library1.h5", "path2/library2.h5"))
 #' }
 restoreOnlineLiger <- function(object, file.path = NULL) {
   if (is.null(file.path) & is.null(object@h5file.info[[1]][["file.path"]])) { # file path is not provided by file.path param or liger object
@@ -1056,7 +1056,7 @@ scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
       
       gene_inds = which(genes %in% vargenes)
       gene_root_mean_sum_sq = sqrt(gene_sum_sq/(num_cells-1))
-      safe_h5_create(object@raw.data[[i]], "scale.data", dims = c(length(vargenes), num_cells), mode = h5types$double, chunk = c(length(vargenes), chunk_size), liger_object = object)
+      safe_h5_create(object@raw.data[[i]], "scale.data", dims = c(length(vargenes), num_cells), mode = h5types$double, chunk_size = c(length(vargenes), chunk_size), liger_object = object)
       num_chunks = ceiling(num_cells/chunk_size)
       pb = txtProgressBar(0, num_chunks, style = 3)
       ind = 0
@@ -1272,13 +1272,13 @@ downsample <- function(object,balance=NULL,max_cells=1000,datasets.use=NULL,seed
 #' }
 
 readSubset <- function(object,
-                       slot.use="norm.data",
-                       balance=NULL,
-                       max.cells=1000,
-                       chunk=1000,
-                       datasets.use=NULL,
-                       genes.use=NULL,
-                       rand.seed=1) {
+                       slot.use = "norm.data",
+                       balance = NULL,
+                       max.cells = 1000,
+                       chunk = 1000,
+                       datasets.use = NULL,
+                       genes.use = NULL,
+                       rand.seed = 1) {
   if (class(object@raw.data[[1]])[1] == "H5File") {
     cat("Sampling\n")
     if(is.null(datasets.use))
@@ -1394,7 +1394,7 @@ readSubset <- function(object,
     {
       datasets.use=names(object@H)
     }
-    cell_inds = downsample(object,balance=balance,max_cells=max_cells,datasets.use=datasets.use)
+    cell_inds = downsample(object,balance=balance,max_cells=max.cells,datasets.use=datasets.use)
     
     files = names(object@raw.data)
     # find the intersect of genes from each input datasets
@@ -2006,9 +2006,9 @@ optimizeALS.list <- function(
   E <- object
   N <- length(x = E)
   ns <- sapply(X = E, FUN = nrow)
-  if (k >= min(ns)) {
-    stop('Select k lower than the number of cells in smallest dataset: ', min(ns))
-  }
+  #if (k >= min(ns)) {
+  #  stop('Select k lower than the number of cells in smallest dataset: ', min(ns))
+  #}
   tmp <- gc()
   g <- ncol(x = E[[1]])
   if (k >= g) {
@@ -3976,7 +3976,7 @@ calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.
 #' expected to be most similar to iNMF. Although agreement can theoretically approach 1, in practice
 #' it is usually no higher than 0.2-0.3 (particularly for non-deterministic approaches like NMF).
 #'
-#' @param object \code{liger} object. Should call quantileAlignSNF before calling.
+#' @param object \code{liger} object. Should call quantile_norm before calling.
 #' @param dr.method Dimensionality reduction method to use for assessing pre-alignment geometry
 #'   (either "PCA", "NMF", or "ICA"). (default "NMF")
 #' @param ndims Number of dimensions to use in dimensionality reduction (recommended to use the
@@ -4105,7 +4105,7 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #' value for perfectly mixed datasets, and scale the value from 0 to 1. Note that in practice,
 #' alignment can be greater than 1 occasionally.
 #'
-#' @param object \code{liger} object. Should call quantileAlignSNF before calling.
+#' @param object \code{liger} object. Should call quantile_norm before calling.
 #' @param k Number of nearest neighbors to use in calculating alignment. By default, this will be
 #'   floor(0.01 * total number of cells), with a lower bound of 10 in all cases except where the
 #'   total number of sampled cells is less than 10.
@@ -4126,7 +4126,7 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #' \dontrun{
 #' # liger object, factorization complete
 #' ligerex
-#' ligerex <- quantileAlignSNF(ligerex)
+#' ligerex <- quantile_norm(ligerex)
 #' alignment <- calcAlignment(ligerex)
 #' }
 
@@ -4713,8 +4713,6 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #'   threshold (default 10).
 #' @param log.fc.thresh Lower log-fold change threshold for differential expression in markers
 #'   (default 1).
-#' @param umi.thresh Lower UMI threshold for markers (default 30).
-#' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
 #' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
 #'   (default 0.05).
 #' @param do.spec.plot Include dataset specificity plot in printout (default TRUE).
@@ -5762,8 +5760,6 @@ plotClusterFactors <- function(object, use.aligned = F, Rowv = NA, Colv = "Rowv"
 #'   available.
 #' @param log.fc.thresh Lower log-fold change threshold for differential expression in markers
 #'   (default 1).
-#' @param umi.thresh Lower UMI threshold for markers (default 30).
-#' @param frac.thresh Lower threshold for fraction of cells expressing marker (default 0).
 #' @param pval.thresh Upper p-value threshold for Wilcoxon rank test for gene expression
 #'   (default 0.05).
 #' @param num.genes Max number of genes to report for each dataset (default 30).
@@ -6332,8 +6328,8 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   raw.data <- lapply(seq_along(object@raw.data), function(q) {
     cells <- intersect(cells.use, colnames(object@raw.data[[q]]))
     if (length(cells) > 0) {
-      if (length(cells < 50)) {
-        warning("Number of subsetted cells too small (less than 50), please check cells.use!")
+      if (length(cells < 25)) {
+        warning("Number of subsetted cells too small (less than 25), please check cells.use!")
       }
       object@raw.data[[q]][, cells, drop = F]
     } else {

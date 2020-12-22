@@ -17,7 +17,7 @@ calcAlignment(
 )
 }
 \arguments{
-\item{object}{\code{liger} object. Should call quantileAlignSNF before calling.}
+\item{object}{\code{liger} object. Should call quantile_norm before calling.}
 
 \item{k}{Number of nearest neighbors to use in calculating alignment. By default, this will be
 floor(0.01 * total number of cells), with a lower bound of 10 in all cases except where the
@@ -54,7 +54,7 @@ alignment can be greater than 1 occasionally.
 \dontrun{
 # liger object, factorization complete
 ligerex
-ligerex <- quantileAlignSNF(ligerex)
+ligerex <- quantile_norm(ligerex)
 alignment <- calcAlignment(ligerex)
 }
 }

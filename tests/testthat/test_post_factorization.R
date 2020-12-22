@@ -53,26 +53,26 @@ test_that("Factorization is correct", {
 
 # Tests for shared factor neighborhood quantile alignment -- deprecated
 ####################################################################################
-context("Deprecated -- Quantile alignment")
+#context("Deprecated -- Quantile alignment")
 
-ligex <- quantileAlignSNF(ligex, knn_k = 20, k2 = 200, resolution = 1)
+#ligex <- quantileAlignSNF(ligex, knn_k = 20, k2 = 200, resolution = 1)
 
-test_that("Dimensions and lengths are correct", {
-  expect_equal(dim(ligex@H.norm), c(494, 15))
+#test_that("Dimensions and lengths are correct", {
+#  expect_equal(dim(ligex@H.norm), c(494, 15))
   # expect_equal(length(ligex@alignment.clusters), 494)
-  expect_equal(length(ligex@clusters), 494)
-  expect_equal(levels(ligex@clusters), c("1", "10", "11", "12", "13", "14", "15", "2", "3", "4",
-                                         "5", "6", "7", "8", "9"))
-})
+#  expect_equal(length(ligex@clusters), 494)
+#  expect_equal(levels(ligex@clusters), c("1", "10", "11", "12", "13", "14", "15", "2", "3", "4",
+#                                         "5", "6", "7", "8", "9"))
+#})
 
-test_that("Alignment and clustering are correct", {
-  expect_equal(ligex@H.norm[5, 1:5], c(0.004141647, 0, 0.002073747, 0, 0),
-               tolerance = 1e-6)
-  expect_equal(ligex@H.norm[405, 1:5], c(0.0022715258, 0.0194911522, 0.0077549767, 0, 0.0003304383),
-               tolerance = 1e-6)
-  expect_equal(as.character(ligex@clusters[3]), "13")
+#test_that("Alignment and clustering are correct", {
+#  expect_equal(ligex@H.norm[5, 1:5], c(0.004141647, 0, 0.002073747, 0, 0),
+#               tolerance = 1e-6)
+#  expect_equal(ligex@H.norm[405, 1:5], c(0.0022715258, 0.0194911522, 0.0077549767, 0, 0.0003304383),
+#               tolerance = 1e-6)
+#  expect_equal(as.character(ligex@clusters[3]), "13")
   # expect_equal(as.character(ligex@alignment.clusters[203]), "0")
-})
+#})
 
 # TODO: Add tests for saving of SNF (once better parameter setting in place)
 # TODO: Add tests for different knn_k and k2 settings 
@@ -358,50 +358,50 @@ test_that("Wilcoxon test for 'datasets' results correct", {
 # Since this function depends on the cluster assignments, optimizeALS and quantileAlignSNF
 # should be performed before this test
 ####################################################################################
-context("Linking Genes and Peaks")
+# context("Linking Genes and Peaks")
 
-temp_bed <- data.frame(
-  V1 = c("chr1", "chr1"),
-  V2 = c(1353799, 1337275),
-  V3 = c(1356824, 1342693),
-  V4 = c("ANKRD65", "MRPL20")
-)
+# temp_bed <- data.frame(
+#   V1 = c("chr1", "chr1"),
+#   V2 = c(1353799, 1337275),
+#   V3 = c(1356824, 1342693),
+#   V4 = c("ANKRD65", "MRPL20")
+# )
 
-write.table(temp_bed,
-  file = "../testdata/temp_coords.bed", append = TRUE,
-  quote = FALSE, sep = "\t", eol = "\n", na = "NA", dec = ".",
-  row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
-  fileEncoding = ""
-)
+# write.table(temp_bed,
+#   file = "../testdata/temp_coords.bed", append = TRUE,
+#   quote = FALSE, sep = "\t", eol = "\n", na = "NA", dec = ".",
+#   row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
+#   fileEncoding = ""
+# )
 
-set.seed(17)
-psudo_data <- rnorm(200, mean = 0.5, sd = 0.1)
-gmat.small <- Matrix(
-  data = psudo_data, nrow = 2, ncol = 100,
-  dimnames = list(c("MRPL20", "ANKRD65"), paste0("cell_", seq(1:100))), sparse = T
-)
-pmat.small <- Matrix(
-  data = c(psudo_data[1:100], psudo_data[101:200] + 0.2), nrow = 2, ncol = 100,
-  dimnames = list(c("chr1:1821507-1822007", "chr1:1850611-1851111"), paste0("cell_", seq(1:100))), sparse = T
-)
+# set.seed(17)
+# psudo_data <- rnorm(200, mean = 0.5, sd = 0.1)
+# gmat.small <- Matrix(
+#   data = psudo_data, nrow = 2, ncol = 100,
+#   dimnames = list(c("MRPL20", "ANKRD65"), paste0("cell_", seq(1:100))), sparse = T
+# )
+# pmat.small <- Matrix(
+#   data = c(psudo_data[1:100], psudo_data[101:200] + 0.2), nrow = 2, ncol = 100,
+#   dimnames = list(c("chr1:1821507-1822007", "chr1:1850611-1851111"), paste0("cell_", seq(1:100))), sparse = T
+# )
 
-regnet <- linkGenesAndPeaks(gene_counts = gmat.small, peak_counts = pmat.small, dist = "spearman", 
-                            alpha = 0.05, path_to_coords = "../testdata/temp_coords.bed") # about 40 mins
+# regnet <- linkGenesAndPeaks(gene_counts = gmat.small, peak_counts = pmat.small, dist = "spearman", 
+#                             alpha = 0.05, path_to_coords = "../testdata/temp_coords.bed") # about 40 mins
 
-test_that("Testing linkage between gene and peaks", {
-  expect_equivalent(regnet[1, 1], 0.6340474, tolerance = 1e-7)
-  expect_equivalent(regnet[2, 2], 0.6929733, tolerance = 1e-7)
-})
-unlink("../testdata/temp_coords.bed")
+# test_that("Testing linkage between gene and peaks", {
+#   expect_equivalent(regnet[1, 1], 0.6340474, tolerance = 1e-7)
+#   expect_equivalent(regnet[2, 2], 0.6929733, tolerance = 1e-7)
+# })
+# unlink("../testdata/temp_coords.bed")
 
 # Tests for runGSEA
 # Since this function depends on the cluster assignments, optimizeALS and quantil_norm
 # should be performed before this test
 ####################################################################################
-context("GSEA testing on metagenes")
-gsea <- runGSEA(ligex)
+# context("GSEA testing on metagenes")
+# gsea <- runGSEA(ligex)
 
-test_that("Tests top pathways and NES values", {
-  expect_equal(gsea[[1]][1, 1][[1]], "Axon guidance")
-  expect_equivalent(gsea[[1]][1, 2][[1]], 9.999e-05, tolerance = 1e-7)
-})
+# test_that("Tests top pathways and NES values", {
+#   expect_equal(gsea[[1]][1, 1][[1]], "Axon guidance")
+#   expect_equivalent(gsea[[1]][1, 2][[1]], 9.999e-05, tolerance = 1e-7)
+# })
