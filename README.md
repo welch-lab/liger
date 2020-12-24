@@ -30,7 +30,7 @@ We have also designed LIGER to interface with existing single-cell analysis pack
 [Seurat](https://satijalab.org/seurat/).
 
 ## Feedback
-Consider filling out our [feedback form](https://forms.gle/bhvp3K6tiHwf976r8) to help us improve the functionality and accesibility of LIGER.
+Consider filling out our [feedback form](https://forms.gle/bhvp3K6tiHwf976r8) to help us improve the functionality and accessibility of LIGER.
 
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
@@ -43,7 +43,7 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 * [Running Liger directly on Seurat objects using Seurat wrappers](https://htmlpreview.github.io/?https://github.com/satijalab/seurat.wrappers/blob/master/docs/liger.html)
 
-* [Iterative Refinement of Cellular Identity Using Online iNMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/online_iNMF_tutorial.html)
+* [Iterative Single-Cell Multi-Omic Integration Using Online iNMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/online_iNMF_tutorial.html)
 
 ## System Requirements
 
