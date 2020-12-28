@@ -35,6 +35,8 @@ Consider filling out our [feedback form](https://forms.gle/bhvp3K6tiHwf976r8) to
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
+* NEW: [Iterative Single-Cell Multi-Omic Integration Using Online iNMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/online_iNMF_tutorial.html)
+
 * [Integrating Multiple Single-Cell RNA-seq Datasets](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/Integrating_multi_scRNA_data.html)
 
 * [Jointly Defining Cell Types from scRNA-seq and scATAC-seq](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/Integrating_scRNA_and_scATAC_data.html)
@@ -42,8 +44,6 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 * [Jointly Defining Cell Types from Single-Cell RNA-seq and DNA Methylation](https://welch-lab.github.io/liger/rna-methylation.html)
 
 * [Running Liger directly on Seurat objects using Seurat wrappers](https://htmlpreview.github.io/?https://github.com/satijalab/seurat.wrappers/blob/master/docs/liger.html)
-
-* [Iterative Single-Cell Multi-Omic Integration Using Online iNMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/online_iNMF_tutorial.html)
 
 ## System Requirements
 
