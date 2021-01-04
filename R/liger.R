@@ -1931,25 +1931,19 @@ online_iNMF <- function(object,
 }
 ####################################################
 optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lambda_2 = 5),max_iters=30,nrep=1,thresh=1e-4,rand.seed=1){
-  # X[[1]] will be your RNA data with zero matrix added 
-  # X[[2]] will be a matrix of genes+unshared by cells
-  # U will your peak matrix which you can use for dimension stripping
-  
-  # Grab the dimensions of X1, note that X1 is for the RNA matrix
-  
-  
-  # X is the Liger object
-  matrix1_normalized = t(object@scale.data[[1]]) #starmap  20 genes by 80 cells
-  matrix2_normalized = t(object@scale.data[[2]]) #rna      5 genes by 100 cells
+  matrix1_normalized = t(object@scale.data[[1]]) 
+  matrix2_normalized = t(object@scale.data[[2]]) 
   
   unshared <- t(unshared)  
   U_dim <- c(dim(unshared))
   zero_matrix_full <- matrix(0, nrow = U_dim[1] , ncol = dim(matrix1_normalized)[2])
-  matrix1_normalized <- rbind(matrix1_normalized, zero_matrix)
+  matrix1_normalized <- rbind(matrix1_normalized, zero_matrix_full)
   matrix2_normalized <- rbind(matrix2_normalized, unshared)
   
-  X <- list (names(osm.liger@raw.data)[1] = matrix1_normalized, names(osm.liger@raw.data)[2] = matrix2_normalized)
-
+  # X[[1]] will be data without accompanying features with zero matrix added
+  # X[[2]] will be a matrix of genes+unshared by cells
+  X <- list (dataset1 = matrix1_normalized, dataset2 = matrix2_normalized)
+  
   x2_dimensions <- dim(X[[2]])
   x1_dimensions <- dim(X[[1]])
   matrix2_dimensions <- c(x2_dimensions[1]-U_dim[1], x2_dimensions[2])
@@ -1964,12 +1958,13 @@ optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lamb
   
   num_genes = matrix2_dimensions[1]
   
-  set.rand.seed(rand.seed)
-  
+  best_obj <- Inf
   for (i in 1:nrep){
+    set.seed(seed = rand.seed + i -1 )
     #print("Processing iteration")
     #print (i)
     print("Processing")
+    current <- rand.seed + i -1
     # initialization
     idX = list()
     for (i in 1:length(X)){
@@ -2014,7 +2009,7 @@ optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lamb
     delta = Inf
     objective_value_list = list()
     
-    iter = 1
+    iter = 1 
     while(delta > thresh & iter <= max_iters){
       iter_start_time = Sys.time()
       
@@ -2043,7 +2038,7 @@ optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lamb
       run_obj_train_approximation = run_obj_train_approximation + norm(X[[2]] - (rbind(W,zero_matrix_partial) + rbind(V[[2]], U)) %*% H[[2]],"F")^2
       run_obj_train_penalty = run_obj_train_penalty + lambda$lambda_2*(norm(rbind(V[[2]],U) %*% H[[2]], "F")^2)
       running_tally = run_obj_train_approximation + run_obj_train_penalty
-  
+      
       
       ################################################# Updating U##################################
       zero_matrix = matrix(0, num_cells[2], U_dim[1])
@@ -2057,7 +2052,7 @@ optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lamb
       run_obj_train_approximation = run_obj_train_approximation + norm(X[[2]] - (rbind(W,zero_matrix_partial) + rbind(V[[2]], U)) %*% H[[2]],"F")^2
       run_obj_train_penalty = run_obj_train_penalty + lambda$lambda_2*(norm(rbind(V[[2]],U) %*% H[[2]], "F")^2)
       running_tally = run_obj_train_approximation + run_obj_train_penalty
-  
+      
       
       ##############################################################################################
       ################################################# Updating W #################################
@@ -2078,7 +2073,7 @@ optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lamb
       run_obj_train_approximation = run_obj_train_approximation + norm(X[[2]] - (rbind(W,zero_matrix_partial) + rbind(V[[2]], U)) %*% H[[2]],"F")^2
       run_obj_train_penalty = run_obj_train_penalty + lambda$lambda_2*(norm(rbind(V[[2]],U) %*% H[[2]], "F")^2)
       running_tally = run_obj_train_approximation + run_obj_train_penalty
-
+      
       ############################################################################################    
       iter_end_time = Sys.time()
       iter_time = as.numeric(difftime(iter_end_time, iter_start_time, units = "secs"))
@@ -2098,31 +2093,37 @@ optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lamb
       
       obj_train = obj_train_approximation + obj_train_penalty
       delta = abs(obj_train_prev-obj_train)/mean(c(obj_train_prev,obj_train))
-      
       iter = iter + 1
     }
-    
+    cat("\nCurrent seed ",  current , "current objective ", obj_train)
+    if (obj_train < best_obj){
+      W_m <- W
+      H_m <- H
+      V_m <- V
+      U_m <- U
+      best_obj <- obj_train
+      best_seed <- current  
+    }
   }
- 
-  rownames(W) = rownames(X[[1]][0:matrix2_dimensions[1],])
-  colnames(W) = NULL
+  rownames(W_m) = rownames(X[[1]][0:matrix2_dimensions[1],])
+  colnames(W_m) = NULL
   
-  rownames(U) = rownames(X[[2]][(matrix2_dimensions[1]+1):dim(X[[2]])[1],])
-  colnames(U) = NULL
+  rownames(U_m) = rownames(X[[2]][(matrix2_dimensions[1]+1):dim(X[[2]])[1],])
+  colnames(U_m) = NULL
   
   for (i in 1:length(X)){
-    rownames(V[[i]]) = rownames(X[[1]][0:matrix2_dimensions[1],])
-    colnames(V[[i]]) = NULL
-    colnames(H[[i]]) = colnames(X[[i]])
+    rownames(V_m[[i]]) = rownames(X[[1]][0:matrix2_dimensions[1],])
+    colnames(V_m[[i]]) = NULL
+    colnames(H_m[[i]]) = colnames(X[[i]])
   } 
   
   ################################## Returns Results Section #########################################################
   #return(list(W,V,H,U,total_time,obj_train, objective_value_list))
-  object@W <- t(W)
-  object@V[[1]] <- t(V[[1]])
-  object@V[[2]] <- t(V[[2]])
-  object@H[[1]] <- t(H[[1]])
-  object@H[[2]] <- t(H[[2]])
+  object@W <- t(W_m)
+  object@V[[1]] <- t(V_m[[1]])
+  object@V[[2]] <- t(V_m[[2]])
+  object@H[[1]] <- t(H_m[[1]])
+  object@H[[2]] <- t(H_m[[2]])
   
   titles <- names(object@raw.data)
   names(object@H) <- titles
@@ -2133,10 +2134,13 @@ optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lamb
   cells_set1 <- rownames(object@scale.data[[1]])
   cells_set2 <-  rownames(object@scale.data[[2]])
   rel_cells <- c(cells_set1, cells_set2)
-
+  
   object@cell.data <- object@cell.data[rel_cells,]
+  cat("Best results with seed ", best_seed, ".\n", sep = "")
   return (object)
 }
+
+
 ##########################################################
 
 #' Perform thresholding on dense matrix
