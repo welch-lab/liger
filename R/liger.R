@@ -817,8 +817,6 @@ calcGeneVars = function (object, chunk = 1000)
 #'   (default 1:length(object@raw.data))
 #' @param combine How to combine variable genes across experiments. Either "union" or "intersection".
 #'   (default "union")
-#' @param keep.unique Keep genes that occur (i.e., there is a corresponding column in raw.data) only
-#'    in one dataset (default FALSE)
 #' @param capitalize Capitalize gene names to match homologous genes (ie. across species)
 #'   (default FALSE)
 #' @param do.plot Display log plot of gene variance vs. gene expression for each dataset.
@@ -846,7 +844,7 @@ calcGeneVars = function (object, chunk = 1000)
 
 selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes = NULL,
                         tol = 0.0001, datasets.use = 1:length(object@raw.data), combine = "union",
-                        keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3, chunk=1000)
+                        capitalize = F, do.plot = F, cex.use = 0.3, chunk=1000)
 {
   if (class(object@raw.data[[1]])[1] == "H5File") {
     if (!object@raw.data[[1]]$exists("gene_vars")) {
@@ -901,16 +899,15 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
       }
     }
 
-    if (!keep.unique) {
-      for (i in 1:length(hdf5_files)) {
-        if (object@h5file.info[[i]][["format.type"]] == "AnnData"){
-          genes = object@h5file.info[[i]][["genes"]][]$index
-        } else {
-          genes = object@h5file.info[[i]][["genes"]][]
-        }
-        genes.use <- genes.use[genes.use %in% genes]
+    for (i in 1:length(hdf5_files)) {
+      if (object@h5file.info[[i]][["format.type"]] == "AnnData"){
+        genes = object@h5file.info[[i]][["genes"]][]$index
+      } else {
+        genes = object@h5file.info[[i]][["genes"]][]
       }
+      genes.use <- genes.use[genes.use %in% genes]
     }
+
     if (length(genes.use) == 0) {
       warning("No genes were selected; lower var.thresh values or choose 'union' for combine parameter",
               immediate. = T)
@@ -990,11 +987,11 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
         genes.use <- intersect(genes.use, genes.new)
       }
     }
-    if (!keep.unique) {
-      for (i in 1:length(object@raw.data)) {
-        genes.use <- genes.use[genes.use %in% rownames(object@raw.data[[i]])]
-      }
+    
+    for (i in 1:length(object@raw.data)) {
+      genes.use <- genes.use[genes.use %in% rownames(object@raw.data[[i]])]
     }
+    
     if (length(genes.use) == 0) {
       warning("No genes were selected; lower var.thresh values or choose 'union' for combine parameter",
               immediate. = T)

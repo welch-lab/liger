@@ -42,13 +42,13 @@ online_iNMF(
 \item{k}{Inner dimension of factorization--number of metagenes (default 20). A value in the range 20-50 works well for most analyses.}
 
 \item{lambda}{Regularization parameter. Larger values penalize dataset-specific effects more
-strongly (ie. alignment should increase as lambda increases). We recommend always using the default value except 
-possibly for analyses with relatively small differences (biological replicates, male/female comparisons, etc.) 
+strongly (ie. alignment should increase as lambda increases). We recommend always using the default value except
+possibly for analyses with relatively small differences (biological replicates, male/female comparisons, etc.)
 in which case a lower value such as 1.0 may improve reconstruction quality. (default 5.0).}
 
 \item{max.epochs}{Maximum number of epochs (complete passes through the data). (default 5)}
 
-\item{miniBatch_max_iters}{Maximum number of block coordinate descent (HALS algorithm) iterations to perform for 
+\item{miniBatch_max_iters}{Maximum number of block coordinate descent (HALS algorithm) iterations to perform for
 each update of W and V (default 1). Changing this parameter is not recommended.}
 
 \item{miniBatch_size}{Total number of cells in each minibatch (default 5000). This is a reasonable default, but a smaller value
@@ -63,9 +63,9 @@ of cells in the smallest dataset.}
 \code{liger} object with H, W, V, A and B slots set.
 }
 \description{
-Perform online integrative non-negative matrix factorization to represent multiple single-cell datasets 
+Perform online integrative non-negative matrix factorization to represent multiple single-cell datasets
 in terms of H, W, and V matrices. It optimizes the iNMF objective function using online learning (non-negative
-least squares for H matrix, hierarchical alternating least squares for W and V matrices), where the 
+least squares for H matrix, hierarchical alternating least squares for W and V matrices), where the
 number of factors is set by k. The function allows online learning in 3 scenarios: (1) fully observed datasets;
 (2) iterative refinement using continually arriving datasets; and (3) projection of new datasets without updating
 the existing factorization. All three scenarios require fixed memory independent of the number of cells.

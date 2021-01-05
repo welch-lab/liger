@@ -41,32 +41,32 @@ plotGene(
 \item{scale.by}{Grouping of cells by which to scale gene (can be any factor column in cell.data
 or 'none' for scaling across all cells) (default 'dataset').}
 
-\item{log2scale}{Whether to show log2 transformed values or original normalized, raw, or scaled 
+\item{log2scale}{Whether to show log2 transformed values or original normalized, raw, or scaled
 values (as stored in object). Default value is FALSE if use.raw = T, otherwise TRUE.}
 
 \item{methylation.indices}{Indices of datasets in object with methylation data (this data is not
 log transformed and must use normalized values). (default NULL)}
 
-\item{plot.by}{How to group cells for plotting (can be any factor column in cell.data or 'none' 
+\item{plot.by}{How to group cells for plotting (can be any factor column in cell.data or 'none'
 for plotting all cells in a single plot). Note that this can result in large number of plots.
 Users are encouraged to use same value as for scale.by (default 'dataset').}
 
-\item{set.dr.lims}{Whether to keep dimensional reduction coordinates consistent when multiple 
+\item{set.dr.lims}{Whether to keep dimensional reduction coordinates consistent when multiple
 plots created (default FALSE).}
 
 \item{pt.size}{Point size for plots (default 0.1).}
 
-\item{min.clip}{Minimum value for expression values plotted. Can pass in quantile (0-1) or 
+\item{min.clip}{Minimum value for expression values plotted. Can pass in quantile (0-1) or
 absolute cutoff (set clip.absolute = T). Can also pass in vector if expecting multiple plots;
-users are encouraged to pass in named vector (from levels of desired feature) to avoid 
+users are encouraged to pass in named vector (from levels of desired feature) to avoid
 mismatches in order (default NULL).}
 
-\item{max.clip}{Maximum value for expression values plotted. Can pass in quantile (0-1) or 
+\item{max.clip}{Maximum value for expression values plotted. Can pass in quantile (0-1) or
 absolute cutoff (set clip.absolute = T). Can also pass in vector if expecting multiple plots;
-users are encouraged to pass in named vector (from levels of desired feature) to avoid 
+users are encouraged to pass in named vector (from levels of desired feature) to avoid
 mismatches in order (default NULL).}
 
-\item{clip.absolute}{Whether to treat clip values as absolute cutoffs instead of quantiles 
+\item{clip.absolute}{Whether to treat clip values as absolute cutoffs instead of quantiles
 (default FALSE).}
 
 \item{points.only}{Remove axes, background, and legend when plotting coordinates (default FALSE).}
@@ -91,7 +91,7 @@ If returning single plot, returns ggplot object; if returning multiple plots; re
   list of ggplot objects.
 }
 \description{
-Generates plot of dimensional reduction coordinates (default t-SNE) colored by expression of 
+Generates plot of dimensional reduction coordinates (default t-SNE) colored by expression of
 specified gene. Data can be scaled by dataset or selected feature column from cell.data (or across
 all cells). Data plots can be split by feature.
 }

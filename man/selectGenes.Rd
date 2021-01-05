@@ -12,7 +12,6 @@ selectGenes(
   tol = 1e-04,
   datasets.use = 1:length(object@raw.data),
   combine = "union",
-  keep.unique = F,
   capitalize = F,
   do.plot = F,
   cex.use = 0.3,
@@ -36,14 +35,11 @@ as number of datasets (optional, default=NULL).}
 
 \item{tol}{Tolerance to use for optimization if num.genes values passed in (default 0.0001).}
 
-\item{datasets.use}{List of datasets to include for discovery of highly variable genes. 
+\item{datasets.use}{List of datasets to include for discovery of highly variable genes.
 (default 1:length(object@raw.data))}
 
 \item{combine}{How to combine variable genes across experiments. Either "union" or "intersection".
 (default "union")}
-
-\item{keep.unique}{Keep genes that occur (i.e., there is a corresponding column in raw.data) only
-in one dataset (default FALSE)}
 
 \item{capitalize}{Capitalize gene names to match homologous genes (ie. across species)
 (default FALSE)}

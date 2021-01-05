@@ -2,11 +2,11 @@ Package: liger
 Type: Package
 Title: Linked Inference of Genomic Experimental Relationships
 Version: 0.5.0
-Date: 2018-04-09
+Date: 2020-01-05
 Author: Joshua Welch
-Maintainer: Joshua Welch <jwelch@broadinstitute.org>,
+Maintainer: Joshua Welch <welchjd@umich.edu>,
             Jialin Liu <alanliu@umich.edu>,
-            Chao Gao <alanliu@umich.edu>
+            Chao Gao <gchao@umich.edu>
 Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors.
 License: GPL-3 | file LICENSE
 SystemRequirements: Java (>= 6)

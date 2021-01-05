@@ -18,7 +18,7 @@ louvainCluster(
 \arguments{
 \item{object}{\code{liger} object. Should run quantile_norm before calling.}
 
-\item{resolution}{Value of the resolution parameter, use a value above (below) 1.0 if you want 
+\item{resolution}{Value of the resolution parameter, use a value above (below) 1.0 if you want
 to obtain a larger (smaller) number of communities. (default 1.0)}
 
 \item{k}{The maximum number of nearest neighbours to compute. (default 20)}
@@ -41,8 +41,8 @@ prune everything). (default 1/15)}
 \code{liger} object with refined 'clusters' slot set.
 }
 \description{
-After quantile normalization, users can additionally run the Louvain algorithm 
-for community detection, which is widely used in single-cell analysis and excels at merging 
+After quantile normalization, users can additionally run the Louvain algorithm
+for community detection, which is widely used in single-cell analysis and excels at merging
 small clusters into broad cell classes.
 }
 \examples{

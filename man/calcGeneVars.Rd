@@ -7,7 +7,7 @@
 calcGeneVars(object, chunk = 1000)
 }
 \arguments{
-\item{object}{\code{liger} object. The input raw.data should be a list of hdf5 files. 
+\item{object}{\code{liger} object. The input raw.data should be a list of hdf5 files.
 Should call normalize and selectGenes before calling.}
 
 \item{chunk}{size of chunks in hdf5 file. (default 1000)}
