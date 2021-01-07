@@ -1930,24 +1930,69 @@ online_iNMF <- function(object,
   return(object)
 }
 ####################################################
-optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lambda_2 = 5),max_iters=30,nrep=1,thresh=1e-4,rand.seed=1){
-  matrix1_normalized = t(object@scale.data[[1]]) 
-  matrix2_normalized = t(object@scale.data[[2]]) 
+#' Perform iNMF on scaled datasets, and include unshared, scaled and normalized, features
+#' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
+#' The additional features should be relative to the second object in the Liger list
+#' @param k Inner dimension of factorization (number of factors).
+#' @param lambda A list of the lambda penalty. Default 5,5
+#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
+#'   (default 1e-6)
+#' @param max.iters Maximum number of block coordinate descent iterations to perform (default 30).
+#' @param nrep Number of restarts to perform (iNMF objective function is non-convex, so taking the
+#'   best objective from multiple successive initializations is recommended). For easier
+#'   reproducibility, this increments the random seed by 1 for each consecutive restart, so future
+#'   factorizations of the same dataset can be run with one rep if necessary. (default 1)
+#' @param rand.seed Random seed to allow reproducible results (default 1).
+#' @unshared A list containing 0 and the unshared features to include. The unshared features should
+#' first be normalized, scaled, and the top variable features selected.
+
+
+optimize_UANLS = function(object, unshared, k=30,lambda=list(5,5),max_iters=1,nrep=1,thresh=1e-4,rand.seed=1){
   
-  unshared <- t(unshared)  
-  U_dim <- c(dim(unshared))
-  zero_matrix_full <- matrix(0, nrow = U_dim[1] , ncol = dim(matrix1_normalized)[2])
-  matrix1_normalized <- rbind(matrix1_normalized, zero_matrix_full)
-  matrix2_normalized <- rbind(matrix2_normalized, unshared)
+  # Get a list of all the matrices
+  matrices = object@scale.data
   
-  # X[[1]] will be data without accompanying features with zero matrix added
-  # X[[2]] will be a matrix of genes+unshared by cells
-  X <- list (dataset1 = matrix1_normalized, dataset2 = matrix2_normalized)
+  mlist = list()
+  xdim =  list()
+  for (i in 1:length(matrices)){
+    mlist[[i]] = t(matrices[[i]])
+    xdim[[i]] = dim(mlist[[i]])
+  }
   
-  x2_dimensions <- dim(X[[2]])
-  x1_dimensions <- dim(X[[1]])
-  matrix2_dimensions <- c(x2_dimensions[1]-U_dim[1], x2_dimensions[2])
-  zero_matrix_partial <- matrix(0, nrow = U_dim[1], ncol = k)
+  ulist = list()
+  udim = list()
+  max_dim = list()
+  #For every U, transpose
+  for (i in 1:length(unshared)){
+    ulist[[i]] = t(unshared[[i]])
+    if (length(unshared[[i]]) !=1 ){
+      udim[[i]] = dim(t(unshared[[i]]))
+      max_dim = dim(t(unshared[[i]]))
+    }
+    else { 
+      udim[[i]] = 0}
+  }
+  zero_matrix_full = list()
+  for (i in 1:length(unshared)){
+    zero_matrix_full[[i]] <- matrix(0, nrow = max_dim[[1]], ncol = dim(mlist[[i]])[2])
+  }
+  
+  for (i in 1:length(unshared)){
+    if(udim[[i]][1] == 0){
+      mlist[[i]] <- rbind(mlist[[i]], zero_matrix_full[[i]])
+    }
+    else {
+      mlist[[i]] <- rbind(mlist[[i]], ulist[[i]])
+    }
+  }
+  
+  X <- mlist
+  
+  xudim = list()
+  for (i in 1:length(matrices)){
+    xudim[[i]] = dim(mlist[[i]])
+  }
+  zero_matrix_partial <- matrix(0, nrow = max_dim[1], ncol = k)
   
   
   num_cells = c()
@@ -1956,13 +2001,11 @@ optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lamb
   }
   
   
-  num_genes = matrix2_dimensions[1]
+  num_genes = xdim[[1]][1]
   
   best_obj <- Inf
   for (i in 1:nrep){
     set.seed(seed = rand.seed + i -1 )
-    #print("Processing iteration")
-    #print (i)
     print("Processing")
     current <- rand.seed + i -1
     # initialization
@@ -1975,9 +2018,10 @@ optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lamb
     V = list()
     
     #Establish V from only the RNA dimensions
-    V[[1]] = X[[1]][0:matrix2_dimensions[1],idX[[1]]]
-    V[[2]] = X[[2]][0:matrix2_dimensions[1], 0:matrix2_dimensions[2]][,idX[[2]]]
     
+    for (i in 1:length(X)){
+      V[[i]] = X[[i]][0:xdim[[i]][1],0:xdim[[i]][2]][,idX[[i]]]
+    }
     #Establish W from RNA dimensions
     
     W = matrix(abs(runif(num_genes * k, 0, 2)), num_genes, k) 
@@ -1985,24 +2029,36 @@ optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lamb
     H = list()
     
     #Initialize U 
-    U <- unshared[,idX[[2]]]
+    U = list()
+    for (i in 1:length(X)){
+      if (dim(ulist[[i]])[1] == 1){
+        U[[i]] = zero_matrix_partial
+      }
+      else {
+        U[[i]] = ulist[[i]][,idX[[i]]]
+        Ui <- i
+      }
+    }
     
     iter = 0
-    total_time = 0 # track the total amount of time used for learning
-    sqrt_lambda = list(sqlambda_1 = sqrt(lambda$lambda_1), sqlambda_2 = sqrt(lambda$lambda_2))
+    total_time = 0 
+    sqrt_lambda = list()
+    for (i in 1:length(X)){
+      sqrt_lambda[[i]]= sqrt(lambda[[i]])
+    }
     ############################ Initial Training Objects  
     
     obj_train_approximation = 0
     obj_train_penalty = 0
-    H[[1]] = matrix(abs(runif(k * num_cells[1], 0, 2)), k, num_cells[1])
-    obj_train_approximation = obj_train_approximation + lambda$lambda_1*(norm(X[[1]] - (rbind(W,zero_matrix_partial) + rbind(V[[1]],zero_matrix_partial)) %*% H[[1]],"F")^2)
-    obj_train_penalty = obj_train_penalty + norm(rbind(V[[1]],U)%*% H[[1]], "F")^2
     
-    H[[2]] = matrix(abs(runif(k * num_cells[2], 0, 2)), k, num_cells[2])
-    obj_train_approximation = obj_train_approximation + lambda$lambda_2*(norm(X[[2]] - (rbind(W,zero_matrix_partial) + rbind(V[[2]], U)) %*% H[[2]],"F")^2)
-    obj_train_penalty = obj_train_penalty + norm(rbind(V[[2]],U) %*% H[[2]], "F")^2
+    for (i in 1:length(X)){
+      H[[i]] = matrix(abs(runif(k * num_cells[i], 0, 2)), k, num_cells[i])
+      obj_train_approximation = obj_train_approximation + norm(X[[i]] - (rbind(W,zero_matrix_partial) + rbind(V[[i]],U[[i]])) %*% H[[i]],"F")^2
+      obj_train_penalty = obj_train_penalty + lambda[[i]]*norm(rbind(V[[i]],Ui)%*% H[[i]], "F")^2
+    }
     
     obj_train = obj_train_approximation + obj_train_penalty
+    
     
     ######################### Initialize Object Complete ###########################   
     ########################## Begin Updates########################################
@@ -2015,43 +2071,27 @@ optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lamb
       
       
       #H- Updates
-      H[[1]] = solveNNLS(rbind((W + V[[1]]), sqrt_lambda$sqlambda_1 * V[[1]]), rbind(X[[1]][0:num_genes,], matrix(0, num_genes, x1_dimensions[2])))
-      H[[2]] = solveNNLS(rbind(rbind(W,zero_matrix_partial) + rbind((V[[2]]),U), sqrt_lambda$sqlambda_2 * rbind(V[[2]],U)), rbind((X[[2]]), matrix(0, num_genes+U_dim[1], x2_dimensions[2])))
+      for (i in 1:length(X)){
+        if (i != Ui){
+          H[[i]] = solveNNLS(rbind((W + V[[i]]), sqrt_lambda[[i]] * V[[i]]), rbind(X[[i]][0:num_genes,], matrix(0, num_genes, xudim[[i]][2])))
+        }
+        else{
+          H[[i]] = solveNNLS(rbind(rbind(W,zero_matrix_partial) + rbind((V[[i]]),U[[i]]), sqrt_lambda[[i]] * rbind(V[[i]],U[[i]])), rbind((X[[i]]), matrix(0, num_genes+ udim[[i]][1], xudim[[i]][2])))
+        }
+      }
       
-      run_obj_train_approximation = 0
-      run_obj_train_penalty = 0
-      run_obj_train_approximation = run_obj_train_approximation + norm(X[[1]] - (rbind(W,zero_matrix_partial) + rbind(V[[1]],zero_matrix_partial)) %*% H[[1]],"F")^2
-      run_obj_train_penalty = run_obj_train_penalty + lambda$lambda_1*(norm(V[[1]] %*% H[[1]], "F")^2)
-      run_obj_train_approximation = run_obj_train_approximation + norm(X[[2]] - (rbind(W,zero_matrix_partial) + rbind(V[[2]], U)) %*% H[[2]],"F")^2
-      run_obj_train_penalty = run_obj_train_penalty + lambda$lambda_2*(norm(rbind(V[[2]],U) %*% H[[2]], "F")^2)
-      running_tally = run_obj_train_approximation + run_obj_train_penalty
-      
-      
-      #V- Updates
-      V[[1]] = t(solveNNLS(rbind(t(H[[1]]), sqrt_lambda$sqlambda_1 * t(H[[1]])), rbind(t(X[[1]][0:num_genes,] - W %*% H[[1]]), matrix(0, num_cells[1], num_genes))))
-      V[[2]] = t(solveNNLS(rbind(t(H[[2]]), sqrt_lambda$sqlambda_2 * t(H[[2]])), rbind(t(X[[2]][0:num_genes,] - W %*% H[[2]]), matrix(0, num_cells[2], num_genes))))
-      
-      run_obj_train_approximation = 0
-      run_obj_train_penalty = 0
-      run_obj_train_approximation = run_obj_train_approximation + norm(X[[1]] - (rbind(W,zero_matrix_partial) + rbind(V[[1]],zero_matrix_partial)) %*% H[[1]],"F")^2
-      run_obj_train_penalty = run_obj_train_penalty + lambda$lambda_1*(norm(V[[1]] %*% H[[1]], "F")^2)
-      run_obj_train_approximation = run_obj_train_approximation + norm(X[[2]] - (rbind(W,zero_matrix_partial) + rbind(V[[2]], U)) %*% H[[2]],"F")^2
-      run_obj_train_penalty = run_obj_train_penalty + lambda$lambda_2*(norm(rbind(V[[2]],U) %*% H[[2]], "F")^2)
-      running_tally = run_obj_train_approximation + run_obj_train_penalty
-      
-      
+      #V - updates
+      for (i in 1:length(X)){
+        V[[i]] = t(solveNNLS(rbind(t(H[[i]]), sqrt_lambda[[i]] * t(H[[i]])), rbind(t(X[[i]][0:num_genes,] - W %*% H[[i]]), matrix(0, num_cells[i], num_genes))))
+      }
       ################################################# Updating U##################################
-      zero_matrix = matrix(0, num_cells[2], U_dim[1])
-      U = t(solveNNLS(rbind(t(H[[2]]),sqrt_lambda$sqlambda_2 * t(H[[2]])), rbind(t(X[[2]][(num_genes+1):x2_dimensions[1], ]),zero_matrix)))
       
-      
-      run_obj_train_approximation = 0
-      run_obj_train_penalty = 0
-      run_obj_train_approximation = run_obj_train_approximation + norm(X[[1]] - (rbind(W,zero_matrix_partial) + rbind(V[[1]],zero_matrix_partial)) %*% H[[1]],"F")^2
-      run_obj_train_penalty = run_obj_train_penalty + lambda$lambda_1*(norm(V[[1]] %*% H[[1]], "F")^2)
-      run_obj_train_approximation = run_obj_train_approximation + norm(X[[2]] - (rbind(W,zero_matrix_partial) + rbind(V[[2]], U)) %*% H[[2]],"F")^2
-      run_obj_train_penalty = run_obj_train_penalty + lambda$lambda_2*(norm(rbind(V[[2]],U) %*% H[[2]], "F")^2)
-      running_tally = run_obj_train_approximation + run_obj_train_penalty
+      for (i in 1:length(X)){
+        if (i == Ui){
+          zero_u_matrix <- matrix(0, num_cells[i], udim[[Ui]][1])  #################
+          U[[i]] = t(solveNNLS(rbind(t(H[[i]]),sqrt_lambda[[i]]* t(H[[i]])), rbind(t(X[[i]][(num_genes+1):xudim[[i]][1], ]),zero_u_matrix)))
+        }
+      }
       
       
       ##############################################################################################
@@ -2061,18 +2101,10 @@ optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lamb
         H_t_stack = rbind(H_t_stack, t(H[[i]]))
       }
       diff_stack_w = c()
-      #For X[[1]]
-      diff_stack_w = rbind(diff_stack_w,t(X[[1]][0:num_genes,] - V[[1]] %*% H[[1]]))
-      #For X[[2]]
-      diff_stack_w = rbind(diff_stack_w, t(X[[2]][0:num_genes,] - V[[2]] %*% H[[2]]))
+      for (i in 1:length(X)){
+        diff_stack_w = rbind(diff_stack_w,t(X[[i]][0:num_genes,] - V[[i]] %*% H[[i]]))
+      }
       W = t(solveNNLS(H_t_stack, diff_stack_w))
-      run_obj_train_approximation = 0
-      run_obj_train_penalty = 0
-      run_obj_train_approximation = run_obj_train_approximation + norm(X[[1]] - (rbind(W,zero_matrix_partial) + rbind(V[[1]],zero_matrix_partial)) %*% H[[1]],"F")^2
-      run_obj_train_penalty = run_obj_train_penalty + lambda$lambda_1*(norm(V[[1]] %*% H[[1]], "F")^2)
-      run_obj_train_approximation = run_obj_train_approximation + norm(X[[2]] - (rbind(W,zero_matrix_partial) + rbind(V[[2]], U)) %*% H[[2]],"F")^2
-      run_obj_train_penalty = run_obj_train_penalty + lambda$lambda_2*(norm(rbind(V[[2]],U) %*% H[[2]], "F")^2)
-      running_tally = run_obj_train_approximation + run_obj_train_penalty
       
       ############################################################################################    
       iter_end_time = Sys.time()
@@ -2084,18 +2116,20 @@ optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lamb
       obj_train_approximation = 0
       obj_train_penalty = 0
       
-      obj_train_approximation = obj_train_approximation + norm(X[[1]] - (rbind(W,zero_matrix_partial) + rbind(V[[1]],zero_matrix_partial)) %*% H[[1]],"F")^2
-      obj_train_penalty = obj_train_penalty + lambda$lambda_1*(norm(V[[1]] %*% H[[1]], "F")^2)
-      
-      
-      obj_train_approximation = obj_train_approximation + norm(X[[2]] - (rbind(W,zero_matrix_partial) + rbind(V[[2]], U)) %*% H[[2]],"F")^2
-      obj_train_penalty = obj_train_penalty + lambda$lambda_2*(norm(rbind(V[[2]],U) %*% H[[2]], "F")^2)
-      
+      for (i in 1:length(X)){
+        obj_train_approximation = obj_train_approximation + norm(X[[i]] - (rbind(W,zero_matrix_partial) + rbind(V[[i]],U[[i]])) %*% H[[i]],"F")^2
+        if (i == Ui){
+          obj_train_penalty = obj_train_penalty + lambda[[i]]*(norm(rbind(V[[i]],U[[i]]) %*% H[[i]], "F")^2)
+        }
+        else{
+          obj_train_penalty = obj_train_penalty + lambda[[i]]*(norm(V[[i]] %*% H[[i]], "F")^2)
+        }
+      }
       obj_train = obj_train_approximation + obj_train_penalty
       delta = abs(obj_train_prev-obj_train)/mean(c(obj_train_prev,obj_train))
       iter = iter + 1
     }
-    cat("\nCurrent seed ",  current , "current objective ", obj_train)
+    cat("\nCurrent seed ",  current , " current objective ", obj_train)
     if (obj_train < best_obj){
       W_m <- W
       H_m <- H
@@ -2105,35 +2139,35 @@ optimize_UANLS = function(object, unshared, k=30,lambda= list(lambda_1 = 5, lamb
       best_seed <- current  
     }
   }
-  rownames(W_m) = rownames(X[[1]][0:matrix2_dimensions[1],])
+  
+  rownames(W_m) = rownames(X[[1]][0:xdim[[i]][1],])
   colnames(W_m) = NULL
   
-  rownames(U_m) = rownames(X[[2]][(matrix2_dimensions[1]+1):dim(X[[2]])[1],])
-  colnames(U_m) = NULL
+  rownames(U_m[[Ui]]) = rownames(X[[Ui]][(xdim[[i]][1]+1):dim(X[[Ui]])[1],])
+  colnames(U_m[[Ui]]) = NULL
   
   for (i in 1:length(X)){
-    rownames(V_m[[i]]) = rownames(X[[1]][0:matrix2_dimensions[1],])
+    rownames(V_m[[i]]) = rownames(X[[i]][0:xdim[[i]][1],])
     colnames(V_m[[i]]) = NULL
     colnames(H_m[[i]]) = colnames(X[[i]])
   } 
   
   ################################## Returns Results Section #########################################################
-  #return(list(W,V,H,U,total_time,obj_train, objective_value_list))
   object@W <- t(W_m)
-  object@V[[1]] <- t(V_m[[1]])
-  object@V[[2]] <- t(V_m[[2]])
-  object@H[[1]] <- t(H_m[[1]])
-  object@H[[2]] <- t(H_m[[2]])
-  
+  for (i in 1:length(X)){
+    object@V[[i]] <- t(V_m[[i]])
+    object@H[[i]] <- t(H_m[[i]])
+  }
   titles <- names(object@raw.data)
   names(object@H) <- titles
   names(object@V) <- titles
   
   #cat("Objective:", objective_value_list, "\n")
-  
-  cells_set1 <- rownames(object@scale.data[[1]])
-  cells_set2 <-  rownames(object@scale.data[[2]])
-  rel_cells <- c(cells_set1, cells_set2)
+  rel_cells = list()
+  for (i in 1:length(X)){
+    rel_cells <- c(rel_cells, rownames(object@scale.data[[i]]))
+  }
+  rel_cells <- unlist(rel_cells)
   
   object@cell.data <- object@cell.data[rel_cells,]
   cat("Best results with seed ", best_seed, ".\n", sep = "")
