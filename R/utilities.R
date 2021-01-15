@@ -215,7 +215,7 @@ SLMCluster<-function(edge,prune.thresh=0.2,nstart=100,iter.max=10,algorithm=1,R=
     # NULL random.seed disallowed for this program.
     random.seed = 0
   }
-  liger.dir <- system.file(package = "liger")
+  liger.dir <- system.file(package = "rliger")
   ModularityJarFile <- paste0(liger.dir, "/java/ModularityOptimizer.jar")
   command <- paste("java -jar", ModularityJarFile, edge_file, output_file, modularity, R, 
                    algorithm, nstart,

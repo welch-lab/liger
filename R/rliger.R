@@ -43,7 +43,7 @@ NULL
 #' @aliases liger-class
 #' @exportClass liger
 #' @importFrom Rcpp evalCpp
-#' @useDynLib liger
+#' @useDynLib rliger
 
 liger <- methods::setClass(
   "liger",
@@ -455,7 +455,7 @@ createLiger <- function(raw.data,
                         barcodes.name = NULL) {
   if (class(raw.data[[1]]) == "character") { #HDF5 filenames instead of in-memory matrices
     object <- methods::new(Class = "liger", raw.data = raw.data,
-                           version = packageVersion("liger"))
+                           version = packageVersion("rliger"))
     object@V = rep(list(NULL), length(raw.data))
     object@H = rep(list(NULL), length(raw.data))
     cell.data = list()
@@ -564,7 +564,7 @@ createLiger <- function(raw.data,
   object <- methods::new(
     Class = "liger",
     raw.data = raw.data,
-    version = packageVersion("liger")
+    version = packageVersion("rliger")
   )
   # remove missing cells
   if (remove.missing) {
@@ -594,18 +594,18 @@ createLiger <- function(raw.data,
 }
 
 #create new dataset, first deleting existing record if dataset already exists
-safe_h5_create = function(h5_object,dataset_name,dims,mode="double",chunk_size=dims, liger_object = object)
+safe_h5_create = function(object,idx,dataset_name,dims,mode="double",chunk_size=dims)
 {
-  if (!h5_object$exists(dataset_name)) {
-    h5_object$create_dataset(name = dataset_name,dims = dims,dtype = mode, chunk_dims = chunk_size)
+  if (!object@raw.data[[idx]]$exists(dataset_name)) {
+    object@raw.data[[idx]]$create_dataset(name = dataset_name,dims = dims,dtype = mode, chunk_dims = chunk_size)
   } else {
-    if (h5_object$exists("scale.data")) {
-      if (h5_object[["scale.data"]]$dims[1] < length(liger_object@var.genes)){
-          extendDataSet(h5_object[["scale.data"]], c(length(liger_object@var.genes), h5_object[["scale.data"]]$dims[2]))
+    if (object@raw.data[[idx]]$exists("scale.data")) {
+      if (object@raw.data[[idx]][["scale.data"]]$dims[1] < length(object@var.genes)){
+          extendDataSet(object@raw.data[[idx]][["scale.data"]], c(length(object@var.genes), object@raw.data[[idx]][["scale.data"]]$dims[2]))
       }
-    } else if (h5_object$exists("gene_vars")) {
-      if (h5_object[["gene_vars"]]$dims[1] < length(liger_object@var.genes)){
-          extendDataSet(h5_object[["gene_vars"]], length(liger_object@var.genes))
+    } else if (object@raw.data[[idx]]$exists("gene_vars")) {
+      if (object@raw.data[[idx]][["gene_vars"]]$dims[1] < length(object@var.genes)){
+          extendDataSet(object@raw.data[[idx]][["gene_vars"]], length(object@var.genes))
       }
     }
   }
@@ -654,8 +654,8 @@ normalize <- function(object,
       gene_means = rep(0,num_genes)
       #file.h5$close_all()
 
-      safe_h5_create(object@raw.data[[i]],"/norm.data",dims=num_entries,mode = h5types$double, chunk_size = chunk_size, liger_object = object)
-      safe_h5_create(object@raw.data[[i]],"/cell_sums",dims=num_cells,mode = h5types$int, chunk_size = chunk_size, liger_object = object)
+      safe_h5_create(object = object, idx = i, dataset_name = "/norm.data", dims = num_entries, mode = h5types$double, chunk_size = chunk_size)
+      safe_h5_create(object = object, idx = i, dataset_name = "/cell_sums", dims = num_cells, mode = h5types$int, chunk_size = chunk_size)
 
       #file.h5 = H5File$new(fname, mode="r+")
       num_chunks = ceiling(num_cells/chunk_size)
@@ -692,8 +692,8 @@ normalize <- function(object,
       setTxtProgressBar(pb,num_chunks)
       cat("\n")
       gene_means = gene_means / num_cells
-      safe_h5_create(object@raw.data[[i]],"gene_means",dims=num_genes,mode=h5types$double, liger_object = object)
-      safe_h5_create(object@raw.data[[i]],"gene_sum_sq",dims=num_genes,mode=h5types$double, liger_object = object)
+      safe_h5_create(object = object, idx = i, dataset_name = "gene_means", dims=num_genes, mode=h5types$double)
+      safe_h5_create(object = object, idx = i, dataset_name = "gene_sum_sq", dims=num_genes, mode=h5types$double)
       object@raw.data[[i]][["gene_means"]][1:length(gene_means)] = gene_means
       object@raw.data[[i]][["gene_sum_sq"]][1:length(gene_sum_sq)] = gene_sum_sq
       object@norm.data[[i]] = object@raw.data[[i]][["norm.data"]]
@@ -786,8 +786,7 @@ calcGeneVars = function (object, chunk = 1000)
     setTxtProgressBar(pb, num_chunks)
     cat("\n")
     gene_vars = gene_vars/(num_cells - 1)
-    safe_h5_create(object@raw.data[[i]], "/gene_vars", dims = num_genes,
-                   mode = h5types$double, liger_object = object)
+    safe_h5_create(object = object, idx = i, dataset_name = "/gene_vars", dims = num_genes, mode = h5types$double)
     object@raw.data[[i]][["gene_vars"]][1:num_genes] = gene_vars
   }
   return(object)
@@ -1053,7 +1052,7 @@ scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
 
       gene_inds = which(genes %in% vargenes)
       gene_root_mean_sum_sq = sqrt(gene_sum_sq/(num_cells-1))
-      safe_h5_create(object@raw.data[[i]], "scale.data", dims = c(length(vargenes), num_cells), mode = h5types$double, chunk_size = c(length(vargenes), chunk_size), liger_object = object)
+      safe_h5_create(object = object, idx = i, dataset_name = "scale.data", dims = c(length(vargenes), num_cells), mode = h5types$double, chunk_size = c(length(vargenes), chunk_size))
       num_chunks = ceiling(num_cells/chunk_size)
       pb = txtProgressBar(0, num_chunks, style = 3)
       ind = 0
@@ -2609,8 +2608,9 @@ optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100
 #'
 #' @return Matrix of results if indicated or ggplot object. Plots alignment vs. lambda to console.
 #'
-#' @import doSNOW
-#' @importFrom snow makeCluster stopCluster
+#'
+#' @import doParallel
+#' @import parallel
 #' @importFrom foreach foreach
 #' @importFrom foreach "%dopar%"
 #' @importFrom ggplot2 ggplot aes geom_point geom_line guides guide_legend labs theme theme_classic
@@ -2643,16 +2643,18 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
                  lambda.test[1]))
     object <- optimizeALS(object, k = k, thresh = thresh, lambda = lambda.test[1],
                           max.iters = max.iters, nrep = 1, rand.seed = (rand.seed + r - 1))
-    print('Progress now represents completed factorizations (out of total number of lambda values)')
-    cl <- makeCluster(num.cores)
-    registerDoSNOW(cl)
-    pb <- txtProgressBar(min = 0, max = length(lambda.test), style = 3, initial = 1, file = "")
+    print('Testing different choices of lambda values')
+    #cl <- makeCluster(num.cores)
+    cl <- parallel::makeCluster(num.cores)
+    #registerDoSNOW(cl)
+    doParallel::registerDoParallel(cl)
+    #pb <- txtProgressBar(min = 0, max = length(lambda.test), style = 3, initial = 1, file = "")
     # define progress bar function
-    progress <- function(n) setTxtProgressBar(pb, n)
-    opts <- list(progress = progress)
+    #progress <- function(n) setTxtProgressBar(pb, n)
+    #opts <- list(progress = progress)
     i <- 0
-    data_matrix <- foreach(i = 1:length(lambda.test), .combine = "rbind", .options.snow = opts,
-                           .packages = 'liger') %dopar% {
+    data_matrix <- foreach(i = 1:length(lambda.test), .combine = "rbind",
+                           .packages = 'rliger') %dopar% {
                              if (i != 1) {
                                if (gen.new) {
                                  ob.test <- optimizeALS(object,
@@ -2675,8 +2677,8 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
                              )
                              calcAlignment(ob.test)
                            }
-    close(pb)
-    stopCluster(cl)
+    #close(pb)
+    parallel::stopCluster(cl)
     rep_data[[r]] <- data_matrix
   }
 
@@ -2739,8 +2741,8 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 #'   (length(k.test) by n_cells). Length of list corresponds to nrep. (default FALSE)
 #'
 #' @return Matrix of results if indicated or ggplot object. Plots K-L divergence vs. k to console.
-#' @import doSNOW
-#' @importFrom snow makeCluster stopCluster
+#' @import doParallel
+#' @import parallel
 #' @importFrom foreach foreach
 #' @importFrom foreach "%dopar%"
 #' @importFrom ggplot2 ggplot aes geom_point geom_line guides guide_legend labs theme theme_classic
@@ -2773,16 +2775,16 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
                  k.test[length(k.test)]))
     object <- optimizeALS(object, k = k.test[length(k.test)], lambda = lambda, thresh = thresh,
                           max.iters = max.iters, nrep = 1, rand.seed = (rand.seed + r - 1))
-    print('Progress now represents completed factorizations (out of total number of k values)')
-    cl <- makeCluster(num.cores)
-    registerDoSNOW(cl)
-    pb <- txtProgressBar(min = 0, max = length(k.test), style = 3, initial = 1, file = "")
+    print('Testing different choices of k')
+    cl <- parallel::makeCluster(num.cores)
+    doParallel::registerDoParallel(cl)
+    #pb <- txtProgressBar(min = 0, max = length(k.test), style = 3, initial = 1, file = "")
     # define progress bar function
-    progress <- function(n) setTxtProgressBar(pb, n)
-    opts <- list(progress = progress)
+    #progress <- function(n) setTxtProgressBar(pb, n)
+    #opts <- list(progress = progress)
     i <- 0
-    data_matrix <- foreach(i = length(k.test):1, .combine = "rbind", .options.snow = opts,
-                           .packages = 'liger') %dopar% {
+    data_matrix <- foreach(i = length(k.test):1, .combine = "rbind",
+                           .packages = 'rliger') %dopar% {
                              if (i != length(k.test)) {
                                if (gen.new) {
                                  ob.test <- optimizeALS(object,
@@ -2801,8 +2803,8 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
                              dataset_split <- kl_divergence_uniform(ob.test)
                              unlist(dataset_split)
                            }
-    close(pb)
-    stopCluster(cl)
+    #close(pb)
+    parallel::stopCluster(cl)
     data_matrix <- data_matrix[nrow(data_matrix):1, ]
     rep_data[[r]] <- data_matrix
   }
@@ -3253,11 +3255,11 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
 
   if (norm) {
     cat('\nNormalizing data...\n')
-    object <- liger::normalize(object)
+    object <- rliger::normalize(object)
   }
   if (scale) {
     cat('Scaling (but not centering) data...')
-    object <- liger::scaleNotCenter(object)
+    object <- rliger::scaleNotCenter(object)
   }
 
   return(object)
@@ -4114,7 +4116,6 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #' @param clusters.use Names of clusters to use in calculating alignment (default NULL).
 #' @param by.cell Return alignment calculated individually for each cell (default FALSE).
 #' @param by.dataset Return alignment calculated for each dataset (default FALSE).
-#' @param do.kbet Return kBET metric (default FALSE).
 #'
 #' @return Alignment metric.
 #' @importFrom FNN get.knn
@@ -4128,7 +4129,7 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #' }
 
 calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL, cells.comp = NULL,
-                          clusters.use = NULL, by.cell = F, by.dataset = F, do.kbet = F) {
+                          clusters.use = NULL, by.cell = F, by.dataset = F) {
   if (is.null(cells.use)) {
     cells.use <- rownames(object@H.norm)
   }
@@ -4188,13 +4189,6 @@ calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL, cel
   }
   names(dataset) <- rownames(nmf_factors)
   dataset <- dataset[sampled_cells]
-
-  if(do.kbet)
-  {
-    kBET_res = kBET::kBET(nmf_factors[sampled_cells, 1:num_factors],dataset,k0=k,
-                          knn=knn_graph,heuristic=F,n_repeat=100,do.pca=F,testSize=1000)
-    return(kBET_res)
-  }
 
   num_sampled <- N * min_cells
   num_same_dataset <- rep(k, num_sampled)
@@ -5429,7 +5423,7 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
 #'
 #' @param object \code{liger} object. Should call runTSNE before calling.
 #' @param genes Vector of gene names.
-#' @param ... arguments passed from \code{\link[liger]{plotGene}}
+#' @param ... arguments passed from \code{\link[rliger]{plotGene}}
 #'
 #' @export
 #' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
@@ -5631,6 +5625,7 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
 #' @importFrom grid unit
 #' @importFrom ggplot2 ggplot aes coord_fixed element_blank geom_point guides guide_legend
 #' scale_size scale_y_discrete theme
+##' @importFrom rlang .data
 #' @examples
 #' \dontrun{
 #' # liger object, factorization complete
@@ -5641,18 +5636,19 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
 #' }
 
 plotClusterProportions <- function(object, return.plot = F) {
+
   sample_names <- unlist(lapply(seq_along(object@H), function(i) {
     rep(names(object@H)[i], nrow(object@H[[i]]))
   }))
-  freq_table <- data.frame(Cluster = rep(object@clusters, length(object@scale.data)),
-                           Sample = sample_names)
-  freq_table <- table(freq_table[['Cluster']], freq_table[['Sample']])
+  freq_table <- data.frame(rep(object@clusters, length(object@scale.data)),
+                           sample_names)
+  freq_table <- table(freq_table[,1], freq_table[,2])
   for (i in 1:ncol(freq_table)) {
     freq_table[, i] <- freq_table[, i] / sum(freq_table[, i])
   }
-  freq_table <- data.frame(freq_table)
+  freq_table <- as.data.frame(freq_table)
   colnames(freq_table) <- c("Cluster", "Sample", "Proportion")
-  p1 <- ggplot(freq_table, aes(x = Cluster, y = Sample)) +
+  p1 <- ggplot(freq_table, aes_string(x = "Cluster", y = "Sample")) +
     geom_point(aes_string(size = 'Proportion', fill = 'Cluster', color = 'Cluster')) +
     scale_size(guide = "none") + theme(
       axis.line = element_blank(),

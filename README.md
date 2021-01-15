@@ -1,10 +1,10 @@
 <img src="docs/img/liger_cropped.png" width="150">
 
-[![Build Status](https://travis-ci.com/welch-lab/liger.svg?branch=master)](https://travis-ci.com/welch-lab/liger.svg?branch=master)
+[![Build Status](https://api.travis-ci.com/welch-lab/liger.svg?branch=master)](https://api.travis-ci.com/welch-lab/liger.svg?branch=master)
 
 # LIGER (Linked Inference of Genomic Experimental Relationships)
 
-LIGER (`liger`) is a package for integrating and analyzing multiple single-cell datasets, developed by the Macosko lab and maintained/extended by the Welch lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors. 
+LIGER (`rliger` on CRAN) is a package for integrating and analyzing multiple single-cell datasets, developed by the Macosko lab and maintained/extended by the Welch lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors. 
 
 Check out our [Cell paper](https://www.cell.com/cell/fulltext/S0092-8674%2819%2930504-5) for a more complete description of the methods and analyses. To access data used in our SN and BNST analyses, visit our [study](https://portals.broadinstitute.org/single_cell/study/SCP466) on the
 Single Cell Portal. 
@@ -48,7 +48,7 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 ## System Requirements
 
 ### Hardware requirements
-The `liger` package requires only a standard computer with enough RAM to support the in-memory operations. For minimal performance, please make sure that the computer has at least about 2 GB of RAM. For optimal performance, we recommend a computer with the following specs:
+The `rliger` package requires only a standard computer with enough RAM to support the in-memory operations. For minimal performance, please make sure that the computer has at least about 2 GB of RAM. For optimal performance, we recommend a computer with the following specs:
 
 * RAM: 16+ GB
 * CPU: 4+ cores, 2.3 GHz/core
@@ -60,29 +60,29 @@ The package development version is tested on *Linux* operating systems and *Mac 
 * Linux: CentOS 7, Manjaro 5.3.18
 * Mac OSX: Mojave (10.14.1), Catalina (10.15.2)
 
-The `liger` package should be compatible with Windows, Mac, and Linux operating systems.
+The `rliger` package should be compatible with Windows, Mac, and Linux operating systems.
 
-Before setting up the `liger` package, users should have R version 3.4.0 or higher, and several packages set up from CRAN and other repositories. The user can check the dependencies in `DESCRIPTION`.
+Before setting up the `rliger` package, users should have R version 3.4.0 or higher, and several packages set up from CRAN and other repositories. The user can check the dependencies in `DESCRIPTION`.
 
 ## Installation
 
-`liger` is written in R and has a few other system requirements (Java) and recommended packages (umap in Python). To install the most recent development version, follow these instructions:
+`rliger` is written in R and has a few other system requirements (Java) and recommended packages (umap in Python). To install the most recent development version, follow these instructions:
 
 1. Install [R](https://www.r-project.org/)  (>= 3.4)
-2. Install [Rstudio](https://www.rstudio.com/products/rstudio/download/) (recommended)
+2. Install [Rstudio](https://rstudio.com/products/rstudio/download/) (recommended)
 3. Make sure you have Java installed in your machine. Check by typing `java -version` into Terminal or Command Prompt. 
 4. Use the following R commands.
 ```
 install.packages('devtools')
 library(devtools)
-install_github('MacoskoLab/liger')
+install_github('welch-lab/liger')
 ```
 
 ### Additional Installation Steps for MacOS (recommended before step 4)
 Installing RcppArmadillo on R>=3.4 requires Clang >= 4 and gfortran-6.1. Follow the instructions below if you have R version 3.4.0-3.4.4. These instructions (using clang4) may also be sufficient for R>=3.5 but for newer versions of R, it's recommended to follow the instructions in this [post](https://thecoatlessprofessor.com/programming/r-compiler-tools-for-rcpp-on-macos/). 
 
 1. Install gfortran as suggested [here](https://gcc.gnu.org/wiki/GFortranBinaries)
-2. Download clang4 from this [page](http://r.research.att.com/libs/clang-4.0.0-darwin15.6-Release.tar.gz)
+2. Download clang4 from this [page](https://mac.R-project.org/libs/clang-4.0.0-darwin15.6-Release.tar.gz)
 3. Uncompress the resulting zip file and type into Terminal (`sudo` if needed): 
 ```
 mv /path/to/clang4/ /usr/local/ 
@@ -127,7 +127,7 @@ publically), which also comes with Rstudio and Seurat (v2) installed.
 ```
 docker run -d -p 8787:8787 docker.io/vkozareva/sc-liger:latest
 ```
-3. Type [http://localhost:8787](http://localhost:8787) in any browser and enter "rstudio" as the 
+3. Type `http://localhost:8787` in any browser and enter "rstudio" as the 
 username and password when prompted. `liger` and all of its dependencies are already installed in 
 this environment.
 
@@ -179,7 +179,7 @@ The installation process of `liger` should take less than 30 minutes.
 The expected run time is 1 - 4 hours depending on dataset size and downstream analysis of the user’s choice.
 
 ## Sample Datasets
-The `liger` package provides a small simulated dataset for basic demos of the functions, you can find it in folder `liger/tests/testdata/small_pbmc_data.RDS`.
+The `rliger` package provides a small simulated dataset for basic demos of the functions, you can find it in folder `rliger/tests/testdata/small_pbmc_data.RDS`.
 
 We also provide a set of scRNA-seq and scATAC-seq datasets for real-world style demos. These datasets are as follows:
 

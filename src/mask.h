@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sstream>
+#include <vector>
 
 #include "entities.h"
 
@@ -44,7 +45,7 @@ void overwriteOriginalWithMask(dtype*original,dtype*masked,Mask& mask)
 		else
 		{
 			original[i] = 0;
-		} 
+		}
 	}
 }
 int markInfeasible(Mask& infeasiblemask,dtype*x_masked,dtype*y_masked,Mask& xmask)
@@ -84,8 +85,10 @@ void switchSets(Mask& infeasiblemask,Mask& xmask,bool bpp)
 
 void generateCGTCF(DenseMatrix& CGTCF,LowerTriangularMatrix& CTC,Mask& xmask)
 {
-	int rowmap[xmask.dim];
-	int colmap[xmask.dim];
+	//int rowmap[xmask.dim];
+	//int colmap[xmask.dim];
+	std::vector<int> rowmap(xmask.dim);
+	std::vector<int> colmap(xmask.dim);
 	int newrows = 0;
 	for(int row = 0; row < xmask.dim; ++row)
 	{
@@ -122,7 +125,8 @@ void generateCGTCF(DenseMatrix& CGTCF,LowerTriangularMatrix& CTC,Mask& xmask)
 }
 void generateCFTCF(LowerTriangularMatrix& CFTCF,LowerTriangularMatrix& CTC,Mask& columnmask)
 {
-	int colmap[columnmask.dim];
+	//int colmap[columnmask.dim];
+	std::vector<int> colmap(columnmask.dim);
 	int newdim = 0;
 	for(int i = 0; i < columnmask.dim; ++i)
 	{

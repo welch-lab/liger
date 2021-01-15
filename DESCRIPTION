@@ -1,13 +1,13 @@
-Package: liger
+Package: rliger
+Version: 0.5.0
+Date: 2021-01-11
 Type: Package
 Title: Linked Inference of Genomic Experimental Relationships
-Version: 0.5.0
-Date: 2020-01-05
-Author: Joshua Welch
-Maintainer: Joshua Welch <welchjd@umich.edu>,
-            Jialin Liu <alanliu@umich.edu>,
-            Chao Gao <gchao@umich.edu>
-Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors.
+Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors. See Welch J, Kozareva V, et al (2019) <doi:10.1016/j.cell.2019.05.006>, and Liu J, Gao C, Sodicoff J, et al (2020) <doi:10.1038/s41596-020-0391-8> for more details.
+Author: Joshua Welch, Chao Gao, Jialin Liu, Joshua Sodicoff
+Maintainer: Chao Gao <gchao@umich.edu>
+BugReports: https://github.com/welch-lab/liger/issues
+URL: https://github.com/welch-lab/liger
 License: GPL-3 | file LICENSE
 SystemRequirements: Java (>= 6)
 Imports: Rcpp (>= 0.12.10),
@@ -23,12 +23,11 @@ Imports: Rcpp (>= 0.12.10),
      riverplot,
      Hmisc,
      foreach,
-     snow,
-     doSNOW,
+     parallel,
+     doParallel,
      mclust,
      stats,
      psych,
-     RcppEigen,
      RANN,
      uwot,
      rlang,
@@ -56,6 +55,4 @@ Suggests:
     org.Hs.eg.db,
     reactome.db,
     fgsea,
-    AnnotationDbi,
-    kBET
-VignetteBuilder: knitr
+    AnnotationDbi
