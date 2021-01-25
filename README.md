@@ -66,16 +66,22 @@ Before setting up the `liger` package, users should have R version 3.4.0 or high
 
 ## Installation
 
-`liger` is written in R and has a few other system requirements (Java) and recommended packages (umap in Python). To install the most recent development version, follow these instructions:
+`liger` is written in R and is available on the Comprehensive R Archive Network (CRAN). Note that the package name on CRAN is `rliger` to avoid a naming conflict with an unrelated package. To install the version on CRAN, follow these instructions:
 
 1. Install [R](https://www.r-project.org/)  (>= 3.4)
 2. Install [Rstudio](https://www.rstudio.com/products/rstudio/download/) (recommended)
-3. Make sure you have Java installed in your machine. Check by typing `java -version` into Terminal or Command Prompt. 
-4. Use the following R commands.
+3. Type the following R command:
+```
+install.packages('rliger')
+library(devtools)
+install_github('WelchLab/liger')
+```
+
+To install the latest development version directly from GitHub, type the following commands instead of step 3:
 ```
 install.packages('devtools')
 library(devtools)
-install_github('MacoskoLab/liger')
+install_github('WelchLab/liger')
 ```
 
 ### Additional Installation Steps for MacOS (recommended before step 4)
