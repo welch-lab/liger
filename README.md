@@ -83,7 +83,7 @@ install_github('welch-lab/liger')
 ```
 
 ### Additional Installation Steps for MacOS (recommended before step 3)
-Installing RcppArmadillo on R>=3.4 requires Clang >= 4 and gfortran-6.1. Follow the instructions below if you have R version 3.4.0-3.4.4. These instructions (using clang4) may also be sufficient for R>=3.5 but for newer versions of R, it's recommended to follow the instructions in this [post](https://thecoatlessprofessor.com/programming/r-compiler-tools-for-rcpp-on-macos/). 
+Installing RcppArmadillo on R>=3.4 requires Clang >= 4 and gfortran-6.1. For newer versions of R (R>=3.5), it's recommended to follow the instructions in this [post](https://thecoatlessprofessor.com/programming/r-compiler-tools-for-rcpp-on-macos/). Follow the instructions below if you have R version 3.4.0-3.4.4.
 
 1. Install gfortran as suggested [here](https://gcc.gnu.org/wiki/GFortranBinaries)
 2. Download clang4 from this [page](http://r.research.att.com/libs/clang-4.0.0-darwin15.6-Release.tar.gz)
