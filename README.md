@@ -73,15 +73,13 @@ Before setting up the `liger` package, users should have R version 3.4.0 or high
 3. Type the following R command:
 ```
 install.packages('rliger')
-library(devtools)
-install_github('WelchLab/liger')
 ```
 
 To install the latest development version directly from GitHub, type the following commands instead of step 3:
 ```
 install.packages('devtools')
 library(devtools)
-install_github('WelchLab/liger')
+install_github('welch-lab/liger')
 ```
 
 ### Additional Installation Steps for MacOS (recommended before step 4)
