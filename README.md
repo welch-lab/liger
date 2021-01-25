@@ -183,7 +183,7 @@ The installation process of `liger` should take less than 30 minutes.
 The expected run time is 1 - 4 hours depending on dataset size and downstream analysis of the user’s choice.
 
 ## Sample Datasets
-The `liger` package provides a small simulated dataset for basic demos of the functions, you can find it in folder `liger/tests/testdata/small_pbmc_data.RDS`.
+The `liger` package provides a small sample dataset for basic demos of the functions. You can find it in folder `liger/tests/testdata/small_pbmc_data.RDS`.
 
 We also provide a set of scRNA-seq and scATAC-seq datasets for real-world style demos. These datasets are as follows:
 
