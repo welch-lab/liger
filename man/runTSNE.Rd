@@ -6,9 +6,9 @@
 \usage{
 runTSNE(
   object,
-  use.raw = F,
+  use.raw = FALSE,
   dims.use = 1:ncol(object@H.norm),
-  use.pca = F,
+  use.pca = FALSE,
   perplexity = 30,
   theta = 0.5,
   method = "Rtsne",
@@ -55,10 +55,9 @@ to runTSNE. For more detailed FIt-SNE installation instructions, see the liger r
 }
 \examples{
 \dontrun{
- # liger object
-ligerex
-# generate H.norm by quantile aligning factor loadings
-ligerex <- quantileAlignSNF(ligerex)
+# ligerex (liger object), factorization complete
+# generate H.norm by quantile normalizig factor loadings
+ligerex <- quantile_norm(ligerex)
 # get tsne.coords for normalized data
 ligerex <- runTSNE(ligerex)
 # get tsne.coords for raw factor loadings

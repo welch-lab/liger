@@ -7,9 +7,9 @@
 getGeneValues(
   list,
   gene,
-  use.cols = F,
+  use.cols = FALSE,
   methylation.indices = NULL,
-  log2scale = F,
+  log2scale = FALSE,
   scale.factor = 10000
 )
 }
@@ -34,12 +34,12 @@ Plots to console (1-2 pages per factor)
 }
 \description{
 Returns single vector of gene values across all datasets in list provided. Data can be in raw, 
-normalized or scaled form. If matrices are in cell x gene format, set use.cols = T.
+normalized or scaled form. If matrices are in cell x gene format, set use.cols = TRUE.
 }
 \examples{
 \dontrun{
- # liger object with factorization complete
-ligerex
+# liger object with factorization complete
+# ligerex
 gene_values <- getGeneValues(ligerex@raw.data, 'MALAT1')
 }
 }

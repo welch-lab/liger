@@ -4,7 +4,7 @@
 \alias{normalize}
 \title{Normalize raw datasets to column sums}
 \usage{
-normalize(object, chunk = 1000, format.type = "10X")
+normalize(object, chunk = 1000, format.type = "10X", verbose = TRUE)
 }
 \arguments{
 \item{object}{\code{liger} object.}
@@ -12,6 +12,8 @@ normalize(object, chunk = 1000, format.type = "10X")
 \item{chunk}{size of chunks in hdf5 file. (default 1000)}
 
 \item{format.type}{string of HDF5 format (10X CellRanger by default).}
+
+\item{verbose}{Print progress bar/messages (TRUE by default)}
 }
 \value{
 \code{liger} object with norm.data slot set.
@@ -20,10 +22,9 @@ normalize(object, chunk = 1000, format.type = "10X")
 This function normalizes data to account for total gene expression across a cell.
 }
 \examples{
-\dontrun{
-Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
-Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+# Demonstration using matrices with randomly generated numbers
+Y <- matrix(runif(5000,0,2), 10,500)
+Z <- matrix(runif(5000,0,2), 10,500)
 ligerex <- createLiger(list(y_set = Y, z_set = Z))
 ligerex <- normalize(ligerex)
-}
 }

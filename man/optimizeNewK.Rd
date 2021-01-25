@@ -10,7 +10,8 @@ optimizeNewK(
   lambda = NULL,
   thresh = 1e-04,
   max.iters = 100,
-  rand.seed = 1
+  rand.seed = 1,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -27,6 +28,8 @@ optimizeALS.}
 \item{max.iters}{Maximum number of block coordinate descent iterations to perform (default 100).}
 
 \item{rand.seed}{Random seed to set. Only relevant if k.new > k. (default 1)}
+
+\item{verbose}{Print progress bar/messages (TRUE by default)}
 }
 \value{
 \code{liger} object with H, W, and V slots reset.
@@ -38,14 +41,6 @@ where it is more likely to speed up the factorization.
 }
 \examples{
 \dontrun{
-Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
-Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-ligerex <- createLiger(list(y_set = Y, z_set = Z))
-ligerex <- normalize(ligerex)
-ligerex <- selectGenes(ligerex)
-ligerex <- scaleNotCenter(ligerex)
-# get factorization using three restarts and 20 factors
-ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
 # decide to run with k = 15 instead (keeping old lambda the same)
 ligerex <- optimizeNewK(ligerex, k.new = 15)
 }

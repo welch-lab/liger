@@ -6,18 +6,18 @@
 \usage{
 seuratToLiger(
   objects,
-  combined.seurat = F,
+  combined.seurat = FALSE,
   names = "use-projects",
   meta.var = NULL,
   assays.use = NULL,
   raw.assay = "RNA",
-  remove.missing = T,
-  renormalize = T,
-  use.seurat.genes = T,
+  remove.missing = TRUE,
+  renormalize = TRUE,
+  use.seurat.genes = TRUE,
   num.hvg.info = NULL,
-  use.idents = T,
-  use.tsne = T,
-  cca.to.H = F
+  use.idents = TRUE,
+  use.tsne = TRUE,
+  cca.to.H = FALSE
 )
 }
 \arguments{
@@ -87,6 +87,6 @@ ligerex2 <- seuratToLiger(list(tenx, seqwell), names = c('tenx', 'seqwell'), num
 # Seurat object for joint analysis
 pbmc <- readRDS('pbmc.RDS')
 # create liger object, using 'protocol' for dataset names
-ligerex3 <- seuratToLiger(pbmc, combined.seurat = T, meta.var = 'protocol', num.hvg.info = 2000)
+ligerex3 <- seuratToLiger(pbmc, combined.seurat = TRUE, meta.var = 'protocol', num.hvg.info = 2000)
 }
 }

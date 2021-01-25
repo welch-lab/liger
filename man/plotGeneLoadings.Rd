@@ -10,20 +10,21 @@ plotGeneLoadings(
   dataset2 = NULL,
   num.genes.show = 12,
   num.genes = 30,
-  mark.top.genes = T,
+  mark.top.genes = TRUE,
   factor.share.thresh = 10,
   log.fc.thresh = 1,
   umi.thresh = 30,
   frac.thresh = 0,
   pval.thresh = 0.05,
-  do.spec.plot = T,
+  do.spec.plot = TRUE,
   max.val = 0.1,
   pt.size = 0.1,
   option = "plasma",
   zero.color = "#F5F5F5",
-  return.plots = F,
+  return.plots = FALSE,
   axis.labels = NULL,
-  do.title = F
+  do.title = FALSE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -70,6 +71,12 @@ NULL to revert to default gradient scaling. (default 0.1)}
 \item{axis.labels}{Vector of two strings to use as x and y labels respectively (default NULL).}
 
 \item{do.title}{Include top title with cluster and Dataset Specificity (default FALSE).}
+
+\item{verbose}{Print progress bar/messages (TRUE by default)}
+}
+\value{
+List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
+  console).
 }
 \description{
 Plots t-SNE coordinates of all cells by their loadings on each factor. Underneath it displays the
@@ -81,14 +88,13 @@ plots produced.
 }
 \examples{
 \dontrun{
-# liger object, factorization complete
-ligerex
+# ligerex (liger object based on in-memory datasets), factorization complete
 ligerex <- quantile_norm(ligerex)
 ligerex <- runUMAP(ligerex)
 # pdf("gene_loadings.pdf")
 plotGeneLoadings(ligerex, num.genes = 20)
 # dev.off()
-# HDF5 input
+# ligerex (liger object based on datasets in HDF5 format), factorization complete input
 ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
 plotGeneLoadings(ligerex, num.genes = 20)
 }

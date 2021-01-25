@@ -10,14 +10,14 @@ plotByDatasetAndCluster(
   title = NULL,
   pt.size = 0.3,
   text.size = 3,
-  do.shuffle = T,
+  do.shuffle = TRUE,
   rand.seed = 1,
   axis.labels = NULL,
-  do.legend = T,
+  do.legend = TRUE,
   legend.size = 5,
-  reorder.idents = F,
+  reorder.idents = FALSE,
   new.order = NULL,
-  return.plots = F,
+  return.plots = FALSE,
   legend.fonts.size = 12
 )
 }
@@ -65,8 +65,7 @@ names match those of cells).
 }
 \examples{
 \dontrun{
- # liger object with aligned factor loadings
-ligerex
+# ligerex (liger object), factorization complete
 # get tsne.coords for normalized data
 ligerex <- runTSNE(ligerex)
 # plot to console

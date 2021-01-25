@@ -4,12 +4,14 @@
 \alias{calcPurity}
 \title{Calculate purity}
 \usage{
-calcPurity(object, classes.compare)
+calcPurity(object, classes.compare, verbose = TRUE)
 }
 \arguments{
 \item{object}{\code{liger} object. Should run quantileAlignSNF before calling.}
 
 \item{classes.compare}{Clustering with which to compare (named vector).}
+
+\item{verbose}{Print messages (TRUE by default)}
 }
 \value{
 Purity value.
@@ -22,17 +24,16 @@ with a score of 1 representing a pure, or accurate, clustering.
 }
 \examples{
 \dontrun{
-# liger object, factorization done
-ligerex
-ligerex <- quantileAlignSNF(ligerex)
+# ligerex (liger object), factorization complete
+ligerex <- quantile_norm(ligerex)
 # toy clusters
 cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = T)
 names(cluster1) <- colnames(ligerex@raw.data[[1]])
 cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = T)
 names(cluster2) <- colnames(ligerex@raw.data[[2]])
 # get ARI for first clustering
-ari1 <- calcARI(ligerex, cluster1)
+ari1 <- calcPurity(ligerex, cluster1)
 # get ARI for second clustering
-ari2 <- calcARI(ligerex, cluster2)
+ari2 <- calcPurity(ligerex, cluster2)
 }
 }

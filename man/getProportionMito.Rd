@@ -4,7 +4,7 @@
 \alias{getProportionMito}
 \title{Calculate proportion mitochondrial contribution}
 \usage{
-getProportionMito(object, use.norm = F)
+getProportionMito(object, use.norm = FALSE)
 }
 \arguments{
 \item{object}{\code{liger} object.}
@@ -19,8 +19,7 @@ Calculates proportion of mitochondrial contribution based on raw or normalized d
 }
 \examples{
 \dontrun{
-# liger object, factorization done
-ligerex
+# ligerex (liger object), factorization complete
 ligerex@cell.data[["percent_mito"]] <- getProportionMito(ligerex)
 }
 }

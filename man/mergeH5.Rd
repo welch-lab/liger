@@ -44,6 +44,10 @@ before they are preprocessed through Liger pipeline.
 }
 \examples{
 \dontrun{
+# For instance, we want to merge two datasets saved in HDF5 files (10X CellRanger)
+# paths to datasets: "library1.h5","library2.h5"
+# dataset names: "lib1", "lib2"
+# name for output HDF5 file: "merged.h5"
 mergeH5(list("library1.h5","library2.h5"), c("lib1","lib2"), "merged.h5")
 }
 }

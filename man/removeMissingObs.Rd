@@ -4,7 +4,12 @@
 \alias{removeMissingObs}
 \title{Remove cells/genes with no expression across any genes/cells}
 \usage{
-removeMissingObs(object, slot.use = "raw.data", use.cols = T)
+removeMissingObs(
+  object,
+  slot.use = "raw.data",
+  use.cols = TRUE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{object}{\code{liger} object (scale.data or norm.data must be set).}
@@ -12,6 +17,8 @@ removeMissingObs(object, slot.use = "raw.data", use.cols = T)
 \item{slot.use}{The data slot to filter (takes "raw.data" and "scale.data") (default "raw.data").}
 
 \item{use.cols}{Treat each column as a cell (default TRUE).}
+
+\item{verbose}{Print messages (TRUE by default)}
 }
 \value{
 \code{liger} object with modified raw.data (or chosen slot) (dataset names preserved).
@@ -21,8 +28,7 @@ Removes cells/genes from chosen slot with no expression in any genes or cells re
 }
 \examples{
 \dontrun{
-# liger object
-ligerex
+# liger object: ligerex
 ligerex <- removeMissingObs(ligerex)
 }
 }

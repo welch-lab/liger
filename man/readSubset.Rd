@@ -12,7 +12,8 @@ readSubset(
   chunk = 1000,
   datasets.use = NULL,
   genes.use = NULL,
-  rand.seed = 1
+  rand.seed = 1,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -32,8 +33,9 @@ balance="cluster" samples up to max_cells from each cluster.}
 
 \item{genes.use}{samples from only the specified genes. Default is NULL (all genes)}
 
-\item{rand.seed}{for reproducibility (default 1).
-#Note:}
+\item{rand.seed}{for reproducibility (default 1).}
+
+\item{verbose}{Print progress bar/messages (TRUE by default)}
 }
 \value{
 \code{liger} object with sample.data slot set.
@@ -44,13 +46,8 @@ This function assumes that the cell barcodes are unique across all datasets.
 }
 \examples{
 \dontrun{
-Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
-Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-ligerex <- createLiger(list(y_set = Y, z_set = Z))
-ligerex <- normalize(ligerex)
-# select genes
-ligerex <- selectGenes(ligerex)
-ligerex <- scaleNotCenter(ligerex)
+# Only for online liger object (based on HDF5 files)
+# Example: sample a total amount of 5000 cells from norm.data for downstream analysis 
 ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
 }
 }

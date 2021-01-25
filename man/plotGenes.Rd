@@ -13,14 +13,17 @@ plotGenes(object, genes, ...)
 
 \item{...}{arguments passed from \code{\link[rliger]{plotGene}}}
 }
+\value{
+If returning single plot, returns ggplot object; if returning multiple plots; returns
+  list of ggplot objects.
+}
 \description{
 Uses plotGene to plot each gene (and dataset) on a separate page. It is recommended to call this
 function into a PDF due to the large number of plots produced.
 }
 \examples{
 \dontrun{
-# liger object, factorization complete
-ligerex
+# ligerex (liger object), factorization complete input
 ligerex <- runTSNE(ligerex)
 # plot expression for CD4 and FCGR3A
 # pdf("gene_plots.pdf")

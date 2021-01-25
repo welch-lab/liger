@@ -6,11 +6,11 @@
 \usage{
 plotClusterFactors(
   object,
-  use.aligned = F,
+  use.aligned = FALSE,
   Rowv = NA,
   Colv = "Rowv",
   col = NULL,
-  return.data = F,
+  return.data = FALSE,
   ...
 )
 }
@@ -43,8 +43,7 @@ factors and clusters.
 }
 \examples{
 \dontrun{
-# liger object, factorization complete
-ligerex
+# ligerex (liger object), factorization complete input
 # plot expression for CD4 and return plots
 loading.matrix <- plotClusterFactors(ligerex, return.data = T)
 }

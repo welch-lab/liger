@@ -7,7 +7,7 @@
 reorganizeLiger(
   object,
   by.feature,
-  keep.meta = T,
+  keep.meta = TRUE,
   new.label = "orig.dataset",
   ...
 )
@@ -33,8 +33,8 @@ This removes most computed data slots, though cell.data and current clustering c
 }
 \examples{
 \dontrun{
-# liger object organized by species, with column designating sex in cell.data
-ligerex
+# ligerex (liger object based on in-memory objects) organized by species
+# with column designating sex in cell.data
 # rearrange by sex
 ligerex_new <- reorganizeLiger(ligerex, by.feature = "sex", new.label = "species")
 }

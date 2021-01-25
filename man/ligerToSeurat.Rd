@@ -7,9 +7,9 @@
 ligerToSeurat(
   object,
   nms = names(object@H),
-  renormalize = T,
-  use.liger.genes = T,
-  by.dataset = F
+  renormalize = TRUE,
+  use.liger.genes = TRUE,
+  by.dataset = FALSE
 )
 }
 \arguments{
@@ -38,8 +38,7 @@ in nms. iNMF factorization is stored in dim.reduction object with key "iNMF".
 }
 \examples{
 \dontrun{
-# liger object
-ligerex
+# ligerex (liger object based on in-memory datasets ONLY), factorization complete input
 s.object <- ligerToSeurat(ligerex)
 }
 }

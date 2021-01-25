@@ -12,8 +12,8 @@ selectGenes(
   tol = 1e-04,
   datasets.use = 1:length(object@raw.data),
   combine = "union",
-  capitalize = F,
-  do.plot = F,
+  capitalize = FALSE,
+  do.plot = FALSE,
   cex.use = 0.3,
   chunk = 1000
 )
@@ -64,13 +64,12 @@ expression across genes and cells). Selected genes are plotted in green.
 }
 \examples{
 \dontrun{
-Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
-Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
+# Given datasets Y and Z
 ligerex <- createLiger(list(y_set = Y, z_set = Z))
 ligerex <- normalize(ligerex)
-# use default selectGenes settings
+# use default selectGenes settings (var.thresh = 0.1)
 ligerex <- selectGenes(ligerex)
 # select a smaller subset of genes
-ligerex <- selectGenes(ligerex, var.thresh=0.8)
+ligerex <- selectGenes(ligerex, var.thresh = 0.3)
 }
 }

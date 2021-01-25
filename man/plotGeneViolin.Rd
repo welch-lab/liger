@@ -8,8 +8,8 @@ plotGeneViolin(
   object,
   gene,
   methylation.indices = NULL,
-  by.dataset = T,
-  return.plots = F
+  by.dataset = TRUE,
+  return.plots = FALSE
 )
 }
 \arguments{
@@ -25,16 +25,19 @@ magnified and put on log scale).}
 \item{return.plots}{Return ggplot objects instead of printing directly to console (default
 FALSE).}
 }
+\value{
+List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
+  console).
+}
 \description{
 Generates violin plots of expression of specified gene for each dataset.
 }
 \examples{
 \dontrun{
-# liger object, factorization complete
-ligerex
+# ligerex (liger object based on in-memory datasets), factorization complete
 # plot expression for CD4 and return plots
 violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = T)
-HDF5 input
+# ligerex (liger object based on datasets in HDF5 format), factorization complete input
 ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
 violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = T)
 }

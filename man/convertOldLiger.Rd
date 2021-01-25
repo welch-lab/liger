@@ -4,13 +4,15 @@
 \alias{convertOldLiger}
 \title{Convert older liger object into most current version (based on class definition)}
 \usage{
-convertOldLiger(object, override.raw = F)
+convertOldLiger(object, override.raw = FALSE, verbose = TRUE)
 }
 \arguments{
 \item{object}{\code{liger} object.}
 
 \item{override.raw}{Keep original raw.data without any modifications (removing missing cells
 etc.) (defualt FALSE).}
+
+\item{verbose}{Print progress bar/messages (TRUE by default)}
 }
 \value{
 Updated \code{liger} object.
@@ -22,8 +24,7 @@ class NULL.
 }
 \examples{
 \dontrun{
-# old Analogizer object
-analogy
+# analogy (old Analogizer object)
 # convert to latest class definition
 ligerex <- convertOldLiger(analogy)
 }

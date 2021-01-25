@@ -56,6 +56,9 @@ between the nodes (default 0.1).}
 \item{node.order}{Order of clusters in each set (list with three vectors of ordinal numbers).
 By default will try to automatically order them appropriately.}
 }
+\value{
+A riverplot object
+}
 \description{
 Creates a riverplot to show how separate cluster assignments from two datasets map onto a
 joint clustering. The joint clustering is by default the object clustering, but an external one
@@ -63,9 +66,7 @@ can also be passed in. Uses the riverplot package to construct riverplot object 
 }
 \examples{
 \dontrun{
-# liger object, factorization done
-ligerex
-ligerex <- quantileAlignSNF(ligerex)
+# ligerex (liger object), factorization complete input
 # toy clusters
 cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = T)
 names(cluster1) <- colnames(ligerex@raw.data[[1]])

@@ -4,16 +4,16 @@
 \alias{calcARI}
 \title{Calculate adjusted Rand index}
 \usage{
-calcARI(object, clusters.compare)
+calcARI(object, clusters.compare, verbose = TRUE)
 }
 \arguments{
 \item{object}{\code{liger} object. Should run quantileAlignSNF before calling.}
 
 \item{clusters.compare}{Clustering with which to compare (named vector).}
+
+\item{verbose}{Print messages (TRUE by default)}
 }
 \value{
-Value of ARI
-
 Adjusted Rand index value.
 }
 \description{
@@ -23,9 +23,8 @@ indicating perfect agreement.
 }
 \examples{
 \dontrun{
-# liger object, factorization done
-ligerex
-ligerex <- quantileAlignSNF(ligerex)
+# ligerex (liger object), factorization complete
+ligerex <- quantile_norm(ligerex)
 # toy clusters
 cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = T)
 names(cluster1) <- colnames(ligerex@raw.data[[1]])

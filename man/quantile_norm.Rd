@@ -15,10 +15,10 @@ quantile_norm(object, ...)
   min_cells = 20,
   knn_k = 20,
   dims.use = NULL,
-  do.center = F,
+  do.center = FALSE,
   max_sample = 1000,
   eps = 0.9,
-  refine.knn = T,
+  refine.knn = TRUE,
   rand.seed = 1,
   ...
 )
@@ -30,10 +30,10 @@ quantile_norm(object, ...)
   min_cells = 20,
   knn_k = 20,
   dims.use = NULL,
-  do.center = F,
+  do.center = FALSE,
   max_sample = 1000,
   eps = 0.9,
-  refine.knn = T,
+  refine.knn = TRUE,
   rand.seed = 1,
   ...
 )
@@ -87,8 +87,7 @@ aligned factor loadings are combined into a single matrix and returned as H.norm
 }
 \examples{
 \dontrun{
-# liger object, factorization complete
-ligerex
+# ligerex (liger object), factorization complete
 # do basic quantile alignment
 ligerex <- quantile_norm(ligerex)
 # higher resolution for more clusters (note that SNF is conserved)
@@ -96,5 +95,4 @@ ligerex <- quantile_norm(ligerex, resolution = 1.2)
 # change knn_k for more fine-grained local clustering
 ligerex <- quantile_norm(ligerex, knn_k = 15, resolution = 1.2)
 }
-
 }

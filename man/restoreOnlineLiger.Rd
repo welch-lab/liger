@@ -20,6 +20,9 @@ the restoration of those links so that new analyses can be carried out.
 }
 \examples{
 \dontrun{
+# We want to restore the ligerex (liger object based on HDF5 files)
+# It has broken connections to HDF5 files
+# Call the following function and provide the paths to the correspoinding files
 ligerex = restoreOnlineLiger(ligerex, file.path = list("path1/library1.h5", "path2/library2.h5"))
 }
 }

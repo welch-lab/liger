@@ -11,7 +11,8 @@ imputeKNN(
   knn_k = 20,
   weight = TRUE,
   norm = TRUE,
-  scale = FALSE
+  scale = FALSE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ imputeKNN(
 \item{norm}{Whether normalize the imputed data with default parameters (default TRUE).}
 
 \item{scale}{Whether scale but not center the imputed data with default parameters (default TRUE).}
+
+\item{verbose}{Print progress bar/messages (TRUE by default)}
 }
 \value{
 \code{liger} object with raw data in raw.data slot replaced by imputed data (genes by cells)
@@ -37,16 +40,7 @@ Impute query features from a reference dataset using KNN.
 }
 \examples{
 \dontrun{
-Y <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 4, byrow = T)
-Z <- matrix(c(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2), nrow = 4, byrow = T)
-X <- matrix(c(1, 2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 6), nrow = 4, byrow = T)
-ligerex <- createLiger(list(y_set = Y, z_set = Z, x_set = X))
-ligerex <- normalize(ligerex)
-# select genes
-ligerex <- selectGenes(ligerex)
-ligerex <- scaleNotCenter(ligerex)
-ligerex <- optimizeALS(ligerex, k = 20)
-ligerex <- quantileAlignSNF(ligerex)
+# ligerex (liger object), factorization complete
 # impute every dataset other than the reference dataset
 ligerex <- imputeKNN(ligerex, reference = "y_set", weight = FALSE)
 # impute only z_set dataset

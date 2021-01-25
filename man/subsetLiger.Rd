@@ -4,7 +4,12 @@
 \alias{subsetLiger}
 \title{Construct a liger object with a specified subset}
 \usage{
-subsetLiger(object, clusters.use = NULL, cells.use = NULL, remove.missing = T)
+subsetLiger(
+  object,
+  clusters.use = NULL,
+  cells.use = NULL,
+  remove.missing = TRUE
+)
 }
 \arguments{
 \item{object}{\code{liger} object. Should run quantileAlignSNF and runTSNE before calling.}
@@ -27,9 +32,8 @@ Note that it does NOT reoptimize the factorization. See optimizeSubset for this 
 }
 \examples{
 \dontrun{
-# liger object, with clusters 0:10
+# ligerex (liger object based on in-memory datasets), with clusters 0:10
 # factorization, alignment, and t-SNE calculation have been performed
-ligerex
 # subset by clusters
 ligerex_subset <- subsetLiger(ligerex, clusters.use = c(1, 4, 5))
 }

@@ -4,7 +4,7 @@
 \alias{calcAlignmentPerCluster}
 \title{Calculate alignment for each cluster}
 \usage{
-calcAlignmentPerCluster(object, rand.seed = 1, k = NULL, by.dataset = F)
+calcAlignmentPerCluster(object, rand.seed = 1, k = NULL, by.dataset = FALSE)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call quantileAlignSNF before calling.}
@@ -24,9 +24,8 @@ Returns alignment for each cluster in analysiss (see documentation for calcAlign
 }
 \examples{
 \dontrun{
-# liger object, factorization complete
-ligerex
-ligerex <- quantileAlignSNF(ligerex)
+# ligerex (liger object), factorization complete
+ligerex <- quantile_norm(ligerex)
 # get alignment for each cluster
 alignment_per_cluster <- calcAlignmentPerCluster(ligerex)
 }

@@ -6,7 +6,7 @@
 \usage{
 runUMAP(
   object,
-  use.raw = F,
+  use.raw = FALSE,
   dims.use = 1:ncol(object@H.norm),
   k = 2,
   distance = "euclidean",
@@ -54,9 +54,8 @@ on reticulate or python umap-learn.
 }
 \examples{
 \dontrun{
- # liger object with factorization complete
-ligerex
-# generate H.norm by quantile aligning factor loadings
+# ligerex (liger object), factorization complete
+# generate H.norm by quantile normalizig factor loadings
 ligerex <- quantileAlignSNF(ligerex)
 # get tsne.coords for normalized data
 ligerex <- runUMAP(ligerex)

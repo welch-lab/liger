@@ -12,7 +12,8 @@ louvainCluster(
   eps = 0.1,
   nRandomStarts = 10,
   nIterations = 100,
-  random.seed = 1
+  random.seed = 1,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -36,6 +37,8 @@ prune everything). (default 1/15)}
 \item{nIterations}{Maximal number of iterations per random start. (default 100)}
 
 \item{random.seed}{Seed of the random number generator. (default 1)}
+
+\item{verbose}{Print messages (TRUE by default)}
 }
 \value{
 \code{liger} object with refined 'clusters' slot set.
@@ -47,7 +50,7 @@ small clusters into broad cell classes.
 }
 \examples{
 \dontrun{
-# liger object, factorization complete
+# ligerex (liger object), factorization complete
 ligerex <- louvainCluster(ligerex, resulotion = 0.3)
 }
 

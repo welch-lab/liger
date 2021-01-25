@@ -4,7 +4,12 @@
 \alias{calcDatasetSpecificity}
 \title{Calculate a dataset-specificity score for each factor}
 \usage{
-calcDatasetSpecificity(object, dataset1 = NULL, dataset2 = NULL, do.plot = T)
+calcDatasetSpecificity(
+  object,
+  dataset1 = NULL,
+  dataset2 = NULL,
+  do.plot = TRUE
+)
 }
 \arguments{
 \item{object}{\code{liger} object. Should run optimizeALS before calling.}
@@ -28,9 +33,9 @@ description.
 }
 \examples{
 \dontrun{
-# liger object, factorization complete
-ligerex
-ligerex <- quantileAlignSNF(ligerex)
+# ligerex (liger object), factorization complete
+# generate H.norm by quantile normalizig factor loadings
+ligerex <- quantile_norm(ligerex)
 dataset_spec <- calcDatasetSpecificity(ligerex, do.plot = F)
 }
 }

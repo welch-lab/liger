@@ -11,8 +11,8 @@ calcAlignment(
   cells.use = NULL,
   cells.comp = NULL,
   clusters.use = NULL,
-  by.cell = F,
-  by.dataset = F
+  by.cell = FALSE,
+  by.dataset = FALSE
 )
 }
 \arguments{
@@ -49,8 +49,7 @@ alignment can be greater than 1 occasionally.
 }
 \examples{
 \dontrun{
-# liger object, factorization complete
-ligerex
+# ligerex (liger object ), factorization complete
 ligerex <- quantile_norm(ligerex)
 alignment <- calcAlignment(ligerex)
 }
