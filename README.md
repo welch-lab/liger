@@ -81,8 +81,10 @@ install.packages('devtools')
 library(devtools)
 install_github('welch-lab/liger')
 ```
+Note that the GitHub version requires installing from source, which may involve additional installation steps on MacOS (see below).
 
-### Additional Installation Steps for MacOS (recommended before step 3)
+### Additional Steps for Installing LIGER from Source on MacOS (recommended before step 3)
+Installation from CRAN is easy because pre-compiled binaries are available for Windows and MacOS. However, a few additional steps are required to install from source on MacOS.
 Installing RcppArmadillo on R>=3.4 requires Clang >= 4 and gfortran-6.1. For newer versions of R (R>=3.5), it's recommended to follow the instructions in this [post](https://thecoatlessprofessor.com/programming/r-compiler-tools-for-rcpp-on-macos/). Follow the instructions below if you have R version 3.4.0-3.4.4.
 
 1. Install gfortran as suggested [here](https://gcc.gnu.org/wiki/GFortranBinaries)
