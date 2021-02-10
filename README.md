@@ -124,8 +124,9 @@ The HDF5 library is required for implementing online learning in Liger on data f
 
 For Windows, the latest HDF5 1.12.0 is available at https://www.hdfgroup.org/downloads/hdf5/.
 
-### Detailed Instructions for FIt-SNE Installation for use in runTSNE (recommended for large datasets)
-Using FIt-SNE is recommended for computational efficiency when using runTSNE on very large datasets.
+### Detailed Instructions for FIt-SNE Installation
+Note that the runUMAP function (which calls the `uwot` package) also scales to large datasets and does not require additional installation steps.
+However, using FIt-SNE is recommended for computational efficiency if you want to perform t-SNE on very large datasets.
 Installing and compiling the necessary software requires the use of git, FIt-SNE, and FFTW. For a 
 basic overview of installation, visit this [page](https://github.com/KlugerLab/FIt-SNE).
 
