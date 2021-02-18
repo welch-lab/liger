@@ -618,6 +618,9 @@ safe_h5_create = function(h5_object,dataset_name,dims,mode="double",chunk_size=d
 #' @param object \code{liger} object.
 #' @param chunk size of chunks in hdf5 file. (default 1000)
 #' @param format.type string of HDF5 format (10X CellRanger by default).
+#' @param remove.missing Whether to remove cells not expressing any measured genes, and genes not
+#'   expressed in any cells (if take.gene.union = T, removes only genes not expressed in any
+#'   dataset) (default TRUE).
 #'
 #' @return \code{liger} object with norm.data slot set.
 #' @export
@@ -632,7 +635,8 @@ safe_h5_create = function(h5_object,dataset_name,dims,mode="double",chunk_size=d
 
 normalize <- function(object,
                       chunk = 1000,
-                      format.type = "10X") {
+                      format.type = "10X",
+                      remove.missing = TRUE) {
   if (class(object@raw.data[[1]])[1] == "H5File") {
     hdf5_files = names(object@raw.data)
     nUMI = c()
@@ -713,7 +717,9 @@ normalize <- function(object,
 
     names(object@norm.data) = names(object@raw.data)
   } else {
-    object <- removeMissingObs(object, slot.use = "raw.data", use.cols = T)
+    if (remove.missing) {
+      object <- removeMissingObs(object, slot.use = "raw.data", use.cols = T)
+    }
     if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
         class(object@raw.data[[1]])[1] == "dgCMatrix") {
       object@norm.data <- lapply(object@raw.data, Matrix.column_norm)
