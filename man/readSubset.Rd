@@ -39,7 +39,7 @@ balance="cluster" samples up to max_cells from each cluster.}
 \code{liger} object with sample.data slot set.
 }
 \description{
-This function samples raw/normalized/scaled data from on-disk HDF5 files for plotting. 
+This function samples raw/normalized/scaled data from on-disk HDF5 files for plotting.
 This function assumes that the cell barcodes are unique across all datasets.
 }
 \examples{

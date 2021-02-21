@@ -39,7 +39,7 @@ mergeH5(
 Directly generates newly merged hdf5 file.
 }
 \description{
-This function merges hdf5 files generated from different libraries (cell ranger by default) 
+This function merges hdf5 files generated from different libraries (cell ranger by default)
 before they are preprocessed through Liger pipeline.
 }
 \examples{

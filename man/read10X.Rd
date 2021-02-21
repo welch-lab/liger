@@ -36,7 +36,7 @@ sample.dirs containing 10X outs directory (default FALSE).}
 level 10X directory (only necessary if more than one reference used for sequencing).
 (default NULL)}
 
-\item{data.type}{Indicates the protocol of the input data. If not specified, input data will be 
+\item{data.type}{Indicates the protocol of the input data. If not specified, input data will be
 considered scRNA-seq data (default 'rna', alternatives: 'atac').}
 }
 \value{

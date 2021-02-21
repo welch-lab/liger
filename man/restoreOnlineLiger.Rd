@@ -15,7 +15,7 @@ restoreOnlineLiger(object, file.path = NULL)
 \code{liger} object with restored links.
 }
 \description{
-When loading the saved online Liger object in a new R session, the links to hdf5 files may be corrupted. This functions enables 
+When loading the saved online Liger object in a new R session, the links to hdf5 files may be corrupted. This functions enables
 the restoration of those links so that new analyses can be carried out.
 }
 \examples{

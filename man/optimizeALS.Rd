@@ -18,6 +18,8 @@ optimizeALS(object, ...)
   H.init = NULL,
   W.init = NULL,
   V.init = NULL,
+  UINMF = FALSE,
+  lamda.u = NULL,
   rand.seed = 1,
   print.obj = FALSE,
   ...
@@ -33,6 +35,8 @@ optimizeALS(object, ...)
   H.init = NULL,
   W.init = NULL,
   V.init = NULL,
+  UINMF = FALSE,
+  lambda.u = NULL,
   rand.seed = 1,
   print.obj = FALSE,
   ...
@@ -67,9 +71,13 @@ factorizations of the same dataset can be run with one rep if necessary. (defaul
 
 \item{V.init}{Initial values to use for V matrices (default NULL)}
 
+\item{UINMF}{Indicates whether to run unshared features or not}
+
 \item{rand.seed}{Random seed to allow reproducible results (default 1).}
 
 \item{print.obj}{Print objective function values after convergence (default FALSE).}
+
+\item{lambda.u}{Provides the opportunity to submit a vectorized lamba to the UINMF algorithm}
 }
 \value{
 \code{liger} object with H, W, and V slots set.
