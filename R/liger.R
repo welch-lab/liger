@@ -15,6 +15,7 @@ NULL
 #' @slot norm.data List of normalized matrices (genes by cells)
 #' @slot scale.data List of scaled matrices (cells by genes)
 #' @slot sample.data List of sampled matrices (gene by cells)
+#' @slot scale.unshared.data List of scaled matrices of unshared features
 #' @slot h5file.info List of HDF5-related information for each input dataset. Paths to raw data, indices,
 #'       indptr, barcodes, genes and  the pipeline through which the HDF5 file is formated (10X, AnnData, etc),
 #'       type of sampled data (raw, normalized or scaled).
@@ -22,6 +23,7 @@ NULL
 #'   cells across all datasets)
 #' @slot var.genes Subset of informative genes shared across datasets to be used in matrix
 #'   factorization
+#' @slot var.unshared.features Highly variable unshared features selected from each dataset
 #' @slot H Cell loading factors (one matrix per dataset, dimensions cells by k)
 #' @slot H.norm Normalized cell loading factors (cells across all datasets combined into single
 #'   matrix)
@@ -29,6 +31,7 @@ NULL
 #' @slot V Dataset-specific gene loading factors (one matrix per dataset, dimensions k by genes)
 #' @slot A Matrices used for online learning (XH)
 #' @slot B Matrices used for online learning (HTH)
+#' @slot U Matrices used for unshared Matrix factorization
 #' @slot tsne.coords Matrix of 2D coordinates obtained from running t-SNE on H.norm or H matrices
 #' @slot alignment.clusters Initial joint cluster assignments from shared factor alignment
 #' @slot clusters Joint cluster assignments for cells
@@ -52,15 +55,18 @@ liger <- methods::setClass(
     norm.data = "list",
     scale.data = "list",
     sample.data = "list",
+    scale.unshared.data = "list",
     h5file.info = "list",
     cell.data = "data.frame",
     var.genes = "vector",
+    var.unshared.features = "list",
     H = "list",
     H.norm = "matrix",
     W = "matrix",
     V = "list",
     A = "list",
     B = "list",
+    U = "list",
     tsne.coords = "matrix",
     alignment.clusters = 'factor',
     clusters= "factor",
@@ -610,30 +616,7 @@ safe_h5_create = function(h5_object,dataset_name,dims,mode="double",chunk_size=d
     }
   }
 }
-#Data preprocessing for additional features
-#' This function selects the most variable genes from those not shared between datasets. 
-#' These features are normalized and scaled.
-#' @param object \code{liger} object
-#' @param num.feat Approximate number of most variable features to select. (default 2500)
-#' @return a normalized and scaled matrix of additional genes
 
-
-norm_scale_unshared <- function(object, 
-                                num.feat = 2500) {
-#Select the full matrix in order to perform normalization across all genes
-unshared.feats <- object@raw.data[[2]][(!(rownames(object@norm.data[[2]]) %in% colnames(object@scale.data[[2]]))), rownames(object@scale.data[[2]])]
-unshare.lig <- createLiger(list(unshared = unshared.feats))
-#Normalize
-unshare.lig <- normalize(unshare.lig)
-#Selet only genes that are not already being used by standard ANLS approach
-unshare.lig@norm.data[[1]] <- object@norm.data[[2]][(!(rownames(object@norm.data[[2]]) %in% colnames(object@scale.data[[2]]))), rownames(object@scale.data[[2]])]
-unshare.lig <- selectGenes(unshare.lig, num.genes = num.feat ) 
-unshare.lig <- scaleNotCenter(unshare.lig)
-num_unshared_feat <- length(unshare.lig@var.genes)
-print(paste0("Unshared features selected ", num_unshared_feat))
-print(paste0("Adjust num.thres to adjust number of selected features"))
-return (unshare.lig@scale.data[[1]])
-}
 #'
 #' Normalize raw datasets to column sums
 #'
@@ -740,7 +723,7 @@ normalize <- function(object,
     object <- removeMissingObs(object, slot.use = "raw.data", use.cols = T)
     if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
         class(object@raw.data[[1]])[1] == "dgCMatrix") {
-      object@norm.data <- lapply(object@raw.data, Matrix.column_norm)
+      object@norm.data <- lapply(object@raw.data, liger::Matrix.column_norm)
     } else {
       object@norm.data <- lapply(object@raw.data, function(x) {
         sweep(x, 2, colSums(x), "/")
@@ -849,6 +832,10 @@ calcGeneVars = function (object, chunk = 1000)
 #'   Selected genes are plotted in green. (default FALSE)
 #' @param cex.use Point size for plot.
 #' @param chunk size of chunks in hdf5 file. (default 1000)
+#' @param unshared.features Whether to consider unshared features
+#' @param unshared.datasets A list of the datasets to consider unshared features for, i.e. list(2), to use the second dataset
+#' @param unshared.thresh A list of threshold values to apply to each unshared dataset. If only one value is provided, it will apply to all unshared
+#' datasets. If a list is provided, it must match the length of the unshared datasets submitted.
 
 #' @return \code{liger} object with var.genes slot set.
 #' @export
@@ -870,7 +857,7 @@ calcGeneVars = function (object, chunk = 1000)
 
 selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes = NULL,
                         tol = 0.0001, datasets.use = 1:length(object@raw.data), combine = "union",
-                        keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3, chunk=1000)
+                        keep.unique = F, capitalize = F, do.plot = F, cex.use = 0.3, chunk=1000, unshared = F, unshared.datasets = NULL, unshared.thresh = NULL)
 {
   if (class(object@raw.data[[1]])[1] == "H5File") {
     if (!object@raw.data[[1]]$exists("gene_vars")) {
@@ -1024,6 +1011,53 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
               immediate. = T)
     }
     object@var.genes <- genes.use
+
+  }
+  # Only for unshared Features
+  if (unshared == T) {
+    ind.thresh = c()
+    # If only one threshold is provided, apply to all unshared datasets
+    if(length(unshared.thresh == 1)){
+      ind.thresh = rep(unshared.thresh,length(object@raw.data))
+    }
+    # If thresholds are provided for every dataset, use the respective threshold for each datatset
+    else{
+      if (length(unshared.thresh) != length(unshared.datasets)) {
+        warning("The number of thresholds does not match the number of datasets; Please provide either a single threshold value or a value for each unshared dataset.",
+                immediate. = T)
+      }
+      names(unshared.thresh) = unshared.datasets
+      for (i in unshared.datasets){
+        ind.thresh[[i]] = unshared.thresh$i
+      }
+    }
+    unshared.feats <- c()
+    for (i in unshared.datasets){
+      unshared.use <- c()
+      #Provides normalized subset of unshared features
+      normalized_unshared = object@norm.data[[i]][!rownames(object@norm.data[[i]]) %in% object@var.genes,]
+      #Selects top variable features
+      genes.unshared <- c()
+      trx_per_cell <- colSums(object@raw.data[[i]])
+      # Each gene's mean expression level (across all cells)
+      gene_expr_mean <- rowMeansFast(normalized_unshared)
+      # Each gene's expression variance (across all cells)
+      gene_expr_var <- rowVarsFast(normalized_unshared, gene_expr_mean)
+      names(gene_expr_mean) <- names(gene_expr_var) <- rownames(normalized_unshared)
+      nolan_constant <- mean((1 / trx_per_cell))
+      alphathresh.corrected <- alpha.thresh / nrow(object@raw.data[[i]])
+      genemeanupper <- gene_expr_mean + qnorm(1 - alphathresh.corrected / 2) *
+        sqrt(gene_expr_mean * nolan_constant / ncol(object@raw.data[[i]]))
+      basegenelower <- log10(gene_expr_mean * nolan_constant)
+      genes.unshared <- names(gene_expr_var)[which(gene_expr_var / nolan_constant > genemeanupper &
+                                                     log10(gene_expr_var) > basegenelower + ind.thresh[[i]])]
+      unshared.feats[[i]] <- c(genes.unshared)
+    }
+    names(unshared.feats) <- names(object@raw.data)
+    object@var.unshared.features <- unshared.feats
+    for (i in unshared.datasets){
+      print(paste0(names(unshared.feats)[i]," Dataset has ",length(unshared.feats[[i]]) ," Unshared Features"))
+    }
   }
   return(object)
 }
@@ -1139,7 +1173,30 @@ scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
       object <- removeMissingObs(object, slot.use = "scale.data", use.cols = F)
     }
   }
-
+  
+  #Scale unshared features
+  if (!is.null(object@var.unshared.features)){
+    for (i in length(object@raw.data)){
+      if (!is.null(object@var.unshared.features[[i]])){
+        
+        if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
+            class(object@raw.data[[1]])[1] == "dgCMatrix") {
+             object@scale.unshared.data[[i]] <- scaleNotCenterFast(t(object@norm.data[[i]][object@var.unshared.features[[i]], ]))
+         object@scale.unshared.data[[i]] <- scaleNotCenterFast(t(object@norm.data[[i]][object@var.unshared.features[[i]], ]))
+        object@scale.unshared.data[[i]] <- as.matrix(object@scale.unshared.data[[i]])
+      }
+    else {
+        object@scale.unshared.data[[i]] <- scale(t(object@norm.data[[i]][object@var.unshared.features[[i]], ]), center = F, scale = T)
+      }
+    names(object@scale.unshared.data) <- names(object@norm.data)
+    object@scale.unshared.data[[i]][is.na(object@scale.unshared.data[[i]])] <- 0
+    rownames(object@scale.unshared.data[[i]]) <- colnames(object@raw.data[[i]])
+    colnames(object@scale.unshared.data[[i]]) <- object@var.unshared.features[[i]]
+    #Remove cells that were deemed missing for the shared features
+    object@scale.unshared.data[[i]] <- t(object@scale.unshared.data[[i]][rownames(object@scale.data[[i]]),])
+      }
+    }
+  }
   return(object)
 }
 
@@ -1929,250 +1986,6 @@ online_iNMF <- function(object,
   names(object@H) <- names(object@V) <- names(object@raw.data)
   return(object)
 }
-####################################################
-#' Perform iNMF on scaled datasets, and include unshared, scaled and normalized, features
-#' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
-#' The additional features should be relative to the second object in the Liger list
-#' @param k Inner dimension of factorization (number of factors).
-#' @param lambda A list of the lambda penalty. Default 5,5
-#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
-#'   (default 1e-6)
-#' @param max.iters Maximum number of block coordinate descent iterations to perform (default 30).
-#' @param nrep Number of restarts to perform (iNMF objective function is non-convex, so taking the
-#'   best objective from multiple successive initializations is recommended). For easier
-#'   reproducibility, this increments the random seed by 1 for each consecutive restart, so future
-#'   factorizations of the same dataset can be run with one rep if necessary. (default 1)
-#' @param rand.seed Random seed to allow reproducible results (default 1).
-#' @unshared A list containing 0 and the unshared features to include. The unshared features should
-#' first be normalized, scaled, and the top variable features selected.
-
-
-optimize_UANLS = function(object, unshared, k=30,lambda=list(5,5),max_iters=1,nrep=1,thresh=1e-4,rand.seed=1){
-  
-  # Get a list of all the matrices
-  matrices = object@scale.data
-  
-  mlist = list()
-  xdim =  list()
-  for (i in 1:length(matrices)){
-    mlist[[i]] = t(matrices[[i]])
-    xdim[[i]] = dim(mlist[[i]])
-  }
-  
-  ulist = list()
-  udim = list()
-  max_dim = list()
-  #For every U, transpose
-  for (i in 1:length(unshared)){
-    ulist[[i]] = t(unshared[[i]])
-    if (length(unshared[[i]]) !=1 ){
-      udim[[i]] = dim(t(unshared[[i]]))
-      max_dim = dim(t(unshared[[i]]))
-    }
-    else { 
-      udim[[i]] = 0}
-  }
-  zero_matrix_full = list()
-  for (i in 1:length(unshared)){
-    zero_matrix_full[[i]] <- matrix(0, nrow = max_dim[[1]], ncol = dim(mlist[[i]])[2])
-  }
-  
-  for (i in 1:length(unshared)){
-    if(udim[[i]][1] == 0){
-      mlist[[i]] <- rbind(mlist[[i]], zero_matrix_full[[i]])
-    }
-    else {
-      mlist[[i]] <- rbind(mlist[[i]], ulist[[i]])
-    }
-  }
-  
-  X <- mlist
-  
-  xudim = list()
-  for (i in 1:length(matrices)){
-    xudim[[i]] = dim(mlist[[i]])
-  }
-  zero_matrix_partial <- matrix(0, nrow = max_dim[1], ncol = k)
-  
-  
-  num_cells = c()
-  for (i in 1:length(X)){
-    num_cells = c(num_cells, ncol(X[[i]]))
-  }
-  
-  
-  num_genes = xdim[[1]][1]
-  
-  best_obj <- Inf
-  for (i in 1:nrep){
-    set.seed(seed = rand.seed + i -1 )
-    print("Processing")
-    current <- rand.seed + i -1
-    # initialization
-    idX = list()
-    for (i in 1:length(X)){
-      idX[[i]] = sample(1:num_cells[i], k)
-    }
-    
-    
-    V = list()
-    
-    #Establish V from only the RNA dimensions
-    
-    for (i in 1:length(X)){
-      V[[i]] = X[[i]][0:xdim[[i]][1],0:xdim[[i]][2]][,idX[[i]]]
-    }
-    #Establish W from RNA dimensions
-    
-    W = matrix(abs(runif(num_genes * k, 0, 2)), num_genes, k) 
-    
-    H = list()
-    
-    #Initialize U 
-    U = list()
-    for (i in 1:length(X)){
-      if (dim(ulist[[i]])[1] == 1){
-        U[[i]] = zero_matrix_partial
-      }
-      else {
-        U[[i]] = ulist[[i]][,idX[[i]]]
-        Ui <- i
-      }
-    }
-    
-    iter = 0
-    total_time = 0 
-    sqrt_lambda = list()
-    for (i in 1:length(X)){
-      sqrt_lambda[[i]]= sqrt(lambda[[i]])
-    }
-    ############################ Initial Training Objects  
-    
-    obj_train_approximation = 0
-    obj_train_penalty = 0
-    
-    for (i in 1:length(X)){
-      H[[i]] = matrix(abs(runif(k * num_cells[i], 0, 2)), k, num_cells[i])
-      obj_train_approximation = obj_train_approximation + norm(X[[i]] - (rbind(W,zero_matrix_partial) + rbind(V[[i]],U[[i]])) %*% H[[i]],"F")^2
-      obj_train_penalty = obj_train_penalty + lambda[[i]]*norm(rbind(V[[i]],Ui)%*% H[[i]], "F")^2
-    }
-    
-    obj_train = obj_train_approximation + obj_train_penalty
-    
-    
-    ######################### Initialize Object Complete ###########################   
-    ########################## Begin Updates########################################
-    delta = Inf
-    objective_value_list = list()
-    
-    iter = 1 
-    while(delta > thresh & iter <= max_iters){
-      iter_start_time = Sys.time()
-      
-      
-      #H- Updates
-      for (i in 1:length(X)){
-        if (i != Ui){
-          H[[i]] = solveNNLS(rbind((W + V[[i]]), sqrt_lambda[[i]] * V[[i]]), rbind(X[[i]][0:num_genes,], matrix(0, num_genes, xudim[[i]][2])))
-        }
-        else{
-          H[[i]] = solveNNLS(rbind(rbind(W,zero_matrix_partial) + rbind((V[[i]]),U[[i]]), sqrt_lambda[[i]] * rbind(V[[i]],U[[i]])), rbind((X[[i]]), matrix(0, num_genes+ udim[[i]][1], xudim[[i]][2])))
-        }
-      }
-      
-      #V - updates
-      for (i in 1:length(X)){
-        V[[i]] = t(solveNNLS(rbind(t(H[[i]]), sqrt_lambda[[i]] * t(H[[i]])), rbind(t(X[[i]][0:num_genes,] - W %*% H[[i]]), matrix(0, num_cells[i], num_genes))))
-      }
-      ################################################# Updating U##################################
-      
-      for (i in 1:length(X)){
-        if (i == Ui){
-          zero_u_matrix <- matrix(0, num_cells[i], udim[[Ui]][1])  #################
-          U[[i]] = t(solveNNLS(rbind(t(H[[i]]),sqrt_lambda[[i]]* t(H[[i]])), rbind(t(X[[i]][(num_genes+1):xudim[[i]][1], ]),zero_u_matrix)))
-        }
-      }
-      
-      
-      ##############################################################################################
-      ################################################# Updating W #################################
-      H_t_stack = c()
-      for (i in 1:length(X)){
-        H_t_stack = rbind(H_t_stack, t(H[[i]]))
-      }
-      diff_stack_w = c()
-      for (i in 1:length(X)){
-        diff_stack_w = rbind(diff_stack_w,t(X[[i]][0:num_genes,] - V[[i]] %*% H[[i]]))
-      }
-      W = t(solveNNLS(H_t_stack, diff_stack_w))
-      
-      ############################################################################################    
-      iter_end_time = Sys.time()
-      iter_time = as.numeric(difftime(iter_end_time, iter_start_time, units = "secs"))
-      total_time = total_time + iter_time
-      
-      #Updating training object
-      obj_train_prev = obj_train
-      obj_train_approximation = 0
-      obj_train_penalty = 0
-      
-      for (i in 1:length(X)){
-        obj_train_approximation = obj_train_approximation + norm(X[[i]] - (rbind(W,zero_matrix_partial) + rbind(V[[i]],U[[i]])) %*% H[[i]],"F")^2
-        if (i == Ui){
-          obj_train_penalty = obj_train_penalty + lambda[[i]]*(norm(rbind(V[[i]],U[[i]]) %*% H[[i]], "F")^2)
-        }
-        else{
-          obj_train_penalty = obj_train_penalty + lambda[[i]]*(norm(V[[i]] %*% H[[i]], "F")^2)
-        }
-      }
-      obj_train = obj_train_approximation + obj_train_penalty
-      delta = abs(obj_train_prev-obj_train)/mean(c(obj_train_prev,obj_train))
-      iter = iter + 1
-    }
-    cat("\nCurrent seed ",  current , " current objective ", obj_train)
-    if (obj_train < best_obj){
-      W_m <- W
-      H_m <- H
-      V_m <- V
-      U_m <- U
-      best_obj <- obj_train
-      best_seed <- current  
-    }
-  }
-  
-  rownames(W_m) = rownames(X[[1]][0:xdim[[i]][1],])
-  colnames(W_m) = NULL
-  
-  rownames(U_m[[Ui]]) = rownames(X[[Ui]][(xdim[[i]][1]+1):dim(X[[Ui]])[1],])
-  colnames(U_m[[Ui]]) = NULL
-  
-  for (i in 1:length(X)){
-    rownames(V_m[[i]]) = rownames(X[[i]][0:xdim[[i]][1],])
-    colnames(V_m[[i]]) = NULL
-    colnames(H_m[[i]]) = colnames(X[[i]])
-  } 
-  
-  ################################## Returns Results Section #########################################################
-  object@W <- t(W_m)
-  for (i in 1:length(X)){
-    object@V[[i]] <- t(V_m[[i]])
-    object@H[[i]] <- t(H_m[[i]])
-  }
-  titles <- names(object@raw.data)
-  names(object@H) <- titles
-  names(object@V) <- titles
-  
-  #cat("Objective:", objective_value_list, "\n")
-  rel_cells = list()
-  for (i in 1:length(X)){
-    rel_cells <- c(rel_cells, rownames(object@scale.data[[i]]))
-  }
-  rel_cells <- unlist(rel_cells)
-  
-  object@cell.data <- object@cell.data[rel_cells,]
-  cat("Best results with seed ", best_seed, ".\n", sep = "")
-  return (object)
-}
 
 
 ##########################################################
@@ -2223,6 +2036,8 @@ nonneg <- function(x, eps=1e-16) {
 #' @param H.init Initial values to use for H matrices. (default NULL)
 #' @param W.init Initial values to use for W matrix (default NULL)
 #' @param V.init Initial values to use for V matrices (default NULL)
+#' @param UINMF Indicates whether to run unshared features or not
+#' @param lambda.u  Provides the opportunity to submit a vectorized lamba to the UINMF algorithm
 #' @param rand.seed Random seed to allow reproducible results (default 1).
 #' @param print.obj Print objective function values after convergence (default FALSE).
 #' @param ... Arguments passed to other methods
@@ -2266,6 +2081,8 @@ optimizeALS.list <- function(
   H.init = NULL,
   W.init = NULL,
   V.init = NULL,
+  UINMF = FALSE,
+  lamda.u = NULL,
   rand.seed = 1,
   print.obj = FALSE,
   ...
@@ -2469,6 +2286,8 @@ optimizeALS.liger <- function(
   H.init = NULL,
   W.init = NULL,
   V.init = NULL,
+  UINMF = FALSE,
+  lambda.u = NULL,
   rand.seed = 1,
   print.obj = FALSE,
   ...
@@ -2478,6 +2297,7 @@ optimizeALS.liger <- function(
     slot.use = 'scale.data',
     use.cols = FALSE
   )
+  if (UINMF == FALSE){
   out <- optimizeALS(
     object = object@scale.data,
     k = k,
@@ -2488,6 +2308,8 @@ optimizeALS.liger <- function(
     H.init = H.init,
     W.init = W.init,
     V.init = V.init,
+    UINMF = FALSE,
+    lambda.u = NULL,
     rand.seed = rand.seed,
     print.obj = print.obj
   )
@@ -2500,8 +2322,19 @@ optimizeALS.liger <- function(
     slot(object = object, name = i) <- out[[i]]
   }
   object@parameters$lambda <- lambda
-  return(object)
+  return(object)} 
+if(UINMF == TRUE){
+  object <- optimize_UANLS(object = object,
+                           k = k,
+                           lambda = lambda,
+                           thresh = thresh,
+                           lambda.u = lambda.u,
+                           max.iters = max.iters,
+                           nrep = nrep,
+                           rand.seed = rand.seed)
 }
+}
+
 
 #' Perform factorization for new value of k
 #'
@@ -6738,4 +6571,286 @@ convertOldLiger = function(object, override.raw = F) {
   # class has slots that this particular object does not
   print(paste0('New slots not filled: ', setdiff(slots_new[slots_new != "cell.data"], slots)))
   return(new.liger)
+}
+
+
+
+
+
+#' Perform iNMF on scaled datasets, and include unshared, scaled and normalized, features
+#' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
+#' @param k Inner dimension of factorization (number of factors).
+#' @param lambda The lambda penalty. Default 5
+#' @param lambda.u Default is NULL. Allows user to submit a list of lambda penalities, where each penalty corresponds the 
+#' to the dataset order, i.e. first item will be applied to the first dataset, etc. Length of list must match number of datasets
+#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
+#'   (default 1e-6)
+#' @param max.iters Maximum number of block coordinate descent iterations to perform (default 30).
+#' @param nrep Number of restarts to perform (iNMF objective function is non-convex, so taking the
+#'   best objective from multiple successive initializations is recommended). For easier
+#'   reproducibility, this increments the random seed by 1 for each consecutive restart, so future
+#'   factorizations of the same dataset can be run with one rep if necessary. (default 1)
+#' @param rand.seed Random seed to allow reproducible results (default 1).
+optimize_UANLS = function(object, k=30,lambda= 5, lambda.u = NULL,max.iters=30,nrep=1,thresh=1e-4,rand.seed=1){
+  #Account for vectorized lambda
+  if (!is.null(lambda.u)){
+    if (length(lambda) != length(names(object@raw.data))){
+      warning(paste0("Please enter a single lambda value, or a lamba value for each dataset",immediate. = T))
+    }
+    else {
+      lambda = lambda.u
+    }
+  }
+  if (is.null(lambda.u)){
+    lambda = rep(lambda, length(names(object@raw.data)))
+  }
+  
+  # Get a list of all the matrices
+  mlist = list()
+  xdim =  list()
+  for (i in 1:length(object@scale.data)){
+    mlist[[i]] = t(object@scale.data[[i]])
+    xdim[[i]] = dim(mlist[[i]])
+  }
+  
+  #return what datasets have unshared features, and the dimensions of those unshared features
+  u_dim <- c()
+  max_feats = 0
+  unshared <- c()
+  ulist <- c()
+  for (i in length(object@var.unshared.features)){
+    if(!is.null(object@var.unshared.features[[i]])){
+      u_dim[[i]] <- dim(object@scale.unshared.data[[i]])
+      names(u_dim[i]) <- i
+      unshared = c(unshared, i)
+      if (u_dim[[i]][2] > max_feats){
+        max_feats = u_dim[[i]][1]
+      }
+      ulist[[i]] = t(object@scale.unshared.data[[i]])
+    }
+  }
+  
+  #### Creates a 0 matrix that matches the largest set of added features. This is appended to datasets with no unshared features
+  zero_matrix_full = list()
+  for (i in 1:length(object@raw.data)){
+    if (!(i %in% unshared)){
+      zero_matrix_full[[i]] <- matrix(0, nrow = max_feats, ncol = xdim[[i]][[2]])
+      mlist[[i]] <- rbind(mlist[[i]], zero_matrix_full[[i]])
+    }
+  }
+  
+  
+  ############## For every set of additional features less than the maximum, append an additional zero matrix s.t. it matches the maximum
+  for (i in unshared){
+    if (u_dim[[i]][[2]] != as.numeric(max_feats)){
+      short = u_dim[[2]]-max_feats
+      zero_matrix_part = matrix(0, nrow = short, ncol = xdim[[i]][[2]])
+      mlist[[i]] <- rbind(mlist[[i]],object@scale.unshared.data[[i]], zero_matrix_part)
+    }
+    #For the U matrix with the maximum amount of features, append the whole thing
+    else {
+      mlist[[i]] <-  rbind(mlist[[i]],object@scale.unshared.data[[i]])
+    }
+  }
+  
+  X <- mlist
+  ################# Create an 0 matrix the size of U for all U's, s.t. it can be stacked to W
+  zero_matrix_u_full <- c()
+  zero_matrix_u_partial <- c()
+  for (i in 1:length(object@raw.data)){
+    if (i %in% unshared){
+      zero_matrix_u_full[[i]] <- matrix(0, nrow = u_dim[[i]][1], ncol = u_dim[[i]][2])
+      zero_matrix_u_partial[[i]] <- matrix(0, nrow = u_dim[[i]][1], ncol = k)
+    }
+  }
+  
+  num_cells = c()
+  for (i in 1:length(X)){
+    num_cells = c(num_cells, ncol(X[[i]]))
+  }
+  
+  num_genes = length(object@var.genes)
+  
+  best_obj <- Inf
+  for (i in 1:nrep){
+    set.seed(seed = rand.seed + i -1 )
+    print("Processing")
+    current <- rand.seed + i -1
+    # initialization
+    idX = list()
+    for (i in 1:length(X)){
+      idX[[i]] = sample(1:num_cells[i], k)
+    }
+    
+    
+    V = list()
+    
+    #Establish V from only the RNA dimensions
+    
+    for (i in 1:length(X)){
+      V[[i]] = t(object@scale.data[[i]])[,idX[[i]]]
+    }
+    #Establish W from the shared gene dimensions
+    
+    W = matrix(abs(runif(num_genes * k, 0, 2)), num_genes, k) 
+    
+    H = list()
+    
+    #Initialize U 
+    U = list()
+    
+    
+    for (i in length(1:length(X))){
+      if (i %in% unshared){
+        U[[i]] = t(ulist[[i]])[,idX[[i]]]
+      }
+    }
+    
+    iter = 0
+    total_time = 0 
+    sqrt_lambda = list()
+    for (i in 1:length(X)){
+      sqrt_lambda[[i]]= sqrt(lambda[[i]])
+    }
+    ############################ Initial Training Objects  
+    
+    obj_train_approximation = 0
+    obj_train_penalty = 0
+    
+    for (i in 1:length(X)){
+      H[[i]] = matrix(abs(runif(k * num_cells[i], 0, 2)), k, num_cells[i])
+      if (i %in% unshared){
+        obj_train_approximation = obj_train_approximation + norm(X[[i]] - (rbind(W,zero_matrix_u_partial[[i]]) + rbind(V[[i]],U[[i]])) %*% H[[i]],"F")^2
+        obj_train_penalty = obj_train_penalty + lambda[[i]]*norm(rbind(V[[i]],U[[i]])%*% H[[i]], "F")^2
+      }
+      else {
+        obj_train_approximation = obj_train_approximation + norm(X[[i]][1:num_genes,] - (W+ V[[i]]) %*% H[[i]],"F")^2
+        obj_train_penalty = obj_train_penalty + lambda[[i]]*norm(V[[i]]%*% H[[i]], "F")^2
+        
+      }
+    }
+    obj_train = obj_train_approximation + obj_train_penalty
+    
+    ######################### Initialize Object Complete ###########################   
+    ########################## Begin Updates########################################
+    delta = Inf
+    objective_value_list = list()
+    
+    iter = 1 
+    while(delta > thresh & iter <= max.iters){
+      iter_start_time = Sys.time()
+      
+      
+      #H- Updates
+      for (i in 1:length(X)){
+        if (!(i %in% unshared)){
+          H[[i]] = solveNNLS(rbind((W + V[[i]]), sqrt_lambda[[i]] * V[[i]]), rbind(X[[i]][0:num_genes,], matrix(0, num_genes, xdim[[i]][2])))
+        }
+        else{
+          H[[i]] = solveNNLS(rbind(rbind(W,zero_matrix_u_partial[[i]]) + rbind((V[[i]]),U[[i]]), sqrt_lambda[[i]] * rbind(V[[i]],U[[i]])), rbind((X[[i]]), matrix(0, num_genes+ u_dim[[i]][1], xdim[[i]][2])))
+        }
+      }
+      
+      #V - updates
+      for (i in 1:length(X)){
+        V[[i]] = t(solveNNLS(rbind(t(H[[i]]), sqrt_lambda[[i]] * t(H[[i]])), rbind(t(X[[i]][0:num_genes,] - W %*% H[[i]]), matrix(0, num_cells[i], num_genes))))
+      }
+      ################################################# Updating U##################################
+      
+      for (i in 1:length(X)){
+        if (i %in% unshared){
+          U[[i]] = t(solveNNLS(rbind(t(H[[i]]),sqrt_lambda[[i]]* t(H[[i]])), rbind(t(X[[i]][(num_genes+1):(u_dim[[i]][1]+num_genes), ]),t(zero_matrix_u_full[[i]]))))
+        }
+      }
+      
+      
+      ##############################################################################################
+      ################################################# Updating W #################################
+      H_t_stack = c()
+      for (i in 1:length(X)){
+        H_t_stack = rbind(H_t_stack, t(H[[i]]))
+      }
+      diff_stack_w = c()
+      for (i in 1:length(X)){
+        diff_stack_w = rbind(diff_stack_w,t(X[[i]][0:num_genes,] - V[[i]] %*% H[[i]]))
+      }
+      W = t(solveNNLS(H_t_stack, diff_stack_w))
+      
+      ############################################################################################    
+      iter_end_time = Sys.time()
+      iter_time = as.numeric(difftime(iter_end_time, iter_start_time, units = "secs"))
+      total_time = total_time + iter_time
+      
+      #Updating training object
+      obj_train_prev = obj_train
+      obj_train_approximation = 0
+      obj_train_penalty = 0
+      
+      
+      
+      for (i in 1:length(X)){
+        if (i %in% unshared){
+          obj_train_approximation = obj_train_approximation + norm(X[[i]] - (rbind(W,zero_matrix_u_partial[[i]]) + rbind(V[[i]],U[[i]])) %*% H[[i]],"F")^2
+          obj_train_penalty = obj_train_penalty + lambda[[i]]*norm(rbind(V[[i]],U[[i]])%*% H[[i]], "F")^2
+        }
+        else {
+          obj_train_approximation = obj_train_approximation + norm(X[[i]][1:num_genes,] - (W+ V[[i]]) %*% H[[i]],"F")^2
+          obj_train_penalty = obj_train_penalty + lambda[[i]]*norm(V[[i]]%*% H[[i]], "F")^2
+          
+        }
+      }
+      
+      obj_train = obj_train_approximation + obj_train_penalty
+      delta = abs(obj_train_prev-obj_train)/mean(c(obj_train_prev,obj_train))
+      iter = iter + 1
+    }
+    cat("\nCurrent seed ",  current , " current objective ", obj_train)
+    if (obj_train < best_obj){
+      W_m <- W
+      H_m <- H
+      V_m <- V
+      U_m <- U
+      best_obj <- obj_train
+      best_seed <- current  
+    }
+  }
+  
+  rownames(W_m) = rownames(X[[1]][0:xdim[[i]][1],])
+  colnames(W_m) = NULL
+  
+  for (i in 1:length(X)){
+    if (i %in% unshared){
+      rownames(U_m[[i]]) = rownames(X[[i]][(num_genes+1):(u_dim[[i]][1]+num_genes), ])
+      colnames(U_m[[i]]) = NULL
+    }
+    rownames(V_m[[i]]) = rownames(X[[i]][0:xdim[[i]][1],])
+    colnames(V_m[[i]]) = NULL
+    colnames(H_m[[i]]) = colnames(X[[i]])
+  } 
+  
+  ################################## Returns Results Section #########################################################
+  object@W <- t(W_m)
+  for (i in 1:length(X)){
+    object@V[[i]] <- t(V_m[[i]])
+    object@H[[i]] <- t(H_m[[i]])
+    if(i %in% unshared){
+      object@U[[i]] <- t(U_m[[i]])
+    }
+  }
+  titles <- names(object@raw.data)
+  names(object@H) <- titles
+  names(object@V) <- titles
+  if(i %in% unshared){
+    names(object@U) <- titles
+  }
+  #cat("Objective:", objective_value_list, "\n")
+  rel_cells = list()
+  for (i in 1:length(X)){
+    rel_cells <- c(rel_cells, rownames(object@scale.data[[i]]))
+  }
+  rel_cells <- unlist(rel_cells)
+  
+  object@cell.data <- object@cell.data[rel_cells,]
+  cat("Best results with seed ", best_seed, ".\n", sep = "")
+  return (object)
 }
