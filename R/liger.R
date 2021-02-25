@@ -2327,7 +2327,8 @@ if(use.unshared == TRUE){
                            thresh = thresh,
                            max.iters = max.iters,
                            nrep = nrep,
-                           rand.seed = rand.seed)
+                           rand.seed = rand.seed,
+                           print.obj = print.obj)
 }
 }
 
@@ -6582,7 +6583,8 @@ convertOldLiger = function(object, override.raw = F) {
 #'   reproducibility, this increments the random seed by 1 for each consecutive restart, so future
 #'   factorizations of the same dataset can be run with one rep if necessary. (default 1)
 #' @param rand.seed Random seed to allow reproducible results (default 1).
-optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-4,rand.seed=1){
+#' @param print.obj  Print objective function values after convergence (default FALSE).
+optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-4,rand.seed=1, print.obj = FALSE){
   set.seed(seed = rand.seed)
   #Account for vectorized lambda
   lambda = rep(lambda, length(names(object@raw.data)))
@@ -6810,7 +6812,10 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
   if(i %in% unshared){
     names(object@U) <- titles
   }
-  #cat("Objective:", objective_value_list, "\n")
+  if (print.obj) {
+    cat("\n", "Objective:", best_obj, "\n")
+  }
+  
   rel_cells = list()
   for (i in 1:length(X)){
     rel_cells <- c(rel_cells, rownames(object@scale.data[[i]]))
@@ -6818,6 +6823,6 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
   rel_cells <- unlist(rel_cells)
   
   object@cell.data <- object@cell.data[rel_cells,]
-  cat("Best results with seed ", best_seed, ".\n", sep = "")
+  cat("\n", "Best results with seed ", best_seed, ".\n", sep = "")
   return (object)
 }
