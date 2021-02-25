@@ -6,7 +6,7 @@
 \usage{
 louvainCluster(
   object,
-  resolution = 1,
+  resolution = 0.25,
   k = 20,
   prune = 1/15,
   eps = 0.1,

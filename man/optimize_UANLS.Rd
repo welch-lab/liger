@@ -8,11 +8,11 @@ optimize_UANLS(
   object,
   k = 30,
   lambda = 5,
-  lambda.u = NULL,
   max.iters = 30,
   nrep = 1,
   thresh = 1e-04,
-  rand.seed = 1
+  rand.seed = 1,
+  print.obj = FALSE
 )
 }
 \arguments{
@@ -21,9 +21,6 @@ optimize_UANLS(
 \item{k}{Inner dimension of factorization (number of factors).}
 
 \item{lambda}{The lambda penalty. Default 5}
-
-\item{lambda.u}{Default is NULL. Allows user to submit a list of lambda penalities, where each penalty corresponds the 
-to the dataset order, i.e. first item will be applied to the first dataset, etc. Length of list must match number of datasets}
 
 \item{max.iters}{Maximum number of block coordinate descent iterations to perform (default 30).}
 
@@ -36,6 +33,8 @@ factorizations of the same dataset can be run with one rep if necessary. (defaul
 (default 1e-6)}
 
 \item{rand.seed}{Random seed to allow reproducible results (default 1).}
+
+\item{print.obj}{Print objective function values after convergence (default FALSE).}
 }
 \description{
 Perform iNMF on scaled datasets, and include unshared, scaled and normalized, features
