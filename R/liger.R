@@ -1056,7 +1056,7 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
     names(unshared.feats) <- names(object@raw.data)
     object@var.unshared.features <- unshared.feats
     for (i in unshared.datasets){
-      print(paste0(names(unshared.feats)[i]," Dataset has ",length(unshared.feats[[i]]) ," Unshared Features"))
+      print(paste0("Selected ", length(unshared.feats[[i]]), " unshared features from ", names(unshared.feats)[i]," Dataset"))
     }
   }
   return(object)
@@ -1230,7 +1230,7 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = T) {
     }
     if (length(missing) > 0) {
       print(paste0(
-        "Removing ",  length(missing), " ", removed, " not expressing", expressed, " in ",
+        "Removing ",  length(missing), " ", removed, " not expressed", expressed, " in ",
         names(object@raw.data)[x], "."
       ))
       if (use.cols) {
@@ -2036,9 +2036,8 @@ nonneg <- function(x, eps=1e-16) {
 #' @param H.init Initial values to use for H matrices. (default NULL)
 #' @param W.init Initial values to use for W matrix (default NULL)
 #' @param V.init Initial values to use for V matrices (default NULL)
-#' @param UINMF Indicates whether to run unshared features or not
-#' @param lambda.u  Provides the opportunity to submit a vectorized lamba to the UINMF algorithm
-#' @param rand.seed Random seed to allow reproducible results (default 1).
+#' @param use.unshared Indicates whether to run unshared features or not
+#' @param rand.seed Random seed to allow reproducible results (default 1)
 #' @param print.obj Print objective function values after convergence (default FALSE).
 #' @param ... Arguments passed to other methods
 #'
@@ -2081,7 +2080,7 @@ optimizeALS.list <- function(
   H.init = NULL,
   W.init = NULL,
   V.init = NULL,
-  UINMF = FALSE,
+  use.unshared = FALSE,
   lamda.u = NULL,
   rand.seed = 1,
   print.obj = FALSE,
@@ -2258,7 +2257,7 @@ optimizeALS.list <- function(
       cat("Objective:", obj, "\n")
     }
   }
-  cat("Best results with seed ", best_seed, ".\n", sep = "")
+  cat("\n","Best results with seed ", best_seed, ".\n", sep = "")
   out <- list()
   out$H <- H_m
   for (i in 1:length(x = object)) {
@@ -2286,8 +2285,7 @@ optimizeALS.liger <- function(
   H.init = NULL,
   W.init = NULL,
   V.init = NULL,
-  UINMF = FALSE,
-  lambda.u = NULL,
+  use.unshared = FALSE,
   rand.seed = 1,
   print.obj = FALSE,
   ...
@@ -2297,7 +2295,7 @@ optimizeALS.liger <- function(
     slot.use = 'scale.data',
     use.cols = FALSE
   )
-  if (UINMF == FALSE){
+  if (use.unshared == FALSE){
   out <- optimizeALS(
     object = object@scale.data,
     k = k,
@@ -2308,8 +2306,7 @@ optimizeALS.liger <- function(
     H.init = H.init,
     W.init = W.init,
     V.init = V.init,
-    UINMF = FALSE,
-    lambda.u = NULL,
+    use.unshared = FALSE,
     rand.seed = rand.seed,
     print.obj = print.obj
   )
@@ -2323,12 +2320,11 @@ optimizeALS.liger <- function(
   }
   object@parameters$lambda <- lambda
   return(object)} 
-if(UINMF == TRUE){
+if(use.unshared == TRUE){
   object <- optimize_UANLS(object = object,
                            k = k,
                            lambda = lambda,
                            thresh = thresh,
-                           lambda.u = lambda.u,
                            max.iters = max.iters,
                            nrep = nrep,
                            rand.seed = rand.seed)
@@ -3171,7 +3167,7 @@ quantile_norm.liger <- function(
 #' }
 #'
 
-louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps = 0.1, nRandomStarts = 10,
+louvainCluster <- function(object, resolution = 0.25, k = 20, prune = 1 / 15, eps = 0.1, nRandomStarts = 10,
                            nIterations = 100, random.seed = 1) {
   output_path <- paste0('edge_', sub('\\s', '_', Sys.time()), '.txt')
   output_path = sub(":","_",output_path)
@@ -6574,15 +6570,10 @@ convertOldLiger = function(object, override.raw = F) {
 }
 
 
-
-
-
 #' Perform iNMF on scaled datasets, and include unshared, scaled and normalized, features
 #' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
 #' @param k Inner dimension of factorization (number of factors).
 #' @param lambda The lambda penalty. Default 5
-#' @param lambda.u Default is NULL. Allows user to submit a list of lambda penalities, where each penalty corresponds the 
-#' to the dataset order, i.e. first item will be applied to the first dataset, etc. Length of list must match number of datasets
 #' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
 #'   (default 1e-6)
 #' @param max.iters Maximum number of block coordinate descent iterations to perform (default 30).
@@ -6591,19 +6582,10 @@ convertOldLiger = function(object, override.raw = F) {
 #'   reproducibility, this increments the random seed by 1 for each consecutive restart, so future
 #'   factorizations of the same dataset can be run with one rep if necessary. (default 1)
 #' @param rand.seed Random seed to allow reproducible results (default 1).
-optimize_UANLS = function(object, k=30,lambda= 5, lambda.u = NULL,max.iters=30,nrep=1,thresh=1e-4,rand.seed=1){
+optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-4,rand.seed=1){
+  set.seed(seed = rand.seed)
   #Account for vectorized lambda
-  if (!is.null(lambda.u)){
-    if (length(lambda) != length(names(object@raw.data))){
-      warning(paste0("Please enter a single lambda value, or a lamba value for each dataset",immediate. = T))
-    }
-    else {
-      lambda = lambda.u
-    }
-  }
-  if (is.null(lambda.u)){
-    lambda = rep(lambda, length(names(object@raw.data)))
-  }
+  lambda = rep(lambda, length(names(object@raw.data)))
   
   # Get a list of all the matrices
   mlist = list()
@@ -6629,27 +6611,14 @@ optimize_UANLS = function(object, k=30,lambda= 5, lambda.u = NULL,max.iters=30,n
       ulist[[i]] = t(object@scale.unshared.data[[i]])
     }
   }
-  
-  #### Creates a 0 matrix that matches the largest set of added features. This is appended to datasets with no unshared features
-  zero_matrix_full = list()
-  for (i in 1:length(object@raw.data)){
-    if (!(i %in% unshared)){
-      zero_matrix_full[[i]] <- matrix(0, nrow = max_feats, ncol = xdim[[i]][[2]])
-      mlist[[i]] <- rbind(mlist[[i]], zero_matrix_full[[i]])
-    }
-  }
-  
-  
   ############## For every set of additional features less than the maximum, append an additional zero matrix s.t. it matches the maximum
-  for (i in unshared){
-    if (u_dim[[i]][[2]] != as.numeric(max_feats)){
-      short = u_dim[[2]]-max_feats
-      zero_matrix_part = matrix(0, nrow = short, ncol = xdim[[i]][[2]])
-      mlist[[i]] <- rbind(mlist[[i]],object@scale.unshared.data[[i]], zero_matrix_part)
+  for (i in 1:length(object@scale.data)){
+    if (i %in% unshared){
+      mlist[[i]] <-  rbind(mlist[[i]],object@scale.unshared.data[[i]])  
     }
     #For the U matrix with the maximum amount of features, append the whole thing
     else {
-      mlist[[i]] <-  rbind(mlist[[i]],object@scale.unshared.data[[i]])
+      mlist[[i]] <- rbind(mlist[[i]])
     }
   }
   
@@ -6673,7 +6642,6 @@ optimize_UANLS = function(object, k=30,lambda= 5, lambda.u = NULL,max.iters=30,n
   
   best_obj <- Inf
   for (i in 1:nrep){
-    set.seed(seed = rand.seed + i -1 )
     print("Processing")
     current <- rand.seed + i -1
     # initialization
@@ -6681,8 +6649,6 @@ optimize_UANLS = function(object, k=30,lambda= 5, lambda.u = NULL,max.iters=30,n
     for (i in 1:length(X)){
       idX[[i]] = sample(1:num_cells[i], k)
     }
-    
-    
     V = list()
     
     #Establish V from only the RNA dimensions
@@ -6698,8 +6664,6 @@ optimize_UANLS = function(object, k=30,lambda= 5, lambda.u = NULL,max.iters=30,n
     
     #Initialize U 
     U = list()
-    
-    
     for (i in length(1:length(X))){
       if (i %in% unshared){
         U[[i]] = t(ulist[[i]])[,idX[[i]]]
@@ -6708,6 +6672,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, lambda.u = NULL,max.iters=30,n
     
     iter = 0
     total_time = 0 
+    pb <- txtProgressBar(min = 0, max = max.iters, style = 3)
     sqrt_lambda = list()
     for (i in 1:length(X)){
       sqrt_lambda[[i]]= sqrt(lambda[[i]])
@@ -6724,7 +6689,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, lambda.u = NULL,max.iters=30,n
         obj_train_penalty = obj_train_penalty + lambda[[i]]*norm(rbind(V[[i]],U[[i]])%*% H[[i]], "F")^2
       }
       else {
-        obj_train_approximation = obj_train_approximation + norm(X[[i]][1:num_genes,] - (W+ V[[i]]) %*% H[[i]],"F")^2
+        obj_train_approximation = obj_train_approximation + norm(X[[i]] - (W+ V[[i]]) %*% H[[i]],"F")^2
         obj_train_penalty = obj_train_penalty + lambda[[i]]*norm(V[[i]]%*% H[[i]], "F")^2
         
       }
@@ -6744,7 +6709,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, lambda.u = NULL,max.iters=30,n
       #H- Updates
       for (i in 1:length(X)){
         if (!(i %in% unshared)){
-          H[[i]] = solveNNLS(rbind((W + V[[i]]), sqrt_lambda[[i]] * V[[i]]), rbind(X[[i]][0:num_genes,], matrix(0, num_genes, xdim[[i]][2])))
+          H[[i]] = solveNNLS(rbind((W + V[[i]]), sqrt_lambda[[i]] * V[[i]]), rbind(X[[i]], matrix(0, num_genes, xdim[[i]][2])))
         }
         else{
           H[[i]] = solveNNLS(rbind(rbind(W,zero_matrix_u_partial[[i]]) + rbind((V[[i]]),U[[i]]), sqrt_lambda[[i]] * rbind(V[[i]],U[[i]])), rbind((X[[i]]), matrix(0, num_genes+ u_dim[[i]][1], xdim[[i]][2])))
@@ -6794,7 +6759,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, lambda.u = NULL,max.iters=30,n
           obj_train_penalty = obj_train_penalty + lambda[[i]]*norm(rbind(V[[i]],U[[i]])%*% H[[i]], "F")^2
         }
         else {
-          obj_train_approximation = obj_train_approximation + norm(X[[i]][1:num_genes,] - (W+ V[[i]]) %*% H[[i]],"F")^2
+          obj_train_approximation = obj_train_approximation + norm(X[[i]] - (W+ V[[i]]) %*% H[[i]],"F")^2
           obj_train_penalty = obj_train_penalty + lambda[[i]]*norm(V[[i]]%*% H[[i]], "F")^2
           
         }
@@ -6803,7 +6768,9 @@ optimize_UANLS = function(object, k=30,lambda= 5, lambda.u = NULL,max.iters=30,n
       obj_train = obj_train_approximation + obj_train_penalty
       delta = abs(obj_train_prev-obj_train)/mean(c(obj_train_prev,obj_train))
       iter = iter + 1
+      setTxtProgressBar(pb = pb, value = iter)
     }
+    setTxtProgressBar(pb = pb, value = max.iters)
     cat("\nCurrent seed ",  current , " current objective ", obj_train)
     if (obj_train < best_obj){
       W_m <- W
