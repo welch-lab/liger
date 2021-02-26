@@ -6584,7 +6584,7 @@ convertOldLiger = function(object, override.raw = F) {
 #'   factorizations of the same dataset can be run with one rep if necessary. (default 1)
 #' @param rand.seed Random seed to allow reproducible results (default 1).
 #' @param print.obj  Print objective function values after convergence (default FALSE).
-optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-4,rand.seed=1, print.obj = FALSE){
+optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-10,rand.seed=1, print.obj = FALSE){
   set.seed(seed = rand.seed)
   #Account for vectorized lambda
   lambda = rep(lambda, length(names(object@raw.data)))
