@@ -753,6 +753,8 @@ fftRtsne <- function(X,
     version_number <- "1.1.0"
   } else if (grepl(pattern = "= t-SNE v1.0", x = ft.out[1])) {
     version_number <- "1.0"
+  } else if (grepl(pattern = "= t-SNE v1.2", x = ft.out[1])) {
+    version_number <- "1.2"
   } else {
     message("First line of fast_tsne output is")
     message(ft.out[1])
