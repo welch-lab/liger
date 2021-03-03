@@ -1175,7 +1175,7 @@ scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
   }
   
   #Scale unshared features
-  if (!is.null(object@var.unshared.features)){
+  if (length(object@var.unshared.features) != 0){
     for (i in length(object@raw.data)){
       if (!is.null(object@var.unshared.features[[i]])){
         
