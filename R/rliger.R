@@ -643,6 +643,9 @@ safe_h5_create = function(object, idx, dataset_name, dims, mode="double", chunk_
 #' @param object \code{liger} object.
 #' @param chunk size of chunks in hdf5 file. (default 1000)
 #' @param format.type string of HDF5 format (10X CellRanger by default).
+#' @param remove.missing Whether to remove cells not expressing any measured genes, and genes not
+#'   expressed in any cells (if take.gene.union = T, removes only genes not expressed in any
+#'   dataset) (default TRUE).
 #' @param verbose Print progress bar/messages (TRUE by default)
 #'
 #' @return \code{liger} object with norm.data slot set.
@@ -660,6 +663,7 @@ safe_h5_create = function(object, idx, dataset_name, dims, mode="double", chunk_
 normalize <- function(object,
                       chunk = 1000,
                       format.type = "10X",
+                      remove.missing = TRUE,
                       verbose = TRUE) {
   if (class(object@raw.data[[1]])[1] == "H5File") {
     hdf5_files = names(object@raw.data)
@@ -749,7 +753,9 @@ normalize <- function(object,
 
     names(object@norm.data) = names(object@raw.data)
   } else {
-    object <- removeMissingObs(object, slot.use = "raw.data", use.cols = TRUE, verbose = verbose)
+    if (remove.missing) {
+      object <- removeMissingObs(object, slot.use = "raw.data", use.cols = T)
+    }
     if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
         class(object@raw.data[[1]])[1] == "dgCMatrix") {
       object@norm.data <- lapply(object@raw.data, Matrix.column_norm)
@@ -4547,12 +4553,12 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
     p1 <- p1 + xlab(axis.labels[1]) + ylab(axis.labels[2])
     p2 <- p2 + xlab(axis.labels[1]) + ylab(axis.labels[2])
   }
+  p1 <- p1 + theme_cowplot(12)
+  p2 <- p2 + theme_cowplot(12)
   if (!do.legend) {
     p1 <- p1 + theme(legend.position = "none")
     p2 <- p2 + theme(legend.position = "none")
   }
-  p1 <- p1 + theme_cowplot(12)
-  p2 <- p2 + theme_cowplot(12)
   if (return.plots) {
     return(list(p1, p2))
   } else {

@@ -28,7 +28,6 @@ Maintainer: Chao Gao <gchao@umich.edu>
 BugReports: https://github.com/welch-lab/liger/issues
 URL: https://github.com/welch-lab/liger
 License: GPL-3
-SystemRequirements: Java (>= 6)
 Imports: Rcpp (>= 0.12.10),
      plyr,
      FNN,
@@ -40,7 +39,6 @@ Imports: Rcpp (>= 0.12.10),
      Rtsne,
      ggplot2,
      riverplot,
-     Hmisc,
      foreach,
      parallel,
      doParallel,

@@ -66,20 +66,25 @@ Before setting up the `rliger` package, users should have R version 3.4.0 or hig
 
 ## Installation
 
-`rliger` is written in R and has a few other system requirements (Java) and recommended packages (umap in Python). To install the most recent development version, follow these instructions:
+`liger` is written in R and is available on the Comprehensive R Archive Network (CRAN). Note that the package name on CRAN is `rliger` to avoid a naming conflict with an unrelated package. To install the version on CRAN, follow these instructions:
 
 1. Install [R](https://www.r-project.org/)  (>= 3.4)
 2. Install [Rstudio](https://rstudio.com/products/rstudio/download/) (recommended)
-3. Make sure you have Java installed in your machine. Check by typing `java -version` into Terminal or Command Prompt. 
-4. Use the following R commands.
+3. Type the following R command:
+```
+install.packages('rliger')
+```
+To install the latest development version directly from GitHub, type the following commands instead of step 3:
 ```
 install.packages('devtools')
 library(devtools)
 install_github('welch-lab/liger')
 ```
+Note that the GitHub version requires installing from source, which may involve additional installation steps on MacOS (see below).
 
-### Additional Installation Steps for MacOS (recommended before step 4)
-Installing RcppArmadillo on R>=3.4 requires Clang >= 4 and gfortran-6.1. Follow the instructions below if you have R version 3.4.0-3.4.4. These instructions (using clang4) may also be sufficient for R>=3.5 but for newer versions of R, it's recommended to follow the instructions in this [post](https://thecoatlessprofessor.com/programming/r-compiler-tools-for-rcpp-on-macos/). 
+### Additional Steps for Installing LIGER from Source on MacOS (recommended before step 3)
+Installation from CRAN is easy because pre-compiled binaries are available for Windows and MacOS. However, a few additional steps are required to install from source on MacOS.
+Installing RcppArmadillo on R>=3.4 requires Clang >= 4 and gfortran-6.1. For newer versions of R (R>=3.5), it's recommended to follow the instructions in this [post](https://thecoatlessprofessor.com/programming/r-compiler-tools-for-rcpp-on-macos/). Follow the instructions below if you have R version 3.4.0-3.4.4.
 
 1. Install gfortran as suggested [here](https://gcc.gnu.org/wiki/GFortranBinaries)
 2. Download clang4 from this [page](https://mac.R-project.org/libs/clang-4.0.0-darwin15.6-Release.tar.gz)
@@ -118,28 +123,9 @@ The HDF5 library is required for implementing online learning in Liger on data f
 
 For Windows, the latest HDF5 1.12.0 is available at https://www.hdfgroup.org/downloads/hdf5/.
 
-### Running `liger` with Docker
-If installing natively is difficult, you can run `liger` through our Docker image (available
-publically), which also comes with Rstudio and Seurat (v2) installed.
-
-1. Install [Docker](https://docs.docker.com/install/). 
-2. Run the following in terminal:
-```
-docker run -d -p 8787:8787 docker.io/vkozareva/sc-liger:latest
-```
-3. Type `http://localhost:8787` in any browser and enter "rstudio" as the 
-username and password when prompted. `liger` and all of its dependencies are already installed in 
-this environment.
-
-If you wish to access local files in this container (mounting to `/data`) modify the command as follows:
-```
-docker run -d -v /path/to/local/directory:/data -p 8787:8787 docker.io/vkozareva/sc-liger:latest
-```
-Note that you will have to stop the container if you wish to allocate port `8787` to another application
-later on. Further Docker documentation can be found [here](https://docs.docker.com/get-started/).
-
-### Detailed Instructions for FIt-SNE Installation for use in runTSNE (recommended for large datasets)
-Using FIt-SNE is recommended for computational efficiency when using runTSNE on very large datasets.
+### Detailed Instructions for FIt-SNE Installation
+Note that the runUMAP function (which calls the `uwot` package) also scales to large datasets and does not require additional installation steps.
+However, using FIt-SNE is recommended for computational efficiency if you want to perform t-SNE on very large datasets.
 Installing and compiling the necessary software requires the use of git, FIt-SNE, and FFTW. For a 
 basic overview of installation, visit this [page](https://github.com/KlugerLab/FIt-SNE).
 
@@ -179,7 +165,7 @@ The installation process of `liger` should take less than 30 minutes.
 The expected run time is 1 - 4 hours depending on dataset size and downstream analysis of the user’s choice.
 
 ## Sample Datasets
-The `rliger` package provides a small simulated dataset for basic demos of the functions, you can find it in folder `rliger/tests/testdata/small_pbmc_data.RDS`.
+The `rliger` package provides a small sample dataset for basic demos of the functions. You can find it in folder `liger/tests/testdata/small_pbmc_data.RDS`.
 
 We also provide a set of scRNA-seq and scATAC-seq datasets for real-world style demos. These datasets are as follows:
 
