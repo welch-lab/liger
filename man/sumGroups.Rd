@@ -25,11 +25,3 @@ Matrix of groups by features
 \description{
 Utility function to sum over group labels
 }
-\examples{
-\dontrun{
-data(exprs)
-data(y)
-sumGroups_res <- sumGroups(exprs, y, 1)
-sumGroups_res <- sumGroups(t(exprs), y, 2)
-}
-}

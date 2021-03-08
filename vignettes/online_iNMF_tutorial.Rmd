@@ -1,7 +1,7 @@
 ---
 title: "Iterative single-cell multi-omic integration using online learning"
 author: "Chao Gao and Joshua Welch"
-date: "Dec 22, 2020"
+date: "3/8/2020"
 output: html_document
 ---
 
@@ -19,7 +19,7 @@ install_github("welch-lab/liger")
 We first create a Liger object by passing the filenames of HDF5 files containing the raw count data. The data can be downloaded [here](https://umich.box.com/s/m5cojytshxvk44pc4kki6clh6c9sv7ai). Liger assumes by default that the HDF5 files are formatted by the 10X CellRanger pipeline. Large datasets are often generated over multiple 10X runs (for example, multiple biological replicates). In such cases it may be necessary to merge the HDF5 files from each run into a single HDF5 file. We provide the `mergeH5` function for this purpose (see below for details).
 
 ```{r create.object, message=FALSE, results='hide'}
-library(liger)
+library(rliger)
 pbmcs = createLiger(list(stim = "pbmcs_stim.h5", ctrl = "pbmcs_ctrl.h5"))
 ```
 
@@ -52,13 +52,13 @@ calcAlignment(pbmcs)
 ```
 
 With HDF5 files as input, we need to sample the raw, normalized, or scaled data from the full dataset on disk and load them in memory. Some plotting functions and downstream analyses are designed to operate on a subset of cells sampled from the full dataset. This enables rapid analysis using limited memory. The readSubset function allows either uniform random sampling or sampling balanced by cluster. Here we extract the normalized count data of 5000 sampled cells.
-```{r subset, results='hide'}
+```{r subset, message=FALSE, results='hide'}
 pbmcs = readSubset(pbmcs, slot.use = "norm.data", max.cells = 5000)
 ```
 
 Using the sampled data stored in memory, we can now compare clusters or datasets (within each cluster) to identify differentially expressed genes. The runWilcoxon function
 performs differential expression analysis by performing an in-memory Wilcoxon rank-sum test on this subset. Thus, users can still analyze large datasets with a fixed amount of memory.
-```{r wilcox 1, results='hide'}
+```{r wilcox 1, message=FALSE, results='hide'}
 de_genes = runWilcoxon(pbmcs, compare.method = "datasets")
 ```
 

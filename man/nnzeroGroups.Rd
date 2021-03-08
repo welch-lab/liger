@@ -25,12 +25,3 @@ Matrix of groups by features
 \description{
 Utility function to compute number of zeros-per-feature within group
 }
-\examples{
-
-\dontrun{
-data(exprs)
-data(y)
-nnz_res <- nnzeroGroups(exprs, y, 1)
-nnz_res <- nnzeroGroups(t(exprs), y, 2)
-}
-}
