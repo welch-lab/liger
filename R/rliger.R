@@ -644,7 +644,7 @@ safe_h5_create = function(object, idx, dataset_name, dims, mode="double", chunk_
 #' @param chunk size of chunks in hdf5 file. (default 1000)
 #' @param format.type string of HDF5 format (10X CellRanger by default).
 #' @param remove.missing Whether to remove cells not expressing any measured genes, and genes not
-#'   expressed in any cells (if take.gene.union = T, removes only genes not expressed in any
+#'   expressed in any cells (if take.gene.union = TRUE, removes only genes not expressed in any
 #'   dataset) (default TRUE).
 #' @param verbose Print progress bar/messages (TRUE by default)
 #'
@@ -754,7 +754,7 @@ normalize <- function(object,
     names(object@norm.data) = names(object@raw.data)
   } else {
     if (remove.missing) {
-      object <- removeMissingObs(object, slot.use = "raw.data", use.cols = T)
+      object <- removeMissingObs(object, slot.use = "raw.data", use.cols = TRUE)
     }
     if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
         class(object@raw.data[[1]])[1] == "dgCMatrix") {
@@ -3878,7 +3878,7 @@ runGSEA <- function(object, gene_sets = c(), mat_w = TRUE, mat_v = 0, custom_gen
 #' # get tsne.coords for normalized data
 #' ligerex <- runTSNE(ligerex)
 #' # get tsne.coords for raw factor loadings
-#' ligerex <- runTSNE(ligerex, use.raw = T)
+#' ligerex <- runTSNE(ligerex, use.raw = TRUE)
 #' }
 
 runTSNE <- function(object, use.raw = FALSE, dims.use = 1:ncol(object@H.norm), use.pca = FALSE,
@@ -3958,7 +3958,7 @@ runTSNE <- function(object, use.raw = FALSE, dims.use = 1:ncol(object@H.norm), u
 #' # get tsne.coords for normalized data
 #' ligerex <- runUMAP(ligerex)
 #' # get tsne.coords for raw factor loadings
-#' ligerex <- runUMAP(ligerex, use.raw = T)
+#' ligerex <- runUMAP(ligerex, use.raw = TRUE)
 #' }
 
 runUMAP <- function(object, use.raw = FALSE, dims.use = 1:ncol(object@H.norm), k = 2,
@@ -4368,9 +4368,9 @@ calcAlignmentPerCluster <- function(object, rand.seed = 1, k = NULL, by.dataset 
 #' # ligerex (liger object), factorization complete
 #' ligerex <- quantile_norm(ligerex)
 #' # toy clusters
-#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = T)
+#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = TRUE)
 #' names(cluster1) <- colnames(ligerex@raw.data[[1]])
-#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = T)
+#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = TRUE)
 #' names(cluster2) <- colnames(ligerex@raw.data[[2]])
 #' # get ARI for first clustering
 #' ari1 <- calcARI(ligerex, cluster1)
@@ -4405,9 +4405,9 @@ calcARI <- function(object, clusters.compare, verbose = TRUE) {
 #' # ligerex (liger object), factorization complete
 #' ligerex <- quantile_norm(ligerex)
 #' # toy clusters
-#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = T)
+#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = TRUE)
 #' names(cluster1) <- colnames(ligerex@raw.data[[1]])
-#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = T)
+#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = TRUE)
 #' names(cluster2) <- colnames(ligerex@raw.data[[2]])
 #' # get ARI for first clustering
 #' ari1 <- calcPurity(ligerex, cluster1)
@@ -4498,7 +4498,7 @@ getProportionMito <- function(object, use.norm = FALSE) {
 #' # plot to console
 #' plotByDatasetAndCluster(ligerex)
 #' # return list of plots
-#' plots <- plotByDatasetAndCluster(ligerex, return.plots = T)
+#' plots <- plotByDatasetAndCluster(ligerex, return.plots = TRUE)
 #' }
 
 plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
@@ -5178,10 +5178,10 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
 #' \dontrun{
 #' # ligerex (liger object based on in-memory datasets), factorization complete
 #' # plot expression for CD4 and return plots
-#' violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = T)
+#' violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = TRUE)
 #' # ligerex (liger object based on datasets in HDF5 format), factorization complete input
 #' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
-#' violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = T)
+#' violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = TRUE)
 #' }
 
 plotGeneViolin <- function(object, gene, methylation.indices = NULL,
@@ -5318,10 +5318,10 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' ligerex
 #' ligerex <- runTSNE(ligerex)
 #' # plot expression for CD4 and return plots
-#' gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
+#' gene_plots <- plotGene(ligerex, "CD4", return.plots = TRUE)
 #' # ligerex (liger object based on datasets in HDF5 format), factorization complete input
 #' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
-#' gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
+#' gene_plots <- plotGene(ligerex, "CD4", return.plots = TRUE)
 #' }
 
 plotGene <- function(object, gene, use.raw = FALSE, use.scaled = FALSE, scale.by = 'dataset',
@@ -5610,9 +5610,9 @@ plotGenes <- function(object, genes, ...) {
 #' \dontrun{
 #' # ligerex (liger object), factorization complete input
 #' # toy clusters
-#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = T)
+#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = TRUE)
 #' names(cluster1) <- colnames(ligerex@raw.data[[1]])
-#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = T)
+#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = TRUE)
 #' names(cluster2) <- colnames(ligerex@raw.data[[2]])
 #' # create riverplot
 #' makeRiverplot(ligerex, cluster1, cluster2)
@@ -5827,7 +5827,7 @@ plotClusterProportions <- function(object, return.plot = FALSE) {
 #' \dontrun{
 #' # ligerex (liger object), factorization complete input
 #' # plot expression for CD4 and return plots
-#' loading.matrix <- plotClusterFactors(ligerex, return.data = T)
+#' loading.matrix <- plotClusterFactors(ligerex, return.data = TRUE)
 #' }
 
 plotClusterFactors <- function(object, use.aligned = FALSE, Rowv = NA, Colv = "Rowv", col = NULL,
