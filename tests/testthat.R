@@ -1,4 +1,4 @@
 library(testthat)
-library(liger)
+library(rliger)
 
-test_check("liger")
+test_check("rliger")
