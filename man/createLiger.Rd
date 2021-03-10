@@ -6,7 +6,6 @@
 \usage{
 createLiger(
   raw.data,
-  make.sparse = TRUE,
   take.gene.union = FALSE,
   remove.missing = TRUE,
   format.type = "10X",
@@ -20,8 +19,6 @@ createLiger(
 }
 \arguments{
 \item{raw.data}{List of expression matrices (gene by cell). Should be named by dataset.}
-
-\item{make.sparse}{Whether to convert raw data into sparse matrices (default TRUE).}
 
 \item{take.gene.union}{Whether to fill out raw.data matrices with union of genes across all
 datasets (filling in 0 for missing data) (requires make.sparse = TRUE) (default FALSE).}
