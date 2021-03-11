@@ -4888,7 +4888,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
       if (length(top_genes) == 0) {
         gene_df <- data.frame(genes = c("no genes"), loadings = c(1))
       }
-      out_plot <- ggplot(gene_df, aes(x = 1, y = 1, size = loadings, label = gene_df[['genes']])) +
+      out_plot <- ggplot(gene_df, aes(x = 1, y = 1, size = loadings, label = .data[['genes']])) +
         geom_text_repel(force = 100, segment.color = NA) +
         scale_size(range = c(min.size, max.size), guide = FALSE) +
         scale_y_continuous(breaks = NULL) +
