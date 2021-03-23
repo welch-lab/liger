@@ -7,7 +7,7 @@ pbmc.file <- "../testdata/small_pbmc_data.RDS"
 pbmc.small <- readRDS(pbmc.file)
 
 # preprocessing steps (object required for tests)
-ligex <- createLiger(raw.data = pbmc.small, make.sparse = T, take.gene.union = F,
+ligex <- createLiger(raw.data = pbmc.small, take.gene.union = F,
                      remove.missing = T)
 ligex <- normalize(ligex)
 ligex <- selectGenes(ligex, var.thresh = c(0.3, 0.9), do.plot = F)
