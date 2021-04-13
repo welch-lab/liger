@@ -1,0 +1,71 @@
+---
+title: "Including unshared features such as intergenic peaks and genes"
+author: "Joshua Welch and April Kriebel"
+date: "4/12/2021"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+# Step 1: Load necessary libraries
+```{r setup}
+library(liger)
+library(dplyr)
+```
+When running an analysis with unshared number of features, the differences are in the pre-processing and factorization functions. The returned Liger object can then be used in any of the typical downstream Liger functions.
+
+# Step 1: Load the data
+First, load both desired datasets, and create a Liger object. Make sure the dataset that has the unshared features is not the **first** dataset. The submission format is features by cells.
+The datasets can be downloaded at https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0
+```{r load data}
+cortex_data <- readRDS("DROP.vin.RDS")
+star_data <- readRDS("OSMFISH.vin.RDS")
+starmapped <- createLiger(list(star = star_data, rna =cortex_data))
+```
+# Step 2: Normalize and Scale the Data
+Next, we normalize the features. Note that we normalize the entire matrix together, normalizing the shared and unshared features together. 
+```{r normalize}
+starmapped <- normalize(starmapped)
+```
+
+After normalizing, we need to select genes that are variable between the sets. The STARmap data set is unusual, because it only has 28 genes, so after running the selectGenes function, we will actually select all the genes in the STARmap dataset, but this secondary command is not usually run.
+```{r selectgenes}
+starmapped <- selectGenes(starmapped, unshared = TRUE, unshared.datasets = list(2), unshared.thresh= 0.3)
+starmapped@var.genes <- rownames(starmapped@raw.data[[1]])
+
+```
+Finally, we scale the data. 
+```{r scalereg}
+starmapped <- scaleNotCenter(starmapped)
+
+```
+# Step 3: Factorization
+To use the unshared features in the matrix factorization, set use.unshared = TRUE
+```{r factorization}
+starmapped <- optimizeALS(starmapped, lambda=5, use.unshared = TRUE, k=40, max_iters = 30, thresh=1e-10, rand.seed = 8069)
+
+```
+# Step 4: Quantile Normalization and clustering
+When performing the quantile normalization step, we make sure to select the higher quality data as our reference dataset.
+We also create UMAPs that have a minimum of 50 nearest neighbores. This helps to avoid spurious, unaligning cells.
+```{r downstream processing, warning = FALSE}
+starmapped <- quantile_norm(starmapped, ref_dataset = "rna")
+starmapped <- louvainCluster(starmapped)
+starmapped <- runUMAP(starmapped, n_neighbors = 50)
+```
+# Step 5: Visualizations and Downstream processing
+Next, we can visual our returned factorized object by dataset to check the alignment between datasets, as well as by cluster determined in the factorization.
+```{r visualizations}
+umap_plots <-plotByDatasetAndCluster(starmapped, axis.labels = c("UMAP1","UMAP2"), return.plots = TRUE)
+umap_plots[[1]]
+umap_plots[[2]]
+```
+We can also examine features such as gene loadings. Here we show Pvalb, a marker gene typically associated with the MGE neurons, and Flt1, associated with the endothelial stalk cells.
+```{r gene visualizations}
+PVALB <- plotGene(starmapped, "Pvalb", axis.labels = c('UMAP 1', 'UMAP 2'), return.plots = TRUE)
+FLT1 <- plotGene(starmapped, "Flt1", axis.labels = c('UMAP 1', 'UMAP 2'), return.plots = TRUE)
+plot_grid(PVALB[[2]],PVALB[[1]],FLT1[[2]],FLT1[[1]], ncol=2)
+```
+
+
+
