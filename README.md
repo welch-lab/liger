@@ -37,7 +37,7 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 * NEW: [Iterative Single-Cell Multi-Omic Integration Using Online iNMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/online_iNMF_tutorial.html)
 
-* NEW: [Integrating unshared features with UINMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/liger-vignette.html)
+* NEW: [Integrating unshared features with UINMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/UINMF_vignette.html)
 
 * [Integrating Multiple Single-Cell RNA-seq Datasets](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/Integrating_multi_scRNA_data.html)
 
