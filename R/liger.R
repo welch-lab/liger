@@ -6586,6 +6586,7 @@ convertOldLiger = function(object, override.raw = F) {
 #' @param print.obj  Print objective function values after convergence (default FALSE).
 optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-10,rand.seed=1, print.obj = FALSE){
   set.seed(seed = rand.seed)
+  print('Performing Factorization using UINMF')
   #Account for vectorized lambda
   lambda = rep(lambda, length(names(object@raw.data)))
   
