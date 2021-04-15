@@ -19,7 +19,7 @@ library(liger)
 
 # Step 1: Preprocessing and Normalization
 
-First, read in your datasets. For this tutorial, we will use the osmFISH dataset (33 genes by 5,219 cells), and a downsampled single-cell RNA-seq dataset (29,463 genes by 15,000 cells)
+First, read in your datasets. For this tutorial, we will use the osmFISH dataset (33 genes by 5,219 cells), and a downsampled single-cell RNA-seq dataset (29,463 genes by 15,000 cells). The datasets can be downloaded at https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0
 
 ```{r eval = FALSE}
 osmFISH = readRDS("OSMFISH.vin.RDS")

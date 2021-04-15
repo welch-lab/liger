@@ -175,7 +175,7 @@ pre code {
 library(liger)</code></pre>
 <div id="step-1-preprocessing-and-normalization" class="section level1">
 <h1>Step 1: Preprocessing and Normalization</h1>
-<p>First, read in your datasets. For this tutorial, we will use the osmFISH dataset (33 genes by 5,219 cells), and a downsampled single-cell RNA-seq dataset (29,463 genes by 15,000 cells)</p>
+<p>First, read in your datasets. For this tutorial, we will use the osmFISH dataset (33 genes by 5,219 cells), and a downsampled single-cell RNA-seq dataset (29,463 genes by 15,000 cells). The datasets can be downloaded at <a href="https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0" class="uri">https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0</a></p>
 <pre class="r"><code>osmFISH = readRDS(&quot;OSMFISH.vin.RDS&quot;)
 rna = readRDS(&quot;DROPVIZ.vin.RDS&quot;)</code></pre>
 <p>Next, create your Liger object, submitting the datasets in list format. The unshared features should not be subsetted out, or submitted separately. Rather, they should be included in the matrix submitted for that dataset. For example,the scRNA-seq data is submitted in its entirety, the unshared features are not submitted seperately. This helps ensure proper normalization.</p>
