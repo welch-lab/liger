@@ -1,71 +1,85 @@
 ---
-title: "Including unshared features such as intergenic peaks and genes"
+title: "Unshared Features UINMF"
 author: "Joshua Welch and April Kriebel"
-date: "4/12/2021"
-output:
-  html_document: default
-  pdf_document: default
-  word_document: default
+date: "4/14/2021"
+output: html_document
 ---
-# Step 1: Load necessary libraries
-```{r setup}
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+osmFISH = readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Vignette/OSMFISH.vin.RDS")
+rna = readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Vignette/DROPVIZ.vin.RDS")
+
+```
+```{r eval = FALSE}
+install_github("welch-lab/liger", ref = "U_algorithm")
+```
+
+# Step 1: Preprocessing and Normalization
+
+First, read in your datasets. For this tutorial, we will use the osmFISH dataset (33 genes by 5,219 cells), and a downsampled single-cell RNA-seq dataset (29,463 genes by 15,000 cells)
+
+```{r eval = FALSE}
+osmFISH = readRDS("OSMFISH.vin.RDS")
+rna = readRDS("DROPVIZ.vin.RDS")
+```
+
+Next, create your Liger object, submitting the datasets in list format. The unshared features should not be subsetted out, or submitted separately. Rather, they should be included in the matrix submitted for that dataset. For example,the scRNA-seq data is submitted in its entirety, the unshared features are not submitted seperately. This helps ensure proper normalization.
+```{r createliger, warning = FALSE}
 library(liger)
-library(dplyr)
+osm.liger <- createLiger(list(osmFISH = osmFISH, rna = rna))
 ```
-When running an analysis with unshared number of features, the differences are in the pre-processing and factorization functions. The returned Liger object can then be used in any of the typical downstream Liger functions.
+Normalize the datasets.The normalization is applied to the datasets in their entirety.
 
-# Step 1: Load the data
-First, load both desired datasets, and create a Liger object. Make sure the dataset that has the unshared features is not the **first** dataset. The submission format is features by cells.
-The datasets can be downloaded at https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0
-```{r load data}
-cortex_data <- readRDS("DROP.vin.RDS")
-star_data <- readRDS("OSMFISH.vin.RDS")
-starmapped <- createLiger(list(star = star_data, rna =cortex_data))
-```
-# Step 2: Normalize and Scale the Data
-Next, we normalize the features. Note that we normalize the entire matrix together, normalizing the shared and unshared features together. 
 ```{r normalize}
-starmapped <- normalize(starmapped)
+osm.liger <- normalize(osm.liger)
 ```
+To include unshared features in your analysis, set the unshared parameter to TRUE when selecting genes.When selecting the unshared features, it is necessary to include a list of what datasets unshared features should be included for. For instance, in this case, we wish to include the unshared features from the RNA dataset, the second dataset in our analysis. We provide an individual tuning threshold for unshared features. If a single value is submitted, that threshold is applied to all datasets' unshared features. If multiple datasets include unshared features, the user can specify an individual thresholds for each dataset by submitting a list of thresholds the same length as the number of datasets with unshared datasets.
+The variable unshared features willl be stored in `liger@var.unshared.features`.
 
-After normalizing, we need to select genes that are variable between the sets. The STARmap data set is unusual, because it only has 28 genes, so after running the selectGenes function, we will actually select all the genes in the STARmap dataset, but this secondary command is not usually run.
-```{r selectgenes}
-starmapped <- selectGenes(starmapped, unshared = TRUE, unshared.datasets = list(2), unshared.thresh= 0.3)
-starmapped@var.genes <- rownames(starmapped@raw.data[[1]])
-
+```{r selectGenes, warning= FALSE}
+osm.liger <- selectGenes(osm.liger, unshared = TRUE, unshared.datasets = list(2), unshared.thresh= 0.4)
 ```
-Finally, we scale the data. 
-```{r scalereg}
-starmapped <- scaleNotCenter(starmapped)
+The scaleNotCenter functions will scale both the shared and unshared features. The scaled unshared features will be stored 
+in `liger@scale.unshared.data`
 
+```{r scalenotcenter}
+osm.liger <- scaleNotCenter(osm.liger)
 ```
-# Step 3: Factorization
-To use the unshared features in the matrix factorization, set use.unshared = TRUE
+# Step 2: Joint Matrix Factorization
+
+To factorize the datasets including unshared datasets, set the use.unshared parameter to TRUE. 
+
+
 ```{r factorization}
-starmapped <- optimizeALS(starmapped, lambda=5, use.unshared = TRUE, k=40, max_iters = 30, thresh=1e-10, rand.seed = 8069)
+osm.liger <- optimizeALS(osm.liger, k=40, use.unshared = TRUE)
+```
+# Step 3: Quantile Normalization and Joint Clustering
 
+After factorization, the resulting Liger object can used in all downstream LIGER functions without adjustment. The default reference dataset for quantile normalization is the larger dataset, but the user should select the higher quality dataset as the reference dataset, even if it is the smaller dataset.
+
+
+```{r quantilenorm, results = FALSE}
+osm.liger <- quantile_norm(osm.liger, ref_dataset= "rna")
+osm.liger <- louvainCluster(osm.liger)
 ```
-# Step 4: Quantile Normalization and clustering
-When performing the quantile normalization step, we make sure to select the higher quality data as our reference dataset.
-We also create UMAPs that have a minimum of 50 nearest neighbores. This helps to avoid spurious, unaligning cells.
-```{r downstream processing, warning = FALSE}
-starmapped <- quantile_norm(starmapped, ref_dataset = "rna")
-starmapped <- louvainCluster(starmapped)
-starmapped <- runUMAP(starmapped, n_neighbors = 50)
+# Step 4: Visualizations and Downstream processing
+
+```{r runumap, results = FALSE, warnings = FALSE, message = FALSE}
+osm.liger <- runUMAP(osm.liger)
 ```
-# Step 5: Visualizations and Downstream processing
-Next, we can visual our returned factorized object by dataset to check the alignment between datasets, as well as by cluster determined in the factorization.
-```{r visualizations}
-umap_plots <-plotByDatasetAndCluster(starmapped, axis.labels = c("UMAP1","UMAP2"), return.plots = TRUE)
+Next, we can visualize our returned factorized object by dataset to check the alignment between datasets, as well as by cluster determined in the factorization.
+```{r visualizations, message = FALSE, warning = FALSE}
+umap_plots <-plotByDatasetAndCluster(osm.liger, axis.labels = c("UMAP1","UMAP2"), return.plots = TRUE)
 umap_plots[[1]]
 umap_plots[[2]]
 ```
-We can also examine features such as gene loadings. Here we show Pvalb, a marker gene typically associated with the MGE neurons, and Flt1, associated with the endothelial stalk cells.
+\
+We can also examine features such as gene expression. 
 ```{r gene visualizations}
-PVALB <- plotGene(starmapped, "Pvalb", axis.labels = c('UMAP 1', 'UMAP 2'), return.plots = TRUE)
-FLT1 <- plotGene(starmapped, "Flt1", axis.labels = c('UMAP 1', 'UMAP 2'), return.plots = TRUE)
-plot_grid(PVALB[[2]],PVALB[[1]],FLT1[[2]],FLT1[[1]], ncol=2)
+Pdgfra <- plotGene(osm.liger, "Pdgfra", axis.labels = c('UMAP 1', 'UMAP 2'), return.plots = TRUE)
+Bmp4 <- plotGene(osm.liger, "Bmp4", axis.labels = c('UMAP 1', 'UMAP 2'), return.plots = TRUE)
+plot_grid(Pdgfra[[2]],Pdgfra[[1]],Bmp4[[2]],Bmp4[[1]], ncol=2)
 ```
-
 
 
