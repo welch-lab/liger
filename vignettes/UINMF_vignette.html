@@ -171,22 +171,14 @@ pre code {
 </div>
 
 
-<pre class="r"><code>install_github(&quot;welch-lab/liger&quot;, ref = &quot;U_algorithm&quot;)</code></pre>
+<pre class="r"><code>install_github(&quot;welch-lab/liger&quot;, ref = &quot;U_algorithm&quot;)
+library(liger)</code></pre>
 <div id="step-1-preprocessing-and-normalization" class="section level1">
 <h1>Step 1: Preprocessing and Normalization</h1>
 <p>First, read in your datasets. For this tutorial, we will use the osmFISH dataset (33 genes by 5,219 cells), and a downsampled single-cell RNA-seq dataset (29,463 genes by 15,000 cells)</p>
 <pre class="r"><code>osmFISH = readRDS(&quot;OSMFISH.vin.RDS&quot;)
 rna = readRDS(&quot;DROPVIZ.vin.RDS&quot;)</code></pre>
 <p>Next, create your Liger object, submitting the datasets in list format. The unshared features should not be subsetted out, or submitted separately. Rather, they should be included in the matrix submitted for that dataset. For example,the scRNA-seq data is submitted in its entirety, the unshared features are not submitted seperately. This helps ensure proper normalization.</p>
-<pre class="r"><code>library(liger)</code></pre>
-<pre><code>## Loading required package: cowplot</code></pre>
-<pre><code>## Loading required package: Matrix</code></pre>
-<pre><code>## Loading required package: patchwork</code></pre>
-<pre><code>## 
-## Attaching package: &#39;patchwork&#39;</code></pre>
-<pre><code>## The following object is masked from &#39;package:cowplot&#39;:
-## 
-##     align_plots</code></pre>
 <pre class="r"><code>osm.liger &lt;- createLiger(list(osmFISH = osmFISH, rna = rna))</code></pre>
 <pre><code>## [1] &quot;Removing 34 cells not expressed any genes in osmFISH.&quot;
 ## [1] &quot;Removing 4910 genes not expressed in rna.&quot;</code></pre>
@@ -203,70 +195,6 @@ rna = readRDS(&quot;DROPVIZ.vin.RDS&quot;)</code></pre>
 <h1>Step 2: Joint Matrix Factorization</h1>
 <p>To factorize the datasets including unshared datasets, set the use.unshared parameter to TRUE.</p>
 <pre class="r"><code>osm.liger &lt;- optimizeALS(osm.liger, k=40, use.unshared = TRUE)</code></pre>
-<pre><code>## [1] &quot;Processing&quot;
-## 
-  |                                                                            
-  |                                                                      |   0%
-  |                                                                            
-  |=====                                                                 |   7%
-  |                                                                            
-  |=======                                                               |  10%
-  |                                                                            
-  |=========                                                             |  13%
-  |                                                                            
-  |============                                                          |  17%
-  |                                                                            
-  |==============                                                        |  20%
-  |                                                                            
-  |================                                                      |  23%
-  |                                                                            
-  |===================                                                   |  27%
-  |                                                                            
-  |=====================                                                 |  30%
-  |                                                                            
-  |=======================                                               |  33%
-  |                                                                            
-  |==========================                                            |  37%
-  |                                                                            
-  |============================                                          |  40%
-  |                                                                            
-  |==============================                                        |  43%
-  |                                                                            
-  |=================================                                     |  47%
-  |                                                                            
-  |===================================                                   |  50%
-  |                                                                            
-  |=====================================                                 |  53%
-  |                                                                            
-  |========================================                              |  57%
-  |                                                                            
-  |==========================================                            |  60%
-  |                                                                            
-  |============================================                          |  63%
-  |                                                                            
-  |===============================================                       |  67%
-  |                                                                            
-  |=================================================                     |  70%
-  |                                                                            
-  |===================================================                   |  73%
-  |                                                                            
-  |======================================================                |  77%
-  |                                                                            
-  |========================================================              |  80%
-  |                                                                            
-  |==========================================================            |  83%
-  |                                                                            
-  |=============================================================         |  87%
-  |                                                                            
-  |===============================================================       |  90%
-  |                                                                            
-  |=================================================================     |  93%
-  |                                                                            
-  |====================================================================  |  97%
-  |                                                                            
-  |======================================================================| 100%
-## Current seed  1  current objective  18813616
-## Best results with seed 1.</code></pre>
 </div>
 <div id="step-3-quantile-normalization-and-joint-clustering" class="section level1">
 <h1>Step 3: Quantile Normalization and Joint Clustering</h1>

@@ -9,10 +9,12 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 osmFISH = readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Vignette/OSMFISH.vin.RDS")
 rna = readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Vignette/DROPVIZ.vin.RDS")
+library(liger)
 
 ```
 ```{r eval = FALSE}
 install_github("welch-lab/liger", ref = "U_algorithm")
+library(liger)
 ```
 
 # Step 1: Preprocessing and Normalization
@@ -26,7 +28,6 @@ rna = readRDS("DROPVIZ.vin.RDS")
 
 Next, create your Liger object, submitting the datasets in list format. The unshared features should not be subsetted out, or submitted separately. Rather, they should be included in the matrix submitted for that dataset. For example,the scRNA-seq data is submitted in its entirety, the unshared features are not submitted seperately. This helps ensure proper normalization.
 ```{r createliger, warning = FALSE}
-library(liger)
 osm.liger <- createLiger(list(osmFISH = osmFISH, rna = rna))
 ```
 Normalize the datasets.The normalization is applied to the datasets in their entirety.
@@ -51,7 +52,7 @@ osm.liger <- scaleNotCenter(osm.liger)
 To factorize the datasets including unshared datasets, set the use.unshared parameter to TRUE. 
 
 
-```{r factorization}
+```{r factorization, results=FALSE}
 osm.liger <- optimizeALS(osm.liger, k=40, use.unshared = TRUE)
 ```
 # Step 3: Quantile Normalization and Joint Clustering
