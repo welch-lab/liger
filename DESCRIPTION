@@ -51,7 +51,6 @@ Imports: Rcpp (>= 0.12.10),
      utils,
      hdf5r
 biocViews:
-LazyData: true
 LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress
 Depends:
     cowplot,

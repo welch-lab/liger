@@ -71,7 +71,7 @@ Before setting up the `rliger` package, users should have R version 3.4.0 or hig
 LIGER is written in R and is also available on the Comprehensive R Archive Network (CRAN). Note that the package name is `rliger` to avoid a naming conflict with an unrelated package. To install the version on CRAN, follow these instructions:
 
 1. Install [R](https://www.r-project.org/)  (>= 3.4)
-2. Install [Rstudio](https://rstudio.com/products/rstudio/download/) (recommended)
+2. Install [Rstudio](https://www.rstudio.com/products/rstudio/download/) (recommended)
 3. Type the following R command:
 ```
 install.packages('rliger')
