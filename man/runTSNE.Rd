@@ -61,6 +61,6 @@ ligerex <- quantile_norm(ligerex)
 # get tsne.coords for normalized data
 ligerex <- runTSNE(ligerex)
 # get tsne.coords for raw factor loadings
-ligerex <- runTSNE(ligerex, use.raw = T)
+ligerex <- runTSNE(ligerex, use.raw = TRUE)
 }
 }

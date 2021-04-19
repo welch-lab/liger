@@ -71,6 +71,6 @@ ligerex <- runTSNE(ligerex)
 # plot to console
 plotByDatasetAndCluster(ligerex)
 # return list of plots
-plots <- plotByDatasetAndCluster(ligerex, return.plots = T)
+plots <- plotByDatasetAndCluster(ligerex, return.plots = TRUE)
 }
 }

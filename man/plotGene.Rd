@@ -101,9 +101,9 @@ all cells). Data plots can be split by feature.
 ligerex
 ligerex <- runTSNE(ligerex)
 # plot expression for CD4 and return plots
-gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
+gene_plots <- plotGene(ligerex, "CD4", return.plots = TRUE)
 # ligerex (liger object based on datasets in HDF5 format), factorization complete input
 ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
-gene_plots <- plotGene(ligerex, "CD4", return.plots = T)
+gene_plots <- plotGene(ligerex, "CD4", return.plots = TRUE)
 }
 }

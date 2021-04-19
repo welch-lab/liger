@@ -60,6 +60,6 @@ ligerex <- quantileAlignSNF(ligerex)
 # get tsne.coords for normalized data
 ligerex <- runUMAP(ligerex)
 # get tsne.coords for raw factor loadings
-ligerex <- runUMAP(ligerex, use.raw = T)
+ligerex <- runUMAP(ligerex, use.raw = TRUE)
 }
 }

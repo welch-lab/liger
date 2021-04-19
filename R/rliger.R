@@ -438,7 +438,6 @@ restoreOnlineLiger <- function(object, file.path = NULL) {
 #' It initializes cell.data with nUMI and nGene calculated for every cell.
 #'
 #' @param raw.data List of expression matrices (gene by cell). Should be named by dataset.
-#' @param make.sparse Whether to convert raw data into sparse matrices (default TRUE).
 #' @param take.gene.union Whether to fill out raw.data matrices with union of genes across all
 #'   datasets (filling in 0 for missing data) (requires make.sparse = TRUE) (default FALSE).
 #' @param remove.missing Whether to remove cells not expressing any measured genes, and genes not
@@ -466,7 +465,6 @@ restoreOnlineLiger <- function(object, file.path = NULL) {
 
 
 createLiger <- function(raw.data,
-                        make.sparse = TRUE,
                         take.gene.union = FALSE,
                         remove.missing = TRUE,
                         format.type = "10X",
@@ -546,21 +544,20 @@ createLiger <- function(raw.data,
     return(object)
   }
 
-  if (make.sparse) {
-    raw.data <- lapply(raw.data, function(x) {
-      if (class(x)[1] == "dgTMatrix" | class(x)[1] == 'dgCMatrix') {
-        mat <- as(x, 'CsparseMatrix')
-        # Check if dimnames exist
-        if (is.null(x@Dimnames[[1]])) {
-          stop('Raw data must have both row (gene) and column (cell) names.')
-        }
-        mat@Dimnames <- x@Dimnames
-        return(mat)
-      } else {
-        as(as.matrix(x), 'CsparseMatrix')
+  raw.data <- lapply(raw.data, function(x) {
+    if (class(x)[1] == "dgTMatrix" | class(x)[1] == 'dgCMatrix') {
+      mat <- as(x, 'CsparseMatrix')
+      # Check if dimnames exist
+      if (is.null(x@Dimnames[[1]])) {
+        stop('Raw data must have both row (gene) and column (cell) names.')
       }
-    })
-  }
+      mat@Dimnames <- x@Dimnames
+      return(mat)
+    } else {
+      as(as.matrix(x), 'CsparseMatrix')
+    }
+  })
+
   if (length(Reduce(intersect, lapply(raw.data, colnames))) > 0 & length(raw.data) > 1) {
     stop('At least one cell name is repeated across datasets; please make sure all cell names
          are unique.')
@@ -1140,20 +1137,14 @@ scaleNotCenter <- function(object, remove.missing = TRUE, chunk = 1000, verbose 
     }
     names(object@scale.data) <- names(object@raw.data)
   } else {
-    if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
-        class(object@raw.data[[1]])[1] == "dgCMatrix") {
-      object@scale.data <- lapply(1:length(object@norm.data), function(i) {
-        scaleNotCenterFast(t(object@norm.data[[i]][object@var.genes, ]))
-      })
-      # TODO: Preserve sparseness later on (convert inside optimizeALS)
-      object@scale.data <- lapply(object@scale.data, function(x) {
-        as.matrix(x)
-      })
-    } else {
-      object@scale.data <- lapply(1:length(object@norm.data), function(i) {
-        scale(t(object@norm.data[[i]][object@var.genes, ]), center = FALSE, scale = TRUE)
-      })
-    }
+    object@scale.data <- lapply(1:length(object@norm.data), function(i) {
+      scaleNotCenterFast(t(object@norm.data[[i]][object@var.genes, ]))
+    })
+    # TODO: Preserve sparseness later on (convert inside optimizeALS)
+    object@scale.data <- lapply(object@scale.data, function(x) {
+      as.matrix(x)
+    })
+      
     names(object@scale.data) <- names(object@norm.data)
     for (i in 1:length(object@scale.data)) {
       object@scale.data[[i]][is.na(object@scale.data[[i]])] <- 0
@@ -1165,7 +1156,6 @@ scaleNotCenter <- function(object, remove.missing = TRUE, chunk = 1000, verbose 
       object <- removeMissingObs(object, slot.use = "scale.data", use.cols = FALSE, verbose = verbose)
     }
   }
-
   return(object)
 }
 
@@ -3408,8 +3398,8 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
   }
 
   ### create feature x sample matrix
-  if (data.use == "all" | length(data.use) > 1) { # at least two datasets
-    if (data.use == "all") {
+  if (data.use[1] == "all" | length(data.use) > 1) { # at least two datasets
+    if (data.use[1] == "all") {
       message("Performing Wilcoxon test on ALL datasets: ", toString(names(object@norm.data)))
       sample.list <- attributes(object@norm.data)$names
     }
@@ -4898,7 +4888,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
       if (length(top_genes) == 0) {
         gene_df <- data.frame(genes = c("no genes"), loadings = c(1))
       }
-      out_plot <- ggplot(gene_df, aes(x = 1, y = 1, size = loadings, label = gene_df[['genes']])) +
+      out_plot <- ggplot(gene_df, aes(x = 1, y = 1, size = loadings, label = .data[['genes']])) +
         geom_text_repel(force = 100, segment.color = NA) +
         scale_size(range = c(min.size, max.size), guide = FALSE) +
         scale_y_continuous(breaks = NULL) +

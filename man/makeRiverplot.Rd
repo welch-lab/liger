@@ -68,9 +68,9 @@ can also be passed in. Uses the riverplot package to construct riverplot object 
 \dontrun{
 # ligerex (liger object), factorization complete input
 # toy clusters
-cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = T)
+cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = TRUE)
 names(cluster1) <- colnames(ligerex@raw.data[[1]])
-cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = T)
+cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = TRUE)
 names(cluster2) <- colnames(ligerex@raw.data[[2]])
 # create riverplot
 makeRiverplot(ligerex, cluster1, cluster2)

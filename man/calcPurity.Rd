@@ -27,9 +27,9 @@ with a score of 1 representing a pure, or accurate, clustering.
 # ligerex (liger object), factorization complete
 ligerex <- quantile_norm(ligerex)
 # toy clusters
-cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = T)
+cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = TRUE)
 names(cluster1) <- colnames(ligerex@raw.data[[1]])
-cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = T)
+cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = TRUE)
 names(cluster2) <- colnames(ligerex@raw.data[[2]])
 # get ARI for first clustering
 ari1 <- calcPurity(ligerex, cluster1)

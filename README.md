@@ -4,7 +4,7 @@
 
 # LIGER (Linked Inference of Genomic Experimental Relationships)
 
-LIGER (`rliger` on CRAN) is a package for integrating and analyzing multiple single-cell datasets, developed by the Macosko lab and maintained/extended by the Welch lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors. 
+LIGER (installed as `rliger` ) is a package for integrating and analyzing multiple single-cell datasets, developed by the Macosko lab and maintained/extended by the Welch lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors. 
 
 Check out our [Cell paper](https://www.cell.com/cell/fulltext/S0092-8674%2819%2930504-5) for a more complete description of the methods and analyses. To access data used in our SN and BNST analyses, visit our [study](https://portals.broadinstitute.org/single_cell/study/SCP466) on the
 Single Cell Portal. 
@@ -37,6 +37,8 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 * NEW: [Iterative Single-Cell Multi-Omic Integration Using Online iNMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/online_iNMF_tutorial.html)
 
+* NEW: [Integrating unshared features with UINMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/UINMF_vignette.html)
+
 * [Integrating Multiple Single-Cell RNA-seq Datasets](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/Integrating_multi_scRNA_data.html)
 
 * [Jointly Defining Cell Types from scRNA-seq and scATAC-seq](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/Integrating_scRNA_and_scATAC_data.html)
@@ -66,7 +68,7 @@ Before setting up the `rliger` package, users should have R version 3.4.0 or hig
 
 ## Installation
 
-`liger` is written in R and is available on the Comprehensive R Archive Network (CRAN). Note that the package name on CRAN is `rliger` to avoid a naming conflict with an unrelated package. To install the version on CRAN, follow these instructions:
+LIGER is written in R and is also available on the Comprehensive R Archive Network (CRAN). Note that the package name is `rliger` to avoid a naming conflict with an unrelated package. To install the version on CRAN, follow these instructions:
 
 1. Install [R](https://www.r-project.org/)  (>= 3.4)
 2. Install [Rstudio](https://rstudio.com/products/rstudio/download/) (recommended)
@@ -82,9 +84,9 @@ install_github('welch-lab/liger')
 ```
 Note that the GitHub version requires installing from source, which may involve additional installation steps on MacOS (see below).
 
-### Additional Steps for Installing LIGER from Source on MacOS (recommended before step 3)
-Installation from CRAN is easy because pre-compiled binaries are available for Windows and MacOS. However, a few additional steps are required to install from source on MacOS.
-Installing RcppArmadillo on R>=3.4 requires Clang >= 4 and gfortran-6.1. For newer versions of R (R>=3.5), it's recommended to follow the instructions in this [post](https://thecoatlessprofessor.com/programming/r-compiler-tools-for-rcpp-on-macos/). Follow the instructions below if you have R version 3.4.0-3.4.4.
+### Additional Steps for Installing LIGER from Source (recommended before step 3)
+Installation from CRAN is easy because pre-compiled binaries are available for Windows and MacOS. However, a few additional steps are required to install from source on MacOS/Windows (e.g. Install RcppArmadillo).
+(MacOS) Installing RcppArmadillo on R>=3.4 requires Clang >= 4 and gfortran-6.1. For newer versions of R (R>=3.5), it's recommended to follow the instructions in this [post](https://thecoatlessprofessor.com/programming/r-compiler-tools-for-rcpp-on-macos/). Follow the instructions below if you have R version 3.4.0-3.4.4.
 
 1. Install gfortran as suggested [here](https://gcc.gnu.org/wiki/GFortranBinaries)
 2. Download clang4 from this [page](https://mac.R-project.org/libs/clang-4.0.0-darwin15.6-Release.tar.gz)
@@ -112,8 +114,8 @@ nano Makevars
 ``` 
 Paste in the required text above and save with `Ctrl-X`.
 
-### Additional Installation Steps for Online Learning using Liger
-The HDF5 library is required for implementing online learning in Liger on data files in HDF5 format. It can be installed via one of the following commands:
+### Additional Installation Steps for Online Learning using LIGER
+The HDF5 library is required for implementing online learning in LIGER on data files in HDF5 format. It can be installed via one of the following commands:
 
 | System                                    | Command
 |:------------------------------------------|:---------------------------------|
@@ -160,7 +162,7 @@ pwd
 
 ### Install Time and Expected Run Time
 
-The installation process of `liger` should take less than 30 minutes.
+The installation process of `rliger` should take less than 30 minutes.
 
 The expected run time is 1 - 4 hours depending on dataset size and downstream analysis of the user’s choice.
 

@@ -10,7 +10,7 @@ pbmc.small <- readRDS(pbmc.file)
 ####################################################################################
 context("Object creation")
 
-ligex <- createLiger(raw.data = pbmc.small, make.sparse = T, take.gene.union = F,
+ligex <- createLiger(raw.data = pbmc.small, take.gene.union = F,
                      remove.missing = T)
 test_that("Object instantiation creates liger object", {
   expect_is(ligex, "liger")
@@ -34,11 +34,11 @@ test_that("cell.data created correctly", {
   expect_equal(as.character(ligex@cell.data[["dataset"]][253]), "seqwell")
 })
 
-ligex.nofil <- createLiger(raw.data = pbmc.small, make.sparse = T, take.gene.union = F,
+ligex.nofil <- createLiger(raw.data = pbmc.small, take.gene.union = F,
                               remove.missing = F)
-ligex.union <- createLiger(raw.data = pbmc.small, make.sparse = T, take.gene.union = T,
+ligex.union <- createLiger(raw.data = pbmc.small, take.gene.union = T,
                               remove.missing = T)
-ligex.union.nofil <- createLiger(raw.data = pbmc.small, make.sparse = T, take.gene.union = T,
+ligex.union.nofil <- createLiger(raw.data = pbmc.small, take.gene.union = T,
                                   remove.missing = F)
 
 test_that("Dimensions correct for filtered and not filtered", {

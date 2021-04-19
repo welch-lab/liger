@@ -45,6 +45,6 @@ factors and clusters.
 \dontrun{
 # ligerex (liger object), factorization complete input
 # plot expression for CD4 and return plots
-loading.matrix <- plotClusterFactors(ligerex, return.data = T)
+loading.matrix <- plotClusterFactors(ligerex, return.data = TRUE)
 }
 }

@@ -4,7 +4,13 @@
 \alias{normalize}
 \title{Normalize raw datasets to column sums}
 \usage{
-normalize(object, chunk = 1000, format.type = "10X", verbose = TRUE)
+normalize(
+  object,
+  chunk = 1000,
+  format.type = "10X",
+  remove.missing = TRUE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{object}{\code{liger} object.}
@@ -12,6 +18,10 @@ normalize(object, chunk = 1000, format.type = "10X", verbose = TRUE)
 \item{chunk}{size of chunks in hdf5 file. (default 1000)}
 
 \item{format.type}{string of HDF5 format (10X CellRanger by default).}
+
+\item{remove.missing}{Whether to remove cells not expressing any measured genes, and genes not
+expressed in any cells (if take.gene.union = TRUE, removes only genes not expressed in any
+dataset) (default TRUE).}
 
 \item{verbose}{Print progress bar/messages (TRUE by default)}
 }
