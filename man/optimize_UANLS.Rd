@@ -10,7 +10,7 @@ optimize_UANLS(
   lambda = 5,
   max.iters = 30,
   nrep = 1,
-  thresh = 1e-04,
+  thresh = 1e-10,
   rand.seed = 1,
   print.obj = FALSE
 )

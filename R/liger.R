@@ -1176,27 +1176,28 @@ scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
   
   #Scale unshared features
   if (length(object@var.unshared.features) != 0){
-    for (i in length(object@raw.data)){
+    for (i in 1:length(object@raw.data)){
       if (!is.null(object@var.unshared.features[[i]])){
+        if (class(object@raw.data[[i]])[1] == "dgTMatrix" |
+            class(object@raw.data[[i]])[1] == "dgCMatrix") {
+          object@scale.unshared.data[[i]] <- scaleNotCenterFast(t(object@norm.data[[i]][object@var.unshared.features[[i]], ]))
+          object@scale.unshared.data[[i]] <- as.matrix(object@scale.unshared.data[[i]])
+        }
         
-        if (class(object@raw.data[[1]])[1] == "dgTMatrix" |
-            class(object@raw.data[[1]])[1] == "dgCMatrix") {
-             object@scale.unshared.data[[i]] <- scaleNotCenterFast(t(object@norm.data[[i]][object@var.unshared.features[[i]], ]))
-         object@scale.unshared.data[[i]] <- scaleNotCenterFast(t(object@norm.data[[i]][object@var.unshared.features[[i]], ]))
-        object@scale.unshared.data[[i]] <- as.matrix(object@scale.unshared.data[[i]])
-      }
-    else {
-        object@scale.unshared.data[[i]] <- scale(t(object@norm.data[[i]][object@var.unshared.features[[i]], ]), center = F, scale = T)
-      }
-    names(object@scale.unshared.data) <- names(object@norm.data)
-    object@scale.unshared.data[[i]][is.na(object@scale.unshared.data[[i]])] <- 0
-    rownames(object@scale.unshared.data[[i]]) <- colnames(object@raw.data[[i]])
-    colnames(object@scale.unshared.data[[i]]) <- object@var.unshared.features[[i]]
-    #Remove cells that were deemed missing for the shared features
-    object@scale.unshared.data[[i]] <- t(object@scale.unshared.data[[i]][rownames(object@scale.data[[i]]),])
+        else {
+          object@scale.unshared.data[[i]] <- scale(t(object@norm.data[[i]][object@var.unshared.features[[i]], ]), center = F, scale = T)
+        }
+        #names(object@scale.unshared.data) <- names(object@norm.data)
+        object@scale.unshared.data[[i]][is.na(object@scale.unshared.data[[i]])] <- 0
+        rownames(object@scale.unshared.data[[i]]) <- colnames(object@raw.data[[i]])
+        colnames(object@scale.unshared.data[[i]]) <- object@var.unshared.features[[i]]
+        #Remove cells that were deemed missing for the shared features
+        object@scale.unshared.data[[i]] <- t(object@scale.unshared.data[[i]][rownames(object@scale.data[[i]]),])
       }
     }
+    names(object@scale.unshared.data) <- names(object@norm.data)
   }
+  
   return(object)
 }
 
@@ -6703,7 +6704,6 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
     ########################## Begin Updates########################################
     delta = Inf
     objective_value_list = list()
-    
     iter = 1 
     while(delta > thresh & iter <= max.iters){
       iter_start_time = Sys.time()
@@ -6731,7 +6731,6 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
         }
       }
       
-      
       ##############################################################################################
       ################################################# Updating W #################################
       H_t_stack = c()
@@ -6748,7 +6747,6 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
       iter_end_time = Sys.time()
       iter_time = as.numeric(difftime(iter_end_time, iter_start_time, units = "secs"))
       total_time = total_time + iter_time
-      
       #Updating training object
       obj_train_prev = obj_train
       obj_train_approximation = 0
@@ -6767,6 +6765,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
           
         }
       }
+  
       
       obj_train = obj_train_approximation + obj_train_penalty
       delta = abs(obj_train_prev-obj_train)/mean(c(obj_train_prev,obj_train))
@@ -6785,6 +6784,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
     }
   }
   
+
   rownames(W_m) = rownames(X[[1]][0:xdim[[i]][1],])
   colnames(W_m) = NULL
   
@@ -6797,7 +6797,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
     colnames(V_m[[i]]) = NULL
     colnames(H_m[[i]]) = colnames(X[[i]])
   } 
-  
+ 
   ################################## Returns Results Section #########################################################
   object@W <- t(W_m)
   for (i in 1:length(X)){
