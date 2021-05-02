@@ -6571,7 +6571,6 @@ convertOldLiger = function(object, override.raw = F) {
   return(new.liger)
 }
 
-
 #' Perform iNMF on scaled datasets, and include unshared, scaled and normalized, features
 #' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
 #' @param k Inner dimension of factorization (number of factors).
@@ -6587,8 +6586,8 @@ convertOldLiger = function(object, override.raw = F) {
 #' @param print.obj  Print objective function values after convergence (default FALSE).
 optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-10,rand.seed=1, print.obj = FALSE){
   set.seed(seed = rand.seed)
-  print('Performing Factorization using UINMF')
   #Account for vectorized lambda
+  print('Performing Factorization using UINMF') 
   lambda = rep(lambda, length(names(object@raw.data)))
   
   # Get a list of all the matrices
@@ -6604,7 +6603,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
   max_feats = 0
   unshared <- c()
   ulist <- c()
-  for (i in length(object@var.unshared.features)){
+  for (i in 1:length(object@var.unshared.features)){
     if(!is.null(object@var.unshared.features[[i]])){
       u_dim[[i]] <- dim(object@scale.unshared.data[[i]])
       names(u_dim[i]) <- i
@@ -6668,7 +6667,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
     
     #Initialize U 
     U = list()
-    for (i in length(1:length(X))){
+    for (i in 1:length(X)){
       if (i %in% unshared){
         U[[i]] = t(ulist[[i]])[,idX[[i]]]
       }
@@ -6704,6 +6703,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
     ########################## Begin Updates########################################
     delta = Inf
     objective_value_list = list()
+    
     iter = 1 
     while(delta > thresh & iter <= max.iters){
       iter_start_time = Sys.time()
@@ -6731,6 +6731,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
         }
       }
       
+      
       ##############################################################################################
       ################################################# Updating W #################################
       H_t_stack = c()
@@ -6747,6 +6748,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
       iter_end_time = Sys.time()
       iter_time = as.numeric(difftime(iter_end_time, iter_start_time, units = "secs"))
       total_time = total_time + iter_time
+      
       #Updating training object
       obj_train_prev = obj_train
       obj_train_approximation = 0
@@ -6765,7 +6767,6 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
           
         }
       }
-  
       
       obj_train = obj_train_approximation + obj_train_penalty
       delta = abs(obj_train_prev-obj_train)/mean(c(obj_train_prev,obj_train))
@@ -6784,7 +6785,6 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
     }
   }
   
-
   rownames(W_m) = rownames(X[[1]][0:xdim[[i]][1],])
   colnames(W_m) = NULL
   
@@ -6797,7 +6797,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
     colnames(V_m[[i]]) = NULL
     colnames(H_m[[i]]) = colnames(X[[i]])
   } 
- 
+  
   ################################## Returns Results Section #########################################################
   object@W <- t(W_m)
   for (i in 1:length(X)){
