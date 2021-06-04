@@ -1019,9 +1019,7 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
     # If only one threshold is provided, apply to all unshared datasets
     if(length(unshared.thresh == 1)){
       ind.thresh = rep(unshared.thresh,length(object@raw.data))
-    }
-    # If thresholds are provided for every dataset, use the respective threshold for each datatset
-    else{
+    }    else{ # If thresholds are provided for every dataset, use the respective threshold for each datatset
       if (length(unshared.thresh) != length(unshared.datasets)) {
         warning("The number of thresholds does not match the number of datasets; Please provide either a single threshold value or a value for each unshared dataset.",
                 immediate. = T)
@@ -1032,6 +1030,11 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
       }
     }
     unshared.feats <- c()
+    
+    for (i in 1:length(object@raw.data)){
+      unshared.feats[i] <- list(NULL)
+    }
+    
     for (i in unshared.datasets){
       unshared.use <- c()
       #Provides normalized subset of unshared features
@@ -1051,7 +1054,12 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
       basegenelower <- log10(gene_expr_mean * nolan_constant)
       genes.unshared <- names(gene_expr_var)[which(gene_expr_var / nolan_constant > genemeanupper &
                                                      log10(gene_expr_var) > basegenelower + ind.thresh[[i]])]
-      unshared.feats[[i]] <- c(genes.unshared)
+      if (length(genes.unshared) == 0) {
+        warning('Dataset ', i ,' does not contain any unshared features. Please remove this dataset from the unshared.datasets list and rerun the function', immediate. = TRUE)
+      }
+      if (length(genes.unshared != 0)) {
+        unshared.feats[[i]] <- c(genes.unshared)
+      }
     }
     names(unshared.feats) <- names(object@raw.data)
     object@var.unshared.features <- unshared.feats
@@ -1182,9 +1190,7 @@ scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
             class(object@raw.data[[i]])[1] == "dgCMatrix") {
           object@scale.unshared.data[[i]] <- scaleNotCenterFast(t(object@norm.data[[i]][object@var.unshared.features[[i]], ]))
           object@scale.unshared.data[[i]] <- as.matrix(object@scale.unshared.data[[i]])
-        }
-        
-        else {
+        } else {
           object@scale.unshared.data[[i]] <- scale(t(object@norm.data[[i]][object@var.unshared.features[[i]], ]), center = F, scale = T)
         }
         #names(object@scale.unshared.data) <- names(object@norm.data)
@@ -1193,7 +1199,7 @@ scaleNotCenter <- function(object, remove.missing = T, chunk = 1000) {
         colnames(object@scale.unshared.data[[i]]) <- object@var.unshared.features[[i]]
         #Remove cells that were deemed missing for the shared features
         object@scale.unshared.data[[i]] <- t(object@scale.unshared.data[[i]][rownames(object@scale.data[[i]]),])
-      }
+      } else{object@scale.unshared.data[i]<- NA}
     }
     names(object@scale.unshared.data) <- names(object@norm.data)
   }
@@ -6585,6 +6591,7 @@ convertOldLiger = function(object, override.raw = F) {
 #' @param rand.seed Random seed to allow reproducible results (default 1).
 #' @param print.obj  Print objective function values after convergence (default FALSE).
 optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-10,rand.seed=1, print.obj = FALSE){
+  
   set.seed(seed = rand.seed)
   #Account for vectorized lambda
   print('Performing Factorization using UINMF') 
