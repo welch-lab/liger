@@ -895,7 +895,7 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
       var.thresh <- rep(var.thresh, length(hdf5_files))
     }
     genes.use <- c()
-    for (i in 1:length(hdf5_files)) {
+    for (i in datasets.use) {
       if (object@h5file.info[[i]][["format.type"]] == "AnnData"){
         genes = object@h5file.info[[i]][["genes"]][]$index
       } else {
