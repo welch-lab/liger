@@ -427,6 +427,37 @@ restoreOnlineLiger <- function(object, file.path = NULL) {
   object@raw.data = lapply(object@h5file.info, function(x) hdf5r::H5File$new(x[["file.path"]], mode="r+"))
   object@norm.data = lapply(object@raw.data, function(x) x[["norm.data"]])
   object@scale.data = lapply(object@raw.data, function(x) x[["scale.data"]])
+
+  for (i in 1:length(object@raw.data)){
+    if (object@h5file.info[[i]][["format.type"]] == "10X"){
+      barcodes.name = "matrix/barcodes"
+      barcodes = object@raw.data[[i]][[barcodes.name]][]
+      num_cells = object@raw.data[[i]][[barcodes.name]]$dims
+      data.name = "matrix/data"
+      indices.name = "matrix/indices"
+      indptr.name = "matrix/indptr"
+      genes.name = "matrix/features/name"
+    } else if (format.type.list[i] == "AnnData"){
+      barcodes.name = "obs"
+      barcodes = object@raw.data[[i]][[barcodes.name]][]$cell
+      num_cells = length(object@raw.data[[i]][[barcodes.name]][]$cell)
+      data.name = "raw.X/data"
+      indices.name = "raw.X/indices"
+      indptr.name = "raw.X/indptr"
+      genes.name = "raw.var"
+    } else {
+      barcodes = object@raw.data[[i]][[barcodes.name]][]
+      num_cells = length(object@raw.data[[i]][[barcodes.name]][])
+      data.name = data.name
+      indices.name = indices.name
+      indptr.name = indptr.name
+    }
+    object@h5file.info[[i]][["data"]] = object@raw.data[[i]][[data.name]]
+    object@h5file.info[[i]][["indices"]] = object@raw.data[[i]][[indices.name]]
+    object@h5file.info[[i]][["indptr"]] = object@raw.data[[i]][[indptr.name]]
+    object@h5file.info[[i]][["barcodes"]] = object@raw.data[[i]][[barcodes.name]]
+    object@h5file.info[[i]][["genes"]] = object@raw.data[[i]][[genes.name]]
+  }
   return(object)
 }
 
