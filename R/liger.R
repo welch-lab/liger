@@ -6611,7 +6611,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
   unshared <- c()
   ulist <- c()
   for (i in 1:length(object@var.unshared.features)){
-    if(!is.null(object@var.unshared.features[[i]])){
+    if(length(object@var.unshared.features[[i]])){
       u_dim[[i]] <- dim(object@scale.unshared.data[[i]])
       names(u_dim[i]) <- i
       unshared = c(unshared, i)
