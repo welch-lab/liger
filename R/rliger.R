@@ -6478,7 +6478,7 @@ subsetLiger <- function(object, clusters.use = NULL, cells.use = NULL, remove.mi
   raw.data <- lapply(seq_along(object@raw.data), function(q) {
     cells <- intersect(cells.use, colnames(object@raw.data[[q]]))
     if (length(cells) > 0) {
-      if (length(cells < 25)) {
+      if (length(cells) < 25) {
         warning("Number of subsetted cells too small (less than 25), please check cells.use!")
       }
       object@raw.data[[q]][, cells, drop = FALSE]
