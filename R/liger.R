@@ -6596,7 +6596,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
   
   set.seed(seed =rand.seed)
   #Account for vectorized lambda
-  print('Performing Factorization using UINMF') 
+  print('Performing Factorization using UINMF using unshared features') 
   if (vectorized.lambda == FALSE){
     lambda = rep(lambda, length(names(object@raw.data)))
   }
