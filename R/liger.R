@@ -4509,7 +4509,7 @@ getProportionMito <- function(object, use.norm = F) {
 #' @param new.order new dataset factor order for plotting.  must set reorder.idents = TRUE.
 #' @param return.plots Return ggplot plot objects instead of printing directly (default FALSE).
 #' @param legend.fonts.size Controls the font size of the legend.
-#'
+#'@param datasets A list of datasets that will be plotted, if NULL, uses all datasets
 #' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
 #'   console).
 #' @export
@@ -4527,11 +4527,39 @@ getProportionMito <- function(object, use.norm = F) {
 #' plots <- plotByDatasetAndCluster(ligerex, return.plots = T)
 #' }
 
-plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
+plotByDatasetAndCluster <- function(object, clusters = NULL, datasets = NULL, title = NULL, pt.size = 0.3,
                                     text.size = 3, do.shuffle = T, rand.seed = 1,
                                     axis.labels = NULL, do.legend = T, legend.size = 5,
                                     reorder.idents = F, new.order = NULL,
                                     return.plots = F, legend.fonts.size = 12) {
+  
+  #If a specific dataset is selected, subset the object to those relevant cells for downstream processing
+  if (!is.null(datasets )){
+    message <- paste0("Using datasets: ", datasets)
+    print(message)
+    use.cells = list()
+    for (dataentry in datasets){
+      cell.names = rownames(object@scale.data[[dataentry]])
+      use.cells = c(use.cells, cell.names)
+    }
+    use.cells = unlist(use.cells)
+    
+    for (allsets in names(object@raw.data)){
+      if (allsets %in% datasets){
+        object@H[[allsets]] = object@H[[allsets]]
+      } else {
+        object@H[[allsets]] = subset(object@H[[allsets]], rownames(object@H[[allsets]]) == "empty_cell_test")
+      }
+    }
+    object@H.norm <-  subset(object@H.norm, rownames(object@H.norm) %in% use.cells)
+    object@tsne.coords <-  subset(object@tsne.coords, rownames(object@tsne.coords) %in% use.cells)
+    object@cell.data <-  object@cell.data[use.cells,]
+    object@clusters <-  subset(object@clusters, names(object@clusters) %in% use.cells)
+    } else {
+    print("Using all datasets")
+    object = object
+  }
+  
   tsne_df <- data.frame(object@tsne.coords)
   colnames(tsne_df) <- c("tsne1", "tsne2")
   tsne_df[['Dataset']] <- unlist(lapply(1:length(object@H), function(x) {
@@ -6596,7 +6624,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
   
   set.seed(seed =rand.seed)
   #Account for vectorized lambda
-  print('Performing Factorization using UINMF using unshared features') 
+  print('Performing Factorization using UINMF and unshared features') 
   if (vectorized.lambda == FALSE){
     lambda = rep(lambda, length(names(object@raw.data)))
   }
