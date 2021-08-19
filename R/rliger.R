@@ -1183,9 +1183,6 @@ scaleNotCenter <- function(object, remove.missing = TRUE, chunk = 1000, verbose 
       colnames(object@scale.data[[i]]) <- object@var.genes
     }
     # may want to remove such cells before scaling -- should not matter for large datasets?
-    if (remove.missing) {
-      object <- removeMissingObs(object, slot.use = "scale.data", use.cols = FALSE, verbose = verbose)
-    }
   }
   return(object)
 }
@@ -1210,7 +1207,8 @@ scaleNotCenter <- function(object, remove.missing = TRUE, chunk = 1000, verbose 
 
 removeMissingObs <- function(object, slot.use = "raw.data", use.cols = TRUE, verbose = TRUE) {
   filter.data <- slot(object, slot.use)
-  removed <- ifelse((slot.use %in% c("raw.data", "norm.data")) & (use.cols == TRUE),
+  removed <- ifelse(((slot.use %in% c("raw.data", "norm.data")) & (use.cols == TRUE)) | 
+                    ((slot.use == "scale.data") & (use.cols == FALSE)) ,
                     yes = "cells", no = "genes")
   expressed <- ifelse(removed == "cells", yes = " any genes", no = "")
   filter.data <- lapply(seq_along(filter.data), function(x) {
@@ -1227,14 +1225,14 @@ removeMissingObs <- function(object, slot.use = "raw.data", use.cols = TRUE, ver
       if (use.cols) {
         if (length(missing) < 25) {
           if (verbose) {
-            message(colnames(filter.data[[x]])[missing])
+            message(writeLines(colnames(filter.data[[x]])[missing]))
           }
         }
         subset <- filter.data[[x]][, -missing]
       } else {
         if (length(missing) < 25) {
           if (verbose) {
-            message(rownames(filter.data[[x]])[missing])
+            message(writeLines(rownames(filter.data[[x]])[missing]))
           }
         }
         subset <- filter.data[[x]][-missing, ]
