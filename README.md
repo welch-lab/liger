@@ -36,6 +36,7 @@ Consider filling out our [feedback form](https://forms.gle/bhvp3K6tiHwf976r8) to
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
 * NEW: [Iterative Single-Cell Multi-Omic Integration Using Online iNMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/online_iNMF_tutorial.html)
+* NEW: [Integrating spatial transcriptomic and transcriptomic datasets using UINMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/STARmap_dropviz_vig.html)
 
 * NEW: [Integrating unshared features with UINMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/UINMF_vignette.html)
 * NEW: [scATAC and scRNA Integration using unshared features (UINMF)](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/SNAREseq_walkthrough.html)
