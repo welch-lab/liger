@@ -36,15 +36,11 @@ Consider filling out our [feedback form](https://forms.gle/bhvp3K6tiHwf976r8) to
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
 * NEW: [Iterative Single-Cell Multi-Omic Integration Using Online iNMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/online_iNMF_tutorial.html)
-
-<a href="https://www.dropbox.com/s/ujsypyfpebvdoye/STARmap_dropviz_vig.html?dl=1">Download File</a>
-* NEW: [Integrating spatial transcriptomic and transcriptomic datasets using UINMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/STARmap_dropviz_vig.html)
-
 * NEW: [Integrating unshared features with UINMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/UINMF_vignette.html)
 * NEW: [scATAC and scRNA Integration using unshared features (UINMF)](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/SNAREseq_walkthrough.html)
 * NEW: [Cross-species Analysis with UINMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/cross_species_vig.html)
 * NEW: [Performing Parameter Selection](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/Parameter_selection.html) 
-
+*  NEW: [Integrating spatial transcriptomic and transcriptomic datasets using UINMF]<a href="https://www.dropbox.com/s/ujsypyfpebvdoye/STARmap_dropviz_vig.html?dl=1">Click to  Download</a>
 * [Integrating Multiple Single-Cell RNA-seq Datasets](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/Integrating_multi_scRNA_data.html)
 
 * [Jointly Defining Cell Types from scRNA-seq and scATAC-seq](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/Integrating_scRNA_and_scATAC_data.html)
