@@ -3183,7 +3183,7 @@ louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps
   output_path = sub(":","_",output_path)
 
   if (is.null(dims.use)) {
-    use_these_factors <- 1:ncol(object[[1]])
+    use_these_factors <- 1:ncol(object@H[[1]])
   } else {
     use_these_factors <- dims.use
   }
