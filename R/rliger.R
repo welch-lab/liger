@@ -1695,6 +1695,10 @@ online_iNMF <- function(object,
 
   for (i in file_idx_new) {
     minibatch_sizes[i] = round((num_cells[i]/sum(num_cells[file_idx_new])) * miniBatch_size)
+    if (minibatch_sizes[i] > num_cells[i]){
+      stop(paste0("\nNumber of cells to be sampled (n=", minibatch_sizes[i],") is larger than the size of input dataset ", i, " (n=",num_cells[i],").",
+                  "\nPlease use a smaller mini-batch size."))
+    }
   }
   minibatch_sizes_orig = minibatch_sizes
 
@@ -3160,6 +3164,7 @@ quantile_norm.liger <- function(
 #' @param nIterations Maximal number of iterations per random start. (default 100)
 #' @param random.seed Seed of the random number generator. (default 1)
 #' @param verbose Print messages (TRUE by default)
+#' @param dims.use Indices of factors to use for Louvain clustering (default 1:ncol(H[[1]])).
 #'
 #' @return \code{liger} object with refined 'clusters' slot set.
 #'
@@ -3172,20 +3177,27 @@ quantile_norm.liger <- function(
 #'
 
 louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps = 0.1, nRandomStarts = 10,
-                           nIterations = 100, random.seed = 1, verbose = TRUE) {
+                           nIterations = 100, random.seed = 1, verbose = TRUE, dims.use = NULL) {
   output_path <- paste0('edge_', sub('\\s', '_', Sys.time()), '.txt')
   output_path = sub(":","_",output_path)
   output_path = sub(":","_",output_path)
+
+  if (is.null(dims.use)) {
+    use_these_factors <- 1:ncol(object[[1]])
+  } else {
+    use_these_factors <- dims.use
+  }
+
   if (dim(object@H.norm)[1] == 0){
     if (verbose) {
       message("Louvain Clustering on unnormalized cell factor loadings.")
     }
-    knn <- RANN::nn2(Reduce(rbind, object@H), k = k, eps = eps)
+    knn <- RANN::nn2(Reduce(rbind, object@H)[,use_these_factors], k = k, eps = eps)
   } else {
     if (verbose) {
       message("Louvain Clustering on quantile normalized cell factor loadings.")
     }
-    knn <- RANN::nn2(object@H.norm, k = k, eps = eps)
+    knn <- RANN::nn2(object@H.norm[,use_these_factors], k = k, eps = eps)
   }
   snn <- ComputeSNN(knn$nn.idx, prune = prune)
   WriteEdgeFile(snn, output_path, display_progress = FALSE)
