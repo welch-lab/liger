@@ -6866,3 +6866,99 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
   cat("\n", "Best results with seed ", best_seed, ".\n", sep = "")
   return (object)
 }
+
+
+
+#' Calculate loadings for each factor
+#'
+#' Calculates the contribution of each factor of W,V, and U to the reconstruction. 
+#'
+#' @param object \code{liger} object. Should call quantileNorm before calling.
+#' @return A dataframe, such that each column represents the contribution of a specific matrix (W, V_1, V_2, etc. )
+#' @importFrom 
+#' @export
+#' @examples
+calcNormLoadings = function(object) {
+  ## Normalization Section ####################
+  # Normalize H
+  h_w = object@H.norm 
+  H_norm = t(t(h_w)/colSums(h_w))
+  
+  #Normalize V, U, and W by number of genes
+  W_norm = object@W/rowSums(object@W)
+  V_norm = list()
+  for (i in 1:length(object@raw.data)){
+    sum_V = rowSums(object@V[[i]])
+    sum_V[sum_V==0] <- .00001
+    
+    V_norm[[i]] = object@V[[i]]/sum_V
+  }
+  if (length(ligs2@U) != 0){
+    U_norm = list()
+    for (i in 1:length(object@raw.data)){
+      if (length(object@U[[i]]) != 0){
+        sum_U = rowSums(object@U[[i]])
+        sum_U[sum_U==0] <- .00001
+        U_norm[[i]] = object@U[[i]]/sum_U
+      }
+    }}
+  ##### Calculation of Contribution #########################
+  w_loadings = list()
+  u_loadings = list()
+  for (i in 1:length(object@raw.data)){
+    u_loadings[[i]] = list()
+  }
+  v_loadings = list()
+  for (i in 1:length(object@raw.data)){
+    v_loadings[[i]] = list()
+  }
+  for ( i in 1:dim(object@H.norm)[[2]]){
+    hi= as.matrix(H_norm[,i])
+    ####### Calculate W
+    wi = t(as.matrix(W_norm[i,]))
+    hw = hi %*% wi
+    forb_hw = norm(hw, type = "F")
+    w_loadings = append(w_loadings, forb_hw)
+    
+    ###### Calculate V
+    for (j in 1:length(object@raw.data)){
+      temp_v = t(as.matrix(V_norm[[j]][i,]))
+      hv_temp = hi %*% temp_v
+      forb_hv = norm(hv_temp, type = "F")
+      v_loadings[[j]]= append( v_loadings[[j]], forb_hv)
+    }
+    if (length(ligs2@U) != 0){
+      ###### Calculate U
+      for (j in 1:length(object@raw.data)){
+        if (length(object@U[[j]]) != 0){
+          temp_u = t(as.matrix(U_norm[[j]][i,]))
+          hu_temp = hi %*% temp_u
+          forb_hu = norm(hu_temp, type = "F")
+          u_loadings[[j]]= append(u_loadings[[j]], forb_hu) }
+      }
+    }
+  }
+  
+  ################# Format the return object
+  w_loadings = unlist(w_loadings)
+  factors = 1:dim(object@H.norm)[[2]]
+  results = data.frame(factors, w_loadings)
+  
+  # For all V
+  for (j in 1:length(object@raw.data)){
+    results = cbind(results, unlist(v_loadings[[j]]))
+    colnames(results)[[2+j]] = paste0("V_", j,"_loadings")
+  }
+  if (length(ligs2@U) != 0){
+    # For all U
+    for (j in 1:length(object@raw.data)){
+      name_di = dim(results)[[2]]
+      if (length(object@U[[j]]) != 0){
+        results = cbind(results, unlist(u_loadings[[j]]))
+        colnames(results)[[name_di+1]] = paste0("U_", j,"_loadings")
+      }
+    }
+  }
+  
+  return(results)
+}
