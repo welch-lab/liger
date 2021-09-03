@@ -6875,7 +6875,6 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
 #'
 #' @param object \code{liger} object. Should call quantileNorm before calling.
 #' @return A dataframe, such that each column represents the contribution of a specific matrix (W, V_1, V_2, etc. )
-#' @importFrom 
 #' @export
 #' @examples
 calcNormLoadings = function(object) {
@@ -6893,7 +6892,7 @@ calcNormLoadings = function(object) {
     
     V_norm[[i]] = object@V[[i]]/sum_V
   }
-  if (length(ligs2@U) != 0){
+  if (length(object@U) != 0){
     U_norm = list()
     for (i in 1:length(object@raw.data)){
       if (length(object@U[[i]]) != 0){
@@ -6927,7 +6926,7 @@ calcNormLoadings = function(object) {
       forb_hv = norm(hv_temp, type = "F")
       v_loadings[[j]]= append( v_loadings[[j]], forb_hv)
     }
-    if (length(ligs2@U) != 0){
+    if (length(object@U) != 0){
       ###### Calculate U
       for (j in 1:length(object@raw.data)){
         if (length(object@U[[j]]) != 0){
@@ -6949,7 +6948,7 @@ calcNormLoadings = function(object) {
     results = cbind(results, unlist(v_loadings[[j]]))
     colnames(results)[[2+j]] = paste0("V_", j,"_loadings")
   }
-  if (length(ligs2@U) != 0){
+  if (length(object2@U) != 0){
     # For all U
     for (j in 1:length(object@raw.data)){
       name_di = dim(results)[[2]]
