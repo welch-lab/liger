@@ -6949,7 +6949,7 @@ calcNormLoadings = function(object) {
     results = cbind(results, unlist(v_loadings[[j]]))
     colnames(results)[[2+j]] = paste0("V_", j,"_loadings")
   }
-  if (length(object2@U) != 0){
+  if (length(object@U) != 0){
     # For all U
     for (j in 1:length(object@raw.data)){
       name_di = dim(results)[[2]]
