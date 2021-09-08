@@ -1,7 +1,7 @@
 ---
 title: "Iterative single-cell multi-omic integration using online learning"
 author: "Chao Gao and Joshua Welch"
-date: "9/1/2021"
+date: "9/7/2021"
 output:
   html_document: default
   pdf_document: default
