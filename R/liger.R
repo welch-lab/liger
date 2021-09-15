@@ -6878,8 +6878,7 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
 #' @export
 #' @examples
 calcNormLoadings = function(object) {
-  H_norm = object@H.norm  #101808 by 40 
-  #Normalize V, U, and W by number of genes
+  H_norm = object@H.norm 
   W_norm = object@W
   V_norm = object@V
   U_norm = object@U
