@@ -6878,30 +6878,11 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
 #' @export
 #' @examples
 calcNormLoadings = function(object) {
-  print("Calculating Factor Norms")
-  ## Normalization Section ####################
-  # Normalize H
-  h_w = object@H.norm 
-  H_norm = t(t(h_w)/colSums(h_w))
-  
+  H_norm = object@H.norm  #101808 by 40 
   #Normalize V, U, and W by number of genes
-  W_norm = object@W/rowSums(object@W)
-  V_norm = list()
-  for (i in 1:length(object@raw.data)){
-    sum_V = rowSums(object@V[[i]])
-    sum_V[sum_V==0] <- .00001
-    
-    V_norm[[i]] = object@V[[i]]/sum_V
-  }
-  if (length(object@U) != 0){
-    U_norm = list()
-    for (i in 1:length(object@raw.data)){
-      if (length(object@U[[i]]) != 0){
-        sum_U = rowSums(object@U[[i]])
-        sum_U[sum_U==0] <- .00001
-        U_norm[[i]] = object@U[[i]]/sum_U
-      }
-    }}
+  W_norm = object@W
+  V_norm = object@V
+  U_norm = object@U
   ##### Calculation of Contribution #########################
   w_loadings = list()
   u_loadings = list()
@@ -6917,14 +6898,14 @@ calcNormLoadings = function(object) {
     ####### Calculate W
     wi = t(as.matrix(W_norm[i,]))
     hw = hi %*% wi
-    forb_hw = norm(hw, type = "F")
+    forb_hw = norm(hw, type = "F")/dim(W_norm)[[2]]
     w_loadings = append(w_loadings, forb_hw)
     
     ###### Calculate V
     for (j in 1:length(object@raw.data)){
       temp_v = t(as.matrix(V_norm[[j]][i,]))
       hv_temp = hi %*% temp_v
-      forb_hv = norm(hv_temp, type = "F")
+      forb_hv = norm(hv_temp, type = "F")/dim(V_norm[[j]])[[2]]
       v_loadings[[j]]= append( v_loadings[[j]], forb_hv)
     }
     if (length(object@U) != 0){
@@ -6933,7 +6914,7 @@ calcNormLoadings = function(object) {
         if (length(object@U[[j]]) != 0){
           temp_u = t(as.matrix(U_norm[[j]][i,]))
           hu_temp = hi %*% temp_u
-          forb_hu = norm(hu_temp, type = "F")
+          forb_hu = norm(hu_temp, type = "F")/dim(U_norm[[j]])[[2]]
           u_loadings[[j]]= append(u_loadings[[j]], forb_hu) }
       }
     }
