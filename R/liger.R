@@ -4513,7 +4513,6 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #' @param renormalize Whether to log-normalize raw data using Seurat defaults (default TRUE).
 #' @param use.liger.genes Whether to carry over variable genes (default TRUE).
 #' @param by.dataset Include dataset of origin in cluster identity in Seurat object (default FALSE).
-#' @param keep.meta Transfer additional metadata (nGene/nUMI/dataset already transferred) to new Seurat Object
 #'
 #' @return Seurat object with raw.data, scale.data, dr$tsne, dr$inmf, and ident slots set.
 #' @export
@@ -4528,7 +4527,7 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #' }
 
 ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.liger.genes = T,
-                          by.dataset = F, keep.meta = F) {
+                          by.dataset = F) {
   if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" needed for this function to work. Please install it.",
          call. = FALSE
@@ -4611,24 +4610,6 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.li
     new.seurat[['tsne']] <- tsne.obj
     new.seurat[['inmf']] <- inmf.obj
     Seurat::Idents(new.seurat) <- ident.use
-  }
-  if(keep.meta){
-    # extract meta data from liger object
-    liger_meta <- object@cell.data
-    # remove meta data values already transferred
-    liger_meta <- liger_meta %>% 
-      dplyr::select(-nUMI, -nGene, -dataset)
-    # extract meta data names
-    meta_names <- colnames(liger_meta)
-    # add meta data to new seurat object
-    for (meta_var in meta_names){
-      meta_transfer <- liger_meta %>% 
-        dplyr::pull(meta_var)
-      names(meta_transfer) <- colnames(x = new.seurat)
-      new.seurat <- AddMetaData(object = new.seurat, 
-                                metadata = meta_transfer,
-                                col.name = meta_var)
-    }
   }
   
   return(new.seurat)
