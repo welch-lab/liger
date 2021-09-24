@@ -3749,7 +3749,9 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' @importFrom dplyr %>% group_by mutate_at vars group_cols
 #' @importFrom ggplot2 ggplot geom_point aes_string element_blank ggtitle labs xlim ylim
 #' scale_color_viridis_c scale_color_gradientn theme
+#' @importFrom scattermore geom_scattermore
 #' @importFrom stats quantile
+#' 
 #' @examples
 #' \dontrun{
 #' # liger object, factorization complete
@@ -3764,11 +3766,28 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
                                  set.dr.lims = F, pt.size = 0.1, min.clip = NULL, max.clip = NULL, 
                                  clip.absolute = F, points.only = F, option = 'plasma', cols.use = NULL, 
                                  zero.color = '#F5F5F5', axis.labels = NULL, do.legend = T, return.plots = F,
-                                 keep.scale = F) {
+                                 keep.scale = F, raster = NULL) {
   if ((plot.by != scale.by) & (use.scaled)) {
     warning("Provided values for plot.by and scale.by do not match; results may not be very
             interpretable.")
   }
+  
+  # check raster and set by number of cells total if NULL
+  if (is.null(x = raster)) {
+    if (nrow(x = object@cell.data) > 1e5) {
+      raster <- TRUE
+      message("NOTE: Points are rasterized as number of cells/nuclei plotted exceeds 100,000.
+              \n To plot in vector form set `raster = FALSE`.")
+    } else {
+      raster <- FALSE
+    }
+  }
+  
+  # Set pt.size if raster = TRUE
+  if (isTRUE(x = raster)) {
+    pt.size <- 1
+  }
+  
   if (use.raw) {
     if (is.null(log2scale)) {
       log2scale <- FALSE
@@ -3873,8 +3892,13 @@ plotGene <- function(object, gene, use.raw = F, use.scaled = F, scale.by = 'data
     sub_df$gene[sub_df$gene < min_v & !is.na(sub_df$gene)] <- min_v
     sub_df$gene[sub_df$gene > max_v & !is.na(sub_df$gene)] <- max_v
     
-    ggp <- ggplot(sub_df, aes_string(x = 'dr1', y = 'dr2', color = 'gene')) + geom_point(size = pt.size) +
-      labs(col = gene)
+    if (isTRUE(x = raster)) {
+      ggp <- ggplot(sub_df, aes_string(x = 'dr1', y = 'dr2', color = 'gene')) + geom_scattermore(pointsize = pt.size) +
+        labs(col = gene)
+    } else {
+      ggp <- ggplot(sub_df, aes_string(x = 'dr1', y = 'dr2', color = 'gene')) + geom_point(size = pt.size) +
+        labs(col = gene)
+    }
     
     if (!is.null(cols.use)) {
       if (keep.scale) {
