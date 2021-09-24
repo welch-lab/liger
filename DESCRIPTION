@@ -31,7 +31,8 @@ Imports: Rcpp (>= 0.12.10),
      RANN,
      uwot,
      rlang,
-     utils
+     utils,
+     scattermore (>= 0.7) 
 biocViews:
 LazyData: true
 LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress
