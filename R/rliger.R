@@ -4513,12 +4513,15 @@ getProportionMito <- function(object, use.norm = FALSE) {
 #' @param new.order new dataset factor order for plotting.  must set reorder.idents = TRUE.
 #' @param return.plots Return ggplot plot objects instead of printing directly (default FALSE).
 #' @param legend.fonts.size Controls the font size of the legend.
+#' @param raster Rasterization of points (default NULL). Automatically convert to raster format if 
+#'   there are over 100,000 cells to plot.
 #'
 #' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
 #'   console).
 #' 
 #' @importFrom ggplot2 ggplot geom_point geom_text ggtitle guides guide_legend aes theme xlab ylab
 #' @importFrom dplyr %>% group_by summarize
+#' @importFrom scattermore geom_scattermore
 #'
 #' @export
 #' @examples
@@ -4536,9 +4539,20 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
                                     text.size = 3, do.shuffle = TRUE, rand.seed = 1,
                                     axis.labels = NULL, do.legend = TRUE, legend.size = 5,
                                     reorder.idents = FALSE, new.order = NULL,
-                                    return.plots = FALSE, legend.fonts.size = 12) {
+                                    return.plots = FALSE, legend.fonts.size = 12, raster = NULL) {
+  # check raster and set by number of cells total if NULL
+  if (is.null(x = raster)) {
+    if (nrow(x = object@cell.data) > 1e5) {
+      raster <- TRUE
+      message("NOTE: Points are rasterized as number of cells/nuclei plotted exceeds 100,000.
+              \n To plot in vector form set `raster = FALSE`.")
+    } else {
+      raster <- FALSE
+    }
+  }
+
   tsne_df <- data.frame(object@tsne.coords)
-  colnames(tsne_df) <- c("tsne1", "tsne2")
+  colnames(tsne_df) <- c("Dim1", "Dim2")
   tsne_df[['Dataset']] <- unlist(lapply(1:length(object@H), function(x) {
     rep(names(object@H)[x], nrow(object@H[[x]]))
   }))
@@ -4563,18 +4577,37 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
     tsne_df <- tsne_df[idx, ]
   }
 
-  p1 <- ggplot(tsne_df, aes_string(x = 'tsne1', y = 'tsne2', color = 'Dataset')) + theme_bw() +
-    theme_cowplot(legend.fonts.size) + geom_point(size = pt.size, stroke = 0.2) +
-    guides(color = guide_legend(override.aes = list(size = legend.size)))
 
-  centers <- tsne_df %>% group_by(.data[['Cluster']]) %>% summarize(
-    tsne1 = median(x = .data[['tsne1']]),
-    tsne2 = median(x = .data[['tsne2']])
-  )
-  p2 <- ggplot(tsne_df, aes_string(x = 'tsne1', y = 'tsne2', color = 'Cluster')) +
-    theme_cowplot(legend.fonts.size) + geom_point(size = pt.size, stroke = 0.2) +
-    geom_text(data = centers, mapping = aes_string(label = 'Cluster'), colour = "black", size = text.size) +
-    guides(color = guide_legend(override.aes = list(size = legend.size)))
+  if (isTRUE(x = raster)) {
+    p1 <- ggplot(tsne_df, aes_string(x = 'Dim1', y = 'Dim2', color = 'Dataset')) + theme_bw() +
+      theme_cowplot(legend.fonts.size) + geom_scattermore(pointsize = pt.size) +
+      guides(color = guide_legend(override.aes = list(size = legend.size)))
+
+    centers <- tsne_df %>% group_by(.data[['Cluster']]) %>% summarize(
+      Dim1 = median(x = .data[['Dim1']]),
+      Dim2 = median(x = .data[['Dim2']])
+    )
+    
+    p2 <- ggplot(tsne_df, aes_string(x = 'Dim1', y = 'Dim2', color = 'Cluster')) +
+      theme_cowplot(legend.fonts.size) + geom_scattermore(pointsize = pt.size) +
+      geom_text(data = centers, mapping = aes_string(label = 'Cluster'), colour = "black", size = text.size) +
+      guides(color = guide_legend(override.aes = list(size = legend.size)))
+  } else {
+    p1 <- ggplot(tsne_df, aes_string(x = 'Dim1', y = 'Dim2', color = 'Dataset')) + theme_bw() +
+      theme_cowplot(legend.fonts.size) + geom_point(size = pt.size, stroke = 0.2) +
+      guides(color = guide_legend(override.aes = list(size = legend.size)))
+
+    centers <- tsne_df %>% group_by(.data[['Cluster']]) %>% summarize(
+      Dim1 = median(x = .data[['Dim1']]),
+      Dim2 = median(x = .data[['Dim2']])
+    )
+
+    p2 <- ggplot(tsne_df, aes_string(x = 'Dim1', y = 'Dim2', color = 'Cluster')) +
+      theme_cowplot(legend.fonts.size) + geom_point(size = pt.size, stroke = 0.2) +
+      geom_text(data = centers, mapping = aes_string(label = 'Cluster'), colour = "black", size = text.size) +
+      guides(color = guide_legend(override.aes = list(size = legend.size)))
+  }
+  
 
   if (!is.null(title)) {
     p1 <- p1 + ggtitle(title[1])
@@ -4910,9 +4943,9 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
   for (i in factors.use) {
     tsne_df <- data.frame(H_aligned[, i], tsne_coords)
     factorlab <- paste("Factor", i, sep = "")
-    colnames(tsne_df) <- c(factorlab, "tSNE1", "tSNE2")
+    colnames(tsne_df) <- c(factorlab, "Dim1", "Dim2")
     factor_ds <- paste("Factor", i, "Dataset Specificity:", dataset.specificity[[3]][i])
-    p1 <- ggplot(tsne_df, aes_string(x = "tSNE1", y = "tSNE2", color = factorlab)) + geom_point() +
+    p1 <- ggplot(tsne_df, aes_string(x = "Dim1", y = "Dim2", color = factorlab)) + geom_point() +
       scale_color_gradient(low = "yellow", high = "red") + ggtitle(label = factor_ds)
 
     top_genes_V1 <- markers[[1]]$gene[markers[[1]]$factor_num == i]
@@ -4989,11 +5022,14 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' @param do.spec.plot Include dataset specificity plot in printout (default TRUE).
 #' @param max.val Value between 0 and 1 at which color gradient should saturate to max color. Set to
 #'   NULL to revert to default gradient scaling. (default 0.1)
+#' @param pt.size Point size for plots (default 0.4).
 #' @inheritParams plotGene
 #' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
 #' @param axis.labels Vector of two strings to use as x and y labels respectively (default NULL).
 #' @param do.title Include top title with cluster and Dataset Specificity (default FALSE).
 #' @param verbose Print progress bar/messages (TRUE by default)
+#' @param raster Rasterization of points (default NULL). Automatically convert to raster format if 
+#'   there are over 100,000 cells to plot.
 #'
 #' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
 #'   console).
@@ -5005,6 +5041,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' @import patchwork
 #' @importFrom stats loadings
 #' @importFrom cowplot theme_cowplot
+#' @importFrom scattermore geom_scattermore
 #'
 #' @export
 #' @examples
@@ -5023,9 +5060,20 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes.show = 12,
                              num.genes = 30, mark.top.genes = TRUE, factor.share.thresh = 10,
                              log.fc.thresh = 1, umi.thresh = 30, frac.thresh = 0,
-                             pval.thresh = 0.05, do.spec.plot = TRUE, max.val = 0.1, pt.size = 0.1,
+                             pval.thresh = 0.05, do.spec.plot = TRUE, max.val = 0.1, pt.size = 0.4,
                              option = "plasma", zero.color = "#F5F5F5", return.plots = FALSE,
-                             axis.labels = NULL, do.title = FALSE, verbose = TRUE) {
+                             axis.labels = NULL, do.title = FALSE, verbose = TRUE, raster = NULL) {
+  # check raster and set by number of cells total if NULL
+  if (is.null(x = raster)) {
+    if (nrow(x = object@cell.data) > 1e5) {
+      raster <- TRUE
+      message("NOTE: Points are rasterized as number of cells/nuclei plotted exceeds 100,000.
+              \n To plot in vector form set `raster = FALSE`.")
+    } else {
+      raster <- FALSE
+    }
+  }
+
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
     dataset2 <- names(object@H)[2]
@@ -5072,7 +5120,7 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
   for (i in factors.use) {
     tsne_df <- data.frame(H_aligned[, i], tsne_coords)
     factorlab <- paste("Factor", i, sep = "")
-    colnames(tsne_df) <- c(factorlab, "tSNE1", "tSNE2")
+    colnames(tsne_df) <- c(factorlab, "Dim1", "Dim2")
     tsne_df[[factorlab]][tsne_df[[factorlab]] == 0] <- NA
     factor_ds <- paste("Factor", i, "Dataset Specificity:", dataset.specificity[[3]][i])
     data.max <- max(object@H.norm[, i])
@@ -5082,7 +5130,18 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
     } else {
       values <- NULL
     }
-    p1 <- ggplot(tsne_df, aes_string(x = "tSNE1", y = "tSNE2", color = factorlab)) +
+
+    if (isTRUE(x = raster)) {
+      p1 <- ggplot(tsne_df, aes_string(x = "Dim1", y = "Dim2", color = factorlab)) +
+      geom_scattermore(pointsize = pt.size) +
+      scale_color_viridis_c(
+        option = option,
+        direction = -1,
+        na.value = zero.color, values = values
+      ) +
+      theme_cowplot(12)
+    } else {
+      p1 <- ggplot(tsne_df, aes_string(x = "Dim1", y = "Dim2", color = factorlab)) +
       geom_point(size = pt.size) +
       scale_color_viridis_c(
         option = option,
@@ -5090,6 +5149,8 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
         na.value = zero.color, values = values
       ) +
       theme_cowplot(12)
+    }
+    
 
     if (!is.null(axis.labels)) {
       p1 <- p1 + xlab(axis.labels[1]) + ylab(axis.labels[2])
@@ -5136,8 +5197,9 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
       )
       y_lim_text <- max(gene_df$loadings)
       # plot and annotate with top genes
+
       out_plot <- ggplot(gene_df, aes_string(x = 'xpos', y = 'loadings')) +
-        geom_point(size = 0.4) +
+        geom_point(size = pt.size) +
         theme_bw() +
         theme(
           axis.ticks.x = element_blank(),
@@ -5158,6 +5220,7 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
           clip = "off"
         ) +
         theme(plot.margin = unit(c(1, 4, 1, 1), "lines"))
+      
       if (mark.top.genes) {
         out_plot <- out_plot + geom_point(
           data = subset(gene_df, gene_df[['top_k']] == TRUE),
@@ -5258,7 +5321,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
   }
 
   gene_df$Gene <- as.numeric(gene_vals[rownames(gene_df)])
-  colnames(gene_df) <- c("tSNE1", "tSNE2", "gene")
+  colnames(gene_df) <- c("Dim1", "Dim2", "gene")
   gene_plots <- list()
   for (i in 1:length(object@scale.data)) {
     if (by.dataset) {
@@ -5333,6 +5396,8 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' @param do.legend Display legend on plots (default TRUE).
 #' @param return.plots Return ggplot objects instead of printing directly (default FALSE).
 #' @param keep.scale Maintain min/max color scale across all plots when using plot.by (default FALSE)
+#' @param raster Rasterization of points (default NULL). Automatically convert to raster format if 
+#'   there are over 100,000 cells to plot.
 #'
 #' @return If returning single plot, returns ggplot object; if returning multiple plots; returns
 #'   list of ggplot objects.
@@ -5341,6 +5406,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' @importFrom ggplot2 ggplot geom_point aes_string element_blank ggtitle labs xlim ylim
 #' scale_color_viridis_c scale_color_gradientn theme
 #' @importFrom stats quantile
+#' @importFrom scattermore geom_scattermore
 #'
 #' @export
 #' @examples
@@ -5360,11 +5426,24 @@ plotGene <- function(object, gene, use.raw = FALSE, use.scaled = FALSE, scale.by
                      set.dr.lims = FALSE, pt.size = 0.1, min.clip = NULL, max.clip = NULL,
                      clip.absolute = FALSE, points.only = FALSE, option = 'plasma', cols.use = NULL,
                      zero.color = '#F5F5F5', axis.labels = NULL, do.legend = TRUE, return.plots = FALSE,
-                     keep.scale = FALSE) {
+                     keep.scale = FALSE, raster = NULL) {
   if ((plot.by != scale.by) & (use.scaled)) {
     warning("Provided values for plot.by and scale.by do not match; results may not be very
             interpretable.")
   }
+
+  # check raster and set by number of cells total if NULL
+  if (is.null(x = raster)) {
+    if (nrow(x = object@cell.data) > 1e5) {
+      raster <- TRUE
+      message("NOTE: Points are rasterized as number of cells/nuclei plotted exceeds 100,000.
+              \n To plot in vector form set `raster = FALSE`.")
+    } else {
+      raster <- FALSE
+    }
+  }
+
+
   if (use.raw) {
     if (is.null(log2scale)) {
       log2scale <- FALSE
@@ -5498,8 +5577,13 @@ plotGene <- function(object, gene, use.raw = FALSE, use.scaled = FALSE, scale.by
     sub_df$gene[sub_df$gene < min_v & !is.na(sub_df$gene)] <- min_v
     sub_df$gene[sub_df$gene > max_v & !is.na(sub_df$gene)] <- max_v
 
-    ggp <- ggplot(sub_df, aes_string(x = 'dr1', y = 'dr2', color = 'gene')) + geom_point(size = pt.size, stroke = 0.2) +
-      labs(col = gene)
+    if (isTRUE(x = raster)) {
+      ggp <- ggplot(sub_df, aes_string(x = 'dr1', y = 'dr2', color = 'gene')) + geom_scattermore(pointsize = pt.size) +
+        labs(col = gene)
+    } else {
+      ggp <- ggplot(sub_df, aes_string(x = 'dr1', y = 'dr2', color = 'gene')) + geom_point(size = pt.size) +
+        labs(col = gene)
+    }
 
     if (!is.null(cols.use)) {
       if (keep.scale) {

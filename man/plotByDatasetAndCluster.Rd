@@ -18,7 +18,8 @@ plotByDatasetAndCluster(
   reorder.idents = FALSE,
   new.order = NULL,
   return.plots = FALSE,
-  legend.fonts.size = 12
+  legend.fonts.size = 12,
+  raster = NULL
 )
 }
 \arguments{
@@ -51,6 +52,9 @@ one after the other (default TRUE).}
 \item{return.plots}{Return ggplot plot objects instead of printing directly (default FALSE).}
 
 \item{legend.fonts.size}{Controls the font size of the legend.}
+
+\item{raster}{Rasterization of points (default NULL). Automatically convert to raster format if 
+there are over 100,000 cells to plot.}
 }
 \value{
 List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to

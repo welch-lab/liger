@@ -18,13 +18,14 @@ plotGeneLoadings(
   pval.thresh = 0.05,
   do.spec.plot = TRUE,
   max.val = 0.1,
-  pt.size = 0.1,
+  pt.size = 0.4,
   option = "plasma",
   zero.color = "#F5F5F5",
   return.plots = FALSE,
   axis.labels = NULL,
   do.title = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  raster = NULL
 )
 }
 \arguments{
@@ -60,7 +61,7 @@ threshold (default 10).}
 \item{max.val}{Value between 0 and 1 at which color gradient should saturate to max color. Set to
 NULL to revert to default gradient scaling. (default 0.1)}
 
-\item{pt.size}{Point size for plots (default 0.1).}
+\item{pt.size}{Point size for plots (default 0.4).}
 
 \item{option}{Colormap option to use for ggplot2's scale_color_viridis (default 'plasma').}
 
@@ -73,6 +74,9 @@ NULL to revert to default gradient scaling. (default 0.1)}
 \item{do.title}{Include top title with cluster and Dataset Specificity (default FALSE).}
 
 \item{verbose}{Print progress bar/messages (TRUE by default)}
+
+\item{raster}{Rasterization of points (default NULL). Automatically convert to raster format if 
+there are over 100,000 cells to plot.}
 }
 \value{
 List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to

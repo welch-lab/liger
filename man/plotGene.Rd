@@ -25,7 +25,8 @@ plotGene(
   axis.labels = NULL,
   do.legend = TRUE,
   return.plots = FALSE,
-  keep.scale = FALSE
+  keep.scale = FALSE,
+  raster = NULL
 )
 }
 \arguments{
@@ -85,6 +86,9 @@ mismatches in order (default NULL).}
 \item{return.plots}{Return ggplot objects instead of printing directly (default FALSE).}
 
 \item{keep.scale}{Maintain min/max color scale across all plots when using plot.by (default FALSE)}
+
+\item{raster}{Rasterization of points (default NULL). Automatically convert to raster format if 
+there are over 100,000 cells to plot.}
 }
 \value{
 If returning single plot, returns ggplot object; if returning multiple plots; returns
