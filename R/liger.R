@@ -7089,7 +7089,6 @@ optimize_UANLS = function(object, k=30,lambda= 5, max.iters=30,nrep=1,thresh=1e-
 #' @param object \code{liger} object. Should call quantileNorm before calling.
 #' @return A dataframe, such that each column represents the contribution of a specific matrix (W, V_1, V_2, etc. )
 #' @export
-#' @examples
 calcNormLoadings = function(object) {
   H_norm = object@H.norm 
   W_norm = object@W
