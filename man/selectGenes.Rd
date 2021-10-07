@@ -15,7 +15,10 @@ selectGenes(
   capitalize = FALSE,
   do.plot = FALSE,
   cex.use = 0.3,
-  chunk = 1000
+  chunk = 1000,
+  unshared = F,
+  unshared.datasets = NULL,
+  unshared.thresh = NULL
 )
 }
 \arguments{
@@ -50,6 +53,13 @@ Selected genes are plotted in green. (default FALSE)}
 \item{cex.use}{Point size for plot.}
 
 \item{chunk}{size of chunks in hdf5 file. (default 1000)}
+
+\item{unshared.datasets}{A list of the datasets to consider unshared features for, i.e. list(2), to use the second dataset}
+
+\item{unshared.thresh}{A list of threshold values to apply to each unshared dataset. If only one value is provided, it will apply to all unshared
+datasets. If a list is provided, it must match the length of the unshared datasets submitted.}
+
+\item{unshared.features}{Whether to consider unshared features}
 }
 \value{
 \code{liger} object with var.genes slot set.
