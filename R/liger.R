@@ -1100,10 +1100,16 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
       unshared.feats[i] <- list(NULL)
     }
     
+    #construct a list of shared features
+    shared_names = rownames(object@raw.data[[1]])
+    for (matrix in 2:length(object@raw.data)){
+      shared_names = subset(shared_names, shared_names %in% rownames(object@raw.data[[i]]))
+    }
+    
     for (i in unshared.datasets){
       unshared.use <- c()
       #Provides normalized subset of unshared features
-      normalized_unshared = object@norm.data[[i]][!rownames(object@norm.data[[i]]) %in% object@var.genes,]
+      normalized_unshared = object@norm.data[[i]][!rownames(object@norm.data[[i]]) %in% shared_names,]
       #Selects top variable features
       genes.unshared <- c()
       trx_per_cell <- colSums(object@raw.data[[i]])
