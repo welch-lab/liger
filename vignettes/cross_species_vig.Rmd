@@ -1,0 +1,111 @@
+---
+title: "Cross species Analysis with UINMF"
+author: "April Kriebel and Joshua Welch"
+date: "12/6/2021"
+output: html_document
+---
+# Data integration
+Here we integrate the scRNA of the mouse frontal cortex and lizard pallium.
+
+
+```{r eval = FALSE}
+install.packages('devtools')
+library(devtools)
+install_github('welch-lab/liger')
+library(rliger)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rliger)
+mouse = readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Vignette/Cross_species/Drop_mouse.RDS")
+lizard = readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Vignette/Cross_species/RNA_lizard.RDS")
+lizard_annies <- readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Vignette/Cross_species/lizard_labels.RDS")
+mouse_annies <- readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Lizard_Analysis/Dropviz_general_annotations.RDS")
+
+```
+
+
+
+## Step 1: Download the data
+First, read in your datasets. For this tutorial, we will use two matrices, which can all be downloaded at https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0 .
+The scRNA mouse dataset (Drop_mouse.RDS) is 28,366 genes by 71,639 cells.
+The scRNA lizard dataset (RNA_lizard.RDS) is 15,345 genes by 4,202 cells. 
+```{r eval = FALSE}
+mouse = readRDS("Drop_mouse.RDS")
+lizard = readRDS("RNA_lizard.RDS")
+```
+## Step 2: Preprocessing and normalization
+Next, create your Liger object, submitting the datasets in list format. The unshared features (non-homologous genes) should not be subsetted out, or submitted separately. Rather, they should be included in the matrix submitted for that dataset. This helps ensure proper normalization.
+```{r createliger, warning = FALSE, message = FALSE}
+species.liger <- createLiger(list(mouse = mouse, lizard = lizard))
+```
+Normalize the datasets. The normalization is applied to the datasets in their entirety.
+
+```{r normalize}
+species.liger <- normalize(species.liger)
+```
+
+
+Select shared, homologous genes between the two species, as well as unshared, non-homologous genes from the lizard dataset.
+
+```{r selectvargenes}
+species.liger <- selectGenes(species.liger, var.thres= 0.3,unshared = TRUE, unshared.datasets = list(2), unshared.thresh= 0.3)
+```
+
+Next, scale, but do not center, the data.
+
+```{r scale}
+species.liger <- scaleNotCenter(species.liger)
+```
+
+
+# Step 3: Joint Matrix Factorization
+
+To factorize the datasets including unshared datasets, set the use.unshared parameter to TRUE. 
+```{r factorization}
+species.liger <- optimizeALS(species.liger,  lambda = 5, use.unshared = TRUE, thresh=1e-10, k =30)
+```
+# Step 4: Quantile Normalization and Joint Clustering
+
+After factorization, the resulting Liger object can used in all downstream LIGER functions without adjustment. The default reference dataset for quantile normalization is the larger dataset, but the user should select the higher quality dataset as the reference dataset, even if it is the smaller dataset. In this case, the mouse dataset is considered higher quality than the lizard dataset, so we set the mouse dataset to be the reference dataset.
+
+
+```{r quantilenorm, results = FALSE}
+species.liger <- quantile_norm(species.liger, ref_dataset = "mouse")
+species.liger <- louvainCluster(species.liger)
+```
+# Step 5: Visualizations and Downstream processing
+
+```{r runumap, results = FALSE, warnings = FALSE, message = FALSE}
+species.liger <- runUMAP(species.liger)
+```
+Next, we can visualize our returned factorized object by dataset to check the alignment between datasets. We can also use the datasets' original annotations to check the correspondence between the cell types of the two species. 
+```{r visualizations, message = FALSE, warning = FALSE}
+umap_plots <- plotByDatasetAndCluster(species.liger, axis.labels = c("UMAP1","UMAP2"), return.plots = TRUE)
+umap_plots[[1]]
+umap_plots[[2]] 
+
+```
+ \
+ We can also use the datasets' original annotations to check the correspondence between the cell types of the two species. 
+ The annotations can be downloaded at https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0
+ 
+```{r annies, eval = FALSE}
+mouse_annies = readRDS("Dropviz_general_annotations.RDS")
+lizard_annies = readRDS("lizard_labels.RDS")
+```
+
+Label the lizard cells. Note that we set the `datasets` parameter such that we are graphing only the cells from the lizard dataset.
+
+```{r visualizationsv2, message = FALSE, warning = FALSE}
+umap_plots <-plotByDatasetAndCluster(species.liger, pt.size = 0.6, axis.labels = c("UMAP1","UMAP2"), return.plots = TRUE, clusters = lizard_annies)
+umap_plots[[2]]
+``` 
+
+Label the mouse cells. Note that we set the `datasets` parameter such that we are graphing only the cells from the mouse dataset.
+
+```{r visualizationsv3, message = FALSE, warning = FALSE}
+umap_plots <-plotByDatasetAndCluster(species.liger, axis.labels = c("UMAP1","UMAP2"), return.plots = TRUE, clusters = mouse_annies)
+umap_plots[[2]]
+``` 

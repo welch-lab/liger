@@ -1,7 +1,7 @@
 ---
 title: "Unshared Features UINMF"
 author: "Joshua Welch and April Kriebel"
-date: "4/14/2021"
+date: "12/03/2021"
 output: html_document
 ---
 
@@ -9,13 +9,13 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 osmFISH = readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Vignette/OSMFISH.vin.RDS")
 rna = readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Vignette/DROPVIZ.vin.RDS")
-library(liger)
+library(rliger)
 
 ```
 ```{r eval = FALSE}
+install.packages('devtools')
 library(devtools)
-install_github("welch-lab/liger", ref = "U_algorithm")
-library(liger)
+install_github('welch-lab/liger')
 ```
 
 # Step 1: Preprocessing and Normalization
