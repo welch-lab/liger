@@ -1862,7 +1862,7 @@ online_iNMF <- function(object,
       object@A[(num_prev_files+1):num_files] = rep(list(matrix(0, k, k)), num_new_files)
       object@B[(num_prev_files+1):num_files] = rep(list(matrix(0, num_genes, k)), num_new_files)
       A_old[(num_prev_files+1):num_files] = rep(list(matrix(0, k, k)), num_new_files) # save information older than 2 epochs
-      B_old[(num_prev_files+1):num_files] = rep(list(matrix(0, k, k)), num_new_files) # save information older than 2 epochs
+      B_old[(num_prev_files+1):num_files] = rep(list(matrix(0, num_genes, k)), num_new_files) # save information older than 2 epochs
     }
     
     iter = 1
