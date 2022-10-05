@@ -6310,13 +6310,8 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #' s.object <- ligerToSeurat(ligerex)
 #' }
 
-<<<<<<< HEAD:R/liger.R
-ligerToSeurat <- function(object, nms = names(object@H), renormalize = T, use.liger.genes = T,
-                          by.dataset = F, keep.meta = F) {
-=======
 ligerToSeurat <- function(object, nms = names(object@H), renormalize = TRUE, use.liger.genes = TRUE,
                           by.dataset = FALSE) {
->>>>>>> 8ee61cafd28cce6aaf62fd68acdc4dabb857b59f:R/rliger.R
   if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" needed for this function to work. Please install it.",
          call. = FALSE
@@ -6399,24 +6394,6 @@ ligerToSeurat <- function(object, nms = names(object@H), renormalize = TRUE, use
     new.seurat[['tsne']] <- tsne.obj
     new.seurat[['inmf']] <- inmf.obj
     Seurat::Idents(new.seurat) <- ident.use
-  }
-  if(keep.meta){
-    # extract meta data from liger object
-    liger_meta <- object@cell.data
-    # remove meta data values already transferred
-    liger_meta <- liger_meta %>% 
-      dplyr::select(-nUMI, -nGene, -dataset)
-    # extract meta data names
-    meta_names <- colnames(liger_meta)
-    # add meta data to new seurat object
-    for (meta_var in meta_names){
-      meta_transfer <- liger_meta %>% 
-        dplyr::pull(meta_var)
-      names(meta_transfer) <- colnames(x = new.seurat)
-      new.seurat <- AddMetaData(object = new.seurat, 
-                                metadata = meta_transfer,
-                                col.name = meta_var)
-    }
   }
   
   return(new.seurat)
