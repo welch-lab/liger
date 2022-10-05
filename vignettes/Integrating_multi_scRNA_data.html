@@ -191,7 +191,7 @@ summary {
 <div id="stage-i-preprocessing-and-normalization-3---5-seconds" class="section level3">
 <h3>Stage I: Preprocessing and Normalization (3 - 5 seconds)</h3>
 <p><strong>1.</strong> For the first portion of this protocol, we will be integrating data from control and interferon-stimulated PBMCs from <a href="https://www.nature.com/articles/nbt.4042">Kang et al, 2017</a>. The data can be found in the Gene Expression Omnibus, <a href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE96583">Series GSE96583</a>. This dataset was originally in the form of output from the 10X Cellranger pipeline, though we will directly load downsampled versions of the control and stimulated DGEs here.</p>
-<p><strong>For convenience, we have prepared the pre-processed data which are ready to use.</strong> There are three datasets: “PBMC_control.RDS” and “PBMC_interferon-stimulated.RDS”, which correspond to control and interferon-stimulated PBMCs individually. The data can be downloaded <a href="https://umich.app.box.com/s/n1xfpu9hplrknu6to6u9kvbktsqcql8t">here</a>.</p>
+<p><strong>For convenience, we have prepared the pre-processed data which are ready to use.</strong> There are three datasets: “PBMC_control.RDS” and “PBMC_interferon-stimulated.RDS”, which correspond to control and interferon-stimulated PBMCs individually. The data can be downloaded <a href="https://www.dropbox.com/sh/u94ib3dkf9pb6nd/AABemvnxDgKDGRs8Ek5QGlXWa?dl=0">here</a>.</p>
 <pre class="r"><code>library(liger)
 ctrl_dge &lt;- readRDS(&quot;~/Downloads/PBMC_control.RDS&quot;);
 stim_dge &lt;- readRDS(&quot;~/Downloads/PBMC_interferon-stimulated.RDS&quot;);</code></pre>

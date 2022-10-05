@@ -30,7 +30,7 @@ kl_divergence_uniform = function(object, Hs=NULL)
   n_factors = ncol(Hs[[1]])
   dataset_list = list()
   for (i in 1:length(Hs)) {
-    scaled = scale(Hs[[i]], center=F, scale=T)
+    scaled = scale(Hs[[i]], center=FALSE, scale=TRUE)
     
     inflated = t(apply(scaled, 1, function(x) {
       replace(x, x == 0, 1e-20)
@@ -98,18 +98,9 @@ MergeSparseDataAll <- function(datalist, library.names = NULL) {
   return(M)
 }
 
-#' Perform fast and memory-efficient normalization operation on sparse matrix data.
-#'
-#' @param A Sparse matrix DGE.
-#' @export
-#' @examples
-#' \dontrun{
-#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-#' ligerex = createLiger(list(Y,Z))
-#' ligerex@var.genes = c(1,2,3,4)
-#' ligerex = scaleNotCenter(ligerex)
-#' }
+# Perform fast and memory-efficient normalization operation on sparse matrix data.
+# param A Sparse matrix DGE.
+
 Matrix.column_norm <- function(A){
   if (class(A)[1] == "dgTMatrix") {
     temp = summary(A)
@@ -152,7 +143,7 @@ assign.singletons.list <- function(object, idents, k.use = 15, center = FALSE) {
   if (!is.list(x = object) || !all(sapply(X = object, FUN = is.matrix))) {
     stop("'assign.singletons.list' expects a list of matrices")
   }
-  print('Assigning singletons')
+  message('Assigning singletons')
   singleton.clusters <- names(x = table(idents))[which(x = table(idents) == 1)]
   singleton.cells <- names(x = idents)[which(x = idents %in% singleton.clusters)]
   if (length(x = singleton.cells) > 0) {
@@ -204,9 +195,14 @@ SLMCluster<-function(edge,prune.thresh=0.2,nstart=100,iter.max=10,algorithm=1,R=
   # Prepare data for modularity based clustering
   edge = edge[which(edge[,3]>prune.thresh),]
   
-  print("making edge file.")
+  message("making edge file.")
   edge_file <- paste0("edge", id.number, fileext=".txt")
   # Make sure no scientific notation written to edge file
+
+  # restore default settings when the current function exits
+  init_option <- options() 
+  on.exit(options(init_option))
+
   saveScipen=options(scipen=10000)[[1]]
   write.table(x=edge,file=edge_file,sep="\t",row.names=F,col.names=F)
   options(scipen=saveScipen)
@@ -215,12 +211,12 @@ SLMCluster<-function(edge,prune.thresh=0.2,nstart=100,iter.max=10,algorithm=1,R=
     # NULL random.seed disallowed for this program.
     random.seed = 0
   }
-  liger.dir <- system.file(package = "liger")
+  liger.dir <- system.file(package = "rliger")
   ModularityJarFile <- paste0(liger.dir, "/java/ModularityOptimizer.jar")
   command <- paste("java -jar", ModularityJarFile, edge_file, output_file, modularity, R, 
                    algorithm, nstart,
                    iter.max, random.seed, as.numeric(print.mod), sep = " ")
-  print ("Starting SLM")
+  message ("Starting SLM")
   ret = system(command, wait = TRUE)
   if (ret != 0) {
     stop(paste0(ret, " exit status from ", command))
@@ -248,7 +244,7 @@ getMode <- function(x, na.rm = FALSE) {
 # utility function for seuratToLiger function
 # Compares colnames in reference matrix1 and adds back any missing 
 # column names to matrix.subset as rows 
-# Set transpose = T if rownames of matrix1 should be referenced
+# Set transpose = TRUE if rownames of matrix1 should be referenced
 addMissingCells <- function(matrix1, matrix.subset, transpose = F) {
   if (transpose) {
     matrix1 <- t(matrix1)
@@ -269,7 +265,7 @@ addMissingCells <- function(matrix1, matrix.subset, transpose = F) {
 #'
 #' @description
 #' Returns single vector of gene values across all datasets in list provided. Data can be in raw, 
-#' normalized or scaled form. If matrices are in cell x gene format, set use.cols = T. 
+#' normalized or scaled form. If matrices are in cell x gene format, set use.cols = TRUE. 
 #'
 #' @param list List of gene x cell (or cell x gene) matrices
 #' @param gene Gene for which to return values (if gene is not found in appropriate dimnames will
@@ -285,12 +281,12 @@ addMissingCells <- function(matrix1, matrix.subset, transpose = F) {
 #' @export
 #' @examples
 #' \dontrun{
-#'  # liger object with factorization complete
-#' ligerex
+#' # liger object with factorization complete
+#' # ligerex
 #' gene_values <- getGeneValues(ligerex@raw.data, 'MALAT1')
 #' }
 
-getGeneValues <- function(list, gene, use.cols = F, methylation.indices = NULL, log2scale = F,
+getGeneValues <- function(list, gene, use.cols = FALSE, methylation.indices = NULL, log2scale = FALSE,
                           scale.factor = 10000) {
   gene_vals <- unlist(lapply(seq_along(list), function(i) {
     mtx <- unname(list)[[i]]
@@ -308,7 +304,7 @@ getGeneValues <- function(list, gene, use.cols = F, methylation.indices = NULL, 
     } 
     return(gene_vals_int)
   }),
-  use.names = T)
+  use.names = TRUE)
   return(gene_vals)
 }
 
@@ -416,20 +412,6 @@ wilcoxauc <- function(X, y, groups_use=NULL, verbose=TRUE) {
 }
 
 
-
-#' Pipe operator
-#'
-#' @name %>%
-#' @rdname pipe
-#' @importFrom dplyr %>%
-#' @examples
-#' \dontrun{
-#' x <- 5 %>% sum(10)
-#' }
-#' @return return value of rhs function. 
-NULL
-
-
 tidy_results <- function(wide_res, features, groups) {
   res <- Reduce(cbind, lapply(wide_res, as.numeric)) %>% data.frame() 
   colnames(res) <- names(wide_res)
@@ -487,28 +469,21 @@ compute_pval <- function(ustat, ties, N, n1n2) {
 #' 
 #' @param X feature by observation matrix. 
 #' 
-#' @examples
-#' \dontrun{
-#' data(exprs)
-#' rank_res <- rank_matrix(exprs)
-#' }
 #' @return List with 2 items
-#' \itemize{
-#' \item X_ranked - matrix of entry ranks
-#' \item ties - list of tied group sizes
-#' }
+
+
 rank_matrix <- function(X) {
   UseMethod('rank_matrix')
 }
 
-#' @rdname rank_matrix
+##' @rdname rank_matrix
 rank_matrix.dgCMatrix <- function(X) {
   Xr <- Matrix(X, sparse = TRUE)
   ties <- cpp_rank_matrix_dgc(Xr@x, Xr@p, nrow(Xr), ncol(Xr))
   return(list(X_ranked = Xr, ties = ties))
 }
 
-#' @rdname rank_matrix
+##' @rdname rank_matrix
 rank_matrix.matrix <- function(X) {
   cpp_rank_matrix_dense(X)
 }
@@ -521,14 +496,8 @@ rank_matrix.matrix <- function(X) {
 #' @param y group labels
 #' @param MARGIN whether observations are rows (=2) or columns (=1)
 #' 
-#' @examples
-#' \dontrun{
-#' data(exprs)
-#' data(y)
-#' sumGroups_res <- sumGroups(exprs, y, 1)
-#' sumGroups_res <- sumGroups(t(exprs), y, 2)
-#' }
 #' @return Matrix of groups by features
+
 sumGroups <- function(X, y, MARGIN=2) {
   if (MARGIN == 2 & nrow(X) != length(y)) {
     stop('wrong dims')
@@ -538,7 +507,7 @@ sumGroups <- function(X, y, MARGIN=2) {
   UseMethod('sumGroups')
 }
 
-#' @rdname sumGroups
+##' @rdname sumGroups
 sumGroups.dgCMatrix <- function(X, y, MARGIN=2) {
   if (MARGIN == 1) {
     cpp_sumGroups_dgc_T(X@x, X@p, X@i, ncol(X), nrow(X), as.integer(y) - 1,
@@ -549,7 +518,7 @@ sumGroups.dgCMatrix <- function(X, y, MARGIN=2) {
   }
 }
 
-#' @rdname sumGroups
+##' @rdname sumGroups
 sumGroups.matrix <- function(X, y, MARGIN=2) {
   if (MARGIN == 1) {
     cpp_sumGroups_dense_T(X, as.integer(y) - 1, length(unique(y)))        
@@ -568,15 +537,8 @@ sumGroups.matrix <- function(X, y, MARGIN=2) {
 #' @param y group labels
 #' @param MARGIN whether observations are rows (=2) or columns (=1)
 #' 
-#' @examples
-#' 
-#' \dontrun{
-#' data(exprs)
-#' data(y)
-#' nnz_res <- nnzeroGroups(exprs, y, 1)
-#' nnz_res <- nnzeroGroups(t(exprs), y, 2)
-#' }
 #' @return Matrix of groups by features
+
 nnzeroGroups <- function(X, y, MARGIN=2) {
   if (MARGIN == 2 & nrow(X) != length(y)) {
     stop('wrong dims')
@@ -586,7 +548,7 @@ nnzeroGroups <- function(X, y, MARGIN=2) {
   UseMethod('nnzeroGroups')
 }
 
-#' @rdname nnzeroGroups
+##' @rdname nnzeroGroups
 nnzeroGroups.dgCMatrix <- function(X, y, MARGIN=2) {
   if (MARGIN == 1) {
     cpp_nnzeroGroups_dgc_T(X@p, X@i, ncol(X), nrow(X), as.integer(y) - 1,
@@ -597,7 +559,7 @@ nnzeroGroups.dgCMatrix <- function(X, y, MARGIN=2) {
   }
 }
 
-#' @rdname nnzeroGroups
+##' @rdname nnzeroGroups
 nnzeroGroups.matrix <- function(X, y, MARGIN=2) {
   if (MARGIN == 1) {        
     cpp_nnzeroGroups_dense_T(X, as.integer(y) - 1, length(unique(y)))        
