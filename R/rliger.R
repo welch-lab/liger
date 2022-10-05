@@ -6295,7 +6295,6 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #' @param renormalize Whether to log-normalize raw data using Seurat defaults (default TRUE).
 #' @param use.liger.genes Whether to carry over variable genes (default TRUE).
 #' @param by.dataset Include dataset of origin in cluster identity in Seurat object (default FALSE).
-#' @param keep.meta Transfer additional metadata (nGene/nUMI/dataset already transferred) to new Seurat Object
 #'
 #' @return Seurat object with raw.data, scale.data, dr$tsne, dr$inmf, and ident slots set.
 #' 
