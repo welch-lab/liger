@@ -7,3 +7,8 @@ src/*.so
 src/*.dll
 inst/doc
 .DS_Store
+liger.Rproj
+*.h5
+*.RDS
+*.rds
+.vscode/*
