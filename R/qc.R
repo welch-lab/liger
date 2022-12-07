@@ -20,10 +20,18 @@ runGeneralQC <- function(object, features = NULL, pattern = NULL) {
     # Quick process for nUMI and nGene first
     nUMI <- unlist(lapply(datasets(object), function(x) {
         # x is ligerDataset object
-        colSums(raw.data(x))
+        if (isOnlineLiger(x)) {
+            # Do h5 run
+        } else {
+            colSums(raw.data(x))
+        }
     }), use.names = FALSE)
     nGene <- unlist(lapply(datasets(object), function(x) {
-        colSums(raw.data(x) > 0)
+        if (isOnlineLiger(x)) {
+            # Do h5 run
+        } else {
+            colSums(raw.data(x) > 0)
+        }
     }), use.names = FALSE)
     object$nUMI <- nUMI
     object$nGene <- nGene
@@ -55,8 +63,12 @@ runGeneralQC <- function(object, features = NULL, pattern = NULL) {
     if (!is.null(pattern) | !is.null(features)) {
         percentages <- lapply(featureSubsets, function(x) {
             unlist(lapply(datasets(object), function(d) {
-                row.idx <- rownames(raw.data(d)) %in% x
-                colSums(raw.data(d)[row.idx,]) / colSums(raw.data(d)) * 100
+                if (isOnlineLiger(d)) {
+                    # do h5 computation
+                } else {
+                    row.idx <- rownames(raw.data(d)) %in% x
+                    colSums(raw.data(d)[row.idx,]) / colSums(raw.data(d)) * 100
+                }
             }), use.names = FALSE)
         })
         names(percentages) <- paste0(names(percentages), "_pct")

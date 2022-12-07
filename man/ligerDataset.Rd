@@ -6,6 +6,7 @@
 \usage{
 ligerDataset(
   raw.data = NULL,
+  modal = c("default", "rna", "atac"),
   norm.data = NULL,
   scale.data = NULL,
   scale.unshared.data = NULL,
@@ -14,11 +15,14 @@ ligerDataset(
   V = NULL,
   A = NULL,
   B = NULL,
-  U = NULL
+  U = NULL,
+  h5file.info = NULL,
+  ...
 )
 
 ligerDataset(
   raw.data = NULL,
+  modal = c("default", "rna", "atac"),
   norm.data = NULL,
   scale.data = NULL,
   scale.unshared.data = NULL,
@@ -27,7 +31,9 @@ ligerDataset(
   V = NULL,
   A = NULL,
   B = NULL,
-  U = NULL
+  U = NULL,
+  h5file.info = NULL,
+  ...
 )
 }
 \arguments{
@@ -76,5 +82,7 @@ datasets}
 \item{\code{U}}{matrix}
 
 \item{\code{agg.data}}{list}
+
+\item{\code{h5file.info}}{list}
 }}
 

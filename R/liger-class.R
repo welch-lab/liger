@@ -62,6 +62,8 @@ liger <- setClass(
 #' @export
 createLiger <- function(
         raw.data = NULL,
+        format.type = NULL,
+        modal = NULL,
         cell.meta = NULL,
         take.gene.union = FALSE,
         remove.missing = FALSE,
@@ -71,18 +73,27 @@ createLiger <- function(
         indptr.name = NULL,
         genes.name = NULL,
         barcodes.name = NULL,
-        verbose = TRUE,
-        format.type = NULL)
+        verbose = TRUE
+        )
 {
     if (!is.list(raw.data)) stop("`raw.data` has to be a named list.")
-    datasets <- mapply(function(data, type) {
-        createLigerDataset(data = data, type = type)
-    }, raw.data, format.type)
-    #nData <- length(raw.data)
-    #if (length(format.type) == 1) format.type <- rep(format.type, nData)
-    #else if (length(format.type) != nData)
-    #    stop("Wrong length of `format.type`. ",
-    #         "Specify only 1 or match the length of `datasets`")
+    nData <- length(raw.data)
+    if (length(format.type) == 1) format.type <- rep(format.type, nData)
+    else if (length(format.type) != nData)
+        stop("Wrong length of `format.type`. ",
+             "Specify only 1 or match the length of `datasets`. ",
+             "See ?createLiger for valid options.")
+    if (length(modal) == 1) modal <- rep(modal, nData)
+    else if (length(modal) != nData)
+        stop("Wrong length of `modal`. ",
+             "Specify only 1 or match the length of `datasets`. ",
+             "See ?createLiger for valid options.")
+    datasets <- mapply(function(data, type, modal) {
+        createLigerDataset(raw.data = data,
+                           format = format.type,
+                           modal = modal)
+    }, raw.data, format.type, modal)
+
     if (isTRUE(take.gene.union)) {
         merged.data <- MergeSparseDataAll(raw.data)
         if (isTRUE(remove.missing)) {
@@ -135,16 +146,6 @@ createLiger <- function(
     }
     obj <- runGeneralQC(obj)
     return(obj)
-}
-
-createLigerDataset <- function(dataset, type = c("matrix", "rds")) {
-    type <- match.arg(type)
-    if (type == "matrix") {
-        return(ligerDataset(dataset))
-    } else if (type == "rds") {
-        data <- readRDS(dataset)
-        return(ligerDataset(data))
-    }
 }
 
 #' Deduplicate barcodes from all datasets
@@ -229,7 +230,7 @@ is.newLiger <- function(object) {
 setGeneric("datasets", function(x, ...) standardGeneric("datasets"))
 setGeneric("datasets<-", function(x, ...) standardGeneric("datasets<-"))
 setGeneric("dataset", function(x, name = NULL) standardGeneric("dataset"))
-setGeneric("dataset<-", function(x, name, type = NULL, force = FALSE, value) {
+setGeneric("dataset<-", function(x, name, type = NULL, value) {
     standardGeneric("dataset<-")
 })
 setGeneric("cell.meta", function(x, ...) standardGeneric("cell.meta"))
@@ -416,23 +417,11 @@ setMethod("dataset", signature(x = "liger", name = "missing"),
 #' @rdname dataset
 #' @export
 setReplaceMethod("dataset", signature(x = "liger", name = "character",
-                                      type = "missing", force = "ANY",
+                                      type = "missing",
                                       value = "ligerDataset"),
-                 function(x, name, type = NULL, force = FALSE, value) {
+                 function(x, name, type = NULL, value) {
                      if (name %in% names(x)) {
-                         if (isFALSE(force)) {
-                             stop('Specified dataset name "', name,
-                                  '" exists. Use `force = TRUE` to overwrite.')
-                         } else if (isTRUE(force)) {
-                             message('Replacing dataset"', name,
-                                     '" in liger object')
-                             dataset(x, name) <- NULL
-                         } else {
-                             stop('Please use logical `force`.')
-                         }
-                     } else {
-                         message('Adding new dataset "', name,
-                                 '" to liger object')
+                         dataset(x, name) <- NULL
                      }
                      new.idx <- seq(ncol(x) + 1, ncol(x) + ncol(value))
                      x@datasets[[name]] <- value
@@ -454,16 +443,17 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                      }
                      validObject(x)
                      runGeneralQC(x)
+                     x
                  })
 
 #' @rdname dataset
 #' @export
 setReplaceMethod("dataset", signature(x = "liger", name = "character",
-                                      type = "ANY", force = "ANY",
+                                      type = "ANY",
                                       value = "matrixLike"),
                  function(x, name,
                           type = c("raw.data", "norm.data", "scale.data"),
-                          force = FALSE, value) {
+                          value) {
                      type <- match.arg(type)
                      if (type == "raw.data") {
                          ld <- ligerDataset(raw.data = value)
@@ -472,16 +462,16 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                      } else if (type == "scale.data") {
                          ld <- ligerDataset(scale.data = value)
                      }
-                     dataset(x, name, force = force) <- ld
+                     dataset(x, name) <- ld
                      x
                  })
 
 #' @rdname dataset
 #' @export
 setReplaceMethod("dataset", signature(x = "liger", name = "character",
-                                      type = "missing", force = "ANY",
+                                      type = "missing",
                                       value = "NULL"),
-                 function(x, name, type = NULL, force = NULL, value) {
+                 function(x, name, type = NULL, value) {
                      if (!name %in% names(x)) {
                          warning("Specified dataset name not found in ",
                                  "liger object. Nothing would happen.")
@@ -490,7 +480,7 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                          bcToRemove <- colnames(ldToRemove)
                          bc.idx <- colnames(x) %in% bcToRemove
                          x@datasets[[name]] <- NULL
-                         x@cell.meta <- x@cell.meta[!bc.idx,]
+                         x@cell.meta <- x@cell.meta[!bc.idx, , drop = FALSE]
                          x@H <- x@H[, !bc.idx]
                          x@H.norm <- x@H.norm[, !bc.idx]
                      }

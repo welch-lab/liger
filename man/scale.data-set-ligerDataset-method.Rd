@@ -4,7 +4,7 @@
 \alias{scale.data<-,ligerDataset-method}
 \title{Set norm.data to ligerDataset object}
 \usage{
-\S4method{scale.data}{ligerDataset}(x) <- value
+\S4method{scale.data}{ligerDataset}(x, check = TRUE) <- value
 }
 \arguments{
 \item{x}{ligerDataset object}

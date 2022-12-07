@@ -4,7 +4,7 @@
 \alias{raw.data<-,ligerDataset-method}
 \title{Set raw.data to ligerDataset object}
 \usage{
-\S4method{raw.data}{ligerDataset}(x) <- value
+\S4method{raw.data}{ligerDataset}(x, check = TRUE) <- value
 }
 \arguments{
 \item{x}{ligerDataset object}

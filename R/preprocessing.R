@@ -21,7 +21,7 @@ NULL
 #' Z <- matrix(runif(5000,0,2), 10,500)
 #' ligerex <- createLiger(list(y_set = Y, z_set = Z))
 #' ligerex <- normalize(ligerex)
-normalize <- function(object,
+normalizeOld <- function(object,
                       chunk = 1000,
                       format.type = "10X",
                       remove.missing = TRUE,

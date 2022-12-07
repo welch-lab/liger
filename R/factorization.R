@@ -599,23 +599,6 @@ online_iNMF <- function(object,
     return(object)
 }
 
-
-#' Perform thresholding on dense matrix
-#'
-#' @description
-#' Perform thresholding on the input dense matrix. Remove any values samller than eps by eps.
-#' Helper function for online_iNMF
-#'
-#' @param x Dense matrix.
-#' @param eps Threshold. Should be a small positive value. (default 1e-16)
-#' @return Dense matrix with smallest values equal to eps.
-
-nonneg <- function(x, eps = 1e-16) {
-    x[x < eps] = eps
-    return(x)
-}
-
-
 #' Perform iNMF on scaled datasets
 #'
 #' @description

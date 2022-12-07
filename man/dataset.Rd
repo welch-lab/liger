@@ -3,25 +3,20 @@
 \name{dataset,liger,character_OR_NULL-method}
 \alias{dataset,liger,character_OR_NULL-method}
 \alias{dataset,liger,missing-method}
-\alias{dataset<-,liger,character,missing,ANY,ligerDataset-method}
-\alias{dataset<-,liger,character,ANY,ANY,matrixLike-method}
-\alias{dataset<-,liger,character,missing,ANY,NULL-method}
+\alias{dataset<-,liger,character,missing,ligerDataset-method}
+\alias{dataset<-,liger,character,ANY,matrixLike-method}
+\alias{dataset<-,liger,character,missing,NULL-method}
 \title{Access single dataset of liger object}
 \usage{
 \S4method{dataset}{liger,character_OR_NULL}(x, name = NULL)
 
 \S4method{dataset}{liger,missing}(x, name = NULL)
 
-\S4method{dataset}{liger,character,missing,ANY,ligerDataset}(x, name, type = NULL, force = FALSE) <- value
+\S4method{dataset}{liger,character,missing,ligerDataset}(x, name, type = NULL) <- value
 
-\S4method{dataset}{liger,character,ANY,ANY,matrixLike}(
-  x,
-  name,
-  type = c("raw.data", "norm.data", "scale.data"),
-  force = FALSE
-) <- value
+\S4method{dataset}{liger,character,ANY,matrixLike}(x, name, type = c("raw.data", "norm.data", "scale.data")) <- value
 
-\S4method{dataset}{liger,character,missing,ANY,`NULL`}(x, name, type = NULL, force = NULL) <- value
+\S4method{dataset}{liger,character,missing,`NULL`}(x, name, type = NULL) <- value
 }
 \arguments{
 \item{x}{\linkS4class{liger} object}

@@ -354,7 +354,7 @@ mergeH5 <- function(file.list,
 #' # Call the following function and provide the paths to the correspoinding files
 #' ligerex = restoreOnlineLiger(ligerex, file.path = list("path1/library1.h5", "path2/library2.h5"))
 #' }
-restoreOnlineLiger <- function(object, file.path = NULL) {
+restoreOnlineLigerWrong <- function(object, file.path = NULL) {
     if (is.null(file.path) &
         is.null(object@h5file.info[[1]][["file.path"]])) {
         # file path is not provided by file.path param or liger object

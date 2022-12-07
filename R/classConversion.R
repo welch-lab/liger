@@ -12,3 +12,11 @@ setAs("ligerDataset", "SingleCellExperiment", function(from) {
         assays = assays
     )
 })
+
+
+
+#' @importClassesFrom SeuratObject Seurat
+setAs("Seurat", "ligerDataset", function(from) {
+    requireNamespace("Seurat")
+    raw.data <- Seurat::GetAssayData(from, slot = "counts")
+})

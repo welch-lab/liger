@@ -5,20 +5,26 @@
 \title{Create liger object}
 \usage{
 createLiger(
-  datasets = NULL,
-  type = NULL,
+  raw.data = NULL,
+  format.type = NULL,
+  modal = NULL,
   cell.meta = NULL,
-  var.features = NULL,
-  H = NULL,
-  H.norm = NULL,
-  uns = NULL
+  take.gene.union = FALSE,
+  remove.missing = FALSE,
+  h5.format = "10X",
+  data.name = NULL,
+  indices.name = NULL,
+  indptr.name = NULL,
+  genes.name = NULL,
+  barcodes.name = NULL,
+  verbose = TRUE
 )
 }
 \arguments{
+\item{cell.meta}{data.frame}
+
 \item{datasets}{Named list of datasets. List elements can be one of in memory
 expression matrix, file name (.h5), constructed ligerDataset object.}
-
-\item{cell.meta}{data.frame}
 
 \item{var.features}{vector of feature names}
 
