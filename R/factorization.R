@@ -38,8 +38,6 @@
 #'
 #' @return \code{liger} object with H, W, V, A and B slots set.
 #'
-#' @import hdf5r
-#'
 #' @export
 #' @examples
 #' \dontrun{

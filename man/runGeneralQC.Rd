@@ -4,7 +4,13 @@
 \alias{runGeneralQC}
 \title{General QC for liger object}
 \usage{
-runGeneralQC(object, features = NULL, pattern = NULL)
+runGeneralQC(
+  object,
+  features = NULL,
+  pattern = NULL,
+  chunkSize = 1000,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{object}{liger object with \code{raw.data} available in
@@ -17,6 +23,12 @@ named list for multiple subset. Default \code{NULL}.}
 \item{pattern}{Regex patterns for matching the feature subsets that users
 want to calculate the expression percentage with. A vector for a single
 subset, or a named list for multiple subset. Default \code{NULL}.}
+
+\item{chunkSize}{Integer number of cells to include in a chunk when working
+on HDF5 based dataset. Default \code{1000}}
+
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{TRUE}.}
 }
 \value{
 A liger object with \code{nUMI}, \code{nGene} updated

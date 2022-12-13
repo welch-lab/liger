@@ -6,6 +6,17 @@
 \usage{
 normalize(object, chunk = 1000, verbose = TRUE)
 }
+\arguments{
+\item{object}{liger object}
+
+\item{chunk}{Integer. Number of maximum number of cells in each chunk, when
+normalization is applied to any HDF5 based dataset. Default \code{1000}.}
+
+\item{verbose}{Logical. Whether to show information of the progress.}
+}
+\value{
+Updated \code{object}
+}
 \description{
 Perform normalization on each raw data matrix from each dataset
 to account for total feature expression across a cell.

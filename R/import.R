@@ -255,8 +255,6 @@ read10X <-
 #'
 #' @return Directly generates newly merged hdf5 file.
 #'
-#' @import hdf5r
-#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -343,8 +341,6 @@ mergeH5 <- function(file.list,
 #' @param file.path List of paths to hdf5 files.
 #'
 #' @return \code{liger} object with restored links.
-#'
-#' @import hdf5r
 #'
 #' @export
 #' @examples

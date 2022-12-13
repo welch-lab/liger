@@ -290,7 +290,6 @@ calcGeneVars = function(object,
 #' datasets submitted.
 #' @return \code{liger} object with var.genes slot set.
 #'
-#' @import hdf5r
 #' @importFrom stats optimize
 #' @importFrom graphics abline plot points title
 #' @importFrom stats qnorm
@@ -638,8 +637,6 @@ selectGenes <-
 #'
 #' @return \code{liger} object with scale.data slot set.
 #'
-#' @import hdf5r
-#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -964,8 +961,6 @@ downsample <-
 #' @param verbose Print progress bar/messages (TRUE by default)
 #'
 #' @return \code{liger} object with sample.data slot set.
-#'
-#' @import hdf5r
 #'
 #' @export
 #' @examples

@@ -8,6 +8,8 @@ setClassUnion("matrixLike", c(
     "matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix"
 ))
 
+setClassUnion("dataframe", c("data.frame", "DataFrame", "NULL", "missing"))
+
 #' @title liger class
 #' @description Data container for LIGER analysis. The slot \code{datasets} is a
 #' list where each element should be \linkS4class{ligerDataset} containing
@@ -230,7 +232,7 @@ is.newLiger <- function(object) {
 setGeneric("datasets", function(x, ...) standardGeneric("datasets"))
 setGeneric("datasets<-", function(x, ...) standardGeneric("datasets<-"))
 setGeneric("dataset", function(x, name = NULL) standardGeneric("dataset"))
-setGeneric("dataset<-", function(x, name, type = NULL, value) {
+setGeneric("dataset<-", function(x, name, type = NULL, qc = TRUE, value) {
     standardGeneric("dataset<-")
 })
 setGeneric("cell.meta", function(x, ...) standardGeneric("cell.meta"))
@@ -417,9 +419,9 @@ setMethod("dataset", signature(x = "liger", name = "missing"),
 #' @rdname dataset
 #' @export
 setReplaceMethod("dataset", signature(x = "liger", name = "character",
-                                      type = "missing",
+                                      type = "missing", qc = "ANY",
                                       value = "ligerDataset"),
-                 function(x, name, type = NULL, value) {
+                 function(x, name, type = NULL, qc = TRUE, value) {
                      if (name %in% names(x)) {
                          dataset(x, name) <- NULL
                      }
@@ -442,17 +444,18 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                          colnames(x@H.norm)[new.idx] <- colnames(value)
                      }
                      validObject(x)
-                     runGeneralQC(x)
+                     if (qc) x <- runGeneralQC(x)
                      x
                  })
 
 #' @rdname dataset
 #' @export
 setReplaceMethod("dataset", signature(x = "liger", name = "character",
-                                      type = "ANY",
+                                      type = "ANY", qc = "ANY",
                                       value = "matrixLike"),
                  function(x, name,
                           type = c("raw.data", "norm.data", "scale.data"),
+                          qc = TRUE,
                           value) {
                      type <- match.arg(type)
                      if (type == "raw.data") {
@@ -462,16 +465,16 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                      } else if (type == "scale.data") {
                          ld <- ligerDataset(scale.data = value)
                      }
-                     dataset(x, name) <- ld
+                     dataset(x, name, qc = qc) <- ld
                      x
                  })
 
 #' @rdname dataset
 #' @export
 setReplaceMethod("dataset", signature(x = "liger", name = "character",
-                                      type = "missing",
+                                      type = "missing", qc = "ANY",
                                       value = "NULL"),
-                 function(x, name, type = NULL, value) {
+                 function(x, name, type = NULL, qc = TRUE, value) {
                      if (!name %in% names(x)) {
                          warning("Specified dataset name not found in ",
                                  "liger object. Nothing would happen.")
@@ -481,8 +484,8 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                          bc.idx <- colnames(x) %in% bcToRemove
                          x@datasets[[name]] <- NULL
                          x@cell.meta <- x@cell.meta[!bc.idx, , drop = FALSE]
-                         x@H <- x@H[, !bc.idx]
-                         x@H.norm <- x@H.norm[, !bc.idx]
+                         x@H <- x@H[!bc.idx, ]
+                         x@H.norm <- x@H.norm[!bc.idx, ]
                      }
                      x
                  })

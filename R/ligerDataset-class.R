@@ -1,11 +1,9 @@
 setClassUnion("dgCMatrix_OR_NULL", c("dgCMatrix", "NULL"))
 setClassUnion("matrix_OR_NULL", c("matrix", "NULL"))
-setClassUnion("matrixLike_OR_NULL", c(
-    "matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix", "NULL"
-))
-
-setClassUnion("dgCMatrix_OR_H5D_OR_NULL", c("dgCMatrix_OR_NULL", "H5D"))
-setClassUnion("matrix_OR_H5D_OR_NULL", c("matrix_OR_NULL", "H5D"))
+setClassUnion("matrixLike", c("matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix"))
+setClassUnion("matrixLike_OR_NULL", c("matrixLike", "NULL"))
+suppressWarnings(setClassUnion("dgCMatrix_OR_H5D_OR_NULL", c("dgCMatrix", "H5D", "NULL")))
+setClassUnion("matrix_OR_H5D_OR_NULL", c("matrix", "NULL"))
 
 #' ligerDataset class
 #'
@@ -28,10 +26,10 @@ setClassUnion("matrix_OR_H5D_OR_NULL", c("matrix_OR_NULL", "H5D"))
 ligerDataset <- setClass(
     "ligerDataset",
     representation(
-        raw.data = "dgCMatrix_OR_H5D_OR_NULL",
-        norm.data = "dgCMatrix_OR_H5D_OR_NULL",
-        scale.data = "matrix_OR_H5D_OR_NULL",
-        scale.unshared.data = "matrix_OR_H5D_OR_NULL",
+        raw.data = "ANY",
+        norm.data = "ANY",
+        scale.data = "ANY",
+        scale.unshared.data = "ANY",
         var.unshared.features = "character",
         W = "matrix_OR_NULL",
         V = "matrix_OR_NULL",
@@ -88,9 +86,10 @@ ligerDataset <- function(raw.data = NULL,
         cn <- colnames(args[[i]])
         if (!is.null(cn)) break
     }
-    if (!is.null(raw.data) & !inherits(raw.data, "dgCMatrix")) {
-        raw.data <- as(raw.data, "CsparseMatrix")
+    if (!is.null(raw.data)) {
         rn <- rownames(raw.data)
+        if (!inherits(raw.data, "dgCMatrix"))
+            raw.data <- as(raw.data, "CsparseMatrix")
     }
     if (!is.null(norm.data) & !inherits(norm.data, "dgCMatrix")) {
         norm.data <- as(norm.data, "CsparseMatrix")
@@ -199,7 +198,7 @@ ligerDataset <- function(raw.data = NULL,
 #' \code{NULL}.
 #' @return \code{TRUE} or \code{FALSE} for the specified check.
 #' @export
-isOnlineLiger <- function(object, dataset = NULL) {
+isH5Liger <- function(object, dataset = NULL) {
     if (inherits(object, "ligerDataset")) {
         if (length(object@h5file.info) == 0) {
             return(FALSE)
@@ -208,9 +207,9 @@ isOnlineLiger <- function(object, dataset = NULL) {
         }
     } else if (inherits(object, "liger")) {
         if (!is.null(dataset)) {
-            return(isOnlineLiger(dataset(object, dataset)))
+            return(isH5Liger(dataset(object, dataset)))
         } else {
-            allCheck <- unlist(lapply(datasets(object), isOnlineLiger))
+            allCheck <- unlist(lapply(datasets(object), isH5Liger))
             return(all(allCheck))
         }
     } else {
@@ -248,7 +247,7 @@ isOnlineLiger <- function(object, dataset = NULL) {
 }
 
 .checkOnlineLigerDatasetLink <- function(x) {
-    restoreGuide <- "Please try running `restoreOnlineLiger(object)`."
+    restoreGuide <- "Please try running `restoreH5Liger(object)`."
     if (!"H5File" %in% names(x@h5file.info)) {
         return(paste("`h5file.info` incomplete.", restoreGuide))
     }
@@ -278,7 +277,7 @@ isOnlineLiger <- function(object, dataset = NULL) {
 }
 
 .valid.ligerDataset <- function(object) {
-    if (isOnlineLiger(object)) {
+    if (isH5Liger(object)) {
         message("Pretend to have checked h5 validity")
         .checkOnlineLigerDatasetLink(object)
     } else {
@@ -300,7 +299,12 @@ setGeneric("norm.data<-", function(x, check = TRUE, ...) standardGeneric("norm.d
 setGeneric("scale.data", function(x, ...) standardGeneric("scale.data"))
 setGeneric("scale.data<-", function(x, check = TRUE, ...) standardGeneric("scale.data<-"))
 setGeneric("getH5File", function(x, dataset = NULL) standardGeneric("getH5File"))
-
+setGeneric("h5file.info", function(x, info = NULL, dataset = NULL) standardGeneric("h5file.info"))
+setGeneric("h5file.info<-", function(x, info = NULL, dataset = NULL, value) standardGeneric("h5file.info<-"))
+setGeneric("createLigerDataset",
+           function(raw.data, format, modal = c("default", "rna", "atac")) {
+               standardGeneric("createLigerDataset")
+           })
 # ------------------------------------------------------------------------------
 # Methods ####
 # ------------------------------------------------------------------------------
@@ -312,10 +316,10 @@ setMethod(
         # Use class(object) so that the inheriting classes can be shown properly
         cat("An object of class", class(object), "with",
             ncol(object), "cells\n")
-        if (isOnlineLiger(object) &
+        if (isH5Liger(object) &
             !isTRUE(validObject(object, test = TRUE))) {
             warning("Link to HDF5 file fails. Please try running ",
-                    "`restoreOnlineLiger(object)`.")
+                    "`restoreH5Liger(object)`.")
             return()
         }
         for (slot in c("raw.data", "norm.data", "scale.data")) {
@@ -472,4 +476,122 @@ setMethod("getH5File",
               }
               lapply(datasets(x)[dataset], function(ld) ld@h5file.info$H5File)
           })
+
+#' Access the H5File information in a ligerDataset object
+#' @param x ligerDataset object
+#' @param info Character vector of queried information
+#' @param dataset missing
+#' @export
+setMethod(
+    "h5file.info",
+    signature = signature(x = "ligerDataset",
+                          info = "ANY",
+                          dataset = "missing"),
+    function(x, info = NULL, dataset = NULL) {
+        if (is.null(info)) result <- x@h5file.info
+        else {
+            if (length(info) == 1) result <- x@h5file.info[[info]]
+            else {
+                if (any(!info %in% names(x@h5file.info))) {
+                    stop("Specified h5file info not found: ",
+                         paste(info[!info %in% names(x@h5file.info)],
+                               collapse = ", "))
+                }
+                result <- x@h5file.info[info]
+                names(result) <- info
+            }
+        }
+        return(result)
+    })
+
+setReplaceMethod(
+    "h5file.info",
+    signature = signature(
+        x = "ligerDataset",
+        info = "ANY",
+        dataset = "missing",
+        value = "ANY"
+    ),
+    function(x, info = NULL, dataset = NULL, value) {
+        if (is.null(info)) {
+            x@h5file.info <- value
+            validObject(x)
+        } else {
+            if (!is.character(info) | length(info) != 1)
+                stop('`info` has to be a single character.')
+            if (info %in% c('indices.name', 'indptr.name', 'barcodes.name',
+                            'genes.name', 'raw.data', 'norm.data',
+                            'scale.data')) {
+                if (!getH5File(x)$exists(value)) {
+                    stop("Specified info is invalid, '", info,
+                         "' does not exists in the HDF5 file.")
+                }
+            }
+            x@h5file.info[[info]] <- value
+            if (info %in% c('raw.data', 'norm.data', 'scale.data')) {
+                x <- do.call(paste0(info, "<-"),
+                             list(x = x,
+                                  value = getH5File(x)[[h5file.info(x, info)]]))
+            }
+        }
+        x
+    }
+)
+
+setMethod(
+    "createLigerDataset",
+    signature(raw.data = "ligerDataset",
+              format = "ANY",
+              modal = "ANY"),
+    function(raw.data, modal) {
+        raw.data
+    }
+)
+
+setMethod(
+    "createLigerDataset",
+    signature(raw.data = "matrixLike",
+              format = "ANY",
+              modal = "ANY"),
+    function(raw.data, modal) {
+        ligerDataset(raw.data, modal)
+    }
+)
+
+setMethod(
+    "createLigerDataset",
+    signature(raw.data = "character",
+              format = "ANY",
+              modal = "ANY"),
+    function(raw.data, format, modal) {
+        message("Character input. Trying to read H5 file")
+    }
+)
+
+#'
+setMethod(
+    "createLigerDataset",
+    signature(raw.data = "Seurat",
+              modal = "ANY"),
+    function(raw.data, modal= c("default", "rna", "atac")) {
+        counts <- Seurat::GetAssayData(raw.data, "counts")
+        norm.data <- Seurat::GetAssayData(raw.data, "data")
+        if (identical(counts, norm.data)) norm.data <- NULL
+        scale.data <- Seurat::GetAssayData(raw.data, "scale.data")
+        if (sum(dim(scale.data)) == 0) scale.data <- NULL
+        ligerDataset(raw.data = counts, norm.data = norm.data,
+                     scale.data = scale.data, modal = modal)
+    }
+)
+
+setClass("anndata._core.anndata.AnnData")
+setMethod(
+    "createLigerDataset",
+    signature(raw.data = "anndata._core.anndata.AnnData",
+              modal = "ANY"),
+    function(raw.data, modal) {
+        message("Python object AnnData input. ")
+
+    }
+)
 

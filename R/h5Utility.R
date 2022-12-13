@@ -1,37 +1,33 @@
 #ctrl.h5 <- hdf5r::H5File$new("pbmcs_ctrl.h5")
 
-#' Apply function to chunks of H5 data
-#' @description h5 calculation wrapper, that run user specified calculation with on-disk
-#' matrix in chunks
+#' Apply function to chunks of H5 data in ligerDataset object
+#' @description h5 calculation wrapper, that run user specified calculation with
+#' on-disk matrix in chunks
 #' @param h5file H5File object
 #' @param FUN A function where the first argument must be the chunk of data, the
 #' return value must be a vector.
 H5Apply <- function(
-        h5file,
-        init,
+        object,
         FUN,
-        dataPath = "matrix/data",
-        indicesPath = "matrix/indices",
-        indptrPath = "matrix/indptr",
-        cellIDPath = "matrix/barcodes",
-        featureIDPath = "matrix/features/name",
+        init = NULL,
+        useData = c("raw.data", "norm.data", "scale.data"),
         chunkSize = 1000,
-        #vectorType = c("integer", "numeric", "character"),
         verbose = TRUE,
         ...) {
     fun.args <- list(...)
-    #vectorType <- match.arg(vectorType)
-
-    numCells <- h5file[[cellIDPath]]$dims
-    numFeatures <- h5file[[featureIDPath]]$dims
-    #initVec <- do.call(vectorType, list(numCells))
-    #initVec <- c()
+    useData <- match.arg(useData)
+    h5meta <- h5file.info(object)
+    numCells <- ncol(object)
+    numFeatures <- nrow(object)
 
     prev_end_col <- 1
     prev_end_data <- 1
     numChunks <- ceiling(numCells / chunkSize)
-    ind = 0
-
+    ind <- 0
+    h5file <- h5meta$H5File
+    indptr <- h5file[[h5meta$indptr.name]]
+    indices <- h5file[[h5meta$indices.name]]
+    data <- h5file[[h5meta[[useData]]]]
     if (isTRUE(verbose)) pb <- utils::txtProgressBar(0, numChunks, style = 3)
 
     while (prev_end_col < numCells) {
@@ -40,11 +36,11 @@ H5Apply <- function(
         if (numCells - prev_end_col < chunkSize) {
             chunkSize <- numCells - prev_end_col + 1
         }
-        start_inds <-
-            h5file[[indptrPath]][prev_end_col:(prev_end_col + chunkSize)]
+        start_inds <- indptr[prev_end_col:(prev_end_col + chunkSize)]
         sparseXIdx <- (prev_end_data):(tail(start_inds, 1))
-        row_inds <- h5file[[indicesPath]][sparseXIdx]
-        counts <- h5file[[dataPath]][sparseXIdx]
+        cellIdx <- prev_end_col:(prev_end_col + chunkSize - 1)
+        row_inds <- indices[sparseXIdx]
+        counts <- data[sparseXIdx]
         # Construct sparse matrix of the chunk
         chunkData <- Matrix::sparseMatrix(
             i = row_inds[seq_along(counts)] + 1,
@@ -54,14 +50,11 @@ H5Apply <- function(
         )
         # Process chunk data with given function and additional arguments if
         # applicable. Then insert value to initialized output data.
-        #chunkResult <- FUN(chunkData, ...)
-        init <- FUN(chunkData, sparseXIdx, init, ...)
-        #if (!is.vector(chunkResult) | length(chunkResult) != chunkSize) {
-        #    stop("Chunk ", ind, " did not return proper vector result.")
-        #}
-        #cellIdx <- seq(prev_end_col, prev_end_col + chunkSize - 1)
-        #initVec[cellIdx] <- chunkResult
-        #initVec <- c(initVec, chunkResult)
+        init <- do.call(FUN, c(list(chunkData,
+                                    sparseXIdx,
+                                    cellIdx,
+                                    init),
+                               fun.args))
         ############################
         # Post-processing updates on indices for the next iteration
         prev_end_col <- prev_end_col + chunkSize
@@ -69,16 +62,18 @@ H5Apply <- function(
 
         if (isTRUE(verbose)) utils::setTxtProgressBar(pb, ind)
     }
+    # Break a new line otherwise next message comes right after the "%" sign.
+    cat("\n")
     init
 }
 
 #' Safely add new H5 Data to the HDF5 file in a ligerDataset object
 #' @noRd
 safeH5Create <- function(object,
-                        dataPath,
-                        dims,
-                        dtype = "double",
-                        chunkSize = dims) {
+                         dataPath,
+                         dims,
+                         dtype = "double",
+                         chunkSize = dims) {
     h5file <- getH5File(object)
     if (!h5file$exists(dataPath)) {
         # If specified data does not exist yet, just simply create the link
@@ -104,15 +99,17 @@ safeH5Create <- function(object,
     }
 }
 
-#' Restore links (to HDF5 files) for reloaded online liger object
-#' @description When loading the saved online liger object in a new R session,
-#' the links to HDF5 files may be corrupted. This functions enables the
-#' restoration of those links so that new analyses can be carried out.
+#' Restore links (to HDF5 files) for reloaded liger/ligerDataset object
+#' @description When loading the saved liger object with HDF5 data in a new R
+#' session, the links to HDF5 files would be corrupted. This functions enables
+#' the restoration of those links so that new analyses can be carried out.
 #' @param object liger or ligerDataset object.
-#' @param file.path List of paths to hdf5 files.
+#' @param file.path Paths to HDF5 files. A single character path for
+#' ligerDataset input or a list of paths named by the datasets for liger object
+#' input. Default \code{NULL} looks for the path(s) of the last valid loading.
 #' @return \code{object} with restored links.
 #' @export
-restoreOnlineLiger <- function(object, filePath = NULL) {
+restoreH5Liger <- function(object, filePath = NULL) {
     if (!inherits(object, "liger") & !inherits(object, "ligerDataset")) {
         stop("Please specify a liger or ligerDataset object to restore.")
     }
@@ -120,7 +117,7 @@ restoreOnlineLiger <- function(object, filePath = NULL) {
         if (isTRUE(validObject(object, test = TRUE))) {
             return(object)
         }
-        h5.meta <- object@h5file.info
+        h5.meta <- h5file.info(object)
         if (is.null(filePath)) filePath <- h5.meta$filename
         if (!file.exists(filePath)) {
             stop("HDF5 file path does not exist:\n",
@@ -128,7 +125,6 @@ restoreOnlineLiger <- function(object, filePath = NULL) {
         }
         message(date(), " ... Restoring ligerDataset from: ", filePath)
         h5file <- hdf5r::H5File$new(filePath, mode = "r+")
-        #h5.meta$H5File <- h5file
         h5.meta$filename <- h5file$filename
         pathChecks <- unlist(lapply(h5.meta[4:10], h5file$link_exists))
         if (any(!pathChecks)) {
@@ -149,106 +145,29 @@ restoreOnlineLiger <- function(object, filePath = NULL) {
         }
         # All checks passed!
         h5.meta$H5File <- h5file
-        object@h5file.info <- h5.meta
+        h5file.info(object) <- h5.meta
         raw.data(object, check = FALSE) <- h5file[[h5.meta$raw.data]]
         norm.data(object, check = FALSE) <- h5file[[h5.meta$norm.data]]
         scale.data(object, check = FALSE) <- h5file[[h5.meta$scale.data]]
         validObject(object)
+    } else {
+        # Working for liger object
+        if (!is.list(filePath) || is.null(names(filePath)))
+            stop("`filePath` has to be a named list for liger object.")
+        if (!any(names(filePath) %in% names(object)))
+            stop("names of `filePath` must be found in `names(object)`.")
+        for (d in names(filePath)) {
+            if (!hdf5r::is.h5file(filePath[[d]]))
+                warning("Path for dataset \"", d, "\" is not an HDF5 file: ",
+                        filePath[[d]])
+            if (d %in% names(object))
+                dataset(object, d, qc = FALSE) <-
+                    restoreH5Liger(dataset(object, d), filePath[[d]])
+            else
+                warning("Specified dataset \"", d,
+                        "\" not found in liger object.")
+        }
     }
     return(object)
 }
 
-
-normH5 <- function(h5file) {
-    num_genes <- h5file[["matrix/features/name"]]$dims
-    num_cells <- h5file[["matrix/barcodes"]]$dims
-
-    # Initialize result
-    results <- list(
-        nUMI = c(),
-        geneSumSq = rep(0, num_genes),
-        geneMeans = rep(0, num_genes)
-    )
-    # Use safe create here in practice
-    #h5file$create_dataset(
-    #    name = "norm_data2",
-    #    dims = h5file[["matrix/data"]]$dims,
-    #    dtype = hdf5r::h5types$double,
-    #    chunk_dims = 1000
-    #)
-    # Chunk run
-    results <- H5Apply(h5file, init = results,
-                       function(chunk, sparseXIdx, values) {
-        values$nUMI <- c(values$nUMI, colSums(chunk))
-        norm.data <- Matrix.column_norm(chunk)
-        h5file[["norm_data2"]][sparseXIdx] <- norm.data@x
-        row_sums <- rowSums(norm.data)
-        values$geneSumSq <- values$geneSumSq + rowSums(norm.data * norm.data)
-        values$geneMeans <<- values$geneMeans + row_sums
-        values
-    })
-    results$geneMeans <- results$geneMeans / num_cells
-    return(results)
-}
-
-#res1 <- normH5(ctrl.h5)
-
-#' @useDynLib rliger, .registration = TRUE
-calcGeneVar.h5 <- function(h5file) {
-    num_genes <- h5file[["matrix/features/name"]]$dims
-    num_cells <- h5file[["matrix/barcodes"]]$dims
-
-    gene_vars <- rep(0, num_genes)
-    gene_means <- res1$geneMeans
-    print(gene_means[1:10])
-    gene_vars <- H5Apply(h5file, gene_vars,
-                         function(chunk, sparseXIdx, values) {
-        values + sumSquaredDeviations(chunk, gene_means)
-    }, dataPath = "norm.data")
-    gene_vars / (num_cells - 1)
-}
-
-#gene_vars <- calcGeneVar.h5(ctrl.h5)
-# EXAMPLE ##########
-#library(Matrix)
-# Read data
-#ctrl.h5 <- hdf5r::H5File$new("pbmcs_ctrl.h5")
-#num_genes <- ctrl.h5[["matrix/features/name"]]$dims
-#num_cells <- ctrl.h5[["matrix/barcodes"]]$dims
-
-# Initialize result
-#nUMI.test <- c()
-#gene_sum_sq = rep(0, num_genes)
-#gene_means = rep(0, num_genes)
-#ctrl.h5$create_dataset(
-#    name = "norm_data2",
-#    dims = ctrl.h5[["matrix/data"]]$dims,
-#    dtype = hdf5r::h5types$double,
-#    chunk_dims = 1000
-#)
-
-# Chunk run
-#H5Apply(ctrl.h5, function(chunk, sparseXIdx) {
-#    nUMI.test <<- c(nUMI.test, colSums(chunk))
-#    norm.data <- Matrix.column_norm(chunk)
-#    ctrl.h5[["norm_data2"]][sparseXIdx] <<- norm.data@x
-#    row_sums <- rowSums(norm.data)
-#    gene_sum_sq <<- gene_sum_sq + rowSums(norm.data * norm.data)
-#    gene_means <<- gene_means + row_sums
-#})
-#gene_means <- gene_means / num_cells
-
-# Check
-#all(ctrl.h5[["norm.data"]][] == ctrl.h5[["norm_data2"]][])
-
-#ctrl.dgC <- readRDS("pbmcs_ctrl.RDS")
-#nUMI.true <- colSums(ctrl.dgC)
-#all(nUMI.test == nUMI.true)
-
-#ctrl.dgC.norm <- Matrix.column_norm(ctrl.dgC)
-#gene_means.true <- rowMeans(ctrl.dgC.norm)
-#all(gene_means.true == gene_means)
-#all(round(gene_means.true, 10) == round(gene_means, 10))
-
-#gene_sum_sq.true <- rowSums(ctrl.dgC.norm * ctrl.dgC.norm)
-#all(round(gene_sum_sq, 10) == round(gene_sum_sq.true, 10))
