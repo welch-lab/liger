@@ -131,14 +131,14 @@ runGeneralQC.Matrix <- function(
         verbose = TRUE) {
     nUMI <- colSums(raw.data(object))
     nGene <- colSums(raw.data(object) > 0)
-    result <- data.frame(nUMI = nUMI, nGene = nGene,
+    results <- data.frame(nUMI = nUMI, nGene = nGene,
                          row.names = colnames(object))
     if (length(featureSubsets) > 0) {
         percentages <- lapply(featureSubsets, function(x) {
             row.idx <- rownames(object) %in% x
             colSums(raw.data(object)[row.idx,]) / colSums(raw.data(object)) * 100
         })
-        results <- cbind(result, as.data.frame(percentages))
+        results <- cbind(results, as.data.frame(percentages))
     }
     results
 }

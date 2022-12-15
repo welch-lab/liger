@@ -2,20 +2,36 @@
 #' @description Perform normalization on each raw data matrix from each dataset
 #' to account for total feature expression across a cell.
 #' @param object liger object
+#' @param log Logical. Whether to do a \code{log(x + 1)} transform on the
+#' normalized data. Default \code{TRUE}.
+#' @param scaleFactor Numeric. Scale the normalized expression value by this
+#' factor before transformation. \code{NULL} for not scaling. Default
+#' \code{1e4}.
 #' @param chunk Integer. Number of maximum number of cells in each chunk, when
 #' normalization is applied to any HDF5 based dataset. Default \code{1000}.
 #' @param verbose Logical. Whether to show information of the progress.
 #' @return Updated \code{object}
 #' @export
-normalize <- function(object, chunk = 1000, verbose = TRUE) {
+normalize <- function(
+        object,
+        log = TRUE,
+        scaleFactor = 1e4,
+        chunk = 1000,
+        verbose = TRUE
+) {
+    if (scaleFactor <= 0 | scaleFactor == 1) scaleFactor <- NULL
     for (d in names(object)) {
         # `d` is the name of each dataset
         if (isTRUE(verbose)) message(date(), " ... Normalizing dataset: ", d)
         ld <- dataset(object, d)
         if (isH5Liger(ld)) {
-            dataset(object, d) <- normalizeDataset.h5(ld, chunk, verbose)
+            dataset(object, d, qc = FALSE) <- normalizeDataset.h5(
+                ld, log, scaleFactor, chunk, verbose
+            )
         } else {
-            dataset(object, d) <- normalizeDataset.Matrix(ld, verbose)
+            dataset(object, d, qc = FALSE) <- normalizeDataset.Matrix(
+                ld, log, scaleFactor, verbose
+            )
         }
     }
     object
@@ -26,15 +42,21 @@ normalize <- function(object, chunk = 1000, verbose = TRUE) {
 #' @param verbose Not used yet
 #' @return Updated ligerDataset object
 #' @noRd
-normalizeDataset.Matrix <- function(object, verbose = TRUE) {
+normalizeDataset.Matrix <- function(object, log = TRUE, scaleFactor = 1e4,
+                                    verbose = TRUE) {
     if (inherits(raw.data(object), "dgCMatrix") |
         inherits(raw.data(object), "dgTMatrix")) {
-        norm.data(object) <- Matrix.column_norm(raw.data(object))
+        norm.data(object, check = FALSE) <-
+            Matrix.column_norm(raw.data(object))
     } else {
-        norm.data(object) <- sweep(x = raw.data(object), MARGIN = 2,
-                                   STATS = colSums(raw.data(object)),
-                                   FUN = "/")
+        norm.data(object, check = FALSE) <-
+            sweep(x = raw.data(object), MARGIN = 2,
+                  STATS = colSums(raw.data(object)), FUN = "/")
     }
+    if (!is.null(scaleFactor))
+        norm.data(object, check = FALSE) <- norm.data(object) * scaleFactor
+    if (isTRUE(log))
+        norm.data(object, check = FALSE) <- log1p(norm.data(object))
     object
 }
 
@@ -44,7 +66,8 @@ normalizeDataset.Matrix <- function(object, verbose = TRUE) {
 #' @param verbose Logical. Whether to show a progress bar.
 #' @return Updated ligerDataset object
 #' @noRd
-normalizeDataset.h5 <- function(object, chunkSize = 1000, verbose = TRUE) {
+normalizeDataset.h5 <- function(object, log = TRUE, scaleFactor = 1e4,
+                                chunkSize = 1000, verbose = TRUE) {
     nFeature <- nrow(object)
     nCell <- ncol(object)
 
@@ -67,8 +90,9 @@ normalizeDataset.h5 <- function(object, chunkSize = 1000, verbose = TRUE) {
     results <- H5Apply(
         object,
         function(chunk, sparseXIdx, cellIdx, values) {
-            #values$nUMI <- c(values$nUMI, colSums(chunk))
             norm.data <- Matrix.column_norm(chunk)
+            if (!is.null(scaleFactor)) norm.data <- norm.data * scaleFactor
+            if (isTRUE(log)) norm.data <- log1p(norm.data)
             h5file[[resultH5Path]][sparseXIdx] <- norm.data@x
             row_sums <- rowSums(norm.data)
             values$geneSumSq <- values$geneSumSq +

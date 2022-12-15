@@ -55,46 +55,64 @@ liger <- setClass(
 # ------------------------------------------------------------------------------
 
 #' Create liger object
-#' @param datasets Named list of datasets. List elements can be one of in memory
-#' expression matrix, file name (.h5), constructed ligerDataset object.
-#' @param cell.meta data.frame
-#' @param var.features vector of feature names
-#' @param H matrix
-#' @param H.norm matrix
+#' @description This function allows creating \linkS4class{liger} object from
+#' multiple datasets of various forms (See \code{raw.data}).
+#' @param raw.data Named list of datasets. Required. Elements allowed include a
+#' matrix, a \linkS4class{Seurat} object, a \linkS4class{SingleCellExperiment}
+#' object, an \code{AnnData} object, a \linkS4class{ligerDataset} object or a
+#' filename to an HDF5 file. See detail for HDF5 reading.
+#' @param modal Character vector for modality setting. See detail.
+#' @param cell.meta data.frame of metadata at single-cell level. Default
+#' \code{NULL}.
 #' @export
+#' @seealso \code{\link{createLigerDataset}},
+#' \code{\link{createLigerDataset.h5}}
 createLiger <- function(
-        raw.data = NULL,
-        format.type = NULL,
+        raw.data,
         modal = NULL,
         cell.meta = NULL,
         take.gene.union = FALSE,
         remove.missing = FALSE,
-        h5.format = "10X",
+        format.type = "10X",
         data.name = NULL,
         indices.name = NULL,
         indptr.name = NULL,
         genes.name = NULL,
         barcodes.name = NULL,
         verbose = TRUE
-        )
-{
+) {
     if (!is.list(raw.data)) stop("`raw.data` has to be a named list.")
+
     nData <- length(raw.data)
-    if (length(format.type) == 1) format.type <- rep(format.type, nData)
-    else if (length(format.type) != nData)
-        stop("Wrong length of `format.type`. ",
-             "Specify only 1 or match the length of `datasets`. ",
-             "See ?createLiger for valid options.")
+    if (missing(modal) || is.null(modal)) modal <- "default"
+    modal <- tolower(modal)
     if (length(modal) == 1) modal <- rep(modal, nData)
     else if (length(modal) != nData)
         stop("Wrong length of `modal`. ",
              "Specify only 1 or match the length of `datasets`. ",
              "See ?createLiger for valid options.")
-    datasets <- mapply(function(data, type, modal) {
-        createLigerDataset(raw.data = data,
-                           format = format.type,
-                           modal = modal)
-    }, raw.data, format.type, modal)
+    # TODO handle h5 specific argument for hybrid of H5 and in memory stuff.
+    datasets <- list()
+    for (i in seq_along(raw.data)) {
+        dname <- names(raw.data)[i]
+        data <- raw.data[[i]]
+        if (is.character(data)) {
+            # Assuming character input is a filename
+            datasets[[dname]] <- createLigerDataset.h5(
+                h5file = data,
+                format.type = format.type,
+                raw.data = data.name,
+                barcodes.name = barcodes.name,
+                genes.name = genes.name,
+                indices.name = indices.name,
+                indptr.name = indptr.name,
+                modal = modal[i]
+            )
+        } else {
+            datasets[[dname]] <- as.ligerDataset(x = data,
+                                                 modal = modal[i])
+        }
+    }
 
     if (isTRUE(take.gene.union)) {
         merged.data <- MergeSparseDataAll(raw.data)

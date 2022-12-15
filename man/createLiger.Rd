@@ -5,13 +5,12 @@
 \title{Create liger object}
 \usage{
 createLiger(
-  raw.data = NULL,
-  format.type = NULL,
+  raw.data,
   modal = NULL,
   cell.meta = NULL,
   take.gene.union = FALSE,
   remove.missing = FALSE,
-  h5.format = "10X",
+  format.type = "10X",
   data.name = NULL,
   indices.name = NULL,
   indptr.name = NULL,
@@ -21,17 +20,21 @@ createLiger(
 )
 }
 \arguments{
-\item{cell.meta}{data.frame}
+\item{raw.data}{Named list of datasets. Required. Elements allowed include a
+matrix, a \linkS4class{Seurat} object, a \linkS4class{SingleCellExperiment}
+object, an \code{AnnData} object, a \linkS4class{ligerDataset} object or a
+filename to an HDF5 file. See detail for HDF5 reading.}
 
-\item{datasets}{Named list of datasets. List elements can be one of in memory
-expression matrix, file name (.h5), constructed ligerDataset object.}
+\item{modal}{Character vector for modality setting. See detail.}
 
-\item{var.features}{vector of feature names}
-
-\item{H}{matrix}
-
-\item{H.norm}{matrix}
+\item{cell.meta}{data.frame of metadata at single-cell level. Default
+\code{NULL}.}
 }
 \description{
-Create liger object
+This function allows creating \linkS4class{liger} object from
+multiple datasets of various forms (See \code{raw.data}).
+}
+\seealso{
+\code{\link{createLigerDataset}},
+\code{\link{createLigerDataset.h5}}
 }

@@ -1,22 +1,119 @@
 setClass("ligerDataset")
-setClass("SingleCellExperiment")
+setClassUnion("matrixLike", c("matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix"))
 
-setAs("ligerDataset", "SingleCellExperiment", function(from) {
-    requireNamespace("SingleCellExperiment")
-    assays <- list()
-    if (!is.null(raw.data(from)))
-        assays <- c(assays, list(counts = raw.data(from)))
-    if (!is.null(norm.data(from)))
-        assays <- c(assays, list(normcounts = norm.data(from)))
-    SingleCellExperiment::SingleCellExperiment(
-        assays = assays
-    )
-})
+##############################################
+# From other things to ligerDataset class ####
+##############################################
 
-
-
+#' Convert an object of various classes to a ligerDataset object
+#' @rdname as.ligerDataset
+#' @description S4 method to convert objects of various types to a
+#' \linkS4class{ligerDataset} object or a modality specific sub-class of
+#' \linkS4class{ligerDataset} object. Supported classes include a matrix like
+#' object, a \linkS4class{SingleCellExperiment} object, a \linkS4class{Seurat}
+#' object, and \code{AnnData} object. This method also supports modality
+#' setting to a \linkS4class{ligerDataset} inherited object.
+#' @param x An object to be converted
+#' @param modal The modality of this dataset. Default \code{"default"} for RNA.
+#' Can choose from \code{"rna"}, \code{"atac"}.
+#' @return A ligerDataset object by default, or a modality specific sub-class of
+#' ligerDataset object according to \code{modal}.
+#' @export
 #' @importClassesFrom SeuratObject Seurat
-setAs("Seurat", "ligerDataset", function(from) {
-    requireNamespace("Seurat")
-    raw.data <- Seurat::GetAssayData(from, slot = "counts")
-})
+#' @importClassesFrom SingleCellExperiment SingleCellExperiment
+#' @author Yichen Wang
+setGeneric("as.ligerDataset",
+           function(x, modal = c("default", "rna", "atac")) {
+               standardGeneric("as.ligerDataset")
+           })
+
+#' @rdname as.ligerDataset
+#' @export
+setMethod(
+    "as.ligerDataset",
+    signature(x = "SingleCellExperiment",
+              modal = "ANY"),
+    function(x, modal = c("default", "rna", "atac")) {
+        requireNamespace("SingleCellExperiment")
+        if ("counts" %in% SummarizedExperiment::assayNames(x))
+            raw.data <- SingleCellExperiment::counts(x)
+        else raw.data <- NULL
+        if ("logcounts" %in% SummarizedExperiment::assayNames(x))
+            norm.data <- SingleCellExperiment::logcounts(x)
+        else norm.data <- NULL
+        if ("counts" %in% SummarizedExperiment::assayNames(x))
+            raw.data <- SingleCellExperiment::counts(x)
+        createLigerDataset(raw.data = raw.data, norm.data = norm.data,
+                           modal = modal)
+    }
+)
+
+#' @rdname as.ligerDataset
+#' @export
+setMethod(
+    "as.ligerDataset",
+    signature(x = "ligerDataset",
+              modal = "ANY"),
+    function(x, modal = c("default", "rna", "atac")) {
+        message("TODO: Handle modality specific ligerDataset sub-class conversion")
+        modal <- match.arg(modal)
+        raw.data
+    }
+)
+
+#' @rdname as.ligerDataset
+#' @export
+setMethod(
+    "as.ligerDataset",
+    signature(x = "matrixLike",
+              modal = "ANY"),
+    function(x, modal = c("default", "rna", "atac")) {
+        createLigerDataset(x, modal)
+    }
+)
+
+#' @rdname as.ligerDataset
+#' @export
+setMethod(
+    "as.ligerDataset",
+    signature(x = "Seurat",
+              modal = "ANY"),
+    function(x, modal= c("default", "rna", "atac")) {
+        counts <- Seurat::GetAssayData(x, "counts")
+        norm.data <- Seurat::GetAssayData(x, "data")
+        if (identical(counts, norm.data)) norm.data <- NULL
+        scale.data <- Seurat::GetAssayData(x, "scale.data")
+        if (sum(dim(scale.data)) == 0) scale.data <- NULL
+        createLigerDataset(raw.data = counts, norm.data = norm.data,
+                           scale.data = scale.data, modal = modal)
+    }
+)
+
+setClass("anndata._core.anndata.AnnData")
+#' @rdname as.ligerDataset
+#' @export
+setMethod(
+    "as.ligerDataset",
+    signature(x = "anndata._core.anndata.AnnData",
+              modal = "ANY"),
+    function(x, modal = c("default", "rna", "atac")) {
+        modal <- match.arg(modal)
+        message("Python object AnnData input. ")
+    }
+)
+
+##############################################
+# From ligerDataset class to other things ####
+##############################################
+
+#setAs("ligerDataset", "SingleCellExperiment", function(from) {
+#    requireNamespace("SingleCellExperiment")
+#    assays <- list()
+#    if (!is.null(raw.data(from)))
+#        assays <- c(assays, list(counts = raw.data(from)))
+#    if (!is.null(norm.data(from)))
+#        assays <- c(assays, list(normcounts = norm.data(from)))
+#    SingleCellExperiment::SingleCellExperiment(
+#        assays = assays
+#    )
+#})

@@ -2,67 +2,67 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 RunModularityClusteringCpp <- function(SNN, modularityFunction, resolution, algorithm, nRandomStarts, nIterations, randomSeed, printOutput, edgefilename) {
-    .Call(`_rliger_RunModularityClusteringCpp`, SNN, modularityFunction, resolution, algorithm, nRandomStarts, nIterations, randomSeed, printOutput, edgefilename)
+    .Call('_rliger_RunModularityClusteringCpp', PACKAGE = 'rliger', SNN, modularityFunction, resolution, algorithm, nRandomStarts, nIterations, randomSeed, printOutput, edgefilename)
 }
 
 scaleNotCenterFast <- function(x) {
-    .Call(`_rliger_scaleNotCenterFast`, x)
+    .Call('_rliger_scaleNotCenterFast', PACKAGE = 'rliger', x)
 }
 
 rowMeansFast <- function(x) {
-    .Call(`_rliger_rowMeansFast`, x)
+    .Call('_rliger_rowMeansFast', PACKAGE = 'rliger', x)
 }
 
 rowVarsFast <- function(x, means) {
-    .Call(`_rliger_rowVarsFast`, x, means)
+    .Call('_rliger_rowVarsFast', PACKAGE = 'rliger', x, means)
 }
 
 sumSquaredDeviations <- function(x, means) {
-    .Call(`_rliger_sumSquaredDeviations`, x, means)
+    .Call('_rliger_sumSquaredDeviations', PACKAGE = 'rliger', x, means)
 }
 
 cpp_sumGroups_dgc <- function(x, p, i, ncol, groups, ngroups) {
-    .Call(`_rliger_cpp_sumGroups_dgc`, x, p, i, ncol, groups, ngroups)
+    .Call('_rliger_cpp_sumGroups_dgc', PACKAGE = 'rliger', x, p, i, ncol, groups, ngroups)
 }
 
 cpp_sumGroups_dgc_T <- function(x, p, i, ncol, nrow, groups, ngroups) {
-    .Call(`_rliger_cpp_sumGroups_dgc_T`, x, p, i, ncol, nrow, groups, ngroups)
+    .Call('_rliger_cpp_sumGroups_dgc_T', PACKAGE = 'rliger', x, p, i, ncol, nrow, groups, ngroups)
 }
 
 cpp_sumGroups_dense <- function(X, groups, ngroups) {
-    .Call(`_rliger_cpp_sumGroups_dense`, X, groups, ngroups)
+    .Call('_rliger_cpp_sumGroups_dense', PACKAGE = 'rliger', X, groups, ngroups)
 }
 
 cpp_sumGroups_dense_T <- function(X, groups, ngroups) {
-    .Call(`_rliger_cpp_sumGroups_dense_T`, X, groups, ngroups)
+    .Call('_rliger_cpp_sumGroups_dense_T', PACKAGE = 'rliger', X, groups, ngroups)
 }
 
 cpp_nnzeroGroups_dense <- function(X, groups, ngroups) {
-    .Call(`_rliger_cpp_nnzeroGroups_dense`, X, groups, ngroups)
+    .Call('_rliger_cpp_nnzeroGroups_dense', PACKAGE = 'rliger', X, groups, ngroups)
 }
 
 cpp_nnzeroGroups_dense_T <- function(X, groups, ngroups) {
-    .Call(`_rliger_cpp_nnzeroGroups_dense_T`, X, groups, ngroups)
+    .Call('_rliger_cpp_nnzeroGroups_dense_T', PACKAGE = 'rliger', X, groups, ngroups)
 }
 
 cpp_nnzeroGroups_dgc <- function(p, i, ncol, groups, ngroups) {
-    .Call(`_rliger_cpp_nnzeroGroups_dgc`, p, i, ncol, groups, ngroups)
+    .Call('_rliger_cpp_nnzeroGroups_dgc', PACKAGE = 'rliger', p, i, ncol, groups, ngroups)
 }
 
 cpp_in_place_rank_mean <- function(v_temp, idx_begin, idx_end) {
-    .Call(`_rliger_cpp_in_place_rank_mean`, v_temp, idx_begin, idx_end)
+    .Call('_rliger_cpp_in_place_rank_mean', PACKAGE = 'rliger', v_temp, idx_begin, idx_end)
 }
 
 cpp_rank_matrix_dgc <- function(x, p, nrow, ncol) {
-    .Call(`_rliger_cpp_rank_matrix_dgc`, x, p, nrow, ncol)
+    .Call('_rliger_cpp_rank_matrix_dgc', PACKAGE = 'rliger', x, p, nrow, ncol)
 }
 
 cpp_rank_matrix_dense <- function(X) {
-    .Call(`_rliger_cpp_rank_matrix_dense`, X)
+    .Call('_rliger_cpp_rank_matrix_dense', PACKAGE = 'rliger', X)
 }
 
 cpp_nnzeroGroups_dgc_T <- function(p, i, ncol, nrow, groups, ngroups) {
-    .Call(`_rliger_cpp_nnzeroGroups_dgc_T`, p, i, ncol, nrow, groups, ngroups)
+    .Call('_rliger_cpp_nnzeroGroups_dgc_T', PACKAGE = 'rliger', p, i, ncol, nrow, groups, ngroups)
 }
 
 #' Fast calculation of feature count matrix
@@ -80,34 +80,34 @@ cpp_nnzeroGroups_dgc_T <- function(p, i, ncol, nrow, groups, ngroups) {
 #' samnple <- gene.counts + promoter.counts
 #' }
 makeFeatureMatrix <- function(bedmat, barcodes) {
-    .Call(`_rliger_makeFeatureMatrix`, bedmat, barcodes)
+    .Call('_rliger_makeFeatureMatrix', PACKAGE = 'rliger', bedmat, barcodes)
 }
 
 cluster_vote <- function(nn_ranked, clusts) {
-    .Call(`_rliger_cluster_vote`, nn_ranked, clusts)
+    .Call('_rliger_cluster_vote', PACKAGE = 'rliger', nn_ranked, clusts)
 }
 
 scale_columns_fast <- function(mat, scale = TRUE, center = TRUE) {
-    .Call(`_rliger_scale_columns_fast`, mat, scale, center)
+    .Call('_rliger_scale_columns_fast', PACKAGE = 'rliger', mat, scale, center)
 }
 
 max_factor <- function(H, dims_use, center_cols = FALSE) {
-    .Call(`_rliger_max_factor`, H, dims_use, center_cols)
+    .Call('_rliger_max_factor', PACKAGE = 'rliger', H, dims_use, center_cols)
 }
 
 solveNNLS <- function(C, B) {
-    .Call(`_rliger_solveNNLS`, C, B)
+    .Call('_rliger_solveNNLS', PACKAGE = 'rliger', C, B)
 }
 
 ComputeSNN <- function(nn_ranked, prune) {
-    .Call(`_rliger_ComputeSNN`, nn_ranked, prune)
+    .Call('_rliger_ComputeSNN', PACKAGE = 'rliger', nn_ranked, prune)
 }
 
 WriteEdgeFile <- function(snn, filename, display_progress) {
-    invisible(.Call(`_rliger_WriteEdgeFile`, snn, filename, display_progress))
+    invisible(.Call('_rliger_WriteEdgeFile', PACKAGE = 'rliger', snn, filename, display_progress))
 }
 
 DirectSNNToFile <- function(nn_ranked, prune, display_progress, filename) {
-    .Call(`_rliger_DirectSNNToFile`, nn_ranked, prune, display_progress, filename)
+    .Call('_rliger_DirectSNNToFile', PACKAGE = 'rliger', nn_ranked, prune, display_progress, filename)
 }
 

@@ -2,6 +2,9 @@ setClassUnion("dgCMatrix_OR_NULL", c("dgCMatrix", "NULL"))
 setClassUnion("matrix_OR_NULL", c("matrix", "NULL"))
 setClassUnion("matrixLike", c("matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix"))
 setClassUnion("matrixLike_OR_NULL", c("matrixLike", "NULL"))
+# It is quite hard to handle "H5D here, which is indeed defined as an R6 class.
+# I'm not sure if this is a proper solution
+setOldClass("H5D")
 suppressWarnings(setClassUnion("dgCMatrix_OR_H5D_OR_NULL", c("dgCMatrix", "H5D", "NULL")))
 setClassUnion("matrix_OR_H5D_OR_NULL", c("matrix", "NULL"))
 
@@ -57,19 +60,21 @@ ligerDataset <- setClass(
 #' @param B matrix
 #' @param U matrix
 #' @export
-ligerDataset <- function(raw.data = NULL,
-                         modal = c("default", "rna", "atac"),
-                         norm.data = NULL,
-                         scale.data = NULL,
-                         scale.unshared.data = NULL,
-                         var.unshared.features = NULL,
-                         W = NULL,
-                         V = NULL,
-                         A = NULL,
-                         B = NULL,
-                         U = NULL,
-                         h5file.info = NULL,
-                         ...) {
+createLigerDataset <- function(
+        raw.data = NULL,
+        modal = c("default", "rna", "atac"),
+        norm.data = NULL,
+        scale.data = NULL,
+        scale.unshared.data = NULL,
+        var.unshared.features = NULL,
+        W = NULL,
+        V = NULL,
+        A = NULL,
+        B = NULL,
+        U = NULL,
+        h5file.info = NULL,
+        ...
+) {
     modal <- match.arg(modal)
     args <- as.list(environment())
     additional <- list(...)
@@ -120,7 +125,8 @@ ligerDataset <- function(raw.data = NULL,
     ligerATACDataset = "atac"
 )
 
-.ligerDataset.h5 <- function(
+#' @export
+createLigerDataset.h5 <- function(
         h5file,
         format.type = NULL,
         raw.data = NULL,
@@ -301,10 +307,7 @@ setGeneric("scale.data<-", function(x, check = TRUE, ...) standardGeneric("scale
 setGeneric("getH5File", function(x, dataset = NULL) standardGeneric("getH5File"))
 setGeneric("h5file.info", function(x, info = NULL, dataset = NULL) standardGeneric("h5file.info"))
 setGeneric("h5file.info<-", function(x, info = NULL, dataset = NULL, value) standardGeneric("h5file.info<-"))
-setGeneric("createLigerDataset",
-           function(raw.data, format, modal = c("default", "rna", "atac")) {
-               standardGeneric("createLigerDataset")
-           })
+
 # ------------------------------------------------------------------------------
 # Methods ####
 # ------------------------------------------------------------------------------
@@ -537,61 +540,3 @@ setReplaceMethod(
         x
     }
 )
-
-setMethod(
-    "createLigerDataset",
-    signature(raw.data = "ligerDataset",
-              format = "ANY",
-              modal = "ANY"),
-    function(raw.data, modal) {
-        raw.data
-    }
-)
-
-setMethod(
-    "createLigerDataset",
-    signature(raw.data = "matrixLike",
-              format = "ANY",
-              modal = "ANY"),
-    function(raw.data, modal) {
-        ligerDataset(raw.data, modal)
-    }
-)
-
-setMethod(
-    "createLigerDataset",
-    signature(raw.data = "character",
-              format = "ANY",
-              modal = "ANY"),
-    function(raw.data, format, modal) {
-        message("Character input. Trying to read H5 file")
-    }
-)
-
-#'
-setMethod(
-    "createLigerDataset",
-    signature(raw.data = "Seurat",
-              modal = "ANY"),
-    function(raw.data, modal= c("default", "rna", "atac")) {
-        counts <- Seurat::GetAssayData(raw.data, "counts")
-        norm.data <- Seurat::GetAssayData(raw.data, "data")
-        if (identical(counts, norm.data)) norm.data <- NULL
-        scale.data <- Seurat::GetAssayData(raw.data, "scale.data")
-        if (sum(dim(scale.data)) == 0) scale.data <- NULL
-        ligerDataset(raw.data = counts, norm.data = norm.data,
-                     scale.data = scale.data, modal = modal)
-    }
-)
-
-setClass("anndata._core.anndata.AnnData")
-setMethod(
-    "createLigerDataset",
-    signature(raw.data = "anndata._core.anndata.AnnData",
-              modal = "ANY"),
-    function(raw.data, modal) {
-        message("Python object AnnData input. ")
-
-    }
-)
-

@@ -4,10 +4,23 @@
 \alias{normalize}
 \title{Normalize raw data in liger object}
 \usage{
-normalize(object, chunk = 1000, verbose = TRUE)
+normalize(
+  object,
+  log = TRUE,
+  scaleFactor = 10000,
+  chunk = 1000,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{object}{liger object}
+
+\item{log}{Logical. Whether to do a \code{log(x + 1)} transform on the
+normalized data. Default \code{TRUE}.}
+
+\item{scaleFactor}{Numeric. Scale the normalized expression value by this
+factor before transformation. \code{NULL} for not scaling. Default
+\code{1e4}.}
 
 \item{chunk}{Integer. Number of maximum number of cells in each chunk, when
 normalization is applied to any HDF5 based dataset. Default \code{1000}.}
