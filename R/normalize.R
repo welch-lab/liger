@@ -86,6 +86,18 @@ normalizeDataset.h5 <- function(object, log = TRUE, scaleFactor = 1e4,
         dtype = "double",
         chunkSize = chunkSize
     )
+    safeH5Create(
+        object = object,
+        dataPath = "gene_means",
+        dims = nFeature,
+        dtype = "double"
+    )
+    safeH5Create(
+        object = object,
+        dataPath = "gene_sum_sq",
+        dims = nFeature,
+        dtype = "double"
+    )
     # Chunk run
     results <- H5Apply(
         object,
@@ -105,7 +117,11 @@ normalizeDataset.h5 <- function(object, log = TRUE, scaleFactor = 1e4,
         chunkSize = chunkSize,
         verbose = verbose)
     results$geneMeans <- results$geneMeans / nCell
-    norm.data(object) <- h5file[[resultH5Path]]
+    h5file[["gene_means"]][seq_along(results$geneMeans)] <- results$geneMeans
+    feature.meta(object)$geneMeans <- results$geneMeans
+    h5file[["gene_sum_sq"]][seq_along(results$geneSumSq)] <- results$geneSumSq
+    feature.meta(object)$geneSumSq <- results$geneSumSq
+    norm.data(object, check = FALSE) <- h5file[[resultH5Path]]
     object@h5file.info$norm.data <- resultH5Path
     return(object)
 }

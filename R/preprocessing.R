@@ -176,7 +176,7 @@ normalizeOld <- function(object,
 #' @param verbose Print progress bar/messages (TRUE by default)
 #'
 #' @return \code{liger} object with scale.data slot set.
-calcGeneVars = function(object,
+calcGeneVars.old = function(object,
                         chunk = 1000,
                         verbose = TRUE)
 {
@@ -306,7 +306,7 @@ calcGeneVars = function(object,
 #' ligerex <- selectGenes(ligerex, var.thresh = 0.3)
 #' }
 
-selectGenes <-
+selectGenes.old <-
     function(object,
              var.thresh = 0.1,
              alpha.thresh = 0.99,

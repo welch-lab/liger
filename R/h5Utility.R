@@ -126,7 +126,10 @@ restoreH5Liger <- function(object, filePath = NULL) {
         message(date(), " ... Restoring ligerDataset from: ", filePath)
         h5file <- hdf5r::H5File$new(filePath, mode = "r+")
         h5.meta$filename <- h5file$filename
-        pathChecks <- unlist(lapply(h5.meta[4:10], h5file$link_exists))
+        pathChecks <- unlist(lapply(h5.meta[4:10], function(x) {
+            if (!is.null(x)) h5file$link_exists(x)
+            else TRUE
+        }))
         if (any(!pathChecks)) {
             info.name <- names(pathChecks)[!pathChecks]
             paths <- unlist(h5.meta[info.name])
@@ -145,27 +148,33 @@ restoreH5Liger <- function(object, filePath = NULL) {
         }
         # All checks passed!
         h5.meta$H5File <- h5file
-        h5file.info(object) <- h5.meta
+        h5file.info(object, check = FALSE) <- h5.meta
         raw.data(object, check = FALSE) <- h5file[[h5.meta$raw.data]]
-        norm.data(object, check = FALSE) <- h5file[[h5.meta$norm.data]]
-        scale.data(object, check = FALSE) <- h5file[[h5.meta$scale.data]]
+        if (!is.null(h5.meta$norm.data))
+            norm.data(object, check = FALSE) <- h5file[[h5.meta$norm.data]]
+        if (!is.null(h5.meta$scale.data))
+            scale.data(object, check = FALSE) <- h5file[[h5.meta$scale.data]]
         validObject(object)
     } else {
         # Working for liger object
-        if (!is.list(filePath) || is.null(names(filePath)))
-            stop("`filePath` has to be a named list for liger object.")
-        if (!any(names(filePath) %in% names(object)))
-            stop("names of `filePath` must be found in `names(object)`.")
-        for (d in names(filePath)) {
-            if (!hdf5r::is.h5file(filePath[[d]]))
-                warning("Path for dataset \"", d, "\" is not an HDF5 file: ",
-                        filePath[[d]])
-            if (d %in% names(object))
+        if (!is.null(filePath)) {
+            if (!is.list(filePath) || is.null(names(filePath)))
+                stop("`filePath` has to be a named list for liger object.")
+            if (!any(names(filePath) %in% names(object)))
+                stop("names of `filePath` must be found in `names(object)`.")
+        }
+        for (d in names(object)) {
+            if (isH5Liger(object, d)) {
+                path <- NULL
+                if (d %in% names(filePath)) {
+                    if (!hdf5r::is.h5file(filePath[[d]]))
+                        warning("Path for dataset \"", d, "\" is not an HDF5 file: ",
+                                filePath[[d]])
+                    else path <- filePath[[d]]
+                }
                 dataset(object, d, qc = FALSE) <-
                     restoreH5Liger(dataset(object, d), filePath[[d]])
-            else
-                warning("Specified dataset \"", d,
-                        "\" not found in liger object.")
+            }
         }
     }
     return(object)

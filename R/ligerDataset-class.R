@@ -6,7 +6,7 @@ setClassUnion("matrixLike_OR_NULL", c("matrixLike", "NULL"))
 # I'm not sure if this is a proper solution
 setOldClass("H5D")
 suppressWarnings(setClassUnion("dgCMatrix_OR_H5D_OR_NULL", c("dgCMatrix", "H5D", "NULL")))
-setClassUnion("matrix_OR_H5D_OR_NULL", c("matrix", "NULL"))
+setClassUnion("matrix_OR_H5D_OR_NULL", c("matrix", "H5D", "NULL"))
 
 #' ligerDataset class
 #'
@@ -25,13 +25,15 @@ setClassUnion("matrix_OR_H5D_OR_NULL", c("matrix", "NULL"))
 #' @slot U matrix
 #' @slot agg.data list
 #' @slot h5file.info list
+#' @slot feature.meta Feature metadata, DataFrame
+#' @importClassesFrom S4Vectors DataFrame
 #' @exportClass ligerDataset
 ligerDataset <- setClass(
     "ligerDataset",
     representation(
-        raw.data = "ANY",
-        norm.data = "ANY",
-        scale.data = "ANY",
+        raw.data = "dgCMatrix_OR_H5D_OR_NULL",
+        norm.data = "dgCMatrix_OR_H5D_OR_NULL",
+        scale.data = "matrix_OR_H5D_OR_NULL",
         scale.unshared.data = "ANY",
         var.unshared.features = "character",
         W = "matrix_OR_NULL",
@@ -41,6 +43,7 @@ ligerDataset <- setClass(
         U = "matrix_OR_NULL",
         agg.data = "list",
         h5file.info = "list",
+        feature.meta = "DataFrame",
         colnames = "character",
         rownames = "character"
     )
@@ -73,6 +76,7 @@ createLigerDataset <- function(
         B = NULL,
         U = NULL,
         h5file.info = NULL,
+        feature.meta = NULL,
         ...
 ) {
     modal <- match.arg(modal)
@@ -100,13 +104,15 @@ createLigerDataset <- function(
         norm.data <- as(norm.data, "CsparseMatrix")
     }
     if (is.null(h5file.info)) h5file.info <- list()
+    if (is.null(feature.meta))
+        feature.meta <- S4Vectors::DataFrame(row.names = rn)
     # Create ligerDataset
     allData <- list(.modalClassDict[[modal]],
                     raw.data = raw.data,
                     norm.data = norm.data,
                     scale.data = scale.data,
                     W = W, V = V, A = A, B = B, U = U,
-                    h5file.info = h5file.info,
+                    h5file.info = h5file.info, feature.meta = feature.meta,
                     colnames = cn, rownames = rn)
     allData <- c(allData, additional)
     x <- do.call("new", allData)
@@ -137,6 +143,7 @@ createLigerDataset.h5 <- function(
         indices.name = NULL,
         indptr.name = NULL,
         modal = c("default", "rna", "atac"),
+        feature.meta = NULL,
         ...
 ) {
     if (!hdf5r::is_hdf5(h5file)) {
@@ -185,12 +192,14 @@ createLigerDataset.h5 <- function(
     if (!is.null(raw.data)) raw.data <- h5file[[raw.data]]
     if (!is.null(norm.data)) norm.data <- h5file[[norm.data]]
     if (!is.null(scale.data)) scale.data <- h5file[[scale.data]]
+    if (is.null(feature.meta))
+        feature.meta <- S4Vectors::DataFrame(row.names = genes)
     allData <- list(.modalClassDict[[modal]],
                     raw.data = raw.data,
                     norm.data = norm.data,
                     scale.data = scale.data,
                     #W = W, V = V, A = A, B = B, U = U,
-                    h5file.info = h5.meta,
+                    h5file.info = h5.meta, feature.meta = feature.meta,
                     colnames = barcodes, rownames = genes)
     allData <- c(allData, additional)
     x <- do.call("new", allData)
@@ -306,8 +315,9 @@ setGeneric("scale.data", function(x, ...) standardGeneric("scale.data"))
 setGeneric("scale.data<-", function(x, check = TRUE, ...) standardGeneric("scale.data<-"))
 setGeneric("getH5File", function(x, dataset = NULL) standardGeneric("getH5File"))
 setGeneric("h5file.info", function(x, info = NULL, dataset = NULL) standardGeneric("h5file.info"))
-setGeneric("h5file.info<-", function(x, info = NULL, dataset = NULL, value) standardGeneric("h5file.info<-"))
-
+setGeneric("h5file.info<-", function(x, info = NULL, dataset = NULL, check = TRUE, value) standardGeneric("h5file.info<-"))
+setGeneric("feature.meta", function(x) standardGeneric("feature.meta"))
+setGeneric("feature.meta<-", function(x, value) standardGeneric("feature.meta<-"))
 # ------------------------------------------------------------------------------
 # Methods ####
 # ------------------------------------------------------------------------------
@@ -477,7 +487,10 @@ setMethod("getH5File",
                   stop("Specified dataset name(s) not found: ",
                        paste(dataset[!dataset %in% names(x)], collapse = ", "))
               }
-              lapply(datasets(x)[dataset], function(ld) ld@h5file.info$H5File)
+              results <- lapply(datasets(x)[dataset],
+                                function(ld) ld@h5file.info$H5File)
+              if (length(results) == 1) results <- results[[1]]
+              results
           })
 
 #' Access the H5File information in a ligerDataset object
@@ -513,12 +526,12 @@ setReplaceMethod(
         x = "ligerDataset",
         info = "ANY",
         dataset = "missing",
+        check = "ANY",
         value = "ANY"
     ),
-    function(x, info = NULL, dataset = NULL, value) {
+    function(x, info = NULL, dataset = NULL, check = TRUE, value) {
         if (is.null(info)) {
             x@h5file.info <- value
-            validObject(x)
         } else {
             if (!is.character(info) | length(info) != 1)
                 stop('`info` has to be a single character.')
@@ -537,6 +550,25 @@ setReplaceMethod(
                                   value = getH5File(x)[[h5file.info(x, info)]]))
             }
         }
+        if (isTRUE(check)) validObject(x)
+        x
+    }
+)
+
+#' Access the feature metadata in a ligerDataset object
+#' @param x ligerDataset object
+#' @rdname feature.meta
+#' @export
+setMethod("feature.meta", signature(x = "ligerDataset"), function(x) {
+    x@feature.meta
+})
+
+setReplaceMethod(
+    "feature.meta",
+    signature(x = "ligerDataset"),
+    function(x, value) {
+        x@feature.meta <- value
+        validObject(x)
         x
     }
 )

@@ -17,6 +17,7 @@ createLigerDataset(
   B = NULL,
   U = NULL,
   h5file.info = NULL,
+  feature.meta = NULL,
   ...
 )
 }

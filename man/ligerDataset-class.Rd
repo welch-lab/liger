@@ -36,5 +36,7 @@ datasets}
 \item{\code{agg.data}}{list}
 
 \item{\code{h5file.info}}{list}
+
+\item{\code{feature.meta}}{Feature metadata, DataFrame}
 }}
 
