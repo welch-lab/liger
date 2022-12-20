@@ -18,6 +18,10 @@ selectGenes <- function(
     ...
 ) {
     combine <- match.arg(combine)
+    if (length(var.thresh) != 1 & length(var.thresh) != length(object)) {
+        stop("Wrong length of `var.thresh`. Use 1 or `length(object)` values.")
+    }
+    if (length(var.thresh) == 1) var.thresh <- rep(var.thresh, length(object))
     gene.use <- list()
     for (d in names(object)) {
         i <- names(object) == d
@@ -76,12 +80,10 @@ selectGenes <- function(
             geneVars / nolan_constant > geneMeanUpper &
                 log10(geneVars) > basegenelower + var.thresh[i]
         ]
-
         if (isTRUE(verbose))
             message(date(), " ...   ", length(selected), " features selected")
         gene.use[[d]] <- selected
     }
-
     if (combine == "intersection") gene.use <- Reduce(intersect, gene.use)
     else gene.use <- Reduce(union, gene.use)
 
@@ -134,51 +136,7 @@ calcGeneVars.H5 <- function(object, chunkSize = 1000, verbose = TRUE) {
         geneVars <- geneVars / (ncol(object) - 1)
         h5file[["gene_vars"]][seq_along(geneVars)] <- geneVars
     }
-    print(1)
     feature.meta(object)$geneVars <- geneVars
-    print(2)
     object
-}
-
-#' Select variable genes from an H5 ligerDataset object
-#' @param object ligerDataset Object
-selectGenes.H5 <- function(
-    object,
-    var.thresh = 0.1,
-    alpha.thresh = 0.99,
-    capitalize = FALSE,
-    cell.meta = NULL
-) {
-    if (!"geneVars" %in% names(feature.meta(object))) {
-        object <- calcGeneVars.H5(object)
-    }
-    features <- rownames(object)
-    if (isTRUE(capitalize)) {
-        features <- toupper(features)
-    }
-    trx_per_cell <- cell.meta$nUMI
-    gene_expr_mean <- feature.meta(object)$geneMeans
-    gene_expr_var <- feature.meta(object)$geneVars
-    nolan_constant <- mean((1 / trx_per_cell))
-    alphathresh.corrected <- alpha.thresh / length(features)
-    geneMeanUpper <-
-        gene_expr_mean + qnorm(1 - alphathresh.corrected / 2) *
-        sqrt(gene_expr_mean * nolan_constant / length(trx_per_cell))
-    print(trx_per_cell)
-    selectIdx1 <- gene_expr_var / nolan_constant > geneMeanUpper
-    selectIdx2 <- log10(gene_expr_var) >
-        log10(gene_expr_mean) + log10(nolan_constant) + var.thresh
-    selected <- features[selectIdx1 & selectIdx2]
-    return(list(object = object, selected = selected))
-}
-
-selectGenes.Matrix <- function(
-    object,
-    var.thresh = 0.1,
-    alpha.thresh = 0.99,
-    capitalize = FALSE,
-    cell.meta = NULL
-) {
-
 }
 
