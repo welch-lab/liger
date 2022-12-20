@@ -19,20 +19,17 @@ normalize <- function(
         chunk = 1000,
         verbose = TRUE
 ) {
-    if (scaleFactor <= 0 | scaleFactor == 1) scaleFactor <- NULL
+    if (!is.null(scaleFactor) && (scaleFactor <= 0 | scaleFactor == 1))
+        scaleFactor <- NULL
     for (d in names(object)) {
         # `d` is the name of each dataset
         if (isTRUE(verbose)) message(date(), " ... Normalizing dataset: ", d)
         ld <- dataset(object, d)
-        if (isH5Liger(ld)) {
-            dataset(object, d, qc = FALSE) <- normalizeDataset.h5(
-                ld, log, scaleFactor, chunk, verbose
-            )
-        } else {
-            dataset(object, d, qc = FALSE) <- normalizeDataset.Matrix(
-                ld, log, scaleFactor, verbose
-            )
-        }
+        if (isH5Liger(ld))
+            ld <- normalizeDataset.h5(ld, log, scaleFactor, chunk, verbose)
+        else
+            ld <- normalizeDataset.Matrix(ld, log, scaleFactor, verbose)
+        datasets(object)[[d]] <- ld
     }
     object
 }
