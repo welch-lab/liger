@@ -11,7 +11,7 @@ createLigerDataset(
   scale.data = NULL,
   scale.unshared.data = NULL,
   var.unshared.features = NULL,
-  W = NULL,
+  H = NULL,
   V = NULL,
   A = NULL,
   B = NULL,
@@ -25,8 +25,6 @@ createLigerDataset(
 \item{raw.data}{matrix}
 
 \item{norm.data}{matrix}
-
-\item{W}{matrix}
 
 \item{V}{matrix}
 

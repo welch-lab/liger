@@ -2,12 +2,15 @@
 % Please edit documentation in R/liger-class.R
 \name{cell.meta,liger-method}
 \alias{cell.meta,liger-method}
+\alias{cell.meta<-,liger-method}
 \title{Access cell.meta of liger object}
 \usage{
 \S4method{cell.meta}{liger}(x)
+
+\S4method{cell.meta}{liger}(x) <- value
 }
 \arguments{
-\item{x}{liger object}
+\item{x}{\linkS4class{liger} object}
 }
 \description{
 Access cell.meta of liger object

@@ -47,7 +47,7 @@
 #' ligerex <- online_iNMF(ligerex, k = 20, lambda = 5, miniBatch_size = 5000)
 #' }
 
-online_iNMF <- function(object,
+online_iNMF.old <- function(object,
                         X_new = NULL,
                         projection = FALSE,
                         W.init = NULL,

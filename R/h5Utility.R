@@ -63,7 +63,7 @@ H5Apply <- function(
         if (isTRUE(verbose)) utils::setTxtProgressBar(pb, ind)
     }
     # Break a new line otherwise next message comes right after the "%" sign.
-    cat("\n")
+    if (isTRUE(verbose)) cat("\n")
     init
 }
 
@@ -74,7 +74,38 @@ safeH5Create <- function(object,
                          dims,
                          dtype = "double",
                          chunkSize = dims) {
-    h5file <- getH5File(object)
+    if (inherits(object, "ligerDataset") && isH5Liger(object)) {
+        h5file <- getH5File(object)
+    } else if (inherits(object, "H5File")) {
+        h5file <- object
+    }
+
+    # Check/Create H5Group ####
+    # Inspect given `dataPath` b/c `hdf5r` does not allow creating dataset w/
+    # "group" path(s)
+    if (length(dataPath) != 1 | !is.character(dataPath)) {
+        stop("`path` has to be a single character.")
+    }
+    dataPath <- trimws(dataPath, whitespace = "/")
+    dataPath <- strsplit(dataPath, "/")[[1]]
+    if (length(dataPath) > 1) {
+        dataPath <- list(groups = dataPath[seq(length(dataPath) - 1)],
+                         data = dataPath[length(dataPath)])
+    } else {
+        dataPath <- list(groups = NULL, data = dataPath)
+    }
+    if (!is.null(dataPath$groups)) {
+        for (depth in seq(length(dataPath$groups))) {
+            pathNow <- paste(dataPath$groups[seq(depth)], collapse = "/")
+            if (!h5file$exists(pathNow)) {
+                h5file$create_group(pathNow)
+            }
+        }
+    }
+    dataPath <- paste0(paste(dataPath$groups, collapse = "/"),
+                       "/", dataPath$data)
+
+    # Now we can work on the H5D data itself ####
     if (!h5file$exists(dataPath)) {
         # If specified data does not exist yet, just simply create the link
         h5file$create_dataset(
@@ -89,11 +120,27 @@ safeH5Create <- function(object,
         if (length(dims) == 1) {
             if (originalDims < dims) {
                 hdf5r::extendDataSet(h5file[[dataPath]], dims)
+            } else if (originalDims > dims) {
+                h5file$link_delete(dataPath)
+                h5file$create_dataset(
+                    name = dataPath,
+                    dims = dims,
+                    dtype = hdf5r::h5types[[dtype]],
+                    chunk_dims = chunkSize
+                )
             }
         } else if (length(dims) == 2) {
             # Only check for the 1st dim for now (number of feature)
             if (originalDims[1] < dims[1]) {
                 hdf5r::extendDataSet(h5file[[dataPath]], dims)
+            } else if (originalDims[1] > dims[1]) {
+                h5file$link_delete(dataPath)
+                h5file$create_dataset(
+                    name = dataPath,
+                    dims = dims,
+                    dtype = hdf5r::h5types[[dtype]],
+                    chunk_dims = chunkSize
+                )
             }
         }
     }
@@ -178,5 +225,19 @@ restoreH5Liger <- function(object, filePath = NULL) {
         }
     }
     return(object)
+}
+
+.inspectH5Path <- function(path) {
+    if (length(path) != 1 | !is.character(path)) {
+        stop("`path` has to be a single character.")
+    }
+    path <- trimws(path, whitespace = "/")
+    path <- strsplit(path, "/")[[1]]
+    if (length(path) > 1) {
+        list(folder = path[seq(length(path) - 1)],
+             data = path[length(path)])
+    } else {
+        list(folder = NULL, data = path)
+    }
 }
 

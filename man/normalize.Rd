@@ -6,14 +6,15 @@
 \usage{
 normalize(
   object,
-  log = TRUE,
-  scaleFactor = 10000,
+  log = FALSE,
+  scaleFactor = NULL,
+  useDatasets = NULL,
   chunk = 1000,
   verbose = TRUE
 )
 }
 \arguments{
-\item{object}{liger object}
+\item{object}{\linkS4class{liger} object}
 
 \item{log}{Logical. Whether to do a \code{log(x + 1)} transform on the
 normalized data. Default \code{TRUE}.}
@@ -22,13 +23,18 @@ normalized data. Default \code{TRUE}.}
 factor before transformation. \code{NULL} for not scaling. Default
 \code{1e4}.}
 
+\item{useDatasets}{A character vector of the names, a numeric or logical
+vector of the index of the datasets to be normalized. Default
+\code{NULL} normalizes all datasets.}
+
 \item{chunk}{Integer. Number of maximum number of cells in each chunk, when
 normalization is applied to any HDF5 based dataset. Default \code{1000}.}
 
 \item{verbose}{Logical. Whether to show information of the progress.}
 }
 \value{
-Updated \code{object}
+Updated \code{object}, where the \code{norm.data} slot of each
+\linkS4class{ligerDataset} object in the \code{datasets} slot is updated.
 }
 \description{
 Perform normalization on each raw data matrix from each dataset

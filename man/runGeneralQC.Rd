@@ -6,15 +6,23 @@
 \usage{
 runGeneralQC(
   object,
+  mito = TRUE,
+  ribo = TRUE,
+  hemo = TRUE,
   features = NULL,
   pattern = NULL,
+  useDatasets = names(object),
   chunkSize = 1000,
   verbose = TRUE
 )
 }
 \arguments{
-\item{object}{liger object with \code{raw.data} available in
-each ligerDataset embedded}
+\item{object}{\linkS4class{liger} object with \code{raw.data} available in
+each \linkS4class{ligerDataset} embedded}
+
+\item{mito, ribo, hemo}{Whether to calculate the expression percentage of
+mitochondrial, ribosomal or hemoglobin genes, respectively. Default
+\code{TRUE}.}
 
 \item{features}{Feature names matching the feature subsets that users want to
 calculate the expression percentage with. A vector for a single subset, or a
@@ -24,6 +32,10 @@ named list for multiple subset. Default \code{NULL}.}
 want to calculate the expression percentage with. A vector for a single
 subset, or a named list for multiple subset. Default \code{NULL}.}
 
+\item{useDatasets}{A character vector of the names, a numeric or logical
+vector of the index of the datasets to be included for QC. Default
+\code{names(object)} (i.e. all datasets).}
+
 \item{chunkSize}{Integer number of cells to include in a chunk when working
 on HDF5 based dataset. Default \code{1000}}
 
@@ -31,9 +43,9 @@ on HDF5 based dataset. Default \code{1000}}
 \code{TRUE}.}
 }
 \value{
-A liger object with \code{nUMI}, \code{nGene} updated
+Updated \code{object} with \code{nUMI}, \code{nGene} updated
 in \code{cell.meta(object)}, as well as expression percentage value for each
-feature subset
+feature subset.
 }
 \description{
 Calculate number of UMIs, number of detected features and

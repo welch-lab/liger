@@ -2,12 +2,15 @@
 % Please edit documentation in R/ligerDataset-class.R
 \name{feature.meta,ligerDataset-method}
 \alias{feature.meta,ligerDataset-method}
+\alias{feature.meta<-,ligerDataset-method}
 \title{Access the feature metadata in a ligerDataset object}
 \usage{
-\S4method{feature.meta}{ligerDataset}(x)
+\S4method{feature.meta}{ligerDataset}(x, check = NULL)
+
+\S4method{feature.meta}{ligerDataset}(x, check = TRUE) <- value
 }
 \arguments{
-\item{x}{ligerDataset object}
+\item{x}{\linkS4class{ligerDataset} object}
 }
 \description{
 Access the feature metadata in a ligerDataset object

@@ -11,14 +11,68 @@ selectGenes(
   num.genes = NULL,
   tol = 1e-04,
   capitalize = FALSE,
-  combine = c("intersection", "union"),
-  verbose = TRUE,
+  combine = c("union", "intersection"),
+  datasets.use = NULL,
+  unshared = FALSE,
+  unshared.datasets = NULL,
+  unshared.thresh = NULL,
   chunkSize = 1000,
-  ...
+  verbose = TRUE
 )
 }
 \arguments{
-\item{object}{ligerObject}
+\item{object}{\linkS4class{liger} object. Normalization has to be performed
+in advance. See \code{\link{normalize}}.}
+
+\item{var.thresh}{Variance threshold. Main threshold used to identify
+variable genes. Genes with expression variance greater than threshold
+(relative to mean) are selected. Higher threshold results in fewer selected
+genes. Accepts single value or vector with specific threshold for each
+dataset in \code{datasets.use}. Default \code{0.1}.}
+
+\item{alpha.thresh}{Alpha threshold. Controls upper bound for expected mean
+gene expression. Lower threshold means higher upper bound. Default
+\code{0.99}.}
+
+\item{num.genes}{Number of genes to find for each dataset. Optimizes the
+value of \code{var.thresh} for each dataset to get this number of genes.
+Accepts single value or vector with same length as number of
+\code{datasets.use}. Default \code{NULL} does not optimize.}
+
+\item{tol}{Tolerance to use for optimization if \code{num.genes} is
+specified. Default \code{0.0001}.}
+
+\item{capitalize}{Capitalize gene names to match homologous genes (i.e.
+across species). Default \code{FALSE}.}
+
+\item{combine}{How to combine variable genes across datasets. Choose from
+\code{"union"} or \code{"intersection"}. Default \code{"union"}.}
+
+\item{datasets.use}{A character vector of the names, a numeric or logical
+vector of the index of the datasets to be included for selection. Default
+\code{NULL} considers all datasets.}
+
+\item{unshared}{Logical. Whether to consider unshared features. Default
+\code{FALSE}.}
+
+\item{unshared.datasets}{The dataset to be included for considering unshared
+features. Similar to how \code{datasets.use} should be specified. Default
+\code{NULL}.}
+
+\item{unshared.thresh}{The threshold to be applied for each dataset in
+\code{unshared.datasets}. Similar to how \code{var.thresh} should be
+specified. Default \code{NULL}.}
+
+\item{chunkSize}{Integer. Number of maximum number of cells in each chunk,
+when gene selection is applied to any HDF5 based dataset. Default
+\code{1000}.}
+
+\item{verbose}{Logical. Whether to show the progress. Default \code{TRUE}.}
+}
+\value{
+The input \code{object}, with the \code{var.features} slot updated.
+The \code{var.unshared.features} slot of the \linkS4class{ligerDataset}
+object in the \code{datasets} slot will be updated if \code{unshared = TRUE}.
 }
 \description{
 This function identifies highly variable genes from each dataset
@@ -26,4 +80,7 @@ and combines these gene sets (either by union or intersection) for use in
 downstream analysis. Assuming that gene expression approximately follows a
 Poisson distribution, this function identifies genes with gene expression
 variance above a given variance threshold (relative to mean gene expression).
+}
+\seealso{
+\code{\link{plotVarFeatures}}
 }

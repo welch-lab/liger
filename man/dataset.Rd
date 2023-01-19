@@ -3,6 +3,7 @@
 \name{dataset,liger,character_OR_NULL-method}
 \alias{dataset,liger,character_OR_NULL-method}
 \alias{dataset,liger,missing-method}
+\alias{dataset,liger,numeric-method}
 \alias{dataset<-,liger,character,missing,ANY,ligerDataset-method}
 \alias{dataset<-,liger,character,ANY,ANY,matrixLike-method}
 \alias{dataset<-,liger,character,missing,ANY,NULL-method}
@@ -11,6 +12,8 @@
 \S4method{dataset}{liger,character_OR_NULL}(x, name = NULL)
 
 \S4method{dataset}{liger,missing}(x, name = NULL)
+
+\S4method{dataset}{liger,numeric}(x, name = NULL)
 
 \S4method{dataset}{liger,character,missing,ANY,ligerDataset}(x, name, type = NULL, qc = TRUE) <- value
 
@@ -39,4 +42,11 @@ setter methods update the input \code{x} (the \linkS4class{liger} object).
 TODO: Debating on whether to have a separate (differently named)
 method to directly access matrices in embedded ligerDataset objects, or to
 allow accessing matrices with \code{type}.
+
+This method access a single dataset of the \linkS4class{liger} object. Using
+the setter method to add/modify a dataset will subsequentially perform cell
+metadata updates and checks.
+}
+\seealso{
+\code{\link{datasets}}
 }

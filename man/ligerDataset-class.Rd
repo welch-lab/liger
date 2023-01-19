@@ -23,8 +23,6 @@ datasets}
 
 \item{\code{var.unshared.features}}{Variable features not shared with other datasets}
 
-\item{\code{W}}{matrix}
-
 \item{\code{V}}{matrix}
 
 \item{\code{A}}{matrix}

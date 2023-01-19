@@ -9,7 +9,7 @@ createLiger(
   modal = NULL,
   cell.meta = NULL,
   take.gene.union = FALSE,
-  remove.missing = FALSE,
+  remove.missing = TRUE,
   format.type = "10X",
   data.name = NULL,
   indices.name = NULL,
@@ -27,8 +27,15 @@ filename to an HDF5 file. See detail for HDF5 reading.}
 
 \item{modal}{Character vector for modality setting. See detail.}
 
-\item{cell.meta}{data.frame of metadata at single-cell level. Default
-\code{NULL}.}
+\item{cell.meta}{data.frame of metadata at single-cell level. Default}
+
+\item{remove.missing}{Whether to remove cells that do not have any counts and
+features not expressed in any cells from each dataset. Default \code{TRUE}.}
+
+\item{format.type}{Select preset of H5 file structure. Current available
+options are \code{"10X"} and \code{"AnnData"}. Can be either a single
+specification for all datasets or a character vector that match with each
+dataset.}
 }
 \description{
 This function allows creating \linkS4class{liger} object from

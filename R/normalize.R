@@ -1,27 +1,33 @@
 #' Normalize raw data in liger object
 #' @description Perform normalization on each raw data matrix from each dataset
 #' to account for total feature expression across a cell.
-#' @param object liger object
+#' @param object \linkS4class{liger} object
 #' @param log Logical. Whether to do a \code{log(x + 1)} transform on the
 #' normalized data. Default \code{TRUE}.
 #' @param scaleFactor Numeric. Scale the normalized expression value by this
 #' factor before transformation. \code{NULL} for not scaling. Default
 #' \code{1e4}.
+#' @param useDatasets A character vector of the names, a numeric or logical
+#' vector of the index of the datasets to be normalized. Default
+#' \code{NULL} normalizes all datasets.
 #' @param chunk Integer. Number of maximum number of cells in each chunk, when
 #' normalization is applied to any HDF5 based dataset. Default \code{1000}.
 #' @param verbose Logical. Whether to show information of the progress.
-#' @return Updated \code{object}
+#' @return Updated \code{object}, where the \code{norm.data} slot of each
+#' \linkS4class{ligerDataset} object in the \code{datasets} slot is updated.
 #' @export
 normalize <- function(
         object,
-        log = TRUE,
-        scaleFactor = 1e4,
+        log = FALSE,
+        scaleFactor = NULL,
+        useDatasets = NULL,
         chunk = 1000,
         verbose = TRUE
 ) {
+    useDatasets <- .checkUseDatasets(object, useDatasets)
     if (!is.null(scaleFactor) && (scaleFactor <= 0 | scaleFactor == 1))
         scaleFactor <- NULL
-    for (d in names(object)) {
+    for (d in useDatasets) {
         # `d` is the name of each dataset
         if (isTRUE(verbose)) message(date(), " ... Normalizing dataset: ", d)
         ld <- dataset(object, d)
@@ -74,7 +80,7 @@ normalizeDataset.h5 <- function(object, log = TRUE, scaleFactor = 1e4,
         geneMeans = rep(0, nFeature)
     )
     h5file <- getH5File(object)
-    resultH5Path <- "norm.data3"
+    resultH5Path <- "norm.data"
     # Use safe create here in practice
     safeH5Create(
         object = object,
@@ -115,10 +121,10 @@ normalizeDataset.h5 <- function(object, log = TRUE, scaleFactor = 1e4,
         verbose = verbose)
     results$geneMeans <- results$geneMeans / nCell
     h5file[["gene_means"]][seq_along(results$geneMeans)] <- results$geneMeans
-    feature.meta(object)$geneMeans <- results$geneMeans
+    feature.meta(object, check = FALSE)$geneMeans <- results$geneMeans
     h5file[["gene_sum_sq"]][seq_along(results$geneSumSq)] <- results$geneSumSq
-    feature.meta(object)$geneSumSq <- results$geneSumSq
+    feature.meta(object, check = FALSE)$geneSumSq <- results$geneSumSq
     norm.data(object, check = FALSE) <- h5file[[resultH5Path]]
-    object@h5file.info$norm.data <- resultH5Path
+    h5file.info(object, "norm.data", check = FALSE) <- resultH5Path
     return(object)
 }
