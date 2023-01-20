@@ -1,10 +1,11 @@
+#' Online iNMF
+#' @export
 online_iNMF <- function(
         object,
         X_new = NULL,
         projection = FALSE,
         W.init = NULL,
         V.init = NULL,
-        H.init = NULL,
         A.init = NULL,
         B.init = NULL,
         k = 20,
@@ -17,11 +18,7 @@ online_iNMF <- function(
 ) {
     if (!inherits(object, "liger"))
         stop("Please use a liger object.")
-    W <- object@W
-    V <- lapply(datasets(object), function(x) x@V)
-    H <- lapply(datasets(object), function(x) x@H)
-    A <- lapply(datasets(object), function(x) x@A)
-    B <- lapply(datasets(object), function(x) x@B)
+
     nPrevDataset <- 0
     nNewDataset <- 0
     if (!is.null(X_new)) {
@@ -53,6 +50,11 @@ online_iNMF <- function(
     if (isTRUE(verbose))
         message(date(), " ... ", nNewDataset, " new datasets detected.")
 
+    W <- object@W
+    V <- lapply(datasets(object), function(x) x@V)
+    A <- lapply(datasets(object), function(x) x@A)
+    B <- lapply(datasets(object), function(x) x@B)
+
     # Initialize minibatch sizes ####
     dataIdx <- seq_along(object)
     dataIdxNew <- seq(nPrevDataset + 1, length(object))
@@ -81,34 +83,40 @@ online_iNMF <- function(
         if (is.null(X_new)) {
             if (isTRUE(verbose))
                 message(date(), " ... Scenario 1, init arguments ignored.")
+
             W <- matrix(runif(nGenes * k, 0, 2), nGenes, k)
+            # TODO: W <- W / sqrt(colSums(W ^ 2))
             for (j in seq(k)) W[, j] <- W[, j] / sqrt(sum(W[, j] ^ 2))
+
             V <- list()
             for (i in dataIdx) {
                 VInitIdx <- sample(nCells[i], k)
                 # pick k sample from datasets as initial H matrix
                 V[[i]] = scale.data(object, i)[1:nGenes, VInitIdx]
-            }
-
-            # normalize the columns of H_i, H_s matrices
-            for (j in seq(k)) {
-                for (i in dataIdx) {
+                for (j in seq(k)) {
                     # normalize columns of dictionaries
                     V[[i]][, j] = V[[i]][, j] / sqrt(sum(V[[i]][, j]^2))
                 }
             }
-            H <- rep(list(NULL), nNewDataset)
-            H_minibatch <- list()
-            A <- rep(list(matrix(0, k, k)), nNewDataset)
-            B <- rep(list(matrix(0, nGenes, k)), nNewDataset)
-            AOld <- rep(list(matrix(0, k, k)), nNewDataset)
-            # save information older than 2 epochs
-            BOld <- rep(list(matrix(0, nGenes, k)), nNewDataset)
+            # "Old"s for saving information older than 2 epochs
+            A <- AOld <- rep(list(matrix(0, k, k)), nNewDataset)
+            B <- BOld <- rep(list(matrix(0, nGenes, k)), nNewDataset)
         } else {
             if (isTRUE(verbose))
                 message(date(), " ... Scenario 2, initiating parameters")
+
             if (!is.null(W.init)) W <- W.init
-            if (!is.null(V.init)) V <- V.init
+            W <- .checkMatrixValid(W, k, name = "W")
+
+            if (!is.null(V.init)) {
+                if (length(V.init) != nPrevDataset)
+                    stop("Number of matrices in `V.init` does not match to ",
+                         "number of datasets in `object`")
+                V <- V.init
+            }
+            V[dataIdxPrev] <- lapply(V[dataIdxPrev],
+                                     function(v)
+                                         .checkMatrixValid(v, k, name = "V"))
             for (i in dataIdxNew) {
                 VInitIdx <- sample(nCells[i], k)
                 # initialize the Vi for new dataset
@@ -116,9 +124,7 @@ online_iNMF <- function(
                 for (j in seq(k))
                     V[[i]][, j] <- V[[i]][, j] / sqrt(sum(V[[i]][, j]^2))
             }
-            if (!is.null(H.init)) H[dataIdxPrev] <- H.init
-            H[dataIdxNew] <- rep(list(NULL), nNewDataset)
-            HMinibatch <- list()
+
             if (!is.null(A.init)) A[dataIdxPrev] <- A.init
             if (!is.null(B.init)) B[dataIdxPrev] <- B.init
             A[dataIdxNew] <- rep(list(matrix(0, k, k)), nNewDataset)
@@ -140,8 +146,8 @@ online_iNMF <- function(
         message(date(), " ... Initialization done.")
 
         # chunk permutation: shuffle cell index by H5 chunks
-        allIdx <- list()
-        for (i in seq_along(dataIdxNew)) {
+        allIdx <- rep(list(NULL), length(object))
+        for (i in dataIdxNew) {
             allIdx[[i]] <- .permuteChunkIdx(object, i, 1000)
         }
 
@@ -352,4 +358,16 @@ online_iNMF <- function(
         else seq((i - 1)*size + 1, nCell)
     }
     result
+}
+
+.checkMatrixValid <- function(m, k, name) {
+    if (is.null(m)) {
+        stop("Matrix ", name, " has to be provided, either from ",
+             "pre-calculation or supply by `", name, ".init`.")
+    }
+    if (ncol(m) != k) {
+        stop("Factors from matrix ", name,
+             " do not match specification of `k` (", k, ").")
+    }
+    m
 }

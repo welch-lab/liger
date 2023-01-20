@@ -437,16 +437,18 @@ setReplaceMethod("dimnames", c("ligerDataset", "list"), function(x, value) {
 #' @rdname subsetLigerDataset
 setMethod(
     "[",
-    signature(x = "ligerDataset", i = "missing", j = "index"),
-    function(x, i, j, ...) subsetLigerDataset(x, cellIdx = j, ...)
+    signature(x = "ligerDataset", i = "index", j = "missing"),
+    function(x, i, j, ...)
+        subsetLigerDataset(x, featureIdx = i, cellIdx = NULL, ...)
 )
 
 #' @export
 #' @rdname subsetLigerDataset
 setMethod(
     "[",
-    signature(x = "ligerDataset", i = "index", j = "missing"),
-    function(x, i, j, ...) subsetLigerDataset(x, featureIdx = i, ...)
+    signature(x = "ligerDataset", i = "missing", j = "index"),
+    function(x, i, j, ...)
+        subsetLigerDataset(x, featureIdx = NULL, cellIdx = j, ...)
 )
 
 #' @export
