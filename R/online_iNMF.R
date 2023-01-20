@@ -220,10 +220,14 @@ online_iNMF <- function(
                 if (epoch[dataIdxNew[1]] > 0 & epochNext[dataIdxNew[1]]) {
                     # remove information older than 2 epochs
                     A[[i]] <- A[[i]] - AOld[[i]]
+                    AOld[[i]] <- scale_param[i] * A[[i]]
                     B[[i]] <- B[[i]] - BOld[[i]]
+                    BOld[[i]] <- scale_param[i] * B[[i]]
+                } else {
+                    AOld[[i]] <- scale_param[i] * AOld[[i]]
+                    BOld[[i]] <- scale_param[i] * BOld[[i]]
                 }
-                AOld[[i]] <- scale_param[i] * AOld[[i]]
-                BOld[[i]] <- scale_param[i] * BOld[[i]]
+
                 # HiHit
                 A[[i]] <- scale_param[i] * A[[i]] +
                     H_minibatch[[i]] %*% t(H_minibatch[[i]]) / minibatchSizes[i]
