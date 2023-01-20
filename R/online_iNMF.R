@@ -137,14 +137,13 @@ online_iNMF <- function(
         epochNext <- rep(FALSE, length(object))
         sqrtLambda <- sqrt(lambda)
 
-        nChunks <- rep(NULL, length(object))
-        chunkIdx <- rep(list(NULL), length(object))
         message(date(), " ... Initialization done.")
 
         # chunk permutation: shuffle cell index by H5 chunks
-        allIdx <- lapply(seq_along(object),
-                         function(i) .permuteChunkIdx(object, i, 1000))
-
+        allIdx <- list()
+        for (i in seq_along(dataIdxNew)) {
+            allIdx[[i]] <- .permuteChunkIdx(object, i, 1000)
+        }
 
         totalIters <- floor(sum(nCellsNew) * max.epochs / miniBatch_size)
         if (isTRUE(verbose)) {
@@ -187,7 +186,6 @@ online_iNMF <- function(
                 }
                 epoch[dataIdxNew[1]] <- max.epochs
             }
-
             if (length(minibatchIdx[[dataIdxNew[1]]]) != minibatchSizesOrig[dataIdxNew[1]])
                 next
 
@@ -278,7 +276,6 @@ online_iNMF <- function(
             }
         }
 
-
         if (isTRUE(verbose)) {
             cat("\n")
             message(date(), " ... Calculating metagene loadings...")
@@ -339,7 +336,7 @@ online_iNMF <- function(
     chunkIdx <- sample(nChunks, nChunks)
     unlist(lapply(chunkIdx, function(i) {
         if (i != nChunks) seq(1 + chunkSize*(i - 1), i*chunkSize)
-        else seq((1 + chunkSize*(i - 1)):ncol(ld))
+        else seq((1 + chunkSize*(i - 1)), ncol(ld))
     }), use.names = FALSE)
 }
 
@@ -347,8 +344,8 @@ online_iNMF <- function(
     nBatch <- ceiling(nCell / size)
     result <- list()
     for (i in seq(nBatch)) {
-        result[[i]] <- if (i != nBatch) seq((i - 1) * size + 1, i * size)
-        else seq((i - 1) * size + 1, nCell)
+        result[[i]] <- if (i != nBatch) seq((i - 1)*size + 1, i*size)
+        else seq((i - 1)*size + 1, nCell)
     }
     result
 }
