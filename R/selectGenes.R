@@ -108,7 +108,7 @@ selectGenes <- function(
         i <- datasets.use == d
         j <- unshared.datasets == d
         if (isTRUE(verbose))
-            message(date(), " ... Selecting HVG for dataset: ", d)
+            .log("Selecting HVG for dataset: ", d)
         ld <- dataset(object, d)
         ## Make sure that all required feature meta values exist ####
         if (isH5Liger(ld)) {
@@ -165,8 +165,8 @@ selectGenes <- function(
             datasets(object, check = FALSE)[[d]] <- ld
             selected <- selected[selected %in% shared.features]
             if (isTRUE(verbose))
-                message(date(), " ...   ", length(selected),
-                        " shared variable features selected")
+                .log("  ", length(selected),
+                     " shared variable features selected")
             selected.shared[[d]] <- selected
         }
         if (d %in% unshared.datasets) {
@@ -180,8 +180,7 @@ selectGenes <- function(
             ]
             selected <- selected[!selected %in% shared.features]
             if (isTRUE(verbose))
-                message(date(), " ...   ", length(selected),
-                        " unshared features selected")
+                .log("  ", length(selected), " unshared features selected")
             selected.unshared[[d]] <- selected
         }
     }
@@ -195,7 +194,7 @@ selectGenes <- function(
                 '`combine = "union"`', immediate. = TRUE)
     } else {
         if (isTRUE(verbose))
-            message(date(), " ... Finally ", length(selected.shared),
+            .log("Finally ", length(selected.shared),
                     " shared variable features selected.")
     }
     var.features(object, check = FALSE) <- selected.shared

@@ -170,7 +170,7 @@ restoreH5Liger <- function(object, filePath = NULL) {
             stop("HDF5 file path does not exist:\n",
                  filePath)
         }
-        message(date(), " ... Restoring ligerDataset from: ", filePath)
+        .log("Restoring ligerDataset from: ", filePath)
         h5file <- hdf5r::H5File$new(filePath, mode = "r+")
         h5.meta$filename <- h5file$filename
         pathChecks <- unlist(lapply(h5.meta[4:10], function(x) {

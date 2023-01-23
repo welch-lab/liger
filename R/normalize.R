@@ -13,6 +13,7 @@
 #' @param chunk Integer. Number of maximum number of cells in each chunk, when
 #' normalization is applied to any HDF5 based dataset. Default \code{1000}.
 #' @param verbose Logical. Whether to show information of the progress.
+#' Default \code{TRUE}.
 #' @return Updated \code{object}, where the \code{norm.data} slot of each
 #' \linkS4class{ligerDataset} object in the \code{datasets} slot is updated.
 #' @export
@@ -29,7 +30,7 @@ normalize <- function(
         scaleFactor <- NULL
     for (d in useDatasets) {
         # `d` is the name of each dataset
-        if (isTRUE(verbose)) message(date(), " ... Normalizing dataset: ", d)
+        if (isTRUE(verbose)) .log("Normalizing dataset: ", d)
         ld <- dataset(object, d)
         if (isH5Liger(ld))
             ld <- normalizeDataset.h5(ld, log, scaleFactor, chunk, verbose)

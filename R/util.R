@@ -108,3 +108,7 @@
     slot
 }
 
+.log <- function(..., level = 1) {
+    line <- paste(rep("...", level), collapse = "")
+    message(date(), " ", line, " ", ...)
+}

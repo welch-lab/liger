@@ -75,8 +75,7 @@ runGeneralQC <- function(
     for (nrn in newResultNames) object[[nrn]] <- 0
     for (d in useDatasets) {
         ld <- dataset(object, d)
-        if (isTRUE(verbose))
-            message(date(), ' ... calculating QC for dataset "', d, '"')
+        if (isTRUE(verbose)) .log('calculating QC for dataset "', d, '"')
         if (isH5Liger(ld))
             results <- runGeneralQC.h5(
                 ld,
@@ -167,6 +166,21 @@ runGeneralQC.Matrix <- function(
     list(cell = results, feature = nCell)
 }
 
+#' Remove missing cells or features from liger object
+#' @param object \linkS4class{liger} object
+#' @param orient Choose to remove non-expressing features (\code{"feature"}),
+#' empty barcodes (\code{"cell"}), or both of them (\code{"both"}). Default
+#' \code{"both"}.
+#' @param useDatasets A character vector of the names, a numeric or logical
+#' vector of the index of the datasets to be processed. Default
+#' \code{NULL} removes empty entries from all datasets.
+#' @param filenameSuffix When subsetting H5 based datasets to new H5 files, this
+#' suffix will be added to all the filenames. Default \code{"removeMissing"}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{TRUE}.
+#' @param ... Arguments passed to \code{\link{subsetLigerDataset}}
+#' @return Updated (subset) \code{object}.
+#' @export
 removeMissing <- function(
         object,
         orient = c("both", "feature", "cell"),
@@ -183,33 +197,48 @@ removeMissing <- function(
     rmFeature <- ifelse(orient %in% c("both", "feature"), TRUE, FALSE)
     rmCell <- ifelse(orient %in% c("both", "cell"), TRUE, FALSE)
     datasets.new <- list()
+    subsetted <- c()
     for (d in useDatasets) {
-        if (isTRUE(verbose)) message(date(),
-                                     " ... Removing missing in dataset: ", d)
         ld <- dataset(object, d)
         if (rmFeature) {
-            featureIdx <- feature.meta(ld)$nCell > 0
+            featureIdx <- which(feature.meta(ld)$nCell > 0)
         } else {
             featureIdx <- seq(nrow(ld))
         }
+        if (length(featureIdx) == nrow(ld)) rmFeature <- FALSE
         if (rmCell) {
             cellIdx <- colnames(object)[object$dataset == d & object$nGene > 0]
+            cellIdx <- which(colnames(ld) %in% cellIdx)
         } else {
             cellIdx <- seq(ncol(ld))
         }
-        datasets.new[[d]] <- subsetLigerDataset(ld, featureIdx = featureIdx,
-                                                cellIdx = cellIdx,
-                                                filenameSuffix = filenameSuffix,
-                                                verbose = verbose, ...)
+        if (length(cellIdx) == ncol(ld)) rmCell <- FALSE
+        subsetted <- c(subsetted, any(c(rmFeature, rmCell)))
+        if (any(c(rmFeature, rmCell))) {
+            if (isTRUE(verbose)) .log("Removing missing in dataset: ", d)
+            datasets.new[[d]] <- subsetLigerDataset(
+                ld,
+                featureIdx = featureIdx,
+                cellIdx = cellIdx,
+                filenameSuffix = filenameSuffix,
+                verbose = verbose, ...
+            )
+        } else {
+            datasets.new[[d]] <- ld
+        }
     }
-    methods::new(
-        "liger",
-        datasets = datasets.new,
-        cell.meta = cell.meta(object)[object$nGene > 0, , drop = FALSE],
-        var.features = character(),
-        H.norm = object@H.norm[cellIdx, , drop = FALSE],
-        version = packageVersion("rliger")
-    )
+    if (any(subsetted)) {
+        methods::new(
+            "liger",
+            datasets = datasets.new,
+            cell.meta = cell.meta(object)[object$nGene > 0, , drop = FALSE],
+            var.features = character(),
+            H.norm = object@H.norm[cellIdx, , drop = FALSE],
+            version = packageVersion("rliger")
+        )
+    } else {
+        object
+    }
 }
 
 #' Generate violin plot of QC metrics of each dataset

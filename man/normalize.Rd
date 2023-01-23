@@ -30,7 +30,8 @@ vector of the index of the datasets to be normalized. Default
 \item{chunk}{Integer. Number of maximum number of cells in each chunk, when
 normalization is applied to any HDF5 based dataset. Default \code{1000}.}
 
-\item{verbose}{Logical. Whether to show information of the progress.}
+\item{verbose}{Logical. Whether to show information of the progress.
+Default \code{TRUE}.}
 }
 \value{
 Updated \code{object}, where the \code{norm.data} slot of each

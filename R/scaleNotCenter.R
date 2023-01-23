@@ -7,7 +7,8 @@
 #' have been run in advance.
 #' @param chunk Integer. Number of maximum number of cells in each chunk, when
 #' scaling is applied to any HDF5 based dataset. Default \code{1000}.
-#' @param verbose Logical. Whether to show information of the progress.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{TRUE}.
 #' @return Updated \code{object}, where the \code{scale.data} slot of each
 #' \linkS4class{ligerDataset} object in the \code{datasets} slot is updated.
 #' @export
@@ -22,7 +23,7 @@ scaleNotCenter <- function(
              "Please check the result of `selectGenes()`")
     }
     for (d in names(object)) {
-        if (isTRUE(verbose)) message(date(), " ... Scaling dataset: ", d)
+        if (isTRUE(verbose)) .log("Scaling dataset: ", d)
         ld <- dataset(object, d)
         if (isH5Liger(ld)) {
             # Scale H5 based data

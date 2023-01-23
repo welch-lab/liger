@@ -47,11 +47,11 @@ online_iNMF <- function(
     } else {
         nNewDataset <- length(object)
     }
-    if (isTRUE(verbose))
-        message(date(), " ... ", nNewDataset, " new datasets detected.")
+    if (isTRUE(verbose)) .log(nNewDataset, " new datasets detected.")
 
     W <- object@W
     V <- lapply(datasets(object), function(x) x@V)
+    H <- lapply(datasets(object), function(x) x@H)
     A <- lapply(datasets(object), function(x) x@A)
     B <- lapply(datasets(object), function(x) x@B)
 
@@ -81,8 +81,7 @@ online_iNMF <- function(
         if (!is.null(seed)) set.seed(seed)
         # Initialize all kinds of matrices ####
         if (is.null(X_new)) {
-            if (isTRUE(verbose))
-                message(date(), " ... Scenario 1, init arguments ignored.")
+            if (isTRUE(verbose)) .log("Scenario 1, init arguments ignored.")
 
             W <- matrix(runif(nGenes * k, 0, 2), nGenes, k)
             # TODO: W <- W / sqrt(colSums(W ^ 2))
@@ -102,8 +101,7 @@ online_iNMF <- function(
             A <- AOld <- rep(list(matrix(0, k, k)), nNewDataset)
             B <- BOld <- rep(list(matrix(0, nGenes, k)), nNewDataset)
         } else {
-            if (isTRUE(verbose))
-                message(date(), " ... Scenario 2, initiating parameters")
+            if (isTRUE(verbose)) .log("Scenario 2, initiating parameters")
 
             if (!is.null(W.init)) W <- W.init
             W <- .checkMatrixValid(W, k, name = "W")
@@ -143,7 +141,7 @@ online_iNMF <- function(
         epochNext <- rep(FALSE, length(object))
         sqrtLambda <- sqrt(lambda)
 
-        message(date(), " ... Initialization done.")
+        .log("Initialization done.")
 
         # chunk permutation: shuffle cell index by H5 chunks
         allIdx <- rep(list(NULL), length(object))
@@ -153,7 +151,7 @@ online_iNMF <- function(
 
         totalIters <- floor(sum(nCellsNew) * max.epochs / miniBatch_size)
         if (isTRUE(verbose)) {
-            message(date(), " ... Starting Online iNMF...")
+            .log("Starting Online iNMF...")
             pb <- utils::txtProgressBar(1, totalIters + 1, style = 3)
         }
         while (epoch[dataIdxNew[1]] < max.epochs) {
@@ -288,7 +286,7 @@ online_iNMF <- function(
 
         if (isTRUE(verbose)) {
             cat("\n")
-            message(date(), " ... Calculating metagene loadings...")
+            .log("Calculating metagene loadings...")
         }
         H <- rep(list(NULL), length(object))
         for (i in dataIdx) {
@@ -312,7 +310,7 @@ online_iNMF <- function(
         }
     } else {
         if (isTRUE(verbose))
-            message(date(), " ... Scenario 3, metagene projection")
+            .log("Scenario 3, metagene projection")
         if (!is.null(W.init)) W <- W.init
         H[dataIdxNew] = rep(list(NULL), nNewDataset)
         V[dataIdxNew] = rep(list(NULL), nNewDataset)

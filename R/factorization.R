@@ -640,22 +640,22 @@ online_iNMF.old <- function(object,
 #' # Requires preprocessed liger object (only for objected not based on HDF5 files)
 #' # Get factorization using 20 factors and mini-batch of 5000 cells
 #' # (default setting, can be adjusted for ideal results)
-#' ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 1)
+#' ligerex <- optimizeALSOld(ligerex, k = 20, lambda = 5, nrep = 1)
 #' }
 
-optimizeALS <- function(object,
+optimizeALSOld <- function(object,
                         ...) {
-    UseMethod(generic = 'optimizeALS', object = object)
+    UseMethod(generic = 'optimizeALSOld', object = object)
 }
 
-#' @rdname optimizeALS
+#' @rdname optimizeALSOld
 #' @importFrom stats runif
 #' @importFrom utils setTxtProgressBar txtProgressBar
 #'
 #' @export
-#' @method optimizeALS list
+#' @method optimizeALSOld list
 #'
-optimizeALS.list <- function(object,
+optimizeALSOld.list <- function(object,
                              k,
                              lambda = 5.0,
                              thresh = 1e-6,
@@ -893,11 +893,11 @@ optimizeALS.list <- function(object,
 
 #' @importFrom methods slot<-
 #'
-#' @rdname optimizeALS
+#' @rdname optimizeALSOld
 #' @export
-#' @method optimizeALS liger
+#' @method optimizeALSOld liger
 #'
-optimizeALS.liger <- function(object,
+optimizeALSOld.liger <- function(object,
                               k,
                               lambda = 5.0,
                               thresh = 1e-6,

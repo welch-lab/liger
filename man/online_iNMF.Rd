@@ -10,7 +10,6 @@ online_iNMF(
   projection = FALSE,
   W.init = NULL,
   V.init = NULL,
-  H.init = NULL,
   A.init = NULL,
   B.init = NULL,
   k = 20,

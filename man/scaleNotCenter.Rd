@@ -13,7 +13,8 @@ have been run in advance.}
 \item{chunk}{Integer. Number of maximum number of cells in each chunk, when
 scaling is applied to any HDF5 based dataset. Default \code{1000}.}
 
-\item{verbose}{Logical. Whether to show information of the progress.}
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{TRUE}.}
 }
 \value{
 Updated \code{object}, where the \code{scale.data} slot of each

@@ -76,7 +76,6 @@ createLiger <- function(
         raw.data,
         modal = NULL,
         cell.meta = NULL,
-        take.gene.union = FALSE,
         remove.missing = TRUE,
         format.type = "10X",
         data.name = NULL,
@@ -116,31 +115,6 @@ createLiger <- function(
         } else {
             datasets[[dname]] <- as.ligerDataset(data, modal = modal[i])
         }
-    }
-
-    if (isTRUE(take.gene.union)) {
-        merged.data <- MergeSparseDataAll(raw.data)
-        if (isTRUE(remove.missing)) {
-            missing_genes <- rowSums(merged.data) == 0
-            if (length(missing_genes) > 0) {
-                if (isTRUE(verbose)) {
-                    message(
-                        "Removing ",
-                        sum(missing_genes),
-                        " genes not expressed in any cells across all datasets."
-                    )
-                }
-                if (length(missing_genes) < 25) {
-                    if (isTRUE(verbose)) {
-                        message(rownames(merged.data)[missing_genes])
-                    }
-                }
-                merged.data <- merged.data[!missing_genes,]
-            }
-        }
-        raw.data <- lapply(raw.data, function(x) {
-            merged.data[, colnames(x)]
-        })
     }
 
     datasets <- .dedupLigerDatasets(datasets)

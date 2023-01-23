@@ -8,7 +8,6 @@ createLiger(
   raw.data,
   modal = NULL,
   cell.meta = NULL,
-  take.gene.union = FALSE,
   remove.missing = TRUE,
   format.type = "10X",
   data.name = NULL,
