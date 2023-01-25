@@ -1,6 +1,11 @@
 .log <- function(..., level = 1) {
     line <- paste(rep("...", level), collapse = "")
-    message(date(), " ", line, " ", ...)
+    pref <- paste0(date(), " ", line, " ")
+    indent <- paste(rep(" ", nchar(pref)), collapse = "")
+    content <- list(...)
+    msg <- paste(content, collapse = "")
+    msg <- gsub("\n", paste0("\n", indent), msg)
+    message(pref, msg)
 }
 
 .collapseLongNames <- function(x) {

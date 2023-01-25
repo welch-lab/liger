@@ -17,7 +17,6 @@ optimizeALS(
   W.init = NULL,
   V.init = NULL,
   use.unshared = FALSE,
-  lamda.u = NULL,
   rand.seed = 1,
   print.obj = FALSE,
   readH5 = "auto",
@@ -35,7 +34,6 @@ optimizeALS(
   W.init = NULL,
   V.init = NULL,
   use.unshared = FALSE,
-  lamda.u = NULL,
   rand.seed = 1,
   print.obj = FALSE,
   readH5 = "auto",
@@ -53,7 +51,6 @@ optimizeALS(
   W.init = NULL,
   V.init = NULL,
   use.unshared = FALSE,
-  lamda.u = NULL,
   rand.seed = 1,
   print.obj = FALSE,
   verbose = TRUE
@@ -105,10 +102,10 @@ each element is the initial \eqn{V} matrix of each dataset. Default
 \code{TRUE}.}
 }
 \value{
-\code{object} with slot \code{W} updated with the result \eqn{W}
+\code{object} with \code{W} slot updated with the result \eqn{W}
 matrix, and the \code{H} and \code{V} slots of each
 \linkS4class{ligerDataset} object in the \code{datasets} slot updated with
-the \eqn{H} and \eqn{V} matrix, respectively.
+the dataset specific \eqn{H} and \eqn{V} matrix, respectively.
 }
 \description{
 Performs integrative non-negative matrix (iNMF) factorization to return

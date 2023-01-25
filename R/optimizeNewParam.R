@@ -1,3 +1,27 @@
+#' Perform factorization for new value of k
+#' @description This uses an efficient strategy for updating that takes
+#' advantage of the information in the existing factorization. It is most
+#' recommended for values of \code{k.new} smaller than current value (\code{k},
+#' which is set when running \code{\link{optimizeALS}}), where it
+#' is more likely to speed up the factorization.
+#' @param object \linkS4class{liger} object. Should call
+#' \code{\link{optimizeALS}} in advance.
+#' @param k.new Number of factors of factorization.
+#' @param lambda Regularization parameter. By default, this will use the lambda
+#' last used with \code{\link{optimizeALS}}.
+#' @param thresh Convergence threshold. Convergence occurs when
+#' \eqn{|obj_0-obj|/(mean(obj0,obj)) < thresh}. Default \code{1e-4}.
+#' @param max.iters Maximum number of block coordinate descent iterations to
+#' perform. Default \code{100}.
+#' @param rand.seed Random seed to set. Only relevant if \code{k.new} is greater
+#' than \code{k}. Default \code{1}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{TRUE}.
+#' @return \code{object} with \code{W} slot updated with the new \eqn{W}
+#' matrix, and the \code{H} and \code{V} slots of each
+#' \linkS4class{ligerDataset} object in the \code{datasets} slot updated with
+#' the new dataset specific \eqn{H} and \eqn{V} matrix, respectively.
+#' @export
 optimizeNewK <- function(
         object,
         k.new,
@@ -12,65 +36,65 @@ optimizeNewK <- function(
         #lambda <- object@parameters$lambda
     }
     k <- ncol(object@W)
-    if (is.null(k)) {
-        stop("Unable to detect valid existing factorization result. ",
-             "Please run `optimizeALS()` or `online_iNMF()` first.")
-    }
     if (k.new == k) {
         return(object)
     }
-
-    H <- lapply(datasets(object), function(ld) t(ld@H))
-    W <- t(object@W)
-    V <- lapply(datasets(object), function(ld) t(ld@V))
-    E <- lapply(datasets(object), function(ld) t(scale.data(ld)))
-    nGenes <- ncol(W)
+    # g x c
+    E <- lapply(datasets(object), function(ld) scale.data(ld))
+    # g x k
+    W <- object@W
+    # g x k
+    V <- lapply(datasets(object), function(ld) ld@V)
+    # k x c
+    H <- lapply(datasets(object), function(ld) ld@H)
+    nGenes <- nrow(W)
     nDatasets <- length(object)
     nCells <- sapply(datasets(object), ncol)
     if (isTRUE(verbose)) .log("Updating initial input matrices")
     if (k.new > k) {
         set.seed(rand.seed)
         sqrtLambda <- sqrt(lambda)
-        W_new <- matrix(runif(nGenes*(k.new - k), 0, 2), k.new - k, nGenes)
+        # Initialize W_new g x k_diff
+        # TODO: Directly initialize with nGene x k.new-k instead of transposing
+        # Doing it now because need to reproduce old result
+        W_new <- t(matrix(runif(nGenes*(k.new - k), 0, 2), k.new - k, nGenes))
+        # Initialize V_new g x k_diff
         V_new <- lapply(seq(nDatasets), function(i)
-            matrix(runif(nGenes*(k.new - k), 0, 2), k.new - k, nGenes))
-        H_new <- lapply(nCells, function(n)
-            matrix(runif(n*(k.new - k), 0, 2), n, k.new - k))
+            t(matrix(runif(nGenes*(k.new - k), 0, 2), k.new - k, nGenes)))
+        # H_new k_diff x c
         H_new <- lapply(seq(nDatasets), function(i) {
-            t(solveNNLS(rbind(t(W_new + V_new[[i]]),
-                              sqrtLambda * t(V_new[[i]])),
-                        rbind(t(E[[i]] - H[[i]] %*% (W + V[[i]])),
-                              matrix(0, nGenes, nCells[i]))
-                        ))
+            solveNNLS(rbind(W_new + V_new[[i]], sqrtLambda * V_new[[i]]),
+                      rbind(E[[i]] - (W + V[[i]]) %*% H[[i]],
+                            matrix(0, nGenes, nCells[i])))
         })
         V_new <- lapply(seq(nDatasets), function(i) {
-            solveNNLS(
-                rbind(H_new[[i]], sqrtLambda * H_new[[i]]),
-                rbind(
-                    E[[i]] - H[[i]] %*% (W + V[[i]]) - H_new[[i]] %*% W_new,
-                    matrix(0, nCells[[i]], nGenes)
-                )
-            )
+            t(solveNNLS(
+                t(cbind(H_new[[i]], sqrtLambda * H_new[[i]])),
+                t(cbind(
+                    E[[i]] - (W + V[[i]]) %*% H[[i]] - W_new %*% H_new[[i]],
+                    matrix(0, nGenes, nCells[[i]])))
+            ))
         })
-        W_new <- solveNNLS(rbind.fill.matrix(H_new),
-                           rbind.fill.matrix(
-                               lapply(seq(nDatasets), function(i) {
-                                   E[[i]] - H[[i]] %*% (W + V[[i]]) -
-                                       H_new[[i]] %*% V_new[[i]]
-                               })))
-        H <- lapply(seq(nDatasets), function(i) t(cbind(H[[i]], H_new[[i]])))
-        V <- lapply(seq(nDatasets), function(i) t(rbind(V[[i]], V_new[[i]])))
-        W <- t(rbind(W, W_new))
+        W_new <- t(solveNNLS(
+            t(Reduce(cbind, H_new)),
+            t(Reduce(cbind,  lapply(seq(nDatasets), function(i)
+                E[[i]] - (W + V[[i]]) %*% H[[i]] - V_new[[i]] %*% H_new[[i]])))
+        ))
+        # H k.new x c
+        H <- lapply(seq(nDatasets), function(i) rbind(H[[i]], H_new[[i]]))
+        # V&W g x k.new
+        V <- lapply(seq(nDatasets), function(i) cbind(V[[i]], V_new[[i]]))
+        W <- cbind(W, W_new)
     } else {
         deltas <- rep(0, k)
         for (i in seq(nDatasets))
-            deltas <- deltas + sapply(seq(k), function(x)
-                norm(H[[i]][, k] %*% t(W[k, ] + V[[i]][k, ]), "F")
+            deltas <- deltas + sapply(seq(k), function(ki)
+                norm((W[, ki] + V[[i]][, ki]) %*% t(H[[i]][ki,]), "F")
             )
         k.use <- order(deltas, decreasing = TRUE)[seq(k.new)]
-        W <- t(W[k.use, ])
-        H <- lapply(H, function(x) t(x[, k.use]))
-        V <- lapply(V, function(x) t(x[k.use, ]))
+        W <- W[, k.use]
+        V <- lapply(V, function(x) x[, k.use])
+        H <- lapply(H, function(x) x[k.use, ])
     }
     object <- optimizeALS(
         object,

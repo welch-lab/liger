@@ -186,12 +186,9 @@ setMethod(
         }
         # E ==> cell x gene scaled matrices
         E <- lapply(object, t)
-        # N ==> nDataset
         nDatasets <- length(E)
-        # ns ==> nCells
         nCells <- sapply(E, nrow)
         tmp <- gc()
-        # g ==> nGenes
         nGenes <- ncol(E[[1]])
         if (k >= nGenes) {
             stop('Select k lower than the number of variable genes: ', nGenes)

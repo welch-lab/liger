@@ -38,7 +38,6 @@
 #'
 #' @return \code{liger} object with H, W, V, A and B slots set.
 #'
-#' @export
 #' @examples
 #' \dontrun{
 #' # Requires preprocessed liger object
@@ -634,7 +633,6 @@ online_iNMF.old <- function(object,
 #'
 #' @return \code{liger} object with H, W, and V slots set.
 #'
-#' @export
 #' @examples
 #' \dontrun{
 #' # Requires preprocessed liger object (only for objected not based on HDF5 files)
@@ -652,7 +650,6 @@ optimizeALSOld <- function(object,
 #' @importFrom stats runif
 #' @importFrom utils setTxtProgressBar txtProgressBar
 #'
-#' @export
 #' @method optimizeALSOld list
 #'
 optimizeALSOld.list <- function(object,
@@ -894,7 +891,6 @@ optimizeALSOld.list <- function(object,
 #' @importFrom methods slot<-
 #'
 #' @rdname optimizeALSOld
-#' @export
 #' @method optimizeALSOld liger
 #'
 optimizeALSOld.liger <- function(object,
@@ -977,16 +973,13 @@ optimizeALSOld.liger <- function(object,
 #'
 #' @return \code{liger} object with H, W, and V slots reset.
 #'
-#' @importFrom plyr rbind.fill.matrix
-#'
-#' @export
 #' @examples
 #' \dontrun{
 #' # decide to run with k = 15 instead (keeping old lambda the same)
 #' ligerex <- optimizeNewK(ligerex, k.new = 15)
 #' }
 
-optimizeNewK <-
+optimizeNewK.old <-
     function(object,
              k.new,
              lambda = NULL,
