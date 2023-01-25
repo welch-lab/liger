@@ -44,6 +44,10 @@
 #' \code{verbose = TRUE}. Default \code{FALSE}.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{TRUE}.
+#' @return \code{object} with \code{W} slot updated with the result \eqn{W}
+#' matrix, and the \code{H} and \code{V} slots of each
+#' \linkS4class{ligerDataset} object in the \code{datasets} slot updated with
+#' the dataset specific \eqn{H} and \eqn{V} matrix, respectively.
 #' @rdname optimizeALS
 #' @export
 setGeneric(
@@ -59,7 +63,6 @@ setGeneric(
         W.init = NULL,
         V.init = NULL,
         use.unshared = FALSE,
-        lamda.u = NULL,
         rand.seed = 1,
         print.obj = FALSE,
         readH5 = "auto",
@@ -83,7 +86,6 @@ setMethod(
         W.init = NULL,
         V.init = NULL,
         use.unshared = FALSE,
-        lamda.u = NULL,
         rand.seed = 1,
         print.obj = FALSE,
         readH5 = "auto",
@@ -103,8 +105,7 @@ setMethod(
                                         "scaled dense matrix into memory. ",
                                         "Dim: ", h5d$dims[1], "x", h5d$dims[2],
                                         immediate. = verbose)
-                            }
-                            else {
+                            } else {
                                 stop("Scaled data in H5 based dataset with ",
                                      "more than 8000 cells will not be ",
                                      "automatically read into memory.")
@@ -136,19 +137,14 @@ setMethod(
                 print.obj = print.obj,
                 verbose = verbose
             )
-            colnames(out$W) <- var.features(object)
             object@W <- out$W
-            names(out$H) <- names(out$V) <- names(object)
             for (d in names(object)) {
                 ld <- dataset(object, d)
-                rownames(out$H[[d]]) <- colnames(ld)
                 ld@H <- out$H[[d]]
-                colnames(out$V[[d]]) <- rownames(scale.data(ld))
                 ld@V <- out$V[[d]]
                 datasets(object, check = FALSE)[[d]] <- ld
             }
             #object@parameters$lambda <- lambda
-            return(object)
         } else {
             object <- optimize_UANLS(
                 object = object,
@@ -161,6 +157,7 @@ setMethod(
                 print.obj = print.obj
             )
         }
+        return(object)
     }
 )
 
@@ -180,7 +177,6 @@ setMethod(
         W.init = NULL,
         V.init = NULL,
         use.unshared = FALSE,
-        lamda.u = NULL,
         rand.seed = 1,
         print.obj = FALSE,
         verbose = TRUE
@@ -188,40 +184,47 @@ setMethod(
         if (!all(sapply(object, is.matrix))) {
             stop("All values in 'object' must be a matrix")
         }
-        E <- object
-        E <- lapply(E, t)
+        # E ==> cell x gene scaled matrices
+        E <- lapply(object, t)
         # N ==> nDataset
         nDatasets <- length(E)
-        # TODO Fix the direction of scaled data. g x c or c x g?
         # ns ==> nCells
         nCells <- sapply(E, nrow)
         tmp <- gc()
         # g ==> nGenes
         nGenes <- ncol(E[[1]])
         if (k >= nGenes) {
-            stop('Select k lower than the number of variable genes: ', g)
+            stop('Select k lower than the number of variable genes: ', nGenes)
         }
-        W_m <- matrix(0, k, nGenes)
-        V_m <- lapply(seq(nDatasets), function(i) matrix(0, k, nGenes))
-        H_m <- lapply(nCells, function(n) matrix(0, n, k))
+        Wm <- matrix(0, k, nGenes)
+        Vm <- rep(list(matrix(0, k, nGenes)), nDatasets)
+        Hm <- lapply(nCells, function(n) matrix(0, n, k))
         tmp <- gc()
-        best_obj <- Inf
-        run_stats <- matrix(0, nrep, 2)
+        bestObj <- Inf
+        bestSeed <- rand.seed
+        runStats <- matrix(0, nrep, 2)
         for (i in seq(nrep)) {
             set.seed(seed = rand.seed + i - 1)
-            start_time <- Sys.time()
-            if (!is.null(W.init)) W <- W.init
+            startTime <- Sys.time()
+            if (!is.null(W.init))
+                W <- t(.checkInit(W.init, nCells, nGenes, k, "W"))
             else W <- matrix(runif(nGenes*k, 0, 2), k, nGenes)
-            if (!is.null(V.init)) V <- V.init
-            else
-                V <- rep(list(matrix(runif(nGenes*k, 0, 2), k, nGenes)),
-                         nDatasets)
-            if (!is.null(H.init)) H <- H.init
-            else H <- lapply(nCells, function(n) matrix(runif(n*k, 0, 2), n, k))
+            if (!is.null(V.init)) {
+                V <- .checkInit(V.init, nCells, nGenes, k, "V")
+                V <- lapply(V, t)
+            } else
+                V <- lapply(seq(nDatasets), function(i) {
+                    matrix(runif(nGenes*k, 0, 2), k, nGenes)})
+            if (!is.null(H.init)) {
+                H <- .checkInit(H.init, nCells, nGenes, k, "H")
+                H <- lapply(H, t)
+            } else
+                H <- lapply(nCells, function(n) matrix(runif(n*k, 0, 2), n, k))
             tmp <- gc()
             delta <- 1
             iters <- 0
-            sqrt_lambda <- sqrt(lambda)
+            sqrtLambda <- sqrt(lambda)
+
             obj0 <- sum(sapply(
                 seq(nDatasets),
                 function(i) norm(E[[i]] - H[[i]] %*% (W + V[[i]]), "F") ^ 2
@@ -232,7 +235,7 @@ setMethod(
                 ))
             tmp <- gc()
             if (isTRUE(verbose)) {
-                .log("Start iNMF...")
+                .log("Start iNMF with seed: ", rand.seed + i - 1, "...")
                 pb <- utils::txtProgressBar(0, max.iters, style = 3)
             }
             while (delta > thresh & iters < max.iters) {
@@ -240,7 +243,7 @@ setMethod(
                     seq(nDatasets),
                     function(i)
                         t(solveNNLS(
-                            C = rbind(t(W + V[[i]]), sqrt_lambda*t(V[[i]])),
+                            C = rbind(t(W + V[[i]]), sqrtLambda*t(V[[i]])),
                             B = rbind(t(E[[i]]), matrix(0, nGenes, nCells[i]))
                         ))
                 )
@@ -248,7 +251,7 @@ setMethod(
                 V <- lapply(
                     seq(nDatasets),
                     function(i)
-                        solveNNLS(C = rbind(H[[i]], sqrt_lambda*H[[i]]),
+                        solveNNLS(C = rbind(H[[i]], sqrtLambda*H[[i]]),
                             B = rbind(E[[i]] - H[[i]] %*% W,
                                       matrix(0, nCells[[i]], nGenes)))
                 )
@@ -282,32 +285,34 @@ setMethod(
             #   print("Warning: failed to converge within the allowed number of iterations.
             #         Re-running with a higher max.iters is recommended.")
             # }
-            if (obj < best_obj) {
-                W_m <- W
-                H_m <- H
-                V_m <- V
-                best_obj <- obj
-                best_seed <- rand.seed + i - 1
+            if (obj < bestObj) {
+                Wm <- W
+                Hm <- H
+                Vm <- V
+                bestObj <- obj
+                bestSeed <- rand.seed + i - 1
             }
-            end_time <- difftime(time1 = Sys.time(), time2 = start_time,
+            endTime <- difftime(time1 = Sys.time(), time2 = startTime,
                                  units = "auto")
-            run_stats[i, 1] <- as.double(end_time)
-            run_stats[i, 2] <- iters
+            runStats[i, 1] <- as.double(endTime)
+            runStats[i, 2] <- iters
             if (isTRUE(verbose)) {
-                .log("Finished in ", run_stats[i, 1], " ", units(end_time),
+                .log("Finished in ", runStats[i, 1], " ", units(endTime),
                      ", ", iters, " iterations. \nMax iterations set: ",
                      max.iters, "\nFinal objective delta: ", delta)
                 if (isTRUE(print.obj)) .log("Objective: ", obj)
-                .log("Best results with seed ", best_seed)
+                .log("Best results with seed ", bestSeed)
             }
         }
-        out <- list()
-        out$H <- H_m
-        for (i in seq(nDatasets))
-            rownames(out$H[[i]]) <- rownames(object[[i]])
-        out$V <- V_m
+        out <- list(H = Hm, V = Vm, W = t(Wm))
+        for (i in seq(nDatasets)) {
+            out$H[[i]] <- t(out$H[[i]])
+            colnames(out$H[[i]]) <- colnames(object[[i]])
+            out$V[[i]] <- t(out$V[[i]])
+            rownames(out$V[[i]]) <- rownames(object[[i]])
+        }
         names(out$V) <- names(out$H) <- names(object)
-        out$W <- W_m
+        rownames(out$W) <- rownames(object[[1]])
         return(out)
     }
 )

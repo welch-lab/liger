@@ -104,6 +104,12 @@ each element is the initial \eqn{V} matrix of each dataset. Default
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{TRUE}.}
 }
+\value{
+\code{object} with slot \code{W} updated with the result \eqn{W}
+matrix, and the \code{H} and \code{V} slots of each
+\linkS4class{ligerDataset} object in the \code{datasets} slot updated with
+the \eqn{H} and \eqn{V} matrix, respectively.
+}
 \description{
 Performs integrative non-negative matrix (iNMF) factorization to return
 factorized \eqn{H}, \eqn{W}, and \eqn{V} matrices. It optimizes the iNMF

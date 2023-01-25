@@ -72,24 +72,7 @@ selectGenes <- function(
 
     ## Checks for the same thing for unshared variable features ####
     if (isTRUE(unshared)) {
-        if (is.numeric(unshared.datasets)) {
-            unshared.datasets <- names(object)[unshared.datasets]
-            if (any(is.na(unshared.datasets)))
-                stop("`unshared.datasets` subscription out of bound.")
-        } else if (is.character(unshared.datasets)) {
-            if (any(!unshared.datasets %in% names(object))) {
-                stop("`unshared.datasets` cannot be found for datasets: ",
-                     paste(unshared.datasets[!unshared.datasets %in%
-                                                 names(object)],
-                           collapse = ", "))
-            }
-        } else if (is.logical(unshared.datasets)) {
-            if (length(unshared.datasets) != length(object))
-                stop("`unshared.datasets` has wrong length of logical values.")
-            unshared.datasets <- names(object)[unshared.datasets]
-        } else {
-            stop("Cannot understand `unshared.datasets`. See `?selectGenes`")
-        }
+        unshared.datasets <- .checkUseDatasets(object, unshared.datasets)
         if (length(unshared.thresh) != 1 &
             length(unshared.thresh) != length(unshared.datasets))
             stop("Wrong length of `unshared.thresh`. ",
@@ -201,7 +184,8 @@ selectGenes <- function(
 
     # Final process for unshared variable features ####
     for (d in unshared.datasets) {
-        datasets(object)[[d]]@var.unshared.features <- selected.unshared[[d]]
+        datasets(object, check = FALSE)[[d]]@var.unshared.features <-
+            selected.unshared[[d]]
     }
 
     return(object)

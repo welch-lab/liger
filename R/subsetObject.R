@@ -87,8 +87,8 @@ subsetLiger <- function(
         datasets = datasets.new,
         cell.meta = cell.meta(object)[cellIdx, , drop = FALSE],
         var.features = character(),
-        W = object@W[, featureIdx, drop = FALSE],
-        H.norm = object@H.norm[cellIdx, , drop = FALSE],
+        W = object@W[featureIdx, , drop = FALSE],
+        H.norm = object@H.norm[, cellIdx, drop = FALSE],
         version = packageVersion("rliger")
     )
 
@@ -251,13 +251,14 @@ subsetH5LigerDatasetToMem <- function(
                 # what features are in the scale.data
                 # After: based on variable features, selecting what features
                 # from variable features are being involved in featureIdx.
-                scaledFeatureIdx2 <- which(scaledFeatureIdx %in% featureIdx)
+                scaledFeatureIdx2 <- unlist(lapply(featureIdx, function(i) {
+                    which(scaledFeatureIdx == i)}), use.names = FALSE)
                 if (isTRUE(verbose))
                     .log(length(scaledFeatureIdx2),
                          " features used in scale.data were selected. ",
                          level = 3)
-                scaleData <- scale.data(object)[scaledFeatureIdx2, cellIdx]
-                rownames(scaleData) <- rownames(object)[scaledFeatureIdx2]
+                scaleData <- scale.data(object)[scaledFeatureIdx2, cellIdx, drop = FALSE]
+                rownames(scaleData) <- rownames(object)[scaledFeatureIdx][scaledFeatureIdx2]
                 colnames(scaleData) <- colnames(object)[cellIdx]
             } else {
                 scaleData <- NULL
@@ -270,8 +271,8 @@ subsetH5LigerDatasetToMem <- function(
     }
     # `NULL[idx1, idx2]` returns `NULL`
     # V: k x genes
-    H <- object@H[cellIdx, , drop = FALSE]
-    V <- object@V[, featureIdx, drop = FALSE]
+    H <- object@H[, cellIdx, drop = FALSE]
+    V <- object@V[featureIdx, , drop = FALSE]
     A <- object@A
     B <- object@B[featureIdx, , drop = FALSE]
     U <- object@U#[cellIdx, , drop = FALSE]
@@ -446,7 +447,8 @@ subsetH5LigerDatasetToH5 <- function(
         }
         if (!is.null(scaledFeatureIdx) && length(scaledFeatureIdx) > 0) {
             if (length(scaledFeatureIdx) == scale.data(object)$dims[1]) {
-                scaledFeatureIdx2 <- which(scaledFeatureIdx %in% featureIdx)
+                scaledFeatureIdx2 <- unlist(lapply(featureIdx, function(i)
+                    which(scaledFeatureIdx == i)), use.names = FALSE)
                 ng <- length(scaledFeatureIdx2)
                 nc <- length(cellIdx)
                 if (isTRUE(verbose))
@@ -455,13 +457,13 @@ subsetH5LigerDatasetToH5 <- function(
                          level = 3)
                 safeH5Create(newH5File, dataPath = newH5Meta$scale.data,
                              dims = c(ng, nc), dtype = "double",
-                             chunkSize = c(ng, nc))
+                             chunkSize = c(ng, 1000))
                 newH5File[[newH5Meta$scale.data]][1:ng,1:nc] <-
-                    scale.data(object)[scaledFeatureIdx2, cellIdx]
+                    scale.data(object)[scaledFeatureIdx2, cellIdx, drop = FALSE]
                 safeH5Create(newH5File, dataPath = "scale.data.featureIdx",
                              dims = ng, dtype = "int", chunkSize = ng)
                 newH5File[["scale.data.featureIdx"]][1:ng] <-
-                    which(featureIdx %in% scaledFeatureIdx)
+                    .getOrderedSubsetIdx(featureIdx, scaledFeatureIdx)
             } else {
                 warning("Row dimension of scale.data does not match with ",
                         "feature selection. Unable to subset from H5.")
@@ -471,7 +473,7 @@ subsetH5LigerDatasetToH5 <- function(
     newH5File$close()
     if (!"raw.data" %in% useSlot) newH5Meta$raw.data <- NULL
     if (!"norm.data" %in% useSlot) newH5Meta$norm.data <- NULL
-    if (!"raw.data" %in% useSlot & !"norm.data" %in% slot) {
+    if (!"raw.data" %in% useSlot & !"norm.data" %in% useSlot) {
         newH5Meta$indices.name <- NULL
         newH5Meta$indptr.name <- NULL
     }
@@ -488,8 +490,8 @@ subsetH5LigerDatasetToH5 <- function(
         modal = modal,
         feature.meta = feature.meta(object)[featureIdx, , drop = FALSE]
     )
-    newObj@H <- object@H[cellIdx, , drop = FALSE]
-    newObj@V <- object@V[, featureIdx, drop = FALSE]
+    newObj@H <- object@H[, cellIdx, drop = FALSE]
+    newObj@V <- object@V[featureIdx, , drop = FALSE]
     newObj@A <- object@A
     newObj@B <- object@B[featureIdx, , drop = FALSE]
     newObj@U <- object@U
@@ -524,27 +526,32 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
     }
     if ("scale.data" %in% slot.use) {
         if (!is.null(scale.data(object))) {
-            scaleFeatureIdx <-
-                which(rownames(object) %in% rownames(scale.data(object)))
+            # Which genes in raw.data is in scale.data, by order
+            scaleFeatureIdx <- .getOrderedSubsetIdx(
+                rownames(object), rownames(scale.data(object))
+            )
+            # Which genes in scale.data is requested by featureIdx
+            scaleFeatureIdx2 <- unlist(lapply(featureIdx, function(i)
+                which(scaleFeatureIdx == i)), use.names = FALSE)
             subsetData$scale.data <-
-                scale.data(object)[scaleFeatureIdx %in% featureIdx, cellIdx,
-                                   drop = FALSE]
+                scale.data(object)[scaleFeatureIdx2, cellIdx, drop = FALSE]
         }
         if (!is.null(object@scale.unshared.data)) {
-            scaleUnsFeatureIdx <-
-                which(rownames(object) %in%
-                          rownames(object@scale.unshared.data))
+            scaleUnsFeatureIdx <- .getOrderedSubsetIdx(
+                rownames(object), rownames(object@scale.unshared.data)
+            )
+            scaleUnsFeatIdx2 <- unlist(lapply(featureIdx, function(i)
+                which(scaleFeatureIdx == i)), use.names = FALSE)
             subsetData$scale.unshared.data <-
-                object@scale.unshared.data[scaleUnsFeatureIdx %in% featureIdx,
-                                           cellIdx,
+                object@scale.unshared.data[scaleUnsFeatIdx2, cellIdx,
                                            drop = FALSE]
         }
     }
     if (is.null(useSlot)) {
         # Users do not specify, subset the whole object
         subsetData <- c(subsetData,
-                        list(H = object@H[cellIdx, , drop = FALSE],
-                             V = object@V[, featureIdx, drop = FALSE],
+                        list(H = object@H[, cellIdx, drop = FALSE],
+                             V = object@V[featureIdx, , drop = FALSE],
                              A = object@A,
                              B = object@B[featureIdx, , drop = FALSE],
                              U = object@U,
@@ -557,5 +564,21 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
         }
     }
 
-    do.call("createLigerDataset", subsetData)
+    return(do.call("createLigerDataset", subsetData))
 }
+
+.getOrderedSubsetIdx <- function(allNames, subsetNames) {
+    # subsetNames must be real subset, but can be in a different order from
+    # original allNames
+
+    # Label the order of original allNames
+    idx <- seq_along(allNames)
+    names(idx) <- allNames
+    # Subscribe with named vector, so the value (label for original order) get
+    # ordered by subscription
+    subsetIdx <- idx[subsetNames]
+    subsetIdx <- subsetIdx[!is.na(subsetIdx)]
+    names(subsetIdx) <- NULL
+    subsetIdx
+}
+

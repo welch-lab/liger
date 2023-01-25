@@ -195,9 +195,31 @@ createLiger <- function(
     NULL
 }
 
+.checkLigerVarFeature <- function(x) {
+    if (!is.null(var.features(x)) &&
+        length(var.features(x)) > 0) {
+        if (!is.null(x@W))
+            if (!identical(rownames(x@W), var.features(x)))
+                return("Variable features do not match dimension of W matrix")
+        for (d in names(x)) {
+            ld <- dataset(x, d)
+            if (!is.null(ld@V))
+                if (!identical(rownames(ld@V), var.features(x)))
+                    return(paste("Variable features do not match dimension",
+                                 "of V matrix in dataset", d))
+            if (!is.null(scale.data(ld)))
+                if (!identical(rownames(scale.data(ld)), var.features(x)))
+                    return(paste("Variable features do not match dimension",
+                                 "of scale.data in dataset", d))
+        }
+    }
+    TRUE
+}
+
 .valid.liger <- function(object) {
     message("Checking liger object validity")
     .checkLigerBarcodes(object)
+    .checkLigerVarFeature(object)
     # TODO more checks
 }
 
@@ -308,7 +330,7 @@ setReplaceMethod("dimnames", c("liger", "list"), function(x, value) {
         colnames(x@datasets[[d]]) <- value[[2L]][dataset.idx]
     }
     rownames(cell.meta(x)) <- value[[2L]]
-    colnames(x@W) <- value[[1L]]
+    rownames(x@W) <- value[[1L]]
     if (!is.null(x@H.norm)) colnames(x@H.norm) <- value[[2L]]
     x
 })
@@ -462,7 +484,7 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                      levels(x@cell.meta$dataset) <-
                          c(levels(x@cell.meta$dataset), name)
                      x@cell.meta$dataset[new.idx] <- name
-                     # x@W is k x genes, no need to worry
+                     # x@W is genes x k, no need to worry
                      if (!is.null(x@H.norm)) {
                          message("Filling in NAs to H.norm matrix")
                          x@H.norm[, new.idx] <- NA
@@ -547,7 +569,7 @@ setReplaceMethod(
         for (d in names(x)) {
             ld <- dataset(x, d)
             feature.meta(ld, check = FALSE)$selected <- rownames(ld) %in% value
-            datasets(x)[[d]] <- ld
+            datasets(x, check = FALSE)[[d]] <- ld
         }
         if (isTRUE(check)) {
             checkResult <- unlist(lapply(datasets(x), function(ld) {
@@ -589,7 +611,6 @@ NULL
 #' @method fortify liger
 fortify.liger <- function(x) {
     df <- as.data.frame(cell.meta(x))
-    if (!is.null(x@H)) df <- cbind(df, x@H)
     if (!is.null(x@H.norm)) df <- cbind(df, x@H.norm)
     df
 }

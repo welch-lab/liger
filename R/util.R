@@ -1,3 +1,8 @@
+.log <- function(..., level = 1) {
+    line <- paste(rep("...", level), collapse = "")
+    message(date(), " ", line, " ", ...)
+}
+
 .collapseLongNames <- function(x) {
     if (length(x) < 5) {
         return(paste(x, collapse = ", "))
@@ -60,7 +65,10 @@
                               collapse = ", ")
             stop(paramName, " not found in object: ", notFound)
         }
-        idx <- which(getNames(object) %in% idx)
+        name <- seq(getNumber(object))
+        names(name) <- getNames(object)
+        idx <- name[idx]
+        names(idx) <- NULL
     } else if (is.logical(idx)) {
         if (length(idx) != getNumber(object)) {
             stop("Length of logical ", paramName, " does not match to ",
@@ -108,7 +116,79 @@
     slot
 }
 
-.log <- function(..., level = 1) {
-    line <- paste(rep("...", level), collapse = "")
-    message(date(), " ", line, " ", ...)
+.checkInit <- function(m, nCells, nGenes, k, type = c("W", "H", "V", "A", "V")) {
+    type <- match.arg(type)
+    # Order of checklist:
+    # islist = 0, rowGene = 0, colK = 0, rowK = 0, colCell = 0)
+    if (type == "W") checklist <- c(0, 1, 1, 0, 0)
+    if (type == "H") checklist <- c(1, 0, 0, 1, 1)
+    if (type == "V") checklist <- c(1, 1, 1, 0, 0)
+    if (checklist[1]) {
+        if (!is.list(m))
+            stop("`", type, ".init` should be a list of matrices")
+        if (length(m) != length(nCells))
+            stop("Number of matrices in `", type, ".init` should match number",
+                 " of datasets in `object`")
+        isMat <- sapply(m, is.matrix)
+        if (!all(isMat)) {
+            stop(sum(!isMat), " elements in `", type, ".init` is not a matrix.")
+        }
+        isValid <- sapply(seq_along(m), function(i)
+            .checkInit.mat(m[[i]], nCells[i], nGenes, k, checklist))
+        if (!all(isValid))
+            stop("Not all matrices in `", type,
+                 ".init` has valid dimensionality.")
+    } else {
+        if (!is.matrix(m))
+            stop("`", type, ".init` should be a matrix")
+        if (!.checkInit.mat(m, sum(nCells), nGenes, k, checklist))
+            stop("`", type, ".init` does not have valid dimensionality.")
+    }
+    m
+}
+
+.checkInit.mat <- function(m, nCells, nGenes, k, checklist) {
+    if (checklist[2]) if (nrow(m) != nGenes) return(FALSE)
+    if (checklist[3]) if (ncol(m) != k) return(FALSE)
+    if (checklist[4]) if (nrow(m) != k) return(FALSE)
+    if (checklist[5]) if (ncol(m) != nCells) return(FALSE)
+    return(TRUE)
+}
+
+.checkValidFactorResult <- function(object) {
+    result <- TRUE
+    if (is.null(object@W)) {
+        warning("W matrix does not exist.")
+        result <- FALSE
+    } else {
+        nGenes <- nrow(object@W)
+        k <- ncol(object@W)
+        for (d in names(object)) {
+            ld <- dataset(object, d)
+            nCells <- ncol(ld)
+            if (is.null(ld@V)) {
+                warning("V matrix does not exist for dataset '", d, "'.")
+                result <- FALSE
+            } else {
+                if (!identical(dim(ld@V), dim(object@W))) {
+                    warning("Dimensionality of V matrix for dataset '", d,
+                            "' does not match with W matrix.")
+                    result <- FALSE
+                }
+            }
+            if (is.null(ld@H)) {
+                warning("H matrix does not exist for dataset '", d, "'.")
+                result <- FALSE
+            } else {
+                if (!identical(dim(ld@H), c(k, nCells))) {
+                    warning("Dimensionality of H matrix for dataset '", d,
+                            "' is not valid")
+                    result <- FALSE
+                }
+            }
+        }
+    }
+    if (isFALSE(result))
+        stop("Cannot detect valid existing factorization result. ",
+             "Please run factorization first.")
 }

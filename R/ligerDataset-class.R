@@ -253,7 +253,7 @@ isH5Liger <- function(object, dataset = NULL) {
                       "Please create object with matrices with colnames."))
     }
     for (slot in c("raw.data", "norm.data", "scale.data", "scale.unshared.data",
-                   "H", "V", "A", "B", "U", "peak")) {
+                   "H", "peak")) {
         if (!slot %in% methods::slotNames(x)) next
         data <- methods::slot(x, slot)
         if (!is.null(data)) {
@@ -361,7 +361,7 @@ setMethod(
             if (!is.null(data)) {
                 if (inherits(data, c("matrix", "dgCMatrix",
                                      "dgTMatrix", "dgeMatrix"))) {
-                    cat(paste0(slot, ":"), ncol(data), "features\n")
+                    cat(paste0(slot, ":"), nrow(data), "features\n")
                 }
                 if (inherits(data, "H5D")) {
                     cat(paste0(slot, ":"), paste(data$dims, collapse = " x "),

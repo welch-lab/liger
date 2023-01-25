@@ -103,14 +103,11 @@ online_iNMF <- function(
         } else {
             if (isTRUE(verbose)) .log("Scenario 2, initiating parameters")
 
-            if (!is.null(W.init)) W <- W.init
-            W <- .checkMatrixValid(W, k, name = "W")
+            if (!is.null(W.init)) W <- .checkInit(W.init, NULL, nGenes, k, "W")
+            W <- .checkMatrixValid(W, k, nGene, name = "W")
 
             if (!is.null(V.init)) {
-                if (length(V.init) != nPrevDataset)
-                    stop("Number of matrices in `V.init` does not match to ",
-                         "number of datasets in `object`")
-                V <- V.init
+                V <- .checkInit(V.init, nCells[dataIdxPrev], nGenes, k, "V")
             }
             V[dataIdxPrev] <- lapply(V[dataIdxPrev],
                                      function(v)

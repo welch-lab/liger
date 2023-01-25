@@ -27,7 +27,7 @@ scaleNotCenter <- function(
         ld <- dataset(object, d)
         if (isH5Liger(ld)) {
             # Scale H5 based data
-            featureIdx <- rownames(ld) %in% var.features(object)
+            featureIdx <- .getOrderedSubsetIdx(rownames(ld), var.features(object))
             features <- rownames(ld)[featureIdx]
             geneSumSq <- feature.meta(ld)$geneSumSq[featureIdx]
             nCells <- ncol(ld)
@@ -51,7 +51,6 @@ scaleNotCenter <- function(
                     chunk = as.matrix(chunk)
                     chunk = sweep(chunk, 1, geneRootMeanSumSq, "/")
                     rownames(chunk) <- features
-                    chunk = chunk[var.features(object),]
                     chunk[is.na(chunk)] = 0
                     chunk[chunk == Inf] = 0
                     h5file[[resultH5Path]][seq_along(features),
@@ -65,8 +64,8 @@ scaleNotCenter <- function(
                 dims = length(features),
                 dtype = "double"
             )
-            h5file[["scale.data.featureIdx"]][1:length(features)] <-
-                which(featureIdx)
+            h5file[["scale.data.featureIdx"]][1:length(featureIdx)] <-
+                featureIdx
         } else {
             # Scale in memory data
             # IMPORTANT: scale data is cell (row) by gene (column)
