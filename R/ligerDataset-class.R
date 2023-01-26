@@ -339,6 +339,7 @@ setGeneric("h5file.info", function(x, info = NULL) standardGeneric("h5file.info"
 setGeneric("h5file.info<-", function(x, info = NULL, check = TRUE, value) standardGeneric("h5file.info<-"))
 setGeneric("feature.meta", function(x, check = NULL) standardGeneric("feature.meta"))
 setGeneric("feature.meta<-", function(x, check = TRUE, value) standardGeneric("feature.meta<-"))
+setGeneric("getMatrix", function(x, slot = "raw.data", dataset = NULL) standardGeneric("getMatrix"))
 # ------------------------------------------------------------------------------
 # Methods ####
 # ------------------------------------------------------------------------------
@@ -699,4 +700,45 @@ setReplaceMethod(
         x
     }
 )
+
+#' Get matrix from liger/ligerDataset object
+#' @param x \linkS4class{liger} or \linkS4class{ligerDataset} object
+#' @param slot The type of matrix to retrieve. Choose from \code{"raw.data"},
+#' \code{"norm.data"}, \code{"scale.data"}, \code{"H"}, \code{"V"} for both
+#' classes. For \linkS4class{liger} object, \code{"W"} can also be an option,
+#' ignoring \code{dataset}.
+#' @param dataset When using a \linkS4class{liger} object, from which dataset(s)
+#' to retrieve the data. Single dataset returns the matrix, multiple datasets
+#' return a named list of the type of matrices, default \code{NULL} return a
+#' named list of the type of matrix from all datasets.
+#' @return A matrix or a list, depending on \code{dataset}
+#' @rdname getMatrix
+#' @export
+setMethod("getMatrix", signature(x = "ligerDataset", dataset = "missing"),
+          function(x, slot = c("raw.data", "norm.data", "scale.data", "H", "V"),
+                   dataset = NULL) {
+              # TODO: Currently directly find the data with slot, but need to
+              # think about maintainability when we need to change slot name.
+              slot <- match.arg(slot)
+              methods::slot(x, slot)
+          })
+
+#' @rdname getMatrix
+#' @export
+setMethod("getMatrix", signature(x = "liger"),
+          function(x, slot = c("raw.data", "norm.data", "scale.data", "H", "V", "W"),
+                   dataset = NULL) {
+              slot <- match.arg(slot)
+              if (slot == "W") return(x@W)
+              if (is.null(dataset)) {
+                  return(lapply(datasets(x), function(ld) getMatrix(ld, slot)))
+              } else {
+                  if (length(dataset) == 1)
+                      return(getMatrix(dataset(x, dataset), slot))
+                  else {
+                      lds <- datasets(x)[dataset]
+                      return(lapply(lds, function(ld) getMatrix(ld, slot)))
+                  }
+              }
+          })
 

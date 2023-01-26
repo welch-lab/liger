@@ -1113,7 +1113,7 @@ optimizeNewK.old <-
 #'                            add.to.existing = FALSE)
 #' }
 
-optimizeNewData <-
+optimizeNewDataOld <-
     function(object,
              new.data,
              which.datasets,

@@ -48,3 +48,6 @@ recommended for values of \code{k.new} smaller than current value (\code{k},
 which is set when running \code{\link{optimizeALS}}), where it
 is more likely to speed up the factorization.
 }
+\seealso{
+\code{\link{optimizeALS}}
+}
