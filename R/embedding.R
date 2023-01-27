@@ -1,38 +1,50 @@
-#' Perform UMAP dimensionality reduction
-#' @description
-#' Run UMAP on the normalized cell factors (or raw cell factors) to generate a 2D embedding for
-#' visualization (or general dimensionality reduction). Has option to run on subset of factors.
-#' Note that running multiple times will overwrite tsne.coords values. It is generally
-#' recommended to use this method for dimensionality reduction with extremely large datasets.
+#' Perform UMAP Dimensionality Reduction
+#' @description Run UMAP on the quantile normalized cell factors (result from
+#' \code{\link{quantile_norm}}), or unnormalized cell
+#' factors (result from \code{\link{optimizeALS}} or \code{\link{online_iNMF}}))
+#' to generate a 2D embedding for visualization (or general dimensionality
+#' reduction). Has option to run on subset of factors. It is generally
+#' recommended to use this method for dimensionality reduction with extremely
+#' large datasets. The underlying UMAP calculation imports uwot
+#' \code{\link[uwot]{umap}}.
+#' @details For \code{n_neighbors}, larger values will result in more global
+#' structure being preserved at the loss of detailed local structure. In general
+#' this parameter should often be in the range 5 to 50, with a choice of 10 to
+#' 15 being a sensible default.
 #'
-#' Note that this method requires that the package uwot is installed. It does not depend
-#' on reticulate or python umap-learn.
-#' @param object \code{liger} object. Should run quantile_norm before calling with defaults.
-#' @param use.raw Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).
-#' @param dims.use Factors to use for computing tSNE embedding (default 1:ncol(H.norm)).
-#' @param k Number of dimensions to reduce to (default 2).
-#' @param distance Mtric used to measure distance in the input space. A wide variety of metrics are
-#'   already coded, and a user defined function can be passed as long as it has been JITd by numba.
-#'   (default "euclidean", alternatives: "cosine", "manhattan", "hamming")
-#' @param n_neighbors Number of neighboring points used in local approximations of manifold
-#'   structure. Larger values will result in more global structure being preserved at the loss of
-#'   detailed local structure. In general this parameter should often be in the range 5 to 50, with
-#'   a choice of 10 to 15 being a sensible default. (default 10)
-#' @param min_dist Controls how tightly the embedding is allowed compress points together. Larger
-#'   values ensure embedded points are more evenly distributed, while smaller values allow the
-#'   algorithm to optimise more accurately with regard to local structure. Sensible values are in
-#'   the range 0.001 to 0.5, with 0.1 being a reasonable default. (default 0.1)
-#' @param rand.seed Random seed for reproducibility (default 42).
-#' @return \code{liger} object with tsne.coords slot set.
+#' For \code{min_dist}, larger values ensure embedded points are more evenly
+#' distributed, while smaller values allow the algorithm to optimise more
+#' accurately with regard to local structure. Sensible values are in the range
+#' 0.001 to 0.5, with 0.1 being a reasonable default.
+#' @param object \linkS4class{liger} object with factorization results.
+#' @param use.raw Whether to use un-aligned cell factor loadings (\eqn{H}
+#' matrices). Default \code{FALSE}.
+#' @param dims.use Index of factors to use for computing UMAP embedding. Default
+#' \code{NULL} uses all factors.
+#' @param k Number of dimensions to reduce to. Default \code{2}.
+#' @param distance Character. Metric used to measure distance in the input
+#' space. Default \code{"euclidean"}, alternative options include:
+#' \code{"cosine"}, \code{"manhattan"} and \code{"hamming"}.
+#' @param n_neighbors Number of neighboring points used in local approximations
+#' of manifold structure. Default \code{10}.
+#' @param min_dist Numeric. Controls how tightly the embedding is allowed
+#' compress points together. Default \code{0.1}.
+#' @param rand.seed Random seed for reproducibility. Default \code{42}.
+#' @return The \code{object} with new variables, from \code{UMAP_1} to
+#' \code{UMAP_[k]}, updated in the \code{cell.meta} slot.
+#' @seealso \code{\link{runTSNE}}
 #' @export
-runUMAP <- function(object,
-                    use.raw = FALSE,
-                    dims.use = NULL,
-                    k = 2,
-                    distance = "euclidean",
-                    n_neighbors = 10,
-                    min_dist = 0.1,
-                    rand.seed = 42) {
+runUMAP <- function(
+        object,
+        use.raw = FALSE,
+        dims.use = NULL,
+        k = 2,
+        distance = c("euclidean", "cosine", "manhattan", "hamming"),
+        n_neighbors = 10,
+        min_dist = 0.1,
+        rand.seed = 42
+) {
+    distance <- match.arg(distance)
     set.seed(rand.seed)
     if (isTRUE(use.raw)) {
         data.use <- t(Reduce(cbind, getMatrix(object, "H")))
@@ -53,40 +65,53 @@ runUMAP <- function(object,
 }
 
 #' Perform t-SNE dimensionality reduction
+#' @description Runs t-SNE on the quantile normalized cell factors (result from
+#' \code{\link{quantile_norm}}), or unnormalized cell factors (result from
+#' \code{\link{optimizeALS}} or \code{\link{online_iNMF}})) to generate a 2D
+#' embedding for visualization. By default \code{\link[Rtsne]{Rtsne}}
+#' (Barnes-Hut implementation of t-SNE) method is invoked, while alternative
+#' "fftRtsne" method (FFT-accelerated Interpolation-based t-SNE, using Kluger
+#' Lab implementation) is also supported.
 #'
-#' Runs t-SNE on the normalized cell factors (or raw cell factors) to generate a 2D embedding for
-#' visualization. Has option to run on subset of factors. Note that running multiple times will
-#' reset tsne.coords values.
-#'
-#' In order to run fftRtsne (recommended for large datasets), you must first install FIt-SNE as
-#' detailed \href{https://github.com/KlugerLab/FIt-SNE}{here}. Include the path to the cloned
-#' FIt-SNE directory as the fitsne.path parameter, though this is only necessary for the first call
-#' to runTSNE. For more detailed FIt-SNE installation instructions, see the liger repo README.
-#'
-#' @param object \code{liger} object. Should run quantile_norm before calling with defaults.
-#' @param use.raw Whether to use un-aligned cell factor loadings (H matrices) (default FALSE).
-#' @param dims.use Factors to use for computing tSNE embedding (default 1:ncol(H.norm)).
-#' @param use.pca Whether to perform initial PCA step for Rtsne (default FALSE).
-#' @param perplexity Parameter to pass to Rtsne (expected number of neighbors) (default 30).
-#' @param theta Speed/accuracy trade-off (increase for less accuracy), set to 0.0 for exact TSNE
-#'   (default 0.5).
-#' @param method Supports two methods for estimating tSNE values: Rtsne (Barnes-Hut implementation
-#'   of t-SNE) and fftRtsne (FFT-accelerated Interpolation-based t-SNE) (using Kluger Lab
-#'   implementation). (default Rtsne)
-#' @param fitsne.path Path to the cloned FIt-SNE directory (ie. '/path/to/dir/FIt-SNE') (required
-#'   for using fftRtsne -- only first time runTSNE is called) (default NULL).
-#' @param rand.seed Random seed for reproducibility (default 42).
-#' @return \code{liger} object with tsne.coords slot set.
+#' In order to run fftRtsne (recommended for large datasets), FIt-SNE must be
+#' installed as instructed in detailed
+#' \href{https://github.com/KlugerLab/FIt-SNE}{here}. Include the path to the
+#' cloned FIt-SNE directory as the \code{fitsne.path} parameter, though this is
+#' only necessary for the first call to run \code{runTSNE}. For more detailed
+#' FIt-SNE installation instructions, see the liger repo
+#' \href{https://github.com/welch-lab/liger#readme}{README}.
+#' @param object \linkS4class{liger} object with factorization results.
+#' @param use.raw Whether to use un-aligned cell factor loadings (\eqn{H}
+#' matrices). Default \code{FALSE}.
+#' @param dims.use Index of factors to use for computing UMAP embedding. Default
+#' \code{NULL} uses all factors.
+#' @param use.pca Whether to perform initial PCA step for Rtsne. Default
+#' \code{FALSE}.
+#' @param perplexity Numeric parameter to pass to Rtsne (expected number of
+#' neighbors). Default \code{30}.
+#' @param theta Speed/accuracy trade-off (increase for less accuracy), set to
+#' \code{0.0} for exact TSNE. Default \code{0.5}.
+#' @param method Choose from \code{"Rtsne"} or \code{"fftRtsne"}. See
+#' Description. Default \code{"Rtsne"}.
+#' @param fitsne.path Path to the cloned FIt-SNE directory (i.e.
+#' \code{'/path/to/dir/FIt-SNE'}). Required only when first time using
+#' \code{runTSNE} with \code{method = "fftRtsne"}. Default \code{NULL}.
+#' @param rand.seed Random seed for reproducibility. Default \code{42}.
+#' @return The \code{object} with new variables, from \code{TSNE_1} to
+#' \code{TSNE_[k]}, updated in the \code{cell.meta} slot.
+#' @seealso \code{\link{runUMAP}}
 #' @export
-runTSNE <- function(object,
-                    use.raw = FALSE,
-                    dims.use = NULL,
-                    use.pca = FALSE,
-                    perplexity = 30,
-                    theta = 0.5,
-                    method = c("Rtsne", "fftRtsne"),
-                    fitsne.path = NULL,
-                    rand.seed = 42) {
+runTSNE <- function(
+        object,
+        use.raw = FALSE,
+        dims.use = NULL,
+        use.pca = FALSE,
+        perplexity = 30,
+        theta = 0.5,
+        method = c("Rtsne", "fftRtsne"),
+        fitsne.path = NULL,
+        rand.seed = 42
+) {
     method <- match.arg(method)
     if (isTRUE(use.raw)) {
         data.use <- t(Reduce(cbind, getMatrix(object, "H")))
@@ -104,10 +129,10 @@ runTSNE <- function(object,
         tsne <- tsne$Y
     } else if (method == "fftRtsne") {
         tsne <- .fftRtsne(X = data.use[, dims.use],
-            rand_seed = rand.seed,
-            fast_tsne_path = fitsne.path,
-            theta = theta,
-            perplexity = perplexity)
+                          rand_seed = rand.seed,
+                          fast_tsne_path = fitsne.path,
+                          theta = theta,
+                          perplexity = perplexity)
     }
     rownames(tsne) <- colnames(object)
     colnames(tsne) <- paste0("TSNE_", seq(ncol(tsne)))
@@ -294,8 +319,8 @@ runTSNE <- function(object,
     if (version_number != "1.0")
         writeBin(object = as.numeric(df), con = f, size = 8)
     writeBin(object = as.integer(load_affinities),
-        con = f,
-        size = 4)
+             con = f,
+             size = 4)
     if (!is.null(x = initialization))
         writeBin(object = c(t(x = initialization)), con = f)
     close(con = f)
