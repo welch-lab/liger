@@ -13,7 +13,7 @@
 
 \S4method{getMatrix}{liger,ANY,ANY}(
   x,
-  slot = c("raw.data", "norm.data", "scale.data", "H", "V", "W"),
+  slot = c("raw.data", "norm.data", "scale.data", "H", "V", "W", "H.norm"),
   dataset = NULL
 )
 }

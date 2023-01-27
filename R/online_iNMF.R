@@ -1,4 +1,77 @@
-#' Online iNMF
+#' Perform online iNMF on scaled datasets
+#' @description Perform online integrative non-negative matrix factorization to
+#' represent multiple single-cell datasets in terms of \eqn{H}, \eqn{W}, and
+#' \eqn{V} matrices. It optimizes the iNMF objective function using online
+#' learning (non-negative least squares for H matrix, hierarchical alternating
+#' least squares for \eqn{W} and \eqn{V} matrices), where the number of factors
+#' is set by \code{k}. The function allows online learning in 3 scenarios:
+#'
+#' \enumerate{
+#'  \item Fully observed datasets;
+#'  \item Iterative refinement using continually arriving datasets;
+#'  \item Projection of new datasets without updating the existing factorization
+#' }
+#'
+#' All three scenarios require fixed memory independent of the number of cells.
+#'
+#' For each dataset, this factorization produces an \eqn{H} matrix (k by cell),
+#' a \eqn{V} matrix (genes by k), and a shared \eqn{W} matrix (genes by k). The
+#' \eqn{H} matrices represent the cell factor loadings. \eqn{W} is identical
+#' among all datasets, as it represents the shared components of the metagenes
+#' across datasets. The \eqn{V} matrices represent the dataset-specific
+#' components of the metagenes.
+#' @details
+#' For optional initialization, \code{W.init} must be a matrix object with
+#' number of rows equal to number of variable genes (denoted as \code{g}) and
+#' number of columns equal to \code{k}. Any of \code{V.init}, \code{A} and
+#' \code{B} must be a list object of n matrices where n is the number of
+#' datasets in \code{object}. For \code{V.init}, each matrix should be of size g
+#' x k. For \code{A.init}, each matrix should be k x k and for \code{B.init},
+#' each matrix should be g x k.
+#'
+#' Minibatch iterations is performed on small subset of cells. The exact
+#' minibatch size applied on each dataset is \code{miniBatch_size} multiplied by
+#' the proportion of cells in this dataset out of all cells. The setting of
+#' \code{miniBatch_size} is by default \code{5000}, which is reasonable.
+#' However, a smaller value such as \code{1000} may be necessary for analyzing
+#' very small datasets. In general, \code{miniBatch_size} should be no larger
+#' than the number of cells in the smallest dataset. An epoch is one completion
+#' of calculation on all cells after a number of iterations of minibatches.
+#' Therefore, the total number of iterations is determined by the setting of
+#' \code{max.epochs}, total number of cells, and \code{miniBatch_size}.
+#'
+#' @param object \linkS4class{liger} object. Scaled data required.
+#' @param X_new New datasets for scenario 2 or scenario 3. See detail for usage.
+#' @param projection Perform data integration with scenario 3. See description.
+#' Default \code{FALSE}.
+#' @param W.init Optional initialization for W. See detail. Default \code{NULL}.
+#' @param V.init Optional initialization for V. See detail. Default \code{NULL}.
+#' @param A.init Optional initialization for A. See detail. Default \code{NULL}.
+#' @param B.init Optional initialization for B. See detail. Default \code{NULL}.
+#' @param k Inner dimension of factorization--number of metagenes. A value in
+#' the range 20-50 works well for most analyses. Default \code{20}.
+#' @param lambda Regularization parameter. Larger values penalize
+#' dataset-specific effects more strongly (i.e. alignment should increase as
+#' lambda increases). We recommend always using the default value except
+#' possibly for analyses with relatively small differences (biological
+#' replicates, male/female comparisons, etc.) in which case a lower value such
+#' as 1.0 may improve reconstruction quality. Default \code{5.0}.
+#' @param max.epochs The number of epochs to iterate through. See detail.
+#' Default \code{5}.
+#' @param miniBatch_max_iters Maximum number of block coordinate descent (HALS
+#' algorithm) iterations to perform for each update of \eqn{W} and \eqn{V}.
+#' Default \code{1}. Changing this parameter is not recommended.
+#' @param miniBatch_size Total number of cells in each minibatch. See detail.
+#' Default \code{5000}.
+#' @param h5_chunk_size Chunk size of input hdf5 files. Default \code{1000}. The
+#' chunk size should be no larger than the batch size.
+#' @param seed Random seed to allow reproducible results. Default \code{123}.
+#' @param verbose Logical. Whether to show information of the progress.
+#' Default \code{TRUE}.
+#' @return \code{object} with \code{W} slot updated with resulting \eqn{W}
+#' matrix; the \code{H}, \code{V}, \code{A} and \code{B} slots of each
+#' \linkS4class{ligerDataset} object in \code{datasets} slot is updated with the
+#' corresponding result matrices.
 #' @export
 online_iNMF <- function(
         object,
@@ -43,15 +116,17 @@ online_iNMF <- function(
                     nNewDataset <- nNewDataset + 1
                 }
             }
+            object <- normalize(object)
+            object <- scaleNotCenter(object)
         }
     } else {
         nNewDataset <- length(object)
     }
     if (isTRUE(verbose)) .log(nNewDataset, " new datasets detected.")
 
-    W <- object@W
-    V <- lapply(datasets(object), function(x) x@V)
-    H <- lapply(datasets(object), function(x) x@H)
+    W <- getMatrix(object, "W")
+    V <- getMatrix(object, "V")
+    H <- getMatrix(object, "H")
     A <- lapply(datasets(object), function(x) x@A)
     B <- lapply(datasets(object), function(x) x@B)
 
@@ -104,7 +179,7 @@ online_iNMF <- function(
             if (isTRUE(verbose)) .log("Scenario 2, initiating parameters")
 
             if (!is.null(W.init)) W <- .checkInit(W.init, NULL, nGenes, k, "W")
-            W <- .checkMatrixValid(W, k, nGene, name = "W")
+            W <- .checkMatrixValid(W, k, nGenes, name = "W")
 
             if (!is.null(V.init)) {
                 V <- .checkInit(V.init, nCells[dataIdxPrev], nGenes, k, "V")

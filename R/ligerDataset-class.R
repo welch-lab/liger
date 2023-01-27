@@ -267,7 +267,7 @@ isH5Liger <- function(object, dataset = NULL) {
             }
         }
     }
-    for (slot in c("scale.data", "scale.unshared.data")) {
+    for (slot in c("scale.data", "scale.unshared.data", "V")) {
         featuresToCheck <- rownames(methods::slot(x, slot))
         check <- !featuresToCheck %in% rownames(x)
         if (any(check)) {
@@ -726,10 +726,11 @@ setMethod("getMatrix", signature(x = "ligerDataset", dataset = "missing"),
 #' @rdname getMatrix
 #' @export
 setMethod("getMatrix", signature(x = "liger"),
-          function(x, slot = c("raw.data", "norm.data", "scale.data", "H", "V", "W"),
+          function(x, slot = c("raw.data", "norm.data", "scale.data", "H", "V", "W", "H.norm"),
                    dataset = NULL) {
               slot <- match.arg(slot)
               if (slot == "W") return(x@W)
+              if (slot == "H.norm") return(x@H.norm)
               if (is.null(dataset)) {
                   return(lapply(datasets(x), function(ld) getMatrix(ld, slot)))
               } else {

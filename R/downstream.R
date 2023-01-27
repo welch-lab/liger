@@ -31,7 +31,7 @@
 #' }
 #'
 
-louvainCluster <-
+louvainClusterOld <-
     function(object,
              resolution = 1.0,
              k = 20,

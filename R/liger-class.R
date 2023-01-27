@@ -182,6 +182,11 @@ createLiger <- function(
     if (!identical(colnames(x), bcFromDatasets)) {
         return("liger object barcodes do not match to barcodes in datasets")
     }
+    if (!is.null(x@H.norm)) {
+        if (!identical(rownames(x@H.norm), bcFromDatasets)) {
+            return("H.norm barcodes do not match to barcodes in datasets.")
+        }
+    }
     if (!"dataset" %in% names(cell.meta(x))) {
         return("`datasets` variable missing in cell.meta(x)")
     }
@@ -487,8 +492,10 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                      # x@W is genes x k, no need to worry
                      if (!is.null(x@H.norm)) {
                          message("Filling in NAs to H.norm matrix")
-                         x@H.norm[, new.idx] <- NA
-                         colnames(x@H.norm)[new.idx] <- colnames(value)
+                         H.normNew <- matrix(
+                             NA, ncol(value), ncol(x@H.norm),
+                             dimnames = list(colnames(value), NULL))
+                         x@H.norm <- rbind(x@H.norm, H.normNew)
                      }
                      validObject(x)
                      if (qc) x <- runGeneralQC(x, useDatasets = name)
@@ -506,11 +513,11 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                           value) {
                      type <- match.arg(type)
                      if (type == "raw.data") {
-                         ld <- ligerDataset(raw.data = value)
+                         ld <- createLigerDataset(raw.data = value)
                      } else if (type == "norm.data") {
-                         ld <- ligerDataset(norm.data = value)
+                         ld <- createLigerDataset(norm.data = value)
                      } else if (type == "scale.data") {
-                         ld <- ligerDataset(scale.data = value)
+                         ld <- createLigerDataset(scale.data = value)
                      }
                      dataset(x, name, qc = qc) <- ld
                      x
