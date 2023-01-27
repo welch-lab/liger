@@ -944,7 +944,7 @@ runGSEA <-
 #' ligerex <- runTSNE(ligerex, use.raw = TRUE)
 #' }
 
-runTSNE <- function(object,
+runTSNEOld <- function(object,
                     use.raw = FALSE,
                     dims.use = 1:ncol(object@H.norm),
                     use.pca = FALSE,
@@ -1034,7 +1034,7 @@ runTSNE <- function(object,
 #' # get tsne.coords for raw factor loadings
 #' ligerex <- runUMAP(ligerex, use.raw = TRUE)
 #' }
-runUMAP <- function(object,
+runUMAPOld <- function(object,
                     use.raw = FALSE,
                     dims.use = 1:ncol(object@H.norm),
                     k = 2,

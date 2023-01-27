@@ -88,7 +88,7 @@ subsetLiger <- function(
         cell.meta = cell.meta(object)[cellIdx, , drop = FALSE],
         var.features = character(),
         W = object@W[featureIdx, , drop = FALSE],
-        H.norm = object@H.norm[, cellIdx, drop = FALSE],
+        H.norm = object@H.norm[cellIdx, , drop = FALSE],
         version = packageVersion("rliger")
     )
 
@@ -549,11 +549,13 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
     }
     if (is.null(useSlot)) {
         # Users do not specify, subset the whole object
+        if (exists("scaleFeatureIdx2")) sfi <- scaleFeatureIdx2
+        else sfi <- seq(scale.data(object))
         subsetData <- c(subsetData,
                         list(H = object@H[, cellIdx, drop = FALSE],
-                             V = object@V[featureIdx, , drop = FALSE],
+                             V = object@V[sfi, , drop = FALSE],
                              A = object@A,
-                             B = object@B[featureIdx, , drop = FALSE],
+                             B = object@B[sfi, , drop = FALSE],
                              U = object@U,
                              feature.meta = object@feature.meta[featureIdx, ,
                                                                 drop = FALSE]
