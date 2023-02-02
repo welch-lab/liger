@@ -4,30 +4,7 @@
 \alias{plotGene}
 \title{Plot gene expression on dimensional reduction (t-SNE) coordinates}
 \usage{
-plotGene(
-  object,
-  gene,
-  use.raw = FALSE,
-  use.scaled = FALSE,
-  scale.by = "dataset",
-  log2scale = NULL,
-  methylation.indices = NULL,
-  plot.by = "dataset",
-  set.dr.lims = FALSE,
-  pt.size = 0.1,
-  min.clip = NULL,
-  max.clip = NULL,
-  clip.absolute = FALSE,
-  points.only = FALSE,
-  option = "plasma",
-  cols.use = NULL,
-  zero.color = "#F5F5F5",
-  axis.labels = NULL,
-  do.legend = TRUE,
-  return.plots = FALSE,
-  keep.scale = FALSE,
-  raster = NULL
-)
+plotGene(object, gene, ...)
 }
 \arguments{
 \item{object}{\code{liger} object. Should call runTSNE before calling.}

@@ -36,13 +36,13 @@ subsetLiger <- function(
         chunkSize = 1000,
         verbose = TRUE,
         newH5 = "auto",
-        ...
+        returnObject = TRUE
 ) {
     if (inherits(object, "ligerDataset")) {
         object <- subsetLigerDataset(
             object = object, featureIdx = featureIdx, cellIdx = cellIdx,
             useSlot = useSlot, chunkSize = chunkSize, verbose = verbose,
-            newH5 = newH5, ...)
+            newH5 = newH5, returnObject = returnObject, ...)
         return(object)
     }
     if (!inherits(object, "liger")) {
@@ -52,7 +52,8 @@ subsetLiger <- function(
     # Check subscription parameters ####
     cellIdx <- .idxCheck(object, cellIdx, "cell")
     barcodes <- colnames(object)[cellIdx]
-    useDatasets <- as.vector(unique(object$dataset[cellIdx]))
+    datasetVar <- object$dataset[cellIdx]
+    useDatasets <- as.vector(unique(datasetVar))
     # feature idx need different check from ligerDataset's .idxCheck
     if (!is.null(featureIdx)) {
         if (!is.character(featureIdx)) {
@@ -71,7 +72,7 @@ subsetLiger <- function(
         featureIdx <- featureIdx[featureIdx %in% allGenes]
     }
     # Subset each involved dataset and create new liger object
-    datasetVar <- object$dataset[cellIdx]
+
     datasets.new <- list()
     for (d in useDatasets) {
         if (isTRUE(verbose)) .log("Subsetting dataset: ",  d)
@@ -79,21 +80,85 @@ subsetLiger <- function(
         ld <- subsetLigerDataset(
             object = ld, featureIdx = featureIdx,
             cellIdx = barcodes[datasetVar == d], useSlot = useSlot,
-            chunkSize = chunkSize, verbose = verbose, newH5 = newH5)
+            chunkSize = chunkSize, verbose = verbose, newH5 = newH5,
+            returnObject = returnObject)
         datasets.new[[d]] <- ld
     }
-    methods::new(
-        "liger",
-        datasets = datasets.new,
-        cell.meta = cell.meta(object)[cellIdx, , drop = FALSE],
-        var.features = character(),
-        W = object@W[featureIdx, , drop = FALSE],
-        H.norm = object@H.norm[cellIdx, , drop = FALSE],
-        version = packageVersion("rliger")
-    )
-
+    if (isTRUE(returnObject)) {
+        return(methods::new(
+            "liger",
+            datasets = datasets.new,
+            cell.meta = cell.meta(object)[cellIdx, , drop = FALSE],
+            var.features = character(),
+            W = object@W[featureIdx, , drop = FALSE],
+            H.norm = object@H.norm[cellIdx, , drop = FALSE],
+            version = packageVersion("rliger")
+        ))
+    } else {
+        return(datasets.new)
+    }
 }
 
+#' Retrieve a single matrix of cells from a slot
+#' @description Only retrieve data from specific slot to reduce memory used by
+#' a whole \linkS4class{liger} object of the subset. Useful for plotting.
+#' Internally used by \code{\link{plotCellScatter}} and
+#' \code{\link{plotCellSViolin}}.
+#' @param object \linkS4class{liger} object
+#' @param feature Gene names, factor index or cell metadata variable names.
+#' Should be available in specified \code{slot}.
+#' @param slot Exactly choose from \code{"raw.data"}, \code{"norm.data"},
+#' \code{"scale.data"}, \code{"H"}, \code{"H.norm"} or \code{"cell.meta"}.
+#' @param cellIdx Any valid type of index that subset from all cells. Default
+#' \code{NULL} uses all cells.
+#' @param ... Additional arguments passed to \code{\link{subsetLiger}} when
+#' \code{slot} is one of \code{"raw.data"}, \code{"norm.data"} or
+#' \code{"scale.data"}.
+#' @return A matrix object where rows are cells and columns are specified
+#' features.
+#' @export
+retrieveCellFeature <- function(
+        object,
+        feature,
+        slot = c("raw.data", "norm.data", "scale.data",
+                 "H", "H.norm", "cell.meta"),
+        cellIdx = NULL,
+        ...
+) {
+    slot <- match.arg(slot)
+    cellIdx <- .idxCheck(object, idx = cellIdx, orient = "cell")
+    if (length(slot) > 1) {
+        stop("Retrieving feature expression or factor loading from multiple ",
+             "slots is not supported for now.")
+    }
+    if (is.null(cellIdx)) cellIdx <- seq(ncol(object))
+    if (slot %in% c("raw.data", "norm.data", "scale.data")) {
+        subsetData <- subsetLiger(object, featureIdx = feature,
+                                  cellIdx = cellIdx, useSlot = slot,
+                                  returnObject = FALSE, ...)
+        # value is expected to be a list structured like this
+        # value
+        # |--dataset1
+        #    |--------slot1 subset matrix
+        #    |--------slot2 subset matrix (Though multi-slot not supported here)
+        # |--dataset2
+        # ......
+        value <- list()
+        for (d in names(object)) {
+            value[[d]] <- subsetData[[d]][[slot]]
+        }
+        value <- as.data.frame(as.matrix(t(Reduce(cbind, value))))
+    } else if (slot == "H") {
+        value <- Reduce(cbind, getMatrix(object, "H"))
+        value <- as.data.frame(t(value[feature, cellIdx, drop = FALSE]))
+    } else if (slot == "H.norm") {
+        value <- getMatrix(object, "H.norm")[cellIdx, feature, drop = FALSE]
+    } else {
+        value <- as.data.frame(cell.meta(object))[cellIdx, feature,
+                                                  drop = FALSE]
+    }
+    return(value)
+}
 
 #' Subset ligerDataset object
 #' @description This function subsets a \linkS4class{ligerDataset} object with
@@ -138,16 +203,20 @@ subsetLigerDataset <- function(
     filename = NULL,
     filenameSuffix = NULL,
     chunkSize = 1000,
-    verbose = TRUE
+    verbose = TRUE,
+    returnObject = TRUE,
+    ...
 ) {
     if (isH5Liger(object))
         subsetH5LigerDataset(object, featureIdx = featureIdx, cellIdx = cellIdx,
                              useSlot = useSlot, newH5 = newH5,
                              filename = filename,
                              filenameSuffix = filenameSuffix,
-                             chunkSize = chunkSize, verbose = verbose)
+                             chunkSize = chunkSize, verbose = verbose,
+                             returnObject = returnObject, ...)
     else subsetMemLigerDataset(object, featureIdx = featureIdx,
-                               cellIdx = cellIdx, useSlot = useSlot)
+                               cellIdx = cellIdx, useSlot = useSlot,
+                               returnObject = returnObject, ...)
 }
 
 #' @export
@@ -161,7 +230,8 @@ subsetH5LigerDataset <- function(
     filename = NULL,
     filenameSuffix = NULL,
     chunkSize = 1000,
-    verbose = TRUE
+    verbose = TRUE,
+    returnObject = TRUE
 ) {
     if (newH5 == "auto") {
         cellIdx <- .idxCheck(object, cellIdx, "cell")
@@ -169,6 +239,9 @@ subsetH5LigerDataset <- function(
         else newH5 <- FALSE
     }
     if (isTRUE(newH5)) {
+        if (isTRUE(returnObject))
+            warning("Cannot set `returnObject = FALSE` when subsetting",
+                    "H5 based ligerDataset to new H5 file.")
         newObj <- subsetH5LigerDatasetToH5(
             object, filename = filename, cellIdx = cellIdx,
             featureIdx = featureIdx, filenameSuffix = filenameSuffix,
@@ -176,7 +249,8 @@ subsetH5LigerDataset <- function(
     } else if (isFALSE(newH5)) {
         newObj <- subsetH5LigerDatasetToMem(
             object, cellIdx = cellIdx, featureIdx = featureIdx,
-            useSlot = useSlot, chunkSize = chunkSize, verbose = verbose)
+            useSlot = useSlot, chunkSize = chunkSize, verbose = verbose,
+            returnObject = returnObject)
     }
     newObj
 }
@@ -186,6 +260,7 @@ subsetH5LigerDatasetToMem <- function(
     featureIdx = NULL,
     cellIdx = NULL,
     useSlot = NULL,
+    returnObject = TRUE,
     chunkSize = 1000,
     verbose = TRUE
 ) {
@@ -200,41 +275,44 @@ subsetH5LigerDatasetToMem <- function(
     modal <- .classModalDict[[class(object)]]
     cellIdx <- .idxCheck(object, cellIdx, "cell")
     featureIdx <- .idxCheck(object, featureIdx, "feature")
-    useSlot <- .checkLDSlot(object, useSlot)
+    # Having `useSlot` as a record of user specification, to know whether it's
+    # a `NULL` but involve everything, or just a few slots.
+    slotInvolved <- .checkLDSlot(object, useSlot)
+    value <- list()
     # Process raw data ####
-    if ("raw.data" %in% useSlot & !is.null(raw.data(object))) {
+    if ("raw.data" %in% slotInvolved & !is.null(raw.data(object))) {
         if (isTRUE(verbose)) .log("Subsetting `raw.data`", level = 2)
         rawData <- H5Apply(
             object, init = NULL, useData = "raw.data", chunkSize = chunkSize,
             verbose = verbose,
             FUN = function(chunk, sparseXIdx, chunkCellIdx, values) {
-                subset <- chunk[featureIdx, chunkCellIdx %in% cellIdx]
+                subset <- chunk[featureIdx, chunkCellIdx %in% cellIdx, drop = FALSE]
                 values <- cbind(values, subset)
             }
         )
         rownames(rawData) <- rownames(object)[featureIdx]
         colnames(rawData) <- colnames(object)[cellIdx]
-    } else {
-        rawData <- NULL
+        value$raw.data <- rawData
     }
+
     # Process norm.data ####
-    if ("norm.data" %in% useSlot & !is.null(norm.data(object))) {
+    if ("norm.data" %in% slotInvolved & !is.null(norm.data(object))) {
         if (isTRUE(verbose)) .log("Subsetting `norm.data`", level = 2)
         normData <- H5Apply(
             object, init = NULL, useData = "norm.data", chunkSize = chunkSize,
             verbose = verbose,
             FUN = function(chunk, sparseXIdx, chunkCellIdx, values) {
-                subset <- chunk[featureIdx, chunkCellIdx %in% cellIdx]
+                subset <- chunk[featureIdx, chunkCellIdx %in% cellIdx, drop = FALSE]
                 values <- cbind(values, subset)
             }
         )
         rownames(normData) <- rownames(object)[featureIdx]
         colnames(normData) <- colnames(object)[cellIdx]
-    } else {
-        normData <- NULL
+        value$norm.data <- normData
     }
+
     # Process scaled data ####
-    if ("scale.data" %in% useSlot & !is.null(scale.data(object))) {
+    if ("scale.data" %in% slotInvolved & !is.null(scale.data(object))) {
         if (isTRUE(verbose)) .log("Subsetting `scale.data`", level = 2)
         scaledFeatureIdx <- NULL
         if (getH5File(object)$exists("scale.data.featureIdx")) {
@@ -257,7 +335,8 @@ subsetH5LigerDatasetToMem <- function(
                     .log(length(scaledFeatureIdx2),
                          " features used in scale.data were selected. ",
                          level = 3)
-                scaleData <- scale.data(object)[scaledFeatureIdx2, cellIdx, drop = FALSE]
+                scaleData <- scale.data(object)[scaledFeatureIdx2, cellIdx,
+                                                drop = FALSE]
                 rownames(scaleData) <- rownames(object)[scaledFeatureIdx][scaledFeatureIdx2]
                 colnames(scaleData) <- colnames(object)[cellIdx]
             } else {
@@ -266,22 +345,27 @@ subsetH5LigerDatasetToMem <- function(
                         "feature selection. Unable to subset from H5.")
             }
         }
-    } else {
-        scaleData <- NULL
+        value$scale.data <- scaleData
     }
     # `NULL[idx1, idx2]` returns `NULL`
     # V: k x genes
-    H <- object@H[, cellIdx, drop = FALSE]
-    V <- object@V[featureIdx, , drop = FALSE]
-    A <- object@A
-    B <- object@B[featureIdx, , drop = FALSE]
-    U <- object@U#[cellIdx, , drop = FALSE]
-    # New object construction ####
-    createLigerDataset(raw.data = rawData, modal = modal, norm.data = normData,
-                       scale.data = scaleData, H = H, V = V, A = A, B = B,
-                       U = U,
-                       feature.meta = feature.meta(object)[featureIdx, ,
-                                                           drop = FALSE])
+    if (is.null(useSlot)) {
+        # It's a bad practice to use `scaledFeatureIdx2` here because it only
+        # exists when entering the scale.data condition.
+        # But this condition conceptually contains that condition.
+        value$H <- object@H[, cellIdx, drop = FALSE]
+        value$V <- object@V[scaledFeatureIdx2, , drop = FALSE]
+        value$A <- object@A
+        value$B <- object@B[scaledFeatureIdx2, , drop = FALSE]
+        value$U <- object@U#[cellIdx, , drop = FALSE]
+        value$feature.meta <- feature.meta(object)[featureIdx, , drop = FALSE]
+    }
+    if (isTRUE(returnObject)) {
+        value$modal <- modal
+        do.call(createLigerDataset, value)
+    } else {
+        value
+    }
 }
 
 subsetH5LigerDatasetToH5 <- function(
@@ -502,7 +586,7 @@ subsetH5LigerDatasetToH5 <- function(
 #' @export
 #' @rdname subsetLigerDataset
 subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
-                                  useSlot = NULL) {
+                                  useSlot = NULL, returnObject = TRUE) {
     if (!inherits(object, "ligerDataset")) {
         warning("`object` is not a ligerDataset obejct. Nothing to be done.")
         return(object)
@@ -514,17 +598,17 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
     modal <- .classModalDict[[class(object)]]
     featureIdx <- .idxCheck(object, featureIdx, "feature")
     cellIdx <- .idxCheck(object, cellIdx, "cell")
-    slot.use <- .checkLDSlot(object, useSlot)
-    subsetData <- list(modal = modal)
-    if ("raw.data" %in% slot.use) {
+    slotInvolved <- .checkLDSlot(object, useSlot)
+    subsetData <- list()
+    if ("raw.data" %in% slotInvolved) {
         subsetData$raw.data <- raw.data(object)[featureIdx, cellIdx,
                                                 drop = FALSE]
     }
-    if ("norm.data" %in% slot.use) {
+    if ("norm.data" %in% slotInvolved) {
         subsetData$norm.data <- norm.data(object)[featureIdx, cellIdx,
                                                   drop = FALSE]
     }
-    if ("scale.data" %in% slot.use) {
+    if ("scale.data" %in% slotInvolved) {
         if (!is.null(scale.data(object))) {
             # Which genes in raw.data is in scale.data, by order
             scaleFeatureIdx <- .getOrderedSubsetIdx(
@@ -566,7 +650,11 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
         }
     }
 
-    return(do.call("createLigerDataset", subsetData))
+    if (isTRUE(returnObject)) {
+        subsetData$modal <- modal
+        return(do.call("createLigerDataset", subsetData))
+    }
+    else return(subsetData)
 }
 
 .getOrderedSubsetIdx <- function(allNames, subsetNames) {

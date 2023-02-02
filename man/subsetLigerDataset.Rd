@@ -24,7 +24,9 @@ subsetLigerDataset(
   filename = NULL,
   filenameSuffix = NULL,
   chunkSize = 1000,
-  verbose = TRUE
+  verbose = TRUE,
+  returnObject = TRUE,
+  ...
 )
 
 subsetH5LigerDataset(
@@ -36,14 +38,16 @@ subsetH5LigerDataset(
   filename = NULL,
   filenameSuffix = NULL,
   chunkSize = 1000,
-  verbose = TRUE
+  verbose = TRUE,
+  returnObject = TRUE
 )
 
 subsetMemLigerDataset(
   object,
   featureIdx = NULL,
   cellIdx = NULL,
-  useSlot = NULL
+  useSlot = NULL,
+  returnObject = TRUE
 )
 }
 \arguments{

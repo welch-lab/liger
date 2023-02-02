@@ -238,25 +238,16 @@ calcGeneVars.H5 <- function(object, chunkSize = 1000, verbose = TRUE,
 #' Default \code{TRUE}.
 #' @param dotSize Controls the size of dots in the main plot. Default
 #' \code{0.8}.
-#' @param legendDotSize Controls the size of dots in the legend. Default
-#' \code{4}.
-#' @param titleSize Controls the size of the main title of each sub-plot.
-#' Default \code{14}.
-#' @param subTitleSize Controls the size of subtitle, axis title and legend
-#' title. Default \code{12}.
-#' @param textSize Controls the size of axis text and legend text. Default
-#' \code{10}.
+#' @param ... More theme setting parameters passed to
+#' \code{\link{.ggplotLigerTheme}}.
 #' @return \code{ggplot} object when \code{combinePlot = TRUE}, a list of
 #' \code{ggplot} objects when \code{combinePlot = FALSE}
 #' @export
 plotVarFeatures <- function(
         object,
         combinePlot = TRUE,
-        dotSize = 0.8,
-        legendDotSize = 4,
-        titleSize = 14,
-        subTitleSize = 12,
-        textSize = 10
+        dotSize = 1,
+        ...
 ) {
     plotList <- list()
     for (d in names(object)) {
@@ -273,33 +264,23 @@ plotVarFeatures <- function(
         p <- ggplot2::ggplot(data, ggplot2::aes_string(x = "geneMeans",
                                                        y = "geneVars",
                                                        color = "is_variable")) +
-            ggplot2::geom_point(size = dotSize, stroke = 0.2) +
+            ggplot2::geom_point(size = dotSize, stroke = 0) +
             ggplot2::scale_colour_discrete(name = "Variable\nfeature",
                                            type = c(`TRUE` = "red",
                                                     `FALSE` = "black")) +
-            ggplot2::guides(colour = ggplot2::guide_legend(
-                override.aes = list(size = legendDotSize))
-            ) +
             ggplot2::geom_abline(intercept = log10(nolan_constant), slope = 1,
-                                 color = "purple") +
-            ggplot2::xlab("Gene Expression Mean (log10)") +
-            ggplot2::ylab("Gene Expression Variance (log10)") +
-            ggplot2::ggtitle(d, paste0(nSelect, " variable features")) +
-            ggplot2::theme_classic() +
-            ggplot2::theme(
-                plot.title = ggplot2::element_text(size = titleSize),
-                plot.subtitle = ggplot2::element_text(size = subTitleSize),
-                axis.title = ggplot2::element_text(size = subTitleSize),
-                axis.text = ggplot2::element_text(size = textSize),
-                legend.title = ggplot2::element_text(size = subTitleSize),
-                legend.text = ggplot2::element_text(size = textSize)
-            )
+                                 color = "purple")
+        p <- .ggplotLigerTheme(p, title = d,
+                               subtitle = paste0(nSelect, " variable features"),
+                               xlab = "Gene Expression Mean (log10)",
+                               ylab = "Gene Expression Variance (log10)",
+                               ...)
         plotList[[d]] <- p
     }
     if (isTRUE(combinePlot)) {
         legend <- cowplot::get_legend(plotList[[1]])
         plotList <- lapply(plotList, function(x) {
-            x + theme(legend.position = "none")
+            x + ggplot2::theme(legend.position = "none")
         })
         combined <- cowplot::plot_grid(plotlist = plotList,
                                        align = "hv",

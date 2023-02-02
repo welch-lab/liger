@@ -13,7 +13,8 @@ Authors@R: c(
   person(given = 'Evan', family = 'Macosko', role = c('aut', 'ctb')),
   person(given = 'Paul', family = 'Hoffman', role = 'ctb'),
   person(given = 'Ilya', family = 'Korsunsky', role = 'ctb'),
-  person(given = 'Robert', family = 'Lee', role = 'ctb')
+  person(given = 'Robert', family = 'Lee', role = 'ctb'),
+  person(given = 'Yichen', family = "Wang', role = c('aut', 'cre'))
   )
 Author: Joshua Welch [aut, ctb], 
         Chao Gao [aut, ctb, cre], 
@@ -23,55 +24,58 @@ Author: Joshua Welch [aut, ctb],
         Evan Macosko [aut, ctb],
         Paul Hoffman [ctb],
         Ilya Korsunsky [ctb],
-        Robert Lee [ctb]
+        Robert Lee [ctb],
+        Yichen Wang [aut, cre]
 Maintainer: Chao Gao <gchao@umich.edu>
 BugReports: https://github.com/welch-lab/liger/issues
 URL: https://github.com/welch-lab/liger
 License: GPL-3 | file LICENSE
-Imports: Rcpp (>= 0.12.10),
-     plyr,
-     FNN,
-     dplyr,
-     grid,
-     ggrepel,
-     irlba,
-     ica,
-     Rtsne,
-     ggplot2,
-     riverplot,
-     foreach,
-     parallel,
+Imports: 
+     cowplot,
      doParallel,
+     dplyr,
+     FNN,
+     foreach,
+     ggplot2,
+     ggrepel,
+     grid,
+     hdf5r,
+     ica,
+     irlba,
      mclust,
-     stats,
+     parallel,
+     patchwork,
+     plyr,
      psych,
      RANN,
-     uwot,
+     Rcpp (>= 0.12.10),
+     riverplot,
      rlang,
-     utils,
-     hdf5r,
+     Rtsne,
+     S4Vectors,
      scattermore (>= 0.7),
-     S4Vectors
+     stats,
+     utils,
+     uwot
 biocViews:
 LazyData: true
 LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress
 Depends:
-    cowplot,
     Matrix,
     methods,
-    patchwork
 RoxygenNote: 7.2.3
 Encoding: UTF-8
 Suggests:
-    Seurat,
-    knitr,
-    reticulate,
-    rmarkdown,
-    testthat,
+    AnnotationDbi,
+    fgsea,
     GenomicRanges,
     IRanges,
+    knitr,
     org.Hs.eg.db,
+    plotly,
     reactome.db,
-    fgsea,
-    AnnotationDbi
+    reticulate,
+    rmarkdown,
+    Seurat,
+    testthat
 VignetteBuilder: knitr

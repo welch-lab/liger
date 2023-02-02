@@ -6,26 +6,33 @@
 \usage{
 runTSNE(
   object,
-  use.raw = FALSE,
-  dims.use = NULL,
-  use.pca = FALSE,
+  useRaw = FALSE,
+  useDims = NULL,
+  nDims = 2,
+  usePCA = FALSE,
   perplexity = 30,
   theta = 0.5,
   method = c("Rtsne", "fftRtsne"),
-  fitsne.path = NULL,
-  rand.seed = 42
+  fitsnePath = NULL,
+  seed = 42,
+  k = nDims,
+  use.raw = useRaw,
+  dims.use = useDims,
+  use.pca = usePCA,
+  fitsne.path = fitsnePath,
+  rand.seed = seed
 )
 }
 \arguments{
 \item{object}{\linkS4class{liger} object with factorization results.}
 
-\item{use.raw}{Whether to use un-aligned cell factor loadings (\eqn{H}
+\item{useRaw}{Whether to use un-aligned cell factor loadings (\eqn{H}
 matrices). Default \code{FALSE}.}
 
-\item{dims.use}{Index of factors to use for computing UMAP embedding. Default
+\item{useDims}{Index of factors to use for computing UMAP embedding. Default
 \code{NULL} uses all factors.}
 
-\item{use.pca}{Whether to perform initial PCA step for Rtsne. Default
+\item{usePCA}{Whether to perform initial PCA step for Rtsne. Default
 \code{FALSE}.}
 
 \item{perplexity}{Numeric parameter to pass to Rtsne (expected number of
@@ -37,15 +44,20 @@ neighbors). Default \code{30}.}
 \item{method}{Choose from \code{"Rtsne"} or \code{"fftRtsne"}. See
 Description. Default \code{"Rtsne"}.}
 
-\item{fitsne.path}{Path to the cloned FIt-SNE directory (i.e.
+\item{fitsnePath}{Path to the cloned FIt-SNE directory (i.e.
 \code{'/path/to/dir/FIt-SNE'}). Required only when first time using
 \code{runTSNE} with \code{method = "fftRtsne"}. Default \code{NULL}.}
 
-\item{rand.seed}{Random seed for reproducibility. Default \code{42}.}
+\item{seed}{Random seed for reproducibility. Default \code{42}.}
+
+\item{k}{Number of dimensions to reduce to. Default \code{2}.}
+
+\item{use.raw, dims.use, use.pca, fitsne.path, rand.seed}{\bold{Deprecated}. See
+Usage section for replacement.}
 }
 \value{
-The \code{object} with new variables, from \code{TSNE_1} to
-\code{TSNE_[k]}, updated in the \code{cell.meta} slot.
+The \code{object} where a \code{"TSNE"} variable is updated in the
+\code{cell.meta} slot with the whole 2D embedding matrix.
 }
 \description{
 Runs t-SNE on the quantile normalized cell factors (result from

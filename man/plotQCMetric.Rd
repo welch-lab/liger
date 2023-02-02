@@ -16,28 +16,16 @@ plotQCMetric(
   dotSize = 1,
   violinPlot = TRUE,
   violinAlpha = 0.8,
-  boxPlot = TRUE,
+  boxPlot = FALSE,
   boxAlpha = 0,
-  legend = TRUE,
-  xlab = "Dataset",
+  xlab = groupBy,
   ylab = metric,
-  baseSize = 10,
-  xTextSize = NULL,
-  xTitleSize = NULL,
-  yTextSize = NULL,
-  yTitleSize = NULL,
-  legendTextSize = NULL,
-  legendTitleSize = NULL
-)
-
-plotTotalCountViolin(object, metric = "nUMI", ylab = "Total Counts", ...)
-
-plotGeneDetectedViolin(
-  object,
-  metric = "nGene",
-  ylab = "Number of Genes Detected",
   ...
 )
+
+plotTotalCountViolin(object, groupBy = "dataset", ...)
+
+plotGeneDetectedViolin(object, groupBy = "dataset", ...)
 }
 \arguments{
 \item{object}{\linkS4class{liger} object, or a data.frame like object of cell
@@ -59,21 +47,8 @@ metadata, where \code{"dataset"} variable must exist.}
 \item{violinAlpha, boxAlpha}{The transparency of violins or boxes,
 respectively. \code{1} is opaque and \code{0} is transparent.}
 
-\item{legend}{Whether to show the legend.}
-
-\item{xlab, ylab}{X and Y axis title text.}
-
-\item{baseSize}{One-parameter control of all text sizes. Individual text
-element size can be controled by other size arguments. "Title" sizes are
-2 points larger than "text" sizes.}
-
-\item{xTextSize, yTextSize, legendTextSize}{Size of axis texts and legend text.
-Default \code{NULL} controls by \code{baseSize}.}
-
-\item{xTitleSize, yTitleSize, legendTitleSize}{Size of axis titles and legend
-title. Default \code{NULL} controls by \code{baseSize}.}
-
-\item{...}{Arguments passed to \code{plotQCMetric}}
+\item{...}{Theme setting parameters. Check \code{\link{.ggplotLigerTheme}}
+for more options and details.}
 }
 \description{
 By default, a violin plot grouped by dataset variable, overlaid by a box plot

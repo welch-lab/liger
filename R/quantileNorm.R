@@ -142,7 +142,6 @@ setMethod(
         }
         # Transposing all H to cell x k
         Hs <- lapply(object, t)
-        record <- list(Hs = Hs)
         # fast max factor assignment with Rcpp code
         clusters <- lapply(Hs, max_factor,
                          dims_use = dims.use, center_cols = do.center)
@@ -151,13 +150,13 @@ setMethod(
         # clusterAssign <- factor(unlist(clusters))
         clusterAssign <- as.factor(unlist(lapply(clusters, as.character)))
         names(clusterAssign) <- unlist(lapply(Hs, rownames))
-        record$clusters <- clusterAssign
         # increase robustness of cluster assignments using knn graph
         if (isTRUE(refine.knn)) {
             for (i in seq_along(Hs)) {
                 clustsH <- clusterAssign[rownames(Hs[[i]])]
                 H_knn <- RANN::nn2(Hs[[i]], eps = eps, k = knn_k,
                                    searchtype = "standard")
+                #print(clustsH[1:10])
                 # Rcpp method cluster_vote
                 newClusts <- cluster_vote(H_knn$nn.idx, clustsH)
                 clusterAssign[rownames(Hs[[i]])] <- newClusts

@@ -46,7 +46,9 @@ H5Apply <- function(
             i = row_inds[seq_along(counts)] + 1,
             p = start_inds[seq(chunkSize + 1)] - prev_end_data + 1,
             x = counts,
-            dims = c(numFeatures, chunkSize)
+            dims = c(numFeatures, chunkSize),
+            dimnames = list(rownames(object),
+                            colnames(object)[cellIdx])
         )
         # Process chunk data with given function and additional arguments if
         # applicable. Then insert value to initialized output data.

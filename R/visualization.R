@@ -31,11 +31,6 @@ NULL
 #'
 #' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
 #'   console).
-#'
-#' @importFrom ggplot2 ggplot geom_point geom_text ggtitle guides guide_legend aes theme xlab ylab
-#' @importFrom dplyr %>% group_by summarize
-#' @importFrom scattermore geom_scattermore
-#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -48,7 +43,7 @@ NULL
 #' plots <- plotByDatasetAndCluster(ligerex, return.plots = TRUE)
 #' }
 
-plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
+plotByDatasetAndClusterOld <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
                                     text.size = 3, do.shuffle = TRUE, rand.seed = 1,
                                     axis.labels = NULL, do.legend = TRUE, legend.size = 5,
                                     reorder.idents = FALSE, new.order = NULL,
@@ -174,11 +169,6 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
 #'   console).
 #'
-#' @importFrom ggplot2 ggplot geom_point geom_text ggtitle aes guides guide_legend labs
-#' scale_color_viridis_c scale_color_gradientn theme xlab ylab
-#' @importFrom dplyr %>% group_by summarize
-#' @importFrom stats median
-#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -189,7 +179,7 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #' plotFeature(ligerex, feature = 'nUMI')
 #' }
 
-plotFeature <- function(object, feature, by.dataset = TRUE, discrete = NULL, title = NULL,
+plotFeatureOld <- function(object, feature, by.dataset = TRUE, discrete = NULL, title = NULL,
                         pt.size = 0.3, text.size = 3, do.shuffle = TRUE, rand.seed = 1, do.labels = FALSE,
                         axis.labels = NULL, do.legend = TRUE, legend.size = 5, option = 'plasma',
                         cols.use = NULL, zero.color = '#F5F5F5', return.plots = FALSE) {
@@ -299,9 +289,6 @@ plotFeature <- function(object, feature, by.dataset = TRUE, discrete = NULL, tit
 #'
 #' @return Plots to console (1-2 pages per factor)
 #'
-#' @importFrom graphics legend par plot
-#' @importFrom grDevices rainbow
-#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -390,14 +377,6 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #'
 #' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
 #'   console).
-#'
-#' @importFrom ggrepel geom_text_repel
-#' @importFrom ggplot2 ggplot aes aes_string geom_point ggtitle scale_color_gradient scale_size
-#' scale_x_continuous scale_y_continuous coord_fixed labs
-#' @importFrom grid roundrectGrob
-#' @importFrom grid gpar
-#' @importFrom cowplot draw_grob
-#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -546,16 +525,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #'
 #' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
 #'   console).
-#'
-#' @importFrom ggplot2 aes aes_string annotate coord_cartesian element_blank ggplot geom_point
-#' ggtitle scale_color_viridis_c theme
-#' theme_bw
-#' @importFrom grid gpar unit
-#' @import patchwork
 #' @importFrom stats loadings
-#' @importFrom cowplot theme_cowplot
-#' @importFrom scattermore geom_scattermore
-#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -776,10 +746,6 @@ plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes
 #' @return List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots to
 #'   console).
 #'
-#' @importFrom cowplot plot_grid
-#' @importFrom ggplot2 aes_string ggplot geom_point geom_boxplot geom_violin ggtitle labs
-#' scale_color_gradient2 theme
-#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -916,11 +882,7 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #'   list of ggplot objects.
 #'
 #' @importFrom dplyr %>% group_by mutate_at vars group_cols
-#' @importFrom ggplot2 ggplot geom_point aes_string element_blank ggtitle labs xlim ylim
-#' scale_color_viridis_c scale_color_gradientn theme
 #' @importFrom stats quantile
-#' @importFrom scattermore geom_scattermore
-#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -1177,9 +1139,6 @@ plotGene <- function(object, gene, use.raw = FALSE, use.scaled = FALSE, scale.by
 #'
 #' @return If returning single plot, returns ggplot object; if returning multiple plots; returns
 #'   list of ggplot objects.
-#'
-#' @importFrom ggplot2 ggplot geom_point aes_string scale_color_gradient2 ggtitle
-#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -1377,10 +1336,6 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
 #'
 #' @return print plot to console (return.plot = FALSE); ggplot object (return.plot = TRUE)
 #'   list of ggplot objects.
-#'
-#' @importFrom grid unit
-#' @importFrom ggplot2 ggplot aes coord_fixed element_blank geom_point guides guide_legend
-#' scale_size scale_y_discrete theme
 #'
 #' @export
 #' @examples

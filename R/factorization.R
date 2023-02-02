@@ -1387,7 +1387,6 @@ optimizeNewLambda <-
 #' @import parallel
 #' @importFrom foreach foreach
 #' @importFrom foreach "%dopar%"
-#' @importFrom ggplot2 ggplot aes geom_point geom_line guides guide_legend labs theme theme_classic
 #'
 #' @export
 #' @examples
@@ -1576,7 +1575,6 @@ suggestLambda <-
 #' @import parallel
 #' @importFrom foreach foreach
 #' @importFrom foreach "%dopar%"
-#' @importFrom ggplot2 ggplot aes geom_point geom_line guides guide_legend labs theme theme_classic
 #'
 #' @export
 #' @examples

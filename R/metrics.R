@@ -28,7 +28,7 @@ NULL
 #' dataset_spec <- calcDatasetSpecificity(ligerex, do.plot = F)
 #' }
 
-calcDatasetSpecificity <- function(object,
+calcDatasetSpecificityOld <- function(object,
                                    dataset1 = NULL,
                                    dataset2 = NULL,
                                    do.plot = TRUE) {

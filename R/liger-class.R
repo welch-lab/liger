@@ -212,10 +212,18 @@ createLiger <- function(
                 if (!identical(rownames(ld@V), var.features(x)))
                     return(paste("Variable features do not match dimension",
                                  "of V matrix in dataset", d))
-            if (!is.null(scale.data(ld)))
-                if (!identical(rownames(scale.data(ld)), var.features(x)))
-                    return(paste("Variable features do not match dimension",
-                                 "of scale.data in dataset", d))
+            if (!is.null(scale.data(ld))) {
+                if (!isH5Liger(ld)) {
+                    if (!identical(rownames(scale.data(ld)), var.features(x)))
+                        return(paste("Variable features do not match dimension",
+                                     "of scale.data in dataset", d))
+                } else {
+                    if (scale.data(ld)$dims[1] != length(var.features(x)))
+                        return(paste("Variable features do not match dimension",
+                                     "of scale.data in dataset (H5)", d))
+                }
+            }
+
         }
     }
     TRUE
@@ -341,8 +349,9 @@ setReplaceMethod("dimnames", c("liger", "list"), function(x, value) {
 })
 
 setMethod("[[", signature(x = "liger", i = "ANY", j = "missing"),
-          function(x, i, j, ...)
+          function(x, i, ...)
           {
+              if (is.null(i)) return(NULL)
               cell.meta(x)[[i, ...]]
           })
 

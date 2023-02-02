@@ -6,41 +6,50 @@
 \usage{
 runUMAP(
   object,
-  use.raw = FALSE,
-  dims.use = NULL,
-  k = 2,
+  useRaw = FALSE,
+  useDims = NULL,
+  nDims = 2,
   distance = c("euclidean", "cosine", "manhattan", "hamming"),
-  n_neighbors = 10,
-  min_dist = 0.1,
-  rand.seed = 42
+  nNeighbors = 20,
+  minDist = 0.1,
+  seed = 42,
+  k = nDims,
+  use.raw = useRaw,
+  dims.use = useDims,
+  n_neighbors = nNeighbors,
+  min_dist = minDist,
+  rand.seed = seed
 )
 }
 \arguments{
 \item{object}{\linkS4class{liger} object with factorization results.}
 
-\item{use.raw}{Whether to use un-aligned cell factor loadings (\eqn{H}
+\item{useRaw}{Whether to use un-aligned cell factor loadings (\eqn{H}
 matrices). Default \code{FALSE}.}
 
-\item{dims.use}{Index of factors to use for computing UMAP embedding. Default
+\item{useDims}{Index of factors to use for computing UMAP embedding. Default
 \code{NULL} uses all factors.}
 
-\item{k}{Number of dimensions to reduce to. Default \code{2}.}
+\item{nDims}{Number of dimensions to reduce to. Default \code{2}.}
 
 \item{distance}{Character. Metric used to measure distance in the input
 space. Default \code{"euclidean"}, alternative options include:
 \code{"cosine"}, \code{"manhattan"} and \code{"hamming"}.}
 
-\item{n_neighbors}{Number of neighboring points used in local approximations
+\item{nNeighbors}{Number of neighboring points used in local approximations
 of manifold structure. Default \code{10}.}
 
-\item{min_dist}{Numeric. Controls how tightly the embedding is allowed
+\item{minDist}{Numeric. Controls how tightly the embedding is allowed
 compress points together. Default \code{0.1}.}
 
-\item{rand.seed}{Random seed for reproducibility. Default \code{42}.}
+\item{seed}{Random seed for reproducibility. Default \code{42}.}
+
+\item{k, use.raw, dims.use, n_neighbors, min_dist, rand.seed}{\bold{Deprecated}.
+See Usage section for replacement.}
 }
 \value{
-The \code{object} with new variables, from \code{UMAP_1} to
-\code{UMAP_[k]}, updated in the \code{cell.meta} slot.
+The \code{object} where a \code{"UMAP"} variable is updated in the
+\code{cell.meta} slot with the whole 2D embedding matrix.
 }
 \description{
 Run UMAP on the quantile normalized cell factors (result from
@@ -53,13 +62,13 @@ large datasets. The underlying UMAP calculation imports uwot
 \code{\link[uwot]{umap}}.
 }
 \details{
-For \code{n_neighbors}, larger values will result in more global
+For \code{nNeighbors}, larger values will result in more global
 structure being preserved at the loss of detailed local structure. In general
 this parameter should often be in the range 5 to 50, with a choice of 10 to
 15 being a sensible default.
 
-For \code{min_dist}, larger values ensure embedded points are more evenly
-distributed, while smaller values allow the algorithm to optimise more
+For \code{minDist}, larger values ensure embedded points are more evenly
+distributed, while smaller values allow the algorithm to optimize more
 accurately with regard to local structure. Sensible values are in the range
 0.001 to 0.5, with 0.1 being a reasonable default.
 }

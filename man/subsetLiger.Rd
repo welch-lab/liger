@@ -21,7 +21,7 @@ subsetLiger(
   chunkSize = 1000,
   verbose = TRUE,
   newH5 = "auto",
-  ...
+  returnObject = TRUE
 )
 }
 \arguments{

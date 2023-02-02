@@ -10,8 +10,8 @@
 #' \code{\link{online_iNMF}}) when the former is not available.
 #' @param object \linkS4class{liger} object. Should run
 #' \code{\link{quantile_norm}} before calling.
-#' @param k Integer, the maximum number of nearest neighbors to compute. Default
-#' \code{20}.
+#' @param nNeighbors Integer, the maximum number of nearest neighbors to
+#' compute. Default \code{20}.
 #' @param resolution Numeric, value of the resolution parameter, a larger value
 #' results in a larger number of communities with smaller sizes. Default
 #' \code{1.0}.
@@ -25,11 +25,13 @@
 #' @param nRandomStarts Integer number of random starts. Default \code{10}.
 #' @param nIterations Integer, maximal number of iterations per random start.
 #' Default \code{100}.
-#' @param dims.use Indices of factors to use for Louvain clustering. Default
+#' @param useDims Indices of factors to use for Louvain clustering. Default
 #' \code{NULL} uses all available factors.
-#' @param random.seed Seed of the random number generator. Default \code{1}.
+#' @param seed Seed of the random number generator. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress.
 #' Default \code{TRUE}.
+#' @param dims.use,random.seed \bold{Deprecated}. See Usage section for
+#' replacement.
 #' @return \code{object} with refined cluster assignment updated in
 #' \code{louvain_cluster} variable in \code{cell.meta} slot. Can be fetched
 #' with \code{object$louvain_cluster}
@@ -37,15 +39,22 @@
 louvainCluster <- function(
         object,
         resolution = 1.0,
-        k = 20,
+        nNeighbors = 20,
         prune = 1 / 15,
         eps = 0.1,
         nRandomStarts = 10,
         nIterations = 100,
+        useDims = NULL,
+        seed = 1,
+        verbose = TRUE,
+        # Deprecated coding style
+        k = nNeighbors,
         dims.use = NULL,
-        random.seed = 1,
-        verbose = TRUE
+        random.seed = 1
 ) {
+    .deprecateArgs(list(k = "nNeighbors", dims.use = "useDims",
+                        random.seed = "seed"),
+                   call = rlang::call_args(match.call()))
     H.norm <- getMatrix(object, "H.norm")
     if (is.null(H.norm)) {
         type <- " unnormalized "
@@ -64,14 +73,11 @@ louvainCluster <- function(
     edgeOutPath <- gsub("-", "", edgeOutPath)
     edgeOutPath <- gsub(":", "", edgeOutPath)
 
-    if (is.null(dims.use)) {
-        useFactors <- seq(ncol(H.norm))
-    } else {
-        useFactors <- dims.use
-    }
+    if (!is.null(useDims)) H.norm <- H.norm[, useDims]
+
     if (isTRUE(verbose))
         .log("Louvain clustering on", type, "cell factor loadings...")
-    knn <- RANN::nn2(H.norm[, useFactors], k = k, eps = eps)
+    knn <- RANN::nn2(H.norm, k = nNeighbors, eps = eps)
     snn <- ComputeSNN(knn$nn.idx, prune = prune)
     WriteEdgeFile(snn, edgeOutPath, display_progress = FALSE)
     clusts <- RunModularityClusteringCpp(
@@ -81,7 +87,7 @@ louvainCluster <- function(
         nRandomStarts = nRandomStarts,
         nIterations = nIterations,
         algorithm = 1,
-        randomSeed = random.seed,
+        randomSeed = seed,
         printOutput = FALSE,
         edgefilename = edgeOutPath
     )
@@ -95,4 +101,18 @@ louvainCluster <- function(
     cell.meta(object)$louvain_cluster <- factor(clusts)
     unlink(edgeOutPath)
     return(object)
+}
+
+mapAnnotation <- function(lig, original, mapping, newName) {
+    if (length(original) == 1) original <- lig[[original]]
+    else if (length(original) != ncol(lig))
+        stop("Wrong length from `original`.")
+
+    newAnn <- rep(NA, ncol(lig))
+    for (origClust in names(mapping)) {
+        newAnn[original == origClust] <- mapping[[origClust]]
+    }
+    newAnn <- factor(newAnn)
+    cell.meta(lig)[[newName]] <- newAnn
+    return(lig)
 }

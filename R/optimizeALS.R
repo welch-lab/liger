@@ -138,10 +138,13 @@ setMethod(
                 verbose = verbose
             )
             object@W <- out$W
+            rownames(object@W) <- var.features(object)
             for (d in names(object)) {
                 ld <- dataset(object, d)
                 ld@H <- out$H[[d]]
+                colnames(ld@H) <- colnames(ld)
                 ld@V <- out$V[[d]]
+                rownames(ld@V) <- var.features(object)
                 datasets(object, check = FALSE)[[d]] <- ld
             }
             #object@parameters$lambda <- lambda
@@ -302,14 +305,18 @@ setMethod(
             }
         }
         out <- list(H = Hm, V = Vm, W = t(Wm))
+        factorNames <- paste0("factor_", seq(k))
         for (i in seq(nDatasets)) {
             out$H[[i]] <- t(out$H[[i]])
             colnames(out$H[[i]]) <- colnames(object[[i]])
+            rownames(out$H[[i]]) <- factorNames
             out$V[[i]] <- t(out$V[[i]])
             rownames(out$V[[i]]) <- rownames(object[[i]])
+            colnames(out$V[[i]]) <- factorNames
         }
         names(out$V) <- names(out$H) <- names(object)
         rownames(out$W) <- rownames(object[[1]])
+        colnames(out$W) <- factorNames
         return(out)
     }
 )

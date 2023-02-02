@@ -7,43 +7,59 @@
 #' recommended to use this method for dimensionality reduction with extremely
 #' large datasets. The underlying UMAP calculation imports uwot
 #' \code{\link[uwot]{umap}}.
-#' @details For \code{n_neighbors}, larger values will result in more global
+#' @details For \code{nNeighbors}, larger values will result in more global
 #' structure being preserved at the loss of detailed local structure. In general
 #' this parameter should often be in the range 5 to 50, with a choice of 10 to
 #' 15 being a sensible default.
 #'
-#' For \code{min_dist}, larger values ensure embedded points are more evenly
-#' distributed, while smaller values allow the algorithm to optimise more
+#' For \code{minDist}, larger values ensure embedded points are more evenly
+#' distributed, while smaller values allow the algorithm to optimize more
 #' accurately with regard to local structure. Sensible values are in the range
 #' 0.001 to 0.5, with 0.1 being a reasonable default.
 #' @param object \linkS4class{liger} object with factorization results.
-#' @param use.raw Whether to use un-aligned cell factor loadings (\eqn{H}
+#' @param useRaw Whether to use un-aligned cell factor loadings (\eqn{H}
 #' matrices). Default \code{FALSE}.
-#' @param dims.use Index of factors to use for computing UMAP embedding. Default
+#' @param useDims Index of factors to use for computing UMAP embedding. Default
 #' \code{NULL} uses all factors.
-#' @param k Number of dimensions to reduce to. Default \code{2}.
+#' @param nDims Number of dimensions to reduce to. Default \code{2}.
 #' @param distance Character. Metric used to measure distance in the input
 #' space. Default \code{"euclidean"}, alternative options include:
 #' \code{"cosine"}, \code{"manhattan"} and \code{"hamming"}.
-#' @param n_neighbors Number of neighboring points used in local approximations
+#' @param nNeighbors Number of neighboring points used in local approximations
 #' of manifold structure. Default \code{10}.
-#' @param min_dist Numeric. Controls how tightly the embedding is allowed
+#' @param minDist Numeric. Controls how tightly the embedding is allowed
 #' compress points together. Default \code{0.1}.
-#' @param rand.seed Random seed for reproducibility. Default \code{42}.
-#' @return The \code{object} with new variables, from \code{UMAP_1} to
-#' \code{UMAP_[k]}, updated in the \code{cell.meta} slot.
+#' @param seed Random seed for reproducibility. Default \code{42}.
+#' @param k,use.raw,dims.use,n_neighbors,min_dist,rand.seed \bold{Deprecated}.
+#' See Usage section for replacement.
+#' @return The \code{object} where a \code{"UMAP"} variable is updated in the
+#' \code{cell.meta} slot with the whole 2D embedding matrix.
 #' @seealso \code{\link{runTSNE}}
 #' @export
 runUMAP <- function(
         object,
-        use.raw = FALSE,
-        dims.use = NULL,
-        k = 2,
+        useRaw = FALSE,
+        useDims = NULL,
+        nDims = 2,
         distance = c("euclidean", "cosine", "manhattan", "hamming"),
-        n_neighbors = 10,
-        min_dist = 0.1,
-        rand.seed = 42
+        nNeighbors = 20,
+        minDist = 0.1,
+        seed = 42,
+        # Deprecated coding style
+        k = nDims,
+        use.raw = useRaw,
+        dims.use = useDims,
+        n_neighbors = nNeighbors,
+        min_dist = minDist,
+        rand.seed = seed
 ) {
+    .deprecateArgs(list(k = "nDims",
+                        use.raw = "useRaw",
+                        dims.use = "useDims",
+                        n_neighbors = "nNeighbors",
+                        min_dist = "minDist",
+                        rand.seed = "seed"),
+                   call = rlang::call_args(match.call()))
     distance <- match.arg(distance)
     set.seed(rand.seed)
     if (isTRUE(use.raw)) {
@@ -51,16 +67,15 @@ runUMAP <- function(
     } else {
         data.use <- getMatrix(object, "H.norm")
     }
-    if (is.null(dims.use)) dims.use <- seq(ncol(data.use))
-    umap <- uwot::umap(data.use[, dims.use],
-                       n_components = as.integer(k),
+    if (!is.null(dims.use)) data.use <- data.use[, dims.use]
+    umap <- uwot::umap(data.use,
+                       n_components = as.integer(nDims),
                        metric = distance,
                        n_neighbors = as.integer(n_neighbors),
                        min_dist = min_dist)
     rownames(umap) <- colnames(object)
-    colnames(umap) <- paste0("UMAP_", seq(k))
-    cell.meta(object) <- cbind(cell.meta(object), umap)
-    object@uns$UMAP <- list(variableName = colnames(umap))
+    colnames(umap) <- seq(nDims)
+    cell.meta(object)$UMAP <- umap
     return(object)
 }
 
@@ -81,11 +96,12 @@ runUMAP <- function(
 #' FIt-SNE installation instructions, see the liger repo
 #' \href{https://github.com/welch-lab/liger#readme}{README}.
 #' @param object \linkS4class{liger} object with factorization results.
-#' @param use.raw Whether to use un-aligned cell factor loadings (\eqn{H}
+#' @param useRaw Whether to use un-aligned cell factor loadings (\eqn{H}
 #' matrices). Default \code{FALSE}.
-#' @param dims.use Index of factors to use for computing UMAP embedding. Default
+#' @param useDims Index of factors to use for computing UMAP embedding. Default
 #' \code{NULL} uses all factors.
-#' @param use.pca Whether to perform initial PCA step for Rtsne. Default
+#' @param k Number of dimensions to reduce to. Default \code{2}.
+#' @param usePCA Whether to perform initial PCA step for Rtsne. Default
 #' \code{FALSE}.
 #' @param perplexity Numeric parameter to pass to Rtsne (expected number of
 #' neighbors). Default \code{30}.
@@ -93,51 +109,70 @@ runUMAP <- function(
 #' \code{0.0} for exact TSNE. Default \code{0.5}.
 #' @param method Choose from \code{"Rtsne"} or \code{"fftRtsne"}. See
 #' Description. Default \code{"Rtsne"}.
-#' @param fitsne.path Path to the cloned FIt-SNE directory (i.e.
+#' @param fitsnePath Path to the cloned FIt-SNE directory (i.e.
 #' \code{'/path/to/dir/FIt-SNE'}). Required only when first time using
 #' \code{runTSNE} with \code{method = "fftRtsne"}. Default \code{NULL}.
-#' @param rand.seed Random seed for reproducibility. Default \code{42}.
-#' @return The \code{object} with new variables, from \code{TSNE_1} to
-#' \code{TSNE_[k]}, updated in the \code{cell.meta} slot.
+#' @param seed Random seed for reproducibility. Default \code{42}.
+#' @param use.raw,dims.use,use.pca,fitsne.path,rand.seed \bold{Deprecated}. See
+#' Usage section for replacement.
+#' @return The \code{object} where a \code{"TSNE"} variable is updated in the
+#' \code{cell.meta} slot with the whole 2D embedding matrix.
 #' @seealso \code{\link{runUMAP}}
 #' @export
 runTSNE <- function(
         object,
-        use.raw = FALSE,
-        dims.use = NULL,
-        use.pca = FALSE,
+        useRaw = FALSE,
+        useDims = NULL,
+        nDims = 2,
+        usePCA = FALSE,
         perplexity = 30,
         theta = 0.5,
         method = c("Rtsne", "fftRtsne"),
-        fitsne.path = NULL,
-        rand.seed = 42
+        fitsnePath = NULL,
+        seed = 42,
+        # Deprecated coding styles
+        k = nDims,
+        use.raw = useRaw,
+        dims.use = useDims,
+        use.pca = usePCA,
+        fitsne.path = fitsnePath,
+        rand.seed = seed
 ) {
+    .deprecateArgs(list(k = "nDims",
+                        use.raw = "useRaw",
+                        dims.use = "useDims",
+                        use.pca = "usePCA",
+                        fitsne.path = "fitsnePath",
+                        rand.seed = "seed"),
+                   call = rlang::call_args(match.call()))
     method <- match.arg(method)
-    if (isTRUE(use.raw)) {
+    if (isTRUE(useRaw)) {
         data.use <- t(Reduce(cbind, getMatrix(object, "H")))
     } else {
         data.use <- getMatrix(object, "H.norm")
     }
-    if (is.null(dims.use)) dims.use <- seq(ncol(data.use))
+    if (!is.null(useDims)) data.use <- data.use[, useDims]
     if (method == "Rtsne") {
-        set.seed(rand.seed)
-        tsne <- Rtsne::Rtsne(data.use[, dims.use],
-                             pca = use.pca,
+        set.seed(seed)
+        tsne <- Rtsne::Rtsne(data.use,
+                             dims = nDims,
+                             pca = usePCA,
                              check_duplicates = FALSE,
                              theta = theta,
                              perplexity = perplexity)
         tsne <- tsne$Y
     } else if (method == "fftRtsne") {
-        tsne <- .fftRtsne(X = data.use[, dims.use],
-                          rand_seed = rand.seed,
-                          fast_tsne_path = fitsne.path,
+        tsne <- .fftRtsne(data.use,
+                          dims = nDims,
+                          rand_seed = seed,
+                          fast_tsne_path = fitsnePath,
                           theta = theta,
                           perplexity = perplexity)
     }
     rownames(tsne) <- colnames(object)
-    colnames(tsne) <- paste0("TSNE_", seq(ncol(tsne)))
-    cell.meta(object) <- cbind(cell.meta(object), tsne)
-    object@uns$TSNE <- list(variableName = colnames(tsne), method = method)
+    colnames(tsne) <- seq(nDims)
+    cell.meta(object)$TSNE <- tsne
+    object@uns$TSNE <- list(method = method)
     return(object)
 }
 

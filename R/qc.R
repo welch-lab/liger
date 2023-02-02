@@ -257,16 +257,8 @@ removeMissing <- function(
 #' @param dotSize Size of dots.
 #' @param violinAlpha,boxAlpha The transparency of violins or boxes,
 #' respectively. \code{1} is opaque and \code{0} is transparent.
-#' @param legend Whether to show the legend.
-#' @param xlab,ylab X and Y axis title text.
-#' @param baseSize One-parameter control of all text sizes. Individual text
-#' element size can be controled by other size arguments. "Title" sizes are
-#' 2 points larger than "text" sizes.
-#' @param xTextSize,yTextSize,legendTextSize Size of axis texts and legend text.
-#' Default \code{NULL} controls by \code{baseSize}.
-#' @param xTitleSize,yTitleSize,legendTitleSize Size of axis titles and legend
-#' title. Default \code{NULL} controls by \code{baseSize}.
-#' @param ... Arguments passed to \code{plotQCMetric}
+#' @param ... Theme setting parameters. Check \code{\link{.ggplotLigerTheme}}
+#' for more options and details.
 #' @export
 #' @rdname plotQCMetric
 #' @importFrom rlang .data
@@ -280,18 +272,11 @@ plotQCMetric <- function(
         dotSize = 1,
         violinPlot = TRUE,
         violinAlpha = .8,
-        boxPlot = TRUE,
+        boxPlot = FALSE,
         boxAlpha = 0,
-        legend = TRUE,
-        xlab = "Dataset",
+        xlab = groupBy,
         ylab = metric,
-        baseSize = 10,
-        xTextSize = NULL,
-        xTitleSize = NULL,
-        yTextSize = NULL,
-        yTitleSize = NULL,
-        legendTextSize = NULL,
-        legendTitleSize = NULL
+        ...
 ) {
     if (is.null(colorBy))
         p <- ggplot2::ggplot(object, ggplot2::aes(x = .data[[groupBy]],
@@ -316,36 +301,7 @@ plotQCMetric <- function(
 
     if (isTRUE(boxPlot)) p <- p + ggplot2::geom_boxplot(alpha = boxAlpha)
 
-    p <- p + ggplot2::theme_classic()
-
-    xText <- yText <- legendText <- baseSize
-    xTitle <- yTitle <- legendTitle <- baseSize + 2
-    if (!is.null(xTextSize)) xText <- xTextSize
-    if (!is.null(xTitleSize)) xTitle <- xTitleSize
-    if (!is.null(yTextSize)) yText <- yTextSize
-    if (!is.null(yTitleSize)) yTitle <- yTitleSize
-    if (!is.null(legendTextSize)) legendText <- legendTextSize
-    if (!is.null(legendTitleSize)) legendTitle <- legendTitleSize
-
-    p <- p + ggplot2::theme(
-        axis.text.x = ggplot2::element_text(size = xText),
-        axis.title.x = ggplot2::element_text(size = xTitle),
-        axis.text.y = ggplot2::element_text(size = yText),
-        axis.title.y = ggplot2::element_text(size = yTitle),
-        legend.text = ggplot2::element_text(size = legendText),
-        legend.title = ggplot2::element_text(size = legendTitle)
-    )
-
-    if (!isTRUE(legend))
-        p <- p + ggplot2::theme(legend.position = "none")
-    if (!is.null(xlab))
-        p <- p + xlab(xlab)
-    else
-        p <- p + ggplot2::theme(axis.title.x = ggplot2::element_blank())
-    if (!is.null(ylab))
-        p <- p + ylab(ylab)
-    else
-        p <- p + ggplot2::theme(axis.title.y = ggplot2::element_blank())
+    p <- .ggplotLigerTheme(p, xlab = xlab, ylab = ylab, ...)
     p
 }
 
@@ -353,20 +309,22 @@ plotQCMetric <- function(
 #' @rdname plotQCMetric
 plotTotalCountViolin <- function(
     object,
-    metric = "nUMI",
-    ylab = "Total Counts",
+    groupBy = "dataset",
     ...
 ) {
-    plotQCMetric(object, metric = "nUMI", ylab = ylab, ...)
+    plotCellViolin(object, y = "nUMI", groupBy = groupBy,
+                   ylab = "Total counts", ...)
 }
 
 #' @export
 #' @rdname plotQCMetric
 plotGeneDetectedViolin <- function(
     object,
-    metric = "nGene",
-    ylab = "Number of Genes Detected",
+    groupBy = "dataset",
     ...
 ) {
-    plotQCMetric(object, metric = "nGene", ylab = ylab, ...)
+    callArgs <- names(rlang::call_args(match.call()))
+
+    plotCellViolin(object, y = "nGene", groupBy = groupBy,
+                   ylab = "Number of Genes Detected", ...)
 }

@@ -4,15 +4,7 @@
 \alias{plotVarFeatures}
 \title{Plot the variance vs mean of feature expression}
 \usage{
-plotVarFeatures(
-  object,
-  combinePlot = TRUE,
-  dotSize = 0.8,
-  legendDotSize = 4,
-  titleSize = 14,
-  subTitleSize = 12,
-  textSize = 10
-)
+plotVarFeatures(object, combinePlot = TRUE, dotSize = 1, ...)
 }
 \arguments{
 \item{object}{\linkS4class{liger} object. \code{\link{selectGenes}} need to
@@ -25,17 +17,8 @@ Default \code{TRUE}.}
 \item{dotSize}{Controls the size of dots in the main plot. Default
 \code{0.8}.}
 
-\item{legendDotSize}{Controls the size of dots in the legend. Default
-\code{4}.}
-
-\item{titleSize}{Controls the size of the main title of each sub-plot.
-Default \code{14}.}
-
-\item{subTitleSize}{Controls the size of subtitle, axis title and legend
-title. Default \code{12}.}
-
-\item{textSize}{Controls the size of axis text and legend text. Default
-\code{10}.}
+\item{...}{More theme setting parameters passed to
+\code{\link{.ggplotLigerTheme}}.}
 }
 \value{
 \code{ggplot} object when \code{combinePlot = TRUE}, a list of

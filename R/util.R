@@ -197,3 +197,71 @@
         stop("Cannot detect valid existing factorization result. ",
              "Please run factorization first.")
 }
+
+# !!!MaintainerDeveloperNOTE:
+#
+# When renaming an argument, for example
+#   `foo <- function(object, use.raw = FALSE) {}`
+# We want to change it to
+#   `foo <- function(object, useRaw = FALSE) {}`
+#
+# Please write in this way:
+#   `foo <- function(object, useRaw = FALSE, use.raw = useRaw)`
+# and at the beginning of the function definition body, add:
+# ```
+# .deprecateArgs(list(use.raw = "useRaw",
+#                     another.old.arg.name = "correspondingNewArgName"),
+#                call = rlang::call_args(match.call()))
+# ```
+# NEVER FORGET the `call` argument which provides the access to know whether an
+# argument is specified by users or left missing.
+.deprecateArgs <- function(replace = NULL, defunct = NULL, call = NULL) {
+    parentFuncName <- as.list(sys.call(-1))[[1]]
+    p <- parent.frame()
+    for (old in names(replace)) {
+        new <- replace[[old]]
+        if (old %in% names(call)) {
+            # User set old arg in their call
+            what <- paste0(parentFuncName, "(", old, ")")
+            with <- paste0(parentFuncName, "(", new, ")")
+            lifecycle::deprecate_warn("1.2.0", what, with, always = TRUE)
+            if (!new %in% names(call)) {
+                # If no setting with new argument is found in user call
+                p[[new]] <- p[[old]]
+            }
+        }
+    }
+    for (old in names(defunct))
+        lifecycle::deprecate_stop("1.2.0", old)
+
+    invisible(NULL)
+}
+
+# Retrieve a vector of feature values with length equal to nCell
+.retrieveCellFeatureOld <- function(object, feature, slot) {
+    if (slot != "cell.meta") {
+        # Should be a list if we are not using H.norm or W
+        dataList <- getMatrix(object, slot)
+        if (slot != "H.norm")
+            exp <- unlist(lapply(dataList, function(m) {
+                if (inherits(m, "H5D")) {
+                    if (length(m$dims) == 2) {
+                        # Dense matrix, e.g. scale.data
+                        # 1. Get the numeric index of feature
+                        # 2. extract
+
+                    } else if (length(m$dims) == 1) {
+                        # Most likely the `x` of a sparse matrix
+                        # 1. go through chunks to subscribe
+
+                    }
+                }
+                else m[feature,]
+            }), use.names = FALSE)
+        else exp <- dataList[, feature]
+        featureVal <- exp
+    } else {
+        featureVal <- object[[feature]]
+    }
+}
+

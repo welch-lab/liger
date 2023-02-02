@@ -7,14 +7,17 @@
 louvainCluster(
   object,
   resolution = 1,
-  k = 20,
+  nNeighbors = 20,
   prune = 1/15,
   eps = 0.1,
   nRandomStarts = 10,
   nIterations = 100,
+  useDims = NULL,
+  seed = 1,
+  verbose = TRUE,
+  k = nNeighbors,
   dims.use = NULL,
-  random.seed = 1,
-  verbose = TRUE
+  random.seed = 1
 )
 }
 \arguments{
@@ -25,8 +28,8 @@ louvainCluster(
 results in a larger number of communities with smaller sizes. Default
 \code{1.0}.}
 
-\item{k}{Integer, the maximum number of nearest neighbors to compute. Default
-\code{20}.}
+\item{nNeighbors}{Integer, the maximum number of nearest neighbors to
+compute. Default \code{20}.}
 
 \item{prune}{Numeric. Sets the cutoff for acceptable Jaccard index when
 computing the neighborhood overlap for the SNN construction. Any edges with
@@ -42,13 +45,16 @@ while \code{1} prunes everything. Default \code{1/15}.}
 \item{nIterations}{Integer, maximal number of iterations per random start.
 Default \code{100}.}
 
-\item{dims.use}{Indices of factors to use for Louvain clustering. Default
+\item{useDims}{Indices of factors to use for Louvain clustering. Default
 \code{NULL} uses all available factors.}
 
-\item{random.seed}{Seed of the random number generator. Default \code{1}.}
+\item{seed}{Seed of the random number generator. Default \code{1}.}
 
 \item{verbose}{Logical. Whether to show information of the progress.
 Default \code{TRUE}.}
+
+\item{dims.use, random.seed}{\bold{Deprecated}. See Usage section for
+replacement.}
 }
 \value{
 \code{object} with refined cluster assignment updated in

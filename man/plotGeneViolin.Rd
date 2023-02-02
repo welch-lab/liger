@@ -4,23 +4,17 @@
 \alias{plotGeneViolin}
 \title{Plot violin plots for gene expression}
 \usage{
-plotGeneViolin(
-  object,
-  gene,
-  methylation.indices = NULL,
-  by.dataset = TRUE,
-  return.plots = FALSE
-)
+plotGeneViolin(object, gene, by.dataset = TRUE, groupBy = NULL, ...)
 }
 \arguments{
 \item{object}{\code{liger} object.}
 
 \item{gene}{Gene for which to plot relative expression.}
 
+\item{by.dataset}{Plots gene expression for each dataset separately (default TRUE).}
+
 \item{methylation.indices}{Indices of datasets in object with methylation data (this data is not
 magnified and put on log scale).}
-
-\item{by.dataset}{Plots gene expression for each dataset separately (default TRUE).}
 
 \item{return.plots}{Return ggplot objects instead of printing directly to console (default
 FALSE).}

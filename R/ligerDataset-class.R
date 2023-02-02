@@ -230,12 +230,9 @@ isH5Liger <- function(object, dataset = NULL) {
             return(TRUE)
         }
     } else if (inherits(object, "liger")) {
-        if (!is.null(dataset)) {
-            return(isH5Liger(dataset(object, dataset)))
-        } else {
-            allCheck <- unlist(lapply(datasets(object), isH5Liger))
-            return(all(allCheck))
-        }
+        if (is.null(dataset)) dataset <- names(object)
+        allCheck <- unlist(lapply(datasets(object)[dataset], isH5Liger))
+        return(all(allCheck))
     } else {
         warning("Given object is not of liger or ligerDataset class.")
         return(FALSE)
