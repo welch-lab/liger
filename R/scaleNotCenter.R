@@ -5,6 +5,9 @@
 #' accepts positive values).
 #' @param object \linkS4class{liger} object, \code{link{selectGenes}} should
 #' have been run in advance.
+#' @param useDatasets A character vector of the names, a numeric or logical
+#' vector of the index of the datasets to be scaled but not centered. Default
+#' \code{NULL} applies to all datasets.
 #' @param chunk Integer. Number of maximum number of cells in each chunk, when
 #' scaling is applied to any HDF5 based dataset. Default \code{1000}.
 #' @param verbose Logical. Whether to show information of the progress. Default
@@ -14,6 +17,7 @@
 #' @export
 scaleNotCenter <- function(
     object,
+    useDatasets = NULL,
     chunk = 1000,
     verbose = TRUE
 ) {
@@ -22,7 +26,8 @@ scaleNotCenter <- function(
         stop("No variable feature found. ",
              "Please check the result of `selectGenes()`")
     }
-    for (d in names(object)) {
+    useDatasets <- .checkUseDatasets(object, useDatasets)
+    for (d in useDatasets) {
         if (isTRUE(verbose)) .log("Scaling dataset: ", d)
         ld <- dataset(object, d)
         if (isH5Liger(ld)) {

@@ -1,27 +1,37 @@
 #' Find shared and dataset-specific markers
-#'
-#' Applies various filters to genes on the shared (W) and dataset-specific (V) components of the
-#' factorization, before selecting those which load most significantly on each factor (in a shared
-#' or dataset-specific way).
-#'
-#' @param object \code{liger} object. Should call optimizeALS before calling.
-#' @param dataset1 Name of first dataset (default first dataset by order)
-#' @param dataset2 Name of second dataset (default second dataset by order)
-#' @param factorShareThresh Use only factors with a dataset specificity less than or equalt to
-#'   threshold (default 10).
-#' @param datasetSpecificity Pre-calculated dataset specificity if available. Will calculate if not
-#'   available.
-#' @param logFCThresh Lower log-fold change threshold for differential expression in markers
-#'   (default 1).
-#' @param pvalThresh Upper p-value threshold for Wilcoxon rank test for gene expression
-#'   (default 0.05).
-#' @param nGenes Max number of genes to report for each dataset (default 30).
-#' @param printGenes Print ordered markers passing logfc, umi and frac thresholds (default FALSE).
-#' @param verbose Print messages (TRUE by default)
-#' @param factor.share.thresh,dataset.specificity,log.fc.thresh,pval.thresh,num.genes,print.genes Deprecated
-#' @return List of shared and specific factors. First three elements are dataframes of dataset1-
-#'   specific, shared, and dataset2-specific markers. Last two elements are tables indicating the
-#'   number of factors in which marker appears.
+#' @description Applies various filters to genes on the shared (\eqn{W}) and
+#' dataset-specific (\eqn{V}) components of the factorization, before selecting
+#' those which load most significantly on each factor (in a shared or
+#' dataset-specific way).
+#' @param object \linkS4class{liger} object with factorization results.
+#' @param dataset1 Name of first dataset. Required.
+#' @param dataset2 Name of second dataset. Required
+#' @param factorShareThresh Numeric. Only factors with a dataset specificity
+#' less than or equal to this threshold will be used. Default \code{10}.
+#' @param datasetSpecificity Numeric vector. Pre-calculated dataset specificity
+#' if available. Length should match number of all factors available. Default
+#' \code{NULL} automatically calculates with
+#' \code{\link{calcDatasetSpecificity}}.
+#' @param logFCThresh Numeric. Lower log-fold change threshold for differential
+#' expression in markers. Default \code{1}.
+#' @param pvalThresh Numeric. Upper p-value threshold for Wilcoxon rank test for
+#' gene expression. Default \code{0.05}.
+#' @param nGenes Integer. Max number of genes to report for each dataset.
+#' Default \code{30}.
+#' @param printGenes Logical. Whether to print ordered markers passing logFC,
+#' UMI and frac thresholds, when \code{verbose = TRUE}. Default \code{FALSE}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{TRUE}.
+#' @param factor.share.thresh,dataset.specificity,log.fc.thresh,pval.thresh,num.genes,print.genes
+#' \bold{Deprecated}. See Usage section for replacement.
+#' @return A list object consisting of the following entries:
+#' \item{[value of `dataset1`]}{data.frame of dataset1-specific markers}
+#' \item{shared}{data.frame of shared markers}
+#' \item{[value of `dataset1`]}{data.frame of dataset2-specific markers}
+#' \item{num_factors_V1}{A frequency table indicating the number of factors each
+#' marker appears, in dataset1}
+#' \item{num_factors_V2}{A frequency table indicating the number of factors each
+#' marker appears, in dataset2}
 #' @export
 getFactorMarkers <- function(
         object,
@@ -85,7 +95,13 @@ getFactorMarkers <- function(
     V2_matrices <- list()
     W_matrices <- list()
     vargene <- var.features(object)
-    for (j in 1:length(useFactors)) {
+    if (isTRUE(verbose)) {
+        .log("Performing wilcoxon test between datasets \"", dataset1,
+             "\" and \"", dataset2, "\", \nbasing on factor loading.")
+        if (!isTRUE(printGenes))
+            pb <- utils::txtProgressBar(0, length(useFactors), style = 3)
+    }
+    for (j in seq_along(useFactors)) {
         i <- useFactors[j]
 
         W <- getMatrix(object, "W")
@@ -110,11 +126,11 @@ getFactorMarkers <- function(
         wilcoxResult <- wilcoxauc(log(normData + 1e-10), cellLabel)
 
         log2fc <- wilcoxResult[wilcoxResult$group == dataset1, ]$logFC
-        names(log2fc) = wilcoxResult[wilcoxResult$group == dataset1, ]$feature
-        filteredGenesV1 = wilcoxResult[wilcoxResult$logFC > logFCThresh &
+        names(log2fc) <- wilcoxResult[wilcoxResult$group == dataset1, ]$feature
+        filteredGenesV1 <- wilcoxResult[wilcoxResult$logFC > logFCThresh &
                                            wilcoxResult$pval < pvalThresh,
                                        "feature"]
-        filteredGenesV2 = wilcoxResult[-wilcoxResult$logFC > logFCThresh &
+        filteredGenesV2 <- wilcoxResult[-wilcoxResult$logFC > logFCThresh &
                                            wilcoxResult$pval < pvalThresh,
                                        "feature"]
 
@@ -122,35 +138,37 @@ getFactorMarkers <- function(
         V1 <- V1[filteredGenesV1, , drop = FALSE]
         V2 <- V2[filteredGenesV2, , drop = FALSE]
 
-        if (length(filteredGenesV1) == 0) {
-            topGenesV1 <- character(0)
-        } else {
-            topGeneIdx1 <- order(V1[, i], decreasing = TRUE)[1:nGenes]
+        topGenesV1 <- character(0)
+        if (length(filteredGenesV1) > 0) {
+            topGeneIdx1 <- order(V1[, i], decreasing = TRUE)[seq(nGenes)]
             topGenesV1 <- row.names(V1)[topGeneIdx1]
             topGenesV1 <- topGenesV1[!is.na(topGenesV1)]
             topGenesV1 <- topGenesV1[V1[topGenesV1, i] > 0]
         }
-        if (length(filteredGenesV2) == 0) {
-            topGenesV2 <- character(0)
-        } else {
-            topGenesIdx2 <- order(V2[, i], decreasing = TRUE)[1:num.genes]
+        topGenesV2 <- character(0)
+        if (length(filteredGenesV2) > 0) {
+            topGenesIdx2 <- order(V2[, i], decreasing = TRUE)[seq(nGenes)]
             topGenesV2 <- row.names(V2)[topGenesIdx2]
             topGenesV2 <- topGenesV2[!is.na(topGenesV2)]
             topGenesV2 <- topGenesV2[V2[topGenesV2, i] > 0]
         }
-        topGeneIdxW <- order(W[, i], decreasing = TRUE)[1:num.genes]
+        topGeneIdxW <- order(W[, i], decreasing = TRUE)[seq(nGenes)]
         topGenesW <- row.names(W)[topGeneIdxW]
         topGenesW <- topGenesW[!is.na(topGenesW)]
         topGenesW <- topGenesW[W[topGenesW, i] > 0]
 
-        if (isTRUE(verbose) && isTRUE(print.genes)) {
-            .log("Factor ", i)
-            message("Dataset 1:\n",
-                 paste(topGenesV1, collapse = ", "),
-                 "\nShared:\n",
-                 paste(topGenesW, collapse = ", "),
-                 "\nDataset 2\n",
-                 paste(topGenesV2, collapse = ", "), "\n")
+        if (isTRUE(verbose)) {
+            if (isTRUE(printGenes)) {
+                .log("Factor ", i)
+                message("Dataset 1:\n",
+                        paste(topGenesV1, collapse = ", "),
+                        "\nShared:\n",
+                        paste(topGenesW, collapse = ", "),
+                        "\nDataset 2\n",
+                        paste(topGenesV2, collapse = ", "), "\n")
+            } else {
+                utils::setTxtProgressBar(pb, j)
+            }
         }
 
         # order is V1, V2, W
@@ -161,16 +179,13 @@ getFactorMarkers <- function(
         })
         # bind values in matrices
         V1_matrices[[j]] <- Reduce(cbind, list(
-            rep(i, length(topGenesV1)), topGenesV1,
-            log2fc[topGenesV1], pvals$V1
+            rep(i, length(topGenesV1)), topGenesV1, log2fc[topGenesV1], pvals$V1
         ))
         V2_matrices[[j]] <- Reduce(cbind, list(
-            rep(i, length(topGenesV2)), topGenesV2,
-            log2fc[topGenesV2], pvals$V2
+            rep(i, length(topGenesV2)), topGenesV2, log2fc[topGenesV2], pvals$V2
         ))
         W_matrices[[j]] <- Reduce(cbind, list(
-            rep(i, length(topGenesW)), topGenesW,
-            log2fc[topGenesW], pvals$W
+            rep(i, length(topGenesW)), topGenesW, log2fc[topGenesW], pvals$W
         ))
     }
     V1_genes <- data.frame(Reduce(rbind, V1_matrices), stringsAsFactors = FALSE)
@@ -187,7 +202,7 @@ getFactorMarkers <- function(
                         p_value = as.numeric(df$p_value))
         # Cutoff only applies to dataset-specific dfs
         if (x != 2) {
-            df[which(df$p_value < pval.thresh), ]
+            df[which(df$p_value < pvalThresh), ]
         } else {
             df
         }
@@ -199,19 +214,21 @@ getFactorMarkers <- function(
 }
 
 #' Calculate a dataset-specificity score for each factor
-#'
-#' This score represents the relative magnitude of the dataset-specific components of each factor's
-#' gene loadings compared to the shared components for two datasets. First, for each dataset we
-#' calculate the norm of the sum of each factor's shared loadings (W) and dataset-specific loadings
-#' (V). We then determine the ratio of these two values and subtract from 1... TODO: finish
-#' description.
-#'
-#' @param object \code{liger} object. Should run optimizeALS before calling.
-#' @param dataset1 Name of first dataset (by default takes first two datasets for dataset1 and 2)
-#' @param dataset2 Name of second dataset
-#' @param do.plot Display barplot of dataset specificity scores (by factor) (default TRUE).
-#' @return List containing three elements. First two elements are the norm of each metagene factor
-#' for each dataset. Last element is the vector of dataset specificity scores.
+#' @description This score represents the relative magnitude of the
+#' dataset-specific components of each factor's gene loadings compared to the
+#' shared components for two datasets. First, for each dataset we calculate the
+#' norm of the sum of each factor's shared loadings (\eqn{W}) and
+#' dataset-specific loadings (\eqn{V}). We then determine the ratio of these two
+#' values and subtract from 1... TODO: finish description.
+#' @param object \linkS4class{liger} object with factorization results.
+#' @param dataset1 Name of first dataset. Required.
+#' @param dataset2 Name of second dataset. Required.
+#' @param doPlot Logical. Whether to display a barplot of dataset specificity
+#' scores (by factor). Default \code{FALSE}.
+#' @return List containing three elements.
+#' \item{pct1}{Vector of the norm of each metagene factor for dataset1.}
+#' \item{pct2}{Vector of the norm of each metagene factor for dataset2.}
+#' \item{pctSpec}{Vector of dataset specificity scores.}
 #' @export
 calcDatasetSpecificity <- function(
         object,
@@ -226,17 +243,17 @@ calcDatasetSpecificity <- function(
     k <- nrow(H1)
     pct1 <- rep(0, k)
     pct2 <- rep(0, k)
-    for (i in 1:k) {
+    for (i in seq(k)) {
         pct1[i] <- norm(as.matrix(V[[dataset1]][,i] + W[,i]), "F")
         pct2[i] <- norm(as.matrix(V[[dataset2]][,i] + W[,i]), "F")
     }
-    if (do.plot) {
+    if (isTRUE(do.plot)) {
         graphics::barplot(
             100 * (1 - (pct1 / pct2)),
             xlab = "Factor",
             ylab = "Percent Specificity",
             main = "Dataset Specificity of Factors",
-            names.arg = 1:k,
+            names.arg = seq(k),
             cex.names = 0.75,
             mgp = c(2, 0.5, 0)
         ) # or possibly abs(pct1-pct2)

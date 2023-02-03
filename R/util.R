@@ -237,31 +237,4 @@
     invisible(NULL)
 }
 
-# Retrieve a vector of feature values with length equal to nCell
-.retrieveCellFeatureOld <- function(object, feature, slot) {
-    if (slot != "cell.meta") {
-        # Should be a list if we are not using H.norm or W
-        dataList <- getMatrix(object, slot)
-        if (slot != "H.norm")
-            exp <- unlist(lapply(dataList, function(m) {
-                if (inherits(m, "H5D")) {
-                    if (length(m$dims) == 2) {
-                        # Dense matrix, e.g. scale.data
-                        # 1. Get the numeric index of feature
-                        # 2. extract
-
-                    } else if (length(m$dims) == 1) {
-                        # Most likely the `x` of a sparse matrix
-                        # 1. go through chunks to subscribe
-
-                    }
-                }
-                else m[feature,]
-            }), use.names = FALSE)
-        else exp <- dataList[, feature]
-        featureVal <- exp
-    } else {
-        featureVal <- object[[feature]]
-    }
-}
 

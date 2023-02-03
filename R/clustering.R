@@ -27,6 +27,9 @@
 #' Default \code{100}.
 #' @param useDims Indices of factors to use for Louvain clustering. Default
 #' \code{NULL} uses all available factors.
+#' @param groupSingletons Whether to group single cells that make up their own
+#' cluster in with the cluster they are most connected to. Default \code{TRUE},
+#' if \code{FALSE}, assign all singletons to a \code{"singleton"} group.
 #' @param seed Seed of the random number generator. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress.
 #' Default \code{TRUE}.
@@ -45,6 +48,7 @@ louvainCluster <- function(
         nRandomStarts = 10,
         nIterations = 100,
         useDims = NULL,
+        groupSingletons = TRUE,
         seed = 1,
         verbose = TRUE,
         # Deprecated coding style
@@ -94,13 +98,65 @@ louvainCluster <- function(
     names(clusts) <- colnames(object)
     rownames(snn) <- colnames(object)
     colnames(snn) <- colnames(object)
-    clusts <-
-        GroupSingletons(ids = clusts,
-                        SNN = snn,
-                        verbose = FALSE)
+    # clusts must not be a factor at this point
+    clusts <- groupSingletons(ids = clusts, SNN = snn,
+                              groupSingletons = groupSingletons,
+                              verbose = verbose)
     cell.meta(object)$louvain_cluster <- factor(clusts)
     unlink(edgeOutPath)
     return(object)
+}
+
+# Group single cells that make up their own cluster in with the cluster they are
+# most connected to. (Adopted from Seurat v3)
+#
+# @param ids Named vector of cluster ids
+# @param SNN SNN graph used in clustering
+# @param groupSingletons Group singletons into nearest cluster (TRUE by
+# default). If FALSE, assign all singletons to a "singleton" group.
+# @param verbose Print message
+# @return Returns updated cluster assignment (vector) with all singletons merged
+# with most connected cluster
+groupSingletons <- function(
+        ids,
+        SNN,
+        groupSingletons = TRUE,
+        verbose = FALSE
+) {
+    # identify singletons
+    singletons <- names(which(table(ids) == 1))
+    singletons <- intersect(unique(ids), singletons)
+    if (!isTRUE(groupSingletons)) {
+        ids[ids %in% singletons] <- "singleton"
+        return(ids)
+    }
+    # calculate connectivity of singletons to other clusters, add singleton
+    # to cluster it is most connected to
+    clusterNames <- as.character(unique(ids))
+    clusterNames <- setdiff(clusterNames, singletons)
+    connectivity <- vector(mode = "numeric", length = length(clusterNames))
+    names(connectivity) <- clusterNames
+    for (i in singletons) {
+        i.cells <- names(which(ids == i))
+        for (j in clusterNames) {
+            j.cells <- names(which(ids == j))
+            subSNN <- SNN[i.cells, j.cells]
+            # to match previous behavior, random seed being set in WhichCells
+            set.seed(1)
+            if (is.object(subSNN))
+                connectivity[j] <- sum(subSNN) / (nrow(subSNN) * ncol(subSNN))
+            else
+                connectivity[j] <- mean(subSNN)
+        }
+        m <- max(connectivity, na.rm = TRUE)
+        mi <- which(connectivity == m, arr.ind = TRUE)
+        closest_cluster <- sample(names(connectivity[mi]), 1)
+        ids[i.cells] <- closest_cluster
+    }
+    if (length(singletons) > 0 && isTRUE(verbose))
+        .log(length(singletons), " singletons identified. ",
+             length(unique(ids)), " final clusters.")
+    return(ids)
 }
 
 mapAnnotation <- function(lig, original, mapping, newName) {

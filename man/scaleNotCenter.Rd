@@ -4,11 +4,15 @@
 \alias{scaleNotCenter}
 \title{Scale genes by root-mean-square across cells}
 \usage{
-scaleNotCenter(object, chunk = 1000, verbose = TRUE)
+scaleNotCenter(object, useDatasets = NULL, chunk = 1000, verbose = TRUE)
 }
 \arguments{
 \item{object}{\linkS4class{liger} object, \code{link{selectGenes}} should
 have been run in advance.}
+
+\item{useDatasets}{A character vector of the names, a numeric or logical
+vector of the index of the datasets to be scaled but not centered. Default
+\code{NULL} applies to all datasets.}
 
 \item{chunk}{Integer. Number of maximum number of cells in each chunk, when
 scaling is applied to any HDF5 based dataset. Default \code{1000}.}

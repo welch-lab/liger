@@ -103,7 +103,7 @@ louvainClusterOld <-
 #
 # @return Returns updated cluster assignment with all singletons merged with most connected cluster
 #
-GroupSingletons <-
+GroupSingletonsOld <-
     function(ids,
              SNN,
              group.singletons = TRUE,
@@ -182,7 +182,7 @@ GroupSingletons <-
 #' ligerex <- imputeKNN(ligerex, reference = "y_set", queries = list("z_set"), knn_k = 50)
 #' }
 
-imputeKNN <-
+imputeKNNOld <-
     function(object,
              reference,
              queries,
@@ -1095,8 +1095,6 @@ runUMAPOld <- function(object,
 #'   specific, shared, and dataset2-specific markers. Last two elements are tables indicating the
 #'   number of factors in which marker appears.
 #'
-#' @importFrom stats wilcox.test
-#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -1106,7 +1104,7 @@ runUMAPOld <- function(object,
 #' head(markers[[2]])
 #' }
 
-getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.share.thresh = 10,
+getFactorMarkersOld <- function(object, dataset1 = NULL, dataset2 = NULL, factor.share.thresh = 10,
                              dataset.specificity = NULL, log.fc.thresh = 1, pval.thresh = 0.05,
                              num.genes = 30, print.genes = FALSE, verbose = TRUE) {
     if (is.null(dataset1) | is.null(dataset2)) {

@@ -13,6 +13,7 @@ louvainCluster(
   nRandomStarts = 10,
   nIterations = 100,
   useDims = NULL,
+  groupSingletons = TRUE,
   seed = 1,
   verbose = TRUE,
   k = nNeighbors,
@@ -47,6 +48,10 @@ Default \code{100}.}
 
 \item{useDims}{Indices of factors to use for Louvain clustering. Default
 \code{NULL} uses all available factors.}
+
+\item{groupSingletons}{Whether to group single cells that make up their own
+cluster in with the cluster they are most connected to. Default \code{TRUE},
+if \code{FALSE}, assign all singletons to a \code{"singleton"} group.}
 
 \item{seed}{Seed of the random number generator. Default \code{1}.}
 

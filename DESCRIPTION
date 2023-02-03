@@ -14,7 +14,7 @@ Authors@R: c(
   person(given = 'Paul', family = 'Hoffman', role = 'ctb'),
   person(given = 'Ilya', family = 'Korsunsky', role = 'ctb'),
   person(given = 'Robert', family = 'Lee', role = 'ctb'),
-  person(given = 'Yichen', family = "Wang', role = c('aut', 'cre'))
+  person(given = 'Yichen', family = 'Wang', role = c('aut', 'cre'))
   )
 Author: Joshua Welch [aut, ctb], 
         Chao Gao [aut, ctb, cre], 

@@ -239,6 +239,28 @@ isH5Liger <- function(object, dataset = NULL) {
     }
 }
 
+#' Return preset modality of a ligerDataset object or that of all datasets in a
+#' liger object
+#' @param object a \linkS4class{ligerDataset} object or a \linkS4class{liger}
+#' object
+#' @return A single character of modality setting value for
+#' \linkS4class{ligerDataset} \code{object}, or a named vector for
+#' \linkS4class{liger} object, where the names are dataset names.
+#' @export
+modalOf <- function(object) {
+    if (inherits(object, "ligerDataset")) {
+        if (class(object) %in% names(.classModalDict))
+            return(.classModalDict[[class(object)]])
+        else {
+            warning("DEVELOPERS, please add this ligerDataset sub-class to ",
+                    "`.classModalDict`", immediate. = TRUE)
+            return("UNKNOWN")
+        }
+    } else if (inherits(object, "liger")) {
+        return(sapply(datasets(object), modalOf))
+    }
+}
+
 # ------------------------------------------------------------------------------
 # Object validity ####
 # ------------------------------------------------------------------------------

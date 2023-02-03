@@ -272,7 +272,7 @@ subsetH5LigerDatasetToMem <- function(
         warning("`object` is not HDF5 based. Nothing to be done.")
         return(object)
     }
-    modal <- .classModalDict[[class(object)]]
+    modal <- modalOf(object)
     cellIdx <- .idxCheck(object, cellIdx, "cell")
     featureIdx <- .idxCheck(object, featureIdx, "feature")
     # Having `useSlot` as a record of user specification, to know whether it's
@@ -387,7 +387,7 @@ subsetH5LigerDatasetToH5 <- function(
         warning("`object` is not HDF5 based. Nothing to be done.")
         return(object)
     }
-    modal <- .classModalDict[[class(object)]]
+    modal <- modalOf(object)
     cellIdx <- .idxCheck(object, cellIdx, "cell")
     featureIdx <- .idxCheck(object, featureIdx, "feature")
     useSlot <- .checkLDSlot(object, useSlot)
@@ -595,7 +595,7 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
         stop("`object` is HDF5 based. Use `subsetH5LigerDataset()` instead.")
     }
     if (is.null(cellIdx) && is.null(featureIdx)) return(object)
-    modal <- .classModalDict[[class(object)]]
+    modal <- modalOf(object)
     featureIdx <- .idxCheck(object, featureIdx, "feature")
     cellIdx <- .idxCheck(object, cellIdx, "cell")
     slotInvolved <- .checkLDSlot(object, useSlot)
