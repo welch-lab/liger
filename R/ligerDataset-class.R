@@ -230,7 +230,7 @@ isH5Liger <- function(object, dataset = NULL) {
             return(TRUE)
         }
     } else if (inherits(object, "liger")) {
-        if (is.null(dataset)) dataset <- names(object)
+        dataset <- .checkUseDatasets(object, dataset)
         allCheck <- unlist(lapply(datasets(object)[dataset], isH5Liger))
         return(all(allCheck))
     } else {

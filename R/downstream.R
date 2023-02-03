@@ -325,7 +325,7 @@ imputeKNNOld <-
 #' de_genes <- runWilcoxon(ligerex, compare.method = "clusters")
 #' }
 
-runWilcoxon <- function(object, data.use = "all", compare.method) {
+runWilcoxonOld <- function(object, data.use = "all", compare.method) {
     # check parameter inputs
     if (missing(compare.method)) {
         stop("Parameter *compare.method* cannot be empty!")
