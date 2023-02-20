@@ -49,6 +49,7 @@ louvainCluster <- function(
         nIterations = 100,
         useDims = NULL,
         groupSingletons = TRUE,
+        clusterName = "louvain_cluster",
         seed = 1,
         verbose = TRUE,
         # Deprecated coding style
@@ -57,8 +58,8 @@ louvainCluster <- function(
         random.seed = 1
 ) {
     .deprecateArgs(list(k = "nNeighbors", dims.use = "useDims",
-                        random.seed = "seed"),
-                   call = rlang::call_args(match.call()))
+                        random.seed = "seed"))
+    object <- recordCommand(object, dependencies = "RANN")
     H.norm <- getMatrix(object, "H.norm")
     if (is.null(H.norm)) {
         type <- " unnormalized "
@@ -68,10 +69,6 @@ louvainCluster <- function(
         stop("No factor loading ('H.norm' or 'H') found in `object`.")
     # Not transposing when cbind'ing becausing `t(NULL)` causes error
     if (type == " unnormalized ") H.norm <- t(H.norm)
-    if (nrow(H.norm) != ncol(object))
-        stop("Invalid factor loading matrix. ",
-             "Matrix dimensionality does not match to number of cells.")
-
 
     edgeOutPath <- paste0('edge_', sub('\\s', '_', Sys.time()), '.txt')
     edgeOutPath <- gsub("-", "", edgeOutPath)
@@ -102,7 +99,7 @@ louvainCluster <- function(
     clusts <- groupSingletons(ids = clusts, SNN = snn,
                               groupSingletons = groupSingletons,
                               verbose = verbose)
-    cell.meta(object)$louvain_cluster <- factor(clusts)
+    object[[clusterName]] <- factor(clusts)
     unlink(edgeOutPath)
     return(object)
 }

@@ -14,6 +14,7 @@ louvainCluster(
   nIterations = 100,
   useDims = NULL,
   groupSingletons = TRUE,
+  clusterName = "louvain_cluster",
   seed = 1,
   verbose = TRUE,
   k = nNeighbors,

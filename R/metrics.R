@@ -1,69 +1,4 @@
-#' @importFrom Matrix colSums t
-NULL
-
-#' Calculate a dataset-specificity score for each factor
-#'
-#' This score represents the relative magnitude of the dataset-specific components of each factor's
-#' gene loadings compared to the shared components for two datasets. First, for each dataset we
-#' calculate the norm of the sum of each factor's shared loadings (W) and dataset-specific loadings
-#' (V). We then determine the ratio of these two values and subtract from 1... TODO: finish
-#' description.
-#'
-#' @param object \code{liger} object. Should run optimizeALS before calling.
-#' @param dataset1 Name of first dataset (by default takes first two datasets for dataset1 and 2)
-#' @param dataset2 Name of second dataset
-#' @param do.plot Display barplot of dataset specificity scores (by factor) (default TRUE).
-#'
-#' @return List containing three elements. First two elements are the norm of each metagene factor
-#' for each dataset. Last element is the vector of dataset specificity scores.
-#'
-#' @importFrom graphics barplot
-#'
-#' @export
-#' @examples
-#' \dontrun{
-#' # ligerex (liger object), factorization complete
-#' # generate H.norm by quantile normalizig factor loadings
-#' ligerex <- quantile_norm(ligerex)
-#' dataset_spec <- calcDatasetSpecificity(ligerex, do.plot = F)
-#' }
-
-calcDatasetSpecificityOld <- function(object,
-                                   dataset1 = NULL,
-                                   dataset2 = NULL,
-                                   do.plot = TRUE) {
-    if (is.null(dataset1) | is.null(dataset2)) {
-        dataset1 <- names(object@H)[1]
-        dataset2 <- names(object@H)[2]
-    }
-    k <- ncol(object@H[[1]])
-    pct1 <- rep(0, k)
-    pct2 <- rep(0, k)
-    for (i in 1:k) {
-        pct1[i] <-
-            norm(as.matrix(object@V[[dataset1]][i,] + object@W[i,]), "F")
-        # norm(object@H[[1]][,i] %*% t(object@W[i,] + object@V[[1]][i,]),"F")
-        pct2[i] <-
-            norm(as.matrix(object@V[[dataset2]][i,] + object@W[i,]), "F")
-        # norm(object@H[[2]][,i] %*% t(object@W[i,] + object@V[[2]][i,]),"F")
-    }
-    # pct1 = pct1/sum(pct1)
-    # pct2 = pct2/sum(pct2)
-    if (do.plot) {
-        graphics::barplot(
-            100 * (1 - (pct1 / pct2)),
-            xlab = "Factor",
-            ylab = "Percent Specificity",
-            main = "Dataset Specificity of Factors",
-            names.arg = 1:k,
-            cex.names = 0.75,
-            mgp = c(2, 0.5, 0)
-        ) # or possibly abs(pct1-pct2)
-    }
-    return(list(pct1, pct2, 100 * (1 - (pct1 / pct2))))
-}
-
-#' Calculate agreement metric
+#' [Deprecated] Calculate agreement metric
 #'
 #' @description
 #' This metric quantifies how much the factorization and alignment distorts the geometry of the
@@ -91,11 +26,6 @@ calcDatasetSpecificityOld <- function(object,
 #'
 #' @return Agreement metric (or vector of agreement per dataset).
 #'
-#' @importFrom FNN get.knn
-#' @importFrom ica icafast
-#' @importFrom irlba prcomp_irlba
-#'
-#' @export
 #' @examples
 #' \dontrun{
 #' # ligerex (liger object based on in-memory datasets), factorization complete
@@ -107,7 +37,14 @@ calcDatasetSpecificityOld <- function(object,
 #' ligerex <- readSubset(ligerex, slot.use = "scale.data", max.cells = 5000)
 #' agreement <- calcAgreement(ligerex, dr.method = "NMF")
 #' }
+#' @name calcAgreement-deprecated
+#' @seealso \code{\link{rliger-deprecated}}
+NULL
 
+#' @rdname rliger-deprecated
+#' @export
+#' @section \code{calcAgreement}:
+#' \code{calcAgreement} is deprecated and is now defunct.
 calcAgreement <- function(object,
                           dr.method = "NMF",
                           ndims = 40,
@@ -115,6 +52,7 @@ calcAgreement <- function(object,
                           use.aligned = TRUE,
                           rand.seed = 42,
                           by.dataset = FALSE) {
+    lifecycle::deprecate_stop("1.2.0", "calcAgreement()")
     # if (!requireNamespace("NNLM", quietly = TRUE) & dr.method == "NMF") {
     #   stop("Package \"NNLM\" needed for this function to perform NMF. Please install it.",
     #        call. = FALSE
@@ -146,12 +84,12 @@ calcAgreement <- function(object,
         if (class(object@raw.data[[1]])[1] == "H5File") {
             dr <- list()
             for (i in 1:length(object@H)) {
-                dr[[i]] = icafast(t(object@sample.data[[i]]), nc = ndims)$S
+                dr[[i]] = ica::icafast(t(object@sample.data[[i]]), nc = ndims)$S
             }
 
         } else {
             dr <- lapply(object@scale.data, function(x) {
-                icafast(x, nc = ndims)$S
+                ica::icafast(x, nc = ndims)$S
             })
         }
     } else {
@@ -159,7 +97,7 @@ calcAgreement <- function(object,
             dr <- list()
             for (i in 1:length(object@H)) {
                 dr[[i]] = suppressWarnings(
-                    prcomp_irlba(
+                    irlba::prcomp_irlba(
                         object@sample.data[[i]],
                         n = ndims,
                         scale. = (colSums(t(
@@ -173,7 +111,7 @@ calcAgreement <- function(object,
 
         } else {
             dr <- lapply(object@scale.data, function(x) {
-                suppressWarnings(prcomp_irlba(
+                suppressWarnings(irlba::prcomp_irlba(
                     t(x),
                     n = ndims,
                     scale. = (colSums(x) > 0),
@@ -197,8 +135,8 @@ calcAgreement <- function(object,
         } else {
             original <- object@H[[i]]
         }
-        fnn.1 <- get.knn(dr[[i]], k = k)
-        fnn.2 <- get.knn(original, k = k)
+        fnn.1 <- FNN::get.knn(dr[[i]], k = k)
+        fnn.2 <- FNN::get.knn(original, k = k)
         jaccard_inds_i <-
             c(jaccard_inds_i, sapply(1:ns[i], function(i) {
                 intersect <- intersect(fnn.1$nn.index[i,], fnn.2$nn.index[i,])
@@ -240,8 +178,6 @@ calcAgreement <- function(object,
 #'
 #' @return Alignment metric.
 #'
-#' @importFrom FNN get.knn
-#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -249,7 +185,6 @@ calcAgreement <- function(object,
 #' ligerex <- quantile_norm(ligerex)
 #' alignment <- calcAlignment(ligerex)
 #' }
-
 calcAlignment <- function(object,
                           k = NULL,
                           rand.seed = 1,
@@ -258,6 +193,7 @@ calcAlignment <- function(object,
                           clusters.use = NULL,
                           by.cell = FALSE,
                           by.dataset = FALSE) {
+    #lifecycle::deprecate_stop("1.2.0", "calcAlignment()")
     if (is.null(cells.use)) {
         cells.use <- rownames(object@H.norm)
     }
@@ -308,7 +244,7 @@ calcAlignment <- function(object,
         stop(paste0("Please select k <=", max_k))
     }
     knn_graph <-
-        get.knn(nmf_factors[sampled_cells, 1:num_factors], k)
+        FNN::get.knn(nmf_factors[sampled_cells, 1:num_factors], k)
     # Generate new "datasets" for desired cell groups
     if (!is.null(cells.comp)) {
         dataset <- unlist(sapply(1:N, function(x) {
@@ -348,7 +284,7 @@ calcAlignment <- function(object,
     return(mean(alignment_per_cell))
 }
 
-#' Calculate alignment for each cluster
+#' [Deprecated] Calculate alignment for each cluster
 #'
 #' Returns alignment for each cluster in analysiss (see documentation for calcAlignment).
 #'
@@ -360,9 +296,6 @@ calcAlignment <- function(object,
 #'
 #' @return Vector of alignment statistics (with names of clusters).
 #'
-#' @importFrom FNN get.knn
-#'
-#' @export
 #' @examples
 #' \dontrun{
 #' # ligerex (liger object), factorization complete
@@ -370,11 +303,19 @@ calcAlignment <- function(object,
 #' # get alignment for each cluster
 #' alignment_per_cluster <- calcAlignmentPerCluster(ligerex)
 #' }
+#' @name calcAlignmentPerCluster-deprecated
+#' @seealso \code{\link{rliger-deprecated}}
+NULL
 
+#' @rdname rliger-deprecated
+#' @export
+#' @section \code{calcAlignmentPerCluster}:
+#' \code{calcAlignmentPerCluster} is deprecated and is now defunct.
 calcAlignmentPerCluster <- function(object,
                                     rand.seed = 1,
                                     k = NULL,
                                     by.dataset = FALSE) {
+    lifecycle::deprecate_stop("1.2.0", "calcAlignmentPerCluster()")
     clusters <- levels(object@clusters)
     if (typeof(k) == "double") {
         if (length(k) == 1) {
@@ -401,7 +342,7 @@ calcAlignmentPerCluster <- function(object,
     return(align_metrics)
 }
 
-#' Calculate adjusted Rand index
+#' [Deprecated] Calculate adjusted Rand index
 #'
 #' Computes adjusted Rand index for \code{liger} clustering and external clustering.
 #' The Rand index ranges from 0 to 1, with 0 indicating no agreement between clusterings and 1
@@ -413,9 +354,6 @@ calcAlignmentPerCluster <- function(object,
 #'
 #' @return Adjusted Rand index value.
 #'
-#' @importFrom mclust adjustedRandIndex
-#'
-#' @export
 #' @examples
 #' \dontrun{
 #' # ligerex (liger object), factorization complete
@@ -430,16 +368,24 @@ calcAlignmentPerCluster <- function(object,
 #' # get ARI for second clustering
 #' ari2 <- calcARI(ligerex, cluster2)
 #' }
+#' @name calcARI-deprecated
+#' @seealso \code{\link{rliger-deprecated}}
+NULL
 
+#' @rdname rliger-deprecated
+#' @export
+#' @section \code{calcARI}:
+#' \code{calcARI} is deprecated and is now defunct.
 calcARI <- function(object, clusters.compare, verbose = TRUE) {
+    lifecycle::deprecate_stop("1.2.0", "calcARI()")
     if (length(clusters.compare) < length(object@clusters) && verbose) {
         message("Calculating ARI for subset of all cells")
     }
-    return(adjustedRandIndex(object@clusters[names(clusters.compare)],
+    return(mclust::adjustedRandIndex(object@clusters[names(clusters.compare)],
                              clusters.compare))
 }
 
-#' Calculate purity
+#' [Deprecated] Calculate purity
 #'
 #' Calculates purity for \code{liger} clustering and external clustering (true clusters/classes).
 #' Purity can sometimes be a more useful metric when the clustering to be tested contains more
@@ -452,7 +398,6 @@ calcARI <- function(object, clusters.compare, verbose = TRUE) {
 #'
 #' @return Purity value.
 #'
-#' @export
 #' @examples
 #' \dontrun{
 #' # ligerex (liger object), factorization complete
@@ -467,8 +412,16 @@ calcARI <- function(object, clusters.compare, verbose = TRUE) {
 #' # get ARI for second clustering
 #' ari2 <- calcPurity(ligerex, cluster2)
 #' }
+#' @name calcPurity-deprecated
+#' @seealso \code{\link{rliger-deprecated}}
+NULL
 
+#' @rdname rliger-deprecated
+#' @export
+#' @section \code{calcPurity}:
+#' \code{calcPurity} is deprecated and is now defunct.
 calcPurity <- function(object, classes.compare, verbose = TRUE) {
+    lifecycle::deprecate_stop("1.2.0", "calcPurity()")
     if (length(classes.compare) < length(object@clusters) && verbose) {
         print("Calculating purity for subset of full cells")
     }
@@ -477,37 +430,4 @@ calcPurity <- function(object, classes.compare, verbose = TRUE) {
         sum(apply(table(classes.compare, clusters), 2, max)) / length(clusters)
 
     return(purity)
-}
-
-#' Calculate proportion mitochondrial contribution
-#'
-#' Calculates proportion of mitochondrial contribution based on raw or normalized data.
-#'
-#' @param object \code{liger} object.
-#' @param use.norm Whether to use cell normalized data in calculating contribution (default FALSE).
-#'
-#' @return Named vector containing proportion of mitochondrial contribution for each cell.
-#'
-#' @export
-#' @examples
-#' \dontrun{
-#' # ligerex (liger object), factorization complete
-#' ligerex@cell.data[["percent_mito"]] <- getProportionMito(ligerex)
-#' }
-
-getProportionMito <- function(object, use.norm = FALSE) {
-    all.genes <- Reduce(union, lapply(object@raw.data, rownames))
-    mito.genes <-
-        grep(pattern = "^mt-",
-             x = all.genes,
-             value = TRUE)
-    data.use <- object@raw.data
-    if (use.norm) {
-        data.use <- object@norm.data
-    }
-    percent_mito <- unlist(lapply(unname(data.use), function(x) {
-        colSums(x[mito.genes,]) / colSums(x)
-    }), use.names = TRUE)
-
-    return(percent_mito)
 }

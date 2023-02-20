@@ -2,6 +2,7 @@
 % Please edit documentation in R/normalize.R
 \name{normalize}
 \alias{normalize}
+\alias{normalizePeak}
 \title{Normalize raw data in liger object}
 \usage{
 normalize(
@@ -10,6 +11,14 @@ normalize(
   scaleFactor = NULL,
   useDatasets = NULL,
   chunk = 1000,
+  verbose = TRUE
+)
+
+normalizePeak(
+  object,
+  log = FALSE,
+  scaleFactor = NULL,
+  useDatasets = NULL,
   verbose = TRUE
 )
 }
@@ -24,8 +33,9 @@ factor before transformation. \code{NULL} for not scaling. Default
 \code{1e4}.}
 
 \item{useDatasets}{A character vector of the names, a numeric or logical
-vector of the index of the datasets to be normalized. Default
-\code{NULL} normalizes all datasets.}
+vector of the index of the datasets to be normalized. Should specify ATACseq
+datasets when using \code{normalizePeak}. Default \code{NULL} normalizes all
+valid datasets.}
 
 \item{chunk}{Integer. Number of maximum number of cells in each chunk, when
 normalization is applied to any HDF5 based dataset. Default \code{1000}.}
@@ -34,8 +44,12 @@ normalization is applied to any HDF5 based dataset. Default \code{1000}.}
 Default \code{TRUE}.}
 }
 \value{
-Updated \code{object}, where the \code{norm.data} slot of each
-\linkS4class{ligerDataset} object in the \code{datasets} slot is updated.
+Updated \code{object}. When using \code{normalize()}, the
+\code{norm.data} slot of each \linkS4class{ligerDataset} object in the
+\code{datasets} slot is updated with normalized values calculated from
+\code{raw.data} slot. While \code{normalizePeak()} normalizes raw peak counts
+in \code{raw.peak} slot of a \linkS4class{ligerATACDataset} object and update
+result in its \code{norm.peak} slot.
 }
 \description{
 Perform normalization on each raw data matrix from each dataset

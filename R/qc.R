@@ -91,7 +91,7 @@ runGeneralQC <- function(
             )
         object@cell.meta[object$dataset == d, newResultNames] <- results$cell
         feature.meta(ld, check = FALSE)$nCell <- results$feature
-        datasets(object)[[d]] <- ld
+        datasets(object, check = FALSE)[[d]] <- ld
     }
 
     return(object)

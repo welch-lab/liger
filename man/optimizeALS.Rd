@@ -11,16 +11,19 @@ optimizeALS(
   k,
   lambda = 5,
   thresh = 1e-06,
-  max.iters = 30,
+  maxIter = 30,
   nrep = 1,
   H.init = NULL,
   W.init = NULL,
   V.init = NULL,
-  use.unshared = FALSE,
-  rand.seed = 1,
-  print.obj = FALSE,
+  useUnshared = FALSE,
+  seed = 1,
   readH5 = "auto",
-  verbose = TRUE
+  verbose = TRUE,
+  max.iters = maxIter,
+  use.unshared = useUnshared,
+  rand.seed = seed,
+  print.obj = NULL
 )
 
 \S4method{optimizeALS}{liger}(
@@ -28,16 +31,19 @@ optimizeALS(
   k,
   lambda = 5,
   thresh = 1e-06,
-  max.iters = 30,
+  maxIter = 30,
   nrep = 1,
   H.init = NULL,
   W.init = NULL,
   V.init = NULL,
-  use.unshared = FALSE,
-  rand.seed = 1,
-  print.obj = FALSE,
+  useUnshared = FALSE,
+  seed = 1,
   readH5 = "auto",
-  verbose = TRUE
+  verbose = TRUE,
+  max.iters = maxIter,
+  use.unshared = useUnshared,
+  rand.seed = seed,
+  print.obj = NULL
 )
 
 \S4method{optimizeALS}{list}(
@@ -45,15 +51,19 @@ optimizeALS(
   k,
   lambda = 5,
   thresh = 1e-06,
-  max.iters = 30,
+  maxIter = 30,
   nrep = 1,
   H.init = NULL,
   W.init = NULL,
   V.init = NULL,
-  use.unshared = FALSE,
-  rand.seed = 1,
-  print.obj = FALSE,
-  verbose = TRUE
+  useUnshared = FALSE,
+  seed = 1,
+  readH5 = "auto",
+  verbose = TRUE,
+  max.iters = maxIter,
+  use.unshared = useUnshared,
+  rand.seed = seed,
+  print.obj = NULL
 )
 }
 \arguments{
@@ -73,9 +83,6 @@ dataset-specific effects more strongly (i.e. alignment should increase as
 \item{thresh}{Convergence threshold. Convergence occurs when
 \eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-6}.}
 
-\item{max.iters}{Maximum number of block coordinate descent iterations to
-perform. Default \code{30}.}
-
 \item{nrep}{Number of restarts to perform (iNMF objective function is
 non-convex, so taking the best objective from multiple successive
 initializations is recommended). For easier reproducibility, this increments
@@ -93,13 +100,16 @@ Default \code{NULL}.}
 each element is the initial \eqn{V} matrix of each dataset. Default
 \code{NULL}.}
 
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{TRUE}.}
+
+\item{max.iters}{Maximum number of block coordinate descent iterations to
+perform. Default \code{30}.}
+
 \item{rand.seed}{Random seed to allow reproducible results. Default \code{1}.}
 
 \item{print.obj}{Print objective function values after convergence when
 \code{verbose = TRUE}. Default \code{FALSE}.}
-
-\item{verbose}{Logical. Whether to show information of the progress. Default
-\code{TRUE}.}
 }
 \value{
 \code{object} with \code{W} slot updated with the result \eqn{W}

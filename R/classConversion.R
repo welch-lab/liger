@@ -55,9 +55,22 @@ setMethod(
     signature(x = "ligerDataset",
               modal = "ANY"),
     function(x, modal = c("default", "rna", "atac")) {
-        message("TODO: Handle modality specific ligerDataset sub-class conversion")
         modal <- match.arg(modal)
-        raw.data
+        newClass <- .modalClassDict[[modal]]
+        if (class(x) == newClass) return(x)
+        slotFromClass <- methods::slotNames(class(x))
+        slotToClass <- methods::slotNames(newClass)
+        if (any(!slotFromClass %in% slotToClass))
+            warning("Will remove information in the following slots when ",
+                    "converting class from `", class(x), "` to `", newClass,
+                    "`: ", paste(slotFromClass[!slotFromClass %in% slotToClass],
+                                 collapse = ", "))
+        newCallArgs <- list(Class = newClass)
+        for (s in slotFromClass) {
+            if (s %in% slotToClass)
+                newCallArgs[[s]] <- methods::slot(x, s)
+        }
+        do.call("new", newCallArgs)
     }
 )
 
@@ -79,6 +92,8 @@ setMethod(
     signature(x = "Seurat",
               modal = "ANY"),
     function(x, modal= c("default", "rna", "atac")) {
+        if (!requireNamespace("Seurat", quietly = TRUE))
+            stop("Please have package `Seurat` installed.")
         counts <- Seurat::GetAssayData(x, "counts")
         norm.data <- Seurat::GetAssayData(x, "data")
         if (identical(counts, norm.data)) norm.data <- NULL

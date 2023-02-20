@@ -15,6 +15,7 @@ runTSNE(
   method = c("Rtsne", "fftRtsne"),
   fitsnePath = NULL,
   seed = 42,
+  verbose = TRUE,
   k = nDims,
   use.raw = useRaw,
   dims.use = useDims,
@@ -49,6 +50,9 @@ Description. Default \code{"Rtsne"}.}
 \code{runTSNE} with \code{method = "fftRtsne"}. Default \code{NULL}.}
 
 \item{seed}{Random seed for reproducibility. Default \code{42}.}
+
+\item{verbose}{Logical. Whether to show information of the progress.
+Default \code{TRUE}.}
 
 \item{k}{Number of dimensions to reduce to. Default \code{2}.}
 

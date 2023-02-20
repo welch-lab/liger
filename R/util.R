@@ -19,11 +19,19 @@
 }
 
 # Returns character names of datasets
-.checkUseDatasets <- function(object, useDatasets = NULL) {
+.checkUseDatasets <- function(object, useDatasets = NULL,
+                              modal = NULL) {
     if (!inherits(object, "liger"))
         stop("A liger object is required.")
-    if (is.null(useDatasets)) useDatasets <- names(object)
-    else {
+    if (is.null(useDatasets)) {
+        if (is.null(modal)) useDatasets <- names(object)
+        else {
+            selection <- sapply(names(object), function(d)
+                inherits(dataset(object, d), .modalClassDict[[modal]])
+            )
+            useDatasets <- names(object)[selection]
+        }
+    } else {
         if (is.numeric(useDatasets)) {
             if (max(useDatasets) > length(object)) {
                 stop("Numeric dataset index out of bound. Only ",
@@ -47,8 +55,70 @@
             stop("Please use a proper numeric/logical/character vector to ",
                  "select dataset to use.")
         }
+        if (!is.null(modal)) {
+            passing <- sapply(useDatasets, function(d)
+                inherits(dataset(object, d), .modalClassDict[[modal]])
+            )
+            if (!all(passing))
+                stop("Not all specified datasets are of `",
+                     .modalClassDict[[modal]], "` class: ",
+                     paste(useDatasets[!passing], collapse = ", "))
+        }
     }
     useDatasets
+}
+
+# Check if the selection of cell.meta variable is valid, in terms of existence
+# and class and return all result
+.fetchCellMetaVar <- function(
+        object,
+        variables,
+        cellIdx = NULL,
+        checkCategorical = FALSE,
+        drop = TRUE,
+        returnList = FALSE
+) {
+    if (!is.null(variables) &&
+        !all(variables %in% colnames(cell.meta(object)))) {
+        notFound <- variables[!variables %in% colnames(cell.meta(object))]
+        stop("Specified cell.meta variable not found: ",
+             paste(notFound, collapse = ", "))
+    }
+    cellIdx <- .idxCheck(object, cellIdx, "cell")
+    df <- cell.meta(object)[cellIdx, variables, drop = FALSE]
+    if (isTRUE(checkCategorical)) {
+        passing <- sapply(variables, function(v) {
+            vec <- df[[v]]
+            if (!is.null(dim(vec))) return(FALSE)
+            if (is.factor(vec)) return(TRUE)
+            if (is.character(vec)) {
+                if (length(unique(vec)) > 50)
+                    warning("Categorical variable selection `", v,
+                            "' has more than 100 unique values.",
+                            immediate. = TRUE)
+                return(TRUE)
+            }
+            if (is.numeric(vec)) {
+                if (length(unique(vec)) > 50)
+                    warning("Categorical variable selection `", v,
+                            "` has more than 100 unique values.",
+                            immediate. = TRUE)
+                return(FALSE)
+            }
+        })
+        if (!all(passing)) {
+            notPassed <- variables[!passing]
+            stop("The following selected variables are not considered as ",
+                 "categorical. Please use something else or try converting ",
+                 "them to factor class to force passing checks.\n",
+                 paste(notPassed, collapse = ", "))
+        }
+    }
+    if (isTRUE(returnList)) {
+        return(as.list(df))
+    }
+    df <- df[,,drop = drop]
+    return(df)
 }
 
 # Used for checking the subscription of cells or features and returns numeric
@@ -160,7 +230,7 @@
     return(TRUE)
 }
 
-.checkValidFactorResult <- function(object) {
+.checkValidFactorResult <- function(object, useDatasets) {
     result <- TRUE
     if (is.null(object@W)) {
         warning("W matrix does not exist.")
@@ -168,7 +238,8 @@
     } else {
         nGenes <- nrow(object@W)
         k <- ncol(object@W)
-        for (d in names(object)) {
+
+        for (d in useDatasets) {
             ld <- dataset(object, d)
             nCells <- ncol(ld)
             if (is.null(ld@V)) {
@@ -192,6 +263,8 @@
                 }
             }
         }
+        if (k != object@k)
+            warning("Number of factors does not match with object `k` slot. ")
     }
     if (isFALSE(result))
         stop("Cannot detect valid existing factorization result. ",
@@ -210,30 +283,36 @@
 # and at the beginning of the function definition body, add:
 # ```
 # .deprecateArgs(list(use.raw = "useRaw",
-#                     another.old.arg.name = "correspondingNewArgName"),
-#                call = rlang::call_args(match.call()))
+#                     another.old.arg.name = "correspondingNewArgName"))
 # ```
-# NEVER FORGET the `call` argument which provides the access to know whether an
-# argument is specified by users or left missing.
-.deprecateArgs <- function(replace = NULL, defunct = NULL, call = NULL) {
-    parentFuncName <- as.list(sys.call(-1))[[1]]
+.deprecateArgs <- function(replace = NULL, defunct = NULL) {
+    # This retrieves the exact user call
+    call <- match.call(definition = sys.function(-1),
+                       call = sys.call(-1))
+    callArgs <- rlang::call_args(call)
+    parentFuncName <- as.list(call)[[1]]
+    # This gives access to variable in the function operation environment
     p <- parent.frame()
     for (old in names(replace)) {
         new <- replace[[old]]
-        if (old %in% names(call)) {
+        if (old %in% names(callArgs)) {
             # User set old arg in their call
             what <- paste0(parentFuncName, "(", old, ")")
             with <- paste0(parentFuncName, "(", new, ")")
             lifecycle::deprecate_warn("1.2.0", what, with, always = TRUE)
-            if (!new %in% names(call)) {
+            if (!new %in% names(callArgs)) {
                 # If no setting with new argument is found in user call
                 p[[new]] <- p[[old]]
             }
         }
     }
-    for (old in names(defunct))
-        lifecycle::deprecate_stop("1.2.0", old)
-
+    for (old in defunct) {
+        if (old %in% names(callArgs)) {
+            lifecycle::deprecate_stop("1.2.0",
+                                      paste0(parentFuncName, "(", old, ")"))
+        }
+    }
+    rm(list = c(names(replace), defunct), envir = p)
     invisible(NULL)
 }
 

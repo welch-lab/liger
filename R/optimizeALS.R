@@ -57,16 +57,21 @@ setGeneric(
         k,
         lambda = 5.0,
         thresh = 1e-6,
-        max.iters = 30,
+        maxIter = 30,
         nrep = 1,
         H.init = NULL,
         W.init = NULL,
         V.init = NULL,
-        use.unshared = FALSE,
-        rand.seed = 1,
-        print.obj = FALSE,
+        useUnshared = FALSE,
+        seed = 1,
         readH5 = "auto",
-        verbose = TRUE
+        verbose = TRUE,
+        # Deprecated coding style
+        max.iters = maxIter,
+        use.unshared = useUnshared,
+        rand.seed = seed,
+        # Deprecated functionality
+        print.obj = NULL
     ) standardGeneric("optimizeALS")
 )
 
@@ -80,39 +85,54 @@ setMethod(
         k,
         lambda = 5.0,
         thresh = 1e-6,
-        max.iters = 30,
+        maxIter = 30,
         nrep = 1,
         H.init = NULL,
         W.init = NULL,
         V.init = NULL,
-        use.unshared = FALSE,
-        rand.seed = 1,
-        print.obj = FALSE,
+        useUnshared = FALSE,
+        seed = 1,
         readH5 = "auto",
-        verbose = TRUE
+        verbose = TRUE,
+        # Deprecated coding style
+        max.iters = maxIter,
+        use.unshared = useUnshared,
+        rand.seed = seed,
+        # Deprecated functionality
+        print.obj = NULL
     ) {
-        if (isFALSE(use.unshared)) {
+        .deprecateArgs(list(max.iters = "maxIter", use.unshared = "useUnshared",
+                            rand.seed = "seed"), defunct = "print.obj")
+        object <- recordCommand(object)
+        if (isFALSE(useUnshared)) {
             object <- removeMissing(object, orient = "cell",
                                     verbose = verbose)
             data <- lapply(datasets(object), function(ld) {
+                if (is.null(scale.data(ld)))
+                    stop("Scaled data not available. ",
+                         "Run `scaleNotCenter(object)` first")
                 if (isH5Liger(ld)) {
                     if (!isFALSE(readH5)) {
                         h5d <- scale.data(ld)
                         if (readH5 == "auto") {
                             if (h5d$dims[2] <= 8000) {
-                                readH5 <- TRUE
                                 warning("Automatically reading H5 based ",
                                         "scaled dense matrix into memory. ",
                                         "Dim: ", h5d$dims[1], "x", h5d$dims[2],
                                         immediate. = verbose)
+                                return(h5d[,])
                             } else {
                                 stop("Scaled data in H5 based dataset with ",
                                      "more than 8000 cells will not be ",
-                                     "automatically read into memory.")
+                                     "automatically read into memory. Use ",
+                                     "`readH5 = TRUE` to force reading, or ",
+                                     "try `online_iNMF()` instead.")
                             }
-                        }
-                        if (isTRUE(readH5)) {
+                        } else if (isTRUE(readH5)) {
                             return(h5d[,])
+                        } else {
+                            stop("Can only set `readH5` to TRUE, FALSE, ",
+                                 "or 'auto'.")
                         }
                     } else {
                         stop("H5 based dataset detected while `readH5` is ",
@@ -127,18 +147,18 @@ setMethod(
                 k = k,
                 lambda = lambda,
                 thresh = thresh,
-                max.iters = max.iters,
+                maxIter = maxIter,
                 nrep = nrep,
                 H.init = H.init,
                 W.init = W.init,
                 V.init = V.init,
-                use.unshared = FALSE,
-                rand.seed = rand.seed,
-                print.obj = print.obj,
+                useUnshared = FALSE,
+                seed = seed,
                 verbose = verbose
             )
             object@W <- out$W
             rownames(object@W) <- var.features(object)
+            object@k <- ncol(out$W)
             for (d in names(object)) {
                 ld <- dataset(object, d)
                 ld@H <- out$H[[d]]
@@ -149,15 +169,15 @@ setMethod(
             }
             #object@parameters$lambda <- lambda
         } else {
-            object <- optimize_UANLS(
+            object <- optimizeUANLS(
                 object = object,
                 k = k,
                 lambda = lambda,
                 thresh = thresh,
-                max.iters = max.iters,
+                maxIter = maxIter,
                 nrep = nrep,
-                rand.seed = rand.seed,
-                print.obj = print.obj
+                seed = seed,
+                verbose = verbose
             )
         }
         return(object)
@@ -174,16 +194,24 @@ setMethod(
         k,
         lambda = 5.0,
         thresh = 1e-6,
-        max.iters = 30,
+        maxIter = 30,
         nrep = 1,
         H.init = NULL,
         W.init = NULL,
         V.init = NULL,
-        use.unshared = FALSE,
-        rand.seed = 1,
-        print.obj = FALSE,
-        verbose = TRUE
+        useUnshared = FALSE,
+        seed = 1,
+        readH5 = "auto",
+        verbose = TRUE,
+        # Deprecated coding style
+        max.iters = maxIter,
+        use.unshared = useUnshared,
+        rand.seed = seed,
+        # Deprecated functionality
+        print.obj = NULL
     ) {
+        .deprecateArgs(list(max.iters = "maxIter", use.unshared = "useUnshared",
+                            rand.seed = "seed"), defunct = "print.obj")
         if (!all(sapply(object, is.matrix))) {
             stop("All values in 'object' must be a matrix")
         }
@@ -201,10 +229,10 @@ setMethod(
         Hm <- lapply(nCells, function(n) matrix(0, n, k))
         tmp <- gc()
         bestObj <- Inf
-        bestSeed <- rand.seed
+        bestSeed <- seed
         runStats <- matrix(0, nrep, 2)
         for (i in seq(nrep)) {
-            set.seed(seed = rand.seed + i - 1)
+            set.seed(seed = seed + i - 1)
             startTime <- Sys.time()
             if (!is.null(W.init))
                 W <- t(.checkInit(W.init, nCells, nGenes, k, "W"))
@@ -235,10 +263,10 @@ setMethod(
                 ))
             tmp <- gc()
             if (isTRUE(verbose)) {
-                .log("Start iNMF with seed: ", rand.seed + i - 1, "...")
-                pb <- utils::txtProgressBar(0, max.iters, style = 3)
+                .log("Start iNMF with seed: ", seed + i - 1, "...")
+                pb <- utils::txtProgressBar(0, maxIter, style = 3)
             }
-            while (delta > thresh & iters < max.iters) {
+            while (delta > thresh & iters < maxIter) {
                 H <- lapply(
                     seq(nDatasets),
                     function(i)
@@ -278,19 +306,19 @@ setMethod(
                     utils::setTxtProgressBar(pb, value = iters)
             }
             if (isTRUE(verbose)) {
-                utils::setTxtProgressBar(pb, value = max.iters)
+                utils::setTxtProgressBar(pb, value = maxIter)
                 cat("\n")
             }
-            # if (iters == max.iters) {
+            # if (iters == maxIter) {
             #   print("Warning: failed to converge within the allowed number of iterations.
-            #         Re-running with a higher max.iters is recommended.")
+            #         Re-running with a higher maxIter is recommended.")
             # }
             if (obj < bestObj) {
                 Wm <- W
                 Hm <- H
                 Vm <- V
                 bestObj <- obj
-                bestSeed <- rand.seed + i - 1
+                bestSeed <- seed + i - 1
             }
             endTime <- difftime(time1 = Sys.time(), time2 = startTime,
                                  units = "auto")
@@ -299,8 +327,8 @@ setMethod(
             if (isTRUE(verbose)) {
                 .log("Finished in ", runStats[i, 1], " ", units(endTime),
                      ", ", iters, " iterations. \nMax iterations set: ",
-                     max.iters, "\nFinal objective delta: ", delta)
-                if (isTRUE(print.obj)) .log("Objective: ", obj)
+                     maxIter, "\nFinal objective delta: ", delta)
+                .log("Objective: ", obj)
                 .log("Best results with seed ", bestSeed)
             }
         }

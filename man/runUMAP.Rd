@@ -13,6 +13,7 @@ runUMAP(
   nNeighbors = 20,
   minDist = 0.1,
   seed = 42,
+  verbose = TRUE,
   k = nDims,
   use.raw = useRaw,
   dims.use = useDims,
@@ -43,6 +44,9 @@ of manifold structure. Default \code{10}.}
 compress points together. Default \code{0.1}.}
 
 \item{seed}{Random seed for reproducibility. Default \code{42}.}
+
+\item{verbose}{Logical. Whether to show information of the progress.
+Default \code{TRUE}.}
 
 \item{k, use.raw, dims.use, n_neighbors, min_dist, rand.seed}{\bold{Deprecated}.
 See Usage section for replacement.}

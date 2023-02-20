@@ -514,6 +514,7 @@ plotCellViolin <- function(
         xlab = TRUE,
         ylab = TRUE,
         legendColorTitle = NULL,
+        legendFillTitle = NULL,
         legendShapeTitle = NULL,
         legendSizeTitle = NULL,
         legend = TRUE,
@@ -522,8 +523,10 @@ plotCellViolin <- function(
         titleSize = NULL,
         subtitleSize = NULL,
         xTextSize = NULL,
+        xFacetSize = NULL,
         xTitleSize = NULL,
         yTextSize = NULL,
+        yFacetSize = NULL,
         yTitleSize = NULL,
         legendTextSize = NULL,
         legendTitleSize = NULL,
@@ -531,7 +534,7 @@ plotCellViolin <- function(
         # Other
         legendNRow = NULL,
         legendNCol = NULL,
-        colorPalette = "plasma",
+        colorPalette = "magma",
         colorDirection = -1,
         colorLow = NULL,
         colorMid = NULL,
@@ -545,12 +548,15 @@ plotCellViolin <- function(
     # Broadcast one-param setting to each
     Subtitle <- xText <- yText <- legendText <- baseSize
     Title <- xTitle <- yTitle <- legendTitle <- baseSize + 2
+    xFacet <- yFacet <- baseSize - 2
     # And set specific ones if specified
     if (!is.null(titleSize)) Title <- titleSize
     if (!is.null(subtitleSize)) Subtitle <- subtitleSize
     if (!is.null(xTextSize)) xText <- xTextSize
+    if (!is.null(xFacetSize)) xFacet <- xFacetSize
     if (!is.null(xTitleSize)) xTitle <- xTitleSize
     if (!is.null(yTextSize)) yText <- yTextSize
+    if (!is.null(yFacetSize)) yFacet <- yFacetSize
     if (!is.null(yTitleSize)) yTitle <- yTitleSize
     if (!is.null(legendTextSize)) legendText <- legendTextSize
     if (!is.null(legendTitleSize)) legendTitle <- legendTitleSize
@@ -579,6 +585,8 @@ plotCellViolin <- function(
             axis.title.x = ggplot2::element_text(size = xTitle),
             axis.text.y = ggplot2::element_text(size = yText),
             axis.title.y = ggplot2::element_text(size = yTitle),
+            strip.text.x = ggplot2::element_text(size = xFacet),
+            strip.text.y = ggplot2::element_text(size = yFacet),
             legend.text = ggplot2::element_text(size = legendText),
             legend.title = ggplot2::element_text(size = legendTitle)
         )
@@ -589,58 +597,64 @@ plotCellViolin <- function(
     else {
         # legend region settings. Need to prepare a list so we call
         # `guides()` once, otherwise any previous calls will be overwritten.
-        guide <- list(colour = list(), shape = list(), size = list())
+        guide <- list(colour = list(), fill = list(),
+                      shape = list(), size = list())
         guideFunc <- list(colour = NULL, shape = NULL, size = NULL)
         legendTitle <- list(colour = legendColorTitle,
+                            fill = legendFillTitle,
                             shape = legendShapeTitle,
                             size = legendSizeTitle)
         for (a in names(guide)) {
             varName <- rlang::as_label(plot$mapping[[a]])
-            if (varName != "NULL") {
-                # If colour or shape is set
-                if (is.factor(plot$data[[varName]])) {
-                    # Categorical setting
-                    guideFunc[[a]] <- ggplot2::guide_legend
-                    # Set dot size in legend
-                    guide[[a]]$override.aes <- list(size = legendDotSize)
-                    # Set nrow/ncol to arrange the legend categories
-                    if (is.null(legendNRow) & is.null(legendNCol)) {
-                        # When nothing set, ggplot automatically makes it one
-                        # column, which might be too long, so I add a auto-
-                        # arrangement to limit max nrow to 10 but still evenly
-                        # distribute the columns.
-                        nCategory <- length(levels(plot$data[[varName]]))
-                        if (nCategory > 10)
-                            legendNCol <- ceiling(nCategory/10)
-                    }
-                    guide[[a]]$nrow <- legendNRow
-                    guide[[a]]$ncol <- legendNCol
-                } else {
-                    # continuous setting
-                    if (a == "colour") {
-                        guideFunc[[a]] <- ggplot2::guide_colourbar
-                        # Set continuous palette
-                        plot <- plot +
-                            .setColorBarPalette(palette = colorPalette,
-                                                direction = colorDirection,
-                                                low = colorLow, mid = colorMid,
-                                                high = colorHigh,
-                                                midPoint = colorMidPoint)
-                    }
-                    else
-                        guideFunc[[a]] <- ggplot2::guide_legend
-
+            if (varName == "NULL") next
+            # If colour or shape is set
+            if (is.factor(plot$data[[varName]])) {
+                # Categorical setting
+                guideFunc[[a]] <- ggplot2::guide_legend
+                # Set dot size in legend
+                guide[[a]]$override.aes <- list(size = legendDotSize)
+                # Set nrow/ncol to arrange the legend categories
+                if (is.null(legendNRow) & is.null(legendNCol)) {
+                    # When nothing set, ggplot automatically makes it one
+                    # column, which might be too long, so I add a auto-
+                    # arrangement to limit max nrow to 10 but still evenly
+                    # distribute the columns.
+                    nCategory <- length(levels(plot$data[[varName]]))
+                    if (nCategory > 10)
+                        legendNCol <- ceiling(nCategory/10)
                 }
-                # Set title for the variable
-                if (!is.null(legendTitle[[a]]))
-                    guide[[a]]$title <- legendTitle[[a]]
-                # Finalise the setting
-                guide[[a]] <- do.call(guideFunc[[a]], guide[[a]])
+                guide[[a]]$nrow <- legendNRow
+                guide[[a]]$ncol <- legendNCol
+            } else {
+                # continuous setting
+                if (a %in% c("colour", "fill")) {
+                    guideFunc[[a]] <- ggplot2::guide_colourbar
+                    # Set continuous palette
+                    plot <- plot +
+                        .setColorBarPalette(aesType = a,
+                                            palette = colorPalette,
+                                            direction = colorDirection,
+                                            low = colorLow, mid = colorMid,
+                                            high = colorHigh,
+                                            midPoint = colorMidPoint)
+                }
+                else
+                    guideFunc[[a]] <- ggplot2::guide_legend
+                if (a == "size") {
+                    guide[[a]]$fill <- "black"
+                }
+
             }
+            # Set title for the variable
+            if (!is.null(legendTitle[[a]]))
+                guide[[a]]$title <- legendTitle[[a]]
+            # Finalise the setting
+            guide[[a]] <- do.call(guideFunc[[a]], guide[[a]])
         }
         plot <- plot + ggplot2::guides(
             colour = guide$colour,
-            shape = guide$shape
+            shape = guide$shape,
+            size = guide$size
         )
     }
 
@@ -656,6 +670,7 @@ plotCellViolin <- function(
 }
 
 .setColorBarPalette <- function(
+        aesType = c("colour", "fill"),
         palette = "magma",
         direction = 1,
         low = NULL,
@@ -663,6 +678,7 @@ plotCellViolin <- function(
         high = NULL,
         midPoint = NULL
 ) {
+    aesType <- match.arg(aesType)
     viridisOptions <- c(
         "magma", "A", "inferno", "B", "plasma", "C", "viridis", "D",
         "cividis", "E", "rocket", "F", "mako", "G", "turbo", "H"
@@ -679,11 +695,18 @@ plotCellViolin <- function(
     } else if (!is.null(palette)) {
         # Otherwise, choose a palette based on non-NULL name
         if (palette %in% viridisOptions) {
-            layer <- ggplot2::scale_colour_viridis_c(option = palette,
-                                                     direction = direction)
+            if (aesType == "colour")
+                layer <- ggplot2::scale_colour_viridis_c(option = palette,
+                                                         direction = direction)
+            else
+                layer <- ggplot2::scale_fill_viridis_c(option = palette,
+                                                       direction = direction)
         }
         else
-            layer <- ggplot2::scale_colour_distiller(palette = palette)
+            if (aesType == "colour")
+                layer <- ggplot2::scale_colour_distiller(palette = palette)
+            else
+                layer <- ggplot2::scale_fill_distiller(palette = palette)
     }
     # When nothing set, return NULL. "+ NULL" on a ggplot object doesn't
     # change anything

@@ -272,21 +272,17 @@ modalOf <- function(object) {
                       "Please create object with matrices with colnames."))
     }
     for (slot in c("raw.data", "norm.data", "scale.data", "scale.unshared.data",
-                   "H", "peak")) {
+                   "H", "raw.peak", "norm.peak")) {
         if (!slot %in% methods::slotNames(x)) next
         data <- methods::slot(x, slot)
         if (!is.null(data)) {
-            #if (slot == "annotation") {
-            #    barcodes.slot <- rownames(data)
-            #} else {
             barcodes.slot <- colnames(data)
-            #}
             if (!identical(colnames(x), barcodes.slot)) {
                 return(paste0("Inconsistant cell identifiers in ", slot, "."))
             }
         }
     }
-    for (slot in c("scale.data", "scale.unshared.data", "V")) {
+    for (slot in c("scale.data", "V")) {
         featuresToCheck <- rownames(methods::slot(x, slot))
         check <- !featuresToCheck %in% rownames(x)
         if (any(check)) {
@@ -353,12 +349,14 @@ setGeneric("norm.data", function(x) standardGeneric("norm.data"))
 setGeneric("norm.data<-", function(x, check = TRUE, value) standardGeneric("norm.data<-"))
 setGeneric("scale.data", function(x, name = NULL) standardGeneric("scale.data"))
 setGeneric("scale.data<-", function(x, check = TRUE, value) standardGeneric("scale.data<-"))
+setGeneric("scale.unshared.data", function(x, name = NULL) standardGeneric("scale.unshared.data"))
+setGeneric("scale.unshared.data<-", function(x, check = TRUE, value) standardGeneric("scale.unshared.data<-"))
 setGeneric("getH5File", function(x, dataset = NULL) standardGeneric("getH5File"))
 setGeneric("h5file.info", function(x, info = NULL) standardGeneric("h5file.info"))
 setGeneric("h5file.info<-", function(x, info = NULL, check = TRUE, value) standardGeneric("h5file.info<-"))
 setGeneric("feature.meta", function(x, check = NULL) standardGeneric("feature.meta"))
 setGeneric("feature.meta<-", function(x, check = TRUE, value) standardGeneric("feature.meta<-"))
-setGeneric("getMatrix", function(x, slot = "raw.data", dataset = NULL) standardGeneric("getMatrix"))
+setGeneric("getMatrix", function(x, slot = "raw.data", dataset = NULL, returnList = FALSE) standardGeneric("getMatrix"))
 # ------------------------------------------------------------------------------
 # Methods ####
 # ------------------------------------------------------------------------------
@@ -390,9 +388,11 @@ setMethod(
             }
         }
         # Information for sub-classes added below, in condition statements
-        if ("peak" %in% methods::slotNames(object)) {
-            if (!is.null(peak(object)))
-                cat("peak:", nrow(peak(object)), "regions\n")
+        if ("raw.peak" %in% methods::slotNames(object)) {
+            if (!is.null(raw.peak(object)))
+                cat("raw.peak:", nrow(raw.peak(object)), "regions\n")
+            if (!is.null(norm.peak(object)))
+                cat("norm.peak:", nrow(norm.peak(object)), "regions\n")
         }
 
         invisible(x = NULL)
@@ -603,6 +603,61 @@ setReplaceMethod(
     }
 )
 
+
+#' @export
+#' @rdname data-access
+setMethod("scale.unshared.data", "ligerDataset",
+          function(x, name = NULL) x@scale.unshared.data)
+
+#' @export
+#' @rdname data-access
+setMethod(
+    "scale.unshared.data",
+    signature(x = "liger", name = "character"),
+    function(x, name) {
+        scale.unshared.data(dataset(x, name))
+    }
+)
+
+#' @export
+#' @rdname data-access
+setMethod(
+    "scale.unshared.data",
+    signature(x = "liger", name = "numeric"),
+    function(x, name) {
+        scale.unshared.data(dataset(x, name))
+    }
+)
+
+#' @export
+#' @rdname data-access
+setReplaceMethod(
+    "scale.unshared.data",
+    signature(x = "ligerDataset", check = "ANY", value = "matrixLike_OR_NULL"),
+    function(x, check = TRUE, value) {
+        if (isH5Liger(x))
+            stop("Cannot replace slot with in-memory data for H5 based object.")
+        x@scale.unshared.data <- value
+        if (isTRUE(check)) validObject(x)
+        x
+    }
+)
+
+#' @export
+#' @rdname data-access
+setReplaceMethod(
+    "scale.unshared.data",
+    signature(x = "ligerDataset", check = "ANY", value = "H5D"),
+    function(x, check = TRUE, value) {
+        if (!isH5Liger(x))
+            stop("Cannot replace slot with on-disk data for in-memory object.")
+        x@scale.unshared.data <- value
+        if (isTRUE(check)) validObject(x)
+        x
+    }
+)
+
+
 #' Access the H5File object
 #' @param x \linkS4class{ligerDataset} object or \linkS4class{liger} object.
 #' @param dataset Get H5File from specific dataset(s) if using a
@@ -733,32 +788,45 @@ setReplaceMethod(
 #' @return A matrix or a list, depending on \code{dataset}
 #' @rdname getMatrix
 #' @export
-setMethod("getMatrix", signature(x = "ligerDataset", dataset = "missing"),
-          function(x, slot = c("raw.data", "norm.data", "scale.data", "H", "V"),
-                   dataset = NULL) {
-              # TODO: Currently directly find the data with slot, but need to
-              # think about maintainability when we need to change slot name.
-              slot <- match.arg(slot)
-              methods::slot(x, slot)
-          })
+setMethod(
+    "getMatrix", signature(x = "ligerDataset", dataset = "missing",
+                           returnList = "missing"),
+    function(x,
+             slot = c("raw.data", "norm.data", "scale.data",
+                      "scale.unshared.data", "H", "V"),
+             dataset = NULL) {
+        # TODO: Currently directly find the data with slot, but need to
+        # think about maintainability when we need to change slot name.
+        slot <- match.arg(slot)
+        methods::slot(x, slot)
+    })
 
 #' @rdname getMatrix
 #' @export
-setMethod("getMatrix", signature(x = "liger"),
-          function(x, slot = c("raw.data", "norm.data", "scale.data", "H", "V", "W", "H.norm"),
-                   dataset = NULL) {
-              slot <- match.arg(slot)
-              if (slot == "W") return(x@W)
-              if (slot == "H.norm") return(x@H.norm)
-              if (is.null(dataset)) {
-                  return(lapply(datasets(x), function(ld) getMatrix(ld, slot)))
-              } else {
-                  if (length(dataset) == 1)
-                      return(getMatrix(dataset(x, dataset), slot))
-                  else {
-                      lds <- datasets(x)[dataset]
-                      return(lapply(lds, function(ld) getMatrix(ld, slot)))
-                  }
-              }
-          })
+setMethod(
+    "getMatrix", signature(x = "liger"),
+    function(x,
+             slot = c("raw.data", "norm.data", "scale.data",
+                      "scale.unshared.data", "H", "V", "W", "H.norm"),
+             dataset = NULL,
+             returnList = FALSE) {
+        slot <- match.arg(slot)
+        if (slot == "W") return(x@W)
+        if (slot == "H.norm") return(x@H.norm)
+        if (is.null(dataset)) {
+            return(lapply(datasets(x), function(ld) getMatrix(ld, slot)))
+        } else {
+            if (length(dataset) == 1) {
+                if (isTRUE(returnList)) {
+                    result <- list(getMatrix(dataset(x, dataset), slot))
+                    names(result) <- dataset
+                    return(result)
+                } else if (isFALSE(returnList))
+                    return(getMatrix(dataset(x, dataset), slot))
+            } else {
+                lds <- datasets(x)[dataset]
+                return(lapply(lds, function(ld) getMatrix(ld, slot)))
+            }
+        }
+    })
 

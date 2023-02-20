@@ -1234,7 +1234,7 @@ optimizeNewDataOld <-
 #' ligerex2 <- optimizeSubset(ligerex, cell.subset = list(cell_names_1, cell_names_2))
 #' }
 
-optimizeSubset <-
+optimizeSubsetOld <-
     function(object,
              cell.subset = NULL,
              cluster.subset = NULL,
@@ -1319,7 +1319,7 @@ optimizeSubset <-
 #' ligerex <- optimizeNewLambda(ligerex, new.lambda = 15)
 #' }
 
-optimizeNewLambda <-
+optimizeNewLambdaOld <-
     function(object,
              new.lambda,
              thresh = 1e-4,

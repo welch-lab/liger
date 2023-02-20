@@ -47,54 +47,89 @@ ligerRNADataset <- setClass(
 ligerATACDataset <- setClass(
     "ligerATACDataset",
     contains = "ligerDataset",
-    representation = representation(peak = "matrixLike_OR_NULL"),
+    representation = representation(raw.peak = "matrixLike_OR_NULL",
+                                    norm.peak = "matrixLike_OR_NULL"),
     prototype = prototype(peak = NULL)
 )
 
-#' @export
-setGeneric("peak", function(x, dataset) standardGeneric("peak"))
-setGeneric("peak<-", function(x, dataset, value) standardGeneric("peak<-"))
+setGeneric("raw.peak", function(x, dataset) standardGeneric("raw.peak"))
+setGeneric("raw.peak<-", function(x, dataset, check = TRUE, value) standardGeneric("raw.peak<-"))
+setGeneric("norm.peak", function(x, dataset) standardGeneric("norm.peak"))
+setGeneric("norm.peak<-", function(x, dataset, check = TRUE, value) standardGeneric("norm.peak<-"))
 
 #' @export
-setMethod("peak", signature(x = "liger", dataset = "character"),
+setMethod("raw.peak", signature(x = "liger", dataset = "character"),
           function(x, dataset) {
               atac <- dataset(x, dataset)
               if (!inherits(atac, "ligerATACDataset")) {
                   stop("Specified dataset is not of ligerATACDataset class.")
               }
-              atac@peak
+              atac@raw.peak
           })
 
 #' @export
 setReplaceMethod(
-    "peak",
+    "raw.peak",
     signature(x = "liger", dataset = "character"),
-    function(x, dataset, value) {
-        peak(dataset(x, dataset)) <- value
+    function(x, dataset, check = TRUE, value) {
+        if (!inherits(dataset(x, dataset), "ligerATACDataset"))
+            stop("Specified dataset is not of `ligerATACDataset` class.")
+        x@datasets[[dataset]]@raw.peak <- value
+        if (isTRUE(check)) validObject(dataset(x, dataset))
         x
     })
 
 #' @export
-setMethod("peak", signature(x = "ligerATACDataset", dataset = "missing"),
+setMethod("raw.peak", signature(x = "ligerATACDataset", dataset = "missing"),
           function(x, dataset = NULL) {
-              x@peak
+              x@raw.peak
           })
 
 #' @export
 setReplaceMethod(
-    "peak",
+    "raw.peak",
     signature(x = "ligerATACDataset", dataset = "missing"),
-    function(x, dataset = NULL, value) {
-        if (!all(colnames(x) %in% colnames(value))) {
-            stop("Cells in the dataset not all found in given matrix")
-        }
-        if (!identical(colnames(value), colnames(x))) {
-            warning("colnames of given matrix not identical to the dataset. ",
-                    "Reordering for the existing cells in the dataset.")
-            value <- value[, colnames(x)]
-        }
-        x@peak <- value
-        validObject(x)
+    function(x, dataset = NULL, check = TRUE, value) {
+        x@raw.peak <- value
+        if (isTRUE(check)) validObject(x)
+        x
+    })
+
+#' @export
+setMethod("norm.peak", signature(x = "liger", dataset = "character"),
+          function(x, dataset) {
+              atac <- dataset(x, dataset)
+              if (!inherits(atac, "ligerATACDataset")) {
+                  stop("Specified dataset is not of ligerATACDataset class.")
+              }
+              atac@norm.peak
+          })
+
+#' @export
+setReplaceMethod(
+    "norm.peak",
+    signature(x = "liger", dataset = "character"),
+    function(x, dataset, check = TRUE, value) {
+        if (!inherits(dataset(x, dataset), "ligerATACDataset"))
+            stop("Specified dataset is not of `ligerATACDataset` class.")
+        x@datasets[[dataset]]@norm.peak <- value
+        if (isTRUE(check)) validObject(dataset(x, dataset))
+        x
+    })
+
+#' @export
+setMethod("norm.peak", signature(x = "ligerATACDataset", dataset = "missing"),
+          function(x, dataset = NULL) {
+              x@norm.peak
+          })
+
+#' @export
+setReplaceMethod(
+    "norm.peak",
+    signature(x = "ligerATACDataset", dataset = "missing"),
+    function(x, dataset = NULL, check = TRUE, value) {
+        x@norm.peak <- value
+        if (isTRUE(check)) validObject(x)
         x
     })
 

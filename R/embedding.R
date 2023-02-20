@@ -30,6 +30,8 @@
 #' @param minDist Numeric. Controls how tightly the embedding is allowed
 #' compress points together. Default \code{0.1}.
 #' @param seed Random seed for reproducibility. Default \code{42}.
+#' @param verbose Logical. Whether to show information of the progress.
+#' Default \code{TRUE}.
 #' @param k,use.raw,dims.use,n_neighbors,min_dist,rand.seed \bold{Deprecated}.
 #' See Usage section for replacement.
 #' @return The \code{object} where a \code{"UMAP"} variable is updated in the
@@ -45,6 +47,7 @@ runUMAP <- function(
         nNeighbors = 20,
         minDist = 0.1,
         seed = 42,
+        verbose = TRUE,
         # Deprecated coding style
         k = nDims,
         use.raw = useRaw,
@@ -53,29 +56,30 @@ runUMAP <- function(
         min_dist = minDist,
         rand.seed = seed
 ) {
-    .deprecateArgs(list(k = "nDims",
-                        use.raw = "useRaw",
-                        dims.use = "useDims",
-                        n_neighbors = "nNeighbors",
-                        min_dist = "minDist",
-                        rand.seed = "seed"),
-                   call = rlang::call_args(match.call()))
+    .deprecateArgs(list(k = "nDims", use.raw = "useRaw", dims.use = "useDims",
+                        n_neighbors = "nNeighbors", min_dist = "minDist",
+                        rand.seed = "seed"))
     distance <- match.arg(distance)
-    set.seed(rand.seed)
-    if (isTRUE(use.raw)) {
-        data.use <- t(Reduce(cbind, getMatrix(object, "H")))
+    object <- recordCommand(object, dependencies = "uwot")
+    set.seed(seed)
+    if (isTRUE(useRaw)) {
+        type <- " unnormalized "
+        H <- t(Reduce(cbind, getMatrix(object, "H")))
     } else {
-        data.use <- getMatrix(object, "H.norm")
+        type <- " quantile normalized "
+        H <- getMatrix(object, "H.norm")
     }
-    if (!is.null(dims.use)) data.use <- data.use[, dims.use]
-    umap <- uwot::umap(data.use,
+    if (isTRUE(verbose))
+        .log("Generating UMAP on", type, "cell factor loadings...")
+    if (!is.null(useDims)) H <- H[, useDims]
+    umap <- uwot::umap(H,
                        n_components = as.integer(nDims),
                        metric = distance,
-                       n_neighbors = as.integer(n_neighbors),
-                       min_dist = min_dist)
+                       n_neighbors = as.integer(nNeighbors),
+                       min_dist = minDist)
     rownames(umap) <- colnames(object)
     colnames(umap) <- seq(nDims)
-    cell.meta(object)$UMAP <- umap
+    object[["UMAP"]] <- umap
     return(object)
 }
 
@@ -113,6 +117,8 @@ runUMAP <- function(
 #' \code{'/path/to/dir/FIt-SNE'}). Required only when first time using
 #' \code{runTSNE} with \code{method = "fftRtsne"}. Default \code{NULL}.
 #' @param seed Random seed for reproducibility. Default \code{42}.
+#' @param verbose Logical. Whether to show information of the progress.
+#' Default \code{TRUE}.
 #' @param use.raw,dims.use,use.pca,fitsne.path,rand.seed \bold{Deprecated}. See
 #' Usage section for replacement.
 #' @return The \code{object} where a \code{"TSNE"} variable is updated in the
@@ -130,6 +136,7 @@ runTSNE <- function(
         method = c("Rtsne", "fftRtsne"),
         fitsnePath = NULL,
         seed = 42,
+        verbose = TRUE,
         # Deprecated coding styles
         k = nDims,
         use.raw = useRaw,
@@ -138,19 +145,21 @@ runTSNE <- function(
         fitsne.path = fitsnePath,
         rand.seed = seed
 ) {
-    .deprecateArgs(list(k = "nDims",
-                        use.raw = "useRaw",
-                        dims.use = "useDims",
-                        use.pca = "usePCA",
-                        fitsne.path = "fitsnePath",
-                        rand.seed = "seed"),
-                   call = rlang::call_args(match.call()))
+    .deprecateArgs(list(k = "nDims", use.raw = "useRaw", dims.use = "useDims",
+                        use.pca = "usePCA", fitsne.path = "fitsnePath",
+                        rand.seed = "seed"))
     method <- match.arg(method)
+    object <- recordCommand(object, dependencies = "Rtsne")
     if (isTRUE(useRaw)) {
+        type <- " unnormalized "
         data.use <- t(Reduce(cbind, getMatrix(object, "H")))
     } else {
+        type <- " quantile normalized "
         data.use <- getMatrix(object, "H.norm")
     }
+    if (isTRUE(verbose))
+        .log("Generating TSNE (", method, ") on", type,
+             "cell factor loadings...")
     if (!is.null(useDims)) data.use <- data.use[, useDims]
     if (method == "Rtsne") {
         set.seed(seed)
@@ -171,7 +180,7 @@ runTSNE <- function(
     }
     rownames(tsne) <- colnames(object)
     colnames(tsne) <- seq(nDims)
-    cell.meta(object)$TSNE <- tsne
+    object[["TSNE"]] <- tsne
     object@uns$TSNE <- list(method = method)
     return(object)
 }

@@ -27,6 +27,7 @@ scaleNotCenter <- function(
              "Please check the result of `selectGenes()`")
     }
     useDatasets <- .checkUseDatasets(object, useDatasets)
+    object <- recordCommand(object, dependencies = "hdf5r")
     for (d in useDatasets) {
         if (isTRUE(verbose)) .log("Scaling dataset: ", d)
         ld <- dataset(object, d)
@@ -73,17 +74,29 @@ scaleNotCenter <- function(
                 featureIdx
         } else {
             # Scale in memory data
-            # IMPORTANT: scale data is cell (row) by gene (column)
-            norm.subset <- t(norm.data(ld)[var.features(object),])
-            scaled <- scaleNotCenterFast(norm.subset)
-            scaled <- as.matrix(t(scaled))
-            scaled[is.na(scaled)] <- 0
-            scaled[scaled == Inf] = 0
-            rownames(scaled) <- var.features(object)
-            colnames(scaled) <- colnames(ld)
+            scaled <- .scaleMemMatrix(norm.data(ld)[var.features(object),])
             scale.data(ld, check = FALSE) <- scaled
+            # For unshared var features
+            if (!is.null(ld@var.unshared.features)) {
+                scaled.unshared <- .scaleMemMatrix(
+                    norm.data(ld)[ld@var.unshared.features,]
+                )
+                ld@scale.unshared.data <- scaled.unshared
+            }
         }
-        datasets(object)[[d]] <- ld
+        datasets(object, check = FALSE)[[d]] <- ld
     }
     object
+}
+
+# Input norm.subset should still be feature x cell dimensionality
+.scaleMemMatrix <- function(norm.subset) {
+    scaled <- scaleNotCenterFast(t(norm.subset))
+    # scaled: g x c
+    scaled <- as.matrix(t(scaled))
+    scaled[is.na(scaled)] <- 0
+    scaled[scaled == Inf] = 0
+    rownames(scaled) <- rownames(norm.subset)
+    colnames(scaled) <- colnames(norm.subset)
+    return(scaled)
 }

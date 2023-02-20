@@ -91,7 +91,7 @@ online_iNMF <- function(
 ) {
     if (!inherits(object, "liger"))
         stop("Please use a liger object.")
-
+    object <- recordCommand(object, dependencies = "hdf5r")
     nPrevDataset <- 0
     nNewDataset <- 0
     if (!is.null(X_new)) {
@@ -405,6 +405,7 @@ online_iNMF <- function(
         ld@B <- B[[i]]
         datasets(object, check = FALSE)[[i]] <- ld
     }
+    object@k <- ncol(W)
     object
 }
 

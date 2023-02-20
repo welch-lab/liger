@@ -8,14 +8,20 @@
 #' factor before transformation. \code{NULL} for not scaling. Default
 #' \code{1e4}.
 #' @param useDatasets A character vector of the names, a numeric or logical
-#' vector of the index of the datasets to be normalized. Default
-#' \code{NULL} normalizes all datasets.
+#' vector of the index of the datasets to be normalized. Should specify ATACseq
+#' datasets when using \code{normalizePeak}. Default \code{NULL} normalizes all
+#' valid datasets.
 #' @param chunk Integer. Number of maximum number of cells in each chunk, when
 #' normalization is applied to any HDF5 based dataset. Default \code{1000}.
 #' @param verbose Logical. Whether to show information of the progress.
 #' Default \code{TRUE}.
-#' @return Updated \code{object}, where the \code{norm.data} slot of each
-#' \linkS4class{ligerDataset} object in the \code{datasets} slot is updated.
+#' @return Updated \code{object}. When using \code{normalize()}, the
+#' \code{norm.data} slot of each \linkS4class{ligerDataset} object in the
+#' \code{datasets} slot is updated with normalized values calculated from
+#' \code{raw.data} slot. While \code{normalizePeak()} normalizes raw peak counts
+#' in \code{raw.peak} slot of a \linkS4class{ligerATACDataset} object and update
+#' result in its \code{norm.peak} slot.
+#' @rdname normalize
 #' @export
 normalize <- function(
         object,
@@ -26,6 +32,7 @@ normalize <- function(
         verbose = TRUE
 ) {
     useDatasets <- .checkUseDatasets(object, useDatasets)
+    object <- recordCommand(object, dependencies = "hdf5r")
     if (!is.null(scaleFactor) && (scaleFactor <= 0 | scaleFactor == 1))
         scaleFactor <- NULL
     for (d in useDatasets) {
@@ -36,7 +43,7 @@ normalize <- function(
             ld <- normalizeDataset.h5(ld, log, scaleFactor, chunk, verbose)
         else
             ld <- normalizeDataset.Matrix(ld, log, scaleFactor, verbose)
-        datasets(object)[[d]] <- ld
+        datasets(object, check = FALSE)[[d]] <- ld
     }
     object
 }
@@ -128,4 +135,49 @@ normalizeDataset.h5 <- function(object, log = TRUE, scaleFactor = 1e4,
     norm.data(object, check = FALSE) <- h5file[[resultH5Path]]
     h5file.info(object, "norm.data", check = FALSE) <- resultH5Path
     return(object)
+}
+
+#' @rdname normalize
+#' @export
+normalizePeak <- function(
+        object,
+        log = FALSE,
+        scaleFactor = NULL,
+        useDatasets = NULL,
+        verbose = TRUE
+) {
+    useDatasets <- .checkUseDatasets(object, useDatasets, modal = "atac")
+    object <- recordCommand(object, dependencies = "hdf5r")
+    if (!is.null(scaleFactor) && (scaleFactor <= 0 | scaleFactor == 1))
+        scaleFactor <- NULL
+    for (d in useDatasets) {
+        # `d` is the name of each dataset
+        if (isTRUE(verbose)) .log("Normalizing raw peak counts in dataset: ", d)
+        ld <- dataset(object, d)
+        if (inherits(raw.peak(ld), "dgCMatrix") |
+            inherits(raw.peak(ld), "dgTMatrix"))
+            norm.peak(ld, check = FALSE) <- Matrix.column_norm(raw.peak(ld))
+        else
+            norm.peak(ld, check = FALSE) <- sweep(x = raw.peak(ld), MARGIN = 2,
+                                                  STATS = colSums(raw.peak(ld)),
+                                                  FUN = "/")
+
+        if (!is.null(scaleFactor))
+            norm.peak(ld, check = FALSE) <- norm.peak(ld) * scaleFactor
+        if (isTRUE(log))
+            norm.peak(ld, check = FALSE) <- log1p(norm.peak(ld))
+        datasets(object, check = FALSE)[[d]] <- ld
+    }
+    object
+}
+
+# Perform fast and memory-efficient normalization operation on sparse matrix data.
+# param A Sparse matrix DGE.
+Matrix.column_norm <- function(A) {
+    if (class(A)[1] == "dgTMatrix") {
+        temp = summary(A)
+        A = sparseMatrix(i = temp[, 1], j = temp[, 2], x = temp[, 3])
+    }
+    A@x <- A@x / rep.int(Matrix::colSums(A), diff(A@p))
+    return(A)
 }

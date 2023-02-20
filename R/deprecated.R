@@ -1,11 +1,18 @@
-#' @importFrom Matrix colSums rowSums rowMeans t sparseMatrix
+#' @title Deprecated functions in package \pkg{rliger}.
+#' @description The functions listed below are deprecated and will be defunct in
+#'   the near future. When possible, alternative functions with similar
+#'   functionality or a replacement are also mentioned. Help pages for
+#'   deprecated functions are available at \code{help("<function>-deprecated")}.
+#' @name rliger-deprecated
+#' @keywords internal
 NULL
+
 
 # These are deprecated functions likely to be removed in future versions.
 # Documentation for these functions is incomplete.
 
 #' Quantile align (normalize) factor loadings
-#' 
+#'
 #' This is a deprecated function. Calling 'quantile_norm' instead.
 #'
 #' This process builds a shared factor neighborhood graph to jointly cluster cells, then quantile

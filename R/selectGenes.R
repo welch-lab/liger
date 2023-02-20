@@ -63,6 +63,7 @@ selectGenes <- function(
     # A bunch of input checks at first ####
     combine <- match.arg(combine)
     datasets.use <- .checkUseDatasets(object, datasets.use)
+    object <- recordCommand(object, dependencies = "hdf5r")
 
     if (length(var.thresh) != 1 & length(var.thresh) != length(datasets.use))
         stop("Wrong length of `var.thresh`. Use 1 or `length(object)` values.")

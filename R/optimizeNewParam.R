@@ -33,6 +33,7 @@ optimizeNewK <- function(
         verbose = TRUE
 ) {
     .checkValidFactorResult(object)
+    object <- recordCommand(object)
     if (is.null(lambda)) {
         #lambda <- object@parameters$lambda
     }
@@ -158,6 +159,7 @@ optimizeNewData <- function(
         verbose = TRUE
 ) {
     .checkValidFactorResult(object)
+    object <- recordCommand(object)
     #if (is.null(lambda)) {
     #    lambda <- object@parameters$lambda
     #}
@@ -233,6 +235,111 @@ optimizeNewData <- function(
         W.init = W,
         V.init = V,
         verbose = verbose
+    )
+    return(object)
+}
+
+#' Perform factorization for new lambda value
+#' @description Uses an efficient strategy for updating that takes advantage of
+#' the information in the existing factorization; uses previous k. Recommended
+#' mainly when re-optimizing for higher lambda and when new lambda value is
+#' significantly different; otherwise may not return optimal results.
+#' @param object \linkS4class{liger} object. Should call
+#' \code{\link{optimizeALS}} in advance.
+#' @param new.lambda Numeric regularization parameter. Larger values penalize
+#' dataset-specific effects more strongly.
+#' @param thresh Convergence threshold. Convergence occurs when
+#' \eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-4}.
+#' @param max.iters Maximum number of block coordinate descent iterations to
+#' perform. Default \code{100}.
+#' @param rand.seed Random seed to allow reproducible results. Default \code{1}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{TRUE}.
+#' @return Input \code{object} with optimized factorization values updated.
+#' including the \code{W} matrix in \linkS4class{liger} object, and \code{W} and
+#' \code{V} matrices in each \linkS4class{ligerDataset} object in the
+#' \code{datasets} slot.
+#' @export
+optimizeNewLambda <- function(
+        object,
+        new.lambda,
+        thresh = 1e-4,
+        max.iters = 100,
+        rand.seed = 1,
+        verbose = TRUE
+) {
+    .checkValidFactorResult(object, names(object))
+    if (new.lambda < object@uns$lambda && isTRUE(verbose))
+        .log("New lambda less than current lambda; new factorization may not ",
+             "be optimal. Re-optimization with optimizeAlS recommended ",
+             "instead.")
+    object <- optimizeALS(
+        object,
+        k = object@k,
+        lambda = new.lambda,
+        thresh = thresh,
+        maxIter = max.iters,
+        H.init = getMatrix(object, "H"),
+        W.init = getMatrix(object, "W"),
+        rand.seed = rand.seed,
+        verbose = verbose
+    )
+    return(object)
+}
+
+#' Perform factorization for subset of data
+#' @description Uses an efficient strategy for updating that takes advantage of
+#' the information in the existing factorization.
+#' @param object \linkS4class{liger} object. Should call
+#' \code{\link{optimizeALS}} in advance.
+#' @param cellIdx Valid index vector that applies to the whole object. See
+#' \code{\link{subsetLiger}} for requirement.
+#' @param lambda Numeric regularization parameter. Default \code{5}.
+#' @param thresh Convergence threshold. Convergence occurs when
+#' \eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-4}.
+#' @param max.iters Maximum number of block coordinate descent iterations to
+#' perform. Default \code{100}.
+#' @param datasets.scale Names of datasets to rescale after subsetting.
+#' Default \code{NULL} does not rescale.
+#' @return Subset \code{object} with factorization matrices reset, including
+#' the \code{W} matrix in \linkS4class{liger} object, and \code{W} and \code{V}
+#' matrices in each \linkS4class{ligerDataset} object in the \code{datasets}
+#' slot. \code{scale.data} in the \linkS4class{ligerDataset} objects of
+#' datasets specified by \code{datasets.scale} will also be updated to reflect
+#' the subset.
+#' @export
+optimizeSubset <- function(
+        object,
+        cellIdx,
+        lambda = 5,
+        thresh = 1e-4,
+        max.iters = 100,
+        datasets.scale = NULL,
+        ...,
+        # Deprecated
+        cell.subset = NULL,
+        cluster.subset = NULL
+) {
+    .deprecateArgs(list(cell.subset = "cellIdx"), defunct = "cluster.subset")
+    .checkValidFactorResult(object, useDatasets = names(object))
+    cellIdx <- .idxCheck(object, cellIdx, orient = "cell")
+    if (!is.null(datasets.scale))
+        datasets.scale <- .checkUseDatasets(object, datasets.scale)
+    object <- recordCommand(object)
+
+    if (!is.null(datasets.scale))
+        object <- scaleNotCenter(object, useDatasets = datasets.scale)
+    object <- subsetLiger(object, cellIdx = cellIdx)
+    object <- optimizeALS(
+        object,
+        k = object@k,
+        lambda = lambda,
+        thresh = thresh,
+        max.iters = max.iters,
+        H.init = getMatrix(object, "H"),
+        W.init = getMatrix(object, "W"),
+        V.init = getMatrix(object, "V"),
+        ...
     )
     return(object)
 }

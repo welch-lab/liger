@@ -85,13 +85,24 @@ subsetLiger <- function(
         datasets.new[[d]] <- ld
     }
     if (isTRUE(returnObject)) {
+        if (!is.null(featureIdx)) {
+            W <- object@W[featureIdx, , drop = FALSE]
+            varFeature <- var.features(object)[var.features(object) %in%
+                                                   featureIdx]
+        } else {
+            W <- object@W
+            varFeature <- var.features(object)
+        }
         return(methods::new(
             "liger",
             datasets = datasets.new,
             cell.meta = cell.meta(object)[cellIdx, , drop = FALSE],
-            var.features = character(),
-            W = object@W[featureIdx, , drop = FALSE],
+            var.features = varFeature,
+            W = W,
             H.norm = object@H.norm[cellIdx, , drop = FALSE],
+            k = object@k,
+            uns = object@uns,
+            commands = object@commands,
             version = packageVersion("rliger")
         ))
     } else {
@@ -357,8 +368,13 @@ subsetH5LigerDatasetToMem <- function(
         value$V <- object@V[scaledFeatureIdx2, , drop = FALSE]
         value$A <- object@A
         value$B <- object@B[scaledFeatureIdx2, , drop = FALSE]
-        value$U <- object@U#[cellIdx, , drop = FALSE]
+        value$U <- object@U
         value$feature.meta <- feature.meta(object)[featureIdx, , drop = FALSE]
+        # Additional subsetting for sub-classes, if applicable
+        if (modal == "atac") {
+            value$raw.peak <- raw.peak(object)[, cellIdx, drop = FALSE]
+            value$norm.peak <- norm.peak(object)[, cellIdx, drop = FALSE]
+        }
     }
     if (isTRUE(returnObject)) {
         value$modal <- modal
@@ -610,30 +626,22 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
     }
     if ("scale.data" %in% slotInvolved) {
         if (!is.null(scale.data(object))) {
-            # Which genes in raw.data is in scale.data, by order
-            scaleFeatureIdx <- .getOrderedSubsetIdx(
-                rownames(object), rownames(scale.data(object))
-            )
-            # Which genes in scale.data is requested by featureIdx
-            scaleFeatureIdx2 <- unlist(lapply(featureIdx, function(i)
-                which(scaleFeatureIdx == i)), use.names = FALSE)
+            scaleFeatureIdx <- rownames(scale.data(object)) %in%
+                rownames(object)[featureIdx]
             subsetData$scale.data <-
-                scale.data(object)[scaleFeatureIdx2, cellIdx, drop = FALSE]
+                scale.data(object)[scaleFeatureIdx, cellIdx, drop = FALSE]
         }
         if (!is.null(object@scale.unshared.data)) {
-            scaleUnsFeatureIdx <- .getOrderedSubsetIdx(
-                rownames(object), rownames(object@scale.unshared.data)
-            )
-            scaleUnsFeatIdx2 <- unlist(lapply(featureIdx, function(i)
-                which(scaleFeatureIdx == i)), use.names = FALSE)
+            scaleUnsFeatureIdx <- rownames(object@scale.unshared.data) %in%
+                rownames(object)[featureIdx]
             subsetData$scale.unshared.data <-
-                object@scale.unshared.data[scaleUnsFeatIdx2, cellIdx,
+                object@scale.unshared.data[scaleUnsFeatureIdx, cellIdx,
                                            drop = FALSE]
         }
     }
     if (is.null(useSlot)) {
         # Users do not specify, subset the whole object
-        if (exists("scaleFeatureIdx2")) sfi <- scaleFeatureIdx2
+        if (exists("scaleFeatureIdx")) sfi <- scaleFeatureIdx
         else sfi <- seq(scale.data(object))
         subsetData <- c(subsetData,
                         list(H = object@H[, cellIdx, drop = FALSE],
@@ -646,7 +654,8 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
                         ))
         # Additional subsetting for sub-classes, if applicable
         if (modal == "atac") {
-            subsetData$peak <- peak(object)[, cellIdx, drop = FALSE]
+            subsetData$raw.peak <- raw.peak(object)[, cellIdx, drop = FALSE]
+            subsetData$norm.peak <- norm.peak(object)[, cellIdx, drop = FALSE]
         }
     }
 

@@ -7,6 +7,7 @@ setClassUnion("character_OR_NULL", c("character", "NULL"))
 setClassUnion("matrixLike", c(
     "matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix"
 ))
+setClassUnion("Number_or_NULL", c("integer", "numeric", "NULL"))
 
 setClassUnion("dataframe", c("data.frame", "DataFrame", "NULL", "missing"))
 
@@ -40,8 +41,9 @@ liger <- setClass(
         var.features = "character_OR_NULL",
         W = "matrix_OR_NULL",
         H.norm = "matrix_OR_NULL",
-        commands = "list",
+        k = "Number_or_NULL",
         uns = "list",
+        commands = "list",
         version = "ANY"
     ),
     methods::prototype(
@@ -291,6 +293,8 @@ setMethod(
         cat(.collapseLongNames(datasetInfos), "\n")
         cat(paste0("cell.meta(", ncol(cell.meta(object)), "): "))
         cat(.collapseLongNames(colnames(cell.meta(object))), "\n")
+        cat(paste0("var.feature(", length(var.features(object)), "): "))
+        cat(.collapseLongNames(var.features(object)), "\n")
         invisible(x = NULL)
     }
 )
