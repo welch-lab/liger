@@ -25,9 +25,9 @@ can produce ggplots with the cell metadata simply by calling
 \describe{
 \item{\code{datasets}}{list of \linkS4class{ligerDataset} objects.}
 
-\item{\code{cell.meta}}{Cell metadata, \linkS4class{DFrame}}
+\item{\code{cellMeta}}{Cell metadata, \linkS4class{DFrame}}
 
-\item{\code{var.features}}{vector of feature names}
+\item{\code{varFeatures}}{vector of feature names}
 
 \item{\code{H.norm}}{matrix}
 

@@ -57,7 +57,7 @@ suggestK <- function(
                         gen.new = "genNew", plot.log2 = FALSE,
                         return.raw = "returnRaw"),
                    defunct = "return.data")
-    scaleData <- getMatrix(object, "scale.data")
+    scaleData <- getMatrix(object, "scaleData")
     notScaled <- sapply(scaleData, is.null)
     if (any(notScaled))
         stop("Dataset not scaled (",

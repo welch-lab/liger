@@ -39,8 +39,8 @@
 #' when gene selection is applied to any HDF5 based dataset. Default
 #' \code{1000}.
 #' @param verbose Logical. Whether to show the progress. Default \code{TRUE}.
-#' @return The input \code{object}, with the \code{var.features} slot updated.
-#' The \code{var.unshared.features} slot of the \linkS4class{ligerDataset}
+#' @return The input \code{object}, with the \code{varFeatures} slot updated.
+#' The \code{varUnsharedFeatures} slot of the \linkS4class{ligerDataset}
 #' object in the \code{datasets} slot will be updated if \code{unshared = TRUE}.
 #' @seealso \code{\link{plotVarFeatures}}
 #' @useDynLib rliger, .registration = TRUE
@@ -99,16 +99,16 @@ selectGenes <- function(
             ld <- calcGeneVars.H5(ld, chunkSize = chunkSize,
                                   verbose = verbose)
         } else {
-            feature.meta(ld, check = FALSE)$geneMeans <-
-                rowMeansFast(norm.data(ld))
-            feature.meta(ld, check = FALSE)$geneVars <-
-                rowVarsFast(norm.data(ld), feature.meta(ld)$geneMeans)
+            featureMeta(ld, check = FALSE)$geneMeans <-
+                rowMeansFast(normData(ld))
+            featureMeta(ld, check = FALSE)$geneVars <-
+                rowVarsFast(normData(ld), featureMeta(ld)$geneMeans)
         }
         datasets(object, check = FALSE)[[d]] <- ld
         ## The real calculation starts here ####
-        geneMeans <- feature.meta(ld)$geneMeans
-        geneVars <- feature.meta(ld)$geneVars
-        trx_per_cell <- cell.meta(object, "nUMI", cellIdx = object$dataset == d)
+        geneMeans <- featureMeta(ld)$geneMeans
+        geneVars <- featureMeta(ld)$geneVars
+        trx_per_cell <- cellMeta(object, "nUMI", cellIdx = object$dataset == d)
         nolan_constant <- mean((1 / trx_per_cell))
         alphathresh.corrected <- alpha.thresh / nrow(ld)
         geneMeanUpper <- geneMeans +
@@ -145,7 +145,7 @@ selectGenes <- function(
                 geneVars / nolan_constant > geneMeanUpper &
                     log10(geneVars) > basegenelower + var.thresh[i]
             ]
-            feature.meta(ld, check = FALSE)$is_variable <-
+            featureMeta(ld, check = FALSE)$is_variable <-
                 rownames(ld) %in% selected
             datasets(object, check = FALSE)[[d]] <- ld
             selected <- selected[selected %in% shared.features]
@@ -182,11 +182,11 @@ selectGenes <- function(
             .log("Finally ", length(selected.shared),
                     " shared variable features selected.")
     }
-    var.features(object, check = FALSE) <- selected.shared
+    varFeatures(object, check = FALSE) <- selected.shared
 
     # Final process for unshared variable features ####
     for (d in unshared.datasets) {
-        datasets(object, check = FALSE)[[d]]@var.unshared.features <-
+        datasets(object, check = FALSE)[[d]]@varUnsharedFeatures <-
             selected.unshared[[d]]
     }
 
@@ -219,13 +219,13 @@ calcGeneVars.H5 <- function(object, chunkSize = 1000, verbose = TRUE,
             values + sumSquaredDeviations(chunk, geneMeans)
         },
         init = geneVars,
-        useData = "norm.data",
+        useData = "normData",
         chunkSize = chunkSize,
         verbose = verbose
     )
     geneVars <- geneVars / (ncol(object) - 1)
     h5file[["gene_vars"]][seq_along(geneVars)] <- geneVars
-    feature.meta(object, check = FALSE)$geneVars <- geneVars
+    featureMeta(object, check = FALSE)$geneVars <- geneVars
     object
 }
 
@@ -254,10 +254,10 @@ plotVarFeatures <- function(
     plotList <- list()
     for (d in names(object)) {
         ld <- dataset(object, d)
-        trx_per_cell <- cell.meta(object, "nUMI", cellIdx = object$dataset == d)
+        trx_per_cell <- cellMeta(object, "nUMI", cellIdx = object$dataset == d)
         nolan_constant <- mean((1 / trx_per_cell))
 
-        data <- as.data.frame(feature.meta(ld))
+        data <- as.data.frame(featureMeta(ld))
         nSelect <- sum(data$is_variable)
         data$geneMeans <- log10(data$geneMeans)
         data$geneVars <- log10(data$geneVars)

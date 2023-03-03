@@ -26,7 +26,7 @@ vector of the index of the datasets to be normalized. Default
 \code{"clusters"} compares between clusters across all datasets, while
 \code{"datasets"} compares between datasets within each cluster.}
 
-\item{useCluster}{The name of the column in \code{cell.meta} slot storing the
+\item{useCluster}{The name of the column in \code{cellMeta} slot storing the
 cluster assignment variable. Default \code{"louvain_cluster"}}
 
 \item{verbose}{Logical. Whether to show information of the progress.

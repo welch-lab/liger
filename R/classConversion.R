@@ -41,11 +41,11 @@ setMethod(
             raw.data <- SingleCellExperiment::counts(x)
         else raw.data <- NULL
         if ("logcounts" %in% SummarizedExperiment::assayNames(x))
-            norm.data <- SingleCellExperiment::logcounts(x)
-        else norm.data <- NULL
+            normData <- SingleCellExperiment::logcounts(x)
+        else normData <- NULL
         if ("counts" %in% SummarizedExperiment::assayNames(x))
             raw.data <- SingleCellExperiment::counts(x)
-        createLigerDataset(raw.data = raw.data, norm.data = norm.data,
+        createLigerDataset(raw.data = raw.data, normData = normData,
                            modal = modal)
     }
 )
@@ -100,11 +100,11 @@ setMethod(
                  "BiocManager::install('Seurat')",
                  call. = FALSE)
         counts <- Seurat::GetAssayData(x, "counts")
-        norm.data <- Seurat::GetAssayData(x, "data")
-        if (identical(counts, norm.data)) norm.data <- NULL
+        normData <- Seurat::GetAssayData(x, "data")
+        if (identical(counts, normData)) normData <- NULL
         scale.data <- Seurat::GetAssayData(x, "scale.data")
         if (sum(dim(scale.data)) == 0) scale.data <- NULL
-        createLigerDataset(raw.data = counts, norm.data = norm.data,
+        createLigerDataset(raw.data = counts, normData = normData,
                            scale.data = scale.data, modal = modal)
     }
 )
@@ -131,8 +131,8 @@ setMethod(
 #    assays <- list()
 #    if (!is.null(raw.data(from)))
 #        assays <- c(assays, list(counts = raw.data(from)))
-#    if (!is.null(norm.data(from)))
-#        assays <- c(assays, list(normcounts = norm.data(from)))
+#    if (!is.null(normData(from)))
+#        assays <- c(assays, list(normcounts = normData(from)))
 #    SingleCellExperiment::SingleCellExperiment(
 #        assays = assays
 #    )

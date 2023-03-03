@@ -7,7 +7,7 @@
 plotClusterFactorDot(
   object,
   groupBy = "louvain_cluster",
-  useDims = seq(object@k),
+  useDims = NULL,
   useRaw = FALSE,
   splitBy = NULL,
   factorScaleFunc = NULL,
@@ -22,18 +22,17 @@ plotClusterFactorDot(
 \arguments{
 \item{object}{A \linkS4class{liger} object}
 
-\item{groupBy}{The names of the columns in \code{cell.meta} slot storing
+\item{groupBy}{The names of the columns in \code{cellMeta} slot storing
 categorical variables. Loading data would be aggregated basing on these,
 together with \code{splitBy}. Default \code{"louvain_cluster"}.}
 
 \item{useDims}{A Numeric vector to specify exact factors of interests.
-Default \code{seq(object@k)}. (Note that \code{object@k} only exists after
-factorization).}
+Default \code{NULL} uses all available factors.}
 
 \item{useRaw}{Whether to use un-aligned cell factor loadings (\eqn{H}
 matrices). Default \code{FALSE}.}
 
-\item{splitBy}{The names of the columns in \code{cell.meta} slot storing
+\item{splitBy}{The names of the columns in \code{cellMeta} slot storing
 categorical variables. Dotplot panel splitting would be based on these.
 Default \code{NULL}.}
 

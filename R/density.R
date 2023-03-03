@@ -6,10 +6,10 @@
 #' \code{"dataset"}), while the scatter plot will always be shown for all cells
 #' in subplots as a reference of the global structure.
 #' @param object A \linkS4class{liger} object
-#' @param useDimRed Name of type of the coordinate matrix in \code{cell.meta}
+#' @param useDimRed Name of type of the coordinate matrix in \code{cellMeta}
 #' slot. Default \code{"UMAP"}.
 #' @param splitBy Character vector of categorical variable names in
-#' \code{cell.meta} slot. Split all cells by groupings on this/these variable(s)
+#' \code{cellMeta} slot. Split all cells by groupings on this/these variable(s)
 #' to produce a density plot containing only the cells in each group. Default
 #' \code{NULL}.
 #' @param combinePlot Logical, whether to utilize

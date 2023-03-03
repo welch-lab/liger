@@ -40,14 +40,14 @@ optimizeNewK <- function(
         return(object)
     }
     # g x c
-    E <- getMatrix(object, "scale.data", returnList = TRUE)
+    E <- getMatrix(object, "scaleData", returnList = TRUE)
     # g x k
     W <- getMatrix(object, "W")
     # g x k
     V <- getMatrix(object, "V", returnList = TRUE)
     # k x c
     H <- getMatrix(object, "H", returnList = TRUE)
-    nGenes <- length(var.features(object))
+    nGenes <- length(varFeatures(object))
     nDatasets <- length(object)
     nCells <- sapply(datasets(object), ncol)
     if (isTRUE(verbose)) .log("Initializing with new k...")
@@ -119,7 +119,7 @@ optimizeNewK <- function(
 #' factorization. Assumes that selected genes (var.genes) are represented in the new datasets.
 #'
 #' @param object \code{liger} object. Should call optimizeALS before calling.
-#' @param new.data List of raw data matrices (one or more). Each list entry should be named.
+#' @param new.data List of rawData matrices (one or more). Each list entry should be named.
 #' @param which.datasets List of datasets to append new.data to if add.to.existing is true.
 #'   Otherwise, the most similar existing datasets for each entry in new.data.
 #' @param add.to.existing Add the new data to existing datasets or treat as totally new datasets
@@ -131,7 +131,7 @@ optimizeNewK <- function(
 #' @param max.iters Maximum number of block coordinate descent iterations to perform (default 100).
 #' @param verbose Print progress bar/messages (TRUE by default)
 #'
-#' @return \code{liger} object with H, W, and V slots reset. Raw.data, norm.data, and scale.data will
+#' @return \code{liger} object with H, W, and V slots reset. Raw.data, normData, and scaleData will
 #'   also be updated to include the new data.
 #'
 #' @export
@@ -162,7 +162,7 @@ optimizeNewData <- function(
     object <- recordCommand(object)
     if (is.null(lambda)) lambda <- object@uns$factorization$lambda
     sqrtLambda <- sqrt(lambda)
-    nGenes <- length(var.features(object))
+    nGenes <- length(varFeatures(object))
     k <- object@uns$factorization$k
     # W: g x k
     W <- getMatrix(object, "W")
@@ -173,13 +173,13 @@ optimizeNewData <- function(
         # TODO Establish dataset merging/extending functionality first
         for (i in 1:length(new.data)) {
             if (verbose) {
-                message(dim(object@raw.data[[which.datasets[[i]]]]))
+                message(dim(object@rawData[[which.datasets[[i]]]]))
             }
-            object@raw.data[[which.datasets[[i]]]] <-
-                cbind(object@raw.data[[which.datasets[[i]]]],
+            object@rawData[[which.datasets[[i]]]] <-
+                cbind(object@rawData[[which.datasets[[i]]]],
                       new.data[[i]])
             if (verbose) {
-                message(dim(object@raw.data[[which.datasets[[i]]]]))
+                message(dim(object@rawData[[which.datasets[[i]]]]))
             }
         }
         object <- normalize(object)
@@ -190,7 +190,7 @@ optimizeNewData <- function(
                 sqrtLambda * t(V[[which.datasets[[i]]]])
             ),
             rbind(
-                t(object@scale.data[[which.datasets[[i]]]][colnames(new.data[[i]]), ]),
+                t(object@scaleData[[which.datasets[[i]]]][colnames(new.data[[i]]), ]),
                 matrix(0, nGenes, ncol(new.data[[i]]))
             )))
         })
@@ -201,15 +201,15 @@ optimizeNewData <- function(
     } else {
         new.names <- names(new.data)
         for (i in seq_along(new.names)) {
-            ld <- createLigerDataset(raw.data = new.data[[i]],
+            ld <- createLigerDataset(rawData = new.data[[i]],
                                      V = dataset(object, which.datasets[i])@V)
             dataset(object, new.names[i]) <- ld
         }
         object <- normalize(object)
         object <- scaleNotCenter(object)
         nCells <- lapply(datasets(object), ncol)
-        # scale.data: g x c
-        E <- lapply(datasets(object), function(ld) scale.data(ld))
+        # scaleData: g x c
+        E <- lapply(datasets(object), function(ld) scaleData(ld))
         # H: k x c
         H_new <- lapply(new.names, function(n) {
             solveNNLS(rbind(W + V[[n]], sqrtLambda*V[[n]]),
@@ -302,7 +302,7 @@ optimizeNewLambda <- function(
 #' @return Subset \code{object} with factorization matrices reset, including
 #' the \code{W} matrix in \linkS4class{liger} object, and \code{W} and \code{V}
 #' matrices in each \linkS4class{ligerDataset} object in the \code{datasets}
-#' slot. \code{scale.data} in the \linkS4class{ligerDataset} objects of
+#' slot. \code{scaleData} in the \linkS4class{ligerDataset} objects of
 #' datasets specified by \code{datasets.scale} will also be updated to reflect
 #' the subset.
 #' @export

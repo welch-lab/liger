@@ -19,8 +19,8 @@ of specification.
 }
 \description{
 The list of \code{datasets} slot, the rows of
-\code{cell.meta} slot and the list of \code{commands} slot will be simply
-concatenated. Variable features in \code{var.features} slot will be taken a
+\code{cellMeta} slot and the list of \code{commands} slot will be simply
+concatenated. Variable features in \code{varFeatures} slot will be taken a
 union. The \eqn{W} and \eqn{H.norm} matrices are not taken into account for
 now.
 }

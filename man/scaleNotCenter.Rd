@@ -21,7 +21,7 @@ scaling is applied to any HDF5 based dataset. Default \code{1000}.}
 \code{TRUE}.}
 }
 \value{
-Updated \code{object}, where the \code{scale.data} slot of each
+Updated \code{object}, where the \code{scaleData} slot of each
 \linkS4class{ligerDataset} object in the \code{datasets} slot is updated.
 }
 \description{

@@ -31,7 +31,7 @@ plotGeneDetectedViolin(object, groupBy = "dataset", ...)
 \item{object}{\linkS4class{liger} object, or a data.frame like object of cell
 metadata, where \code{"dataset"} variable must exist.}
 
-\item{metric}{Metric to use. Should be found in \code{cell.meta(object)}.}
+\item{metric}{Metric to use. Should be found in \code{cellMeta(object)}.}
 
 \item{groupBy}{Group data by this categorical variable.}
 

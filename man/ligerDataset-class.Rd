@@ -12,16 +12,16 @@ higher level \linkS4class{liger} object
 \section{Slots}{
 
 \describe{
-\item{\code{raw.data}}{Raw data.}
+\item{\code{rawData}}{Raw data.}
 
-\item{\code{norm.data}}{Normalized data}
+\item{\code{normData}}{Normalized data}
 
-\item{\code{scale.data}}{Scaled data, usually with subset variable features}
+\item{\code{scaleData}}{Scaled data, usually with subset variable features}
 
-\item{\code{scale.unshared.data}}{Scaled data of features not shared with other
+\item{\code{scaleUnsharedData}}{Scaled data of features not shared with other
 datasets}
 
-\item{\code{var.unshared.features}}{Variable features not shared with other datasets}
+\item{\code{varUnsharedFeatures}}{Variable features not shared with other datasets}
 
 \item{\code{V}}{matrix}
 
@@ -33,9 +33,9 @@ datasets}
 
 \item{\code{U}}{matrix}
 
-\item{\code{h5file.info}}{list}
+\item{\code{h5fileInfo}}{list}
 
-\item{\code{feature.meta}}{Feature metadata, DataFrame}
+\item{\code{featureMeta}}{Feature metadata, DataFrame}
 
 \item{\code{colnames}}{character}
 

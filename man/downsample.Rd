@@ -17,7 +17,7 @@ downsample(
 \item{object}{\linkS4class{liger} object}
 
 \item{balance}{Character vector of categorical variable names in
-\code{cell.meta} slot, to subsample \code{maxCells} cells from each
+\code{cellMeta} slot, to subsample \code{maxCells} cells from each
 combination of all specified variables. Default \code{NULL} samples
 \code{maxCells} cells from the whole object.}
 

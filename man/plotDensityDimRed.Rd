@@ -27,11 +27,11 @@ plotDensityDimRed(
 \arguments{
 \item{object}{A \linkS4class{liger} object}
 
-\item{useDimRed}{Name of type of the coordinate matrix in \code{cell.meta}
+\item{useDimRed}{Name of type of the coordinate matrix in \code{cellMeta}
 slot. Default \code{"UMAP"}.}
 
 \item{splitBy}{Character vector of categorical variable names in
-\code{cell.meta} slot. Split all cells by groupings on this/these variable(s)
+\code{cellMeta} slot. Split all cells by groupings on this/these variable(s)
 to produce a density plot containing only the cells in each group. Default
 \code{NULL}.}
 

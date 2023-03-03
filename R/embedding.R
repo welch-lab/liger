@@ -35,7 +35,7 @@
 #' @param k,use.raw,dims.use,n_neighbors,min_dist,rand.seed \bold{Deprecated}.
 #' See Usage section for replacement.
 #' @return The \code{object} where a \code{"UMAP"} variable is updated in the
-#' \code{cell.meta} slot with the whole 2D embedding matrix.
+#' \code{cellMeta} slot with the whole 2D embedding matrix.
 #' @seealso \code{\link{runTSNE}}
 #' @export
 runUMAP <- function(
@@ -79,7 +79,7 @@ runUMAP <- function(
                        min_dist = minDist)
     rownames(umap) <- colnames(object)
     colnames(umap) <- seq(nDims)
-    cell.meta(object, "UMAP", check = FALSE) <- umap
+    cellMeta(object, "UMAP", check = FALSE) <- umap
     return(object)
 }
 
@@ -122,7 +122,7 @@ runUMAP <- function(
 #' @param use.raw,dims.use,use.pca,fitsne.path,rand.seed \bold{Deprecated}. See
 #' Usage section for replacement.
 #' @return The \code{object} where a \code{"TSNE"} variable is updated in the
-#' \code{cell.meta} slot with the whole 2D embedding matrix.
+#' \code{cellMeta} slot with the whole 2D embedding matrix.
 #' @seealso \code{\link{runUMAP}}
 #' @export
 runTSNE <- function(
@@ -180,7 +180,7 @@ runTSNE <- function(
     }
     rownames(tsne) <- colnames(object)
     colnames(tsne) <- seq(nDims)
-    cell.meta(object, "TSNE", check = FALSE) <- tsne
+    cellMeta(object, "TSNE", check = FALSE) <- tsne
     object@uns$TSNE <- list(method = method)
     return(object)
 }

@@ -63,7 +63,7 @@ Missing or \code{NULL} for all cells.}
 \code{subsetH5LigerDataset}, in-memory data for \code{subsetMemLigerDataset}.}
 
 \item{useSlot}{The slot(s) to only consider. Choose one or more from
-\code{"raw.data"}, \code{"norm.data"} and \code{"scale.data"}. Default
+\code{"rawData"}, \code{"normData"} and \code{"scaleData"}. Default
 \code{NULL} subsets the whole object including analysis result matrices.}
 
 \item{newH5}{Whether to create a new H5 file on disk for the subset dataset
@@ -91,7 +91,7 @@ Subset \code{object}
 This function subsets a \linkS4class{ligerDataset} object with
 valid feature and cell indices. For HDF5 based object, options are available
 for subsetting data into memory or a new on-disk H5 file. Feature and cell
-subscription is always based on the size of raw data. Therefore, the feature
+subscription is always based on the size of rawData. Therefore, the feature
 subsetting on scaled data, which usually contains already a subset of
 features, will select the intersection between the wanted features and the
 set available from scaled data.

@@ -68,7 +68,7 @@
     useDatasets
 }
 
-# Check if the selection of cell.meta variable is valid, in terms of existence
+# Check if the selection of cellMeta variable is valid, in terms of existence
 # and class and return all result
 .fetchCellMetaVar <- function(
         object,
@@ -78,7 +78,7 @@
         drop = TRUE,
         returnList = FALSE
 ) {
-    df <- cell.meta(object, variables, cellIdx, as.data.frame = TRUE,
+    df <- cellMeta(object, variables, cellIdx, as.data.frame = TRUE,
                     drop = FALSE)
     if (isTRUE(checkCategorical)) {
         passing <- sapply(variables, function(v) {
@@ -160,26 +160,26 @@
 .checkLDSlot <- function(object, slot) {
     if (!inherits(object, "ligerDataset"))
         stop("Please use a ligerDataset object.")
-    avail <- c("raw.data", "norm.data", "scale.data")
+    avail <- c("rawData", "normData", "scaleData")
     if (is.null(slot)) slot <- avail
     else {
         if (any(!slot %in% avail)) {
             notFound <- slot[!slot %in% avail]
             stop("Specified slot not availalble: ",
                  paste(notFound, collapse = ", "), ". Use one or more from ",
-                 '"raw.data", "norm.data" or "scale.data"')
+                 '"rawData", "normData" or "scaleData"')
         }
-        if ("raw.data" %in% slot &
-            is.null(raw.data(object))) {
-            stop("`raw.data` is not available for use.")
+        if ("rawData" %in% slot &
+            is.null(rawData(object))) {
+            stop("`rawData` is not available for use.")
         }
-        if ("norm.data" %in% slot &
-            is.null(norm.data(object))) {
-            stop("`norm.data` is not available for use.")
+        if ("normData" %in% slot &
+            is.null(normData(object))) {
+            stop("`normData` is not available for use.")
         }
-        if ("scale.data" %in% slot &
-            is.null(scale.data(object))) {
-            stop("`scale.data` is not available for use.")
+        if ("scaleData" %in% slot &
+            is.null(scaleData(object))) {
+            stop("`scaleData` is not available for use.")
         }
     }
     slot

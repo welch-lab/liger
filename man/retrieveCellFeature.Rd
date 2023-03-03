@@ -7,7 +7,7 @@
 retrieveCellFeature(
   object,
   feature,
-  slot = c("raw.data", "norm.data", "scale.data", "H", "H.norm", "cell.meta"),
+  slot = c("rawData", "normData", "scaleData", "H", "H.norm", "cellMeta"),
   cellIdx = NULL,
   ...
 )
@@ -18,15 +18,15 @@ retrieveCellFeature(
 \item{feature}{Gene names, factor index or cell metadata variable names.
 Should be available in specified \code{slot}.}
 
-\item{slot}{Exactly choose from \code{"raw.data"}, \code{"norm.data"},
-\code{"scale.data"}, \code{"H"}, \code{"H.norm"} or \code{"cell.meta"}.}
+\item{slot}{Exactly choose from \code{"rawData"}, \code{"normData"},
+\code{"scaleData"}, \code{"H"}, \code{"H.norm"} or \code{"cellMeta"}.}
 
 \item{cellIdx}{Any valid type of index that subset from all cells. Default
 \code{NULL} uses all cells.}
 
 \item{...}{Additional arguments passed to \code{\link{subsetLiger}} when
-\code{slot} is one of \code{"raw.data"}, \code{"norm.data"} or
-\code{"scale.data"}.}
+\code{slot} is one of \code{"rawData"}, \code{"normData"} or
+\code{"scaleData"}.}
 }
 \value{
 A matrix object where rows are cells and columns are specified

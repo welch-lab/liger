@@ -12,3 +12,4 @@ liger.Rproj
 *.RDS
 *.rds
 .vscode/*
+*.bed

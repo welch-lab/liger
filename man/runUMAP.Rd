@@ -53,7 +53,7 @@ See Usage section for replacement.}
 }
 \value{
 The \code{object} where a \code{"UMAP"} variable is updated in the
-\code{cell.meta} slot with the whole 2D embedding matrix.
+\code{cellMeta} slot with the whole 2D embedding matrix.
 }
 \description{
 Run UMAP on the quantile normalized cell factors (result from

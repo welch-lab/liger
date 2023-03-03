@@ -47,95 +47,95 @@ ligerRNADataset <- setClass(
 #'
 #' @description Inherits from \linkS4class{ligerDataset} class. Contained slots
 #' can be referred with the link.
-#' @slot raw.peak sparse matrix
-#' @slot norm.peak sparse matrix
+#' @slot rawPeak sparse matrix
+#' @slot normPeak sparse matrix
 #' @exportClass ligerATACDataset
 #' @export
 ligerATACDataset <- setClass(
     "ligerATACDataset",
     contains = "ligerDataset",
-    representation = representation(raw.peak = "matrixLike_OR_NULL",
-                                    norm.peak = "matrixLike_OR_NULL"),
-    prototype = prototype(raw.peak = NULL, norm.peak = NULL)
+    representation = representation(rawPeak = "matrixLike_OR_NULL",
+                                    normPeak = "matrixLike_OR_NULL"),
+    prototype = prototype(rawPeak = NULL, normPeak = NULL)
 )
 
-setGeneric("raw.peak", function(x, dataset) standardGeneric("raw.peak"))
-setGeneric("raw.peak<-", function(x, dataset, check = TRUE, value) standardGeneric("raw.peak<-"))
-setGeneric("norm.peak", function(x, dataset) standardGeneric("norm.peak"))
-setGeneric("norm.peak<-", function(x, dataset, check = TRUE, value) standardGeneric("norm.peak<-"))
+setGeneric("rawPeak", function(x, dataset) standardGeneric("rawPeak"))
+setGeneric("rawPeak<-", function(x, dataset, check = TRUE, value) standardGeneric("rawPeak<-"))
+setGeneric("normPeak", function(x, dataset) standardGeneric("normPeak"))
+setGeneric("normPeak<-", function(x, dataset, check = TRUE, value) standardGeneric("normPeak<-"))
 
 #' @export
-setMethod("raw.peak", signature(x = "liger", dataset = "character"),
+setMethod("rawPeak", signature(x = "liger", dataset = "character"),
           function(x, dataset) {
               atac <- dataset(x, dataset)
               if (!inherits(atac, "ligerATACDataset")) {
                   stop("Specified dataset is not of ligerATACDataset class.")
               }
-              atac@raw.peak
+              atac@rawPeak
           })
 
 #' @export
 setReplaceMethod(
-    "raw.peak",
+    "rawPeak",
     signature(x = "liger", dataset = "character"),
     function(x, dataset, check = TRUE, value) {
         if (!inherits(dataset(x, dataset), "ligerATACDataset"))
             stop("Specified dataset is not of `ligerATACDataset` class.")
-        x@datasets[[dataset]]@raw.peak <- value
+        x@datasets[[dataset]]@rawPeak <- value
         if (isTRUE(check)) methods::validObject(dataset(x, dataset))
         x
     })
 
 #' @export
-setMethod("raw.peak", signature(x = "ligerATACDataset", dataset = "missing"),
+setMethod("rawPeak", signature(x = "ligerATACDataset", dataset = "missing"),
           function(x, dataset = NULL) {
-              x@raw.peak
+              x@rawPeak
           })
 
 #' @export
 setReplaceMethod(
-    "raw.peak",
+    "rawPeak",
     signature(x = "ligerATACDataset", dataset = "missing"),
     function(x, dataset = NULL, check = TRUE, value) {
-        x@raw.peak <- value
+        x@rawPeak <- value
         if (isTRUE(check)) methods::validObject(x)
         x
     })
 
 #' @export
-setMethod("norm.peak", signature(x = "liger", dataset = "character"),
+setMethod("normPeak", signature(x = "liger", dataset = "character"),
           function(x, dataset) {
               atac <- dataset(x, dataset)
               if (!inherits(atac, "ligerATACDataset")) {
                   stop("Specified dataset is not of ligerATACDataset class.")
               }
-              atac@norm.peak
+              atac@normPeak
           })
 
 #' @export
 setReplaceMethod(
-    "norm.peak",
+    "normPeak",
     signature(x = "liger", dataset = "character"),
     function(x, dataset, check = TRUE, value) {
         if (!inherits(dataset(x, dataset), "ligerATACDataset"))
             stop("Specified dataset is not of `ligerATACDataset` class.")
-        x@datasets[[dataset]]@norm.peak <- value
+        x@datasets[[dataset]]@normPeak <- value
         if (isTRUE(check)) methods::validObject(dataset(x, dataset))
         x
     })
 
 #' @export
-setMethod("norm.peak", signature(x = "ligerATACDataset", dataset = "missing"),
+setMethod("normPeak", signature(x = "ligerATACDataset", dataset = "missing"),
           function(x, dataset = NULL) {
-              x@norm.peak
+              x@normPeak
           })
 
 #' @export
 setReplaceMethod(
-    "norm.peak",
+    "normPeak",
     signature(x = "ligerATACDataset", dataset = "missing"),
     function(x, dataset = NULL, check = TRUE, value) {
-        x@norm.peak <- value
+        x@normPeak <- value
         if (isTRUE(check)) methods::validObject(x)
         x
     })

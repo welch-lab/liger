@@ -37,7 +37,7 @@ Missing or \code{NULL} for all cells.}
 \item{object}{A \linkS4class{liger} or \linkS4class{ligerDataset} object.}
 
 \item{useSlot}{The slot(s) to only consider. Choose one or more from
-\code{"raw.data"}, \code{"norm.data"} and \code{"scale.data"}. Default
+\code{"rawData"}, \code{"normData"} and \code{"scaleData"}. Default
 \code{NULL} subsets the whole object including analysis result matrices.}
 
 \item{chunkSize}{Integer. Number of maximum number of cells in each chunk,

@@ -17,7 +17,7 @@ runGeneralQC(
 )
 }
 \arguments{
-\item{object}{\linkS4class{liger} object with \code{raw.data} available in
+\item{object}{\linkS4class{liger} object with \code{rawData} available in
 each \linkS4class{ligerDataset} embedded}
 
 \item{mito, ribo, hemo}{Whether to calculate the expression percentage of
@@ -44,7 +44,7 @@ on HDF5 based dataset. Default \code{1000}}
 }
 \value{
 Updated \code{object} with \code{nUMI}, \code{nGene} updated
-in \code{cell.meta(object)}, as well as expression percentage value for each
+in \code{cellMeta(object)}, as well as expression percentage value for each
 feature subset.
 }
 \description{

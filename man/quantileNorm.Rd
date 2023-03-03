@@ -106,7 +106,7 @@ KNN graph. Default \code{TRUE}.}
 \value{
 For method on \linkS4class{liger} object, the object will be returned
 with the \code{H.norm} slot and \code{"H.norm_cluster"} variable in
-\code{cell.meta} slot updated. For method on list, a result list with entries
+\code{cellMeta} slot updated. For method on list, a result list with entries
 of \code{H.norm} and \code{clusters} will be returned.
 }
 \description{

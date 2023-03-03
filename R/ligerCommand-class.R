@@ -82,8 +82,8 @@ recordCommand <- function(
         datasets = names(object),
         nCells = sapply(datasets(object), ncol),
         nFeatures = sapply(datasets(object), nrow),
-        nVarFeatures = length(var.features(object)),
-        cellMetaNames = colnames(cell.meta(object)),
+        nVarFeatures = length(varFeatures(object)),
+        cellMetaNames = colnames(cellMeta(object)),
         dimW = dim(getMatrix(object, "W")),
         dimHNorm = dim(getMatrix(object, "H.norm"))
     )

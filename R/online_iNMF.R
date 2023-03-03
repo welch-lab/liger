@@ -138,7 +138,7 @@ online_iNMF <- function(
     nCells <- unlist(lapply(datasets(object), ncol)) # vector of ncell per data
     nCellsNew <- nCells[dataIdxNew]
     minibatchSizes <- rep(0, length(object))
-    nGenes <- length(var.features(object))
+    nGenes <- length(varFeatures(object))
     for (i in dataIdxNew) {
         minibatchSizes[i] <- round(nCells[i] / sum(nCells[dataIdxNew]) *
                                        miniBatch_size)
@@ -166,7 +166,7 @@ online_iNMF <- function(
             for (i in dataIdx) {
                 VInitIdx <- sample(nCells[i], k)
                 # pick k sample from datasets as initial H matrix
-                V[[i]] = scale.data(object, i)[1:nGenes, VInitIdx]
+                V[[i]] = scaleData(object, i)[1:nGenes, VInitIdx]
                 for (j in seq(k)) {
                     # normalize columns of dictionaries
                     V[[i]][, j] = V[[i]][, j] / sqrt(sum(V[[i]][, j]^2))
@@ -190,7 +190,7 @@ online_iNMF <- function(
             for (i in dataIdxNew) {
                 VInitIdx <- sample(nCells[i], k)
                 # initialize the Vi for new dataset
-                V[[i]] <- scale.data(object, i)[1:nGenes, VInitIdx]
+                V[[i]] <- scaleData(object, i)[1:nGenes, VInitIdx]
                 for (j in seq(k))
                     V[[i]][, j] <- V[[i]][, j] / sqrt(sum(V[[i]][, j]^2))
             }
@@ -267,7 +267,7 @@ online_iNMF <- function(
 
             X_minibatch = rep(list(NULL), length(object))
             for (i in dataIdxNew) {
-                X_minibatch[[i]] = scale.data(object, i)[1:nGenes, minibatchIdx[[i]]]
+                X_minibatch[[i]] = scaleData(object, i)[1:nGenes, minibatchIdx[[i]]]
             }
 
             # update H_i by ANLS Hi_minibatch[[i]]
@@ -365,7 +365,7 @@ online_iNMF <- function(
             batchIdxs <- .batchCellIdx(nCells[i], miniBatch_size)
             for (j in seq_along(batchIdxs)) {
                 cellIdx <- batchIdxs[[j]]
-                batch <- scale.data(object, i)[1:nGenes, cellIdx]
+                batch <- scaleData(object, i)[1:nGenes, cellIdx]
                 H[[i]] = cbind(H[[i]],
                                solveNNLS(rbind(W + V[[i]], sqrtLambda * V[[i]]),
                                          rbind(batch, matrix(0, nGenes,length(cellIdx))))
@@ -373,11 +373,11 @@ online_iNMF <- function(
             }
             colnames(H[[i]]) = barcodes[[i]]
         }
-        rownames(W) <- var.features(object)
+        rownames(W) <- varFeatures(object)
         colnames(W) <- NULL
 
         for (i in dataIdx) {
-            rownames(V[[i]]) <- var.features(object)
+            rownames(V[[i]]) <- varFeatures(object)
             colnames(V[[i]]) <- NULL
         }
     } else {
@@ -389,7 +389,7 @@ online_iNMF <- function(
         for (i in dataIdxNew) {
             batchIdxs <- .batchCellIdx(nCells[i], miniBatch_size)
             for (j in seq_along(batchIdxs)) {
-                batch <- scale.data(object, i)[1:nGenes, batchIdxs[[j]]]
+                batch <- scaleData(object, i)[1:nGenes, batchIdxs[[j]]]
                 H[[i]] <- cbind(H[[i]], solveNNLS(W, batch))
             }
             colnames(H[[i]]) = barcodes[[i]]
@@ -405,14 +405,14 @@ online_iNMF <- function(
         ld@B <- B[[i]]
         datasets(object, check = FALSE)[[i]] <- ld
     }
-    object@k <- ncol(W)
+    object@uns$factorization$k <- ncol(W)
     object
 }
 
 
 .permuteChunkIdx <- function(object, dataset, chunkSize = NULL) {
     ld <- dataset(object, dataset)
-    if (isH5Liger(ld)) chunkSize <- scale.data(ld)$chunk_dims[2]
+    if (isH5Liger(ld)) chunkSize <- scaleData(ld)$chunk_dims[2]
     nChunks <- ceiling(ncol(ld)/chunkSize)
     chunkIdx <- sample(nChunks, nChunks)
     unlist(lapply(chunkIdx, function(i) {

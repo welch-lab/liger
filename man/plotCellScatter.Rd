@@ -9,7 +9,7 @@ plotCellScatter(
   x,
   y,
   colorBy = NULL,
-  slot = c("cell.meta", "raw.data", "norm.data", "scale.data", "H.norm", "H"),
+  slot = c("cellMeta", "rawData", "normData", "scaleData", "H.norm", "H"),
   colorByFunc = NULL,
   splitBy = NULL,
   shapeBy = NULL,
@@ -19,7 +19,7 @@ plotCellScatter(
 \arguments{
 \item{object}{A \linkS4class{liger} object}
 
-\item{x, y}{Available variable name in \code{cell.meta} slot to look for
+\item{x, y}{Available variable name in \code{cellMeta} slot to look for
 the dot coordinates. See details.}
 
 \item{colorBy}{Available variable name in specified \code{slot} to look for
@@ -27,7 +27,7 @@ color annotation information. See details. Default \code{NULL} generates
 all-black dots.}
 
 \item{slot}{Choose the slot to find the \code{colorBy} variable. See details.
-Default \code{"cell.meta"}.}
+Default \code{"cellMeta"}.}
 
 \item{colorByFunc}{Default \code{NULL}. A function object that expects a
 vector/factor/data.frame retrieved by \code{colorBy} as the only input, and
@@ -36,11 +36,11 @@ by this output. Useful when, for example, users need to scale the gene
 expression shown on plot.}
 
 \item{splitBy}{Character vector of categorical variable names in
-\code{cell.meta} slot. Split all cells by groupings on this/these variable(s)
+\code{cellMeta} slot. Split all cells by groupings on this/these variable(s)
 to produce a scatter plot containing only the cells in each group. Default
 \code{NULL}.}
 
-\item{shapeBy}{Available variable name in \code{cell.meta} slot to look for
+\item{shapeBy}{Available variable name in \code{cellMeta} slot to look for
 categorical annotation to be reflected by dot shapes. Default \code{NULL}.}
 
 \item{...}{More plot setting arguments. See \code{\link{.ggCellScatter}} and
@@ -62,18 +62,18 @@ with different coloring values. Users can further split the plot(s) by
 grouping on cells (e.g. datasets).
 }
 \details{
-Available option for \code{slot} include: \code{"cell.meta"},
-\code{"raw.data"}, \code{"norm.data"}, \code{"scale.data"}, \code{"H.norm"}
-and \code{"H"}. When \code{"raw.data"}, \code{"norm.data"} or
-\code{"scale.data"}, \code{colorBy} has to be a character vector of feature
+Available option for \code{slot} include: \code{"cellMeta"},
+\code{"rawData"}, \code{"normData"}, \code{"scaleData"}, \code{"H.norm"}
+and \code{"H"}. When \code{"rawData"}, \code{"normData"} or
+\code{"scaleData"}, \code{colorBy} has to be a character vector of feature
 names. When \code{"H.norm"} or \code{"H"}, \code{colorBy} can be any valid
 index to select one factor of interests. Note that character index follows
 \code{"factor_[k]"} format, with replacing \code{[k]} with an integer.
 
-When \code{"cell.meta"}, \code{colorBy} has to be an available column name in
+When \code{"cellMeta"}, \code{colorBy} has to be an available column name in
 the table. Note that, for \code{colorBy} as well as \code{x}, \code{y},
 \code{shapeBy} and \code{splitBy}, since a matrix object is feasible in
-\code{cell.meta} table, using a column (e.g. named as \code{"column1"} in a
+\code{cellMeta} table, using a column (e.g. named as \code{"column1"} in a
 certain matrix (e.g. named as \code{"matrixVar"}) should follow the syntax of
 \code{"matrixVar.column1"}. When the matrix does not have a "colname"
 attribute, the subscription goes with \code{"matrixVar.V1"},

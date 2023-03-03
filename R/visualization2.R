@@ -2,9 +2,9 @@
 #' Generate Dimensionality Reduction Plot with Coloring
 #' @description some text
 #' @param object A \linkS4class{liger} object.
-#' @param useCluster Name of variable in \code{cell.meta} slot. Default
+#' @param useCluster Name of variable in \code{cellMeta} slot. Default
 #' \code{"louvain_cluster"}.
-#' @param useDimRed Name of type of the coordinate matrix in \code{cell.meta}
+#' @param useDimRed Name of type of the coordinate matrix in \code{cellMeta}
 #' slot. Currently, choose from \code{"UMAP"} or \code{"TSNE"}. Default
 #' \code{"UMAP"}.
 #' @param combinePlots Logical, whether to utilize
@@ -44,7 +44,7 @@ plotClusterDimRed <- function(
     xVar <- paste0(useDimRed, ".1")
     yVar <- paste0(useDimRed, ".2")
     plotCellScatter(object, x = xVar, y = yVar, colorBy = useCluster,
-                    slot = "cell.meta", dotOrder = "shuffle", ...)
+                    slot = "cellMeta", dotOrder = "shuffle", ...)
 }
 
 #' @rdname plotClusterDimRed
@@ -57,7 +57,7 @@ plotDatasetDimRed <- function(
     xVar <- paste0(useDimRed, ".1")
     yVar <- paste0(useDimRed, ".2")
     plotCellScatter(object, x = xVar, y = yVar, colorBy = "dataset",
-                    slot = "cell.meta", labelText = FALSE,
+                    slot = "cellMeta", labelText = FALSE,
                     dotOrder = "shuffle", ...)
 }
 
@@ -104,7 +104,7 @@ plotGeneDimRed <- function(
         x
     }
     plotCellScatter(object, x = xVar, y = yVar, colorBy = features,
-                    slot = "norm.data", colorByFunc = scaleFunc,
+                    slot = "normData", colorByFunc = scaleFunc,
                     dotOrder = "ascending", zeroAsNA = zeroAsNA,
                     colorPalette = colorPalette, ...)
 }
@@ -143,11 +143,11 @@ plotGeneViolin <- function(
     if (isTRUE(by.dataset)) splitBy <- "dataset"
 
     if (is.null(groupBy)) {
-        if ("leiden_cluster" %in% names(cell.meta(object)))
+        if ("leiden_cluster" %in% names(cellMeta(object)))
             groupBy <- "leiden_cluster"
-        else if ("louvain_cluster" %in% names(cell.meta(object)))
+        else if ("louvain_cluster" %in% names(cellMeta(object)))
             groupBy <- "louvain_cluster"
-        else if ("H.norm_cluster" %in% names(cell.meta(object)))
+        else if ("H.norm_cluster" %in% names(cellMeta(object)))
             groupBy <- "H.norm_cluster"
     } else if (isFALSE(groupBy)) {
         groupBy <- NULL
@@ -156,7 +156,7 @@ plotGeneViolin <- function(
     plotList <- plotCellViolin(
         object,
         y = gene,
-        slot = "norm.data",
+        slot = "normData",
         yFunc = function(x) log2(10000*x + 1),
         groupBy = groupBy,
         splitBy = splitBy,
@@ -189,7 +189,7 @@ plotProportionDot <- function(
     if (length(class1) != 1 ||
         length(class2) != 1)
         stop("`class1` and `class2` must be name of one categorical variable ",
-             "in `cell.meta` slot.")
+             "in `cellMeta` slot.")
     vars <- .fetchCellMetaVar(object, c(class1, class2),
                               checkCategorical = TRUE)
     freq <- table(vars)
@@ -224,7 +224,7 @@ plotProportionBar <- function(
     if (length(class1) != 1 ||
         length(class2) != 1)
         stop("`class1` and `class2` must be name of one categorical variable ",
-             "in `cell.meta` slot.")
+             "in `cellMeta` slot.")
     method <- match.arg(method)
     vars <- .fetchCellMetaVar(object, c(class1, class2),
                               checkCategorical = TRUE)

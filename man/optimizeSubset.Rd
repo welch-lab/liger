@@ -38,7 +38,7 @@ Default \code{NULL} does not rescale.}
 Subset \code{object} with factorization matrices reset, including
 the \code{W} matrix in \linkS4class{liger} object, and \code{W} and \code{V}
 matrices in each \linkS4class{ligerDataset} object in the \code{datasets}
-slot. \code{scale.data} in the \linkS4class{ligerDataset} objects of
+slot. \code{scaleData} in the \linkS4class{ligerDataset} objects of
 datasets specified by \code{datasets.scale} will also be updated to reflect
 the subset.
 }

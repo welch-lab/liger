@@ -23,7 +23,7 @@
 #' @return The input \code{object} where queried \linkS4class{ligerDataset}
 #' objects in \code{datasets} slot are replaced. These datasets will all be
 #' converted to \linkS4class{ligerATACDataset} class with an additional slot
-#' \code{raw.peak} to store the imputed peak counts, and \code{norm.peak} for
+#' \code{rawPeak} to store the imputed peak counts, and \code{normPeak} for
 #' normalized imputed peak counts if \code{norm = TRUE}.
 #' @export
 imputeKNN <- function(
@@ -44,8 +44,8 @@ imputeKNN <- function(
         stop("Aligned factor loading has to be available for imputation. ",
              "Please run `quantileNorm()` in advance.")
     if (isTRUE(verbose)) {
-        warning("This function will discard the raw data previously stored ",
-                "in the liger object and replace the `raw.data` slot with the ",
+        warning("This function will discard the rawData previously stored ",
+                "in the liger object and replace the `rawData` slot with the ",
                 "imputed data.", immediate. = TRUE)
     }
     if (length(reference) > 1) {
@@ -99,7 +99,7 @@ imputeKNN <- function(
 
         # (genes by ref cell num) multiply by the weight matrix
         # (ref cell num by query cell num)
-        referenceRawData <- raw.peak(object, reference)
+        referenceRawData <- rawPeak(object, reference)
         imputed_vals <- referenceRawData %*% weights
         # assigning dimnames
         colnames(imputed_vals) <- queryCells
@@ -108,7 +108,7 @@ imputeKNN <- function(
         if (!inherits(imputed_vals, "dgCMatrix"))
             imputed_vals <- methods::as(imputed_vals, "dgCMatrix")
         newQueryLD <- as.ligerDataset(queryLD, modal = "atac")
-        raw.peak(newQueryLD) <- imputed_vals
+        rawPeak(newQueryLD) <- imputed_vals
         datasets(object, check = FALSE)[[query]] <- newQueryLD
     }
 
@@ -186,14 +186,14 @@ linkGenesAndPeaks <- function(
     if (!inherits(lad, "ligerATACDataset"))
         stop("Specified dataset is not of `ligerATACDataset` class. ",
              "Please try `imputeKNN()` with `query = ", useDataset, "`. ")
-    if (is.null(norm.data(lad)))
+    if (is.null(normData(lad)))
         stop("Normalized gene expression not found in specified dataset.")
-    if (is.null(norm.peak(lad)))
+    if (is.null(normPeak(lad)))
         stop("Normalized peak counts not found in specified dataset.")
 
     ### make GRanges object for peaks
-    peakCounts <- norm.peak(lad)
-    geneCounts <- norm.data(lad)
+    peakCounts <- normPeak(lad)
+    geneCounts <- normData(lad)
 
     regions <- .splitPeakRegion(rownames(peakCounts))
     peaksPos <- GenomicRanges::GRanges(

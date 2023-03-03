@@ -6,7 +6,7 @@
 \usage{
 readSubset(
   object,
-  slot.use = "norm.data",
+  slot.use = "normData",
   balance = NULL,
   max.cells = 1000,
   chunk = 1000,
@@ -19,8 +19,8 @@ readSubset(
 \arguments{
 \item{object}{\linkS4class{liger} object}
 
-\item{slot.use}{Only create subset from one or more of \code{"raw.data"},
-\code{"norm.data"} and \code{"scale.data"}. Default \code{NULL} subsets the
+\item{slot.use}{Only create subset from one or more of \code{"rawData"},
+\code{"normData"} and \code{"scaleData"}. Default \code{NULL} subsets the
 whole \code{object} including downstream results.}
 
 \item{balance}{\code{"all"} for sampling \code{maxCells} cells from all

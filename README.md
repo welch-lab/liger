@@ -1,4 +1,4 @@
-<img src="docs/img/liger_cropped.png" width="150">
+<img src="img/liger_cropped.png" width="150">
 
 [![Build Status](https://api.travis-ci.com/welch-lab/liger.svg?branch=master)](https://api.travis-ci.com/welch-lab/liger.svg?branch=master)
 

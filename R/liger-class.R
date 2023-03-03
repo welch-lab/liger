@@ -25,8 +25,8 @@ setClassUnion("dataframe", c("data.frame", "DataFrame", "NULL", "missing"))
 #' can produce ggplots with the cell metadata simply by calling
 #' \code{ggplot(liger_object)}.
 #' @slot datasets list of \linkS4class{ligerDataset} objects.
-#' @slot cell.meta Cell metadata, \linkS4class{DFrame}
-#' @slot var.features vector of feature names
+#' @slot cellMeta Cell metadata, \linkS4class{DFrame}
+#' @slot varFeatures vector of feature names
 #' @slot H.norm matrix
 #' @slot H matrix
 #' @slot commands Record of analysis
@@ -37,17 +37,16 @@ liger <- setClass(
     "liger",
     representation(
         datasets = "list",
-        cell.meta = "DataFrame",
-        var.features = "character_OR_NULL",
+        cellMeta = "DataFrame",
+        varFeatures = "character_OR_NULL",
         W = "matrix_OR_NULL",
         H.norm = "matrix_OR_NULL",
-        k = "Number_or_NULL",
         uns = "list",
         commands = "list",
         version = "ANY"
     ),
     methods::prototype(
-        cell.meta = methods::new("DFrame"),
+        cellMeta = methods::new("DFrame"),
         version = utils::packageVersion("rliger")
     )
 )
@@ -58,13 +57,13 @@ liger <- setClass(
 
 #' Create liger object
 #' @description This function allows creating \linkS4class{liger} object from
-#' multiple datasets of various forms (See \code{raw.data}).
-#' @param raw.data Named list of datasets. Required. Elements allowed include a
+#' multiple datasets of various forms (See \code{rawData}).
+#' @param rawData Named list of datasets. Required. Elements allowed include a
 #' matrix, a \linkS4class{Seurat} object, a \linkS4class{SingleCellExperiment}
 #' object, an \code{AnnData} object, a \linkS4class{ligerDataset} object or a
 #' filename to an HDF5 file. See detail for HDF5 reading.
 #' @param modal Character vector for modality setting. See detail.
-#' @param cell.meta data.frame of metadata at single-cell level. Default
+#' @param cellMeta data.frame of metadata at single-cell level. Default
 #' @param remove.missing Whether to remove cells that do not have any counts and
 #' features not expressed in any cells from each dataset. Default \code{TRUE}.
 #' @param format.type Select preset of H5 file structure. Current available
@@ -75,9 +74,9 @@ liger <- setClass(
 #' @seealso \code{\link{createLigerDataset}},
 #' \code{\link{createLigerDataset.h5}}
 createLiger <- function(
-        raw.data,
+        rawData,
         modal = NULL,
-        cell.meta = NULL,
+        cellMeta = NULL,
         remove.missing = TRUE,
         format.type = "10X",
         data.name = NULL,
@@ -87,9 +86,9 @@ createLiger <- function(
         barcodes.name = NULL,
         verbose = TRUE
 ) {
-    if (!is.list(raw.data)) stop("`raw.data` has to be a named list.")
+    if (!is.list(rawData)) stop("`rawData` has to be a named list.")
 
-    nData <- length(raw.data)
+    nData <- length(rawData)
     if (missing(modal) || is.null(modal)) modal <- "default"
     modal <- tolower(modal)
     if (length(modal) == 1) modal <- rep(modal, nData)
@@ -99,15 +98,15 @@ createLiger <- function(
              "See ?createLiger for valid options.")
     # TODO handle h5 specific argument for hybrid of H5 and in memory stuff.
     datasets <- list()
-    for (i in seq_along(raw.data)) {
-        dname <- names(raw.data)[i]
-        data <- raw.data[[i]]
+    for (i in seq_along(rawData)) {
+        dname <- names(rawData)[i]
+        data <- rawData[[i]]
         if (is.character(data)) {
             # Assuming character input is a filename
             datasets[[dname]] <- createLigerDataset.h5(
                 h5file = data,
                 format.type = format.type,
-                raw.data = data.name,
+                rawData = data.name,
                 barcodes.name = barcodes.name,
                 genes.name = genes.name,
                 indices.name = indices.name,
@@ -121,21 +120,21 @@ createLiger <- function(
 
     datasets <- .dedupLigerDatasets(datasets)
     barcodes <- unlist(lapply(datasets, colnames), use.names = FALSE)
-    if (is.null(cell.meta)) {
-        cell.meta <- S4Vectors::DataFrame(
+    if (is.null(cellMeta)) {
+        cellMeta <- S4Vectors::DataFrame(
             dataset = factor(rep(names(datasets), lapply(datasets, ncol))),
             row.names = barcodes)
     } else {
-        cell.meta <- S4Vectors::DataFrame(cell.meta)
-        cell.meta <- cell.meta[barcodes,]
+        cellMeta <- S4Vectors::DataFrame(cellMeta)
+        cellMeta <- cellMeta[barcodes,]
         # Force writing `dataset` variable as named by @datasets
-        cell.meta$dataset <- factor(rep(names(datasets),
+        cellMeta$dataset <- factor(rep(names(datasets),
                                         lapply(datasets, ncol)))
     }
     obj <- methods::new("liger",
                         datasets = datasets,
-                        cell.meta = cell.meta)
-    obj <- runGeneralQC(obj, verbose = verbose, )
+                        cellMeta = cellMeta)
+    obj <- runGeneralQC(obj, verbose = verbose)
     if (isTRUE(remove.missing)) {
         obj <- removeMissing(obj, "both", filenameSuffix = "qc",
                              verbose = verbose)
@@ -168,7 +167,7 @@ createLiger <- function(
 
 # Expand rows of raw matrix in each dataset to the union gene list of all
 # datasets
-.takeGeneUnion.rawData <- function(raw.data) {
+.takeGeneUnion.rawData <- function(rawData) {
 
 }
 # ------------------------------------------------------------------------------
@@ -185,40 +184,40 @@ createLiger <- function(
             return("H.norm barcodes do not match to barcodes in datasets.")
         }
     }
-    if (!"dataset" %in% names(cell.meta(x))) {
-        return("`datasets` variable missing in cell.meta(x)")
+    if (!"dataset" %in% names(cellMeta(x))) {
+        return("`datasets` variable missing in cellMeta(x)")
     }
     datasetNamesFromDatasets <- rep(names(x), lapply(datasets(x), ncol))
     names(datasetNamesFromDatasets) <- NULL
 
     if (!identical(datasetNamesFromDatasets, as.character(x$dataset))) {
         return("names of datasets do not match
-               `datasets` variable in cell.meta")
+               `datasets` variable in cellMeta")
     }
     return(NULL)
 }
 
 .checkLigerVarFeature <- function(x) {
-    if (!is.null(var.features(x)) &&
-        length(var.features(x)) > 0) {
+    if (!is.null(varFeatures(x)) &&
+        length(varFeatures(x)) > 0) {
         if (!is.null(x@W))
-            if (!identical(rownames(x@W), var.features(x)))
+            if (!identical(rownames(x@W), varFeatures(x)))
                 return("Variable features do not match dimension of W matrix")
         for (d in names(x)) {
             ld <- dataset(x, d)
             if (!is.null(ld@V))
-                if (!identical(rownames(ld@V), var.features(x)))
+                if (!identical(rownames(ld@V), varFeatures(x)))
                     return(paste("Variable features do not match dimension",
                                  "of V matrix in dataset", d))
-            if (!is.null(scale.data(ld))) {
+            if (!is.null(scaleData(ld))) {
                 if (!isH5Liger(ld)) {
-                    if (!identical(rownames(scale.data(ld)), var.features(x)))
+                    if (!identical(rownames(scaleData(ld)), varFeatures(x)))
                         return(paste("Variable features do not match dimension",
-                                     "of scale.data in dataset", d))
+                                     "of scaleData in dataset", d))
                 } else {
-                    if (scale.data(ld)$dims[1] != length(var.features(x)))
+                    if (scaleData(ld)$dims[1] != length(varFeatures(x)))
                         return(paste("Variable features do not match dimension",
-                                     "of scale.data in dataset (H5)", d))
+                                     "of scaleData in dataset (H5)", d))
                 }
             }
 
@@ -263,10 +262,10 @@ setGeneric("dataset", function(x, name = NULL) standardGeneric("dataset"))
 setGeneric("dataset<-", function(x, name, type = NULL, qc = TRUE, value) {
     standardGeneric("dataset<-")
 })
-setGeneric("cell.meta", function(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) standardGeneric("cell.meta"))
-setGeneric("cell.meta<-", function(x, columns = NULL, check = FALSE, value) standardGeneric("cell.meta<-"))
-setGeneric("var.features", function(x) standardGeneric("var.features"))
-setGeneric("var.features<-", function(x, check = TRUE, value) standardGeneric("var.features<-"))
+setGeneric("cellMeta", function(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) standardGeneric("cellMeta"))
+setGeneric("cellMeta<-", function(x, columns = NULL, check = FALSE, value) standardGeneric("cellMeta<-"))
+setGeneric("varFeatures", function(x) standardGeneric("varFeatures"))
+setGeneric("varFeatures<-", function(x, check = TRUE, value) standardGeneric("varFeatures<-"))
 
 # ------------------------------------------------------------------------------
 # S4 methods ####
@@ -289,10 +288,10 @@ setMethod(
                                unlist(lapply(datasets(object), ncol)),
                                " cells)")
         cat(.collapseLongNames(datasetInfos), "\n")
-        cat(paste0("cell.meta(", ncol(cell.meta(object)), "): "))
-        cat(.collapseLongNames(colnames(cell.meta(object))), "\n")
-        cat(paste0("var.feature(", length(var.features(object)), "): "))
-        cat(.collapseLongNames(var.features(object)), "\n")
+        cat(paste0("cellMeta(", ncol(cellMeta(object)), "): "))
+        cat(.collapseLongNames(colnames(cellMeta(object))), "\n")
+        cat(paste0("varFeatures(", length(varFeatures(object)), "): "))
+        cat(.collapseLongNames(varFeatures(object)), "\n")
         invisible(x = NULL)
     }
 )
@@ -310,11 +309,11 @@ setReplaceMethod(
             dataset.idx <- lapply(originalNames, function(n) {
                 x$dataset == n
             })
-            x@cell.meta$dataset <- as.character(x@cell.meta$dataset)
+            x@cellMeta$dataset <- as.character(x@cellMeta$dataset)
             for (i in seq_along(value)) {
-                x@cell.meta$dataset[dataset.idx[[i]]] <- value[i]
+                x@cellMeta$dataset[dataset.idx[[i]]] <- value[i]
             }
-            x@cell.meta$dataset <- factor(x@cell.meta$dataset)
+            x@cellMeta$dataset <- factor(x@cellMeta$dataset)
             names(x@datasets) <- value
         }
         x
@@ -327,13 +326,13 @@ setMethod("length", signature(x = "liger"), function(x) {
 # `dim()` method set so that `ncol()` returns total number of cells,
 # `nrow()` returns `NA`
 setMethod("dim", "liger", function(x) {
-    c(NA, nrow(cell.meta(x)))
+    c(NA, nrow(cellMeta(x)))
 })
 
 # `dimnames()` method set so that `rownames()` returns `NULL`, `colnames()`
 # returns all barcodes.
 setMethod("dimnames", "liger", function(x) {
-    list(NULL, rownames(cell.meta(x)))
+    list(NULL, rownames(cellMeta(x)))
 })
 
 setReplaceMethod("dimnames", c("liger", "list"), function(x, value) {
@@ -344,7 +343,7 @@ setReplaceMethod("dimnames", c("liger", "list"), function(x, value) {
         # Not using `dataset()` accessor because it does object validity check
         colnames(x@datasets[[d]]) <- value[[2L]][dataset.idx]
     }
-    rownames(cell.meta(x)) <- value[[2L]]
+    rownames(cellMeta(x)) <- value[[2L]]
     rownames(x@W) <- value[[1L]]
     if (!is.null(x@H.norm)) colnames(x@H.norm) <- value[[2L]]
     x
@@ -354,27 +353,27 @@ setMethod("[[", signature(x = "liger", i = "ANY", j = "missing"),
           function(x, i, ...)
           {
               if (is.null(i)) return(NULL)
-              cell.meta(x, columns = i, ...)
+              cellMeta(x, columns = i, ...)
           })
 
 setReplaceMethod("[[", signature(x = "liger", i = "ANY"),
                  function(x, i, ..., value)
                  {
-                     cell.meta(x, columns = i) <- value
+                     cellMeta(x, columns = i) <- value
                      x
                  })
 
 .DollarNames.liger <- function(x, pattern = "")
-    grep(pattern, colnames(x@cell.meta), value = TRUE)
+    grep(pattern, colnames(x@cellMeta), value = TRUE)
 
 setMethod("$", signature(x = "liger"),
           function(x, name) {
-              cell.meta(x, columns = name)
+              cellMeta(x, columns = name)
           })
 
 setReplaceMethod("$", signature(x = "liger"),
                  function(x, name, value) {
-                     cell.meta(x, columns = name) <- value
+                     cellMeta(x, columns = name) <- value
                      return(x)
                  })
 
@@ -448,8 +447,8 @@ setReplaceMethod("datasets", signature(x = "liger", check = "missing"),
 #' @param x \linkS4class{liger} object
 #' @param name name of dataset
 #' @param type Type of specified matrix. Only works when \code{value} is a
-#' matrix like object. choose from \code{"raw.data"}, \code{"norm.data"} or
-#' \code{"scale.data"}. Default \code{"raw.data"}.
+#' matrix like object. choose from \code{"rawData"}, \code{"normData"} or
+#' \code{"scaleData"}. Default \code{"rawData"}.
 #' @param value A matrix of a dataset to be added, or a constructed
 #' \linkS4class{ligerDataset} object. \code{NULL} to remove a dataset by
 #' \code{name}.
@@ -494,12 +493,12 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                      }
                      new.idx <- seq(ncol(x) + 1, ncol(x) + ncol(value))
                      x@datasets[[name]] <- value
-                     # TODO also add rows to cell.meta and H.norm
-                     x@cell.meta[new.idx, ] <- NA
-                     rownames(x@cell.meta)[new.idx] <- colnames(value)
-                     levels(x@cell.meta$dataset) <-
-                         c(levels(x@cell.meta$dataset), name)
-                     x@cell.meta$dataset[new.idx] <- name
+                     # TODO also add rows to cellMeta and H.norm
+                     x@cellMeta[new.idx, ] <- NA
+                     rownames(x@cellMeta)[new.idx] <- colnames(value)
+                     levels(x@cellMeta$dataset) <-
+                         c(levels(x@cellMeta$dataset), name)
+                     x@cellMeta$dataset[new.idx] <- name
                      # x@W is genes x k, no need to worry
                      if (!is.null(x@H.norm)) {
                          message("Filling in NAs to H.norm matrix")
@@ -519,16 +518,16 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                                       type = "ANY", qc = "ANY",
                                       value = "matrixLike"),
                  function(x, name,
-                          type = c("raw.data", "norm.data", "scale.data"),
+                          type = c("rawData", "normData", "scaleData"),
                           qc = TRUE,
                           value) {
                      type <- match.arg(type)
-                     if (type == "raw.data") {
-                         ld <- createLigerDataset(raw.data = value)
-                     } else if (type == "norm.data") {
-                         ld <- createLigerDataset(norm.data = value)
-                     } else if (type == "scale.data") {
-                         ld <- createLigerDataset(scale.data = value)
+                     if (type == "rawData") {
+                         ld <- createLigerDataset(rawData = value)
+                     } else if (type == "normData") {
+                         ld <- createLigerDataset(normData = value)
+                     } else if (type == "scaleData") {
+                         ld <- createLigerDataset(scaleData = value)
                      }
                      dataset(x, name, qc = qc) <- ld
                      x
@@ -546,7 +545,7 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                      } else {
                          idxToRemove <- x$dataset == name
                          x@datasets[[name]] <- NULL
-                         x@cell.meta <- x@cell.meta[!idxToRemove, , drop = FALSE]
+                         x@cellMeta <- x@cellMeta[!idxToRemove, , drop = FALSE]
                          x@H.norm <- x@H.norm[!idxToRemove, , drop = FALSE]
                      }
                      x
@@ -559,12 +558,12 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
         as.data.frame = FALSE,
         ...
 ) {
-    res <- object@cell.meta
+    res <- object@cellMeta
     if (isTRUE(as.data.frame)) res <- as.data.frame(res)
     if (!is.null(columns)) {
         notFound <- !columns %in% colnames(res)
         if (any(notFound)) {
-            warning("Specified variables from cell.meta not found: ",
+            warning("Specified variables from cellMeta not found: ",
                     paste(columns[notFound], collapse = ", "))
             columns <- columns[!notFound]
         }
@@ -579,62 +578,62 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
     return(res)
 }
 
-#' Access cell.meta of liger object
+#' Access cellMeta of liger object
 #' @param x \linkS4class{liger} object
-#' @rdname cell.meta
+#' @rdname cellMeta
 #' @export
 setMethod(
-    "cell.meta",
+    "cellMeta",
     signature(x = "liger", columns = "NULL"),
     function(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
         NULL
 )
 
-#' Access cell.meta of liger object
+#' Access cellMeta of liger object
 #' @param x \linkS4class{liger} object
-#' @rdname cell.meta
+#' @rdname cellMeta
 #' @export
 setMethod(
-    "cell.meta",
+    "cellMeta",
     signature(x = "liger", columns = "character"),
     function(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
         .subsetCellMeta(x, columns = columns, cellIdx = cellIdx,
                         as.data.frame = as.data.frame, ...)
 )
 
-#' Access cell.meta of liger object
+#' Access cellMeta of liger object
 #' @param x \linkS4class{liger} object
-#' @rdname cell.meta
+#' @rdname cellMeta
 #' @export
 setMethod(
-    "cell.meta",
+    "cellMeta",
     signature(x = "liger", columns = "missing"),
     function(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
         .subsetCellMeta(x, columns = NULL, cellIdx = cellIdx,
                         as.data.frame = as.data.frame, ...)
 )
 
-#' @rdname cell.meta
+#' @rdname cellMeta
 #' @export
 setReplaceMethod(
-    "cell.meta",
+    "cellMeta",
     signature(x = "liger", columns = "missing"),
     function(x, columns = NULL, check = FALSE, value) {
         if (!inherits(value, "DFrame"))
             value <- S4Vectors::DataFrame(value)
-        x@cell.meta <- value
+        x@cellMeta <- value
         if (isTRUE(check)) methods::validObject(x)
         x
     }
 )
 
-#' @rdname cell.meta
+#' @rdname cellMeta
 #' @export
 setReplaceMethod(
-    "cell.meta",
+    "cellMeta",
     signature(x = "liger", columns = "character"),
     function(x, columns = NULL, check = FALSE, value) {
-        x@cell.meta[[columns]] <- value
+        x@cellMeta[[columns]] <- value
         if (isTRUE(check)) methods::validObject(x)
         x
     }
@@ -642,21 +641,21 @@ setReplaceMethod(
 
 #' Access variable features of liger object
 #' @param x \linkS4class{liger} object
-#' @rdname var.features
+#' @rdname varFeatures
 #' @export
-setMethod("var.features", signature(x = "liger"),
-          function(x) x@var.features)
+setMethod("varFeatures", signature(x = "liger"),
+          function(x) x@varFeatures)
 
-#' @rdname var.features
+#' @rdname varFeatures
 #' @export
 setReplaceMethod(
-    "var.features",
+    "varFeatures",
     signature(x = "liger", check = "ANY", value = "character"),
     function(x, check = TRUE, value) {
-        x@var.features <- value
+        x@varFeatures <- value
         for (d in names(x)) {
             ld <- dataset(x, d)
-            feature.meta(ld, check = FALSE)$selected <- rownames(ld) %in% value
+            featureMeta(ld, check = FALSE)$selected <- rownames(ld) %in% value
             datasets(x, check = FALSE)[[d]] <- ld
         }
         if (isTRUE(check)) {
@@ -681,7 +680,7 @@ setReplaceMethod(
 #' Fortify method for classes from the liger package
 #'
 #' @param x \code{liger} object to convert into a dataframe.
-#' @return A \code{data.frame} combining \code{cell.meta(x)} with \code{H.norm}
+#' @return A \code{data.frame} combining \code{cellMeta(x)} with \code{H.norm}
 #' matrix.
 #' @name fortify.liger
 #' @importFrom ggplot2 fortify
@@ -691,15 +690,15 @@ NULL
 #' @export
 #' @method fortify liger
 fortify.liger <- function(x) {
-    df <- cell.meta(x, as.data.frame = TRUE)
+    df <- cellMeta(x, as.data.frame = TRUE)
     if (!is.null(x@H.norm)) df <- cbind(df, x@H.norm)
     df
 }
 
 #' Combine multiple liger object in to one
 #' @description The list of \code{datasets} slot, the rows of
-#' \code{cell.meta} slot and the list of \code{commands} slot will be simply
-#' concatenated. Variable features in \code{var.features} slot will be taken a
+#' \code{cellMeta} slot and the list of \code{commands} slot will be simply
+#' concatenated. Variable features in \code{varFeatures} slot will be taken a
 #' union. The \eqn{W} and \eqn{H.norm} matrices are not taken into account for
 #' now.
 #' @param ... \linkS4class{liger} objects
@@ -723,11 +722,11 @@ c.liger <- function(...) {
     for (i in seq_along(objList)) {
         obj <- objList[[i]]
         allDatasets <- c(allDatasets, datasets(obj))
-        allCellMeta <- rbind(allCellMeta, obj@cell.meta)
-        varFeatures <- union(varFeatures, var.features(obj))
+        allCellMeta <- rbind(allCellMeta, obj@cellMeta)
+        varFeatures <- union(varFeatures, varFeatures(obj))
         allCommands <- c(allCommands, obj@commands)
     }
-    methods::new("liger", datasets = allDatasets, cell.meta = allCellMeta,
-                 var.features = varFeatures, commands = allCommands,
+    methods::new("liger", datasets = allDatasets, cellMeta = allCellMeta,
+                 varFeatures = varFeatures, commands = allCommands,
                  version = utils::packageVersion("rliger"))
 }

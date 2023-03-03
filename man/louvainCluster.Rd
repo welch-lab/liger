@@ -64,7 +64,7 @@ replacement.}
 }
 \value{
 \code{object} with refined cluster assignment updated in
-\code{louvain_cluster} variable in \code{cell.meta} slot. Can be fetched
+\code{louvain_cluster} variable in \code{cellMeta} slot. Can be fetched
 with \code{object$louvain_cluster}
 }
 \description{

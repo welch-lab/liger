@@ -11,20 +11,20 @@
     if (!is.null(libraryNames))
         newColnames <- paste0(rep(libraryNames, times = lapply(args, ncol)),
                               "_", newColnames)
-    if (all(sapply(args, function(ld) !is.null(raw.data(ld)))))
-        rawData <- mergeSparseAll(lapply(args, raw.data),
+    if (all(sapply(args, function(ld) !is.null(rawData(ld)))))
+        rawData <- mergeSparseAll(lapply(args, rawData),
                                   libraryNames = libraryNames)
     else rawData <- NULL
-    if (all(sapply(args, function(ld) !is.null(norm.data(ld)))))
-        normData <- mergeSparseAll(lapply(args, norm.data),
+    if (all(sapply(args, function(ld) !is.null(normData(ld)))))
+        normData <- mergeSparseAll(lapply(args, normData),
                                    libraryNames = libraryNames)
     else normData <- NULL
-    if (all(sapply(args, function(ld) !is.null(scale.data(ld)))))
-        scaleData <- mergeDenseAll(lapply(args, scale.data),
+    if (all(sapply(args, function(ld) !is.null(scaleData(ld)))))
+        scaleData <- mergeDenseAll(lapply(args, scaleData),
                                    libraryNames = libraryNames)
     else scaleData <- NULL
-    createLigerDataset(raw.data = rawData, norm.data = normData,
-                       scale.data = scaleData)
+    createLigerDataset(rawData = rawData, normData = normData,
+                       scaleData = scaleData)
 }
 
 .cbind.ligerDataset.h5 <- function(args) stop("Not implemented yet")
@@ -34,10 +34,10 @@
 #' @description \code{mergeSparseAll} takes in a list of DGEs, with genes as
 #' rows and cells as columns, and merges them into a single DGE. Also adds
 #' \code{libraryNames} to colnames from each DGE if expected to be overlap
-#' (common with 10X barcodes). Values in \code{raw.data} or \code{norm.data}
+#' (common with 10X barcodes). Values in \code{rawData} or \code{normData}
 #' slot of a \linkS4class{ligerDataset} object can be processed with this.
 #'
-#' For a list of dense matrices, usually the values in \code{scale.data} slot of
+#' For a list of dense matrices, usually the values in \code{scaleData} slot of
 #' a \linkS4class{ligerDataset} object, please use \code{mergeDenseAll} which
 #' works in the same way.
 #' @param datalist List of dgCMatrix for \code{mergeSparseAll} or a list of

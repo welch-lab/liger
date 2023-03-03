@@ -8,7 +8,7 @@
 #' @param method Choose from \code{"clusters"} or \code{"datasets"}. Default
 #' \code{"clusters"} compares between clusters across all datasets, while
 #' \code{"datasets"} compares between datasets within each cluster.
-#' @param useCluster The name of the column in \code{cell.meta} slot storing the
+#' @param useCluster The name of the column in \code{cellMeta} slot storing the
 #' cluster assignment variable. Default \code{"louvain_cluster"}
 #' @param verbose Logical. Whether to show information of the progress.
 #' Default \code{TRUE}.
@@ -39,30 +39,32 @@ runWilcoxon <- function(
         if (isH5Liger(object, useDatasets)) {
             stop("HDF5 based datasets detected but is not supported. \n",
                  "Try `object.sub <- downsample(object, useSlot = ",
-                 "'norm.data')` to create ANOTHER object with in memory data.")
+                 "'normData')` to create ANOTHER object with in memory data.")
         }
         allNormed <- all(sapply(datasets(object),
-                                function(ld) !is.null(norm.data(ld))))
+                                function(ld) !is.null(normData(ld))))
         if (!allNormed)
             stop("All datasets being involved has to be normalized")
 
         ## get all shared genes of datasets involved
-        geneNameList <- lapply(datasets(object)[useDatasets], rownames)
-        features <- Reduce(intersect, geneNameList)
-        normDataList <- getMatrix(object, "norm.data", dataset = useDatasets,
+        normDataList <- getMatrix(object, "normData", dataset = useDatasets,
                                   returnList = TRUE)
+        features <- Reduce(intersect, lapply(normDataList, rownames))
         normDataList <- lapply(normDataList, function(x) x[features,])
         featureMatrix <- Reduce(cbind, normDataList)
     } else {
         if (method == "datasets" || length(useDatasets) != 1)
             stop("For wilcoxon test on peak counts, can only use ",
                  "\"cluster\" method on one dataset.")
-        featureMatrix <- norm.peak(object, useDatasets)
+        normPeakList <- lapply(useDatasets, function(d) normPeak(object, d))
+        features <- Reduce(intersect, lapply(normPeakList, rownames))
+        featureMatrix <- Reduce(cbind, normPeakList)
+        #featureMatrix <- normPeak(object, useDatasets)
         if (is.null(featureMatrix))
             stop("Peak counts of specified dataset has to be normalized. ",
                  "Please try `normalizePeak(object, useDatasets = '",
                  useDatasets, "')`.")
-        features <- rownames(featureMatrix)
+        #features <- rownames(featureMatrix)
     }
 
     ## Subset metadata involved
@@ -174,7 +176,7 @@ getFactorMarkers <- function(
     if (any(isH5Liger(object, dataset = c(dataset1, dataset2))))
         stop("Please use in-memory liger object for this analysis.`")
     if (is.null(nGenes)) {
-        nGenes <- length(var.features(object))
+        nGenes <- length(varFeatures(object))
     }
     if (is.null(datasetSpecificity)) {
         datasetSpecificity <- calcDatasetSpecificity(object,
@@ -205,7 +207,7 @@ getFactorMarkers <- function(
     V1_matrices <- list()
     V2_matrices <- list()
     W_matrices <- list()
-    vargene <- var.features(object)
+    vargene <- varFeatures(object)
     if (isTRUE(verbose)) {
         .log("Performing wilcoxon test between datasets \"", dataset1,
              "\" and \"", dataset2, "\", \nbasing on factor loading.")
@@ -228,7 +230,7 @@ getFactorMarkers <- function(
         }
 
         # filter genes by gene_count and cell_frac thresholds
-        normDataList <- getMatrix(object, "norm.data",
+        normDataList <- getMatrix(object, "normData",
                                   dataset = c(dataset1, dataset2))
         normData <- cbind(normDataList[[1]][vargene, labels[[1]] == i],
                           normDataList[[2]][vargene, labels[[2]] == i])
@@ -407,6 +409,7 @@ wilcoxauc <- function(X,
     }
 
     if (!is.factor(y)) y <- factor(y)
+    else y <- droplevels(y)
     idx_use <- which(!is.na(y))
     if (length(idx_use) < length(y)) {
         y <- y[idx_use]
@@ -429,7 +432,6 @@ wilcoxauc <- function(X,
     }
 
     ## Compute primary statistics
-    group.size <- as.numeric(table(y))
     n1n2 <- group.size * (ncol(X) - group.size)
     if (methods::is(X, 'dgCMatrix')) {
         rank_res <- rank_matrix(Matrix::t(X))

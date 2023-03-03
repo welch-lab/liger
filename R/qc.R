@@ -1,7 +1,7 @@
 #' General QC for liger object
 #' @description Calculate number of UMIs, number of detected features and
 #' percentage of feature subset (e.g. mito) expression per cell.
-#' @param object \linkS4class{liger} object with \code{raw.data} available in
+#' @param object \linkS4class{liger} object with \code{rawData} available in
 #' each \linkS4class{ligerDataset} embedded
 #' @param mito,ribo,hemo Whether to calculate the expression percentage of
 #' mitochondrial, ribosomal or hemoglobin genes, respectively. Default
@@ -20,7 +20,7 @@
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{TRUE}.
 #' @return Updated \code{object} with \code{nUMI}, \code{nGene} updated
-#' in \code{cell.meta(object)}, as well as expression percentage value for each
+#' in \code{cellMeta(object)}, as well as expression percentage value for each
 #' feature subset.
 #' @export
 runGeneralQC <- function(
@@ -71,7 +71,7 @@ runGeneralQC <- function(
 
     # Start calculation on each dataset
     newResultNames <- c("nUMI", "nGene", names(featureSubsets))
-    # Not using S4 cell.meta() method below because no need to do so
+    # Not using S4 cellMeta() method below because no need to do so
     for (nrn in newResultNames) object[[nrn]] <- 0
     for (d in useDatasets) {
         ld <- dataset(object, d)
@@ -89,8 +89,8 @@ runGeneralQC <- function(
                 featureSubsets = featureSubsets,
                 verbose = verbose
             )
-        object@cell.meta[object$dataset == d, newResultNames] <- results$cell
-        feature.meta(ld, check = FALSE)$nCell <- results$feature
+        object@cellMeta[object$dataset == d, newResultNames] <- results$cell
+        featureMeta(ld, check = FALSE)$nCell <- results$feature
         datasets(object, check = FALSE)[[d]] <- ld
     }
 
@@ -123,7 +123,7 @@ runGeneralQC.h5 <- function(
     H5Apply(
         object,
         init = list(cell = cell, feature = nCell),
-        useData = "raw.data",
+        useData = "rawData",
         chunkSize = chunkSize,
         verbose = verbose,
         FUN = function(chunk, sparseXIdx, cellIdx, values) {
@@ -150,8 +150,8 @@ runGeneralQC.Matrix <- function(
         object,
         featureSubsets = NULL,
         verbose = TRUE) {
-    nUMI <- Matrix::colSums(raw.data(object))
-    nonzero <- raw.data(object) > 0
+    nUMI <- Matrix::colSums(rawData(object))
+    nonzero <- rawData(object) > 0
     nGene <- Matrix::colSums(nonzero)
     nCell <- Matrix::rowSums(nonzero)
     results <- data.frame(nUMI = nUMI, nGene = nGene,
@@ -159,7 +159,7 @@ runGeneralQC.Matrix <- function(
     if (length(featureSubsets) > 0) {
         percentages <- lapply(featureSubsets, function(x) {
             row.idx <- rownames(object) %in% x
-            colSums(raw.data(object)[row.idx,]) / colSums(raw.data(object)) * 100
+            colSums(rawData(object)[row.idx,]) / colSums(rawData(object)) * 100
         })
         results <- cbind(results, as.data.frame(percentages))
     }
@@ -201,7 +201,7 @@ removeMissing <- function(
     for (d in useDatasets) {
         ld <- dataset(object, d)
         if (rmFeature) {
-            featureIdx <- which(feature.meta(ld)$nCell > 0)
+            featureIdx <- which(featureMeta(ld)$nCell > 0)
         } else {
             featureIdx <- seq(nrow(ld))
         }
@@ -231,9 +231,9 @@ removeMissing <- function(
         methods::new(
             "liger",
             datasets = datasets.new,
-            cell.meta = cell.meta(object, cellIdx = object$nGene > 0,
+            cellMeta = cellMeta(object, cellIdx = object$nGene > 0,
                                   drop = FALSE),
-            var.features = character(),
+            varFeatures = character(),
             H.norm = object@H.norm[cellIdx, , drop = FALSE]
         )
     } else {
@@ -248,7 +248,7 @@ removeMissing <- function(
 #' behind.
 #' @param object \linkS4class{liger} object, or a data.frame like object of cell
 #' metadata, where \code{"dataset"} variable must exist.
-#' @param metric Metric to use. Should be found in \code{cell.meta(object)}.
+#' @param metric Metric to use. Should be found in \code{cellMeta(object)}.
 #' @param groupBy Group data by this categorical variable.
 #' @param colorBy Color the dot, violin and box plot with this variable.
 #' @param dotPlot,violinPlot,boxPlot Whether to add corresponding plot(s).

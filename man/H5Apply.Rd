@@ -8,7 +8,7 @@ H5Apply(
   object,
   FUN,
   init = NULL,
-  useData = c("raw.data", "norm.data", "scale.data"),
+  useData = c("rawData", "normData", "scaleData"),
   chunkSize = 1000,
   verbose = TRUE,
   ...

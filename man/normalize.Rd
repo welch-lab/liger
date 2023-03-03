@@ -3,7 +3,7 @@
 \name{normalize}
 \alias{normalize}
 \alias{normalizePeak}
-\title{Normalize raw data in liger object}
+\title{Normalize rawData in liger object}
 \usage{
 normalize(
   object,
@@ -45,13 +45,13 @@ Default \code{TRUE}.}
 }
 \value{
 Updated \code{object}. When using \code{normalize()}, the
-\code{norm.data} slot of each \linkS4class{ligerDataset} object in the
+\code{normData} slot of each \linkS4class{ligerDataset} object in the
 \code{datasets} slot is updated with normalized values calculated from
-\code{raw.data} slot. While \code{normalizePeak()} normalizes raw peak counts
-in \code{raw.peak} slot of a \linkS4class{ligerATACDataset} object and update
-result in its \code{norm.peak} slot.
+\code{rawData} slot. While \code{normalizePeak()} normalizes rawPeak counts
+in \code{rawPeak} slot of a \linkS4class{ligerATACDataset} object and update
+result in its \code{normPeak} slot.
 }
 \description{
-Perform normalization on each raw data matrix from each dataset
+Perform normalization on each rawData matrix from each dataset
 to account for total feature expression across a cell.
 }

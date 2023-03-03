@@ -59,7 +59,7 @@ calcAgreement <- function(object,
     #   )
     # }
     if (class(object@raw.data[[1]])[1] == "H5File") {
-        if (object@h5file.info[[1]][["sample.data.type"]] != "scale.data") {
+        if (object@h5fileInfo[[1]][["sample.data.type"]] != "scale.data") {
             stop(
                 "HDF5-based Liger object requires sampled scale.data for calculating agreement."
             )

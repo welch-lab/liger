@@ -10,7 +10,7 @@
 #' origin, users have to explicitly set \code{balance = "dataset"}.
 #' @param object \linkS4class{liger} object
 #' @param balance Character vector of categorical variable names in
-#' \code{cell.meta} slot, to subsample \code{maxCells} cells from each
+#' \code{cellMeta} slot, to subsample \code{maxCells} cells from each
 #' combination of all specified variables. Default \code{NULL} samples
 #' \code{maxCells} cells from the whole object.
 #' @param maxCells Max number of cells to sample from the grouping based on
@@ -39,7 +39,7 @@ downsample <- function(
         selected <- sort(sample(useCells, maxCells))
     } else {
         balance <- unique(c("dataset", balance))
-        vars <- cell.meta(object, columns = balance, drop = FALSE,
+        vars <- cellMeta(object, columns = balance, drop = FALSE,
                           as.data.frame = TRUE)
         vars <- vars[vars$dataset %in% useDatasets,]
         notFactor <- sapply(vars, function(col) !is.factor(col))
@@ -73,8 +73,8 @@ downsample <- function(
 #' @description This function mainly aims at downsampling datasets to a size
 #' suitable for plotting.
 #' @param object \linkS4class{liger} object
-#' @param slot.use Only create subset from one or more of \code{"raw.data"},
-#' \code{"norm.data"} and \code{"scale.data"}. Default \code{NULL} subsets the
+#' @param slot.use Only create subset from one or more of \code{"rawData"},
+#' \code{"normData"} and \code{"scaleData"}. Default \code{NULL} subsets the
 #' whole \code{object} including downstream results.
 #' @param balance \code{"all"} for sampling \code{maxCells} cells from all
 #' datasets specified by \code{useDatasets}. \code{"cluster"} for sampling
@@ -96,7 +96,7 @@ downsample <- function(
 #' @export
 readSubset <- function(
         object,
-        slot.use = "norm.data",
+        slot.use = "normData",
         balance = NULL,
         max.cells = 1000,
         chunk = 1000,

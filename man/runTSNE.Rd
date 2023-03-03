@@ -61,7 +61,7 @@ Usage section for replacement.}
 }
 \value{
 The \code{object} where a \code{"TSNE"} variable is updated in the
-\code{cell.meta} slot with the whole 2D embedding matrix.
+\code{cellMeta} slot with the whole 2D embedding matrix.
 }
 \description{
 Runs t-SNE on the quantile normalized cell factors (result from

@@ -9,7 +9,7 @@ plotGeneHeatmap(
   object,
   features,
   cellIdx = NULL,
-  slot = c("norm.data", "raw.data", "scale.data", "scale.unshared.data"),
+  slot = c("normData", "rawData", "scaleData", "scaleUnsharedData"),
   useCellMeta = NULL,
   cellAnnotation = NULL,
   featureAnnotation = NULL,
@@ -46,12 +46,12 @@ in \code{uns} slot).}
 \code{\link{subsetLiger}}. Default \code{NULL} use all cells.}
 
 \item{slot}{Use the chosen matrix for heatmap. For \code{plotGeneHeatmap},
-default \code{"norm.data"}, alternatively \code{"raw.data"},
-\code{"scale.data"} or \code{"scale.unshared.data"}. For
+default \code{"normData"}, alternatively \code{"rawData"},
+\code{"scaleData"} or \code{"scaleUnsharedData"}. For
 \code{plotFactorHeatmap}, default \code{"H.norm"}, alternatively \code{"H"}.}
 
 \item{useCellMeta}{Character vector of available variable names in
-\code{cell.meta}, variables will be added as annotation to the heatmap.
+\code{cellMeta}, variables will be added as annotation to the heatmap.
 Default \code{NULL}.}
 
 \item{cellAnnotation}{data.frame object for using external annotation, with

@@ -12,8 +12,8 @@ can be referred with the link.
 \section{Slots}{
 
 \describe{
-\item{\code{raw.peak}}{sparse matrix}
+\item{\code{rawPeak}}{sparse matrix}
 
-\item{\code{norm.peak}}{sparse matrix}
+\item{\code{normPeak}}{sparse matrix}
 }}
 

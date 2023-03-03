@@ -49,10 +49,10 @@ plotFactorDimRed(
 \arguments{
 \item{object}{A \linkS4class{liger} object.}
 
-\item{useCluster}{Name of variable in \code{cell.meta} slot. Default
+\item{useCluster}{Name of variable in \code{cellMeta} slot. Default
 \code{"louvain_cluster"}.}
 
-\item{useDimRed}{Name of type of the coordinate matrix in \code{cell.meta}
+\item{useDimRed}{Name of type of the coordinate matrix in \code{cellMeta}
 slot. Currently, choose from \code{"UMAP"} or \code{"TSNE"}. Default
 \code{"UMAP"}.}
 

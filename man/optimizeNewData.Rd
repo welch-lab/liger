@@ -18,7 +18,7 @@ optimizeNewData(
 \arguments{
 \item{object}{\code{liger} object. Should call optimizeALS before calling.}
 
-\item{new.data}{List of raw data matrices (one or more). Each list entry should be named.}
+\item{new.data}{List of rawData matrices (one or more). Each list entry should be named.}
 
 \item{which.datasets}{List of datasets to append new.data to if add.to.existing is true.
 Otherwise, the most similar existing datasets for each entry in new.data.}
@@ -37,7 +37,7 @@ optimizeALS.}
 \item{verbose}{Print progress bar/messages (TRUE by default)}
 }
 \value{
-\code{liger} object with H, W, and V slots reset. Raw.data, norm.data, and scale.data will
+\code{liger} object with H, W, and V slots reset. Raw.data, normData, and scaleData will
   also be updated to include the new data.
 }
 \description{

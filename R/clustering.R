@@ -36,7 +36,7 @@
 #' @param dims.use,random.seed \bold{Deprecated}. See Usage section for
 #' replacement.
 #' @return \code{object} with refined cluster assignment updated in
-#' \code{louvain_cluster} variable in \code{cell.meta} slot. Can be fetched
+#' \code{louvain_cluster} variable in \code{cellMeta} slot. Can be fetched
 #' with \code{object$louvain_cluster}
 #' @export
 louvainCluster <- function(
@@ -99,7 +99,7 @@ louvainCluster <- function(
     clusts <- groupSingletons(ids = clusts, SNN = snn,
                               groupSingletons = groupSingletons,
                               verbose = verbose)
-    cell.meta(object, columns = clusterName, check = FALSE) <- factor(clusts)
+    cellMeta(object, columns = clusterName, check = FALSE) <- factor(clusts)
     unlink(edgeOutPath)
     return(object)
 }
@@ -166,6 +166,6 @@ mapAnnotation <- function(lig, original, mapping, newName) {
         newAnn[original == origClust] <- mapping[[origClust]]
     }
     newAnn <- factor(newAnn)
-    cell.meta(lig, columns = newName, check = FALSE) <- newAnn
+    cellMeta(lig, columns = newName, check = FALSE) <- newAnn
     return(lig)
 }

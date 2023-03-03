@@ -52,7 +52,7 @@ Default \code{TRUE}.}
 The input \code{object} where queried \linkS4class{ligerDataset}
 objects in \code{datasets} slot are replaced. These datasets will all be
 converted to \linkS4class{ligerATACDataset} class with an additional slot
-\code{raw.peak} to store the imputed peak counts, and \code{norm.peak} for
+\code{rawPeak} to store the imputed peak counts, and \code{normPeak} for
 normalized imputed peak counts if \code{norm = TRUE}.
 }
 \description{

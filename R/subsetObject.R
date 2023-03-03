@@ -14,7 +14,7 @@
 #' @param j,cellIdx Character, logical or numeric index that can subscribe cells.
 #' Missing or \code{NULL} for all cells.
 #' @param useSlot The slot(s) to only consider. Choose one or more from
-#' \code{"raw.data"}, \code{"norm.data"} and \code{"scale.data"}. Default
+#' \code{"rawData"}, \code{"normData"} and \code{"scaleData"}. Default
 #' \code{NULL} subsets the whole object including analysis result matrices.
 #' @param newH5 Whether to create new H5 files on disk for the subset datasets
 #' if involved datasets in the \code{object} is HDF5 based. \code{TRUE} writes a
@@ -93,21 +93,20 @@ subsetLiger <- function(
     if (isTRUE(returnObject)) {
         if (!is.null(featureIdx)) {
             W <- object@W[featureIdx, , drop = FALSE]
-            varFeature <- var.features(object)[var.features(object) %in%
+            varFeature <- varFeatures(object)[varFeatures(object) %in%
                                                    featureIdx]
         } else {
             W <- object@W
-            varFeature <- var.features(object)
+            varFeature <- varFeatures(object)
         }
         return(methods::new(
             "liger",
             datasets = datasets.new,
-            cell.meta = cell.meta(object, cellIdx = orderedCellIdx,
+            cellMeta = cellMeta(object, cellIdx = orderedCellIdx,
                                   drop = FALSE),
-            var.features = varFeature,
+            varFeatures = varFeature,
             W = W,
             H.norm = object@H.norm[orderedCellIdx, , drop = FALSE],
-            k = object@k,
             uns = object@uns,
             commands = object@commands
         ))
@@ -124,28 +123,28 @@ subsetLiger <- function(
 #' @param object \linkS4class{liger} object
 #' @param feature Gene names, factor index or cell metadata variable names.
 #' Should be available in specified \code{slot}.
-#' @param slot Exactly choose from \code{"raw.data"}, \code{"norm.data"},
-#' \code{"scale.data"}, \code{"H"}, \code{"H.norm"} or \code{"cell.meta"}.
+#' @param slot Exactly choose from \code{"rawData"}, \code{"normData"},
+#' \code{"scaleData"}, \code{"H"}, \code{"H.norm"} or \code{"cellMeta"}.
 #' @param cellIdx Any valid type of index that subset from all cells. Default
 #' \code{NULL} uses all cells.
 #' @param ... Additional arguments passed to \code{\link{subsetLiger}} when
-#' \code{slot} is one of \code{"raw.data"}, \code{"norm.data"} or
-#' \code{"scale.data"}.
+#' \code{slot} is one of \code{"rawData"}, \code{"normData"} or
+#' \code{"scaleData"}.
 #' @return A matrix object where rows are cells and columns are specified
 #' features.
 #' @export
 retrieveCellFeature <- function(
         object,
         feature,
-        slot = c("raw.data", "norm.data", "scale.data",
-                 "H", "H.norm", "cell.meta"),
+        slot = c("rawData", "normData", "scaleData",
+                 "H", "H.norm", "cellMeta"),
         cellIdx = NULL,
         ...
 ) {
     slot <- match.arg(slot)
     cellIdx <- .idxCheck(object, idx = cellIdx, orient = "cell")
     if (is.null(cellIdx)) cellIdx <- seq(ncol(object))
-    if (slot %in% c("raw.data", "norm.data", "scale.data")) {
+    if (slot %in% c("rawData", "normData", "scaleData")) {
         subsetData <- subsetLiger(object, featureIdx = feature,
                                   cellIdx = cellIdx, useSlot = slot,
                                   returnObject = FALSE, ...)
@@ -160,6 +159,10 @@ retrieveCellFeature <- function(
         for (d in names(object)) {
             value[[d]] <- subsetData[[d]][[slot]]
         }
+        # Condition for scaleData
+        if (all(sapply(value, function(x) dim(x)[1] == 0)))
+            stop("No feature could be retrieved. ",
+                 "Please check feature names or slot")
         value <- lapply(value, as.matrix)
         value <- as.data.frame(t(mergeDenseAll(value)))
         orderedCellIdx <- sort(cellIdx)
@@ -171,7 +174,7 @@ retrieveCellFeature <- function(
     } else if (slot == "H.norm") {
         value <- getMatrix(object, "H.norm")[cellIdx, feature, drop = FALSE]
     } else {
-        value <- cell.meta(object, feature, cellIdx = cellIdx,
+        value <- cellMeta(object, feature, cellIdx = cellIdx,
                            as.data.frame = TRUE, drop = FALSE)
     }
     return(value)
@@ -181,7 +184,7 @@ retrieveCellFeature <- function(
 #' @description This function subsets a \linkS4class{ligerDataset} object with
 #' valid feature and cell indices. For HDF5 based object, options are available
 #' for subsetting data into memory or a new on-disk H5 file. Feature and cell
-#' subscription is always based on the size of raw data. Therefore, the feature
+#' subscription is always based on the size of rawData. Therefore, the feature
 #' subsetting on scaled data, which usually contains already a subset of
 #' features, will select the intersection between the wanted features and the
 #' set available from scaled data.
@@ -192,7 +195,7 @@ retrieveCellFeature <- function(
 #' @param j,cellIdx Character, logical or numeric index that can subscribe cells.
 #' Missing or \code{NULL} for all cells.
 #' @param useSlot The slot(s) to only consider. Choose one or more from
-#' \code{"raw.data"}, \code{"norm.data"} and \code{"scale.data"}. Default
+#' \code{"rawData"}, \code{"normData"} and \code{"scaleData"}. Default
 #' \code{NULL} subsets the whole object including analysis result matrices.
 #' @param newH5 Whether to create a new H5 file on disk for the subset dataset
 #' if \code{object} is HDF5 based. \code{TRUE} writes a new one, \code{FALSE}
@@ -296,11 +299,11 @@ subsetH5LigerDatasetToMem <- function(
     # a `NULL` but involve everything, or just a few slots.
     slotInvolved <- .checkLDSlot(object, useSlot)
     value <- list()
-    # Process raw data ####
-    if ("raw.data" %in% slotInvolved & !is.null(raw.data(object))) {
-        if (isTRUE(verbose)) .log("Subsetting `raw.data`", level = 2)
+    # Process rawData ####
+    if ("rawData" %in% slotInvolved & !is.null(rawData(object))) {
+        if (isTRUE(verbose)) .log("Subsetting `rawData`", level = 2)
         rawData <- H5Apply(
-            object, init = NULL, useData = "raw.data", chunkSize = chunkSize,
+            object, init = NULL, useData = "rawData", chunkSize = chunkSize,
             verbose = verbose,
             FUN = function(chunk, sparseXIdx, chunkCellIdx, values) {
                 subset <- chunk[featureIdx, chunkCellIdx %in% cellIdx, drop = FALSE]
@@ -309,14 +312,14 @@ subsetH5LigerDatasetToMem <- function(
         )
         rownames(rawData) <- rownames(object)[featureIdx]
         colnames(rawData) <- colnames(object)[cellIdx]
-        value$raw.data <- rawData
+        value$rawData <- rawData
     }
 
-    # Process norm.data ####
-    if ("norm.data" %in% slotInvolved & !is.null(norm.data(object))) {
-        if (isTRUE(verbose)) .log("Subsetting `norm.data`", level = 2)
+    # Process normData ####
+    if ("normData" %in% slotInvolved & !is.null(normData(object))) {
+        if (isTRUE(verbose)) .log("Subsetting `normData`", level = 2)
         normData <- H5Apply(
-            object, init = NULL, useData = "norm.data", chunkSize = chunkSize,
+            object, init = NULL, useData = "normData", chunkSize = chunkSize,
             verbose = verbose,
             FUN = function(chunk, sparseXIdx, chunkCellIdx, values) {
                 subset <- chunk[featureIdx, chunkCellIdx %in% cellIdx, drop = FALSE]
@@ -325,61 +328,60 @@ subsetH5LigerDatasetToMem <- function(
         )
         rownames(normData) <- rownames(object)[featureIdx]
         colnames(normData) <- colnames(object)[cellIdx]
-        value$norm.data <- normData
+        value$normData <- normData
     }
 
     # Process scaled data ####
-    if ("scale.data" %in% slotInvolved & !is.null(scale.data(object))) {
-        if (isTRUE(verbose)) .log("Subsetting `scale.data`", level = 2)
+    if ("scaleData" %in% slotInvolved & !is.null(scaleData(object))) {
+        if (isTRUE(verbose)) .log("Subsetting `scaleData`", level = 2)
         scaledFeatureIdx <- NULL
-        if (getH5File(object)$exists("scale.data.featureIdx")) {
-            scaledFeatureIdx <- getH5File(object)[["scale.data.featureIdx"]][]
-        } else if ("selected" %in% names(feature.meta(object))) {
-            scaledFeatureIdx <- which(feature.meta(object)$selected)
+        if (getH5File(object)$exists("scaleData.featureIdx")) {
+            scaledFeatureIdx <- getH5File(object)[["scaleData.featureIdx"]][]
+        } else if ("selected" %in% names(featureMeta(object))) {
+            scaledFeatureIdx <- which(featureMeta(object)$selected)
         } else {
             warning("Unable to know what features are included scaled data. ",
                     "Skipped.")
         }
         if (!is.null(scaledFeatureIdx) && length(scaledFeatureIdx) > 0) {
-            if (length(scaledFeatureIdx) == scale.data(object)$dims[1]) {
+            if (length(scaledFeatureIdx) == scaleData(object)$dims[1]) {
                 # Before: scaledFeatureIdx is based on all features, selecting
-                # what features are in the scale.data
+                # what features are in the scaleData
                 # After: based on variable features, selecting what features
                 # from variable features are being involved in featureIdx.
                 scaledFeatureIdx2 <- unlist(lapply(featureIdx, function(i) {
                     which(scaledFeatureIdx == i)}), use.names = FALSE)
                 if (isTRUE(verbose))
                     .log(length(scaledFeatureIdx2),
-                         " features used in scale.data were selected. ",
+                         " features used in scaleData were selected. ",
                          level = 3)
-                scaleData <- scale.data(object)[scaledFeatureIdx2, cellIdx,
+                scaleData <- scaleData(object)[scaledFeatureIdx2, cellIdx,
                                                 drop = FALSE]
                 rownames(scaleData) <- rownames(object)[scaledFeatureIdx][scaledFeatureIdx2]
                 colnames(scaleData) <- colnames(object)[cellIdx]
             } else {
                 scaleData <- NULL
-                warning("Row dimension of scale.data does not match with ",
+                warning("Row dimension of scaleData does not match with ",
                         "feature selection. Unable to subset from H5.")
             }
         }
-        value$scale.data <- scaleData
+        value$scaleData <- scaleData
     }
     # `NULL[idx1, idx2]` returns `NULL`
     # V: k x genes
     if (is.null(useSlot)) {
-        # It's a bad practice to use `scaledFeatureIdx2` here because it only
-        # exists when entering the scale.data condition.
-        # But this condition conceptually contains that condition.
+        if (exists("scaledFeatureIdx2")) sfi <- scaledFeatureIdx2
+        else sfi <- NULL
         value$H <- object@H[, cellIdx, drop = FALSE]
-        value$V <- object@V[scaledFeatureIdx2, , drop = FALSE]
+        value$V <- object@V[sfi, , drop = FALSE]
         value$A <- object@A
-        value$B <- object@B[scaledFeatureIdx2, , drop = FALSE]
+        value$B <- object@B[sfi, , drop = FALSE]
         value$U <- object@U
-        value$feature.meta <- feature.meta(object)[featureIdx, , drop = FALSE]
+        value$featureMeta <- featureMeta(object)[featureIdx, , drop = FALSE]
         # Additional subsetting for sub-classes, if applicable
         if (modal == "atac") {
-            value$raw.peak <- raw.peak(object)[, cellIdx, drop = FALSE]
-            value$norm.peak <- norm.peak(object)[, cellIdx, drop = FALSE]
+            value$rawPeak <- rawPeak(object)[, cellIdx, drop = FALSE]
+            value$normPeak <- normPeak(object)[, cellIdx, drop = FALSE]
         }
     }
     if (isTRUE(returnObject)) {
@@ -414,12 +416,12 @@ subsetH5LigerDatasetToH5 <- function(
     featureIdx <- .idxCheck(object, featureIdx, "feature")
     useSlot <- .checkLDSlot(object, useSlot)
     if (is.null(filename) & is.null(filenameSuffix)) {
-        oldFN <- h5file.info(object, "filename")
+        oldFN <- h5fileInfo(object, "filename")
         filename <- paste0(oldFN, ".subset_",
                            format(Sys.time(), "%y%m%d_%H%M%S"),
                            ".h5")
     } else if (is.null(filename & !is.null(filenameSuffix))) {
-        oldFN <- h5file.info(object, "filename")
+        oldFN <- h5fileInfo(object, "filename")
         filename <- paste0(oldFN, ".", filenameSuffix, ".h5")
     }
     # Create new H5 file ####
@@ -429,7 +431,7 @@ subsetH5LigerDatasetToH5 <- function(
         newH5File <- hdf5r::H5File$new(filename, mode = "w")
     }
     if (isTRUE(verbose)) .log("New H5 file at: ", filename)
-    newH5Meta <- h5file.info(object)
+    newH5Meta <- h5fileInfo(object)
     newH5Meta$H5File <- newH5File
     newH5Meta$filename <- filename
     if (newH5Meta$format.type != "AnnData") {
@@ -446,19 +448,19 @@ subsetH5LigerDatasetToH5 <- function(
     newH5File[[newH5Meta$genes.name]][1:length(featureIdx)] <-
         rownames(object)[featureIdx]
     # Process Raw Data ####
-    if ("raw.data" %in% useSlot & !is.null(raw.data(object))) {
+    if ("rawData" %in% useSlot & !is.null(rawData(object))) {
         # 1. Create paths to store i, p, x of sparse matrix
-        if (isTRUE(verbose)) .log("Subsetting `raw.data`", level = 2)
+        if (isTRUE(verbose)) .log("Subsetting `rawData`", level = 2)
         safeH5Create(newH5File, newH5Meta$indices.name, dims = 1, dtype = "int")
         i.h5d <- newH5File[[newH5Meta$indices.name]]
         safeH5Create(newH5File, newH5Meta$indptr.name, dims = 1, dtype = "int")
         p.h5d <- newH5File[[newH5Meta$indptr.name]]
-        safeH5Create(newH5File, newH5Meta$raw.data, dims = 1, dtype = "double")
-        x.h5d <- newH5File[[newH5Meta$raw.data]]
+        safeH5Create(newH5File, newH5Meta$rawData, dims = 1, dtype = "double")
+        x.h5d <- newH5File[[newH5Meta$rawData]]
         # 2. Go into chunks
         subsetSizes <- list(ix = 0, p = 1)
         H5Apply(
-            object, init = subsetSizes, useData = "raw.data",
+            object, init = subsetSizes, useData = "rawData",
             chunkSize = chunkSize, verbose = verbose,
             FUN = function(chunk, sparseXIdx, chunkCellIdx, values) {
                 if (sum(chunkCellIdx %in% cellIdx) > 0) {
@@ -495,14 +497,14 @@ subsetH5LigerDatasetToH5 <- function(
         )
     }
     # Process Normalized Data ####
-    if ("norm.data" %in% useSlot & !is.null(norm.data(object))) {
-        if (isTRUE(verbose)) .log("Subsetting `norm.data`", level = 2)
-        safeH5Create(newH5File, newH5Meta$norm.data, dims = 1, dtype = "double")
-        x.h5d <- newH5File[[newH5Meta$norm.data]]
+    if ("normData" %in% useSlot & !is.null(normData(object))) {
+        if (isTRUE(verbose)) .log("Subsetting `normData`", level = 2)
+        safeH5Create(newH5File, newH5Meta$normData, dims = 1, dtype = "double")
+        x.h5d <- newH5File[[newH5Meta$normData]]
         ipProcessedBefore <- exists("i.h5d") & exists("p.h5d")
         if (!ipProcessedBefore) {
-            # H5D objects are created if have worked on raw.data. Otherwise,
-            # have to recreate them for norm.data. (norm.data and raw.data share
+            # H5D objects are created if have worked on rawData. Otherwise,
+            # have to recreate them for normData. (normData and rawData share
             # the same `i` and `p` vectors as in the form of sparse matrices.)
             safeH5Create(newH5File, newH5Meta$indices.name,
                          dims = 1, dtype = "int")
@@ -513,7 +515,7 @@ subsetH5LigerDatasetToH5 <- function(
         }
         subsetSizes <- list(ix = 0, p = 1)
         H5Apply(
-            object, init = subsetSizes, useData = "norm.data",
+            object, init = subsetSizes, useData = "normData",
             chunkSize = chunkSize, verbose = verbose,
             FUN = function(chunk, sparseXIdx, chunkCellIdx, values) {
                 if (sum(chunkCellIdx %in% cellIdx) > 0) {
@@ -540,61 +542,61 @@ subsetH5LigerDatasetToH5 <- function(
         )
     }
     # Process Scaled Data ####
-    if ("scale.data" %in% useSlot & !is.null(scale.data(object))) {
-        if (isTRUE(verbose)) .log("Subsetting `scale.data`", level = 2)
+    if ("scaleData" %in% useSlot & !is.null(scaleData(object))) {
+        if (isTRUE(verbose)) .log("Subsetting `scaleData`", level = 2)
         scaledFeatureIdx <- NULL
-        if (getH5File(object)$exists("scale.data.featureIdx")) {
-            scaledFeatureIdx <- getH5File(object)[["scale.data.featureIdx"]][]
-        } else if ("selected" %in% names(feature.meta(object))) {
-            scaledFeatureIdx <- which(feature.meta(object)$selected)
+        if (getH5File(object)$exists("scaleData.featureIdx")) {
+            scaledFeatureIdx <- getH5File(object)[["scaleData.featureIdx"]][]
+        } else if ("selected" %in% names(featureMeta(object))) {
+            scaledFeatureIdx <- which(featureMeta(object)$selected)
         } else {
             warning("Unable to know what features are included scaled data. ",
                     "Skipped.")
         }
         if (!is.null(scaledFeatureIdx) && length(scaledFeatureIdx) > 0) {
-            if (length(scaledFeatureIdx) == scale.data(object)$dims[1]) {
+            if (length(scaledFeatureIdx) == scaleData(object)$dims[1]) {
                 scaledFeatureIdx2 <- unlist(lapply(featureIdx, function(i)
                     which(scaledFeatureIdx == i)), use.names = FALSE)
                 ng <- length(scaledFeatureIdx2)
                 nc <- length(cellIdx)
                 if (isTRUE(verbose))
                     .log(length(scaledFeatureIdx2),
-                         " features used in scale.data were selected. ",
+                         " features used in scaleData were selected. ",
                          level = 3)
-                safeH5Create(newH5File, dataPath = newH5Meta$scale.data,
+                safeH5Create(newH5File, dataPath = newH5Meta$scaleData,
                              dims = c(ng, nc), dtype = "double",
                              chunkSize = c(ng, 1000))
-                newH5File[[newH5Meta$scale.data]][1:ng,1:nc] <-
-                    scale.data(object)[scaledFeatureIdx2, cellIdx, drop = FALSE]
-                safeH5Create(newH5File, dataPath = "scale.data.featureIdx",
+                newH5File[[newH5Meta$scaleData]][1:ng,1:nc] <-
+                    scaleData(object)[scaledFeatureIdx2, cellIdx, drop = FALSE]
+                safeH5Create(newH5File, dataPath = "scaleData.featureIdx",
                              dims = ng, dtype = "int", chunkSize = ng)
-                newH5File[["scale.data.featureIdx"]][1:ng] <-
+                newH5File[["scaleData.featureIdx"]][1:ng] <-
                     .getOrderedSubsetIdx(featureIdx, scaledFeatureIdx)
             } else {
-                warning("Row dimension of scale.data does not match with ",
+                warning("Row dimension of scaleData does not match with ",
                         "feature selection. Unable to subset from H5.")
             }
         }
     }
     newH5File$close()
-    if (!"raw.data" %in% useSlot) newH5Meta$raw.data <- NULL
-    if (!"norm.data" %in% useSlot) newH5Meta$norm.data <- NULL
-    if (!"raw.data" %in% useSlot & !"norm.data" %in% useSlot) {
+    if (!"rawData" %in% useSlot) newH5Meta$rawData <- NULL
+    if (!"normData" %in% useSlot) newH5Meta$normData <- NULL
+    if (!"rawData" %in% useSlot & !"normData" %in% useSlot) {
         newH5Meta$indices.name <- NULL
         newH5Meta$indptr.name <- NULL
     }
-    if (!"scale.data" %in% useSlot) newH5Meta$scale.data <- NULL
+    if (!"scaleData" %in% useSlot) newH5Meta$scaleData <- NULL
     # New object construction ####
     newObj <- createLigerDataset.h5(
         h5file = filename,
-        raw.data = newH5Meta$raw.data, norm.data = newH5Meta$norm.data,
-        scale.data = newH5Meta$scale.data,
+        rawData = newH5Meta$rawData, normData = newH5Meta$normData,
+        scaleData = newH5Meta$scaleData,
         barcodes.name = newH5Meta$barcodes.name,
         genes.name = newH5Meta$genes.name,
         indices.name = newH5Meta$indices.name,
         indptr.name = newH5Meta$indptr.name,
         modal = modal,
-        feature.meta = feature.meta(object)[featureIdx, , drop = FALSE]
+        featureMeta = featureMeta(object)[featureIdx, , drop = FALSE]
     )
     newObj@H <- object@H[, cellIdx, drop = FALSE]
     newObj@V <- object@V[featureIdx, , drop = FALSE]
@@ -622,46 +624,46 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
     cellIdx <- .idxCheck(object, cellIdx, "cell")
     slotInvolved <- .checkLDSlot(object, useSlot)
     subsetData <- list()
-    if ("raw.data" %in% slotInvolved) {
-        subsetData$raw.data <- raw.data(object)[featureIdx, cellIdx,
+    if ("rawData" %in% slotInvolved) {
+        subsetData$rawData <- rawData(object)[featureIdx, cellIdx,
                                                 drop = FALSE]
     }
-    if ("norm.data" %in% slotInvolved) {
-        subsetData$norm.data <- norm.data(object)[featureIdx, cellIdx,
+    if ("normData" %in% slotInvolved) {
+        subsetData$normData <- normData(object)[featureIdx, cellIdx,
                                                   drop = FALSE]
     }
-    if ("scale.data" %in% slotInvolved) {
-        if (!is.null(scale.data(object))) {
-            scaleFeatureIdx <- rownames(scale.data(object)) %in%
+    if ("scaleData" %in% slotInvolved) {
+        if (!is.null(scaleData(object))) {
+            scaleFeatureIdx <- rownames(scaleData(object)) %in%
                 rownames(object)[featureIdx]
-            subsetData$scale.data <-
-                scale.data(object)[scaleFeatureIdx, cellIdx, drop = FALSE]
+            subsetData$scaleData <-
+                scaleData(object)[scaleFeatureIdx, cellIdx, drop = FALSE]
         }
-        if (!is.null(object@scale.unshared.data)) {
-            scaleUnsFeatureIdx <- rownames(object@scale.unshared.data) %in%
+        if (!is.null(object@scaleUnsharedData)) {
+            scaleUnsFeatureIdx <- rownames(object@scaleUnsharedData) %in%
                 rownames(object)[featureIdx]
-            subsetData$scale.unshared.data <-
-                object@scale.unshared.data[scaleUnsFeatureIdx, cellIdx,
+            subsetData$scaleUnsharedData <-
+                object@scaleUnsharedData[scaleUnsFeatureIdx, cellIdx,
                                            drop = FALSE]
         }
     }
     if (is.null(useSlot)) {
         # Users do not specify, subset the whole object
         if (exists("scaleFeatureIdx")) sfi <- scaleFeatureIdx
-        else sfi <- seq(scale.data(object))
+        else sfi <- seq(scaleData(object))
         subsetData <- c(subsetData,
                         list(H = object@H[, cellIdx, drop = FALSE],
                              V = object@V[sfi, , drop = FALSE],
                              A = object@A,
                              B = object@B[sfi, , drop = FALSE],
                              U = object@U,
-                             feature.meta = object@feature.meta[featureIdx, ,
+                             featureMeta = object@featureMeta[featureIdx, ,
                                                                 drop = FALSE]
                         ))
         # Additional subsetting for sub-classes, if applicable
         if (modal == "atac") {
-            subsetData$raw.peak <- raw.peak(object)[, cellIdx, drop = FALSE]
-            subsetData$norm.peak <- norm.peak(object)[, cellIdx, drop = FALSE]
+            subsetData$rawPeak <- rawPeak(object)[, cellIdx, drop = FALSE]
+            subsetData$normPeak <- normPeak(object)[, cellIdx, drop = FALSE]
         }
     }
 

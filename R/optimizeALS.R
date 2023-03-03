@@ -108,12 +108,12 @@ setMethod(
             object <- removeMissing(object, orient = "cell",
                                     verbose = verbose)
             data <- lapply(datasets(object), function(ld) {
-                if (is.null(scale.data(ld)))
+                if (is.null(scaleData(ld)))
                     stop("Scaled data not available. ",
                          "Run `scaleNotCenter(object)` first")
                 if (isH5Liger(ld)) {
                     if (!isFALSE(readH5)) {
-                        h5d <- scale.data(ld)
+                        h5d <- scaleData(ld)
                         if (readH5 == "auto") {
                             if (h5d$dims[2] <= 8000) {
                                 warning("Automatically reading H5 based ",
@@ -139,7 +139,7 @@ setMethod(
                              "set to FALSE.")
                     }
                 } else {
-                    return(scale.data(ld))
+                    return(scaleData(ld))
                 }
             })
             out <- optimizeALS(
@@ -157,14 +157,14 @@ setMethod(
                 verbose = verbose
             )
             object@W <- out$W
-            rownames(object@W) <- var.features(object)
-            object@k <- ncol(out$W)
+            rownames(object@W) <- varFeatures(object)
+            object@uns$factorization$k <- ncol(out$W)
             for (d in names(object)) {
                 ld <- dataset(object, d)
                 ld@H <- out$H[[d]]
                 colnames(ld@H) <- colnames(ld)
                 ld@V <- out$V[[d]]
-                rownames(ld@V) <- var.features(object)
+                rownames(ld@V) <- varFeatures(object)
                 datasets(object, check = FALSE)[[d]] <- ld
             }
             object@uns$factorization$k <- k

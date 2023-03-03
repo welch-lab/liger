@@ -10,7 +10,7 @@
 \item{x}{\code{liger} object to convert into a dataframe.}
 }
 \value{
-A \code{data.frame} combining \code{cell.meta(x)} with \code{H.norm}
+A \code{data.frame} combining \code{cellMeta(x)} with \code{H.norm}
 matrix.
 }
 \description{

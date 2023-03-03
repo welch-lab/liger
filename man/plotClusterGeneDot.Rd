@@ -26,11 +26,11 @@ a data.frame where the first column is gene names and second column is
 grouping variable (e.g. \code{runWilcoxon} output, recommended to be row
 subset).}
 
-\item{groupBy}{The names of the columns in \code{cell.meta} slot storing
+\item{groupBy}{The names of the columns in \code{cellMeta} slot storing
 categorical variables. Expression data would be aggregated basing on these,
 together with \code{splitBy}. Default \code{"louvain_cluster"}.}
 
-\item{splitBy}{The names of the columns in \code{cell.meta} slot storing
+\item{splitBy}{The names of the columns in \code{cellMeta} slot storing
 categorical variables. Dotplot panel splitting would be based on these.
 Default \code{NULL}.}
 

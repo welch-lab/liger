@@ -7,11 +7,11 @@
 #' @param cellIdx Valid index to subscribe cells to be included. See
 #' \code{\link{subsetLiger}}. Default \code{NULL} use all cells.
 #' @param slot Use the chosen matrix for heatmap. For \code{plotGeneHeatmap},
-#' default \code{"norm.data"}, alternatively \code{"raw.data"},
-#' \code{"scale.data"} or \code{"scale.unshared.data"}. For
+#' default \code{"normData"}, alternatively \code{"rawData"},
+#' \code{"scaleData"} or \code{"scaleUnsharedData"}. For
 #' \code{plotFactorHeatmap}, default \code{"H.norm"}, alternatively \code{"H"}.
 #' @param useCellMeta Character vector of available variable names in
-#' \code{cell.meta}, variables will be added as annotation to the heatmap.
+#' \code{cellMeta}, variables will be added as annotation to the heatmap.
 #' Default \code{NULL}.
 #' @param cellAnnotation data.frame object for using external annotation, with
 #' each column a variable and each row is a cell. Row names of this data.frame
@@ -36,7 +36,7 @@ plotGeneHeatmap <- function(
         object,
         features,
         cellIdx = NULL,
-        slot = c("norm.data", "raw.data", "scale.data", "scale.unshared.data"),
+        slot = c("normData", "rawData", "scaleData", "scaleUnsharedData"),
         useCellMeta = NULL,
         cellAnnotation = NULL,
         featureAnnotation = NULL,
@@ -49,7 +49,7 @@ plotGeneHeatmap <- function(
     cellIdx <- .idxCheck(object, cellIdx, "cell")
     hmData <- retrieveCellFeature(object, slot = slot, cellIdx = cellIdx,
                                   feature = features)
-    if (slot == "norm.data") dataScaleFunc <- function(x) log2(10000*x + 1)
+    if (slot == "normData") dataScaleFunc <- function(x) log2(10000*x + 1)
     else dataScaleFunc <- NULL
     # Organize annotation
 
@@ -311,10 +311,10 @@ plotFactorHeatmap <- function(
         annDF = NULL,
         splitBy = NULL
 ) {
-    ### Check and format the information in cell.meta
-    # TODO: Only have cell.meta for now but not gonna use feature.meta
-    # See if also allow feature.meta in the future
-    AnnDF <- cell.meta(object, columns = useMeta, cellIdx = charIdx,
+    ### Check and format the information in cellMeta
+    # TODO: Only have cellMeta for now but not gonna use featureMeta
+    # See if also allow featureMeta in the future
+    AnnDF <- cellMeta(object, columns = useMeta, cellIdx = charIdx,
                        as.data.frame = TRUE, drop = FALSE)
 
     ### Check and append customized annotation
@@ -357,11 +357,9 @@ plotFactorHeatmap <- function(
             if (is.factor(df[[var]])) {
                 # Still generate all colors for all classes in var
                 # So it matches up with other visualization
-                # but do .subsetLevels to reduce non-existing classes if input
-                # is a a subset categories.
                 annCol[[var]] <- scales::hue_pal()(length(levels(df[[var]])))
                 names(annCol[[var]]) <- levels(df[[var]])
-                df[[var]] <- .subsetLevels(df[[var]])
+                df[[var]] <- droplevels(df[[var]])
             }
         }
         ha <- ComplexHeatmap::HeatmapAnnotation(

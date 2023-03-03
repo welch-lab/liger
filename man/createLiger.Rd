@@ -5,9 +5,9 @@
 \title{Create liger object}
 \usage{
 createLiger(
-  raw.data,
+  rawData,
   modal = NULL,
-  cell.meta = NULL,
+  cellMeta = NULL,
   remove.missing = TRUE,
   format.type = "10X",
   data.name = NULL,
@@ -19,14 +19,14 @@ createLiger(
 )
 }
 \arguments{
-\item{raw.data}{Named list of datasets. Required. Elements allowed include a
+\item{rawData}{Named list of datasets. Required. Elements allowed include a
 matrix, a \linkS4class{Seurat} object, a \linkS4class{SingleCellExperiment}
 object, an \code{AnnData} object, a \linkS4class{ligerDataset} object or a
 filename to an HDF5 file. See detail for HDF5 reading.}
 
 \item{modal}{Character vector for modality setting. See detail.}
 
-\item{cell.meta}{data.frame of metadata at single-cell level. Default}
+\item{cellMeta}{data.frame of metadata at single-cell level. Default}
 
 \item{remove.missing}{Whether to remove cells that do not have any counts and
 features not expressed in any cells from each dataset. Default \code{TRUE}.}
@@ -38,7 +38,7 @@ dataset.}
 }
 \description{
 This function allows creating \linkS4class{liger} object from
-multiple datasets of various forms (See \code{raw.data}).
+multiple datasets of various forms (See \code{rawData}).
 }
 \seealso{
 \code{\link{createLigerDataset}},

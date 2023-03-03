@@ -1,5 +1,5 @@
-#' Normalize raw data in liger object
-#' @description Perform normalization on each raw data matrix from each dataset
+#' Normalize rawData in liger object
+#' @description Perform normalization on each rawData matrix from each dataset
 #' to account for total feature expression across a cell.
 #' @param object \linkS4class{liger} object
 #' @param log Logical. Whether to do a \code{log(x + 1)} transform on the
@@ -16,11 +16,11 @@
 #' @param verbose Logical. Whether to show information of the progress.
 #' Default \code{TRUE}.
 #' @return Updated \code{object}. When using \code{normalize()}, the
-#' \code{norm.data} slot of each \linkS4class{ligerDataset} object in the
+#' \code{normData} slot of each \linkS4class{ligerDataset} object in the
 #' \code{datasets} slot is updated with normalized values calculated from
-#' \code{raw.data} slot. While \code{normalizePeak()} normalizes raw peak counts
-#' in \code{raw.peak} slot of a \linkS4class{ligerATACDataset} object and update
-#' result in its \code{norm.peak} slot.
+#' \code{rawData} slot. While \code{normalizePeak()} normalizes rawPeak counts
+#' in \code{rawPeak} slot of a \linkS4class{ligerATACDataset} object and update
+#' result in its \code{normPeak} slot.
 #' @rdname normalize
 #' @export
 normalize <- function(
@@ -55,19 +55,19 @@ normalize <- function(
 #' @noRd
 normalizeDataset.Matrix <- function(object, log = TRUE, scaleFactor = 1e4,
                                     verbose = TRUE) {
-    if (inherits(raw.data(object), "dgCMatrix") |
-        inherits(raw.data(object), "dgTMatrix")) {
-        norm.data(object, check = FALSE) <-
-            Matrix.column_norm(raw.data(object))
+    if (inherits(rawData(object), "dgCMatrix") |
+        inherits(rawData(object), "dgTMatrix")) {
+        normData(object, check = FALSE) <-
+            Matrix.column_norm(rawData(object))
     } else {
-        norm.data(object, check = FALSE) <-
-            sweep(x = raw.data(object), MARGIN = 2,
-                  STATS = colSums(raw.data(object)), FUN = "/")
+        normData(object, check = FALSE) <-
+            sweep(x = rawData(object), MARGIN = 2,
+                  STATS = colSums(rawData(object)), FUN = "/")
     }
     if (!is.null(scaleFactor))
-        norm.data(object, check = FALSE) <- norm.data(object) * scaleFactor
+        normData(object, check = FALSE) <- normData(object) * scaleFactor
     if (isTRUE(log))
-        norm.data(object, check = FALSE) <- log1p(norm.data(object))
+        normData(object, check = FALSE) <- log1p(normData(object))
     object
 }
 
@@ -88,12 +88,12 @@ normalizeDataset.h5 <- function(object, log = TRUE, scaleFactor = 1e4,
         geneMeans = rep(0, nFeature)
     )
     h5file <- getH5File(object)
-    resultH5Path <- "norm.data"
+    resultH5Path <- "normData"
     # Use safe create here in practice
     safeH5Create(
         object = object,
         dataPath = resultH5Path,
-        dims = raw.data(object)$dims,
+        dims = rawData(object)$dims,
         dtype = "double",
         chunkSize = chunkSize
     )
@@ -113,27 +113,27 @@ normalizeDataset.h5 <- function(object, log = TRUE, scaleFactor = 1e4,
     results <- H5Apply(
         object,
         function(chunk, sparseXIdx, cellIdx, values) {
-            norm.data <- Matrix.column_norm(chunk)
-            if (!is.null(scaleFactor)) norm.data <- norm.data * scaleFactor
-            if (isTRUE(log)) norm.data <- log1p(norm.data)
-            h5file[[resultH5Path]][sparseXIdx] <- norm.data@x
-            row_sums <- rowSums(norm.data)
+            normData <- Matrix.column_norm(chunk)
+            if (!is.null(scaleFactor)) normData <- normData * scaleFactor
+            if (isTRUE(log)) normData <- log1p(normData)
+            h5file[[resultH5Path]][sparseXIdx] <- normData@x
+            row_sums <- rowSums(normData)
             values$geneSumSq <- values$geneSumSq +
-                rowSums(norm.data * norm.data)
+                rowSums(normData * normData)
             values$geneMeans <- values$geneMeans + row_sums
             values
         },
         init = results,
-        useData = "raw.data",
+        useData = "rawData",
         chunkSize = chunkSize,
         verbose = verbose)
     results$geneMeans <- results$geneMeans / nCell
     h5file[["gene_means"]][seq_along(results$geneMeans)] <- results$geneMeans
-    feature.meta(object, check = FALSE)$geneMeans <- results$geneMeans
+    featureMeta(object, check = FALSE)$geneMeans <- results$geneMeans
     h5file[["gene_sum_sq"]][seq_along(results$geneSumSq)] <- results$geneSumSq
-    feature.meta(object, check = FALSE)$geneSumSq <- results$geneSumSq
-    norm.data(object, check = FALSE) <- h5file[[resultH5Path]]
-    h5file.info(object, "norm.data", check = FALSE) <- resultH5Path
+    featureMeta(object, check = FALSE)$geneSumSq <- results$geneSumSq
+    normData(object, check = FALSE) <- h5file[[resultH5Path]]
+    h5fileInfo(object, "normData", check = FALSE) <- resultH5Path
     return(object)
 }
 
@@ -152,20 +152,20 @@ normalizePeak <- function(
         scaleFactor <- NULL
     for (d in useDatasets) {
         # `d` is the name of each dataset
-        if (isTRUE(verbose)) .log("Normalizing raw peak counts in dataset: ", d)
+        if (isTRUE(verbose)) .log("Normalizing rawPeak counts in dataset: ", d)
         ld <- dataset(object, d)
-        if (inherits(raw.peak(ld), "dgCMatrix") |
-            inherits(raw.peak(ld), "dgTMatrix"))
-            norm.peak(ld, check = FALSE) <- Matrix.column_norm(raw.peak(ld))
+        if (inherits(rawPeak(ld), "dgCMatrix") |
+            inherits(rawPeak(ld), "dgTMatrix"))
+            normPeak(ld, check = FALSE) <- Matrix.column_norm(rawPeak(ld))
         else
-            norm.peak(ld, check = FALSE) <- sweep(x = raw.peak(ld), MARGIN = 2,
-                                                  STATS = colSums(raw.peak(ld)),
+            normPeak(ld, check = FALSE) <- sweep(x = rawPeak(ld), MARGIN = 2,
+                                                  STATS = colSums(rawPeak(ld)),
                                                   FUN = "/")
 
         if (!is.null(scaleFactor))
-            norm.peak(ld, check = FALSE) <- norm.peak(ld) * scaleFactor
+            normPeak(ld, check = FALSE) <- normPeak(ld) * scaleFactor
         if (isTRUE(log))
-            norm.peak(ld, check = FALSE) <- log1p(norm.peak(ld))
+            normPeak(ld, check = FALSE) <- log1p(normPeak(ld))
         datasets(object, check = FALSE)[[d]] <- ld
     }
     object

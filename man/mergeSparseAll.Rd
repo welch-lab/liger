@@ -25,10 +25,10 @@ and the union of genes in \code{datalist} as rows.
 \code{mergeSparseAll} takes in a list of DGEs, with genes as
 rows and cells as columns, and merges them into a single DGE. Also adds
 \code{libraryNames} to colnames from each DGE if expected to be overlap
-(common with 10X barcodes). Values in \code{raw.data} or \code{norm.data}
+(common with 10X barcodes). Values in \code{rawData} or \code{normData}
 slot of a \linkS4class{ligerDataset} object can be processed with this.
 
-For a list of dense matrices, usually the values in \code{scale.data} slot of
+For a list of dense matrices, usually the values in \code{scaleData} slot of
 a \linkS4class{ligerDataset} object, please use \code{mergeDenseAll} which
 works in the same way.
 }

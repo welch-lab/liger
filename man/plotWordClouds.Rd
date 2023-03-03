@@ -68,7 +68,7 @@ ligerex <- runTSNE(ligerex)
 plotWordClouds(ligerex, num.genes = 20)
 # dev.off()
 # ligerex (liger object based on datasets in HDF5 format), factorization complete input
-ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+ligerex <- readSubset(ligerex, slot.use = "normData", max.cells = 5000)
 plotWordClouds(ligerex, num.genes = 20)
 }
 }

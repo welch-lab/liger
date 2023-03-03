@@ -23,10 +23,10 @@
 #' a data.frame where the first column is gene names and second column is
 #' grouping variable (e.g. \code{runWilcoxon} output, recommended to be row
 #' subset).
-#' @param groupBy The names of the columns in \code{cell.meta} slot storing
+#' @param groupBy The names of the columns in \code{cellMeta} slot storing
 #' categorical variables. Expression data would be aggregated basing on these,
 #' together with \code{splitBy}. Default \code{"louvain_cluster"}.
-#' @param splitBy The names of the columns in \code{cell.meta} slot storing
+#' @param splitBy The names of the columns in \code{cellMeta} slot storing
 #' categorical variables. Dotplot panel splitting would be based on these.
 #' Default \code{NULL}.
 #' @param featureScaleFunc A function object applied to normalized data for
@@ -82,7 +82,7 @@ plotClusterGeneDot <- function(
     # Retrieved expression matrix would always be cell x feature, designed for
     # ggplot
     mat <- retrieveCellFeature(object, feature = features[,1],
-                               slot = "norm.data", cellIdx = cellIdx,
+                               slot = "normData", cellIdx = cellIdx,
                                verbose = verbose)
 
     # In case specified features not found
@@ -153,15 +153,14 @@ plotClusterGeneDot <- function(
 #' column_split, column_title_gp, column_title, column_labels, column_names_gp,
 #' top_annotation}.
 #' @param object A \linkS4class{liger} object
-#' @param groupBy The names of the columns in \code{cell.meta} slot storing
+#' @param groupBy The names of the columns in \code{cellMeta} slot storing
 #' categorical variables. Loading data would be aggregated basing on these,
 #' together with \code{splitBy}. Default \code{"louvain_cluster"}.
 #' @param useDims A Numeric vector to specify exact factors of interests.
-#' Default \code{seq(object@k)}. (Note that \code{object@k} only exists after
-#' factorization).
+#' Default \code{NULL} uses all available factors.
 #' @param useRaw Whether to use un-aligned cell factor loadings (\eqn{H}
 #' matrices). Default \code{FALSE}.
-#' @param splitBy The names of the columns in \code{cell.meta} slot storing
+#' @param splitBy The names of the columns in \code{cellMeta} slot storing
 #' categorical variables. Dotplot panel splitting would be based on these.
 #' Default \code{NULL}.
 #' @param factorScaleFunc A function object applied to factor loading matrix for
@@ -184,7 +183,7 @@ plotClusterGeneDot <- function(
 plotClusterFactorDot <- function(
         object,
         groupBy = "louvain_cluster",
-        useDims = seq(object@k),
+        useDims = NULL,
         useRaw = FALSE,
         splitBy = NULL,
         factorScaleFunc = NULL,
@@ -204,6 +203,7 @@ plotClusterFactorDot <- function(
                                   returnList = TRUE)
     # Retrieved expression matrix would always be cell x feature, designed for
     # ggplot
+    if (is.null(useDims)) useDims <- seq(object@uns$factorization$k)
     mat <- retrieveCellFeature(object, feature = useDims,
                                slot = ifelse(useRaw, "H", "H.norm"),
                                cellIdx = cellIdx, verbose = verbose)

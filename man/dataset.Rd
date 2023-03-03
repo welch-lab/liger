@@ -17,7 +17,7 @@
 
 \S4method{dataset}{liger,character,missing,ANY,ligerDataset}(x, name, type = NULL, qc = TRUE) <- value
 
-\S4method{dataset}{liger,character,ANY,ANY,matrixLike}(x, name, type = c("raw.data", "norm.data", "scale.data"), qc = TRUE) <- value
+\S4method{dataset}{liger,character,ANY,ANY,matrixLike}(x, name, type = c("rawData", "normData", "scaleData"), qc = TRUE) <- value
 
 \S4method{dataset}{liger,character,missing,ANY,`NULL`}(x, name, type = NULL, qc = TRUE) <- value
 }
@@ -27,8 +27,8 @@
 \item{name}{name of dataset}
 
 \item{type}{Type of specified matrix. Only works when \code{value} is a
-matrix like object. choose from \code{"raw.data"}, \code{"norm.data"} or
-\code{"scale.data"}. Default \code{"raw.data"}.}
+matrix like object. choose from \code{"rawData"}, \code{"normData"} or
+\code{"scaleData"}. Default \code{"rawData"}.}
 
 \item{value}{A matrix of a dataset to be added, or a constructed
 \linkS4class{ligerDataset} object. \code{NULL} to remove a dataset by

@@ -75,7 +75,7 @@ setGeneric(
 #' \code{TRUE}.
 #' @return For method on \linkS4class{liger} object, the object will be returned
 #' with the \code{H.norm} slot and \code{"H.norm_cluster"} variable in
-#' \code{cell.meta} slot updated. For method on list, a result list with entries
+#' \code{cellMeta} slot updated. For method on list, a result list with entries
 #' of \code{H.norm} and \code{clusters} will be returned.
 #' @rdname quantileNorm
 #' @export
@@ -124,7 +124,7 @@ setMethod(
             seed = seed
         )
         object@H.norm <- out$H.norm
-        cell.meta(object, clusterName, check = FALSE) <- out$clusters
+        cellMeta(object, clusterName, check = FALSE) <- out$clusters
         return(object)
     })
 
@@ -297,7 +297,7 @@ setMethod(
 #' \code{TRUE}.
 #' @return For method on \linkS4class{liger} object, the object will be returned
 #' with the \code{H.norm} slot and \code{"H.norm_cluster"} variable in
-#' \code{cell.meta} slot updated. For method on list, a result list with entries
+#' \code{cellMeta} slot updated. For method on list, a result list with entries
 #' of \code{H.norm} and \code{clusters} will be returned.
 #' @name quantile_norm-deprecated
 #' @seealso \code{\link{rliger-deprecated}}

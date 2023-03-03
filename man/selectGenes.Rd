@@ -70,8 +70,8 @@ when gene selection is applied to any HDF5 based dataset. Default
 \item{verbose}{Logical. Whether to show the progress. Default \code{TRUE}.}
 }
 \value{
-The input \code{object}, with the \code{var.features} slot updated.
-The \code{var.unshared.features} slot of the \linkS4class{ligerDataset}
+The input \code{object}, with the \code{varFeatures} slot updated.
+The \code{varUnsharedFeatures} slot of the \linkS4class{ligerDataset}
 object in the \code{datasets} slot will be updated if \code{unshared = TRUE}.
 }
 \description{

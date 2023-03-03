@@ -37,13 +37,13 @@ optimizeUANLS <- function(
         stop("Vectorized lambda should have one value for each dataset.")
 
     # Get a list of all the matrices
-    # scale data in mlist: gene x cell
-    mlist <- getMatrix(object, "scale.data", returnList = TRUE)
+    # scaleData in mlist: gene x cell
+    mlist <- getMatrix(object, "scaleData", returnList = TRUE)
     xdim <- lapply(mlist, dim)
 
     # Return what datasets have unshared features,
     # and the dimensions of those unshared features
-    ulist <- getMatrix(object, "scale.unshared.data", returnList = TRUE)
+    ulist <- getMatrix(object, "scaleUnsharedData", returnList = TRUE)
     udim <- lapply(ulist, dim)
     unshared <- which(sapply(ulist, function(x) !is.null(x)))
     max_feats <- max(unlist(lapply(ulist, nrow)))
@@ -73,7 +73,7 @@ optimizeUANLS <- function(
     }
 
     nCells <- sapply(X, ncol)
-    nGenes <- length(var.features(object))
+    nGenes <- length(varFeatures(object))
     bestObj <- Inf
 
     for (i in seq(nrep)) {
@@ -86,7 +86,7 @@ optimizeUANLS <- function(
         # Establish V from only the RNA dimensions
         # V matrices: g x k
         V <- list()
-        for (i in seq_along(X)) V[[i]] <- scale.data(object, i)[, idX[[i]]]
+        for (i in seq_along(X)) V[[i]] <- scaleData(object, i)[, idX[[i]]]
         # Establish W from the shared gene dimensions
         # W matrices: g x k
         W <- matrix(stats::runif(nGenes*k, 0, 2), nGenes, k)
@@ -254,14 +254,14 @@ optimizeUANLS <- function(
 
     factorNames <- paste0("factor_", seq(k))
 
-    rownames(W_m) <- var.features(object)
+    rownames(W_m) <- varFeatures(object)
     colnames(W_m) <- factorNames
     object@W <- W_m
 
     for (i in seq_along(object)) {
         ld <- dataset(object, i)
 
-        rownames(V_m[[i]]) <- var.features(object)
+        rownames(V_m[[i]]) <- varFeatures(object)
         colnames(V_m[[i]]) <- factorNames
         ld@V <- V_m[[i]]
 
@@ -270,7 +270,7 @@ optimizeUANLS <- function(
         ld@H <- H_m[[i]]
 
         if (i %in% unshared) {
-            rownames(U_m[[i]]) <- ld@var.unshared.features
+            rownames(U_m[[i]]) <- ld@varUnsharedFeatures
             colnames(U_m[[i]]) <- factorNames
             ld@U <- U_m[[i]]
         }

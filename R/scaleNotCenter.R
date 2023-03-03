@@ -12,7 +12,7 @@
 #' scaling is applied to any HDF5 based dataset. Default \code{1000}.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{TRUE}.
-#' @return Updated \code{object}, where the \code{scale.data} slot of each
+#' @return Updated \code{object}, where the \code{scaleData} slot of each
 #' \linkS4class{ligerDataset} object in the \code{datasets} slot is updated.
 #' @export
 scaleNotCenter <- function(
@@ -21,8 +21,8 @@ scaleNotCenter <- function(
     chunk = 1000,
     verbose = TRUE
 ) {
-    if (is.null(var.features(object)) ||
-        length(var.features(object)) == 0) {
+    if (is.null(varFeatures(object)) ||
+        length(varFeatures(object)) == 0) {
         stop("No variable feature found. ",
              "Please check the result of `selectGenes()`")
     }
@@ -34,28 +34,29 @@ scaleNotCenter <- function(
         if (isH5Liger(ld)) {
             # Scale H5 based data
             featureIdx <- .getOrderedSubsetIdx(rownames(ld),
-                                               var.features(object))
+                                               varFeatures(object))
             ld <- .scaleH5Matrix(ld, featureIdx = featureIdx,
-                                 resultH5Path = "scale.data",
+                                 resultH5Path = "scaleData",
                                  chunk = chunk, verbose = verbose)
 
-            if (!is.null(ld@var.unshared.features)) {
+            if (!is.null(ld@varUnsharedFeatures) &
+                length(ld@varUnsharedFeatures) > 0) {
                 unsharedIdx <- .getOrderedSubsetIdx(rownames(ld),
-                                                    ld@var.unshared.features)
+                                                    ld@varUnsharedFeatures)
                 ld <- .scaleH5Matrix(ld, featureIdx = unsharedIdx,
-                                     resultH5Path = "scale.unshared.data",
+                                     resultH5Path = "scaleUnsharedData",
                                      chunk = chunk, verbose = verbose)
             }
         } else {
             # Scale in memory data
-            scaled <- .scaleMemMatrix(norm.data(ld)[var.features(object),])
-            scale.data(ld, check = FALSE) <- scaled
+            scaled <- .scaleMemMatrix(normData(ld)[varFeatures(object), ,drop = FALSE])
+            scaleData(ld, check = FALSE) <- scaled
             # For unshared var features
-            if (!is.null(ld@var.unshared.features)) {
+            if (!is.null(ld@varUnsharedFeatures)) {
                 scaled.unshared <- .scaleMemMatrix(
-                    norm.data(ld)[ld@var.unshared.features,]
+                    normData(ld)[ld@varUnsharedFeatures, ,drop = FALSE]
                 )
-                ld@scale.unshared.data <- scaled.unshared
+                ld@scaleUnsharedData <- scaled.unshared
             }
         }
         datasets(object, check = FALSE)[[d]] <- ld
@@ -65,7 +66,7 @@ scaleNotCenter <- function(
 
 .scaleH5Matrix <- function(ld, featureIdx, resultH5Path, chunk, verbose) {
     features <- rownames(ld)[featureIdx]
-    geneSumSq <- feature.meta(ld)$geneSumSq[featureIdx]
+    geneSumSq <- featureMeta(ld)$geneSumSq[featureIdx]
     nCells <- ncol(ld)
     geneRootMeanSumSq = sqrt(geneSumSq / (nCells - 1))
     h5file <- getH5File(ld)
@@ -78,7 +79,7 @@ scaleNotCenter <- function(
     )
     H5Apply(
         ld,
-        useData = "norm.data",
+        useData = "normData",
         chunkSize = chunk,
         verbose = verbose,
         FUN = function(chunk, sparseXIdx, cellIdx, values) {
@@ -92,7 +93,7 @@ scaleNotCenter <- function(
                                    cellIdx] <- chunk
         }
     )
-    h5file.info(ld, resultH5Path, check = FALSE) <- resultH5Path
+    h5fileInfo(ld, resultH5Path, check = FALSE) <- resultH5Path
     safeH5Create(
         ld,
         dataPath = paste0(resultH5Path, ".featureIdx"),
@@ -106,6 +107,9 @@ scaleNotCenter <- function(
 
 # Input norm.subset should still be feature x cell dimensionality
 .scaleMemMatrix <- function(norm.subset) {
+    if (nrow(norm.subset) == 0)
+        return(matrix(nrow = 0, ncol = ncol(norm.subset),
+                      dimnames = list(NULL, colnames(norm.subset))))
     scaled <- scaleNotCenterFast(t(norm.subset))
     # scaled: g x c
     scaled <- as.matrix(t(scaled))

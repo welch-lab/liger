@@ -10,13 +10,13 @@ H5Apply <- function(
         object,
         FUN,
         init = NULL,
-        useData = c("raw.data", "norm.data", "scale.data"),
+        useData = c("rawData", "normData", "scaleData"),
         chunkSize = 1000,
         verbose = TRUE,
         ...) {
     fun.args <- list(...)
     useData <- match.arg(useData)
-    h5meta <- h5file.info(object)
+    h5meta <- h5fileInfo(object)
     numCells <- ncol(object)
     numFeatures <- nrow(object)
 
@@ -166,7 +166,7 @@ restoreH5Liger <- function(object, filePath = NULL) {
         if (isTRUE(methods::validObject(object, test = TRUE))) {
             return(object)
         }
-        h5.meta <- h5file.info(object)
+        h5.meta <- h5fileInfo(object)
         if (is.null(filePath)) filePath <- h5.meta$filename
         if (!file.exists(filePath)) {
             stop("HDF5 file path does not exist:\n",
@@ -197,12 +197,12 @@ restoreH5Liger <- function(object, filePath = NULL) {
         }
         # All checks passed!
         h5.meta$H5File <- h5file
-        h5file.info(object, check = FALSE) <- h5.meta
-        raw.data(object, check = FALSE) <- h5file[[h5.meta$raw.data]]
-        if (!is.null(h5.meta$norm.data))
-            norm.data(object, check = FALSE) <- h5file[[h5.meta$norm.data]]
-        if (!is.null(h5.meta$scale.data))
-            scale.data(object, check = FALSE) <- h5file[[h5.meta$scale.data]]
+        h5fileInfo(object, check = FALSE) <- h5.meta
+        rawData(object, check = FALSE) <- h5file[[h5.meta$rawData]]
+        if (!is.null(h5.meta$normData))
+            normData(object, check = FALSE) <- h5file[[h5.meta$normData]]
+        if (!is.null(h5.meta$scaleData))
+            scaleData(object, check = FALSE) <- h5file[[h5.meta$scaleData]]
         methods::validObject(object)
     } else {
         # Working for liger object

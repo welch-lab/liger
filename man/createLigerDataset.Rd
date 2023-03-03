@@ -5,26 +5,26 @@
 \title{Create ligerDataset object}
 \usage{
 createLigerDataset(
-  raw.data = NULL,
+  rawData = NULL,
   modal = c("default", "rna", "atac"),
-  norm.data = NULL,
-  scale.data = NULL,
-  scale.unshared.data = NULL,
-  var.unshared.features = NULL,
+  normData = NULL,
+  scaleData = NULL,
+  scaleUnsharedData = NULL,
+  varUnsharedFeatures = NULL,
   H = NULL,
   V = NULL,
   A = NULL,
   B = NULL,
   U = NULL,
-  h5file.info = NULL,
-  feature.meta = NULL,
+  h5fileInfo = NULL,
+  featureMeta = NULL,
   ...
 )
 }
 \arguments{
-\item{raw.data}{matrix}
+\item{rawData}{matrix}
 
-\item{norm.data}{matrix}
+\item{normData}{matrix}
 
 \item{V}{matrix}
 

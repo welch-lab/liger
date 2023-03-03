@@ -8,7 +8,7 @@ plotCellViolin(
   object,
   y,
   groupBy = NULL,
-  slot = c("cell.meta", "raw.data", "norm.data", "scale.data", "H.norm", "H"),
+  slot = c("cellMeta", "rawData", "normData", "scaleData", "H.norm", "H"),
   yFunc = NULL,
   colorBy = NULL,
   splitBy = NULL,
@@ -21,12 +21,12 @@ plotCellViolin(
 \item{y}{Available variable name in \code{slot} to look for the value to
 visualize.}
 
-\item{groupBy, colorBy}{Available variable name in \code{cell.meta} slot to
+\item{groupBy, colorBy}{Available variable name in \code{cellMeta} slot to
 look for categorical grouping. See details. Default \code{NULL} produces no
 grouping and all-black graphic elements.}
 
 \item{slot}{Choose the slot to find the \code{y} variable. See Details.
-Default \code{"cell.meta"}.}
+Default \code{"cellMeta"}.}
 
 \item{yFunc}{A function object that expects a vector/factor/data.frame
 retrieved by \code{y} as the only input, and returns an object of the same
@@ -34,7 +34,7 @@ size, so that the y-axis is replaced by this output. Useful when, for
 example, users need to scale the gene expression shown on plot.}
 
 \item{splitBy}{Character vector of categorical variable names in
-\code{cell.meta} slot. Split all cells by groupings on this/these variable(s)
+\code{cellMeta} slot. Split all cells by groupings on this/these variable(s)
 to produce a violin plot containing only the cells in each group. Default
 \code{NULL}.}
 
@@ -57,17 +57,17 @@ plot for each. Users can further split the plot(s) by grouping on cells (e.g.
 datasets).
 }
 \details{
-Available option for \code{slot} include: \code{"cell.meta"},
-\code{"raw.data"}, \code{"norm.data"}, \code{"scale.data"}, \code{"H.norm"}
-and \code{"H"}. When \code{"raw.data"}, \code{"norm.data"} or
-\code{"scale.data"}, \code{y} has to be a character vector of feature names.
+Available option for \code{slot} include: \code{"cellMeta"},
+\code{"rawData"}, \code{"normData"}, \code{"scaleData"}, \code{"H.norm"}
+and \code{"H"}. When \code{"rawData"}, \code{"normData"} or
+\code{"scaleData"}, \code{y} has to be a character vector of feature names.
 When \code{"H.norm"} or \code{"H"}, \code{colorBy} can be any valid index to
 select one factor of interests. Note that character index follows
 \code{"factor_[k]"} format, with replacing \code{[k]} with an integer.
 
-When \code{"cell.meta"}, \code{y} has to be an available column name in
+When \code{"cellMeta"}, \code{y} has to be an available column name in
 the table. Note that, for \code{y} as well as \code{groupBy}, \code{colorBy}
-and \code{splitBy} since a matrix object is feasible in \code{cell.meta}
+and \code{splitBy} since a matrix object is feasible in \code{cellMeta}
 table, using a column (e.g. named as \code{"column1"} in a certain matrix
 (e.g. named as \code{"matrixVar"}) should follow the syntax of
 \code{"matrixVar.column1"}. When the matrix does not have a "colname"
