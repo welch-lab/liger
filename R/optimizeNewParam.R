@@ -26,30 +26,28 @@
 optimizeNewK <- function(
         object,
         k.new,
-        lambda = 5,
+        lambda = NULL,
         thresh = 1e-4,
         max.iters = 100,
         rand.seed = 1,
         verbose = TRUE
 ) {
     .checkValidFactorResult(object)
+    if (is.null(lambda)) lambda <- object@uns$factorization$lambda
     object <- recordCommand(object)
-    if (is.null(lambda)) {
-        #lambda <- object@parameters$lambda
-    }
-    k <- ncol(object@W)
+    k <- object@uns$factorization$k
     if (k.new == k) {
         return(object)
     }
     # g x c
-    E <- getMatrix(object, "scale.data")
+    E <- getMatrix(object, "scale.data", returnList = TRUE)
     # g x k
-    W <- object@W
+    W <- getMatrix(object, "W")
     # g x k
-    V <- getMatrix(object, "V")
+    V <- getMatrix(object, "V", returnList = TRUE)
     # k x c
-    H <- getMatrix(object, "H")
-    nGenes <- nrow(W)
+    H <- getMatrix(object, "H", returnList = TRUE)
+    nGenes <- length(var.features(object))
     nDatasets <- length(object)
     nCells <- sapply(datasets(object), ncol)
     if (isTRUE(verbose)) .log("Initializing with new k...")
@@ -59,10 +57,12 @@ optimizeNewK <- function(
         # Initialize W_new g x k_diff
         # TODO: Directly initialize with nGene x k.new-k instead of transposing
         # Doing it now because need to reproduce old result
-        W_new <- t(matrix(runif(nGenes*(k.new - k), 0, 2), k.new - k, nGenes))
+        W_new <- t(matrix(stats::runif(nGenes*(k.new - k), 0, 2),
+                          k.new - k, nGenes))
         # Initialize V_new g x k_diff
         V_new <- lapply(seq(nDatasets), function(i)
-            t(matrix(runif(nGenes*(k.new - k), 0, 2), k.new - k, nGenes)))
+            t(matrix(stats::runif(nGenes*(k.new - k), 0, 2),
+                     k.new - k, nGenes)))
         # H_new k_diff x c
         H_new <- lapply(seq(nDatasets), function(i) {
             solveNNLS(rbind(W_new + V_new[[i]], sqrtLambda * V_new[[i]]),
@@ -153,23 +153,21 @@ optimizeNewData <- function(
         new.data,
         which.datasets,
         add.to.existing = TRUE,
-        lambda = 5,
+        lambda = NULL,
         thresh = 1e-4,
         max.iters = 100,
         verbose = TRUE
 ) {
     .checkValidFactorResult(object)
     object <- recordCommand(object)
-    #if (is.null(lambda)) {
-    #    lambda <- object@parameters$lambda
-    #}
+    if (is.null(lambda)) lambda <- object@uns$factorization$lambda
     sqrtLambda <- sqrt(lambda)
-    nGenes <- nrow(object@W)
-    k <- ncol(object@W)
+    nGenes <- length(var.features(object))
+    k <- object@uns$factorization$k
     # W: g x k
-    W <- object@W
+    W <- getMatrix(object, "W")
     # V: g x k
-    V <- lapply(datasets(object), function(ld) ld@V)
+    V <- getMatrix(object, "V")
     if (isTRUE(verbose)) .log("Initializing with new data...")
     if (isTRUE(add.to.existing)) {
         # TODO Establish dataset merging/extending functionality first
@@ -188,8 +186,8 @@ optimizeNewData <- function(
         object <- scaleNotCenter(object)
         H_new <- lapply(1:length(new.data), function(i) {
             t(solveNNLS(rbind(
-                t(object@W + object@V[[which.datasets[[i]]]]),
-                sqrtLambda * t(object@V[[which.datasets[[i]]]])
+                t(W + V[[which.datasets[[i]]]]),
+                sqrtLambda * t(V[[which.datasets[[i]]]])
             ),
             rbind(
                 t(object@scale.data[[which.datasets[[i]]]][colnames(new.data[[i]]), ]),
@@ -269,13 +267,13 @@ optimizeNewLambda <- function(
         verbose = TRUE
 ) {
     .checkValidFactorResult(object, names(object))
-    if (new.lambda < object@uns$lambda && isTRUE(verbose))
+    if (new.lambda < object@uns$factorization$lambda && isTRUE(verbose))
         .log("New lambda less than current lambda; new factorization may not ",
              "be optimal. Re-optimization with optimizeAlS recommended ",
              "instead.")
     object <- optimizeALS(
         object,
-        k = object@k,
+        k = object@uns$factorization$k,
         lambda = new.lambda,
         thresh = thresh,
         maxIter = max.iters,
@@ -311,7 +309,7 @@ optimizeNewLambda <- function(
 optimizeSubset <- function(
         object,
         cellIdx,
-        lambda = 5,
+        lambda = NULL,
         thresh = 1e-4,
         max.iters = 100,
         datasets.scale = NULL,
@@ -322,6 +320,7 @@ optimizeSubset <- function(
 ) {
     .deprecateArgs(list(cell.subset = "cellIdx"), defunct = "cluster.subset")
     .checkValidFactorResult(object, useDatasets = names(object))
+    if (is.null(lambda)) lambda <- object@uns$factorization$lambda
     cellIdx <- .idxCheck(object, cellIdx, orient = "cell")
     if (!is.null(datasets.scale))
         datasets.scale <- .checkUseDatasets(object, datasets.scale)
@@ -332,7 +331,7 @@ optimizeSubset <- function(
     object <- subsetLiger(object, cellIdx = cellIdx)
     object <- optimizeALS(
         object,
-        k = object@k,
+        k = object@uns$factorization$k,
         lambda = lambda,
         thresh = thresh,
         max.iters = max.iters,

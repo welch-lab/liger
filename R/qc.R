@@ -231,10 +231,10 @@ removeMissing <- function(
         methods::new(
             "liger",
             datasets = datasets.new,
-            cell.meta = cell.meta(object)[object$nGene > 0, , drop = FALSE],
+            cell.meta = cell.meta(object, cellIdx = object$nGene > 0,
+                                  drop = FALSE),
             var.features = character(),
-            H.norm = object@H.norm[cellIdx, , drop = FALSE],
-            version = packageVersion("rliger")
+            H.norm = object@H.norm[cellIdx, , drop = FALSE]
         )
     } else {
         object
@@ -261,7 +261,6 @@ removeMissing <- function(
 #' for more options and details.
 #' @export
 #' @rdname plotQCMetric
-#' @importFrom rlang .data
 plotQCMetric <- function(
         object,
         metric,

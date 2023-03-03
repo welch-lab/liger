@@ -108,8 +108,8 @@ perform. Default \code{30}.}
 
 \item{rand.seed}{Random seed to allow reproducible results. Default \code{1}.}
 
-\item{print.obj}{Print objective function values after convergence when
-\code{verbose = TRUE}. Default \code{FALSE}.}
+\item{print.obj}{\bold{Defunct}. Whether to print objective function values
+after convergence when \code{verbose = TRUE}. Now always print when verbose.}
 }
 \value{
 \code{object} with \code{W} slot updated with the result \eqn{W}

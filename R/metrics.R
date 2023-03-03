@@ -185,21 +185,21 @@ calcAgreement <- function(object,
 #' ligerex <- quantile_norm(ligerex)
 #' alignment <- calcAlignment(ligerex)
 #' }
-calcAlignment <- function(object,
-                          k = NULL,
-                          rand.seed = 1,
-                          cells.use = NULL,
-                          cells.comp = NULL,
-                          clusters.use = NULL,
-                          by.cell = FALSE,
-                          by.dataset = FALSE) {
-    #lifecycle::deprecate_stop("1.2.0", "calcAlignment()")
+calcAlignment <- function(
+        object,
+        k = NULL,
+        rand.seed = 1,
+        cells.use = NULL,
+        cells.comp = NULL,
+        clusters.use = NULL,
+        by.cell = FALSE,
+        by.dataset = FALSE
+) {
     if (is.null(cells.use)) {
-        cells.use <- rownames(object@H.norm)
+        cells.use <- colnames(object)
     }
     if (!is.null(clusters.use)) {
-        cells.use <-
-            names(object@clusters)[which(object@clusters %in% clusters.use)]
+        cells.use <- names(object@clusters)[which(object@clusters %in% clusters.use)]
     }
     if (!is.null(cells.comp)) {
         nmf_factors <- object@H.norm[c(cells.use, cells.comp),]
@@ -288,7 +288,8 @@ calcAlignment <- function(object,
 #'
 #' Returns alignment for each cluster in analysiss (see documentation for calcAlignment).
 #'
-#' @param object \code{liger} object. Should call quantileAlignSNF before calling.
+#' @param object \code{liger} object. Should run
+#' \code{\link{quantileNorm}} before calling.
 #' @param rand.seed Random seed for reproducibility (default 1).
 #' @param k Number of nearest neighbors in calculating alignment (see calcAlignment for default).
 #'   Can pass in single value or vector with same length as number of clusters.
@@ -430,4 +431,145 @@ calcPurity <- function(object, classes.compare, verbose = TRUE) {
         sum(apply(table(classes.compare, clusters), 2, max)) / length(clusters)
 
     return(purity)
+}
+
+#' Calculate loadings for each factor
+#' @description Calculates the contribution of each factor of W,V, and U to the
+#' reconstruction.
+#' @param object A \linkS4class{liger} object. Should call
+#' \code{\link{quantileNorm}} before calling.
+#' @return A dataframe, such that each column represents the contribution of a
+#' specific matrix (W, V_1, V_2, etc. )
+#' @export
+calcNormLoadings = function(object) {
+    .checkValidFactorResult(object, names(object))
+    # c x k
+    H_norm = getMatrix(object, "H.norm")
+    # k x g
+    W_norm = t(getMatrix(object, "W"))
+    # k x g
+    V_norm = lapply(getMatrix(object, "V"), t)
+    # k x g
+    U_norm = lapply(getMatrix(object, "U"), function(x) {
+        if (!is.null(x)) t(x)
+        else NULL
+    })
+    considerU <- !any(sapply(U_norm, is.null))
+    ##### Calculation of Contribution #########################
+    w_loadings = list()
+    u_loadings = rep(list(list()), length(object))
+    v_loadings = rep(list(list()), length(object))
+    k <- object@uns$factorization$k
+    for (i in seq(k)) {
+        hi = as.matrix(H_norm[, i])
+        ####### Calculate W
+        wi = t(as.matrix(W_norm[i, ]))
+        hw = hi %*% wi
+        forb_hw = norm(hw, type = "F") / dim(W_norm)[[2]]
+        w_loadings = append(w_loadings, forb_hw)
+
+        ###### Calculate V
+        for (j in seq_along(object)) {
+            temp_v = t(as.matrix(V_norm[[j]][i, ]))
+            hv_temp = hi %*% temp_v
+            forb_hv = norm(hv_temp, type = "F") / dim(V_norm[[j]])[[2]]
+            v_loadings[[j]] = append(v_loadings[[j]], forb_hv)
+        }
+        if (considerU) {
+            ###### Calculate U
+            for (j in seq_along(object)) {
+                if (length(U_norm[[j]]) != 0) {
+                    temp_u = t(as.matrix(U_norm[[j]][i, ]))
+                    hu_temp = hi %*% temp_u
+                    forb_hu = norm(hu_temp, type = "F") / dim(U_norm[[j]])[[2]]
+                    u_loadings[[j]] = append(u_loadings[[j]], forb_hu)
+                }
+            }
+        }
+    }
+
+    ################# Format the return object
+    w_loadings = unlist(w_loadings)
+    factors = seq(k)
+    results = data.frame(factors, w_loadings)
+
+    # For all V
+    for (j in seq_along(object)) {
+        results = cbind(results, unlist(v_loadings[[j]]))
+        colnames(results)[[2 + j]] = paste0("V_", j, "_loadings")
+    }
+    if (considerU) {
+        # For all U
+        for (j in seq_along(object)) {
+            name_di = dim(results)[[2]]
+            if (length(U_norm[[j]]) != 0) {
+                results = cbind(results, unlist(u_loadings[[j]]))
+                colnames(results)[[name_di + 1]] = paste0("U_", j, "_loadings")
+            }
+        }
+    }
+
+    return(results)
+}
+
+# Hierarchical alternating least squares for regular NMF
+nmf_hals <- function(A, k, max_iters = 500, thresh = 1e-4, reps = 20, W0 = NULL, H0 = NULL) {
+    m <- nrow(A)
+    n <- ncol(A)
+    if (is.null(W0)) {
+        W0 <- matrix(abs(stats::runif(m * k, min = 0, max = 2)), m, k)
+    }
+    if (is.null(H0)) {
+        H0 <- matrix(abs(stats::runif(n * k, min = 0, max = 2)), n, k)
+    }
+    W <- W0
+    rownames(W) <- rownames(A)
+    H <- H0
+    rownames(H) <- colnames(A)
+
+    # alpha = frobenius_prod(A %*% H, W)/frobenius_prod(t(W)%*%W,t(H)%*%H)
+    # W = alpha*W
+
+    for (i in 1:k)
+    {
+        W[, i] <- W[, i] / sum(W[, i]^2)
+    }
+
+    delta <- 1
+    iters <- 0
+    # pb <- txtProgressBar(min=0,max=max_iters,style=3)
+    iter_times <- rep(0, length(max_iters))
+    objs <- rep(0, length(max_iters))
+    obj <- norm(A - W %*% t(H), "F")^2
+    # print(obj)
+    while (delta > thresh & iters < max_iters) {
+        start_time <- Sys.time()
+        obj0 <- obj
+        HtH <- t(H) %*% H
+        AH <- A %*% H
+        for (i in 1:k)
+        {
+            W[, i] <- nonneg(W[, i] + (AH[, i] - (W %*% HtH[, i])) / (HtH[i, i]))
+            W[, i] <- W[, i] / sqrt(sum(W[, i]^2))
+        }
+
+        AtW <- t(A) %*% W
+        WtW <- t(W) %*% W
+        for (i in 1:k)
+        {
+            H[, i] <- nonneg(H[, i] + (AtW[, i] - (H %*% WtW[, i])) / (WtW[i, i]))
+        }
+
+        obj <- norm(A - W %*% t(H), "F")^2
+        # print(obj)
+        delta <- abs(obj0 - obj) / (mean(obj0, obj))
+        iters <- iters + 1
+        end_time <- Sys.time()
+        iter_times[iters] <- end_time - start_time
+        objs[iters] <- obj
+        # setTxtProgressBar(pb,iters)
+    }
+    .log("Converged in", end_time - start_time, "seconds,", iters, "iterations. Objective:", obj, "\n")
+
+    return(list(W, H, cumsum(iter_times), objs))
 }

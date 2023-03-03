@@ -4,7 +4,8 @@
 \alias{calcAlignmentPerCluster-deprecated}
 \title{[Deprecated] Calculate alignment for each cluster}
 \arguments{
-\item{object}{\code{liger} object. Should call quantileAlignSNF before calling.}
+\item{object}{\code{liger} object. Should run
+\code{\link{quantileNorm}} before calling.}
 
 \item{rand.seed}{Random seed for reproducibility (default 1).}
 

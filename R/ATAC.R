@@ -42,7 +42,7 @@ imputeKNN <- function(
     .deprecateArgs(list(knn_k = "nNeighbors"), defunct = "scale")
     if (is.null(getMatrix(object, "H.norm")))
         stop("Aligned factor loading has to be available for imputation. ",
-             "Please run `quantile_norm()` in advance.")
+             "Please run `quantileNorm()` in advance.")
     if (isTRUE(verbose)) {
         warning("This function will discard the raw data previously stored ",
                 "in the liger object and replace the `raw.data` slot with the ",
@@ -79,8 +79,8 @@ imputeKNN <- function(
                               object@H.norm[queryCells, ],
                               k = nNeighbors,
                               algorithm = "CR")
-        weights <- Matrix(0, nrow = length(referenceCells),
-                          ncol = nrow(nn.k$nn.index), sparse = TRUE)
+        weights <- Matrix::Matrix(0, nrow = length(referenceCells),
+                                  ncol = nrow(nn.k$nn.index), sparse = TRUE)
         if (isTRUE(weight)) {
             # for weighted situation
             # find nearest neighbors for query cell in normed ref datasets
@@ -106,7 +106,7 @@ imputeKNN <- function(
         rownames(imputed_vals) <- rownames(referenceRawData)
 
         if (!inherits(imputed_vals, "dgCMatrix"))
-            imputed_vals <- as(imputed_vals, "dgCMatrix")
+            imputed_vals <- methods::as(imputed_vals, "dgCMatrix")
         newQueryLD <- as.ligerDataset(queryLD, modal = "atac")
         raw.peak(newQueryLD) <- imputed_vals
         datasets(object, check = FALSE)[[query]] <- newQueryLD
@@ -205,7 +205,7 @@ linkGenesAndPeaks <- function(
     geneNames <- utils::read.csv2(pathToCoords, sep = "\t",
                                   header = FALSE, stringsAsFactors = FALSE)
 
-    geneNames <- geneNames[complete.cases(geneNames), ]
+    geneNames <- geneNames[stats::complete.cases(geneNames), ]
     genesCoords <- GenomicRanges::GRanges(
         seqnames = geneNames$V1,
         ranges = IRanges::IRanges(as.numeric(geneNames$V2),
@@ -342,7 +342,7 @@ exportInteractTrack <- function(
     }
 
     ### make GRanges object for genes
-    genesCoords <- read.csv2(
+    genesCoords <- utils::read.csv2(
         pathToCoords, sep = "\t", header = FALSE,
         colClasses = c("character", "integer", "integer",
                        "character", "NULL", "NULL")

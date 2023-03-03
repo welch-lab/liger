@@ -169,7 +169,8 @@ getFactorMarkers <- function(
                         log.fc.thresh = "logFCThresh",
                         pval.thresh = "pvalThresh", num.genes = "nGenes",
                         print.genes = "printGenes"))
-
+    dataset1 <- .checkUseDatasets(object, useDatasets = dataset1)
+    dataset2 <- .checkUseDatasets(object, useDatasets = dataset2)
     if (any(isH5Liger(object, dataset = c(dataset1, dataset2))))
         stop("Please use in-memory liger object for this analysis.`")
     if (is.null(nGenes)) {
@@ -335,6 +336,7 @@ getFactorMarkers <- function(
 #' @param dataset2 Name of second dataset. Required.
 #' @param doPlot Logical. Whether to display a barplot of dataset specificity
 #' scores (by factor). Default \code{FALSE}.
+#' @param do.plot \bold{Deprecated}. Use \code{doPlot} instead.
 #' @return List containing three elements.
 #' \item{pct1}{Vector of the norm of each metagene factor for dataset1.}
 #' \item{pct2}{Vector of the norm of each metagene factor for dataset2.}
@@ -344,8 +346,10 @@ calcDatasetSpecificity <- function(
         object,
         dataset1,
         dataset2,
-        do.plot = FALSE
+        doPlot = FALSE,
+        do.plot = doPlot
 ) {
+    .deprecateArgs(list(do.plot = "doPlot"))
     H1 <- getMatrix(object, slot = "H", dataset = 1)
     # V: List of two g x k matrices
     V <- getMatrix(object, slot = "V", dataset = c(dataset1, dataset2))
@@ -357,7 +361,7 @@ calcDatasetSpecificity <- function(
         pct1[i] <- norm(as.matrix(V[[dataset1]][,i] + W[,i]), "F")
         pct2[i] <- norm(as.matrix(V[[dataset2]][,i] + W[,i]), "F")
     }
-    if (isTRUE(do.plot)) {
+    if (isTRUE(doPlot)) {
         graphics::barplot(
             100 * (1 - (pct1 / pct2)),
             xlab = "Factor",
@@ -384,16 +388,16 @@ wilcoxauc <- function(X,
                       groups_use = NULL,
                       verbose = TRUE) {
     ## Check and possibly correct input values
-    if (is(X, 'dgeMatrix'))
+    if (methods::is(X, 'dgeMatrix'))
         X <- as.matrix(X)
-    if (is(X, 'data.frame'))
+    if (methods::is(X, 'data.frame'))
         X <- as.matrix(X)
-    # if (is(X, 'DataFrame')) X <- as.matrix(X)
-    # if (is(X, 'data.table')) X <- as.matrix(X)
-    if (is(X, 'dgTMatrix'))
-        X <- as(X, 'dgCMatrix')
-    if (is(X, 'TsparseMatrix'))
-        X <- as(X, 'dgCMatrix')
+    # if (methods::is(X, 'DataFrame')) X <- as.matrix(X)
+    # if (methods::is(X, 'data.table')) X <- as.matrix(X)
+    if (methods::is(X, 'dgTMatrix'))
+        X <- methods::as(X, 'dgCMatrix')
+    if (methods::is(X, 'TsparseMatrix'))
+        X <- methods::as(X, 'dgCMatrix')
     if (ncol(X) != length(y))
         stop("number of columns of X does not match length of y")
     if (!is.null(groups_use)) {
@@ -427,7 +431,7 @@ wilcoxauc <- function(X,
     ## Compute primary statistics
     group.size <- as.numeric(table(y))
     n1n2 <- group.size * (ncol(X) - group.size)
-    if (is(X, 'dgCMatrix')) {
+    if (methods::is(X, 'dgCMatrix')) {
         rank_res <- rank_matrix(Matrix::t(X))
     } else {
         rank_res <- rank_matrix(X)
@@ -474,7 +478,7 @@ wilcoxauc <- function(X,
 compute_ustat <- function(Xr, cols, n1n2, group.size) {
     grs <- sumGroups(Xr, cols)
 
-    if (is(Xr, 'dgCMatrix')) {
+    if (methods::is(Xr, 'dgCMatrix')) {
         gnz <- (group.size - nnzeroGroups(Xr, cols))
         zero.ranks <- (nrow(Xr) - diff(Xr@p) + 1) / 2
         ustat <- t((t(gnz) * zero.ranks)) + grs - group.size *
@@ -513,7 +517,7 @@ rank_matrix <- function(X) {
 }
 
 rank_matrix.dgCMatrix <- function(X) {
-    Xr <- Matrix(X, sparse = TRUE)
+    Xr <- Matrix::Matrix(X, sparse = TRUE)
     ties <- cpp_rank_matrix_dgc(Xr@x, Xr@p, nrow(Xr), ncol(Xr))
     return(list(X_ranked = Xr, ties = ties))
 }
@@ -605,4 +609,42 @@ nnzeroGroups.matrix <- function(X, y, MARGIN = 2) {
     } else {
         cpp_nnzeroGroups_dense(X, as.integer(y) - 1, length(unique(y)))
     }
+}
+
+
+################################################################################
+# Visualization ####
+################################################################################
+plotVolcano <- function(
+        result,
+        ...
+) {
+    if (!requireNamespace("EnhancedVolcano", quietly = TRUE))
+        stop("Package \"EnhancedVolcano\" needed for this function to work. ",
+             "Please install it by command:\n",
+             "BiocManager::install('EnhancedVolcano')",
+             call. = FALSE)
+    EnhancedVolcano::EnhancedVolcano(result, )
+}
+
+plotMarkerHeatmap <- function(
+        object,
+        result,
+        ...
+) {
+    # TODO
+    featureNames <- result$feature
+    if (any(duplicated(featureNames))) {
+        dups <- unique(featureNames[duplicated(featureNames)])
+        for (g in dups) {
+            idx <- which(featureNames == g)
+            featureNames[idx] <- paste0(g, "-", seq_along(idx))
+        }
+    }
+    rownames(result) <- featureNames
+    plotGeneHeatmap(object, features = result$feature,
+                    useCellMeta = c("louvain_cluster", "dataset"),
+                    featureAnnotation = list(group = result$group),
+                    cellSplitBy = c("dataset", "louvain_cluster"),
+                    cluster_column_slices = FALSE, ...)
 }

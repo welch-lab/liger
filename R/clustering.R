@@ -5,11 +5,11 @@
 #' classes.
 #'
 #' While using quantile normalized factor loadings (result from
-#' \code{\link{quantile_norm}}) is recommended, this function looks for
+#' \code{\link{quantileNorm}}) is recommended, this function looks for
 #' unnormalized factor loadings (result from \code{\link{optimizeALS}} or
 #' \code{\link{online_iNMF}}) when the former is not available.
 #' @param object \linkS4class{liger} object. Should run
-#' \code{\link{quantile_norm}} before calling.
+#' \code{\link{quantileNorm}} before calling.
 #' @param nNeighbors Integer, the maximum number of nearest neighbors to
 #' compute. Default \code{20}.
 #' @param resolution Numeric, value of the resolution parameter, a larger value
@@ -99,7 +99,7 @@ louvainCluster <- function(
     clusts <- groupSingletons(ids = clusts, SNN = snn,
                               groupSingletons = groupSingletons,
                               verbose = verbose)
-    object[[clusterName]] <- factor(clusts)
+    cell.meta(object, columns = clusterName, check = FALSE) <- factor(clusts)
     unlink(edgeOutPath)
     return(object)
 }
@@ -166,6 +166,6 @@ mapAnnotation <- function(lig, original, mapping, newName) {
         newAnn[original == origClust] <- mapping[[origClust]]
     }
     newAnn <- factor(newAnn)
-    cell.meta(lig)[[newName]] <- newAnn
+    cell.meta(lig, columns = newName, check = FALSE) <- newAnn
     return(lig)
 }

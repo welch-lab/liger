@@ -8,6 +8,7 @@
 \alias{calcAlignmentPerCluster}
 \alias{calcARI}
 \alias{calcPurity}
+\alias{quantile_norm}
 \alias{quantile_norm,ANY-method}
 \title{Deprecated functions in package \pkg{rliger}.}
 \usage{
@@ -33,6 +34,22 @@ calcAlignmentPerCluster(object, rand.seed = 1, k = NULL, by.dataset = FALSE)
 calcARI(object, clusters.compare, verbose = TRUE)
 
 calcPurity(object, classes.compare, verbose = TRUE)
+
+quantile_norm(
+  object,
+  quantiles = 50,
+  ref_dataset = NULL,
+  min_cells = 20,
+  knn_k = 20,
+  dims.use = NULL,
+  do.center = FALSE,
+  max_sample = 1000,
+  eps = 0.9,
+  refine.knn = TRUE,
+  clusterName = "H.norm_cluster",
+  rand.seed = 1,
+  verbose = TRUE
+)
 
 \S4method{quantile_norm}{ANY}(
   object,
@@ -81,6 +98,9 @@ For \code{makeInteractTrack}, use \code{\link{exportInteractTrack}}.
 }
 
 \section{\code{quantile_norm}}{
+
+For \code{quantile_norm}, use \code{\link{quantileNorm}}.
+
 
 For \code{quantile_norm}, use \code{\link{quantileNorm}}.
 }

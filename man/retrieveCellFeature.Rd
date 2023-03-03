@@ -36,5 +36,5 @@ features.
 Only retrieve data from specific slot to reduce memory used by
 a whole \linkS4class{liger} object of the subset. Useful for plotting.
 Internally used by \code{\link{plotCellScatter}} and
-\code{\link{plotCellSViolin}}.
+\code{\link{plotCellViolin}}.
 }

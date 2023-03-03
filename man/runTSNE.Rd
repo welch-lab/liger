@@ -65,7 +65,7 @@ The \code{object} where a \code{"TSNE"} variable is updated in the
 }
 \description{
 Runs t-SNE on the quantile normalized cell factors (result from
-\code{\link{quantile_norm}}), or unnormalized cell factors (result from
+\code{\link{quantileNorm}}), or unnormalized cell factors (result from
 \code{\link{optimizeALS}} or \code{\link{online_iNMF}})) to generate a 2D
 embedding for visualization. By default \code{\link[Rtsne]{Rtsne}}
 (Barnes-Hut implementation of t-SNE) method is invoked, while alternative

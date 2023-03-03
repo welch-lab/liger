@@ -25,7 +25,7 @@
 #' \code{"TSNE.1"} or \code{"TSNE.2"} for the 2D embeddings generated with
 #' rliger package. These are based on the nature of \code{as.data.frame} method
 #' on a \code{\link[S4Vectors]{DataFrame}} object.
-#' @param object \linkS4class{liger} object
+#' @param object A \linkS4class{liger} object
 #' @param x,y Available variable name in \code{cell.meta} slot to look for
 #' the dot coordinates. See details.
 #' @param colorBy Available variable name in specified \code{slot} to look for
@@ -64,8 +64,7 @@ plotCellScatter <- function(
         ...
 ) {
     slot <- match.arg(slot)
-    plotDF <- as.data.frame(cell.meta(object))[, c(x, y, shapeBy, splitBy)]
-
+    plotDF <- cell.meta(object, c(x, y, shapeBy, splitBy), as.data.frame = TRUE)
     # Create copies of `plotDF` in `plotDFList`, where each `plotDF` has only
     # one `colorBy` variable
     plotDFList <- list()
@@ -132,6 +131,10 @@ plotCellScatter <- function(
 #' highlight. \code{NULL} use default order.
 #' @param dotSize,dotAlpha Numeric, controls the size or transparency of all
 #' dots. Default \code{0.6} and \code{0.9}.
+#' @param trimHigh,trimLow Numeric, limit the largest or smallest value of
+#' continuous \code{colorBy} variable. Default \code{NULL}.
+#' @param zeroAsNA Logical, whether to set zero values in continuous
+#' \code{colorBy} variable to \code{NA} so the color of these value.
 #' @param raster Logical, whether to rasterize the plot. Default \code{NULL}
 #' automatically rasterize the plot when number of total cells to be plotted
 #' exceeds 100,000.
@@ -145,7 +148,6 @@ plotCellScatter <- function(
 #' \code{\link{.ggplotLigerTheme}}.
 #' @return ggplot object by default. When \code{plotly = TRUE}, returns
 #' plotly (htmlwidget) object.
-#' @importFrom rlang .data
 .ggCellScatter <- function(
         plotDF,
         x,
@@ -155,6 +157,9 @@ plotCellScatter <- function(
         dotOrder = c("shuffle", "ascending", "descending"),
         dotSize = 1,
         dotAlpha = 0.9,
+        trimHigh = NULL,
+        trimLow = NULL,
+        zeroAsNA = TRUE,
         raster = NULL,
         labelText = TRUE,
         labelTextSize = 4,
@@ -163,25 +168,26 @@ plotCellScatter <- function(
 ) {
     dotOrder <- match.arg(dotOrder)
     set.seed(seed)
-    if (is.null(raster)) {
-        # Automatically decide whether to rasterize depending on number of cells
-        if (nrow(plotDF) > 1e5) {
-            raster <- TRUE
-            .log("NOTE: Points are rasterized as number of cells/nuclei ",
-                 "plotted exceeds 100,000.\n",
-                 "Use `raster = FALSE` or `raster = TRUE` to force plot in ",
-                 "vector form or not.")
-        } else raster <- FALSE
-    }
+    raster <- .checkRaster(nrow(plotDF), raster)
 
-    if (!is.null(dotOrder)) {
+    if (!is.null(colorBy)) {
         if (dotOrder == "shuffle") {
             idx <- sample(nrow(plotDF))
             plotDF <- plotDF[idx, ]
         } else if (dotOrder == "ascending") {
-            plotDF <- plotDF[order(plotDF[[colorBy]], decreasing = FALSE),]
+            plotDF <- plotDF[order(plotDF[[colorBy]], decreasing = FALSE,
+                                   na.last = FALSE),]
         } else {
-            plotDF <- plotDF[order(plotDF[[colorBy]], decreasing = TRUE),]
+            plotDF <- plotDF[order(plotDF[[colorBy]], decreasing = TRUE,
+                                   na.last = FALSE),]
+        }
+        if (!is.factor(plotDF[[colorBy]])) {
+            if (!is.null(trimHigh))
+                plotDF[[colorBy]][plotDF[[colorBy]] > trimHigh] <- trimHigh
+            if (!is.null(trimLow))
+                plotDF[[colorBy]][plotDF[[colorBy]] < trimLow] <- trimLow
+            if (isTRUE(zeroAsNA))
+                plotDF[[colorBy]][plotDF[[colorBy]] == 0] <- NA
         }
     }
 
@@ -209,12 +215,11 @@ plotCellScatter <- function(
                                  ggplot2::aes(x = .data[[x]],
                                               y = .data[[y]]))
     }
+
     if (isTRUE(raster)) {
         p <- p + scattermore::geom_scattermore(pointsize = dotSize,
                                                alpha = dotAlpha)
     } else {
-        if (!is.logical(raster))
-            warning("Please use TRUE/FALSE for `raster`. Not rasterizing.")
         p <- p + ggplot2::geom_point(size = dotSize, stroke = 0,
                                      alpha = dotAlpha)
     }
@@ -312,14 +317,14 @@ plotCellViolin <- function(
                              row.names = colnames(object))
         colnames(plotDF) <- groupBy
     } else {
-        plotDF <- as.data.frame(cell.meta(object))[, groupBy, drop = FALSE]
+        plotDF <- cell.meta(object, groupBy, as.data.frame = TRUE, drop = FALSE)
     }
-    plotDF[, splitBy] <- as.data.frame(cell.meta(object))[, splitBy,
-                                                          drop = FALSE]
-    if (!is.null(colorBy)) {
-        colorDF <- as.data.frame(cell.meta(object))[, c(colorBy), drop = FALSE]
-        plotDF[, colorBy] <- colorDF
-    }
+    plotDF[,splitBy] <- cell.meta(object, splitBy, as.data.frame = TRUE,
+                                  drop = FALSE)
+
+    if (!is.null(colorBy))
+        plotDF[,colorBy] <- cell.meta(object, colorBy, as.data.frame = TRUE,
+                                      drop = FALSE)
 
     plotDFList <- list()
     yParam <- list()
@@ -409,16 +414,7 @@ plotCellViolin <- function(
         seed = 1,
         ...
 ) {
-    if (is.null(raster)) {
-        # Automatically decide whether to rasterize depending on number of cells
-        if (ncol(plotDF) > 1e5) {
-            raster <- TRUE
-            .log("NOTE: Points are rasterized as number of cells/nuclei ",
-                 "plotted exceeds 100,000.\n",
-                 "Use `raster = FALSE` or `raster = TRUE` to force plot in ",
-                 "vector form or not.")
-        } else raster <- FALSE
-    }
+    raster <- .checkRaster(nrow(plotDF), raster)
     if (is.null(colorBy)) {
         plot <- ggplot2::ggplot(plotDF,
                                 ggplot2::aes(x = .data[[groupBy]],
@@ -477,9 +473,9 @@ plotCellViolin <- function(
 #' By default, no main title or subtitle will be set, and X/Y axis title will be
 #' the names of variables used for plotting. Use \code{NULL} to hide elements.
 #' \code{TRUE} for \code{xlab} or \code{ylab} shows default values.
-#' @param legendColorTitle,legendShapeTitle Set alternative title text for
-#' legend on color or shape. Default \code{NULL} shows the original variable
-#' name.
+#' @param legendColorTitle,legendFillTitle,legendShapeTitle,legendSizeTitle Set
+#' alternative title text for legend on aes of color, fill, shape and size,
+#' respectively. Default \code{NULL} shows the original variable name.
 #' @param legend Whether to show the legend. Default \code{TRUE}.
 #' @param baseSize One-parameter control of all text sizes. Individual text
 #' element sizes can be controlled by other size arguments. "Title" sizes are
@@ -489,17 +485,25 @@ plotCellViolin <- function(
 #' \code{baseSize + 2}.
 #' @param subtitleSize,xTextSize,yTextSize,legendTextSize Size of subtitle text,
 #' axis texts and legend text. Default \code{NULL} controls by \code{baseSize}.
+#' @param xFacetSize,yFacetSize Size of facet label text. Default \code{NULL}
+#' controls by \code{baseSize - 2}.
 #' @param legendDotSize Allow dots in legend region to be large enough to see
 #' the colors/shapes clearly. Default \code{4}.
+#' @param panelBorder Whether to show rectangle border of the panel instead of
+#' using ggplot classic bottom and left axis lines. Default \code{FALSE}.
 #' @param legendNRow,legendNCol Integer, when too many categories in one
 #' variable, arranges number of rows or columns. Default \code{NULL},
 #' automatically split to \code{ceiling(levels(variable)/10)} columns.
-#' @param colorPalette For continuous coloring, a palette name or an index to
+#' @param colorPalette For continuous coloring, an index or a palette name to
 #' select from available options from ggplot
-#' \code{\link[ggplot2]{scale_brewer}}. Additionally, \code{"viridis"} TODO are
-#' also supported. Default \code{"viridis"}.
+#' \code{\link[ggplot2]{scale_brewer}} or \code{\link[viridisLite]{viridis}}.
+#' Default \code{"magma"}.
+#' @param colorDirection Choose \code{1} or \code{-1}. Applied when
+#' \code{colorPalette} is from Viridis options. Default \code{-1} use darker
+#' color for higher value, while \code{1} reverses this direction.
 #' @param colorLow,colorMid,colorHigh,colorMidPoint All four of these must be
 #' specified to customize palette with
+#' @param naColor The color code for \code{NA} values. Default \code{"#F5F5F5"}.
 #' \code{\link[ggplot2]{scale_colour_gradient2}}. Default \code{NULL}.
 #' @param plotly Whether to use plotly to enable web based interactive browsing
 #' for the plot. Requires installation of package "plotly". Default
@@ -532,10 +536,12 @@ plotCellViolin <- function(
         legendTitleSize = NULL,
         legendDotSize = 4,
         # Other
+        panelBorder = FALSE,
         legendNRow = NULL,
         legendNCol = NULL,
         colorPalette = "magma",
         colorDirection = -1,
+        naColor = "#F5F5F5",
         colorLow = NULL,
         colorMid = NULL,
         colorHigh = NULL,
@@ -588,8 +594,16 @@ plotCellViolin <- function(
             strip.text.x = ggplot2::element_text(size = xFacet),
             strip.text.y = ggplot2::element_text(size = yFacet),
             legend.text = ggplot2::element_text(size = legendText),
-            legend.title = ggplot2::element_text(size = legendTitle)
+            legend.title = ggplot2::element_text(size = legendTitle),
         )
+
+    if (isTRUE(panelBorder)) {
+        plot <- plot + ggplot2::theme(
+            axis.line = ggplot2::element_line(linewidth = 0),
+            panel.border = ggplot2::element_rect(fill = NA, colour = "black",
+                                                 linewidth = 0.7)
+        )
+    }
 
     # Whether to show legend
     if (!isTRUE(legend))
@@ -607,7 +621,6 @@ plotCellViolin <- function(
         for (a in names(guide)) {
             varName <- rlang::as_label(plot$mapping[[a]])
             if (varName == "NULL") next
-            # If colour or shape is set
             if (is.factor(plot$data[[varName]])) {
                 # Categorical setting
                 guideFunc[[a]] <- ggplot2::guide_legend
@@ -634,6 +647,7 @@ plotCellViolin <- function(
                         .setColorBarPalette(aesType = a,
                                             palette = colorPalette,
                                             direction = colorDirection,
+                                            naColor = naColor,
                                             low = colorLow, mid = colorMid,
                                             high = colorHigh,
                                             midPoint = colorMidPoint)
@@ -651,11 +665,15 @@ plotCellViolin <- function(
             # Finalise the setting
             guide[[a]] <- do.call(guideFunc[[a]], guide[[a]])
         }
+        guide <- lapply(guide, function(x) if (!identical(x, list())) x else NULL)
+
         plot <- plot + ggplot2::guides(
             colour = guide$colour,
             shape = guide$shape,
-            size = guide$size
+            size = guide$size,
+            fill = guide$fill
         )
+
     }
 
     if (isTRUE(plotly)) {
@@ -673,6 +691,7 @@ plotCellViolin <- function(
         aesType = c("colour", "fill"),
         palette = "magma",
         direction = 1,
+        naColor = "#F5F5F5",
         low = NULL,
         mid = NULL,
         high = NULL,
@@ -697,10 +716,12 @@ plotCellViolin <- function(
         if (palette %in% viridisOptions) {
             if (aesType == "colour")
                 layer <- ggplot2::scale_colour_viridis_c(option = palette,
-                                                         direction = direction)
+                                                         direction = direction,
+                                                         na.value = naColor)
             else
                 layer <- ggplot2::scale_fill_viridis_c(option = palette,
-                                                       direction = direction)
+                                                       direction = direction,
+                                                       na.value = naColor)
         }
         else
             if (aesType == "colour")

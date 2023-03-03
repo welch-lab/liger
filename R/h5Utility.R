@@ -37,7 +37,7 @@ H5Apply <- function(
             chunkSize <- numCells - prev_end_col + 1
         }
         start_inds <- indptr[prev_end_col:(prev_end_col + chunkSize)]
-        sparseXIdx <- (prev_end_data):(tail(start_inds, 1))
+        sparseXIdx <- (prev_end_data):(utils::tail(start_inds, 1))
         cellIdx <- prev_end_col:(prev_end_col + chunkSize - 1)
         row_inds <- indices[sparseXIdx]
         counts <- data[sparseXIdx]
@@ -163,7 +163,7 @@ restoreH5Liger <- function(object, filePath = NULL) {
         stop("Please specify a liger or ligerDataset object to restore.")
     }
     if (inherits(object, "ligerDataset")) {
-        if (isTRUE(validObject(object, test = TRUE))) {
+        if (isTRUE(methods::validObject(object, test = TRUE))) {
             return(object)
         }
         h5.meta <- h5file.info(object)
@@ -203,7 +203,7 @@ restoreH5Liger <- function(object, filePath = NULL) {
             norm.data(object, check = FALSE) <- h5file[[h5.meta$norm.data]]
         if (!is.null(h5.meta$scale.data))
             scale.data(object, check = FALSE) <- h5file[[h5.meta$scale.data]]
-        validObject(object)
+        methods::validObject(object)
     } else {
         # Working for liger object
         if (!is.null(filePath)) {

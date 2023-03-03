@@ -234,7 +234,6 @@ plotClusterFactorDot <- function(
 }
 
 
-
 .complexHeatmapDotPlot <- function(
         colorMat,
         sizeMat,

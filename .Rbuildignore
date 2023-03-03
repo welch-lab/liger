@@ -7,4 +7,7 @@
 ^vignettes/Integrating_scRNA_and_scATAC_data\.Rmd$
 ^vignettes/Integrating_multi_scRNA_data\.Rmd$
 ^.vscode/*
-
+^vignettes/*
+\.rds$
+\.h5$
+\.RDS$

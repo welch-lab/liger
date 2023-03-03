@@ -40,8 +40,8 @@
 #' each element is the initial \eqn{V} matrix of each dataset. Default
 #' \code{NULL}.
 #' @param rand.seed Random seed to allow reproducible results. Default \code{1}.
-#' @param print.obj Print objective function values after convergence when
-#' \code{verbose = TRUE}. Default \code{FALSE}.
+#' @param print.obj \bold{Defunct}. Whether to print objective function values
+#' after convergence when \code{verbose = TRUE}. Now always print when verbose.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{TRUE}.
 #' @return \code{object} with \code{W} slot updated with the result \eqn{W}
@@ -167,7 +167,8 @@ setMethod(
                 rownames(ld@V) <- var.features(object)
                 datasets(object, check = FALSE)[[d]] <- ld
             }
-            #object@parameters$lambda <- lambda
+            object@uns$factorization$k <- k
+            object@uns$factorization$lambda <- lambda
         } else {
             object <- optimizeUANLS(
                 object = object,
@@ -236,18 +237,19 @@ setMethod(
             startTime <- Sys.time()
             if (!is.null(W.init))
                 W <- t(.checkInit(W.init, nCells, nGenes, k, "W"))
-            else W <- matrix(runif(nGenes*k, 0, 2), k, nGenes)
+            else W <- matrix(stats::runif(nGenes*k, 0, 2), k, nGenes)
             if (!is.null(V.init)) {
                 V <- .checkInit(V.init, nCells, nGenes, k, "V")
                 V <- lapply(V, t)
             } else
                 V <- lapply(seq(nDatasets), function(i) {
-                    matrix(runif(nGenes*k, 0, 2), k, nGenes)})
+                    matrix(stats::runif(nGenes*k, 0, 2), k, nGenes)})
             if (!is.null(H.init)) {
                 H <- .checkInit(H.init, nCells, nGenes, k, "H")
                 H <- lapply(H, t)
             } else
-                H <- lapply(nCells, function(n) matrix(runif(n*k, 0, 2), n, k))
+                H <- lapply(nCells, function(n)
+                    matrix(stats::runif(n*k, 0, 2), n, k))
             tmp <- gc()
             delta <- 1
             iters <- 0
@@ -348,3 +350,6 @@ setMethod(
         return(out)
     }
 )
+
+# Binds list of matrices row-wise (vertical stack)
+rbindlist <- function(mat_list) do.call(rbind, mat_list)

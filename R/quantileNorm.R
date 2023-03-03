@@ -1,3 +1,5 @@
+#' @rdname quantileNorm
+#' @export
 setGeneric(
     "quantileNorm",
     function(
@@ -95,7 +97,7 @@ setMethod(
         seed = 1,
         verbose = TRUE
     ) {
-        .checkValidFactorResult(object)
+        .checkValidFactorResult(object, useDatasets = names(object))
         if (is.null(reference)) {
             # If ref_dataset not given, set the one with the largest number of
             # cells as reference.
@@ -122,7 +124,7 @@ setMethod(
             seed = seed
         )
         object@H.norm <- out$H.norm
-        object[[clusterName]] <- out$clusters
+        cell.meta(object, clusterName, check = FALSE) <- out$clusters
         return(object)
     })
 
@@ -216,10 +218,10 @@ setMethod(
                             mean(Hs[[reference]][cellIdx1, k])
                         next
                     }
-                    q2 <- quantile(sample(Hs[[d]][cellIdx2, k],
+                    q2 <- stats::quantile(sample(Hs[[d]][cellIdx2, k],
                                           min(nCells2, maxSample)),
                                    seq(0, 1, by = 1 / quantiles))
-                    q1 <- quantile(sample(Hs[[reference]][cellIdx1, k],
+                    q1 <- stats::quantile(sample(Hs[[reference]][cellIdx1, k],
                                           min(nCells1, maxSample)),
                                    seq(0, 1, by = 1 / quantiles))
                     if (sum(q1) == 0 | sum(q2) == 0 |
@@ -301,6 +303,10 @@ setMethod(
 #' @seealso \code{\link{rliger-deprecated}}
 NULL
 
+#' @rdname rliger-deprecated
+#' @section \code{quantile_norm}:
+#' For \code{quantile_norm}, use \code{\link{quantileNorm}}.
+#' @export
 setGeneric(
     "quantile_norm",
     function(

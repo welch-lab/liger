@@ -36,7 +36,8 @@ subsetLiger <- function(
         chunkSize = 1000,
         verbose = TRUE,
         newH5 = "auto",
-        returnObject = TRUE
+        returnObject = TRUE,
+        ...
 ) {
     if (inherits(object, "ligerDataset")) {
         object <- subsetLigerDataset(
@@ -51,8 +52,9 @@ subsetLiger <- function(
     }
     # Check subscription parameters ####
     cellIdx <- .idxCheck(object, cellIdx, "cell")
-    barcodes <- colnames(object)[cellIdx]
-    datasetVar <- object$dataset[cellIdx]
+    orderedCellIdx <- sort(cellIdx)
+    barcodes <- colnames(object)[orderedCellIdx]
+    datasetVar <- object$dataset[orderedCellIdx]
     useDatasets <- as.vector(unique(datasetVar))
     # feature idx need different check from ligerDataset's .idxCheck
     if (!is.null(featureIdx)) {
@@ -61,15 +63,16 @@ subsetLiger <- function(
                  "character vector.")
         }
         genesList <- lapply(datasets(object)[useDatasets], rownames)
-        allGenes <- Reduce(intersect, genesList)
+        allGenes <- unique(unlist(genesList, use.names = FALSE))
         if (!all(featureIdx %in% allGenes)) {
             notFound <- featureIdx[!featureIdx %in% allGenes]
-
             warning(length(notFound), " out of ", length(featureIdx),
-                    " given features were not found in the intersection of the",
-                    " features of used datasets")
+                    " given features were not found in the union of all ",
+                    "features of used datasets")
         }
         featureIdx <- featureIdx[featureIdx %in% allGenes]
+        if (length(featureIdx) == 0)
+            stop("No feature can be retrieved")
     }
     # Subset each involved dataset and create new liger object
 
@@ -77,8 +80,11 @@ subsetLiger <- function(
     for (d in useDatasets) {
         if (isTRUE(verbose)) .log("Subsetting dataset: ",  d)
         ld <- dataset(object, d)
+        featureIdxDataset <- featureIdx
+        if (isFALSE(returnObject))
+            featureIdxDataset <- featureIdx[featureIdx %in% rownames(ld)]
         ld <- subsetLigerDataset(
-            object = ld, featureIdx = featureIdx,
+            object = ld, featureIdx = featureIdxDataset,
             cellIdx = barcodes[datasetVar == d], useSlot = useSlot,
             chunkSize = chunkSize, verbose = verbose, newH5 = newH5,
             returnObject = returnObject)
@@ -96,14 +102,14 @@ subsetLiger <- function(
         return(methods::new(
             "liger",
             datasets = datasets.new,
-            cell.meta = cell.meta(object)[cellIdx, , drop = FALSE],
+            cell.meta = cell.meta(object, cellIdx = orderedCellIdx,
+                                  drop = FALSE),
             var.features = varFeature,
             W = W,
-            H.norm = object@H.norm[cellIdx, , drop = FALSE],
+            H.norm = object@H.norm[orderedCellIdx, , drop = FALSE],
             k = object@k,
             uns = object@uns,
-            commands = object@commands,
-            version = packageVersion("rliger")
+            commands = object@commands
         ))
     } else {
         return(datasets.new)
@@ -114,7 +120,7 @@ subsetLiger <- function(
 #' @description Only retrieve data from specific slot to reduce memory used by
 #' a whole \linkS4class{liger} object of the subset. Useful for plotting.
 #' Internally used by \code{\link{plotCellScatter}} and
-#' \code{\link{plotCellSViolin}}.
+#' \code{\link{plotCellViolin}}.
 #' @param object \linkS4class{liger} object
 #' @param feature Gene names, factor index or cell metadata variable names.
 #' Should be available in specified \code{slot}.
@@ -138,10 +144,6 @@ retrieveCellFeature <- function(
 ) {
     slot <- match.arg(slot)
     cellIdx <- .idxCheck(object, idx = cellIdx, orient = "cell")
-    if (length(slot) > 1) {
-        stop("Retrieving feature expression or factor loading from multiple ",
-             "slots is not supported for now.")
-    }
     if (is.null(cellIdx)) cellIdx <- seq(ncol(object))
     if (slot %in% c("raw.data", "norm.data", "scale.data")) {
         subsetData <- subsetLiger(object, featureIdx = feature,
@@ -158,15 +160,19 @@ retrieveCellFeature <- function(
         for (d in names(object)) {
             value[[d]] <- subsetData[[d]][[slot]]
         }
-        value <- as.data.frame(as.matrix(t(Reduce(cbind, value))))
+        value <- lapply(value, as.matrix)
+        value <- as.data.frame(t(mergeDenseAll(value)))
+        orderedCellIdx <- sort(cellIdx)
+        revIdx <- sapply(cellIdx, function(x) which(orderedCellIdx == x))
+        value <- value[revIdx, , drop = FALSE]
     } else if (slot == "H") {
         value <- Reduce(cbind, getMatrix(object, "H"))
         value <- as.data.frame(t(value[feature, cellIdx, drop = FALSE]))
     } else if (slot == "H.norm") {
         value <- getMatrix(object, "H.norm")[cellIdx, feature, drop = FALSE]
     } else {
-        value <- as.data.frame(cell.meta(object))[cellIdx, feature,
-                                                  drop = FALSE]
+        value <- cell.meta(object, feature, cellIdx = cellIdx,
+                           as.data.frame = TRUE, drop = FALSE)
     }
     return(value)
 }

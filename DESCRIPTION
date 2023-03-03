@@ -5,20 +5,20 @@ Type: Package
 Title: Linked Inference of Genomic Experimental Relationships
 Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors. See Welch J, Kozareva V, et al (2019) <doi:10.1016/j.cell.2019.05.006>, and Liu J, Gao C, Sodicoff J, et al (2020) <doi:10.1038/s41596-020-0391-8> for more details.
 Authors@R: c(
-  person(given = 'Joshua', family = 'Welch', email = 'welchjd@umich.edu', role = c('aut', 'ctb')),
-  person(given = 'Chao', family = 'Gao', email = 'gchao@umich.edu', role = c('aut', 'ctb', 'cre')),
-  person(given = 'Jialin', family = 'Liu', email = 'alanliu@umich.edu', role = c('aut', 'ctb')),
+  person(given = 'Joshua', family = 'Welch', email = 'welchjd@umich.edu', role = c('aut')),
+  person(given = 'Chao', family = 'Gao', email = 'gchao@umich.edu', role = c('aut')),
+  person(given = 'Jialin', family = 'Liu', email = 'alanliu@umich.edu', role = c('aut')),
   person(given = 'Joshua', family = 'Sodicoff', email = 'sodicoff@umich.edu', role = c('aut', 'ctb')),
   person(given = 'Velina', family = 'Kozareva', role = c('aut', 'ctb')),
   person(given = 'Evan', family = 'Macosko', role = c('aut', 'ctb')),
   person(given = 'Paul', family = 'Hoffman', role = 'ctb'),
   person(given = 'Ilya', family = 'Korsunsky', role = 'ctb'),
   person(given = 'Robert', family = 'Lee', role = 'ctb'),
-  person(given = 'Yichen', family = 'Wang', role = c('aut', 'cre'))
+  person(given = 'Yichen', family = 'Wang', email = 'wayichen@umich.edu', role = c('aut', 'cre'))
   )
-Author: Joshua Welch [aut, ctb], 
-        Chao Gao [aut, ctb, cre], 
-        Jialin Liu [aut, ctb], 
+Author: Joshua Welch [aut], 
+        Chao Gao [aut], 
+        Jialin Liu [aut], 
         Joshua Sodicoff [aut, ctb],
         Velina Kozareva [aut, ctb],
         Evan Macosko [aut, ctb],
@@ -44,18 +44,18 @@ Imports:
     hdf5r,
     ica,
     irlba,
+    lifecycle,
+    magrittr,
     mclust,
     parallel,
-    patchwork,
     plyr,
     psych,
     RANN,
-    Rcpp (>= 0.12.10),
-    riverplot,
+    RColorBrewer,
     rlang,
     Rtsne,
     S4Vectors,
-    scattermore (>= 0.7),
+    scales,
     stats,
     utils,
     uwot,
@@ -70,6 +70,7 @@ RoxygenNote: 7.2.3
 Encoding: UTF-8
 Suggests:
     AnnotationDbi,
+    EnhancedVolcano,
     fgsea,
     GenomicRanges,
     IRanges,
@@ -78,7 +79,12 @@ Suggests:
     plotly,
     reactome.db,
     reticulate,
+    riverplot,
     rmarkdown,
+    scattermore (>= 0.7),
     Seurat,
+    SeuratObject,
+    SingleCellExperiment,
+    SummarizedExperiment,
     testthat
 VignetteBuilder: knitr

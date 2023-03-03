@@ -7,7 +7,7 @@
 optimizeNewK(
   object,
   k.new,
-  lambda = 5,
+  lambda = NULL,
   thresh = 1e-04,
   max.iters = 100,
   rand.seed = 1,

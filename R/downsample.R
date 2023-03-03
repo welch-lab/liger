@@ -1,11 +1,18 @@
 #' Downsample datasets
 #' @description This function mainly aims at downsampling datasets to a size
 #' suitable for plotting.
+#' @details Users can balance the sample size of categories of interests with
+#' \code{balance}. Multi-variable specification to \code{balance} is supported,
+#' so that at most \code{maxCells} cells will be sampled from each combination
+#' of categories from the variables. Note that \code{"dataset"} will
+#' automatically be added as one variable when balancing the downsampling.
+#' However, if users want to balance the downsampling solely basing on dataset
+#' origin, users have to explicitly set \code{balance = "dataset"}.
 #' @param object \linkS4class{liger} object
-#' @param balance \code{"all"} for sampling \code{maxCells} cells from all
-#' datasets specified by \code{useDatasets}. \code{"cluster"} for sampling
-#' \code{maxCells} cells per cluster per dataset. \code{"dataset"} for
-#' \code{maxCells} cells per dataset.
+#' @param balance Character vector of categorical variable names in
+#' \code{cell.meta} slot, to subsample \code{maxCells} cells from each
+#' combination of all specified variables. Default \code{NULL} samples
+#' \code{maxCells} cells from the whole object.
 #' @param maxCells Max number of cells to sample from the grouping based on
 #' \code{balance}.
 #' @param useDatasets Index selection of datasets to consider. Default
@@ -17,45 +24,47 @@
 #' @export
 downsample <- function(
     object,
-    balance = c("all", "cluster", "dataset"),
+    balance = NULL,
     maxCells = 1000,
     useDatasets = NULL,
     seed = 1,
     ...
 ) {
-    # TODO: multi-variable category balancing
-    balance <- match.arg(balance)
     set.seed(seed)
     useDatasets <- .checkUseDatasets(object, useDatasets)
     selected <- c()
-    if (balance == "all") {
+    if (is.null(balance)) {
         useCells <- which(object$dataset %in% useDatasets)
         maxCells <- min(maxCells, length(useCells))
         selected <- sort(sample(useCells, maxCells))
-    } else if (balance == "cluster") {
-        if (!"cluster" %in% names(cell.meta(object))) {
-            stop('"cluster" not found in `cell.meta(object)`')
-        }
-        if (!is.factor(object$cluster)) {
-            object$cluster <- factor(object$cluster)
-        }
-        for (d in useDatasets) {
-            for (c in levels(object$cluster)) {
-                useCells <- which(object$dataset == d & object$cluster == c)
-                maxCells <- min(maxCells, useCells)
+    } else {
+        balance <- unique(c("dataset", balance))
+        vars <- cell.meta(object, columns = balance, drop = FALSE,
+                          as.data.frame = TRUE)
+        vars <- vars[vars$dataset %in% useDatasets,]
+        notFactor <- sapply(vars, function(col) !is.factor(col))
+        if (any(notFactor))
+            stop("Specified variables is not categorical: ",
+                 paste(balance[notFactor], collapse = ", "))
+        vars <- vars %>%
+            dplyr::group_by_at(.vars = balance) %>%
+            dplyr::count()
+        for (i in seq(nrow(vars))) {
+            comb <- vars[i,]
+            name <- names(comb)[seq_along(balance)]
+            value <- as.vector(t(as.data.frame(comb)))[seq_along(balance)]
+            subscrTxt <- paste0(
+                "which(",
+                paste0("object$", name, ' == "', value, '"', collapse = " & "),
+                ")"
+            )
+            useCells <- eval(parse(text = subscrTxt))
+            if (maxCells < comb[["n"]])
                 selected <- c(selected , sample(useCells, maxCells))
-            }
+            else
+                selected <- c(selected, useCells)
         }
         selected <- sort(selected)
-    } else if (balance == "dataset") {
-        for (d in useDatasets) {
-            ld <- dataset(object, d)
-            maxCells <- min(maxCells, ncol(ld))
-            selected.name <- sample(colnames(ld), maxCells)
-            selected <- c(selected, selected.name)
-        }
-        # Requires that all barcodes in liger object is unique
-        selected <- which(colnames(object) %in% selected)
     }
     subsetLiger(object = object, cellIdx = selected, ...)
 }

@@ -47,8 +47,8 @@ liger <- setClass(
         version = "ANY"
     ),
     methods::prototype(
-        cell.meta = new("DFrame"),
-        version = packageVersion("rliger")
+        cell.meta = methods::new("DFrame"),
+        version = utils::packageVersion("rliger")
     )
 )
 
@@ -176,10 +176,6 @@ createLiger <- function(
 # ------------------------------------------------------------------------------
 
 .checkLigerBarcodes <- function(x) {
-    #colnames <- get("colnames", .GlobalEnv)
-    #ncol <- get("ncol", .GlobalEnv)
-    #cell.meta <- get("cell.meta", .GlobalEnv)
-    #datasets <- get("datasets", .GlobalEnv)
     bcFromDatasets <- unlist(lapply(datasets(x), colnames), use.names = FALSE)
     if (!identical(colnames(x), bcFromDatasets)) {
         return("liger object barcodes do not match to barcodes in datasets")
@@ -199,7 +195,7 @@ createLiger <- function(
         return("names of datasets do not match
                `datasets` variable in cell.meta")
     }
-    NULL
+    return(NULL)
 }
 
 .checkLigerVarFeature <- function(x) {
@@ -228,13 +224,15 @@ createLiger <- function(
 
         }
     }
-    TRUE
+    return(NULL)
 }
 
 .valid.liger <- function(object) {
     message("Checking liger object validity")
-    .checkLigerBarcodes(object)
-    .checkLigerVarFeature(object)
+    res <- .checkLigerBarcodes(object)
+    if (!is.null(res)) return(res)
+    res <- .checkLigerVarFeature(object)
+    if (!is.null(res)) return(res)
     # TODO more checks
 }
 
@@ -260,13 +258,13 @@ is.newLiger <- function(object) {
 # ------------------------------------------------------------------------------
 
 setGeneric("datasets", function(x, check = NULL, ...) standardGeneric("datasets"))
-setGeneric("datasets<-", function(x, check = TRUE, ...) standardGeneric("datasets<-"))
+setGeneric("datasets<-", function(x, check = TRUE, value) standardGeneric("datasets<-"))
 setGeneric("dataset", function(x, name = NULL) standardGeneric("dataset"))
 setGeneric("dataset<-", function(x, name, type = NULL, qc = TRUE, value) {
     standardGeneric("dataset<-")
 })
-setGeneric("cell.meta", function(x, ...) standardGeneric("cell.meta"))
-setGeneric("cell.meta<-", function(x, ...) standardGeneric("cell.meta<-"))
+setGeneric("cell.meta", function(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) standardGeneric("cell.meta"))
+setGeneric("cell.meta<-", function(x, columns = NULL, check = FALSE, value) standardGeneric("cell.meta<-"))
 setGeneric("var.features", function(x) standardGeneric("var.features"))
 setGeneric("var.features<-", function(x, check = TRUE, value) standardGeneric("var.features<-"))
 
@@ -356,27 +354,27 @@ setMethod("[[", signature(x = "liger", i = "ANY", j = "missing"),
           function(x, i, ...)
           {
               if (is.null(i)) return(NULL)
-              cell.meta(x)[[i, ...]]
+              cell.meta(x, columns = i, ...)
           })
 
-setReplaceMethod("[[", signature(x = "liger", i = "ANY", j = "missing"),
-                 function(x, i, j, ..., value)
+setReplaceMethod("[[", signature(x = "liger", i = "ANY"),
+                 function(x, i, ..., value)
                  {
-                     x@cell.meta[[i, ...]] <- value
+                     cell.meta(x, columns = i) <- value
                      x
                  })
 
 .DollarNames.liger <- function(x, pattern = "")
-    grep(pattern, names(cell.meta(x)), value = TRUE)
+    grep(pattern, colnames(x@cell.meta), value = TRUE)
 
 setMethod("$", signature(x = "liger"),
           function(x, name) {
-              cell.meta(x)[[name]]
+              cell.meta(x, columns = name)
           })
 
 setReplaceMethod("$", signature(x = "liger"),
                  function(x, name, value) {
-                     cell.meta(x)[[name]] <- value
+                     cell.meta(x, columns = name) <- value
                      return(x)
                  })
 
@@ -425,7 +423,7 @@ setMethod("datasets", signature(x = "liger", check = "ANY"),
 setReplaceMethod("datasets", signature(x = "liger", check = "logical"),
                  function(x, check = TRUE, value) {
                      x@datasets <- value
-                     if (isTRUE(check)) validObject(x)
+                     if (isTRUE(check)) methods::validObject(x)
                      x
                  })
 
@@ -434,7 +432,7 @@ setReplaceMethod("datasets", signature(x = "liger", check = "logical"),
 setReplaceMethod("datasets", signature(x = "liger", check = "missing"),
                  function(x, check = TRUE, value) {
                      x@datasets <- value
-                     validObject(x)
+                     methods::validObject(x)
                      x
                  })
 
@@ -496,7 +494,7 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                      }
                      new.idx <- seq(ncol(x) + 1, ncol(x) + ncol(value))
                      x@datasets[[name]] <- value
-                     # TODO also add cols to H/H.norm and rows to cell.meta
+                     # TODO also add rows to cell.meta and H.norm
                      x@cell.meta[new.idx, ] <- NA
                      rownames(x@cell.meta)[new.idx] <- colnames(value)
                      levels(x@cell.meta$dataset) <-
@@ -510,7 +508,7 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                              dimnames = list(colnames(value), NULL))
                          x@H.norm <- rbind(x@H.norm, H.normNew)
                      }
-                     validObject(x)
+                     methods::validObject(x)
                      if (qc) x <- runGeneralQC(x, useDatasets = name)
                      x
                  })
@@ -549,28 +547,98 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                          idxToRemove <- x$dataset == name
                          x@datasets[[name]] <- NULL
                          x@cell.meta <- x@cell.meta[!idxToRemove, , drop = FALSE]
-                         x@H.norm <- x@H.norm[!idxToRemove,]
+                         x@H.norm <- x@H.norm[!idxToRemove, , drop = FALSE]
                      }
                      x
                  })
+
+.subsetCellMeta <- function(
+        object,
+        columns = NULL,
+        cellIdx = NULL,
+        as.data.frame = FALSE,
+        ...
+) {
+    res <- object@cell.meta
+    if (isTRUE(as.data.frame)) res <- as.data.frame(res)
+    if (!is.null(columns)) {
+        notFound <- !columns %in% colnames(res)
+        if (any(notFound)) {
+            warning("Specified variables from cell.meta not found: ",
+                    paste(columns[notFound], collapse = ", "))
+            columns <- columns[!notFound]
+        }
+        res <- res[, columns, ...]
+    }
+    if (!is.null(cellIdx)) {
+        cellIdx <- .idxCheck(object, idx = cellIdx, orient = "cell")
+        if (is.vector(res)) res <- res[cellIdx]
+        else if (!is.null(dim(res))) res <- res[cellIdx, , ...]
+        else stop("Result before idx subscription corrupted")
+    }
+    return(res)
+}
 
 #' Access cell.meta of liger object
 #' @param x \linkS4class{liger} object
 #' @rdname cell.meta
 #' @export
-setMethod("cell.meta", signature(x = "liger"),
-          function(x) x@cell.meta)
+setMethod(
+    "cell.meta",
+    signature(x = "liger", columns = "NULL"),
+    function(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
+        NULL
+)
+
+#' Access cell.meta of liger object
+#' @param x \linkS4class{liger} object
+#' @rdname cell.meta
+#' @export
+setMethod(
+    "cell.meta",
+    signature(x = "liger", columns = "character"),
+    function(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
+        .subsetCellMeta(x, columns = columns, cellIdx = cellIdx,
+                        as.data.frame = as.data.frame, ...)
+)
+
+#' Access cell.meta of liger object
+#' @param x \linkS4class{liger} object
+#' @rdname cell.meta
+#' @export
+setMethod(
+    "cell.meta",
+    signature(x = "liger", columns = "missing"),
+    function(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
+        .subsetCellMeta(x, columns = NULL, cellIdx = cellIdx,
+                        as.data.frame = as.data.frame, ...)
+)
 
 #' @rdname cell.meta
 #' @export
-setReplaceMethod("cell.meta", signature(x = "liger"),
-                 function(x, value) {
-                     if (!inherits(value, "DFrame"))
-                         value <- S4Vectors::DataFrame(value)
-                     x@cell.meta <- value
-                     validObject(x)
-                     x
-                 })
+setReplaceMethod(
+    "cell.meta",
+    signature(x = "liger", columns = "missing"),
+    function(x, columns = NULL, check = FALSE, value) {
+        if (!inherits(value, "DFrame"))
+            value <- S4Vectors::DataFrame(value)
+        x@cell.meta <- value
+        if (isTRUE(check)) methods::validObject(x)
+        x
+    }
+)
+
+#' @rdname cell.meta
+#' @export
+setReplaceMethod(
+    "cell.meta",
+    signature(x = "liger", columns = "character"),
+    function(x, columns = NULL, check = FALSE, value) {
+        x@cell.meta[[columns]] <- value
+        if (isTRUE(check)) methods::validObject(x)
+        x
+    }
+)
 
 #' Access variable features of liger object
 #' @param x \linkS4class{liger} object
@@ -613,24 +681,53 @@ setReplaceMethod(
 #' Fortify method for classes from the liger package
 #'
 #' @param x \code{liger} object to convert into a dataframe.
-#' @param ... not used by this method
-#' @return A \code{data.frame} combining \code{cell.meta(x)} with
-#' \code{H} and \code{H.norm} matrices, if any of the latters exist.
+#' @return A \code{data.frame} combining \code{cell.meta(x)} with \code{H.norm}
+#' matrix.
 #' @name fortify.liger
 #' @importFrom ggplot2 fortify
-#' @examples
-#' \dontrun{
-#' library(ggplot2)
-#' # Create liger object, ligerex
-#' ggplot(ligerex,  aes(x = dataset, y = nUMI)) + geom_violin()
-#' }
 NULL
 
 #' @rdname fortify.liger
 #' @export
 #' @method fortify liger
 fortify.liger <- function(x) {
-    df <- as.data.frame(cell.meta(x))
+    df <- cell.meta(x, as.data.frame = TRUE)
     if (!is.null(x@H.norm)) df <- cbind(df, x@H.norm)
     df
+}
+
+#' Combine multiple liger object in to one
+#' @description The list of \code{datasets} slot, the rows of
+#' \code{cell.meta} slot and the list of \code{commands} slot will be simply
+#' concatenated. Variable features in \code{var.features} slot will be taken a
+#' union. The \eqn{W} and \eqn{H.norm} matrices are not taken into account for
+#' now.
+#' @param ... \linkS4class{liger} objects
+#' @return A new \linkS4class{liger} object containing all datasets in the order
+#' of specification.
+#' @name c.liger
+NULL
+
+#' @rdname c.liger
+#' @export
+#' @method c liger
+c.liger <- function(...) {
+    objList <- list(...)
+    if (any(sapply(objList, function(obj) !inherits(obj, "liger"))))
+        stop("Can only combine `liger` objects with `c(...)` method for now.")
+    objList[[length(objList)]] <- recordCommand(objList[[length(objList)]])
+    allDatasets <- list()
+    allCellMeta <- NULL
+    varFeatures <- character()
+    allCommands <- list()
+    for (i in seq_along(objList)) {
+        obj <- objList[[i]]
+        allDatasets <- c(allDatasets, datasets(obj))
+        allCellMeta <- rbind(allCellMeta, obj@cell.meta)
+        varFeatures <- union(varFeatures, var.features(obj))
+        allCommands <- c(allCommands, obj@commands)
+    }
+    methods::new("liger", datasets = allDatasets, cell.meta = allCellMeta,
+                 var.features = varFeatures, commands = allCommands,
+                 version = utils::packageVersion("rliger"))
 }

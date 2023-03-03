@@ -43,13 +43,20 @@ ligerRNADataset <- setClass(
 # Sub-class for ATAC data ####
 #-------------------------------------------------------------------------------
 
+#' Subclass of ligerDataset for ATAC modality
+#'
+#' @description Inherits from \linkS4class{ligerDataset} class. Contained slots
+#' can be referred with the link.
+#' @slot raw.peak sparse matrix
+#' @slot norm.peak sparse matrix
 #' @exportClass ligerATACDataset
+#' @export
 ligerATACDataset <- setClass(
     "ligerATACDataset",
     contains = "ligerDataset",
     representation = representation(raw.peak = "matrixLike_OR_NULL",
                                     norm.peak = "matrixLike_OR_NULL"),
-    prototype = prototype(peak = NULL)
+    prototype = prototype(raw.peak = NULL, norm.peak = NULL)
 )
 
 setGeneric("raw.peak", function(x, dataset) standardGeneric("raw.peak"))
@@ -75,7 +82,7 @@ setReplaceMethod(
         if (!inherits(dataset(x, dataset), "ligerATACDataset"))
             stop("Specified dataset is not of `ligerATACDataset` class.")
         x@datasets[[dataset]]@raw.peak <- value
-        if (isTRUE(check)) validObject(dataset(x, dataset))
+        if (isTRUE(check)) methods::validObject(dataset(x, dataset))
         x
     })
 
@@ -91,7 +98,7 @@ setReplaceMethod(
     signature(x = "ligerATACDataset", dataset = "missing"),
     function(x, dataset = NULL, check = TRUE, value) {
         x@raw.peak <- value
-        if (isTRUE(check)) validObject(x)
+        if (isTRUE(check)) methods::validObject(x)
         x
     })
 
@@ -113,7 +120,7 @@ setReplaceMethod(
         if (!inherits(dataset(x, dataset), "ligerATACDataset"))
             stop("Specified dataset is not of `ligerATACDataset` class.")
         x@datasets[[dataset]]@norm.peak <- value
-        if (isTRUE(check)) validObject(dataset(x, dataset))
+        if (isTRUE(check)) methods::validObject(dataset(x, dataset))
         x
     })
 
@@ -129,7 +136,7 @@ setReplaceMethod(
     signature(x = "ligerATACDataset", dataset = "missing"),
     function(x, dataset = NULL, check = TRUE, value) {
         x@norm.peak <- value
-        if (isTRUE(check)) validObject(x)
+        if (isTRUE(check)) methods::validObject(x)
         x
     })
 

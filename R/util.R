@@ -78,14 +78,8 @@
         drop = TRUE,
         returnList = FALSE
 ) {
-    if (!is.null(variables) &&
-        !all(variables %in% colnames(cell.meta(object)))) {
-        notFound <- variables[!variables %in% colnames(cell.meta(object))]
-        stop("Specified cell.meta variable not found: ",
-             paste(notFound, collapse = ", "))
-    }
-    cellIdx <- .idxCheck(object, cellIdx, "cell")
-    df <- cell.meta(object)[cellIdx, variables, drop = FALSE]
+    df <- cell.meta(object, variables, cellIdx, as.data.frame = TRUE,
+                    drop = FALSE)
     if (isTRUE(checkCategorical)) {
         passing <- sapply(variables, function(v) {
             vec <- df[[v]]
@@ -230,8 +224,9 @@
     return(TRUE)
 }
 
-.checkValidFactorResult <- function(object, useDatasets) {
+.checkValidFactorResult <- function(object, useDatasets = NULL) {
     result <- TRUE
+    useDatasets <- .checkUseDatasets(object, useDatasets)
     if (is.null(object@W)) {
         warning("W matrix does not exist.")
         result <- FALSE
@@ -263,7 +258,7 @@
                 }
             }
         }
-        if (k != object@k)
+        if (k != object@uns$factorization$k)
             warning("Number of factors does not match with object `k` slot. ")
     }
     if (isFALSE(result))
@@ -316,4 +311,37 @@
     invisible(NULL)
 }
 
+# Used in gg plotting function to check for dependency
+# n - Number of points to be shown
+.checkRaster <- function(n, raster = NULL) {
+    pkgAvail <- requireNamespace("scattermore", quietly = TRUE)
+    if (!is.null(raster) && !is.logical(raster)) {
+        stop("Please use `NULL` or logical value for `raster`.")
+    }
+    if (is.null(raster)) {
+        # Automatically decide whether to rasterize depending on number of cells
+        if (n > 1e5) {
+            if (pkgAvail) {
+                raster <- TRUE
+                .log("NOTE: Points are rasterized as number of cells/nuclei ",
+                     "plotted exceeds 100,000.\n",
+                     "Use `raster = FALSE` or `raster = TRUE` to force plot ",
+                     "in vector form or not.")
+            } else {
+                raster <- FALSE
+                warning("Number of cells/nuclei plotted exceeds 100,000. ",
+                        "Rasterizing the scatter plot is recommended but ",
+                        "package \"scattermore\" is not available. ")
+            }
+        } else raster <- FALSE
+    } else if (isTRUE(raster)) {
+        if (!pkgAvail) {
+            stop("Package \"scattermore\" needed for rasterizing the scatter ",
+                 "plot. Please install it by command:\n",
+                 "BiocManager::install('scattermore')",
+                 call. = FALSE)
+        }
+    }
+    return(raster)
+}
 

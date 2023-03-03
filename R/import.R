@@ -1,5 +1,10 @@
-#' @importFrom Matrix colSums
+#' @importFrom Matrix colSums rowSums t
+#' @importFrom foreach "%dopar%"
+#' @importFrom magrittr %>%
+#' @importFrom rlang .data
+#' @importFrom methods new
 NULL
+
 
 #' Read 10X alignment data (including V3)
 #'
@@ -27,9 +32,6 @@ NULL
 #'
 #' @return List of merged matrices across data types (returns sparse matrix if only one data type
 #'   detected), or nested list of matrices organized by sample if merge=F.
-#'
-#' @import Matrix
-#' @importFrom utils read.delim read.table
 #'
 #' @export
 #' @examples
@@ -116,10 +118,10 @@ read10X <-
             matrix.file <- paste0(sample.dir, "/matrix.mtx", suffix)
             barcodes.file <- paste0(sample.dir, "/barcodes.tsv", suffix)
 
-            rawdata <- readMM(matrix.file)
+            rawdata <- Matrix::readMM(matrix.file)
             # convert to dgc matrix
             if (class(rawdata)[1] == "dgTMatrix") {
-                rawdata <- as(rawdata, "CsparseMatrix")
+                rawdata <- methods::as(rawdata, "CsparseMatrix")
             }
 
             # filter for UMIs first to increase speed
@@ -138,12 +140,12 @@ read10X <-
             }
             if (data.type == "rna") {
                 features <-
-                    read.delim(features.file,
+                    utils::read.delim(features.file,
                                header = FALSE,
                                stringsAsFactors = FALSE)
                 rownames(rawdata) <- make.unique(features[, 2])
             } else if (data.type == "atac") {
-                features <- read.table(features.file, header = FALSE)
+                features <- utils::read.table(features.file, header = FALSE)
                 features <-
                     paste0(features[, 1], ":", features[, 2], "-", features[, 3])
                 rownames(rawdata) <- features
@@ -220,7 +222,7 @@ read10X <-
                 mergelist <- mergelist[!sapply(mergelist, is.null)]
                 sample.names.x <-
                     sample.names[!sapply(mergelist, is.null)]
-                MergeSparseDataAll(mergelist, sample.names)
+                mergeSparseAll(mergelist, sample.names)
             })
             names(return_dges) <- datatypes
 

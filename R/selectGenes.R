@@ -108,10 +108,11 @@ selectGenes <- function(
         ## The real calculation starts here ####
         geneMeans <- feature.meta(ld)$geneMeans
         geneVars <- feature.meta(ld)$geneVars
-        trx_per_cell <- cell.meta(object)[object$dataset == d, "nUMI"]
+        trx_per_cell <- cell.meta(object, "nUMI", cellIdx = object$dataset == d)
         nolan_constant <- mean((1 / trx_per_cell))
         alphathresh.corrected <- alpha.thresh / nrow(ld)
-        geneMeanUpper <- geneMeans + qnorm(1 - alphathresh.corrected / 2) *
+        geneMeanUpper <- geneMeans +
+            stats::qnorm(1 - alphathresh.corrected / 2) *
             sqrt(geneMeans * nolan_constant / ncol(ld))
         basegenelower <- log10(geneMeans * nolan_constant)
         num_varGenes <- function(x, num.genes.des) {
@@ -253,7 +254,7 @@ plotVarFeatures <- function(
     plotList <- list()
     for (d in names(object)) {
         ld <- dataset(object, d)
-        trx_per_cell <- cell.meta(object)[object$dataset == d, "nUMI"]
+        trx_per_cell <- cell.meta(object, "nUMI", cellIdx = object$dataset == d)
         nolan_constant <- mean((1 / trx_per_cell))
 
         data <- as.data.frame(feature.meta(ld))

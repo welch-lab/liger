@@ -17,7 +17,7 @@ ligerCommand object: Record the input and time of a LIGER function call
 
 \item{\code{call}}{A character string converted from system call}
 
-\item{\code{parameter}}{List of all arguments except the \linkS4class{liger} object.
+\item{\code{parameters}}{List of all arguments except the \linkS4class{liger} object.
 Large object are summarized to short string.}
 
 \item{\code{objSummary}}{List of attributes of the \linkS4class{liger} object as a

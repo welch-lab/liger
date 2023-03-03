@@ -9,7 +9,7 @@ optimizeNewData(
   new.data,
   which.datasets,
   add.to.existing = TRUE,
-  lambda = 5,
+  lambda = NULL,
   thresh = 1e-04,
   max.iters = 100,
   verbose = TRUE

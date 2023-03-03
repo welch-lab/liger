@@ -24,10 +24,12 @@ setClassUnion("index",
 #' @slot V matrix
 #' @slot A matrix
 #' @slot B matrix
+#' @slot H matrix
 #' @slot U matrix
-#' @slot agg.data list
 #' @slot h5file.info list
 #' @slot feature.meta Feature metadata, DataFrame
+#' @slot colnames character
+#' @slot rownames character
 #' @importClassesFrom S4Vectors DataFrame
 #' @exportClass ligerDataset
 ligerDataset <- setClass(
@@ -43,7 +45,6 @@ ligerDataset <- setClass(
         A = "matrix_OR_NULL",
         B = "matrix_OR_NULL",
         U = "matrix_OR_NULL",
-        agg.data = "list",
         h5file.info = "list",
         feature.meta = "DataFrame",
         colnames = "character",
@@ -99,12 +100,12 @@ createLigerDataset <- function(
     if (!is.null(raw.data)) {
         rn <- rownames(raw.data)
         if (!inherits(raw.data, "dgCMatrix"))
-            raw.data <- as(raw.data, "CsparseMatrix")
+            raw.data <- methods::as(raw.data, "CsparseMatrix")
     }
     if (!is.null(norm.data)) {
         if (is.null(rn)) rn <- rownames(norm.data)
         if (!inherits(norm.data, "dgCMatrix"))
-            raw.data <- as(norm.data, "CsparseMatrix")
+            raw.data <- methods::as(norm.data, "CsparseMatrix")
     }
     if (!is.null(scale.data)) {
         if (is.null(rn)) rn <- rownames(scale.data)
@@ -342,20 +343,72 @@ setValidity("ligerDataset", .valid.ligerDataset)
 # ------------------------------------------------------------------------------
 # Generics ####
 # ------------------------------------------------------------------------------
-
+#' Access data in a liger or ligerDataset object
+#' @param x \linkS4class{ligerDataset} object or \linkS4class{liger} object
+#' @param name,dataset Name or numeric index of a dataset when \code{x} is a
+#' \linkS4class{liger} object, in order to only get the data from this specified
+#' dataset. Default \code{NULL}.
+#' @param value matrix like or \code{NULL}
+#' @param check Whether to perform object validity check on setting new value.
+#' @param info Name of the entry in \code{h5file.info} slot.
+#' @param slot The slot name when using \code{getMatrix}.
+#' @param returnList When using \code{getMatrix} and data from one dataset is
+#' being returned, whether it should be contained in a list or return the data
+#' directly.
+#' @export
+#' @rdname data-access
 setGeneric("raw.data", function(x) standardGeneric("raw.data"))
+
+#' @export
+#' @rdname data-access
 setGeneric("raw.data<-", function(x, check = TRUE, value) standardGeneric("raw.data<-"))
+
+#' @export
+#' @rdname data-access
 setGeneric("norm.data", function(x) standardGeneric("norm.data"))
+
+#' @export
+#' @rdname data-access
 setGeneric("norm.data<-", function(x, check = TRUE, value) standardGeneric("norm.data<-"))
+
+#' @export
+#' @rdname data-access
 setGeneric("scale.data", function(x, name = NULL) standardGeneric("scale.data"))
+
+#' @export
+#' @rdname data-access
 setGeneric("scale.data<-", function(x, check = TRUE, value) standardGeneric("scale.data<-"))
+
+#' @export
+#' @rdname data-access
 setGeneric("scale.unshared.data", function(x, name = NULL) standardGeneric("scale.unshared.data"))
+
+#' @export
+#' @rdname data-access
 setGeneric("scale.unshared.data<-", function(x, check = TRUE, value) standardGeneric("scale.unshared.data<-"))
+
+#' @export
+#' @rdname data-access
 setGeneric("getH5File", function(x, dataset = NULL) standardGeneric("getH5File"))
+
+#' @export
+#' @rdname data-access
 setGeneric("h5file.info", function(x, info = NULL) standardGeneric("h5file.info"))
+
+#' @export
+#' @rdname data-access
 setGeneric("h5file.info<-", function(x, info = NULL, check = TRUE, value) standardGeneric("h5file.info<-"))
+
+#' @export
+#' @rdname data-access
 setGeneric("feature.meta", function(x, check = NULL) standardGeneric("feature.meta"))
+
+#' @export
+#' @rdname data-access
 setGeneric("feature.meta<-", function(x, check = TRUE, value) standardGeneric("feature.meta<-"))
+
+#' @export
+#' @rdname data-access
 setGeneric("getMatrix", function(x, slot = "raw.data", dataset = NULL, returnList = FALSE) standardGeneric("getMatrix"))
 # ------------------------------------------------------------------------------
 # Methods ####
@@ -369,12 +422,13 @@ setMethod(
         cat("An object of class", class(object), "with",
             ncol(object), "cells\n")
         if (isH5Liger(object) &
-            !isTRUE(validObject(object, test = TRUE))) {
+            !isTRUE(methods::validObject(object, test = TRUE))) {
             warning("Link to HDF5 file fails. Please try running ",
                     "`restoreH5Liger(object)`.")
             return()
         }
-        for (slot in c("raw.data", "norm.data", "scale.data")) {
+        for (slot in c("raw.data", "norm.data", "scale.data",
+                       "scale.unshared.data")) {
             data <- methods::slot(object, slot)
             if (!is.null(data)) {
                 if (inherits(data, c("matrix", "dgCMatrix",
@@ -445,8 +499,11 @@ setReplaceMethod("dimnames", c("ligerDataset", "list"), function(x, value) {
     if (!is.null(x@B))
         rownames(x@B) <- value[[1L]][x@rownames %in% rownames(x@V)]
     if (!is.null(x@U)) colnames(x@U) <- value[[2L]]
-    if ("peak" %in% methods::slotNames(x)) {
-        if (!is.null(peak(x))) colnames(peak(x)) <- value[[2L]]
+    if ("raw.peak" %in% methods::slotNames(x)) {
+        if (!is.null(raw.peak(x))) colnames(raw.peak(x)) <- value[[2L]]
+    }
+    if ("norm.peak" %in% methods::slotNames(x)) {
+        if (!is.null(norm.peak(x))) colnames(norm.peak(x)) <- value[[2L]]
     }
     x@rownames <- value[[1L]]
     x@colnames <- value[[2L]]
@@ -480,10 +537,6 @@ setMethod(
         subsetLigerDataset(x, featureIdx = i, cellIdx = j, ...)
 )
 
-#' Access data in a ligerDataset object
-#' @param x \linkS4class{ligerDataset} object
-#' @param value matrix like or \code{NULL}
-#' @param check Whether to perform object validity check on setting new value.
 #' @export
 #' @rdname data-access
 setMethod("raw.data", "ligerDataset",
@@ -498,7 +551,7 @@ setReplaceMethod(
         if (isH5Liger(x))
             stop("Cannot replace slot with in-memory data for H5 based object.")
         x@raw.data <- value
-        if (isTRUE(check)) validObject(x)
+        if (isTRUE(check)) methods::validObject(x)
         x
     }
 )
@@ -512,7 +565,7 @@ setReplaceMethod(
         if (!isH5Liger(x))
             stop("Cannot replace slot with on-disk data for in-memory object.")
         x@raw.data <- value
-        if (isTRUE(check)) validObject(x)
+        if (isTRUE(check)) methods::validObject(x)
         x
     }
 )
@@ -531,7 +584,7 @@ setReplaceMethod(
         if (isH5Liger(x))
             stop("Cannot replace slot with in-memory data for H5 based object.")
         x@norm.data <- value
-        if (isTRUE(check)) validObject(x)
+        if (isTRUE(check)) methods::validObject(x)
         x
     }
 )
@@ -545,7 +598,7 @@ setReplaceMethod(
         if (!isH5Liger(x))
             stop("Cannot replace slot with on-disk data for in-memory object.")
         x@norm.data <- value
-        if (isTRUE(check)) validObject(x)
+        if (isTRUE(check)) methods::validObject(x)
         x
     }
 )
@@ -584,7 +637,7 @@ setReplaceMethod(
         if (isH5Liger(x))
             stop("Cannot replace slot with in-memory data for H5 based object.")
         x@scale.data <- value
-        if (isTRUE(check)) validObject(x)
+        if (isTRUE(check)) methods::validObject(x)
         x
     }
 )
@@ -598,7 +651,7 @@ setReplaceMethod(
         if (!isH5Liger(x))
             stop("Cannot replace slot with on-disk data for in-memory object.")
         x@scale.data <- value
-        if (isTRUE(check)) validObject(x)
+        if (isTRUE(check)) methods::validObject(x)
         x
     }
 )
@@ -638,7 +691,7 @@ setReplaceMethod(
         if (isH5Liger(x))
             stop("Cannot replace slot with in-memory data for H5 based object.")
         x@scale.unshared.data <- value
-        if (isTRUE(check)) validObject(x)
+        if (isTRUE(check)) methods::validObject(x)
         x
     }
 )
@@ -652,24 +705,19 @@ setReplaceMethod(
         if (!isH5Liger(x))
             stop("Cannot replace slot with on-disk data for in-memory object.")
         x@scale.unshared.data <- value
-        if (isTRUE(check)) validObject(x)
+        if (isTRUE(check)) methods::validObject(x)
         x
     }
 )
 
-
-#' Access the H5File object
-#' @param x \linkS4class{ligerDataset} object or \linkS4class{liger} object.
-#' @param dataset Get H5File from specific dataset(s) if using a
-#' \linkS4class{liger} object.
 #' @export
-#' @rdname getH5File
+#' @rdname data-access
 setMethod("getH5File",
           signature = signature(x = "ligerDataset", dataset = "missing"),
           function(x, dataset = NULL) h5file.info(x, "H5File"))
 
-#' @rdname getH5File
 #' @export
+#' @rdname data-access
 setMethod("getH5File",
           signature = signature(x = "liger", dataset = "character"),
           function(x, dataset = NULL) {
@@ -684,17 +732,8 @@ setMethod("getH5File",
               results
           })
 
-#' Access the H5File information
-#' @description H5File information generally stores the "paths" to all types of
-#' data in the H5 file. Setter method changes not only information stored in
-#' \code{h5file.info} slot, but also data slots (i.e. \code{raw.data},
-#' \code{norm.data} or \code{scale.data}) that a related with the corresponding
-#' information.
-#' @param x \linkS4class{ligerDataset}
-#' @param info Character vector of queried information. Default \code{NULL}
-#' returns a full list of information.
 #' @export
-#' @rdname h5file.info
+#' @rdname data-access
 setMethod(
     "h5file.info",
     signature = signature(x = "ligerDataset", info = "ANY"),
@@ -716,7 +755,7 @@ setMethod(
     })
 
 #' @export
-#' @rdname h5file.info
+#' @rdname data-access
 setReplaceMethod(
     "h5file.info",
     signature = signature(
@@ -740,29 +779,28 @@ setReplaceMethod(
                 }
             }
             x@h5file.info[[info]] <- value
-            if (info %in% c('raw.data', 'norm.data', 'scale.data')) {
+            if (info %in% c('raw.data', 'norm.data', 'scale.data',
+                            'scale.unshared.data')) {
                 x <- do.call(paste0(info, "<-"),
                              list(x = x,
                                   value = getH5File(x)[[h5file.info(x, info)]],
                                   check = check))
             }
         }
-        if (isTRUE(check)) validObject(x)
+        if (isTRUE(check)) methods::validObject(x)
         x
     }
 )
 
-#' Access the feature metadata in a ligerDataset object
-#' @param x \linkS4class{ligerDataset} object
-#' @rdname feature.meta
 #' @export
+#' @rdname data-access
 setMethod("feature.meta", signature(x = "ligerDataset", check = "ANY"),
           function(x, check = NULL) {
     x@feature.meta
 })
 
-#' @rdname feature.meta
 #' @export
+#' @rdname data-access
 setReplaceMethod(
     "feature.meta",
     signature(x = "ligerDataset", check = "ANY"),
@@ -770,30 +808,19 @@ setReplaceMethod(
         if (!inherits(value, "DFrame"))
             value <- S4Vectors::DataFrame(value)
         x@feature.meta <- value
-        if (isTRUE(check)) validObject(x)
+        if (isTRUE(check)) methods::validObject(x)
         x
     }
 )
 
-#' Get matrix from liger/ligerDataset object
-#' @param x \linkS4class{liger} or \linkS4class{ligerDataset} object
-#' @param slot The type of matrix to retrieve. Choose from \code{"raw.data"},
-#' \code{"norm.data"}, \code{"scale.data"}, \code{"H"}, \code{"V"} for both
-#' classes. For \linkS4class{liger} object, \code{"W"} can also be an option,
-#' ignoring \code{dataset}.
-#' @param dataset When using a \linkS4class{liger} object, from which dataset(s)
-#' to retrieve the data. Single dataset returns the matrix, multiple datasets
-#' return a named list of the type of matrices, default \code{NULL} return a
-#' named list of the type of matrix from all datasets.
-#' @return A matrix or a list, depending on \code{dataset}
-#' @rdname getMatrix
 #' @export
+#' @rdname data-access
 setMethod(
     "getMatrix", signature(x = "ligerDataset", dataset = "missing",
                            returnList = "missing"),
     function(x,
              slot = c("raw.data", "norm.data", "scale.data",
-                      "scale.unshared.data", "H", "V"),
+                      "scale.unshared.data", "H", "V", "U"),
              dataset = NULL) {
         # TODO: Currently directly find the data with slot, but need to
         # think about maintainability when we need to change slot name.
@@ -801,13 +828,13 @@ setMethod(
         methods::slot(x, slot)
     })
 
-#' @rdname getMatrix
 #' @export
+#' @rdname data-access
 setMethod(
     "getMatrix", signature(x = "liger"),
     function(x,
              slot = c("raw.data", "norm.data", "scale.data",
-                      "scale.unshared.data", "H", "V", "W", "H.norm"),
+                      "scale.unshared.data", "H", "V", "U", "W", "H.norm"),
              dataset = NULL,
              returnList = FALSE) {
         slot <- match.arg(slot)
@@ -830,3 +857,36 @@ setMethod(
         }
     })
 
+#' cbind method for ligerDataset objects
+#' @description The list of \code{datasets} slot, the rows of
+#' \code{cell.meta} slot and the list of \code{commands} slot will be simply
+#' concatenated. Variable features in \code{var.features} slot will be taken a
+#' union. The \eqn{W} and \eqn{H.norm} matrices are not taken into account for
+#' now.
+#' @param x \linkS4class{ligerDataset} object
+#' @param ... \linkS4class{ligerDataset} objects
+#' @param deparse.level Not used here.
+#' @return A new \linkS4class{liger} object containing all datasets in the order
+#' of specification.
+#' @name cbind.ligerDataset
+NULL
+
+#' @rdname cbind.ligerDataset
+#' @export
+#' @method cbind ligerDataset
+cbind.ligerDataset <- function(x, ...,
+                               deparse.level = 1) {
+    args <- list(...)
+    isLD <- sapply(args, function(x) inherits(x, "ligerDataset"))
+    if (any(!isLD)) {
+        warning("Discarding arguments that are not of ligerDataset class")
+        args <- args[isLD]
+    }
+    if (!missing(x)) args <- c(list(x), args)
+    isH5 <- sapply(args, isH5Liger)
+    if (all(isH5)) .cbind.ligerDataset.h5(args)
+    else if (!any(isH5)) .cbind.ligerDataset.mem(args)
+    else
+        stop("Cannot `cbind` a hybrid of H5 ligerDatasets and ",
+             "in-memory ligerDatasets for now.")
+}

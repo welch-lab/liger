@@ -6,7 +6,7 @@
 \usage{
 downsample(
   object,
-  balance = c("all", "cluster", "dataset"),
+  balance = NULL,
   maxCells = 1000,
   useDatasets = NULL,
   seed = 1,
@@ -16,10 +16,10 @@ downsample(
 \arguments{
 \item{object}{\linkS4class{liger} object}
 
-\item{balance}{\code{"all"} for sampling \code{maxCells} cells from all
-datasets specified by \code{useDatasets}. \code{"cluster"} for sampling
-\code{maxCells} cells per cluster per dataset. \code{"dataset"} for
-\code{maxCells} cells per dataset.}
+\item{balance}{Character vector of categorical variable names in
+\code{cell.meta} slot, to subsample \code{maxCells} cells from each
+combination of all specified variables. Default \code{NULL} samples
+\code{maxCells} cells from the whole object.}
 
 \item{maxCells}{Max number of cells to sample from the grouping based on
 \code{balance}.}
@@ -38,4 +38,13 @@ Subset of \linkS4class{liger} \code{object}.
 \description{
 This function mainly aims at downsampling datasets to a size
 suitable for plotting.
+}
+\details{
+Users can balance the sample size of categories of interests with
+\code{balance}. Multi-variable specification to \code{balance} is supported,
+so that at most \code{maxCells} cells will be sampled from each combination
+of categories from the variables. Note that \code{"dataset"} will
+automatically be added as one variable when balancing the downsampling.
+However, if users want to balance the downsampling solely basing on dataset
+origin, users have to explicitly set \code{balance = "dataset"}.
 }

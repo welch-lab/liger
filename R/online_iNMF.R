@@ -158,7 +158,7 @@ online_iNMF <- function(
         if (is.null(X_new)) {
             if (isTRUE(verbose)) .log("Scenario 1, init arguments ignored.")
 
-            W <- matrix(runif(nGenes * k, 0, 2), nGenes, k)
+            W <- matrix(stats::runif(nGenes * k, 0, 2), nGenes, k)
             # TODO: W <- W / sqrt(colSums(W ^ 2))
             for (j in seq(k)) W[, j] <- W[, j] / sqrt(sum(W[, j] ^ 2))
 
@@ -179,7 +179,7 @@ online_iNMF <- function(
             if (isTRUE(verbose)) .log("Scenario 2, initiating parameters")
 
             if (!is.null(W.init)) W <- .checkInit(W.init, NULL, nGenes, k, "W")
-            W <- .checkMatrixValid(W, k, nGenes, name = "W")
+            W <- .checkMatrixValid(W, k, name = "W")
 
             if (!is.null(V.init)) {
                 V <- .checkInit(V.init, nCells[dataIdxPrev], nGenes, k, "V")
@@ -352,7 +352,7 @@ online_iNMF <- function(
             epochNext <- rep(FALSE, length(object))
             iter <- iter + 1
             if (isTRUE(verbose)) {
-                setTxtProgressBar(pb = pb, value = iter)
+                utils::setTxtProgressBar(pb = pb, value = iter)
             }
         }
 
@@ -441,4 +441,9 @@ online_iNMF <- function(
              " do not match specification of `k` (", k, ").")
     }
     m
+}
+
+nonneg <- function(x, eps = 1e-16) {
+    x[x < eps] = eps
+    return(x)
 }

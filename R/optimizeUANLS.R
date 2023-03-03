@@ -1,19 +1,23 @@
-#' Perform iNMF on scaled datasets, and include unshared, scaled and normalized, features
-#' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
-#' @param k Inner dimension of factorization (number of factors).
-#' @param lambda The lambda penalty. Default 5
-#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh.
-#'   (default 1e-6)
-#' @param max.iters Maximum number of block coordinate descent iterations to perform (default 30).
-#' @param nrep Number of restarts to perform (iNMF objective function is non-convex, so taking the
-#'   best objective from multiple successive initializations is recommended). For easier
-#'   reproducibility, this increments the random seed by 1 for each consecutive restart, so future
-#'   factorizations of the same dataset can be run with one rep if necessary. (default 1)
-#' @param rand.seed Random seed to allow reproducible results (default 1).
-#' @param print.obj  Print objective function values after convergence (default FALSE).
-#' @param vectorized.lambda Whether or not to expect a vectorized lambda parameter
+#' Perform iNMF on scaled datasets, and include unshared features
+#' @param object \linkS4class{liger} object. Should run
+#' \code{\link{selectGenes}} with \code{unshared = TRUE} and then run
+#' \code{\link{scaleNotCenter}} in advance.
+#' @param k Integer, inner dimension of factorization (number of factors).
+#' Default \code{30}.
+#' @param lambda Numeric, the lambda penalty. Default \code{5}.
+#' @param thresh Numeric, convergence threshold. Convergence occurs when
+#' \eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-10}.
+#' @param maxIter Maximum number of block coordinate descent iterations to
+#' perform. Default \code{30}.
+#' @param nrep Number of restarts to perform (iNMF objective function is
+#' non-convex, so taking the best objective from multiple successive
+#' initializations is recommended). For easier reproducibility, this increments
+#' the random seed by 1 for each consecutive restart, so future factorizations
+#' of the same dataset can be run with one rep if necessary. Default \code{1}.
+#' @param seed Random seed to allow reproducible results. Default \code{1}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{TRUE}.
 #' @noRd
-#' ##########################################################################
 optimizeUANLS <- function(
         object,
         k = 30,
@@ -25,7 +29,6 @@ optimizeUANLS <- function(
         verbose = TRUE
 ) {
     set.seed(seed)
-    #Account for vectorized lambda
     if (isTRUE(verbose))
         .log('Performing Factorization using UINMF and unshared features')
     if (length(lambda) == 1)
@@ -86,7 +89,7 @@ optimizeUANLS <- function(
         for (i in seq_along(X)) V[[i]] <- scale.data(object, i)[, idX[[i]]]
         # Establish W from the shared gene dimensions
         # W matrices: g x k
-        W <- matrix(runif(nGenes*k, 0, 2), nGenes, k)
+        W <- matrix(stats::runif(nGenes*k, 0, 2), nGenes, k)
         H <- list()
         # Initialize U
         U <- list()
@@ -100,7 +103,7 @@ optimizeUANLS <- function(
         iter <- 0
         total_time <- 0
         if (isTRUE(verbose))
-            pb <- txtProgressBar(min = 0, max = maxIter, style = 3)
+            pb <- utils::txtProgressBar(min = 0, max = maxIter, style = 3)
         sqrtLambda <- lapply(lambda, sqrt)
 
         # Initial Training Objects
@@ -110,7 +113,7 @@ optimizeUANLS <- function(
 
         for (i in seq_along(X)) {
             # H: k x c
-            H[[i]] = matrix(runif(k * nCells[i], 0, 2), k, nCells[i])
+            H[[i]] = matrix(stats::runif(k * nCells[i], 0, 2), k, nCells[i])
             if (i %in% unshared) {
                 obj_train_approximation <- obj_train_approximation +
                     norm(X[[i]] - (rbind(W, zero_matrix_u_partial[[i]]) +
@@ -232,10 +235,10 @@ optimizeUANLS <- function(
             delta <- abs(obj_train_prev - obj_train) /
                 mean(c(obj_train_prev, obj_train))
             iter <- iter + 1
-            if (isTRUE(verbose)) setTxtProgressBar(pb = pb, value = iter)
+            if (isTRUE(verbose)) utils::setTxtProgressBar(pb = pb, value = iter)
         }
         if (isTRUE(verbose)) {
-            setTxtProgressBar(pb = pb, value = maxIter)
+            utils::setTxtProgressBar(pb = pb, value = maxIter)
             cat("\n")
             .log("Current seed: ", current, "; Current objective: ", obj_train)
         }
@@ -249,10 +252,10 @@ optimizeUANLS <- function(
         }
     }
 
-    factorNames <- paste("factor_", seq(k))
+    factorNames <- paste0("factor_", seq(k))
 
-    rownames(W_m) = var.features(object)
-    colnames(W_m) = factorNames
+    rownames(W_m) <- var.features(object)
+    colnames(W_m) <- factorNames
     object@W <- W_m
 
     for (i in seq_along(object)) {
@@ -273,6 +276,8 @@ optimizeUANLS <- function(
         }
         datasets(object, check = FALSE)[[i]] <- ld
     }
+    param <- list(k = k, lambda = lambda)
+    object@uns$factorization <- param
 
     if (isTRUE(verbose))
         .log("Objective: ", bestObj, "\nBest results with seed: ", best_seed)

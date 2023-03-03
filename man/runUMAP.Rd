@@ -57,7 +57,7 @@ The \code{object} where a \code{"UMAP"} variable is updated in the
 }
 \description{
 Run UMAP on the quantile normalized cell factors (result from
-\code{\link{quantile_norm}}), or unnormalized cell
+\code{\link{quantileNorm}}), or unnormalized cell
 factors (result from \code{\link{optimizeALS}} or \code{\link{online_iNMF}}))
 to generate a 2D embedding for visualization (or general dimensionality
 reduction). Has option to run on subset of factors. It is generally

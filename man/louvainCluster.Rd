@@ -24,7 +24,7 @@ louvainCluster(
 }
 \arguments{
 \item{object}{\linkS4class{liger} object. Should run
-\code{\link{quantile_norm}} before calling.}
+\code{\link{quantileNorm}} before calling.}
 
 \item{resolution}{Numeric, value of the resolution parameter, a larger value
 results in a larger number of communities with smaller sizes. Default
@@ -74,7 +74,7 @@ single-cell analysis and excels at merging small clusters into broad cell
 classes.
 
 While using quantile normalized factor loadings (result from
-\code{\link{quantile_norm}}) is recommended, this function looks for
+\code{\link{quantileNorm}}) is recommended, this function looks for
 unnormalized factor loadings (result from \code{\link{optimizeALS}} or
 \code{\link{online_iNMF}}) when the former is not available.
 }

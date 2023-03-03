@@ -176,7 +176,7 @@ normalizePeak <- function(
 Matrix.column_norm <- function(A) {
     if (class(A)[1] == "dgTMatrix") {
         temp = summary(A)
-        A = sparseMatrix(i = temp[, 1], j = temp[, 2], x = temp[, 3])
+        A = Matrix::sparseMatrix(i = temp[, 1], j = temp[, 2], x = temp[, 3])
     }
     A@x <- A@x / rep.int(Matrix::colSums(A), diff(A@p))
     return(A)

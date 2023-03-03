@@ -17,7 +17,7 @@ plotCellScatter(
 )
 }
 \arguments{
-\item{object}{\linkS4class{liger} object}
+\item{object}{A \linkS4class{liger} object}
 
 \item{x, y}{Available variable name in \code{cell.meta} slot to look for
 the dot coordinates. See details.}

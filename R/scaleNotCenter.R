@@ -33,45 +33,19 @@ scaleNotCenter <- function(
         ld <- dataset(object, d)
         if (isH5Liger(ld)) {
             # Scale H5 based data
-            featureIdx <- .getOrderedSubsetIdx(rownames(ld), var.features(object))
-            features <- rownames(ld)[featureIdx]
-            geneSumSq <- feature.meta(ld)$geneSumSq[featureIdx]
-            nCells <- ncol(ld)
-            geneRootMeanSumSq = sqrt(geneSumSq / (nCells - 1))
-            h5file <- getH5File(ld)
-            resultH5Path <- "scale.data"
-            safeH5Create(
-                ld,
-                dataPath = resultH5Path,
-                dims = c(length(features), nCells),
-                dtype = "double",
-                chunkSize = c(length(features), chunk)
-            )
-            H5Apply(
-                ld,
-                useData = "norm.data",
-                chunkSize = chunk,
-                verbose = verbose,
-                FUN = function(chunk, sparseXIdx, cellIdx, values) {
-                    chunk <- chunk[featureIdx,]
-                    chunk = as.matrix(chunk)
-                    chunk = sweep(chunk, 1, geneRootMeanSumSq, "/")
-                    rownames(chunk) <- features
-                    chunk[is.na(chunk)] = 0
-                    chunk[chunk == Inf] = 0
-                    h5file[[resultH5Path]][seq_along(features),
-                                           cellIdx] <- chunk
-                }
-            )
-            h5file.info(ld, "scale.data", check = FALSE) <- resultH5Path
-            safeH5Create(
-                ld,
-                dataPath = "scale.data.featureIdx",
-                dims = length(features),
-                dtype = "double"
-            )
-            h5file[["scale.data.featureIdx"]][1:length(featureIdx)] <-
-                featureIdx
+            featureIdx <- .getOrderedSubsetIdx(rownames(ld),
+                                               var.features(object))
+            ld <- .scaleH5Matrix(ld, featureIdx = featureIdx,
+                                 resultH5Path = "scale.data",
+                                 chunk = chunk, verbose = verbose)
+
+            if (!is.null(ld@var.unshared.features)) {
+                unsharedIdx <- .getOrderedSubsetIdx(rownames(ld),
+                                                    ld@var.unshared.features)
+                ld <- .scaleH5Matrix(ld, featureIdx = unsharedIdx,
+                                     resultH5Path = "scale.unshared.data",
+                                     chunk = chunk, verbose = verbose)
+            }
         } else {
             # Scale in memory data
             scaled <- .scaleMemMatrix(norm.data(ld)[var.features(object),])
@@ -87,6 +61,47 @@ scaleNotCenter <- function(
         datasets(object, check = FALSE)[[d]] <- ld
     }
     object
+}
+
+.scaleH5Matrix <- function(ld, featureIdx, resultH5Path, chunk, verbose) {
+    features <- rownames(ld)[featureIdx]
+    geneSumSq <- feature.meta(ld)$geneSumSq[featureIdx]
+    nCells <- ncol(ld)
+    geneRootMeanSumSq = sqrt(geneSumSq / (nCells - 1))
+    h5file <- getH5File(ld)
+    safeH5Create(
+        ld,
+        dataPath = resultH5Path,
+        dims = c(length(features), nCells),
+        dtype = "double",
+        chunkSize = c(length(features), chunk)
+    )
+    H5Apply(
+        ld,
+        useData = "norm.data",
+        chunkSize = chunk,
+        verbose = verbose,
+        FUN = function(chunk, sparseXIdx, cellIdx, values) {
+            chunk <- chunk[featureIdx, , drop = FALSE]
+            chunk = as.matrix(chunk)
+            chunk = sweep(chunk, 1, geneRootMeanSumSq, "/")
+            rownames(chunk) <- features
+            chunk[is.na(chunk)] = 0
+            chunk[chunk == Inf] = 0
+            h5file[[resultH5Path]][seq_along(features),
+                                   cellIdx] <- chunk
+        }
+    )
+    h5file.info(ld, resultH5Path, check = FALSE) <- resultH5Path
+    safeH5Create(
+        ld,
+        dataPath = paste0(resultH5Path, ".featureIdx"),
+        dims = length(features),
+        dtype = "double"
+    )
+    h5file[[paste0(resultH5Path, ".featureIdx")]][1:length(featureIdx)] <-
+        featureIdx
+    return(ld)
 }
 
 # Input norm.subset should still be feature x cell dimensionality

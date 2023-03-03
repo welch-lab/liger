@@ -1,6 +1,6 @@
 #' Perform UMAP Dimensionality Reduction
 #' @description Run UMAP on the quantile normalized cell factors (result from
-#' \code{\link{quantile_norm}}), or unnormalized cell
+#' \code{\link{quantileNorm}}), or unnormalized cell
 #' factors (result from \code{\link{optimizeALS}} or \code{\link{online_iNMF}}))
 #' to generate a 2D embedding for visualization (or general dimensionality
 #' reduction). Has option to run on subset of factors. It is generally
@@ -79,13 +79,13 @@ runUMAP <- function(
                        min_dist = minDist)
     rownames(umap) <- colnames(object)
     colnames(umap) <- seq(nDims)
-    object[["UMAP"]] <- umap
+    cell.meta(object, "UMAP", check = FALSE) <- umap
     return(object)
 }
 
 #' Perform t-SNE dimensionality reduction
 #' @description Runs t-SNE on the quantile normalized cell factors (result from
-#' \code{\link{quantile_norm}}), or unnormalized cell factors (result from
+#' \code{\link{quantileNorm}}), or unnormalized cell factors (result from
 #' \code{\link{optimizeALS}} or \code{\link{online_iNMF}})) to generate a 2D
 #' embedding for visualization. By default \code{\link[Rtsne]{Rtsne}}
 #' (Barnes-Hut implementation of t-SNE) method is invoked, while alternative
@@ -180,7 +180,7 @@ runTSNE <- function(
     }
     rownames(tsne) <- colnames(object)
     colnames(tsne) <- seq(nDims)
-    object[["TSNE"]] <- tsne
+    cell.meta(object, "TSNE", check = FALSE) <- tsne
     object@uns$TSNE <- list(method = method)
     return(object)
 }

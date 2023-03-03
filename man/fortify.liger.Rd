@@ -8,20 +8,11 @@
 }
 \arguments{
 \item{x}{\code{liger} object to convert into a dataframe.}
-
-\item{...}{not used by this method}
 }
 \value{
-A \code{data.frame} combining \code{cell.meta(x)} with
-\code{H} and \code{H.norm} matrices, if any of the latters exist.
+A \code{data.frame} combining \code{cell.meta(x)} with \code{H.norm}
+matrix.
 }
 \description{
 Fortify method for classes from the liger package
-}
-\examples{
-\dontrun{
-library(ggplot2)
-# Create liger object, ligerex
-ggplot(ligerex,  aes(x = dataset, y = nUMI)) + geom_violin()
-}
 }

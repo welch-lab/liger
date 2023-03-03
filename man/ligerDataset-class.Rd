@@ -29,12 +29,16 @@ datasets}
 
 \item{\code{B}}{matrix}
 
-\item{\code{U}}{matrix}
+\item{\code{H}}{matrix}
 
-\item{\code{agg.data}}{list}
+\item{\code{U}}{matrix}
 
 \item{\code{h5file.info}}{list}
 
 \item{\code{feature.meta}}{Feature metadata, DataFrame}
+
+\item{\code{colnames}}{character}
+
+\item{\code{rownames}}{character}
 }}
 

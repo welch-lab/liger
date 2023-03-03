@@ -27,10 +27,12 @@
   legendTextSize = NULL,
   legendTitleSize = NULL,
   legendDotSize = 4,
+  panelBorder = FALSE,
   legendNRow = NULL,
   legendNCol = NULL,
   colorPalette = "magma",
   colorDirection = -1,
+  naColor = "#F5F5F5",
   colorLow = NULL,
   colorMid = NULL,
   colorHigh = NULL,
@@ -46,9 +48,9 @@ By default, no main title or subtitle will be set, and X/Y axis title will be
 the names of variables used for plotting. Use \code{NULL} to hide elements.
 \code{TRUE} for \code{xlab} or \code{ylab} shows default values.}
 
-\item{legendColorTitle, legendShapeTitle}{Set alternative title text for
-legend on color or shape. Default \code{NULL} shows the original variable
-name.}
+\item{legendColorTitle, legendFillTitle, legendShapeTitle, legendSizeTitle}{Set
+alternative title text for legend on aes of color, fill, shape and size,
+respectively. Default \code{NULL} shows the original variable name.}
 
 \item{legend}{Whether to show the legend. Default \code{TRUE}.}
 
@@ -63,21 +65,33 @@ axis titles and legend title. Default \code{NULL} controls by
 \item{subtitleSize, xTextSize, yTextSize, legendTextSize}{Size of subtitle text,
 axis texts and legend text. Default \code{NULL} controls by \code{baseSize}.}
 
+\item{xFacetSize, yFacetSize}{Size of facet label text. Default \code{NULL}
+controls by \code{baseSize - 2}.}
+
 \item{legendDotSize}{Allow dots in legend region to be large enough to see
 the colors/shapes clearly. Default \code{4}.}
+
+\item{panelBorder}{Whether to show rectangle border of the panel instead of
+using ggplot classic bottom and left axis lines. Default \code{FALSE}.}
 
 \item{legendNRow, legendNCol}{Integer, when too many categories in one
 variable, arranges number of rows or columns. Default \code{NULL},
 automatically split to \code{ceiling(levels(variable)/10)} columns.}
 
-\item{colorPalette}{For continuous coloring, a palette name or an index to
+\item{colorPalette}{For continuous coloring, an index or a palette name to
 select from available options from ggplot
-\code{\link[ggplot2]{scale_brewer}}. Additionally, \code{"viridis"} TODO are
-also supported. Default \code{"viridis"}.}
+\code{\link[ggplot2]{scale_brewer}} or \code{\link[viridisLite]{viridis}}.
+Default \code{"magma"}.}
+
+\item{colorDirection}{Choose \code{1} or \code{-1}. Applied when
+\code{colorPalette} is from Viridis options. Default \code{-1} use darker
+color for higher value, while \code{1} reverses this direction.}
+
+\item{naColor}{The color code for \code{NA} values. Default \code{"#F5F5F5"}.
+\code{\link[ggplot2]{scale_colour_gradient2}}. Default \code{NULL}.}
 
 \item{colorLow, colorMid, colorHigh, colorMidPoint}{All four of these must be
-specified to customize palette with
-\code{\link[ggplot2]{scale_colour_gradient2}}. Default \code{NULL}.}
+specified to customize palette with}
 
 \item{plotly}{Whether to use plotly to enable web based interactive browsing
 for the plot. Requires installation of package "plotly". Default

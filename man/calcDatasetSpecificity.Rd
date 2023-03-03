@@ -4,7 +4,13 @@
 \alias{calcDatasetSpecificity}
 \title{Calculate a dataset-specificity score for each factor}
 \usage{
-calcDatasetSpecificity(object, dataset1, dataset2, do.plot = FALSE)
+calcDatasetSpecificity(
+  object,
+  dataset1,
+  dataset2,
+  doPlot = FALSE,
+  do.plot = doPlot
+)
 }
 \arguments{
 \item{object}{\linkS4class{liger} object with factorization results.}
@@ -15,6 +21,8 @@ calcDatasetSpecificity(object, dataset1, dataset2, do.plot = FALSE)
 
 \item{doPlot}{Logical. Whether to display a barplot of dataset specificity
 scores (by factor). Default \code{FALSE}.}
+
+\item{do.plot}{\bold{Deprecated}. Use \code{doPlot} instead.}
 }
 \value{
 List containing three elements.

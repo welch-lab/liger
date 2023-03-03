@@ -19,8 +19,6 @@ setClassUnion("matrixLike", c("matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix"))
 #' @return A ligerDataset object by default, or a modality specific sub-class of
 #' ligerDataset object according to \code{modal}.
 #' @export
-#' @importClassesFrom SeuratObject Seurat
-#' @importClassesFrom SingleCellExperiment SingleCellExperiment
 #' @author Yichen Wang
 setGeneric("as.ligerDataset",
            function(x, modal = c("default", "rna", "atac")) {
@@ -34,7 +32,11 @@ setMethod(
     signature(x = "SingleCellExperiment",
               modal = "ANY"),
     function(x, modal = c("default", "rna", "atac")) {
-        requireNamespace("SingleCellExperiment")
+        if (!requireNamespace("SingleCellExperiment",quietly = "TRUE"))
+            stop("Package \"SingleCellExperiment\" needed for this function to work. ",
+                 "Please install it by command:\n",
+                 "BiocManager::install('SingleCellExperiment')",
+                 call. = FALSE)
         if ("counts" %in% SummarizedExperiment::assayNames(x))
             raw.data <- SingleCellExperiment::counts(x)
         else raw.data <- NULL
@@ -92,8 +94,11 @@ setMethod(
     signature(x = "Seurat",
               modal = "ANY"),
     function(x, modal= c("default", "rna", "atac")) {
-        if (!requireNamespace("Seurat", quietly = TRUE))
-            stop("Please have package `Seurat` installed.")
+        if (!requireNamespace("Seurat",quietly = "TRUE"))
+            stop("Package \"Seurat\" needed for this function to work. ",
+                 "Please install it by command:\n",
+                 "BiocManager::install('Seurat')",
+                 call. = FALSE)
         counts <- Seurat::GetAssayData(x, "counts")
         norm.data <- Seurat::GetAssayData(x, "data")
         if (identical(counts, norm.data)) norm.data <- NULL

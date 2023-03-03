@@ -1,0 +1,113 @@
+template:
+  params:
+    bootswatch: flatly
+
+reference:
+- title: "Read Data"
+- contents:
+  - starts_with("create")
+  - read10X
+  - restoreH5Liger
+  - as.ligerDataset
+- title: "Preprocessing"
+- contents:
+  - runGeneralQC
+  - removeMissing
+  - normalize
+  - selectGenes
+  - scaleNotCenter
+  - downsample
+- title: "Factorization"
+- contents:
+  - starts_with("optimize")
+  - online_iNMF
+  - quantileNorm,liger-method
+  - suggestK
+  - suggestLambda
+- title: "Downstream Analysis"
+- contents:
+  - runTSNE
+  - runUMAP
+  - louvainCluster
+  - runWilcoxon
+  - getFactorMarkers
+  - runGSEA
+  - imputeKNN
+  - linkGenesAndPeaks
+  - exportInteractTrack
+- title: "Visualization"
+- contents:
+  - starts_with("plot")
+  - makeRiverplot
+  - starts_with(".gg")
+  - starts_with(".plot")
+- title: "Evaluation Metrics"
+- contents:
+  - starts_with("calc")
+- title: "Object Class"
+- contents:
+  - ends_with("class")
+- title: "Object Data Access"
+- contents:
+  - cell.meta,liger,NULL-method
+  - commands,liger-method
+  - raw.data,ligerDataset-method
+  - dataset,liger,character_OR_NULL-method
+  - datasets,liger-method
+  - feature.meta,ligerDataset-method
+  - getH5File,ligerDataset,missing-method
+  - getMatrix,ligerDataset,ANY,missing,missing-method
+  - h5file.info,ligerDataset-method
+  - retrieveCellFeature
+  - "[,liger,character,missing,ANY-method"
+  - "[,ligerDataset,index,missing,ANY-method"
+  - var.features,liger-method
+  - show
+  - c.liger
+  - cbind.ligerDataset
+- title: "Misc"
+- contents:
+  - H5Apply
+  - commandDiff
+  - isH5Liger
+  - makeFeatureMatrix
+  - mergeH5
+  - mergeSparseAll
+  - modalOf
+  - fortify.liger
+- title: "Deprecated"
+- contents:
+  - ends_with("deprecated")
+  - readSubset
+  - quantileAlignSNF
+navbar:
+  title: "rliger"
+  left:
+    - text: "Installation"
+      href: #
+    - text: "Vignettes"
+      menu:
+        - text: Introductory Vignettes
+        - text: "Integrating Multiple scRNAseq Data"
+          href: #
+        - text: "Integrating On-Disk (HDF5 Based) Data"
+          href: #
+        - text: -------
+        - text: Data structure and access
+        - text: "Outer container - liger object"
+          href: #
+        - text: "Dataset container - ligerDataset object and subclasses"
+          href: #
+    - text: "Documentation"
+      menu:
+        - text: "Data"
+          menu:
+            - text: "Import Data"
+              href: #
+    - text: "Reference"
+      href: reference/index.html
+    - text: "NEWS"
+      href: news/index.html
+  right:
+    - icon: fab fa-github fa-lg
+      href: https://github.com/welch-lab/liger

@@ -3,7 +3,7 @@ setClassUnion("POSIXct_or_NULL", c("POSIXct", "NULL"))
 #' @slot funcName Name of the function
 #' @slot time A time stamp object
 #' @slot call A character string converted from system call
-#' @slot parameter List of all arguments except the \linkS4class{liger} object.
+#' @slot parameters List of all arguments except the \linkS4class{liger} object.
 #' Large object are summarized to short string.
 #' @slot objSummary List of attributes of the \linkS4class{liger} object as a
 #' snapshot when command is operated.
@@ -98,11 +98,13 @@ recordCommand <- function(
             as.character(utils::packageVersion(x))
         )
     else dependVer <- character()
-    Command <- new("ligerCommand", funcName = funcName,
-                   objSummary = objSummary,
-                   parameters = args,
-                   ligerVersion = as.character(utils::packageVersion("rliger")),
-                   dependencyVersion = dependVer)
+    Command <- methods::new(
+        "ligerCommand", funcName = funcName,
+        objSummary = objSummary,
+        parameters = args,
+        ligerVersion = as.character(utils::packageVersion("rliger")),
+        dependencyVersion = dependVer
+    )
     # Do a hash tag to see if an identical operation has been done before
     logEntry <- paste0(funcName, "_", substr(rlang::hash(Command), 1, 10))
     # The following items are not included for a hash check
