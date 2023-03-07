@@ -4,7 +4,14 @@
 \name{ligerCommand-class}
 \alias{ligerCommand-class}
 \alias{ligerCommand}
+\alias{show,ligerCommand-method}
 \title{ligerCommand object: Record the input and time of a LIGER function call}
+\usage{
+\S4method{show}{ligerCommand}(object)
+}
+\arguments{
+\item{object}{A \code{ligerCommand} object}
+}
 \description{
 ligerCommand object: Record the input and time of a LIGER function call
 }

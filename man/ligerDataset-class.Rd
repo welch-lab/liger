@@ -4,7 +4,152 @@
 \name{ligerDataset-class}
 \alias{ligerDataset-class}
 \alias{ligerDataset}
+\alias{show,ligerDataset-method}
+\alias{dim,ligerDataset-method}
+\alias{dimnames,ligerDataset-method}
+\alias{dimnames<-,ligerDataset,list-method}
+\alias{[,ligerDataset,index,missing,ANY-method}
+\alias{[,ligerDataset,missing,index,ANY-method}
+\alias{[,ligerDataset,index,index,ANY-method}
+\alias{rawData}
+\alias{rawData<-}
+\alias{rawData,ligerDataset-method}
+\alias{rawData<-,ligerDataset,ANY,matrixLike_OR_NULL-method}
+\alias{rawData<-,ligerDataset,ANY,H5D-method}
+\alias{normData}
+\alias{normData<-}
+\alias{normData,ligerDataset-method}
+\alias{normData<-,ligerDataset,ANY,matrixLike_OR_NULL-method}
+\alias{normData<-,ligerDataset,ANY,H5D-method}
+\alias{scaleData}
+\alias{scaleData<-}
+\alias{scaleData,ligerDataset,missing-method}
+\alias{scaleData<-,ligerDataset,ANY,matrixLike_OR_NULL-method}
+\alias{scaleData<-,ligerDataset,ANY,H5D-method}
+\alias{scaleUnsharedData}
+\alias{scaleUnsharedData<-}
+\alias{scaleUnsharedData,ligerDataset,missing-method}
+\alias{scaleUnsharedData<-,ligerDataset,ANY,matrixLike_OR_NULL-method}
+\alias{scaleUnsharedData<-,ligerDataset,ANY,H5D-method}
+\alias{getMatrix}
+\alias{getMatrix,ligerDataset,ANY,missing,missing-method}
+\alias{h5fileInfo}
+\alias{h5fileInfo<-}
+\alias{h5fileInfo,ligerDataset-method}
+\alias{h5fileInfo<-,ligerDataset-method}
+\alias{getH5File}
+\alias{getH5File,ligerDataset,missing-method}
+\alias{featureMeta}
+\alias{featureMeta<-}
+\alias{featureMeta,ligerDataset-method}
+\alias{featureMeta<-,ligerDataset-method}
 \title{ligerDataset class}
+\usage{
+\S4method{show}{ligerDataset}(object)
+
+\S4method{dim}{ligerDataset}(x)
+
+\S4method{dimnames}{ligerDataset}(x)
+
+\S4method{dimnames}{ligerDataset,list}(x) <- value
+
+\S4method{[}{ligerDataset,index,missing,ANY}(x, i, j, ..., drop = TRUE)
+
+\S4method{[}{ligerDataset,missing,index,ANY}(x, i, j, ..., drop = TRUE)
+
+\S4method{[}{ligerDataset,index,index,ANY}(x, i, j, ..., drop = TRUE)
+
+rawData(x)
+
+rawData(x, check = TRUE) <- value
+
+\S4method{rawData}{ligerDataset}(x)
+
+\S4method{rawData}{ligerDataset,ANY,matrixLike_OR_NULL}(x, check = TRUE) <- value
+
+\S4method{rawData}{ligerDataset,ANY,H5D}(x, check = TRUE) <- value
+
+normData(x)
+
+normData(x, check = TRUE) <- value
+
+\S4method{normData}{ligerDataset}(x)
+
+\S4method{normData}{ligerDataset,ANY,matrixLike_OR_NULL}(x, check = TRUE) <- value
+
+\S4method{normData}{ligerDataset,ANY,H5D}(x, check = TRUE) <- value
+
+scaleData(x, dataset = NULL)
+
+scaleData(x, check = TRUE) <- value
+
+\S4method{scaleData}{ligerDataset,missing}(x, dataset = NULL)
+
+\S4method{scaleData}{ligerDataset,ANY,matrixLike_OR_NULL}(x, check = TRUE) <- value
+
+\S4method{scaleData}{ligerDataset,ANY,H5D}(x, check = TRUE) <- value
+
+scaleUnsharedData(x, dataset = NULL)
+
+scaleUnsharedData(x, check = TRUE) <- value
+
+\S4method{scaleUnsharedData}{ligerDataset,missing}(x, dataset = NULL)
+
+\S4method{scaleUnsharedData}{ligerDataset,ANY,matrixLike_OR_NULL}(x, check = TRUE) <- value
+
+\S4method{scaleUnsharedData}{ligerDataset,ANY,H5D}(x, check = TRUE) <- value
+
+getMatrix(x, slot = "rawData", dataset = NULL, returnList = FALSE)
+
+\S4method{getMatrix}{ligerDataset,ANY,missing,missing}(
+  x,
+  slot = c("rawData", "normData", "scaleData", "scaleUnsharedData", "H", "V", "U"),
+  dataset = NULL
+)
+
+h5fileInfo(x, info = NULL)
+
+h5fileInfo(x, info = NULL, check = TRUE) <- value
+
+\S4method{h5fileInfo}{ligerDataset}(x, info = NULL)
+
+\S4method{h5fileInfo}{ligerDataset}(x, info = NULL, check = TRUE) <- value
+
+getH5File(x, dataset = NULL)
+
+\S4method{getH5File}{ligerDataset,missing}(x, dataset = NULL)
+
+featureMeta(x, check = NULL)
+
+featureMeta(x, check = TRUE) <- value
+
+\S4method{featureMeta}{ligerDataset}(x, check = NULL)
+
+\S4method{featureMeta}{ligerDataset}(x, check = TRUE) <- value
+}
+\arguments{
+\item{x, object}{A \code{ligerDataset} object.}
+
+\item{value}{See detail sections for requirements}
+
+\item{i, j}{Feature and cell index for \code{`[`} method. For \code{`[[`}
+method, use a single variable name with \code{i} and \code{j} is not
+applicable.}
+
+\item{...}{See detailed sections for explanation.}
+
+\item{drop}{Not applicable.}
+
+\item{check}{Whether to perform object validity check on setting new value.}
+
+\item{dataset}{Not applicable for \code{ligerDataset} methods.}
+
+\item{slot}{The slot name when using \code{getMatrix}.}
+
+\item{returnList}{Not applicable for \code{ligerDataset} methods.}
+
+\item{info}{Name of the entry in \code{h5fileInfo} slot.}
+}
 \description{
 Object for storing dastaset specific information. Will be embedded within a
 higher level \linkS4class{liger} object
@@ -41,4 +186,80 @@ datasets}
 
 \item{\code{rownames}}{character}
 }}
+
+\section{Dimensionality}{
+
+For a \code{ligerDataset} object, the column orientation is assigned for
+cells and rows are for features. Therefore, for \code{ligerDataset} objects,
+\code{dim()} returns a numeric vector of two numbers which are number of
+features and number of cells. \code{dimnames()} returns a list of two
+character vectors, which are the feature names and the cell barcodes.
+
+For direct call of \code{dimnames<-} method, \code{value} should be a list
+with a character vector of feature names as the first element and cell
+identifiers as the second element. For \code{colnames<-} method, the
+character vector of cell identifiers. For \code{rownames<-} method, the
+character vector of feature names.
+}
+
+\section{Subsetting}{
+
+For more detail of subsetting a \code{liger} object or a
+\linkS4class{ligerDataset} object, please check out \code{\link{subsetLiger}}
+and \code{\link{subsetLigerDataset}}. Here, we set the S4 method
+"single-bracket" \code{[} as a quick wrapper to subset a \code{ligerDataset}
+object. \code{i} and \code{j} serves as feature and cell subscriptor,
+respectively, which can be any valid index refering the available features
+and cells in a dataset. \code{...} arugments are passed to
+\code{subsetLigerDataset} so that advanced options are allowed.
+}
+
+\section{Matrix access}{
+
+For \code{ligerDataset} object, \code{rawData()}, \code{normData},
+\code{scaleData()} and \code{scaleUnsharedData()} methods are exported for
+users to access the corresponding feature expression matrix. Replacement
+methods are also available to modify the slots.
+
+For other matrices, such as the \eqn{H} and \eqn{V}, which are dataset
+specific, please use \code{getMatrix()} method with specifying slot name.
+Directly accessing slot with \code{@} is generally not recommended.
+}
+
+\section{H5 file and information access}{
+
+A \code{ligerDataset} object has a slot called \code{h5fileInfo}, which is a
+list object. The first element is called \code{$H5File}, which is an
+\code{H5File} class object and is the connection to the input file. The
+second element is \code{$filename} which stores the absolute path of the H5
+file in the current machine. The third element \code{$formatType} stores the
+name of preset being used, if applicable. The other following keys pair with
+paths in the H5 file that point to specific data for constructing a feature
+expression matrix.
+
+\code{h5fileInfo()} method access the list described above and simply
+retrieves the corresponding value. When \code{info = NULL}, returns the whole
+list. When \code{length(info) == 1}, returns the requested list value. When
+more info requested, returns a subset list.
+
+The replacement method modifies the list elements and corresponding slot
+value (if applicable) at the same time. For example, running
+\code{h5fileInfo(obj, "rawData") <- newPath} not only updates the list, but
+also updates the \code{rawData} slot with the \code{H5D} class data at
+"newPath" in the \code{H5File} object.
+
+\code{getH5File()} is a wrapper and is equivalent to
+\code{h5fileInfo(obj, "H5File")}.
+}
+
+\section{Feature metadata access}{
+
+A slot \code{featureMeta} is included for each \code{ligerDataset} object.
+This slot requires a \code{\link[S4Vectors]{DataFrame-class}} object, which
+is the same as \code{cellMeta} slot of a \linkS4class{liger} object. However,
+the associated S4 methods only include access to the whole table for now.
+Internal information access follows the same way as data.frame operation.
+For example, \code{featureMeta(ligerD)$nCell} or
+\code{featureMeta(ligerD)[varFeatures(ligerObj), "gene_var"]}.
+}
 

@@ -1,4 +1,5 @@
 setClassUnion("POSIXct_or_NULL", c("POSIXct", "NULL"))
+
 #' ligerCommand object: Record the input and time of a LIGER function call
 #' @slot funcName Name of the function
 #' @slot time A time stamp object
@@ -15,6 +16,8 @@ setClassUnion("POSIXct_or_NULL", c("POSIXct", "NULL"))
 #' an alternative algorithm, which a call does not actually reach to, but it
 #' would still be included for this call.
 #' @exportClass ligerCommand
+#' @export
+#' @rdname ligerCommand-class
 ligerCommand <- setClass(
     Class = "ligerCommand",
     representation(
@@ -117,6 +120,9 @@ recordCommand <- function(
     return(object)
 }
 
+#' @param object A \code{ligerCommand} object
+#' @export
+#' @rdname ligerCommand-class
 setMethod(
     "show",
     signature(object = "ligerCommand"),
@@ -130,7 +136,6 @@ setMethod(
             cat("   ", p, ":", .showParam(object@parameters[[p]]), "\n")
         }
         invisible(x = NULL)
-
     }
 )
 
@@ -241,17 +246,28 @@ foo <- function(object, param1 = 1, arg2 = "yo", default = NULL) {
     return(object)
 }
 
+#' @section Command records:
+#' rliger functions, that perform calculation and update the \code{liger}
+#' object, will be recorded in a \code{ligerCommand} object and stored in the
+#' \code{commands} slot, a list, of \code{liger} object. Method
+#' \code{commands()} is implemented to retrieve or show the log history.
+#' Running with \code{funcName = NULL} (default) returns all command labels.
+#' Specifying \code{funcName} allows partial matching to all command labels
+#' and returns a subset list (of \code{ligerCommand} object) of matches (or
+#' the \code{ligerCommand} object if only one match found). If \code{arg} is
+#' further specified, a subset list of parameters from the matches will be
+#' returned. For example, requesting a list of resolution values used in
+#' all louvain cluster attempts: \code{commands(ligerObj, "louvainCluster",
+#' "resolution")}
 #' @export
-#' @rdname commands
-setGeneric("commands", function(x, funcName = NULL, arg = NULL) standardGeneric("commands"))
+#' @rdname liger-class
+setGeneric(
+    "commands",
+    function(x, funcName = NULL, arg = NULL) standardGeneric("commands")
+)
 
-#' Fetch command record log
-#' @param x \linkS4class{liger} object
-#' @param funcName Function name of the command of interests, or an exact
-#' command label for the call.
-#' @param arg Argument names
 #' @export
-#' @rdname commands
+#' @rdname liger-class
 setMethod(
     "commands",
     signature(x = "liger", funcName = "ANY", arg = "ANY"),

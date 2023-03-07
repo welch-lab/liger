@@ -2,7 +2,7 @@
 #' @importFrom foreach "%dopar%"
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
-#' @importFrom methods new
+#' @importFrom methods new show
 NULL
 
 

@@ -8,10 +8,10 @@
 #'
 #' a \linkS4class{ligerDataset} object is also allowed for now and meanwhile,
 #' setting \code{filename} is supported.
-#' @param object,x A \linkS4class{liger} or \linkS4class{ligerDataset} object.
-#' @param i,featureIdx Character vector. Missing or \code{NULL} for all
+#' @param object A \linkS4class{liger} or \linkS4class{ligerDataset} object.
+#' @param featureIdx Character vector. Missing or \code{NULL} for all
 #' features.
-#' @param j,cellIdx Character, logical or numeric index that can subscribe cells.
+#' @param cellIdx Character, logical or numeric index that can subscribe cells.
 #' Missing or \code{NULL} for all cells.
 #' @param useSlot The slot(s) to only consider. Choose one or more from
 #' \code{"rawData"}, \code{"normData"} and \code{"scaleData"}. Default
@@ -26,7 +26,6 @@
 #' @param returnObject Logical, whether to return a \linkS4class{liger} object
 #' for result. Default \code{TRUE}. \code{FALSE} returns a list containing
 #' requested values.
-#' @param drop Not applicable.
 #' @param ... Arguments passed to \code{subsetLigerDataset}
 #' @return Subset \code{object}
 #' @export
@@ -192,11 +191,11 @@ retrieveCellFeature <- function(
 #' subsetting on scaled data, which usually contains already a subset of
 #' features, will select the intersection between the wanted features and the
 #' set available from scaled data.
-#' @param object,x \linkS4class{ligerDataset} object. HDF5 based object if using
+#' @param object \linkS4class{ligerDataset} object. HDF5 based object if using
 #' \code{subsetH5LigerDataset}, in-memory data for \code{subsetMemLigerDataset}.
-#' @param i,featureIdx Character, logical or numeric index that can subscribe
+#' @param featureIdx Character, logical or numeric index that can subscribe
 #' features. Missing or \code{NULL} for all features.
-#' @param j,cellIdx Character, logical or numeric index that can subscribe cells.
+#' @param cellIdx Character, logical or numeric index that can subscribe cells.
 #' Missing or \code{NULL} for all cells.
 #' @param useSlot The slot(s) to only consider. Choose one or more from
 #' \code{"rawData"}, \code{"normData"} and \code{"scaleData"}. Default
@@ -217,7 +216,6 @@ retrieveCellFeature <- function(
 #' @param returnObject Logical, whether to return a \linkS4class{ligerDataset}
 #' object for result. Default \code{TRUE}. \code{FALSE} returns a list
 #' containing requested values.
-#' @param drop Not applicable.
 #' @param ... Arguments passed to \code{subsetH5LigerDataset}
 #' @return Subset \code{object}
 #' @export

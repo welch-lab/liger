@@ -15,6 +15,8 @@ setClassUnion("index",
 #'
 #' Object for storing dastaset specific information. Will be embedded within a
 #' higher level \linkS4class{liger} object
+#' @docType class
+#' @rdname ligerDataset-class
 #' @slot rawData Raw data.
 #' @slot normData Normalized data
 #' @slot scaleData Scaled data, usually with subset variable features
@@ -360,77 +362,20 @@ setValidity("ligerDataset", .valid.ligerDataset)
 # ------------------------------------------------------------------------------
 # Generics ####
 # ------------------------------------------------------------------------------
-#' Access data in a liger or ligerDataset object
-#' @param x \linkS4class{ligerDataset} object or \linkS4class{liger} object
-#' @param name,dataset Name or numeric index of a dataset when \code{x} is a
-#' \linkS4class{liger} object, in order to only get the data from this specified
-#' dataset. Default \code{NULL}.
-#' @param value matrix like or \code{NULL}
+#' @param x,object A \code{ligerDataset} object.
+#' @param dataset Not applicable for \code{ligerDataset} methods.
+#' @param value See detail sections for requirements
 #' @param check Whether to perform object validity check on setting new value.
 #' @param info Name of the entry in \code{h5fileInfo} slot.
 #' @param slot The slot name when using \code{getMatrix}.
-#' @param returnList When using \code{getMatrix} and data from one dataset is
-#' being returned, whether it should be contained in a list or return the data
-#' directly.
+#' @param returnList Not applicable for \code{ligerDataset} methods.
+#' @param i,j Feature and cell index for \code{`[`} method. For \code{`[[`}
+#' method, use a single variable name with \code{i} and \code{j} is not
+#' applicable.
+#' @param drop Not applicable.
+#' @param ... See detailed sections for explanation.
+#' @rdname ligerDataset-class
 #' @export
-#' @rdname ligerDataset-access
-setGeneric("rawData", function(x) standardGeneric("rawData"))
-
-#' @export
-#' @rdname ligerDataset-access
-setGeneric("rawData<-", function(x, check = TRUE, value) standardGeneric("rawData<-"))
-
-#' @export
-#' @rdname ligerDataset-access
-setGeneric("normData", function(x) standardGeneric("normData"))
-
-#' @export
-#' @rdname ligerDataset-access
-setGeneric("normData<-", function(x, check = TRUE, value) standardGeneric("normData<-"))
-
-#' @export
-#' @rdname ligerDataset-access
-setGeneric("scaleData", function(x, name = NULL) standardGeneric("scaleData"))
-
-#' @export
-#' @rdname ligerDataset-access
-setGeneric("scaleData<-", function(x, check = TRUE, value) standardGeneric("scaleData<-"))
-
-#' @export
-#' @rdname ligerDataset-access
-setGeneric("scaleUnsharedData", function(x, name = NULL) standardGeneric("scaleUnsharedData"))
-
-#' @export
-#' @rdname ligerDataset-access
-setGeneric("scaleUnsharedData<-", function(x, check = TRUE, value) standardGeneric("scaleUnsharedData<-"))
-
-#' @export
-#' @rdname ligerDataset-access
-setGeneric("getH5File", function(x, dataset = NULL) standardGeneric("getH5File"))
-
-#' @export
-#' @rdname ligerDataset-access
-setGeneric("h5fileInfo", function(x, info = NULL) standardGeneric("h5fileInfo"))
-
-#' @export
-#' @rdname ligerDataset-access
-setGeneric("h5fileInfo<-", function(x, info = NULL, check = TRUE, value) standardGeneric("h5fileInfo<-"))
-
-#' @export
-#' @rdname ligerDataset-access
-setGeneric("featureMeta", function(x, check = NULL) standardGeneric("featureMeta"))
-
-#' @export
-#' @rdname ligerDataset-access
-setGeneric("featureMeta<-", function(x, check = TRUE, value) standardGeneric("featureMeta<-"))
-
-#' @export
-#' @rdname ligerDataset-access
-setGeneric("getMatrix", function(x, slot = "rawData", dataset = NULL, returnList = FALSE) standardGeneric("getMatrix"))
-# ------------------------------------------------------------------------------
-# Methods ####
-# ------------------------------------------------------------------------------
-
 setMethod(
     f = "show",
     signature(object = "ligerDataset"),
@@ -470,7 +415,19 @@ setMethod(
     }
 )
 
-#' @rdname dim-liger
+#' @section Dimensionality:
+#' For a \code{ligerDataset} object, the column orientation is assigned for
+#' cells and rows are for features. Therefore, for \code{ligerDataset} objects,
+#' \code{dim()} returns a numeric vector of two numbers which are number of
+#' features and number of cells. \code{dimnames()} returns a list of two
+#' character vectors, which are the feature names and the cell barcodes.
+#'
+#' For direct call of \code{dimnames<-} method, \code{value} should be a list
+#' with a character vector of feature names as the first element and cell
+#' identifiers as the second element. For \code{colnames<-} method, the
+#' character vector of cell identifiers. For \code{rownames<-} method, the
+#' character vector of feature names.
+#' @rdname ligerDataset-class
 #' @export
 setMethod("dim", "ligerDataset", function(x) {
     nr <- length(x@rownames)
@@ -478,7 +435,7 @@ setMethod("dim", "ligerDataset", function(x) {
     c(nr, nc)
 })
 
-#' @rdname dim-liger
+#' @rdname ligerDataset-class
 #' @export
 setMethod("dimnames", "ligerDataset", function(x) {
     rn <- x@rownames
@@ -486,7 +443,7 @@ setMethod("dimnames", "ligerDataset", function(x) {
     list(rn, cn)
 })
 
-#' @rdname dim-liger
+#' @rdname ligerDataset-class
 #' @export
 setReplaceMethod("dimnames", c("ligerDataset", "list"), function(x, value) {
     if (!isH5Liger(x)) {
@@ -533,40 +490,76 @@ setReplaceMethod("dimnames", c("ligerDataset", "list"), function(x, value) {
     return(x)
 })
 
+#' @section Subsetting:
+#' For more detail of subsetting a \code{liger} object or a
+#' \linkS4class{ligerDataset} object, please check out \code{\link{subsetLiger}}
+#' and \code{\link{subsetLigerDataset}}. Here, we set the S4 method
+#' "single-bracket" \code{[} as a quick wrapper to subset a \code{ligerDataset}
+#' object. \code{i} and \code{j} serves as feature and cell subscriptor,
+#' respectively, which can be any valid index refering the available features
+#' and cells in a dataset. \code{...} arugments are passed to
+#' \code{subsetLigerDataset} so that advanced options are allowed.
 #' @export
-#' @rdname subsetLigerDataset
+#' @rdname ligerDataset-class
 setMethod(
     "[",
     signature(x = "ligerDataset", i = "index", j = "missing"),
-    function(x, i, j, ...)
+    function(x, i, j, ...) {
         subsetLigerDataset(x, featureIdx = i, cellIdx = NULL, ...)
+    }
 )
 
 #' @export
-#' @rdname subsetLigerDataset
+#' @rdname ligerDataset-class
 setMethod(
     "[",
     signature(x = "ligerDataset", i = "missing", j = "index"),
-    function(x, i, j, ...)
+    function(x, i, j, ...) {
         subsetLigerDataset(x, featureIdx = NULL, cellIdx = j, ...)
+    }
 )
 
 #' @export
-#' @rdname subsetLigerDataset
+#' @rdname ligerDataset-class
 setMethod(
     "[",
     signature(x = "ligerDataset", i = "index", j = "index"),
-    function(x, i, j, ...)
+    function(x, i, j, ...) {
         subsetLigerDataset(x, featureIdx = i, cellIdx = j, ...)
+    }
+)
+
+#-------------------------------------------------------------------------------
+# Raw, norm, scale data access
+#-------------------------------------------------------------------------------
+
+#' @section Matrix access:
+#' For \code{ligerDataset} object, \code{rawData()}, \code{normData},
+#' \code{scaleData()} and \code{scaleUnsharedData()} methods are exported for
+#' users to access the corresponding feature expression matrix. Replacement
+#' methods are also available to modify the slots.
+#'
+#' For other matrices, such as the \eqn{H} and \eqn{V}, which are dataset
+#' specific, please use \code{getMatrix()} method with specifying slot name.
+#' Directly accessing slot with \code{@} is generally not recommended.
+#' @export
+#' @rdname ligerDataset-class
+setGeneric("rawData", function(x) standardGeneric("rawData"))
+
+#' @export
+#' @rdname ligerDataset-class
+setGeneric(
+    "rawData<-",
+    function(x, check = TRUE, value) standardGeneric("rawData<-")
 )
 
 #' @export
-#' @rdname ligerDataset-access
+#' @rdname ligerDataset-class
 setMethod("rawData", "ligerDataset",
           function(x) x@rawData)
 
 #' @export
-#' @rdname ligerDataset-access
+#' @rdname ligerDataset-class
 setReplaceMethod(
     "rawData",
     signature(x = "ligerDataset", check = "ANY", value = "matrixLike_OR_NULL"),
@@ -580,7 +573,7 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname ligerDataset-access
+#' @rdname ligerDataset-class
 setReplaceMethod(
     "rawData",
     signature(x = "ligerDataset", check = "ANY", value = "H5D"),
@@ -594,12 +587,23 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname ligerDataset-access
+#' @rdname ligerDataset-class
+setGeneric("normData", function(x) standardGeneric("normData"))
+
+#' @export
+#' @rdname ligerDataset-class
+setGeneric(
+    "normData<-",
+    function(x, check = TRUE, value) standardGeneric("normData<-")
+)
+
+#' @export
+#' @rdname ligerDataset-class
 setMethod("normData", "ligerDataset",
           function(x) x@normData)
 
 #' @export
-#' @rdname ligerDataset-access
+#' @rdname ligerDataset-class
 setReplaceMethod(
     "normData",
     signature(x = "ligerDataset", check = "ANY", value = "matrixLike_OR_NULL"),
@@ -613,7 +617,7 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname ligerDataset-access
+#' @rdname ligerDataset-class
 setReplaceMethod(
     "normData",
     signature(x = "ligerDataset", check = "ANY", value = "H5D"),
@@ -627,32 +631,46 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname ligerDataset-access
-setMethod("scaleData", "ligerDataset",
-          function(x, name = NULL) x@scaleData)
+#' @rdname ligerDataset-class
+setGeneric(
+    "scaleData",
+    function(x, dataset = NULL) standardGeneric("scaleData")
+)
 
 #' @export
-#' @rdname ligerDataset-access
+#' @rdname ligerDataset-class
+setGeneric(
+    "scaleData<-",
+    function(x, check = TRUE, value) standardGeneric("scaleData<-")
+)
+
+#' @export
+#' @rdname ligerDataset-class
+setMethod("scaleData", c("ligerDataset", "missing"),
+          function(x, dataset = NULL) x@scaleData)
+
+#' @export
+#' @rdname liger-class
 setMethod(
     "scaleData",
-    signature(x = "liger", name = "character"),
-    function(x, name) {
-        scaleData(dataset(x, name))
+    signature(x = "liger", dataset = "character"),
+    function(x, dataset) {
+        scaleData(dataset(x, dataset))
     }
 )
 
 #' @export
-#' @rdname ligerDataset-access
+#' @rdname liger-class
 setMethod(
     "scaleData",
-    signature(x = "liger", name = "numeric"),
-    function(x, name) {
-        scaleData(dataset(x, name))
+    signature(x = "liger", dataset = "numeric"),
+    function(x, dataset) {
+        scaleData(dataset(x, dataset))
     }
 )
 
 #' @export
-#' @rdname ligerDataset-access
+#' @rdname ligerDataset-class
 setReplaceMethod(
     "scaleData",
     signature(x = "ligerDataset", check = "ANY", value = "matrixLike_OR_NULL"),
@@ -666,7 +684,7 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname ligerDataset-access
+#' @rdname ligerDataset-class
 setReplaceMethod(
     "scaleData",
     signature(x = "ligerDataset", check = "ANY", value = "H5D"),
@@ -679,34 +697,47 @@ setReplaceMethod(
     }
 )
 
+#' @export
+#' @rdname ligerDataset-class
+setGeneric(
+    "scaleUnsharedData",
+    function(x, dataset = NULL) standardGeneric("scaleUnsharedData")
+)
 
 #' @export
-#' @rdname ligerDataset-access
-setMethod("scaleUnsharedData", "ligerDataset",
-          function(x, name = NULL) x@scaleUnsharedData)
+#' @rdname ligerDataset-class
+setGeneric(
+    "scaleUnsharedData<-",
+    function(x, check = TRUE, value) standardGeneric("scaleUnsharedData<-")
+)
 
 #' @export
-#' @rdname ligerDataset-access
+#' @rdname ligerDataset-class
+setMethod("scaleUnsharedData", c("ligerDataset", "missing"),
+          function(x, dataset = NULL) x@scaleUnsharedData)
+
+#' @export
+#' @rdname liger-class
 setMethod(
     "scaleUnsharedData",
-    signature(x = "liger", name = "character"),
-    function(x, name) {
-        scaleUnsharedData(dataset(x, name))
+    signature(x = "liger", dataset = "character"),
+    function(x, dataset) {
+        scaleUnsharedData(dataset(x, dataset))
     }
 )
 
 #' @export
-#' @rdname ligerDataset-access
+#' @rdname liger-class
 setMethod(
     "scaleUnsharedData",
-    signature(x = "liger", name = "numeric"),
-    function(x, name) {
-        scaleUnsharedData(dataset(x, name))
+    signature(x = "liger", dataset = "numeric"),
+    function(x, dataset) {
+        scaleUnsharedData(dataset(x, dataset))
     }
 )
 
 #' @export
-#' @rdname ligerDataset-access
+#' @rdname ligerDataset-class
 setReplaceMethod(
     "scaleUnsharedData",
     signature(x = "ligerDataset", check = "ANY", value = "matrixLike_OR_NULL"),
@@ -720,7 +751,7 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname ligerDataset-access
+#' @rdname ligerDataset-class
 setReplaceMethod(
     "scaleUnsharedData",
     signature(x = "ligerDataset", check = "ANY", value = "H5D"),
@@ -734,110 +765,16 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname ligerDataset-access
-setMethod("getH5File",
-          signature = signature(x = "ligerDataset", dataset = "missing"),
-          function(x, dataset = NULL) h5fileInfo(x, "H5File"))
-
-#' @export
-#' @rdname ligerDataset-access
-setMethod("getH5File",
-          signature = signature(x = "liger", dataset = "character"),
-          function(x, dataset = NULL) {
-              if (is.null(dataset)) dataset <- names(x)
-              if (any(!dataset %in% names(x))) {
-                  stop("Specified dataset name(s) not found: ",
-                       paste(dataset[!dataset %in% names(x)], collapse = ", "))
-              }
-              results <- lapply(datasets(x)[dataset],
-                                function(ld) h5fileInfo(ld, "H5File"))
-              if (length(results) == 1) results <- results[[1]]
-              results
-          })
-
-#' @export
-#' @rdname ligerDataset-access
-setMethod(
-    "h5fileInfo",
-    signature = signature(x = "ligerDataset", info = "ANY"),
-    function(x, info = NULL) {
-        if (is.null(info)) result <- x@h5fileInfo
-        else {
-            if (length(info) == 1) result <- x@h5fileInfo[[info]]
-            else {
-                if (any(!info %in% names(x@h5fileInfo))) {
-                    stop("Specified h5file info not found: ",
-                         paste(info[!info %in% names(x@h5fileInfo)],
-                               collapse = ", "))
-                }
-                result <- x@h5fileInfo[info]
-                names(result) <- info
-            }
-        }
-        return(result)
-    })
-
-#' @export
-#' @rdname ligerDataset-access
-setReplaceMethod(
-    "h5fileInfo",
-    signature = signature(
-        x = "ligerDataset",
-        info = "ANY",
-        check = "ANY",
-        value = "ANY"
-    ),
-    function(x, info = NULL, check = TRUE, value) {
-        if (is.null(info)) {
-            x@h5fileInfo <- value
-        } else {
-            if (!is.character(info) | length(info) != 1)
-                stop('`info` has to be a single character.')
-            if (info %in% c('indicesName', 'indptrName', 'barcodesName',
-                            'genesName', 'rawData', 'normData',
-                            'scaleData')) {
-                if (!getH5File(x)$exists(value)) {
-                    stop("Specified info is invalid, '", info,
-                         "' does not exists in the HDF5 file.")
-                }
-            }
-            x@h5fileInfo[[info]] <- value
-            if (info %in% c('rawData', 'normData', 'scaleData',
-                            'scaleUnsharedData')) {
-                x <- do.call(paste0(info, "<-"),
-                             list(x = x,
-                                  value = getH5File(x)[[h5fileInfo(x, info)]],
-                                  check = check))
-            }
-        }
-        if (isTRUE(check)) methods::validObject(x)
-        x
+#' @rdname ligerDataset-class
+setGeneric(
+    "getMatrix",
+    function(x, slot = "rawData", dataset = NULL, returnList = FALSE) {
+        standardGeneric("getMatrix")
     }
 )
 
 #' @export
-#' @rdname ligerDataset-access
-setMethod("featureMeta", signature(x = "ligerDataset", check = "ANY"),
-          function(x, check = NULL) {
-    x@featureMeta
-})
-
-#' @export
-#' @rdname ligerDataset-access
-setReplaceMethod(
-    "featureMeta",
-    signature(x = "ligerDataset", check = "ANY"),
-    function(x, check = TRUE, value) {
-        if (!inherits(value, "DFrame"))
-            value <- S4Vectors::DataFrame(value)
-        x@featureMeta <- value
-        if (isTRUE(check)) methods::validObject(x)
-        x
-    }
-)
-
-#' @export
-#' @rdname ligerDataset-access
+#' @rdname ligerDataset-class
 setMethod(
     "getMatrix", signature(x = "ligerDataset", dataset = "missing",
                            returnList = "missing"),
@@ -852,7 +789,7 @@ setMethod(
     })
 
 #' @export
-#' @rdname ligerDataset-access
+#' @rdname liger-class
 setMethod(
     "getMatrix", signature(x = "liger"),
     function(x,
@@ -879,6 +816,169 @@ setMethod(
             }
         }
     })
+
+#-------------------------------------------------------------------------------
+# H5 related
+#-------------------------------------------------------------------------------
+
+#' @section H5 file and information access:
+#' A \code{ligerDataset} object has a slot called \code{h5fileInfo}, which is a
+#' list object. The first element is called \code{$H5File}, which is an
+#' \code{H5File} class object and is the connection to the input file. The
+#' second element is \code{$filename} which stores the absolute path of the H5
+#' file in the current machine. The third element \code{$formatType} stores the
+#' name of preset being used, if applicable. The other following keys pair with
+#' paths in the H5 file that point to specific data for constructing a feature
+#' expression matrix.
+#'
+#' \code{h5fileInfo()} method access the list described above and simply
+#' retrieves the corresponding value. When \code{info = NULL}, returns the whole
+#' list. When \code{length(info) == 1}, returns the requested list value. When
+#' more info requested, returns a subset list.
+#'
+#' The replacement method modifies the list elements and corresponding slot
+#' value (if applicable) at the same time. For example, running
+#' \code{h5fileInfo(obj, "rawData") <- newPath} not only updates the list, but
+#' also updates the \code{rawData} slot with the \code{H5D} class data at
+#' "newPath" in the \code{H5File} object.
+#'
+#' \code{getH5File()} is a wrapper and is equivalent to
+#' \code{h5fileInfo(obj, "H5File")}.
+#' @export
+#' @rdname ligerDataset-class
+setGeneric("h5fileInfo", function(x, info = NULL) standardGeneric("h5fileInfo"))
+
+#' @export
+#' @rdname ligerDataset-class
+setGeneric(
+    "h5fileInfo<-",
+    function(x, info = NULL, check = TRUE, value) {
+        standardGeneric("h5fileInfo<-")
+    }
+)
+
+#' @export
+#' @rdname ligerDataset-class
+setMethod(
+    "h5fileInfo",
+    signature = signature(x = "ligerDataset", info = "ANY"),
+    function(x, info = NULL) {
+        if (is.null(info)) result <- x@h5fileInfo
+        else {
+            if (length(info) == 1) result <- x@h5fileInfo[[info]]
+            else {
+                if (any(!info %in% names(x@h5fileInfo))) {
+                    stop("Specified h5file info not found: ",
+                         paste(info[!info %in% names(x@h5fileInfo)],
+                               collapse = ", "))
+                }
+                result <- x@h5fileInfo[info]
+                names(result) <- info
+            }
+        }
+        return(result)
+    })
+
+#' @export
+#' @rdname ligerDataset-class
+setReplaceMethod(
+    "h5fileInfo",
+    signature = signature(
+        x = "ligerDataset",
+        info = "ANY",
+        check = "ANY",
+        value = "ANY"
+    ),
+    function(x, info = NULL, check = TRUE, value) {
+        if (is.null(info)) {
+            x@h5fileInfo <- value
+        } else {
+            if (!is.character(info) | length(info) != 1)
+                stop("`info` has to be a single character.")
+            if (info %in% c("indicesName", "indptrName", "barcodesName",
+                            "genesName", "rawData", "normData",
+                            "scaleData")) {
+                if (!getH5File(x)$exists(value)) {
+                    stop("Specified info is invalid, '", info,
+                         "' does not exists in the HDF5 file.")
+                }
+            }
+            x@h5fileInfo[[info]] <- value
+            if (info %in% c("rawData", "normData", "scaleData",
+                            "scaleUnsharedData")) {
+                x <- do.call(paste0(info, "<-"),
+                             list(x = x,
+                                  value = getH5File(x)[[h5fileInfo(x, info)]],
+                                  check = check))
+            }
+        }
+        if (isTRUE(check)) methods::validObject(x)
+        x
+    }
+)
+
+#' @export
+#' @rdname ligerDataset-class
+setGeneric("getH5File", function(x, dataset = NULL) standardGeneric("getH5File"))
+
+#' @export
+#' @rdname ligerDataset-class
+setMethod("getH5File",
+          signature = signature(x = "ligerDataset", dataset = "missing"),
+          function(x, dataset = NULL) h5fileInfo(x, "H5File"))
+
+#' @export
+#' @rdname liger-class
+setMethod("getH5File",
+          signature = signature(x = "liger", dataset = "character"),
+          function(x, dataset = NULL) {
+              if (is.null(dataset)) dataset <- names(x)
+              if (any(!dataset %in% names(x))) {
+                  stop("Specified dataset name(s) not found: ",
+                       paste(dataset[!dataset %in% names(x)], collapse = ", "))
+              }
+              results <- lapply(datasets(x)[dataset],
+                                function(ld) h5fileInfo(ld, "H5File"))
+              if (length(results) == 1) results <- results[[1]]
+              results
+          })
+
+#' @section Feature metadata access:
+#' A slot \code{featureMeta} is included for each \code{ligerDataset} object.
+#' This slot requires a \code{\link[S4Vectors]{DataFrame-class}} object, which
+#' is the same as \code{cellMeta} slot of a \linkS4class{liger} object. However,
+#' the associated S4 methods only include access to the whole table for now.
+#' Internal information access follows the same way as data.frame operation.
+#' For example, \code{featureMeta(ligerD)$nCell} or
+#' \code{featureMeta(ligerD)[varFeatures(ligerObj), "gene_var"]}.
+#' @export
+#' @rdname ligerDataset-class
+setGeneric("featureMeta", function(x, check = NULL) standardGeneric("featureMeta"))
+
+#' @export
+#' @rdname ligerDataset-class
+setGeneric("featureMeta<-", function(x, check = TRUE, value) standardGeneric("featureMeta<-"))
+
+#' @export
+#' @rdname ligerDataset-class
+setMethod("featureMeta", signature(x = "ligerDataset", check = "ANY"),
+          function(x, check = NULL) {
+    x@featureMeta
+})
+
+#' @export
+#' @rdname ligerDataset-class
+setReplaceMethod(
+    "featureMeta",
+    signature(x = "ligerDataset", check = "ANY"),
+    function(x, check = TRUE, value) {
+        if (!inherits(value, "DFrame"))
+            value <- S4Vectors::DataFrame(value)
+        x@featureMeta <- value
+        if (isTRUE(check)) methods::validObject(x)
+        x
+    }
+)
 
 #' cbind method for ligerDataset objects
 #' @description The list of \code{datasets} slot, the rows of
