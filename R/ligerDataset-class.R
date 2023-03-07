@@ -980,21 +980,12 @@ setReplaceMethod(
     }
 )
 
-#' cbind method for ligerDataset objects
-#' @description The list of \code{datasets} slot, the rows of
-#' \code{cellMeta} slot and the list of \code{commands} slot will be simply
-#' concatenated. Variable features in \code{varFeatures} slot will be taken a
-#' union. The \eqn{W} and \eqn{H.norm} matrices are not taken into account for
-#' now.
-#' @param x \linkS4class{ligerDataset} object
-#' @param ... \linkS4class{ligerDataset} objects
+#' @section Concatenate ligerDataset:
+#' \code{cbind()} method is implemented for concatenating \code{ligerDataset}
+#' objects by cells. When applying, all feature expression matrix will be merged
+#' with taking a union of all features for the rows.
 #' @param deparse.level Not used here.
-#' @return A new \linkS4class{liger} object containing all datasets in the order
-#' of specification.
-#' @name cbind.ligerDataset
-NULL
-
-#' @rdname cbind.ligerDataset
+#' @rdname ligerDataset-class
 #' @export
 #' @method cbind ligerDataset
 cbind.ligerDataset <- function(x, ...,
@@ -1007,6 +998,7 @@ cbind.ligerDataset <- function(x, ...,
     }
     if (!missing(x)) args <- c(list(x), args)
     isH5 <- sapply(args, isH5Liger)
+    # See mergeObject.R
     if (all(isH5)) .cbind.ligerDataset.h5(args)
     else if (!any(isH5)) .cbind.ligerDataset.mem(args)
     else

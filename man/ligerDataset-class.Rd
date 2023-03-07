@@ -43,6 +43,7 @@
 \alias{featureMeta<-}
 \alias{featureMeta,ligerDataset-method}
 \alias{featureMeta<-,ligerDataset-method}
+\alias{cbind.ligerDataset}
 \title{ligerDataset class}
 \usage{
 \S4method{show}{ligerDataset}(object)
@@ -126,6 +127,8 @@ featureMeta(x, check = TRUE) <- value
 \S4method{featureMeta}{ligerDataset}(x, check = NULL)
 
 \S4method{featureMeta}{ligerDataset}(x, check = TRUE) <- value
+
+\method{cbind}{ligerDataset}(x, ..., deparse.level = 1)
 }
 \arguments{
 \item{x, object}{A \code{ligerDataset} object.}
@@ -149,6 +152,8 @@ applicable.}
 \item{returnList}{Not applicable for \code{ligerDataset} methods.}
 
 \item{info}{Name of the entry in \code{h5fileInfo} slot.}
+
+\item{deparse.level}{Not used here.}
 }
 \description{
 Object for storing dastaset specific information. Will be embedded within a
@@ -261,5 +266,12 @@ the associated S4 methods only include access to the whole table for now.
 Internal information access follows the same way as data.frame operation.
 For example, \code{featureMeta(ligerD)$nCell} or
 \code{featureMeta(ligerD)[varFeatures(ligerObj), "gene_var"]}.
+}
+
+\section{Concatenate ligerDataset}{
+
+\code{cbind()} method is implemented for concatenating \code{ligerDataset}
+objects by cells. When applying, all feature expression matrix will be merged
+with taking a union of all features for the rows.
 }
 
