@@ -104,7 +104,7 @@ runUMAP <- function(
 #' matrices). Default \code{FALSE}.
 #' @param useDims Index of factors to use for computing UMAP embedding. Default
 #' \code{NULL} uses all factors.
-#' @param k Number of dimensions to reduce to. Default \code{2}.
+#' @param nDims Number of dimensions to reduce to. Default \code{2}.
 #' @param usePCA Whether to perform initial PCA step for Rtsne. Default
 #' \code{FALSE}.
 #' @param perplexity Numeric parameter to pass to Rtsne (expected number of
@@ -119,8 +119,8 @@ runUMAP <- function(
 #' @param seed Random seed for reproducibility. Default \code{42}.
 #' @param verbose Logical. Whether to show information of the progress.
 #' Default \code{TRUE}.
-#' @param use.raw,dims.use,use.pca,fitsne.path,rand.seed \bold{Deprecated}. See
-#' Usage section for replacement.
+#' @param use.raw,dims.use,k,use.pca,fitsne.path,rand.seed \bold{Deprecated}.
+#' See Usage section for replacement.
 #' @return The \code{object} where a \code{"TSNE"} variable is updated in the
 #' \code{cellMeta} slot with the whole 2D embedding matrix.
 #' @seealso \code{\link{runUMAP}}
@@ -230,8 +230,7 @@ runTSNE <- function(
 ) {
     if (is.null(fast_tsne_path)) {
         stop("Please pass in path to FIt-SNE directory as fitsne.path.")
-    }
-    else {
+    } else {
         if (.Platform$OS.type == "unix") {
             fast_tsne_path <- file.path(fast_tsne_path, "bin", "fast_tsne")
         } else {

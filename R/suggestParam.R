@@ -1,33 +1,41 @@
 #' Visually suggest appropiate k value
-#'
 #' @description
-#' This can be used to select appropriate value of k for factorization of particular dataset.
-#' Plots median (across cells in all datasets) K-L divergence from uniform for cell factor loadings
-#' as a function of k. This should increase as k increases but is expected to level off above
-#' sufficiently high number of factors (k). This is because cells should have factor loadings which
-#' are not uniformly distributed when an appropriate number of factors is reached.
-#'
-#' Depending on number of cores used, this process can take 10-20 minutes.
-#' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
-#' @param k.test Set of factor numbers to test (default seq(5, 50, 5)).
-#' @param lambda Lambda to use for all foctorizations (default 5).
-#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
-#' @param max.iters Maximum number of block coordinate descent iterations to perform
-#' @param num.cores Number of cores to use for optimizing factorizations in parallel (default 1)
-#' @param rand.seed Random seed for reproducibility (default 1).
-#' @param gen.new Do not use optimizeNewK in factorizations. Results in slower factorizations.
-#'   (default FALSE).
-#' @param nrep Number restarts to perform at each k value tested (increase to produce
-#'   smoother curve if results unclear) (default 1).
-#' @param plot.log2 Plot log2 curve for reference on K-L plot (log2 is upper bound and con
-#'   sometimes help in identifying "elbow" of plot). (default TRUE)
-#' @param return.data Whether to return list of data matrices (raw) or dataframe (processed)
-#'   instead of ggplot object (default FALSE).
-#' @param return.raw If return.results TRUE, whether to return raw data (in format described below),
-#'   or dataframe used to produce ggplot object. Raw data is list of matrices of K-L divergences
-#'   (length(k.test) by n_cells). Length of list corresponds to nrep. (default FALSE)
-#' @param verbose Print progress bar/messages (TRUE by default)
-#' @return Matrix of results if indicated or ggplot object. Plots K-L divergence vs. k to console.
+#' This can be used to select appropriate value of k for factorization of
+#' particular dataset. Plots median (across cells in all datasets) K-L
+#' divergence from uniform for cell factor loadings as a function of k. This
+#' should increase as k increases but is expected to level off above
+#' sufficiently high number of factors (k). This is because cells should have
+#' factor loadings which are not uniformly distributed when an appropriate
+#' number of factors is reached.
+#' @param object A \linkS4class{liger} object with scaled data.
+#' @param kTest Numeric vector of "k" values to test. Default \code{seq(5, 50,
+#' 5)}.
+#' @param lambda Lambda to use for all factorization runs. Default \code{5}.
+#' @param thresh Convergence threshold. Convergence occurs when
+#' \eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-4}.
+#' @param maxIter Maximum number of block coordinate descent iterations to
+#' perform. Default \code{100}.
+#' @param nCores Number of cores to use for optimizing factorization in
+#' parallel. Default \code{1}.
+#' @param seed Random seed to allow reproducible results. Default \code{1}.
+#' @param genNew Logical. Whether to use \code{\link{optimizeNewK}} in
+#' factorization. Results in slower factorization. Default \code{FALSE}.
+#' @param nrep See \code{\link{optimizeALS}} for detail. Number restarts to
+#' perform at each k value tested. Increase to produce smoother curve if results
+#' unclear. Default \code{1}.
+#' @param plotLog2 Logical. Whether to plot log2 curve for reference on K-L
+#' plot. log2 is upper bound and can sometimes help in identifying "elbow" of
+#' plot. Default \code{TRUE}.
+#' @param returnRaw Logical. Whether to return raw data or data.frame. Raw data
+#' is a list of matrices of K-L divergences (length(k.test) by n_cells). Length
+#' of list corresponds to \code{nrep}. (default FALSE)
+#' @param return.data \bold{Defuncted}. Will always return data now. Use
+#' \code{\link{plotSuggestK}} to show the plot.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{TRUE}.
+#' @param k.test,max.iters,num.cores,rand.seed,gen.new,plot.log2,return.raw
+#' \bold{Deprecated}. See Usage section for replacement.
+#' @return Matrix of results
 #' @export
 suggestK <- function(
         object,
@@ -50,6 +58,7 @@ suggestK <- function(
         gen.new = genNew,
         plot.log2 = plotLog2,
         return.raw = returnRaw,
+        # Defunct
         return.data = TRUE
 ) {
     .deprecateArgs(list(k.test = "kTest", max.iters = "maxIter",
@@ -169,6 +178,13 @@ suggestK <- function(
     return(df_kl)
 }
 
+#' Visualize suggestK result statistics
+#' @param result Returned data.frame from \code{\link{suggestK}}.
+#' @param xlab,ylab The title on x-/y-axis of the plot. See Usage for default.
+#' @param legendColorTitle The title of legend. Default \code{""}.
+#' @param ... Additional plot theme setting passed to
+#' \code{\link{.ggplotLigerTheme}}.
+#' @return ggplot
 plotSuggestK <- function(
         result,
         xlab = "k",
@@ -223,39 +239,44 @@ kl_divergence_uniform <- function(object, Hs = NULL) {
 #' likely also correspond to slower decrease in agreement. Depending on number of cores used,
 #' this process can take 10-20 minutes.
 #'
-#' @param object \code{liger} object. Should normalize, select genes, and scale before calling.
-#' @param k Number of factors to use in test factorizations. See optimizeALS documentation.
-#' @param lambda.test Vector of lambda values to test. If not given, use default set spanning
-#'   0.25 to 60
-#' @param rand.seed Random seed for reproducibility (default 1).
-#' @param num.cores Number of cores to use for optimizing factorizations in parallel (default 1).
-#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
-#' @param max.iters Maximum number of block coordinate descent iterations to perform
-#' @param knn_k Number of nearest neighbors for within-dataset knn in quantileAlignSNF (default 20).
-#' @param k2 Horizon parameter for quantileAlignSNF (default 500).
-#' @param ref_dataset Reference dataset for quantileAlignSNF (defaults to larger dataset).
-#' @param resolution Resolution for quantileAlignSNF (default 1).
-#' @param gen.new Do not use optimizeNewLambda in factorizations. Recommended to set TRUE
-#'   when looking at only a small range of lambdas (ie. 1:7) (default FALSE)
-#' @param nrep Number restarts to perform at each lambda value tested (increase to produce
-#'   smoother curve if results unclear) (default 1).
-#' @param return.data Whether to return list of data matrices (raw) or dataframe (processed)
-#'   instead of ggplot object (default FALSE).
-#' @param return.raw If return.results TRUE, whether to return raw data (in format described below),
-#'   or dataframe used to produce ggplot object. Raw data is matrix of alignment values for each
-#'   lambda value tested (each column represents a different rep for nrep).(default FALSE)
-#' @param verbose Print progress bar/messages (TRUE by default)
 #'
-#' @return Matrix of results if indicated or ggplot object. Plots alignment vs. lambda to console.
+#' @param object A \linkS4class{liger} object with scaled data.
+#' @param k Number of factors to use in the test.
+#' @param lambdaTest Numeric vector of "lambda" values to test. Default
+#' \code{NULL} will test the following sequence: 0.25, 0.5, 0.75; 1, 2 to 10;
+#' and 15, 20, ... to 60, totally 23 numbers.
+#' @param seed Random seed to allow reproducible results. Default \code{1}.
+#' @param nCores Number of cores to use for optimizing factorization in
+#' parallel. Default \code{1}.
+#' @param thresh Convergence threshold. Convergence occurs when
+#' \eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-4}.
+#' @param maxIter Maximum number of block coordinate descent iterations to
+#' perform. Default \code{100}.
 #'
+#' @param nNeighbors Number of nearest neighbors for within-dataset KNN in
+#' \code{\link{quantileNorm}}. Default \code{20}.
+#' @param reference Reference dataset for \code{\link{quantileNorm}}. See link
+#' for detail. Default \code{NULL}.
+#'
+#' @param genNew Logical. Whether to use \code{\link{optimizeNewLambda}} in
+#' factorization. Recommended \code{TRUE} when looking at only a small range of
+#' lambdas (i.e. 1:7). Default \code{FALSE}.
+#' @param nrep See \code{\link{optimizeALS}} for detail. Number restarts to
+#' perform at each k value tested. Increase to produce smoother curve if results
+#' unclear. Default \code{1}.
+#' @param returnRaw Logical. Whether to return raw data or data.frame. Raw data
+#' is matrix of alignment values for each lambda value tested (each column
+#' represents a different rep for nrep). Default \code{FALSE}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{TRUE}.
+#' @param lambda.test,rand.seed,num.cores,max.iters,knn_k,ref_dataset,gen.new,return.raw
+#' \bold{Deprecated}. See Usage section for replacement.
+#' @param return.data \bold{Defuncted}. Will always return data now. Use
+#' \code{\link{plotSuggestLambda}} to show the plot.
+#' @param k2,resolution \bold{Defuncted}. Parameter passed to
+#' \code{\link{quantileAlignSNF}} which is deprecated.
+#' @return Matrix of results
 #' @export
-#' @examples
-#' \dontrun{
-#' # Requires preprocessed liger object
-#' # examine plot for most appropriate lambda, use multiple cores for faster results
-#' suggestLambda(ligerex, k = 20, num.cores = 4)
-#' }
-
 suggestLambda <- function(
         object,
         k,
@@ -265,9 +286,7 @@ suggestLambda <- function(
         thresh = 1e-4,
         maxIter = 100,
         nNeighbors = 20,
-        k2 = 500,
         reference = NULL,
-        resolution = 1,
         genNew = FALSE,
         nrep = 1,
         returnRaw = FALSE,
@@ -282,7 +301,9 @@ suggestLambda <- function(
         gen.new = genNew,
         return.raw = returnRaw,
         # Defunct
-        return.data = TRUE
+        return.data = TRUE,
+        k2 = 500,
+        resolution = 1
 ) {
     .deprecateArgs(list(lambda.test = "lambdaTest", rand.seed = "seed",
                         num.cores = "nCores", max.iters = "maxIter",
@@ -395,6 +416,13 @@ suggestLambda <- function(
     return(df_al)
 }
 
+#' Visualize suggestLambda result statistics
+#' @param result Returned data.frame from \code{\link{suggestLambda}}.
+#' @param xlab,ylab The title on x-/y-axis of the plot. See Usage for default.
+#' @param legendColorTitle The title of legend. Default \code{""}.
+#' @param ... Additional plot theme setting passed to
+#' \code{\link{.ggplotLigerTheme}}.
+#' @return ggplot
 plotSuggestLambda <- function(
         result,
         xlab = "Lambda",

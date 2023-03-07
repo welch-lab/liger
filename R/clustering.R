@@ -30,10 +30,12 @@
 #' @param groupSingletons Whether to group single cells that make up their own
 #' cluster in with the cluster they are most connected to. Default \code{TRUE},
 #' if \code{FALSE}, assign all singletons to a \code{"singleton"} group.
+#' @param clusterName Name of the variable that will store the clustering result
+#' in \code{cellMeta} slot of \code{object}. Default \code{"louvain_cluster"}.
 #' @param seed Seed of the random number generator. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress.
 #' Default \code{TRUE}.
-#' @param dims.use,random.seed \bold{Deprecated}. See Usage section for
+#' @param k,dims.use,random.seed \bold{Deprecated}. See Usage section for
 #' replacement.
 #' @return \code{object} with refined cluster assignment updated in
 #' \code{louvain_cluster} variable in \code{cellMeta} slot. Can be fetched

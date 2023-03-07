@@ -15,12 +15,47 @@ H5Apply(
 )
 }
 \arguments{
-\item{FUN}{A function where the first argument must be the chunk of data, the
-return value must be a vector.}
+\item{object}{A \linkS4class{ligerDataset} object.}
 
-\item{h5file}{H5File object}
+\item{FUN}{A function that is applied to each chunk. See detail for
+restrictions.}
+
+\item{init}{Initialized result if it need to be updated iteratively. Default
+\code{NULL}.}
+
+\item{useData}{The slot name of the data to be processed. Choose from
+\code{"rawData"}, \code{"normData"}, \code{"scaleData"}. Default
+\code{"rawData"}.}
+
+\item{chunkSize}{Number if columns to be included in each chunk.
+Default \code{1000}.}
+
+\item{verbose}{Logical. Whether to show information of the progress.
+Default \code{TRUE}.}
+
+\item{...}{Other arguments to be passed to \code{FUN}.}
 }
 \description{
-h5 calculation wrapper, that run user specified calculation with
+h5 calculation wrapper, that runs specified calculation with
 on-disk matrix in chunks
+}
+\details{
+The \code{FUN} function has to have the first four arguments ordered
+by:
+\enumerate{
+\item \bold{chunk data:} A sparse matrix (\code{\link[Matrix]{dgCMatrix-class}})
+containing maximum \code{chunkSize} columns.
+\item \bold{x-vector index:} The index that subscribes the vector of \code{x}
+slot of a dgCMatrix, which points to the values in each chunk. Mostly used
+when need to write a new sparse matrix to H5 file.
+\item \bold{cell index:} The column index of each chunk out of the whole
+original matrix
+\item \bold{Initialized result:} A customized object, the value passed to
+\code{H5Apply(init)} argument will be passed here in the first iteration. And
+the returned value of \code{FUN} will be iteratively passed here in next
+chunk iterations. So it is important to keep the object structure of the
+returned value consistent with \code{init}.
+}
+No default value to these four arguments should be pre-defined because
+\code{H5Apply} will automatically generate the input.
 }

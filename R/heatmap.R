@@ -24,6 +24,8 @@
 #' heatmap by specified variables. Default \code{NULL}.
 #' @param featureSplitBy,factorSplitBy Similar as \code{cellSplitBy}. Default
 #' \code{NULL}
+#' @param trim Numeric vector of two numbers. Higher value limits the maximum
+#' value and lower value limits the minimum value. Default \code{c(0, 0.03)}.
 #' @param viridisOption See \code{option} argument of
 #' \code{\link[viridisLite]{viridis}}. Default \code{"C"} (plasma) for
 #' \code{plotGeneHeatmap} and \code{"D"} (viridis) for \code{plotFactorHeatmap}.

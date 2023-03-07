@@ -8,7 +8,7 @@
 #'
 #' a \linkS4class{ligerDataset} object is also allowed for now and meanwhile,
 #' setting \code{filename} is supported.
-#' @param object A \linkS4class{liger} or \linkS4class{ligerDataset} object.
+#' @param object,x A \linkS4class{liger} or \linkS4class{ligerDataset} object.
 #' @param i,featureIdx Character vector. Missing or \code{NULL} for all
 #' features.
 #' @param j,cellIdx Character, logical or numeric index that can subscribe cells.
@@ -23,6 +23,10 @@
 #' @param chunkSize Integer. Number of maximum number of cells in each chunk,
 #' Default \code{1000}.
 #' @param verbose Logical. Whether to show the progress. Default \code{TRUE}.
+#' @param returnObject Logical, whether to return a \linkS4class{liger} object
+#' for result. Default \code{TRUE}. \code{FALSE} returns a list containing
+#' requested values.
+#' @param drop Not applicable.
 #' @param ... Arguments passed to \code{subsetLigerDataset}
 #' @return Subset \code{object}
 #' @export
@@ -188,7 +192,7 @@ retrieveCellFeature <- function(
 #' subsetting on scaled data, which usually contains already a subset of
 #' features, will select the intersection between the wanted features and the
 #' set available from scaled data.
-#' @param object \linkS4class{ligerDataset} object. HDF5 based object if using
+#' @param object,x \linkS4class{ligerDataset} object. HDF5 based object if using
 #' \code{subsetH5LigerDataset}, in-memory data for \code{subsetMemLigerDataset}.
 #' @param i,featureIdx Character, logical or numeric index that can subscribe
 #' features. Missing or \code{NULL} for all features.
@@ -210,6 +214,10 @@ retrieveCellFeature <- function(
 #' @param chunkSize Integer. Number of maximum number of cells in each chunk,
 #' Default \code{1000}.
 #' @param verbose Logical. Whether to show the progress. Default \code{TRUE}.
+#' @param returnObject Logical, whether to return a \linkS4class{ligerDataset}
+#' object for result. Default \code{TRUE}. \code{FALSE} returns a list
+#' containing requested values.
+#' @param drop Not applicable.
 #' @param ... Arguments passed to \code{subsetH5LigerDataset}
 #' @return Subset \code{object}
 #' @export
@@ -435,26 +443,26 @@ subsetH5LigerDatasetToH5 <- function(
     newH5Meta$H5File <- newH5File
     newH5Meta$filename <- filename
     if (newH5Meta$format.type != "AnnData") {
-        safeH5Create(newH5File, newH5Meta$barcodes.name,
+        safeH5Create(newH5File, newH5Meta$barcodesName,
                      dims = length(cellIdx), dtype = "char")
-        newH5File[[newH5Meta$barcodes.name]][1:length(cellIdx)] <-
+        newH5File[[newH5Meta$barcodesName]][1:length(cellIdx)] <-
             colnames(object)[cellIdx]
     } else {
         # TODO: AnnData style barcodes storage.
     }
 
-    safeH5Create(newH5File, newH5Meta$genes.name,
+    safeH5Create(newH5File, newH5Meta$genesName,
                  dims = length(featureIdx), dtype = "char")
-    newH5File[[newH5Meta$genes.name]][1:length(featureIdx)] <-
+    newH5File[[newH5Meta$genesName]][1:length(featureIdx)] <-
         rownames(object)[featureIdx]
     # Process Raw Data ####
     if ("rawData" %in% useSlot & !is.null(rawData(object))) {
         # 1. Create paths to store i, p, x of sparse matrix
         if (isTRUE(verbose)) .log("Subsetting `rawData`", level = 2)
-        safeH5Create(newH5File, newH5Meta$indices.name, dims = 1, dtype = "int")
-        i.h5d <- newH5File[[newH5Meta$indices.name]]
-        safeH5Create(newH5File, newH5Meta$indptr.name, dims = 1, dtype = "int")
-        p.h5d <- newH5File[[newH5Meta$indptr.name]]
+        safeH5Create(newH5File, newH5Meta$indicesName, dims = 1, dtype = "int")
+        i.h5d <- newH5File[[newH5Meta$indicesName]]
+        safeH5Create(newH5File, newH5Meta$indptrName, dims = 1, dtype = "int")
+        p.h5d <- newH5File[[newH5Meta$indptrName]]
         safeH5Create(newH5File, newH5Meta$rawData, dims = 1, dtype = "double")
         x.h5d <- newH5File[[newH5Meta$rawData]]
         # 2. Go into chunks
@@ -506,12 +514,12 @@ subsetH5LigerDatasetToH5 <- function(
             # H5D objects are created if have worked on rawData. Otherwise,
             # have to recreate them for normData. (normData and rawData share
             # the same `i` and `p` vectors as in the form of sparse matrices.)
-            safeH5Create(newH5File, newH5Meta$indices.name,
+            safeH5Create(newH5File, newH5Meta$indicesName,
                          dims = 1, dtype = "int")
-            i.h5d <- newH5File[[newH5Meta$indices.name]]
-            safeH5Create(newH5File, newH5Meta$indptr.name,
+            i.h5d <- newH5File[[newH5Meta$indicesName]]
+            safeH5Create(newH5File, newH5Meta$indptrName,
                          dims = 1, dtype = "int")
-            p.h5d <- newH5File[[newH5Meta$indptr.name]]
+            p.h5d <- newH5File[[newH5Meta$indptrName]]
         }
         subsetSizes <- list(ix = 0, p = 1)
         H5Apply(
@@ -582,19 +590,19 @@ subsetH5LigerDatasetToH5 <- function(
     if (!"rawData" %in% useSlot) newH5Meta$rawData <- NULL
     if (!"normData" %in% useSlot) newH5Meta$normData <- NULL
     if (!"rawData" %in% useSlot & !"normData" %in% useSlot) {
-        newH5Meta$indices.name <- NULL
-        newH5Meta$indptr.name <- NULL
+        newH5Meta$indicesName <- NULL
+        newH5Meta$indptrName <- NULL
     }
     if (!"scaleData" %in% useSlot) newH5Meta$scaleData <- NULL
     # New object construction ####
-    newObj <- createLigerDataset.h5(
+    newObj <- createH5LigerDataset(
         h5file = filename,
         rawData = newH5Meta$rawData, normData = newH5Meta$normData,
         scaleData = newH5Meta$scaleData,
-        barcodes.name = newH5Meta$barcodes.name,
-        genes.name = newH5Meta$genes.name,
-        indices.name = newH5Meta$indices.name,
-        indptr.name = newH5Meta$indptr.name,
+        barcodesName = newH5Meta$barcodesName,
+        genesName = newH5Meta$genesName,
+        indicesName = newH5Meta$indicesName,
+        indptrName = newH5Meta$indptrName,
         modal = modal,
         featureMeta = featureMeta(object)[featureIdx, , drop = FALSE]
     )

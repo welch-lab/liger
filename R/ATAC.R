@@ -156,8 +156,6 @@ linkGenesAndPeaks <- function(
         useGenes = NULL,
         method = c("spearman", "pearson", "kendall"),
         alpha = 0.05,
-        writeInteractTrack = FALSE,
-        pathToInteractTrack = getwd(),
         verbose = TRUE,
         # Deprecated coding style
         path_to_coords = pathToCoords,
@@ -175,6 +173,11 @@ linkGenesAndPeaks <- function(
         stop("Package \"IRanges\" needed for this function to work. ",
              "Please install it by command:\n",
              "BiocManager::install('IRanges')",
+             call. = FALSE)
+    if (!requireNamespace("psych", quietly = TRUE))
+        stop("Package \"psych\" needed for this function to work. ",
+             "Please install it by command:\n",
+             "BiocManager::install('psych')",
              call. = FALSE)
     .deprecateArgs(list(path_to_coords = "pathToCoords",
                         genes.list = "useGenes", dist = "method"))

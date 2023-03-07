@@ -86,6 +86,7 @@ online_iNMF <- function(
         max.epochs = 5,
         miniBatch_max_iters = 1,
         miniBatch_size = 5000,
+        h5_chunk_size = 1000,
         seed = 123,
         verbose = TRUE
 ) {
@@ -218,7 +219,7 @@ online_iNMF <- function(
         # chunk permutation: shuffle cell index by H5 chunks
         allIdx <- rep(list(NULL), length(object))
         for (i in dataIdxNew) {
-            allIdx[[i]] <- .permuteChunkIdx(object, i, 1000)
+            allIdx[[i]] <- .permuteChunkIdx(object, i, h5_chunk_size)
         }
 
         totalIters <- floor(sum(nCellsNew) * max.epochs / miniBatch_size)
@@ -244,7 +245,7 @@ online_iNMF <- function(
                         epochNext[i] <- TRUE
                         epochPrev[i] <- epoch[i]
                         minibatchIdx[[i]] <- allIdx[[i]][batchStartIdx:nCells[i]]
-                        allIdx[[i]] <- .permuteChunkIdx(object, i, 1000)
+                        allIdx[[i]] <- .permuteChunkIdx(object, i, h5_chunk_size)
                         if ((iter * minibatchSizes[i]) %% nCells[i] != 0) {
                             minibatchIdx[[i]] <- c(minibatchIdx[[i]],
                                                   allIdx[[i]][seq((iter * minibatchSizes[i]) %% nCells[i])])

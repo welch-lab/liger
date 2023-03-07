@@ -59,33 +59,59 @@ liger <- setClass(
 #' @description This function allows creating \linkS4class{liger} object from
 #' multiple datasets of various forms (See \code{rawData}).
 #' @param rawData Named list of datasets. Required. Elements allowed include a
-#' matrix, a \linkS4class{Seurat} object, a \linkS4class{SingleCellExperiment}
-#' object, an \code{AnnData} object, a \linkS4class{ligerDataset} object or a
-#' filename to an HDF5 file. See detail for HDF5 reading.
-#' @param modal Character vector for modality setting. See detail.
+#' matrix, a \code{Seurat} object, a \code{SingleCellExperiment} object, an
+#' \code{AnnData} object, a \linkS4class{ligerDataset} object or a filename to
+#' an HDF5 file. See detail for HDF5 reading.
+#' @param modal Character vector for modality setting. Currently options of
+#' \code{"default"}, \code{"rna"}, and \code{"atac"} are supported.
 #' @param cellMeta data.frame of metadata at single-cell level. Default
-#' @param remove.missing Whether to remove cells that do not have any counts and
-#' features not expressed in any cells from each dataset. Default \code{TRUE}.
-#' @param format.type Select preset of H5 file structure. Current available
+#' \code{NULL}.
+#' @param removeMissing Logical. Whether to remove cells that do not have any
+#' counts and features not expressed in any cells from each dataset. Default
+#' \code{TRUE}. H5 based dataset with less than 8000 cells will be subset into
+#' memory.
+#' @param formatType Select preset of H5 file structure. Current available
 #' options are \code{"10X"} and \code{"AnnData"}. Can be either a single
 #' specification for all datasets or a character vector that match with each
 #' dataset.
+#' @param dataName,indicesName,indptrName The path in a H5 file for the raw
+#' sparse matrix data. These three types of data stands for the \code{x},
+#' \code{i}, and \code{p} slots of a \code{\link[Matrix]{dgCMatrix-class}}
+#' object. Default \code{NULL} uses \code{formatType} preset.
+#' @param genesName,barcodesName The path in a H5 file for the gene names and
+#' cell barcodes. Default \code{NULL} uses \code{formatType} preset.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{TRUE}.
+#' @param remove.missing,format.type,data.name,indices.name,indptr.name,genes.name,barcodes.name
+#' \bold{Deprecated.} See Usage section for replacement.
 #' @export
-#' @seealso \code{\link{createLigerDataset}},
-#' \code{\link{createLigerDataset.h5}}
+#' @seealso \code{\link{createLigerDataset}}, \code{\link{createH5LigerDataset}}
 createLiger <- function(
         rawData,
         modal = NULL,
         cellMeta = NULL,
-        remove.missing = TRUE,
-        format.type = "10X",
-        data.name = NULL,
-        indices.name = NULL,
-        indptr.name = NULL,
-        genes.name = NULL,
-        barcodes.name = NULL,
-        verbose = TRUE
+        removeMissing = TRUE,
+        formatType = "10X",
+        dataName = NULL,
+        indicesName = NULL,
+        indptrName = NULL,
+        genesName = NULL,
+        barcodesName = NULL,
+        verbose = TRUE,
+        # Deprecated coding style
+        remove.missing = removeMissing,
+        format.type = formatType,
+        data.name = dataName,
+        indices.name = indicesName,
+        indptr.name = indptrName,
+        genes.name = genesName,
+        barcodes.name = barcodesName
 ) {
+    .deprecateArgs(list(remove.missing = "removeMissing",
+                        format.type = "formatType", data.name = "dataName",
+                        indices.name = "indicesName",
+                        indptr.name = "indptrName", genes.name = "genesName",
+                        barcodes.name = "barcodesName"))
     if (!is.list(rawData)) stop("`rawData` has to be a named list.")
 
     nData <- length(rawData)
@@ -103,14 +129,14 @@ createLiger <- function(
         data <- rawData[[i]]
         if (is.character(data)) {
             # Assuming character input is a filename
-            datasets[[dname]] <- createLigerDataset.h5(
+            datasets[[dname]] <- createH5LigerDataset(
                 h5file = data,
-                format.type = format.type,
-                rawData = data.name,
-                barcodes.name = barcodes.name,
-                genes.name = genes.name,
-                indices.name = indices.name,
-                indptr.name = indptr.name,
+                formatType = formatType,
+                rawData = dataName,
+                barcodesName = barcodesName,
+                genesName = genesName,
+                indicesName = indicesName,
+                indptrName = indptrName,
                 modal = modal[i]
             )
         } else {
@@ -126,7 +152,7 @@ createLiger <- function(
             row.names = barcodes)
     } else {
         cellMeta <- S4Vectors::DataFrame(cellMeta)
-        cellMeta <- cellMeta[barcodes,]
+        cellMeta <- cellMeta[barcodes,,drop = FALSE]
         # Force writing `dataset` variable as named by @datasets
         cellMeta$dataset <- factor(rep(names(datasets),
                                         lapply(datasets, ncol)))
@@ -135,7 +161,7 @@ createLiger <- function(
                         datasets = datasets,
                         cellMeta = cellMeta)
     obj <- runGeneralQC(obj, verbose = verbose)
-    if (isTRUE(remove.missing)) {
+    if (isTRUE(removeMissing)) {
         obj <- removeMissing(obj, "both", filenameSuffix = "qc",
                              verbose = verbose)
     }
@@ -144,7 +170,6 @@ createLiger <- function(
 }
 
 #' Deduplicate barcodes from all datasets
-#'
 #' @param  datasets list of ligerDataset object
 #' @noRd
 .dedupLigerDatasets <- function(datasets) {
@@ -255,16 +280,64 @@ is.newLiger <- function(object) {
 # ------------------------------------------------------------------------------
 # Generics ####
 # ------------------------------------------------------------------------------
+#' Access data in a liger object
+#' @description The methods listed in this manual only apply to
+#' \linkS4class{liger} objects, while there are other generics that have methods
+#' for both \code{liger} and \linkS4class{ligerDataset} objects. Please see
+#' \code{\link{rawData}} page.
+#' @param x \linkS4class{liger} object
+#' @param name Name or numeric index of a dataset
+#' @param value Check \linkS4class{liger} class specification for required value
+#' type.
+#' @param type When using \code{dataset<-} with a matrix like \code{value},
+#' specify what type the matrix is. Choose from \code{"rawData"},
+#' \code{"normData"} or \code{"scaleData"}.
+#' @param qc Logical, whether to perform general qc on added new dataset.
+#' @param check Logical, whether to perform object validity check on setting new
+#' value.
+#' @param columns The names of available variables in \code{cellMeta} slot. When
+#' \code{as.data.frame = TRUE}, please use variable names after coercion.
+#' @param cellIdx Valid cell subscription to subset retrieved variables. Default
+#' \code{NULL} uses all cells.
+#' @param as.data.frame Logical, whether to apply
+#' \code{\link[base]{as.data.frame}} on the subscription. Default \code{FALSE}.
+#' @param i,j Feature or cell index for \code{`[`} method. For \code{`[[`}
+#' method, use a single variable name with \code{i} and \code{j} is not
+#' applicable.
+#' @param ... For \code{cellMeta}, arguments passed to \code{[]} subscriptor,
+#' e.g. \code{drop = FALSE}.
+#' @export
+#' @rdname liger-access
+setGeneric("datasets", function(x, check = NULL) standardGeneric("datasets"))
 
-setGeneric("datasets", function(x, check = NULL, ...) standardGeneric("datasets"))
+#' @export
+#' @rdname liger-access
 setGeneric("datasets<-", function(x, check = TRUE, value) standardGeneric("datasets<-"))
+
+#' @export
+#' @rdname liger-access
 setGeneric("dataset", function(x, name = NULL) standardGeneric("dataset"))
+
+#' @export
+#' @rdname liger-access
 setGeneric("dataset<-", function(x, name, type = NULL, qc = TRUE, value) {
     standardGeneric("dataset<-")
 })
+
+#' @export
+#' @rdname liger-access
 setGeneric("cellMeta", function(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) standardGeneric("cellMeta"))
+
+#' @export
+#' @rdname liger-access
 setGeneric("cellMeta<-", function(x, columns = NULL, check = FALSE, value) standardGeneric("cellMeta<-"))
+
+#' @export
+#' @rdname liger-access
 setGeneric("varFeatures", function(x) standardGeneric("varFeatures"))
+
+#' @export
+#' @rdname liger-access
 setGeneric("varFeatures<-", function(x, check = TRUE, value) standardGeneric("varFeatures<-"))
 
 # ------------------------------------------------------------------------------
@@ -296,10 +369,18 @@ setMethod(
     }
 )
 
+#' Access dataset names or length
+#' @param x \linkS4class{liger} object
+#' @param value Character vector of new names for datasets.
+#' @return character vector of dataset names or number of datasets
+#' @rdname names-liger
+#' @export
 setMethod("names", signature(x = "liger"), function(x) {
     names(datasets(x))
 })
 
+#' @rdname names-liger
+#' @export
 setReplaceMethod(
     "names",
     signature(x = "liger", value = "character"),
@@ -319,22 +400,45 @@ setReplaceMethod(
         x
     })
 
+#' @rdname names-liger
+#' @export
 setMethod("length", signature(x = "liger"), function(x) {
     length(datasets(x))
 })
 
-# `dim()` method set so that `ncol()` returns total number of cells,
-# `nrow()` returns `NA`
+#' Access dimensionality of liger object
+#' @description For a \linkS4class{liger} object or a
+#' \linkS4class{ligerDataset} object, the column orientation is
+#' assigned for cells while rows should be for features/genes. However, due to
+#' the data structure, it is hard to define a row index for the outer container
+#' -- \code{liger} object, which might contain datasets that vary in genes.
+#'
+#' Therefore, for \code{liger} objects, \code{dim} and \code{dimnames} returns
+#' \code{NA}/\code{NULL} for rows and total cell counts/barcodes for the
+#' columns. For \code{ligerDataset} objects, gene index will be available for
+#' rows.
+#' @param x \linkS4class{liger} object
+#' @param value For direct call of \code{dimnames<-} method, should be a list
+#' with \code{NULL} as the first element and valid cell identifiers as the
+#' second element. For \code{colnames<-} method, the character vector of cell
+#' identifiers. \code{rownames<-} method is not applicable.
+#' @return See Description
+#' @rdname dim-liger
+#' @export
 setMethod("dim", "liger", function(x) {
     c(NA, nrow(cellMeta(x)))
 })
 
 # `dimnames()` method set so that `rownames()` returns `NULL`, `colnames()`
 # returns all barcodes.
+#' @rdname dim-liger
+#' @export
 setMethod("dimnames", "liger", function(x) {
     list(NULL, rownames(cellMeta(x)))
 })
 
+#' @rdname dim-liger
+#' @export
 setReplaceMethod("dimnames", c("liger", "list"), function(x, value) {
     dataset.var <- x$dataset
     dataset.uniq <- unique(dataset.var)
@@ -349,28 +453,40 @@ setReplaceMethod("dimnames", c("liger", "list"), function(x, value) {
     x
 })
 
-setMethod("[[", signature(x = "liger", i = "ANY", j = "missing"),
-          function(x, i, ...)
-          {
-              if (is.null(i)) return(NULL)
-              cellMeta(x, columns = i, ...)
-          })
+#' @rdname liger-access
+#' @export
+setMethod(
+    "[[",
+    c("liger", "ANY", "missing"),
+    function(x, i, j, ...) {
+        if (is.null(i)) return(NULL)
+            cellMeta(x, columns = i, ...)
+    }
+)
 
-setReplaceMethod("[[", signature(x = "liger", i = "ANY"),
-                 function(x, i, ..., value)
-                 {
-                     cellMeta(x, columns = i) <- value
-                     x
-                 })
+#' @rdname liger-access
+#' @export
+setReplaceMethod(
+    "[[",
+    c("liger", "ANY", "missing"),
+    function(x, i, j, ..., value) {
+        cellMeta(x, columns = i, ...) <- value
+        x
+    }
+)
 
 .DollarNames.liger <- function(x, pattern = "")
     grep(pattern, colnames(x@cellMeta), value = TRUE)
 
+#' @export
+#' @rdname liger-access
 setMethod("$", signature(x = "liger"),
           function(x, name) {
               cellMeta(x, columns = name)
           })
 
+#' @export
+#' @rdname liger-access
 setReplaceMethod("$", signature(x = "liger"),
                  function(x, name, value) {
                      cellMeta(x, columns = name) <- value
@@ -401,24 +517,21 @@ setMethod(
     function(x, i, j, ...) subsetLiger(x, featureIdx = i, cellIdx = j, ...)
 )
 
-#' Access datasets of liger object
-#' @description This method access the whole slot \code{datasets}, a list, of
-#' the \linkS4class{liger} object. So that operations like
-#' \code{datasets(x)[[1]] <- y} modifies the inner \code{ligerDataset} object
-#' without triggering cell metadata update, which will be done by
-#' \code{dataset(x) <- y}.
-#' @param x liger object
-#' @param check Whether to perform object validity check when using setter
-#' method. Default \code{TRUE}.
-#' @param value list of \linkS4class{ligerDataset} object.
-#' @seealso \code{\link{dataset}}
+#' @section Whether to use datasets() or dataset()?:
+#' \code{datasets()} method only accesses the \code{datasets} slot, the list of
+#' \linkS4class{ligerDataset} objects. \code{dataset()} method accesses a single
+#' dataset, with subsequent cell metadata updates and checks bonded when adding
+#' or modifying a dataset. Therefore, when users want to modify something inside
+#' a \code{ligerDataset} while no cell metadata change should happen, it is
+#' recommended to use: \code{datasets(x)[[name]] <- ligerD} for efficiency,
+#' though the result would be the same as \code{dataset(x, name) <- ligerD}.
 #' @export
-#' @rdname datasets
+#' @rdname liger-access
 setMethod("datasets", signature(x = "liger", check = "ANY"),
           function(x, check = NULL) x@datasets)
 
 #' @export
-#' @rdname datasets
+#' @rdname liger-access
 setReplaceMethod("datasets", signature(x = "liger", check = "logical"),
                  function(x, check = TRUE, value) {
                      x@datasets <- value
@@ -427,7 +540,7 @@ setReplaceMethod("datasets", signature(x = "liger", check = "logical"),
                  })
 
 #' @export
-#' @rdname datasets
+#' @rdname liger-access
 setReplaceMethod("datasets", signature(x = "liger", check = "missing"),
                  function(x, check = TRUE, value) {
                      x@datasets <- value
@@ -435,27 +548,8 @@ setReplaceMethod("datasets", signature(x = "liger", check = "missing"),
                      x
                  })
 
-#' @title Access single dataset of liger object
-#' @description TODO: Debating on whether to have a separate (differently named)
-#' method to directly access matrices in embedded ligerDataset objects, or to
-#' allow accessing matrices with \code{type}.
-#'
-#' This method access a single dataset of the \linkS4class{liger} object. Using
-#' the setter method to add/modify a dataset will subsequentially perform cell
-#' metadata updates and checks.
-#' @rdname dataset
-#' @param x \linkS4class{liger} object
-#' @param name name of dataset
-#' @param type Type of specified matrix. Only works when \code{value} is a
-#' matrix like object. choose from \code{"rawData"}, \code{"normData"} or
-#' \code{"scaleData"}. Default \code{"rawData"}.
-#' @param value A matrix of a dataset to be added, or a constructed
-#' \linkS4class{ligerDataset} object. \code{NULL} to remove a dataset by
-#' \code{name}.
-#' @seealso \code{\link{datasets}}
-#' @return Getter methods returns a \linkS4class{ligerDataset} object, while
-#' setter methods update the input \code{x} (the \linkS4class{liger} object).
 #' @export
+#' @rdname liger-access
 setMethod("dataset", signature(x = "liger", name = "character_OR_NULL"),
           function(x, name = NULL) {
               if (is.null(name)) return(datasets(x)[[1]])
@@ -468,22 +562,22 @@ setMethod("dataset", signature(x = "liger", name = "character_OR_NULL"),
               }
           })
 
-#' @rdname dataset
 #' @export
+#' @rdname liger-access
 setMethod("dataset", signature(x = "liger", name = "missing"),
           function(x, name = NULL) {
               datasets(x)[[1]]
           })
 
-#' @rdname dataset
 #' @export
+#' @rdname liger-access
 setMethod("dataset", signature(x = "liger", name = "numeric"),
           function(x, name = NULL) {
               datasets(x)[[name]]
           })
 
-#' @rdname dataset
 #' @export
+#' @rdname liger-access
 setReplaceMethod("dataset", signature(x = "liger", name = "character",
                                       type = "missing", qc = "ANY",
                                       value = "ligerDataset"),
@@ -512,8 +606,8 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                      x
                  })
 
-#' @rdname dataset
 #' @export
+#' @rdname liger-access
 setReplaceMethod("dataset", signature(x = "liger", name = "character",
                                       type = "ANY", qc = "ANY",
                                       value = "matrixLike"),
@@ -533,8 +627,8 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
                      x
                  })
 
-#' @rdname dataset
 #' @export
+#' @rdname liger-access
 setReplaceMethod("dataset", signature(x = "liger", name = "character",
                                       type = "missing", qc = "ANY",
                                       value = "NULL"),
@@ -578,10 +672,14 @@ setReplaceMethod("dataset", signature(x = "liger", name = "character",
     return(res)
 }
 
-#' Access cellMeta of liger object
-#' @param x \linkS4class{liger} object
-#' @rdname cellMeta
 #' @export
+#' @rdname liger-access
+#' @section Cell metadata access:
+#' Three approaches are provided for access of cell metadata. A generic function
+#' \code{cellMeta} is implemented with plenty of options and multi-variable
+#' accessibility. Besides, users can use double-bracket (e.g.
+#' \code{ligerObj[[Var]]}) or dollor-sign (e.g. \code{ligerObj$nUMI}) to access
+#' or modify single variables.
 setMethod(
     "cellMeta",
     signature(x = "liger", columns = "NULL"),
@@ -589,10 +687,8 @@ setMethod(
         NULL
 )
 
-#' Access cellMeta of liger object
-#' @param x \linkS4class{liger} object
-#' @rdname cellMeta
 #' @export
+#' @rdname liger-access
 setMethod(
     "cellMeta",
     signature(x = "liger", columns = "character"),
@@ -601,10 +697,8 @@ setMethod(
                         as.data.frame = as.data.frame, ...)
 )
 
-#' Access cellMeta of liger object
-#' @param x \linkS4class{liger} object
-#' @rdname cellMeta
 #' @export
+#' @rdname liger-access
 setMethod(
     "cellMeta",
     signature(x = "liger", columns = "missing"),
@@ -613,8 +707,8 @@ setMethod(
                         as.data.frame = as.data.frame, ...)
 )
 
-#' @rdname cellMeta
 #' @export
+#' @rdname liger-access
 setReplaceMethod(
     "cellMeta",
     signature(x = "liger", columns = "missing"),
@@ -627,8 +721,8 @@ setReplaceMethod(
     }
 )
 
-#' @rdname cellMeta
 #' @export
+#' @rdname liger-access
 setReplaceMethod(
     "cellMeta",
     signature(x = "liger", columns = "character"),
@@ -639,15 +733,13 @@ setReplaceMethod(
     }
 )
 
-#' Access variable features of liger object
-#' @param x \linkS4class{liger} object
-#' @rdname varFeatures
 #' @export
+#' @rdname liger-access
 setMethod("varFeatures", signature(x = "liger"),
           function(x) x@varFeatures)
 
-#' @rdname varFeatures
 #' @export
+#' @rdname liger-access
 setReplaceMethod(
     "varFeatures",
     signature(x = "liger", check = "ANY", value = "character"),

@@ -1,14 +1,18 @@
 #' Analyze biological interpretations of metagene
-#'
-#' Identify the biological pathways (gene sets from Reactome) that each metagene (factor) might belongs to.
-#' @param object \code{liger} object.
-#' @param gene_sets A list of the Reactome gene sets names to be tested. If not specified,
-#' this function will use all the gene sets from the Reactome by default
-#' @param mat_w This indicates whether to use the shared factor loadings 'W' (default TRUE)
-#' @param mat_v This indicates which V matrix to be added to the analysis. It can be a numeric number or a list
-#' of the numerics.
-#' @param custom_gene_sets A named list of character vectors of entrez gene ids. If not specified,
-#' this function will use all the gene symbols from the input matrix by default
+#' @description Identify the biological pathways (gene sets from Reactome) that
+#' each metagene (factor) might belongs to.
+#' @param object A \linkS4class{liger} object with valid factorization result.
+#' @param genesets Character vecotr of the Reactome gene sets names to be
+#' tested. Default \code{NULL} uses all the gene sets from the Reactome.
+#' @param useW Logical, whether to use the shared factor loadings (\eqn{W}).
+#' Default \code{TRUE}.
+#' @param useDatasets A character vector of the names, a numeric or logical
+#' vector of the index of the datasets where the \eqn{V} matrices will be
+#' included for analysis. Default \code{NULL} uses all datasets.
+#' @param customGenesets A named list of character vectors of entrez gene ids.
+#' Default \code{NULL} uses all the gene symbols from the input matrix.
+#' @param gene_sets,mat_w,mat_v,custom_gene_sets \bold{Deprecated}. See Usage
+#' section for replacement.
 #' @return A list of matrices with GSEA analysis for each factor
 #' @export
 runGSEA <- function(

@@ -8,39 +8,62 @@ createLiger(
   rawData,
   modal = NULL,
   cellMeta = NULL,
-  remove.missing = TRUE,
-  format.type = "10X",
-  data.name = NULL,
-  indices.name = NULL,
-  indptr.name = NULL,
-  genes.name = NULL,
-  barcodes.name = NULL,
-  verbose = TRUE
+  removeMissing = TRUE,
+  formatType = "10X",
+  dataName = NULL,
+  indicesName = NULL,
+  indptrName = NULL,
+  genesName = NULL,
+  barcodesName = NULL,
+  verbose = TRUE,
+  remove.missing = removeMissing,
+  format.type = formatType,
+  data.name = dataName,
+  indices.name = indicesName,
+  indptr.name = indptrName,
+  genes.name = genesName,
+  barcodes.name = barcodesName
 )
 }
 \arguments{
 \item{rawData}{Named list of datasets. Required. Elements allowed include a
-matrix, a \linkS4class{Seurat} object, a \linkS4class{SingleCellExperiment}
-object, an \code{AnnData} object, a \linkS4class{ligerDataset} object or a
-filename to an HDF5 file. See detail for HDF5 reading.}
+matrix, a \code{Seurat} object, a \code{SingleCellExperiment} object, an
+\code{AnnData} object, a \linkS4class{ligerDataset} object or a filename to
+an HDF5 file. See detail for HDF5 reading.}
 
-\item{modal}{Character vector for modality setting. See detail.}
+\item{modal}{Character vector for modality setting. Currently options of
+\code{"default"}, \code{"rna"}, and \code{"atac"} are supported.}
 
-\item{cellMeta}{data.frame of metadata at single-cell level. Default}
+\item{cellMeta}{data.frame of metadata at single-cell level. Default
+\code{NULL}.}
 
-\item{remove.missing}{Whether to remove cells that do not have any counts and
-features not expressed in any cells from each dataset. Default \code{TRUE}.}
+\item{removeMissing}{Logical. Whether to remove cells that do not have any
+counts and features not expressed in any cells from each dataset. Default
+\code{TRUE}. H5 based dataset with less than 8000 cells will be subset into
+memory.}
 
-\item{format.type}{Select preset of H5 file structure. Current available
+\item{formatType}{Select preset of H5 file structure. Current available
 options are \code{"10X"} and \code{"AnnData"}. Can be either a single
 specification for all datasets or a character vector that match with each
 dataset.}
+
+\item{dataName, indicesName, indptrName}{The path in a H5 file for the raw
+sparse matrix data. These three types of data stands for the \code{x},
+\code{i}, and \code{p} slots of a \code{\link[Matrix]{dgCMatrix-class}}
+object. Default \code{NULL} uses \code{formatType} preset.}
+
+\item{genesName, barcodesName}{The path in a H5 file for the gene names and
+cell barcodes. Default \code{NULL} uses \code{formatType} preset.}
+
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{TRUE}.}
+
+\item{remove.missing, format.type, data.name, indices.name, indptr.name, genes.name, barcodes.name}{\bold{Deprecated.} See Usage section for replacement.}
 }
 \description{
 This function allows creating \linkS4class{liger} object from
 multiple datasets of various forms (See \code{rawData}).
 }
 \seealso{
-\code{\link{createLigerDataset}},
-\code{\link{createLigerDataset.h5}}
+\code{\link{createLigerDataset}}, \code{\link{createH5LigerDataset}}
 }

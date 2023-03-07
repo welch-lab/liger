@@ -34,6 +34,11 @@ setClassUnion("matrixLike_OR_NULL", c(
     "matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix", "NULL"
 ))
 
+#' Subclass of ligerDataset for RNA modality
+#' @description Inherits from \linkS4class{ligerDataset} class. Contained slots
+#' can be referred with the link. This subclass does not have any different from
+#' the default \code{ligerDataset} class except the class name.
+#' @export
 #' @exportClass ligerRNADataset
 ligerRNADataset <- setClass(
     "ligerRNADataset", contains = "ligerDataset"
@@ -59,11 +64,33 @@ ligerATACDataset <- setClass(
     prototype = prototype(rawPeak = NULL, normPeak = NULL)
 )
 
+#' Access ligerATACDataset peak data
+#' @description Similar as how default \linkS4class{ligerDataset} data is
+#' accessed.
+#' @param x \linkS4class{ligerATACDataset} object or a \linkS4class{liger}
+#' object.
+#' @param dataset Name or numeric index of an ATAC dataset.
+#' @param check Logical, whether to perform object validity check on setting new
+#' value.
+#' @param value \code{\link[Matrix]{dgCMatrix-class}} matrix.
+#' @return The retrieved peak count matrix or the updated \code{x} object.
+#' @rdname peak
+#' @export
 setGeneric("rawPeak", function(x, dataset) standardGeneric("rawPeak"))
+
+#' @rdname peak
+#' @export
 setGeneric("rawPeak<-", function(x, dataset, check = TRUE, value) standardGeneric("rawPeak<-"))
+
+#' @rdname peak
+#' @export
 setGeneric("normPeak", function(x, dataset) standardGeneric("normPeak"))
+
+#' @rdname peak
+#' @export
 setGeneric("normPeak<-", function(x, dataset, check = TRUE, value) standardGeneric("normPeak<-"))
 
+#' @rdname peak
 #' @export
 setMethod("rawPeak", signature(x = "liger", dataset = "character"),
           function(x, dataset) {
@@ -74,6 +101,7 @@ setMethod("rawPeak", signature(x = "liger", dataset = "character"),
               atac@rawPeak
           })
 
+#' @rdname peak
 #' @export
 setReplaceMethod(
     "rawPeak",
@@ -86,12 +114,14 @@ setReplaceMethod(
         x
     })
 
+#' @rdname peak
 #' @export
 setMethod("rawPeak", signature(x = "ligerATACDataset", dataset = "missing"),
           function(x, dataset = NULL) {
               x@rawPeak
           })
 
+#' @rdname peak
 #' @export
 setReplaceMethod(
     "rawPeak",
@@ -102,6 +132,7 @@ setReplaceMethod(
         x
     })
 
+#' @rdname peak
 #' @export
 setMethod("normPeak", signature(x = "liger", dataset = "character"),
           function(x, dataset) {
@@ -112,6 +143,7 @@ setMethod("normPeak", signature(x = "liger", dataset = "character"),
               atac@normPeak
           })
 
+#' @rdname peak
 #' @export
 setReplaceMethod(
     "normPeak",
@@ -124,12 +156,14 @@ setReplaceMethod(
         x
     })
 
+#' @rdname peak
 #' @export
 setMethod("normPeak", signature(x = "ligerATACDataset", dataset = "missing"),
           function(x, dataset = NULL) {
               x@normPeak
           })
 
+#' @rdname peak
 #' @export
 setReplaceMethod(
     "normPeak",

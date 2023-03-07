@@ -299,6 +299,9 @@ optimizeNewLambda <- function(
 #' perform. Default \code{100}.
 #' @param datasets.scale Names of datasets to rescale after subsetting.
 #' Default \code{NULL} does not rescale.
+#' @param cell.subset,cluster.subset \bold{Deprecated}. Please use
+#' \code{cellIdx} to explicitly specify.
+#' @param ... Additional arguments passed to \code{\link{optimizeALS}}
 #' @return Subset \code{object} with factorization matrices reset, including
 #' the \code{W} matrix in \linkS4class{liger} object, and \code{W} and \code{V}
 #' matrices in each \linkS4class{ligerDataset} object in the \code{datasets}

@@ -34,7 +34,9 @@ Missing or \code{NULL} for all cells.}
 
 \item{...}{Arguments passed to \code{subsetLigerDataset}}
 
-\item{object}{A \linkS4class{liger} or \linkS4class{ligerDataset} object.}
+\item{drop}{Not applicable.}
+
+\item{object, x}{A \linkS4class{liger} or \linkS4class{ligerDataset} object.}
 
 \item{useSlot}{The slot(s) to only consider. Choose one or more from
 \code{"rawData"}, \code{"normData"} and \code{"scaleData"}. Default
@@ -49,6 +51,10 @@ Default \code{1000}.}
 if involved datasets in the \code{object} is HDF5 based. \code{TRUE} writes a
 new ones, \code{FALSE} returns in memory data. Default \code{"auto"} writes a
 new dataset when more than 8000 cells from that dataset is subscribed.}
+
+\item{returnObject}{Logical, whether to return a \linkS4class{liger} object
+for result. Default \code{TRUE}. \code{FALSE} returns a list containing
+requested values.}
 }
 \value{
 Subset \code{object}

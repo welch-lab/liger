@@ -257,6 +257,8 @@ removeMissing <- function(
 #' @param dotSize Size of dots.
 #' @param violinAlpha,boxAlpha The transparency of violins or boxes,
 #' respectively. \code{1} is opaque and \code{0} is transparent.
+#' @param xlab,ylab Title for x-/y-axis, respectively. Default \code{groupBy}
+#' and \code{metric}.
 #' @param ... Theme setting parameters. Check \code{\link{.ggplotLigerTheme}}
 #' for more options and details.
 #' @export

@@ -233,7 +233,42 @@ plotClusterFactorDot <- function(
     )
 }
 
-
+#' Generate dot plot from input matrix with ComplexHeatmap
+#' @param colorMat,sizeMat Matrix of the same size. Values in \code{colorMat}
+#' will be visualized with color while values in \code{sizeMat} will be
+#' reflected by dot size.
+#' @param featureAnnDF Data frame of features containing feature names and
+#' grouping labels.
+#' @param cellSplitVar Split the cell orientation (default columns) by this
+#' variable.
+#' @param cellLabels Label to be shown on cell orientation.
+#' @param maxDotSize The maximum dot size. Default \code{4}.
+#' @param clusterFeature,clusterCell Whether the feature/cell orientation
+#' (default rows/column, respectively) should be clustered. Default
+#' \code{FALSE}.
+#' @param legendColorTitle,legendSizeTitle The title for color bar and dot size
+#' legends, repectively. Default see \code{"Matrix Value"} and \code{"Fraction
+#' Value"}.
+#' @param transpose Logical, whether to rotate the dot plot orientation. i.e.
+#' rows as cell aggregation and columns as features. Default \code{FALSE}.
+#' @param baseSize One-parameter control of all text sizes. Individual text
+#' element sizes can be controlled by other size arguments. "Title" sizes are
+#' 2 points larger than "text" sizes when being controlled by this. Default
+#' \code{8}.
+#' @param cellTextSize,featureTextSize,legendTextSize Size of cell labels,
+#' feature label and legend text. Default \code{NULL} controls by
+#' \code{baseSize}.
+#' @param cellTitleSize,featureTitleSize,legendTitleSize Size of titles on
+#' cell and feature orientation and legend title. Default \code{NULL} controls
+#' by \code{baseSize + 2}.
+#' @param featureGrpRot Number of degree to rotate the feature grouping label.
+#' Default \code{0}.
+#' @param viridisOption,viridisDirection See argument \code{option} and
+#' \code{direction} of \code{\link[viridisLite]{viridis}}. Default \code{"A"}
+#' and \code{-1}.
+#' @param ... Additional arguments passed to
+#' \code{\link[ComplexHeatmap]{Heatmap}}.
+#' @return A \code{\link[ComplexHeatmap]{HeatmapList}} object.
 .complexHeatmapDotPlot <- function(
         colorMat,
         sizeMat,

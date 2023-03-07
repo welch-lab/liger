@@ -241,6 +241,8 @@ foo <- function(object, param1 = 1, arg2 = "yo", default = NULL) {
     return(object)
 }
 
+#' @export
+#' @rdname commands
 setGeneric("commands", function(x, funcName = NULL, arg = NULL) standardGeneric("commands"))
 
 #' Fetch command record log
@@ -248,7 +250,8 @@ setGeneric("commands", function(x, funcName = NULL, arg = NULL) standardGeneric(
 #' @param funcName Function name of the command of interests, or an exact
 #' command label for the call.
 #' @param arg Argument names
-#' @exportMethod commands
+#' @export
+#' @rdname commands
 setMethod(
     "commands",
     signature(x = "liger", funcName = "ANY", arg = "ANY"),

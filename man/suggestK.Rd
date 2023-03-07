@@ -28,47 +28,56 @@ suggestK(
 )
 }
 \arguments{
-\item{object}{\code{liger} object. Should normalize, select genes, and scale before calling.}
+\item{object}{A \linkS4class{liger} object with scaled data.}
 
-\item{lambda}{Lambda to use for all foctorizations (default 5).}
+\item{kTest}{Numeric vector of "k" values to test. Default \code{seq(5, 50,
+5)}.}
 
-\item{thresh}{Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh}
+\item{lambda}{Lambda to use for all factorization runs. Default \code{5}.}
 
-\item{nrep}{Number restarts to perform at each k value tested (increase to produce
-smoother curve if results unclear) (default 1).}
+\item{thresh}{Convergence threshold. Convergence occurs when
+\eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-4}.}
 
-\item{verbose}{Print progress bar/messages (TRUE by default)}
+\item{maxIter}{Maximum number of block coordinate descent iterations to
+perform. Default \code{100}.}
 
-\item{k.test}{Set of factor numbers to test (default seq(5, 50, 5)).}
+\item{nCores}{Number of cores to use for optimizing factorization in
+parallel. Default \code{1}.}
 
-\item{max.iters}{Maximum number of block coordinate descent iterations to perform}
+\item{seed}{Random seed to allow reproducible results. Default \code{1}.}
 
-\item{num.cores}{Number of cores to use for optimizing factorizations in parallel (default 1)}
+\item{genNew}{Logical. Whether to use \code{\link{optimizeNewK}} in
+factorization. Results in slower factorization. Default \code{FALSE}.}
 
-\item{rand.seed}{Random seed for reproducibility (default 1).}
+\item{plotLog2}{Logical. Whether to plot log2 curve for reference on K-L
+plot. log2 is upper bound and can sometimes help in identifying "elbow" of
+plot. Default \code{TRUE}.}
 
-\item{gen.new}{Do not use optimizeNewK in factorizations. Results in slower factorizations.
-(default FALSE).}
+\item{nrep}{See \code{\link{optimizeALS}} for detail. Number restarts to
+perform at each k value tested. Increase to produce smoother curve if results
+unclear. Default \code{1}.}
 
-\item{plot.log2}{Plot log2 curve for reference on K-L plot (log2 is upper bound and con
-sometimes help in identifying "elbow" of plot). (default TRUE)}
+\item{returnRaw}{Logical. Whether to return raw data or data.frame. Raw data
+is a list of matrices of K-L divergences (length(k.test) by n_cells). Length
+of list corresponds to \code{nrep}. (default FALSE)}
 
-\item{return.raw}{If return.results TRUE, whether to return raw data (in format described below),
-or dataframe used to produce ggplot object. Raw data is list of matrices of K-L divergences
-(length(k.test) by n_cells). Length of list corresponds to nrep. (default FALSE)}
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{TRUE}.}
 
-\item{return.data}{Whether to return list of data matrices (raw) or dataframe (processed)
-instead of ggplot object (default FALSE).}
+\item{k.test, max.iters, num.cores, rand.seed, gen.new, plot.log2, return.raw}{\bold{Deprecated}. See Usage section for replacement.}
+
+\item{return.data}{\bold{Defuncted}. Will always return data now. Use
+\code{\link{plotSuggestK}} to show the plot.}
 }
 \value{
-Matrix of results if indicated or ggplot object. Plots K-L divergence vs. k to console.
+Matrix of results
 }
 \description{
-This can be used to select appropriate value of k for factorization of particular dataset.
-Plots median (across cells in all datasets) K-L divergence from uniform for cell factor loadings
-as a function of k. This should increase as k increases but is expected to level off above
-sufficiently high number of factors (k). This is because cells should have factor loadings which
-are not uniformly distributed when an appropriate number of factors is reached.
-
-Depending on number of cores used, this process can take 10-20 minutes.
+This can be used to select appropriate value of k for factorization of
+particular dataset. Plots median (across cells in all datasets) K-L
+divergence from uniform for cell factor loadings as a function of k. This
+should increase as k increases but is expected to level off above
+sufficiently high number of factors (k). This is because cells should have
+factor loadings which are not uniformly distributed when an appropriate
+number of factors is reached.
 }

@@ -1,13 +1,24 @@
 #' Visualize factor expression and gene loading
 #' @rdname plotGeneLoadings
+#' @param object A \linkS4class{liger} object with valid factorization result.
+#' @param markerTable Returned result of \code{\link{getFactorMarkers}}.
+#' @param useFactor Integer index for which factor to visualize.
+#' @param useDimRed Name of the variable storing dimensionality reduction result
+#' in the \code{cellMeta} slot. Default \code{"UMAP"}.
+#' @param nLabel Integer, number of top genes to be shown with text labels.
+#' Default \code{12}.
+#' @param nPlot Integer, number of top genes to be shown in the loading rank
+#' plot. Default \code{30}.
+#' @param ... Additional plot theme setting arguments passed to
+#' \code{\link{.ggCellScatter}} and \code{\link{.ggplotLigerTheme}}.
 #' @export
 plotGeneLoadings <- function(
         object,
         markerTable,
         useFactor,
         useDimRed = "UMAP",
-        topNPval = 12,
-        topNLoad = 30,
+        nLabel = 12,
+        nPlot = 30,
         ...
 ) {
     p1 <- plotCellScatter(
@@ -17,7 +28,7 @@ plotGeneLoadings <- function(
         splitBy = NULL, shapeBy = NULL, colorByFunc = NULL, ...
     )
     bottom <- plotGeneLoadingRank(object, markerTable, useFactor,
-                                  topNPval, topNLoad, ...)
+                                  nLabel, nPlot, ...)
     bottom <- bottom[c(1, 3, 2)]
     bottomComb <- cowplot::plot_grid(plotlist = bottom, nrow = 1)
     cowplot::plot_grid(p1, bottomComb, nrow = 2)
@@ -29,8 +40,8 @@ plotGeneLoadingRank <- function(
         object,
         markerTable,
         useFactor,
-        topNPval = 12,
-        topNLoad = 30,
+        nLabel = 12,
+        nPlot = 30,
         ...
 ) {
     # Table-object matching check
@@ -47,7 +58,7 @@ plotGeneLoadingRank <- function(
     geneList$V2 <- geneList$V2[order(geneList$V2$p_value), ]$gene
     # don't sort for W
     geneList$W <- markerTable[[2]][markerTable[[2]]$factor_num == useFactor,]$gene
-    geneList <- lapply(geneList, function(g) g[seq(min(topNPval, length(g)))])
+    geneList <- lapply(geneList, function(g) g[seq(min(nLabel, length(g)))])
 
     loadingList <- getMatrix(object, "V", dataset = c(dataset1, dataset2))
     W <- getMatrix(object, "W")
@@ -59,7 +70,7 @@ plotGeneLoadingRank <- function(
         loading <- loadingList[[i]]
         topGenes <- geneList[[i]]
         sorted <- sort(loading[,useFactor])
-        topLoaded <- rev(sorted)[seq(topNLoad)]
+        topLoaded <- rev(sorted)[seq(nPlot)]
         topLoaded <- names(topLoaded)
         topGenes <- topLoaded[topLoaded %in% topGenes]
         if (length(topGenes) == 0) topGenes <- "no genes"
@@ -77,7 +88,7 @@ plotGeneLoadingRank <- function(
             ggplot2::annotate(
                 "text",
                 x = 1.1,
-                y = seq(ylimTxt, 0, length.out = topNPval)[seq_along(topGenes)],
+                y = seq(ylimTxt, 0, length.out = nLabel)[seq_along(topGenes)],
                 label = topGenes, hjust = 0, col = "#8227A0"
             ) +
             ggplot2::theme_bw() +

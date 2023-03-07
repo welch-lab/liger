@@ -56,28 +56,25 @@ ligerDataset <- setClass(
 # Dataset creatinfg function ####
 # ------------------------------------------------------------------------------
 
-#' Create ligerDataset object
-#' @param rawData matrix
-#' @param normData matrix
-#' @param annotation data.frame
-#' @param V matrix
-#' @param A matrix
-#' @param B matrix
-#' @param U matrix
+#' Create in-memory ligerDataset object
+#' @param rawData,normData,scaleData A \code{\link[Matrix]{dgCMatrix-class}}
+#' object for the raw or normalized expression count or a dense matrix of scaled
+#' variable gene expression, respectively. Default \code{NULL} for all three but
+#' at lease one has to be specified.
+#' @param modal Name of modality for this dataset. Currently options of
+#' \code{"default"}, \code{"rna"}, and \code{"atac"} are supported. Default
+#' \code{"default"}.
+#' @param featureMeta Data frame of feature metadata. Default \code{NULL}.
+#' @param ... Additional slot data. See \linkS4class{ligerDataset} for detail.
+#' Given values will be directly placed at corresponding slots.
+#' @seealso \linkS4class{ligerDataset}, \linkS4class{ligerATACDataset},
+#' \code{\link{createH5LigerDataset}}
 #' @export
 createLigerDataset <- function(
         rawData = NULL,
         modal = c("default", "rna", "atac"),
         normData = NULL,
         scaleData = NULL,
-        scaleUnsharedData = NULL,
-        varUnsharedFeatures = NULL,
-        H = NULL,
-        V = NULL,
-        A = NULL,
-        B = NULL,
-        U = NULL,
-        h5fileInfo = NULL,
         featureMeta = NULL,
         ...
 ) {
@@ -113,13 +110,12 @@ createLigerDataset <- function(
     if (is.null(h5fileInfo)) h5fileInfo <- list()
     if (is.null(featureMeta))
         featureMeta <- S4Vectors::DataFrame(row.names = rn)
+    else if (!inherits(featureMeta, "DFrame"))
+        featureMeta <- S4Vectors::DataFrame(featureMeta)
     # Create ligerDataset
     allData <- list(.modalClassDict[[modal]],
-                    rawData = rawData,
-                    normData = normData,
-                    scaleData = scaleData,
-                    H =H, V = V, A = A, B = B, U = U,
-                    h5fileInfo = h5fileInfo, featureMeta = featureMeta,
+                    rawData = rawData, normData = normData,
+                    scaleData = scaleData, featureMeta = featureMeta,
                     colnames = cn, rownames = rn)
     allData <- c(allData, additional)
     x <- do.call("new", allData)
@@ -138,17 +134,36 @@ createLigerDataset <- function(
     ligerATACDataset = "atac"
 )
 
-#' @export
-createLigerDataset.h5 <- function(
+#' Create on-disk ligerDataset Object
+#' @param h5file Filename of a H5 file
+#' @param formatType Select preset of H5 file structure. Current available
+#' options are \code{"10X"} and \code{"AnnData"}.
+#' @param rawData,indicesName,indptrName The path in a H5 file for the raw
+#' sparse matrix data. These three types of data stands for the \code{x},
+#' \code{i}, and \code{p} slots of a \code{\link[Matrix]{dgCMatrix-class}}
+#' object. Default \code{NULL} uses \code{formatType} preset.
+#' @param normData The path in a H5 file for the "x" vector of the normalized
+#' sparse matrix. Default \code{NULL}.
+#' @param scaleData The path in a H5 file for the dense 2D scaled matrix.
+#' Default \code{NULL}.
+#' @param genesName,barcodesName The path in a H5 file for the gene names and
+#' cell barcodes. Default \code{NULL} uses \code{formatType} preset.
+#' @param modal Name of modality for this dataset. Currently options of
+#' \code{"default"}, \code{"rna"}, and \code{"atac"} are supported. Default
+#' \code{"default"}.
+#' @param featureMeta Data frame for feature metadata. Default \code{NULL}.
+#' @param ... Additional slot data. See \linkS4class{ligerDataset} for detail.
+#' Given values will be directly placed at corresponding slots.
+createH5LigerDataset <- function(
         h5file,
-        format.type = NULL,
+        formatType = NULL,
         rawData = NULL,
         normData = NULL,
         scaleData = NULL,
-        barcodes.name = NULL,
-        genes.name = NULL,
-        indices.name = NULL,
-        indptr.name = NULL,
+        barcodesName = NULL,
+        genesName = NULL,
+        indicesName = NULL,
+        indptrName = NULL,
         modal = c("default", "rna", "atac"),
         featureMeta = NULL,
         ...
@@ -159,42 +174,42 @@ createLigerDataset.h5 <- function(
     modal <- match.arg(modal)
     additional <- list(...)
     h5file <- hdf5r::H5File$new(h5file, mode = "r+")
-    if (!is.null(format.type) &&
-        format.type %in% c("10X", "AnnData")) {
-        if (format.type == "10X") {
-            barcodes.name <- "matrix/barcodes"
-            barcodes <- h5file[[barcodes.name]][]
+    if (!is.null(formatType) &&
+        formatType %in% c("10X", "AnnData")) {
+        if (formatType == "10X") {
+            barcodesName <- "matrix/barcodes"
+            barcodes <- h5file[[barcodesName]][]
             rawData <- "matrix/data"
-            indices.name <- "matrix/indices"
-            indptr.name <- "matrix/indptr"
-            genes.name <- "matrix/features/name"
-            genes <- h5file[[genes.name]][]
-        } else if (format.type == "AnnData") {
-            barcodes.name <- "obs"
-            barcodes <- h5file[[barcodes.name]][]$cell
+            indicesName <- "matrix/indices"
+            indptrName <- "matrix/indptr"
+            genesName <- "matrix/features/name"
+            genes <- h5file[[genesName]][]
+        } else if (formatType == "AnnData") {
+            barcodesName <- "obs"
+            barcodes <- h5file[[barcodesName]][]$cell
             rawData <- "raw.X/data"
-            indices.name <- "raw.X/indices"
-            indptr.name <- "raw.X/indptr"
-            genes.name <- "raw.var"
-            genes <- h5file[[genes.name]][]
+            indicesName <- "raw.X/indices"
+            indptrName <- "raw.X/indptr"
+            genesName <- "raw.var"
+            genes <- h5file[[genesName]][]
         } else {
-            stop("Specified `format.type` '", format.type,
+            stop("Specified `formatType` '", formatType,
                  "' is not supported for now.")
         }
     } else {
-        barcodes <- h5file[[barcodes.name]][]
-        genes <- h5file[[genes.name]][]
+        barcodes <- h5file[[barcodesName]][]
+        genes <- h5file[[genesName]][]
     }
     # The order of list elements matters. Put "paths" together so easier for
     # checking link existence.
     h5.meta <- list(
         H5File = h5file,
         filename = h5file$filename,
-        format.type = format.type,
-        indices.name = indices.name,
-        indptr.name = indptr.name,
-        barcodes.name = barcodes.name,
-        genes.name = genes.name,
+        formatType = formatType,
+        indicesName = indicesName,
+        indptrName = indptrName,
+        barcodesName = barcodesName,
+        genesName = genesName,
         rawData = rawData,
         normData = normData,
         scaleData = scaleData
@@ -204,6 +219,8 @@ createLigerDataset.h5 <- function(
     if (!is.null(scaleData)) scaleData <- h5file[[scaleData]]
     if (is.null(featureMeta))
         featureMeta <- S4Vectors::DataFrame(row.names = genes)
+    else if (!inherits(featureMeta, "DFrame"))
+        featureMeta <- S4Vectors::DataFrame(featureMeta)
     allData <- list(.modalClassDict[[modal]],
                     rawData = rawData,
                     normData = normData,
@@ -356,59 +373,59 @@ setValidity("ligerDataset", .valid.ligerDataset)
 #' being returned, whether it should be contained in a list or return the data
 #' directly.
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setGeneric("rawData", function(x) standardGeneric("rawData"))
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setGeneric("rawData<-", function(x, check = TRUE, value) standardGeneric("rawData<-"))
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setGeneric("normData", function(x) standardGeneric("normData"))
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setGeneric("normData<-", function(x, check = TRUE, value) standardGeneric("normData<-"))
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setGeneric("scaleData", function(x, name = NULL) standardGeneric("scaleData"))
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setGeneric("scaleData<-", function(x, check = TRUE, value) standardGeneric("scaleData<-"))
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setGeneric("scaleUnsharedData", function(x, name = NULL) standardGeneric("scaleUnsharedData"))
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setGeneric("scaleUnsharedData<-", function(x, check = TRUE, value) standardGeneric("scaleUnsharedData<-"))
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setGeneric("getH5File", function(x, dataset = NULL) standardGeneric("getH5File"))
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setGeneric("h5fileInfo", function(x, info = NULL) standardGeneric("h5fileInfo"))
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setGeneric("h5fileInfo<-", function(x, info = NULL, check = TRUE, value) standardGeneric("h5fileInfo<-"))
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setGeneric("featureMeta", function(x, check = NULL) standardGeneric("featureMeta"))
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setGeneric("featureMeta<-", function(x, check = TRUE, value) standardGeneric("featureMeta<-"))
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setGeneric("getMatrix", function(x, slot = "rawData", dataset = NULL, returnList = FALSE) standardGeneric("getMatrix"))
 # ------------------------------------------------------------------------------
 # Methods ####
@@ -453,18 +470,24 @@ setMethod(
     }
 )
 
+#' @rdname dim-liger
+#' @export
 setMethod("dim", "ligerDataset", function(x) {
     nr <- length(x@rownames)
     nc <- length(x@colnames)
     c(nr, nc)
 })
 
+#' @rdname dim-liger
+#' @export
 setMethod("dimnames", "ligerDataset", function(x) {
     rn <- x@rownames
     cn <- x@colnames
     list(rn, cn)
 })
 
+#' @rdname dim-liger
+#' @export
 setReplaceMethod("dimnames", c("ligerDataset", "list"), function(x, value) {
     if (!isH5Liger(x)) {
         if (!is.null(rawData(x))) {
@@ -489,8 +512,8 @@ setReplaceMethod("dimnames", c("ligerDataset", "list"), function(x, value) {
     # else {
         #h5file <- getH5File(x)
         #h5meta <- h5fileInfo(x)
-        #h5file[[h5meta$genes.name]][1:length(value[[1L]])] <- value[[1L]]
-        #h5file[[h5meta$barcodes.name]][1:length(value[[2L]])] <- value[[2L]]
+        #h5file[[h5meta$genesName]][1:length(value[[1L]])] <- value[[1L]]
+        #h5file[[h5meta$barcodesName]][1:length(value[[2L]])] <- value[[2L]]
     #}
     if (!is.null(x@H))
         rownames(x@H) <- value[[2L]]
@@ -538,12 +561,12 @@ setMethod(
 )
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setMethod("rawData", "ligerDataset",
           function(x) x@rawData)
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setReplaceMethod(
     "rawData",
     signature(x = "ligerDataset", check = "ANY", value = "matrixLike_OR_NULL"),
@@ -557,7 +580,7 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setReplaceMethod(
     "rawData",
     signature(x = "ligerDataset", check = "ANY", value = "H5D"),
@@ -571,12 +594,12 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setMethod("normData", "ligerDataset",
           function(x) x@normData)
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setReplaceMethod(
     "normData",
     signature(x = "ligerDataset", check = "ANY", value = "matrixLike_OR_NULL"),
@@ -590,7 +613,7 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setReplaceMethod(
     "normData",
     signature(x = "ligerDataset", check = "ANY", value = "H5D"),
@@ -604,12 +627,12 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setMethod("scaleData", "ligerDataset",
           function(x, name = NULL) x@scaleData)
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setMethod(
     "scaleData",
     signature(x = "liger", name = "character"),
@@ -619,7 +642,7 @@ setMethod(
 )
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setMethod(
     "scaleData",
     signature(x = "liger", name = "numeric"),
@@ -629,7 +652,7 @@ setMethod(
 )
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setReplaceMethod(
     "scaleData",
     signature(x = "ligerDataset", check = "ANY", value = "matrixLike_OR_NULL"),
@@ -643,7 +666,7 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setReplaceMethod(
     "scaleData",
     signature(x = "ligerDataset", check = "ANY", value = "H5D"),
@@ -658,12 +681,12 @@ setReplaceMethod(
 
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setMethod("scaleUnsharedData", "ligerDataset",
           function(x, name = NULL) x@scaleUnsharedData)
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setMethod(
     "scaleUnsharedData",
     signature(x = "liger", name = "character"),
@@ -673,7 +696,7 @@ setMethod(
 )
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setMethod(
     "scaleUnsharedData",
     signature(x = "liger", name = "numeric"),
@@ -683,7 +706,7 @@ setMethod(
 )
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setReplaceMethod(
     "scaleUnsharedData",
     signature(x = "ligerDataset", check = "ANY", value = "matrixLike_OR_NULL"),
@@ -697,7 +720,7 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setReplaceMethod(
     "scaleUnsharedData",
     signature(x = "ligerDataset", check = "ANY", value = "H5D"),
@@ -711,13 +734,13 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setMethod("getH5File",
           signature = signature(x = "ligerDataset", dataset = "missing"),
           function(x, dataset = NULL) h5fileInfo(x, "H5File"))
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setMethod("getH5File",
           signature = signature(x = "liger", dataset = "character"),
           function(x, dataset = NULL) {
@@ -733,7 +756,7 @@ setMethod("getH5File",
           })
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setMethod(
     "h5fileInfo",
     signature = signature(x = "ligerDataset", info = "ANY"),
@@ -755,7 +778,7 @@ setMethod(
     })
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setReplaceMethod(
     "h5fileInfo",
     signature = signature(
@@ -770,8 +793,8 @@ setReplaceMethod(
         } else {
             if (!is.character(info) | length(info) != 1)
                 stop('`info` has to be a single character.')
-            if (info %in% c('indices.name', 'indptr.name', 'barcodes.name',
-                            'genes.name', 'rawData', 'normData',
+            if (info %in% c('indicesName', 'indptrName', 'barcodesName',
+                            'genesName', 'rawData', 'normData',
                             'scaleData')) {
                 if (!getH5File(x)$exists(value)) {
                     stop("Specified info is invalid, '", info,
@@ -793,14 +816,14 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setMethod("featureMeta", signature(x = "ligerDataset", check = "ANY"),
           function(x, check = NULL) {
     x@featureMeta
 })
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setReplaceMethod(
     "featureMeta",
     signature(x = "ligerDataset", check = "ANY"),
@@ -814,7 +837,7 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setMethod(
     "getMatrix", signature(x = "ligerDataset", dataset = "missing",
                            returnList = "missing"),
@@ -829,7 +852,7 @@ setMethod(
     })
 
 #' @export
-#' @rdname data-access
+#' @rdname ligerDataset-access
 setMethod(
     "getMatrix", signature(x = "liger"),
     function(x,

@@ -9,7 +9,7 @@ restoreH5Liger(object, filePath = NULL)
 \arguments{
 \item{object}{liger or ligerDataset object.}
 
-\item{file.path}{Paths to HDF5 files. A single character path for
+\item{filePath}{Paths to HDF5 files. A single character path for
 ligerDataset input or a list of paths named by the datasets for liger object
 input. Default \code{NULL} looks for the path(s) of the last valid loading.}
 }

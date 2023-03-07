@@ -81,6 +81,11 @@ calcAgreement <- function(object,
         }
     }
     else if (dr.method == "ICA") {
+        if (!requireNamespace("ica", quietly = TRUE))
+            stop("Package \"ica\" needed for this function to work. ",
+                 "Please install it by command:\n",
+                 "BiocManager::install('ica')",
+                 call. = FALSE)
         if (class(object@raw.data[[1]])[1] == "H5File") {
             dr <- list()
             for (i in 1:length(object@H)) {
@@ -93,6 +98,11 @@ calcAgreement <- function(object,
             })
         }
     } else {
+        if (!requireNamespace("irlba", quietly = TRUE))
+            stop("Package \"irlba\" needed for this function to work. ",
+                 "Please install it by command:\n",
+                 "BiocManager::install('irlba')",
+                 call. = FALSE)
         if (class(object@raw.data[[1]])[1] == "H5File") {
             dr <- list()
             for (i in 1:length(object@H)) {
@@ -379,6 +389,11 @@ NULL
 #' \code{calcARI} is deprecated and is now defunct.
 calcARI <- function(object, clusters.compare, verbose = TRUE) {
     lifecycle::deprecate_stop("1.2.0", "calcARI()")
+    if (!requireNamespace("mclust", quietly = TRUE))
+        stop("Package \"mclust\" needed for this function to work. ",
+             "Please install it by command:\n",
+             "BiocManager::install('mclust')",
+             call. = FALSE)
     if (length(clusters.compare) < length(object@clusters) && verbose) {
         message("Calculating ARI for subset of all cells")
     }

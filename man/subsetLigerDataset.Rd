@@ -59,7 +59,9 @@ Missing or \code{NULL} for all cells.}
 
 \item{...}{Arguments passed to \code{subsetH5LigerDataset}}
 
-\item{object}{\linkS4class{ligerDataset} object. HDF5 based object if using
+\item{drop}{Not applicable.}
+
+\item{object, x}{\linkS4class{ligerDataset} object. HDF5 based object if using
 \code{subsetH5LigerDataset}, in-memory data for \code{subsetMemLigerDataset}.}
 
 \item{useSlot}{The slot(s) to only consider. Choose one or more from
@@ -83,6 +85,10 @@ for the new files so the new filename looks like
 Default \code{1000}.}
 
 \item{verbose}{Logical. Whether to show the progress. Default \code{TRUE}.}
+
+\item{returnObject}{Logical, whether to return a \linkS4class{ligerDataset}
+object for result. Default \code{TRUE}. \code{FALSE} returns a list
+containing requested values.}
 }
 \value{
 Subset \code{object}

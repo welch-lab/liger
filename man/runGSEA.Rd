@@ -17,22 +17,28 @@ runGSEA(
 )
 }
 \arguments{
-\item{object}{\code{liger} object.}
+\item{object}{A \linkS4class{liger} object with valid factorization result.}
 
-\item{gene_sets}{A list of the Reactome gene sets names to be tested. If not specified,
-this function will use all the gene sets from the Reactome by default}
+\item{genesets}{Character vecotr of the Reactome gene sets names to be
+tested. Default \code{NULL} uses all the gene sets from the Reactome.}
 
-\item{mat_w}{This indicates whether to use the shared factor loadings 'W' (default TRUE)}
+\item{useW}{Logical, whether to use the shared factor loadings (\eqn{W}).
+Default \code{TRUE}.}
 
-\item{mat_v}{This indicates which V matrix to be added to the analysis. It can be a numeric number or a list
-of the numerics.}
+\item{useDatasets}{A character vector of the names, a numeric or logical
+vector of the index of the datasets where the \eqn{V} matrices will be
+included for analysis. Default \code{NULL} uses all datasets.}
 
-\item{custom_gene_sets}{A named list of character vectors of entrez gene ids. If not specified,
-this function will use all the gene symbols from the input matrix by default}
+\item{customGenesets}{A named list of character vectors of entrez gene ids.
+Default \code{NULL} uses all the gene symbols from the input matrix.}
+
+\item{gene_sets, mat_w, mat_v, custom_gene_sets}{\bold{Deprecated}. See Usage
+section for replacement.}
 }
 \value{
 A list of matrices with GSEA analysis for each factor
 }
 \description{
-Identify the biological pathways (gene sets from Reactome) that each metagene (factor) might belongs to.
+Identify the biological pathways (gene sets from Reactome) that
+each metagene (factor) might belongs to.
 }

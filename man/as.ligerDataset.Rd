@@ -35,9 +35,9 @@ ligerDataset object according to \code{modal}.
 S4 method to convert objects of various types to a
 \linkS4class{ligerDataset} object or a modality specific sub-class of
 \linkS4class{ligerDataset} object. Supported classes include a matrix like
-object, a \linkS4class{SingleCellExperiment} object, a \linkS4class{Seurat}
-object, and \code{AnnData} object. This method also supports modality
-setting to a \linkS4class{ligerDataset} inherited object.
+object, a \code{SingleCellExperiment} object, a \code{Seurat} object, and
+\code{AnnData} object. This method also supports modality setting to a
+\linkS4class{ligerDataset} inherited object.
 }
 \author{
 Yichen Wang

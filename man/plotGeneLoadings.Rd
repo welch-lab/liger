@@ -10,8 +10,8 @@ plotGeneLoadings(
   markerTable,
   useFactor,
   useDimRed = "UMAP",
-  topNPval = 12,
-  topNLoad = 30,
+  nLabel = 12,
+  nPlot = 30,
   ...
 )
 
@@ -19,10 +19,29 @@ plotGeneLoadingRank(
   object,
   markerTable,
   useFactor,
-  topNPval = 12,
-  topNLoad = 30,
+  nLabel = 12,
+  nPlot = 30,
   ...
 )
+}
+\arguments{
+\item{object}{A \linkS4class{liger} object with valid factorization result.}
+
+\item{markerTable}{Returned result of \code{\link{getFactorMarkers}}.}
+
+\item{useFactor}{Integer index for which factor to visualize.}
+
+\item{useDimRed}{Name of the variable storing dimensionality reduction result
+in the \code{cellMeta} slot. Default \code{"UMAP"}.}
+
+\item{nLabel}{Integer, number of top genes to be shown with text labels.
+Default \code{12}.}
+
+\item{nPlot}{Integer, number of top genes to be shown in the loading rank
+plot. Default \code{30}.}
+
+\item{...}{Additional plot theme setting arguments passed to
+\code{\link{.ggCellScatter}} and \code{\link{.ggplotLigerTheme}}.}
 }
 \description{
 Visualize factor expression and gene loading

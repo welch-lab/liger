@@ -27,8 +27,8 @@ plotDensityDimRed(
 \arguments{
 \item{object}{A \linkS4class{liger} object}
 
-\item{useDimRed}{Name of type of the coordinate matrix in \code{cellMeta}
-slot. Default \code{"UMAP"}.}
+\item{useDimRed}{Name of the variable storing dimensionality reduction result
+in the \code{cellMeta} slot. Default \code{"UMAP"}.}
 
 \item{splitBy}{Character vector of categorical variable names in
 \code{cellMeta} slot. Split all cells by groupings on this/these variable(s)

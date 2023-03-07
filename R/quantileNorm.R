@@ -15,15 +15,7 @@ setGeneric(
         refineKNN = TRUE,
         clusterName = "H.norm_cluster",
         seed = 1,
-        verbose = TRUE,
-        ref_dataset = reference,
-        min_cells = minCells,
-        knn_k = nNeighbors,
-        dims.use = useDims,
-        do.center = center,
-        max_sample = maxSample,
-        refine.knn = refineKNN,
-        rand.seed = seed
+        verbose = TRUE
     ) standardGeneric("quantileNorm")
 )
 
@@ -70,11 +62,13 @@ setGeneric(
 #' each cluster and factor. Default \code{1000}.
 #' @param refineKNN whether to increase robustness of cluster assignments using
 #' KNN graph. Default \code{TRUE}.
+#' @param clusterName of the variable that will store the clustering result
+#' in \code{cellMeta} slot of \code{object}. Default \code{"H.norm_cluster"}.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{TRUE}.
 #' @return For method on \linkS4class{liger} object, the object will be returned
-#' with the \code{H.norm} slot and \code{"H.norm_cluster"} variable in
+#' with the \code{H.norm} slot and \code{clusterName} variable in
 #' \code{cellMeta} slot updated. For method on list, a result list with entries
 #' of \code{H.norm} and \code{clusters} will be returned.
 #' @rdname quantileNorm

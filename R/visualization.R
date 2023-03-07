@@ -195,9 +195,9 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL, 
         length(intersect(levels(cluster1), levels(cluster_consensus))) > 0 |
         length(intersect(levels(cluster2), levels(cluster_consensus))) > 0) {
         message("Duplicate cluster names detected. Adding 1- and 2- to make unique names.")
-        cluster1 <- plyr::mapvalues(cluster1, from = levels(cluster1),
+        cluster1 <- mapvalues(cluster1, from = levels(cluster1),
                               to = paste("1", levels(cluster1), sep = "-"))
-        cluster2 <- plyr::mapvalues(cluster2, from = levels(cluster2),
+        cluster2 <- mapvalues(cluster2, from = levels(cluster2),
                               to = paste("2", levels(cluster2), sep = "-"))
     }
     cluster1 <- cluster1[intersect(names(cluster1), names(cluster_consensus))]

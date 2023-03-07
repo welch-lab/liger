@@ -11,8 +11,6 @@ linkGenesAndPeaks(
   useGenes = NULL,
   method = c("spearman", "pearson", "kendall"),
   alpha = 0.05,
-  writeInteractTrack = FALSE,
-  pathToInteractTrack = getwd(),
   verbose = TRUE,
   path_to_coords = pathToCoords,
   genes.list = useGenes,

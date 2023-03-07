@@ -2,40 +2,36 @@
 % Please edit documentation in R/ligerDataset-class.R
 \name{createLigerDataset}
 \alias{createLigerDataset}
-\title{Create ligerDataset object}
+\title{Create in-memory ligerDataset object}
 \usage{
 createLigerDataset(
   rawData = NULL,
   modal = c("default", "rna", "atac"),
   normData = NULL,
   scaleData = NULL,
-  scaleUnsharedData = NULL,
-  varUnsharedFeatures = NULL,
-  H = NULL,
-  V = NULL,
-  A = NULL,
-  B = NULL,
-  U = NULL,
-  h5fileInfo = NULL,
   featureMeta = NULL,
   ...
 )
 }
 \arguments{
-\item{rawData}{matrix}
+\item{rawData, normData, scaleData}{A \code{\link[Matrix]{dgCMatrix-class}}
+object for the raw or normalized expression count or a dense matrix of scaled
+variable gene expression, respectively. Default \code{NULL} for all three but
+at lease one has to be specified.}
 
-\item{normData}{matrix}
+\item{modal}{Name of modality for this dataset. Currently options of
+\code{"default"}, \code{"rna"}, and \code{"atac"} are supported. Default
+\code{"default"}.}
 
-\item{V}{matrix}
+\item{featureMeta}{Data frame of feature metadata. Default \code{NULL}.}
 
-\item{A}{matrix}
-
-\item{B}{matrix}
-
-\item{U}{matrix}
-
-\item{annotation}{data.frame}
+\item{...}{Additional slot data. See \linkS4class{ligerDataset} for detail.
+Given values will be directly placed at corresponding slots.}
 }
 \description{
-Create ligerDataset object
+Create in-memory ligerDataset object
+}
+\seealso{
+\linkS4class{ligerDataset}, \linkS4class{ligerATACDataset},
+\code{\link{createH5LigerDataset}}
 }

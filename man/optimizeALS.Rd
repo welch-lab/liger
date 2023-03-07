@@ -83,10 +83,13 @@ dataset-specific effects more strongly (i.e. alignment should increase as
 \item{thresh}{Convergence threshold. Convergence occurs when
 \eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-6}.}
 
+\item{maxIter}{Maximum number of block coordinate descent iterations to
+perform. Default \code{30}.}
+
 \item{nrep}{Number of restarts to perform (iNMF objective function is
 non-convex, so taking the best objective from multiple successive
-initializations is recommended). For easier reproducibility, this increments
-the random seed by 1 for each consecutive restart, so future factorizations
+initialization is recommended). For easier reproducibility, this increments
+the random seed by 1 for each consecutive restart, so future factorization
 of the same dataset can be run with one rep if necessary. Default \code{1}.}
 
 \item{H.init}{Initial values to use for \eqn{H} matrices. A list object where
@@ -100,13 +103,22 @@ Default \code{NULL}.}
 each element is the initial \eqn{V} matrix of each dataset. Default
 \code{NULL}.}
 
+\item{useUnshared}{Logical, whether to include unshared variable features and
+run optimizeUANLS algorithm. Defaul \code{FALSE}. Running
+\code{\link{selectGenes}} with \code{unshared = TRUE} and then running
+\code{\link{scaleNotCenter}} is required.}
+
+\item{seed}{Random seed to allow reproducible results. Default \code{1}.}
+
+\item{readH5}{\code{TRUE} to force reading H5 based data into memory and
+conduct factorization. \code{"auto"} reads H5 dataset with less than 8000
+cells. \code{FALSE} will stop users from running if H5 data presents.}
+
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{TRUE}.}
 
-\item{max.iters}{Maximum number of block coordinate descent iterations to
-perform. Default \code{30}.}
-
-\item{rand.seed}{Random seed to allow reproducible results. Default \code{1}.}
+\item{max.iters, use.unshared, rand.seed}{\bold{Deprecated}. See Usage section
+for replacement.}
 
 \item{print.obj}{\bold{Defunct}. Whether to print objective function values
 after convergence when \code{verbose = TRUE}. Now always print when verbose.}

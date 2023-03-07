@@ -11,15 +11,15 @@
 plotClusterDimRed(
   object,
   useCluster = "louvain_cluster",
-  useDimRed = c("UMAP", "TSNE"),
+  useDimRed = "UMAP",
   ...
 )
 
-plotDatasetDimRed(object, useDimRed = c("UMAP", "TSNE"), ...)
+plotDatasetDimRed(object, useDimRed = "UMAP", ...)
 
 plotByDatasetAndCluster(
   object,
-  useDimRed = c("UMAP", "TSNE"),
+  useDimRed = "UMAP",
   useCluster = "louvain_cluster",
   combinePlots = TRUE,
   ...
@@ -28,7 +28,7 @@ plotByDatasetAndCluster(
 plotGeneDimRed(
   object,
   features,
-  useDimRed = c("UMAP", "TSNE"),
+  useDimRed = "UMAP",
   log = TRUE,
   scaleFactor = 10000,
   zeroAsNA = TRUE,
@@ -39,7 +39,7 @@ plotGeneDimRed(
 plotFactorDimRed(
   object,
   factors,
-  useDimRed = c("UMAP", "TSNE"),
+  useDimRed = "UMAP",
   trimHigh = 0.03,
   zeroAsNA = TRUE,
   colorPalette = "D",
@@ -52,9 +52,8 @@ plotFactorDimRed(
 \item{useCluster}{Name of variable in \code{cellMeta} slot. Default
 \code{"louvain_cluster"}.}
 
-\item{useDimRed}{Name of type of the coordinate matrix in \code{cellMeta}
-slot. Currently, choose from \code{"UMAP"} or \code{"TSNE"}. Default
-\code{"UMAP"}.}
+\item{useDimRed}{Name of the variable storing dimensionality reduction result
+in the \code{cellMeta} slot. Default \code{"UMAP"}.}
 
 \item{...}{Additional graphic setting arguments passed to
 \code{\link{plotCellScatter}}.}

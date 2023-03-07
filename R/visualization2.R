@@ -4,9 +4,8 @@
 #' @param object A \linkS4class{liger} object.
 #' @param useCluster Name of variable in \code{cellMeta} slot. Default
 #' \code{"louvain_cluster"}.
-#' @param useDimRed Name of type of the coordinate matrix in \code{cellMeta}
-#' slot. Currently, choose from \code{"UMAP"} or \code{"TSNE"}. Default
-#' \code{"UMAP"}.
+#' @param useDimRed Name of the variable storing dimensionality reduction result
+#' in the \code{cellMeta} slot. Default \code{"UMAP"}.
 #' @param combinePlots Logical, whether to utilize
 #' \code{\link[cowplot]{plot_grid}} to combine multiple plots into one. Default
 #' \code{TRUE} returns combined ggplot. \code{FALSE} returns a list of ggplot.
@@ -38,9 +37,8 @@
 plotClusterDimRed <- function(
         object,
         useCluster = "louvain_cluster",
-        useDimRed = c("UMAP", "TSNE"),
+        useDimRed = "UMAP",
         ...) {
-    useDimRed <- match.arg(useDimRed)
     xVar <- paste0(useDimRed, ".1")
     yVar <- paste0(useDimRed, ".2")
     plotCellScatter(object, x = xVar, y = yVar, colorBy = useCluster,
@@ -51,9 +49,8 @@ plotClusterDimRed <- function(
 #' @export
 plotDatasetDimRed <- function(
         object,
-        useDimRed = c("UMAP", "TSNE"),
+        useDimRed = "UMAP",
         ...) {
-    useDimRed <- match.arg(useDimRed)
     xVar <- paste0(useDimRed, ".1")
     yVar <- paste0(useDimRed, ".2")
     plotCellScatter(object, x = xVar, y = yVar, colorBy = "dataset",
@@ -65,12 +62,11 @@ plotDatasetDimRed <- function(
 #' @export
 plotByDatasetAndCluster <- function(
         object,
-        useDimRed = c("UMAP", "TSNE"),
+        useDimRed = "UMAP",
         useCluster = "louvain_cluster",
         combinePlots = TRUE,
         ...
 ) {
-    useDimRed <- match.arg(useDimRed)
     plot <- list(
         dataset = plotDatasetDimRed(object, useDimRed = useDimRed, ...),
         cluster = plotClusterDimRed(object, useCluster = useCluster,
@@ -88,14 +84,13 @@ plotByDatasetAndCluster <- function(
 plotGeneDimRed <- function(
         object,
         features,
-        useDimRed = c("UMAP", "TSNE"),
+        useDimRed = "UMAP",
         log = TRUE,
         scaleFactor = 1e4,
         zeroAsNA = TRUE,
         colorPalette = "C",
         ...
 ) {
-    useDimRed <- match.arg(useDimRed)
     xVar <- paste0(useDimRed, ".1")
     yVar <- paste0(useDimRed, ".2")
     scaleFunc <- function(x) {
@@ -114,13 +109,12 @@ plotGeneDimRed <- function(
 plotFactorDimRed <- function(
         object,
         factors,
-        useDimRed = c("UMAP", "TSNE"),
+        useDimRed = "UMAP",
         trimHigh = 0.03,
         zeroAsNA = TRUE,
         colorPalette = "D",
         ...
 ) {
-    useDimRed <- match.arg(useDimRed)
     xVar <- paste0(useDimRed, ".1")
     yVar <- paste0(useDimRed, ".2")
     plotCellScatter(object, x = xVar, y = yVar, colorBy = factors,
@@ -131,16 +125,28 @@ plotFactorDimRed <- function(
 
 
 # Violin Plots #################################################################
+
+#' Visualize gene expression with violin plot
+#' @param object A \linkS4class{liger} object.
+#' @param gene Character gene names.
+#' @param byDataset Logical, whether the violin plot should be splitted by
+#' dataset. Default \code{TRUE}.
+#' @param groupBy Names of available categorical variable in \code{cellMeta}
+#' slot. Use \code{FALSE} for no grouping. Default \code{NULL} looks clustering
+#' result but will not group if no clustering found.
+#' @param ... Additional arguments passed to \code{\link{plotCellViolin}}.
+#' @return ggplot if using a single gene and not splitting by dataset.
+#' Otherwise, list of ggplot.
 #' @export
 plotGeneViolin <- function(
         object,
         gene,
-        by.dataset = TRUE,
+        byDataset = TRUE,
         groupBy = NULL,
         ...
 ) {
     splitBy <- NULL
-    if (isTRUE(by.dataset)) splitBy <- "dataset"
+    if (isTRUE(byDataset)) splitBy <- "dataset"
 
     if (is.null(groupBy)) {
         if ("leiden_cluster" %in% names(cellMeta(object)))
@@ -177,6 +183,47 @@ plotGeneViolin <- function(
 
 # Others #######################################################################
 
+#' Visualize proportion across two categorical variables
+#' @description \code{plotProportionBar} creates bar plots comparing the
+#' cross-category proportion. \code{plotProportionDot} creates dot plots.
+#' \code{plotClusterProportions} has variable pre-specified and calls the dot
+#' plot. \code{plotProportion} produces a combination of both bar plots and dot
+#' plot.
+#' @param object A \linkS4class{liger} object.
+#' @param class1,class2 Each should be a single name of a categorical variable
+#' available in \code{cellMeta} slot. Number of cells in each categories in
+#' \code{class2} will be served as the denominator when calculating proportions.
+#' @param method For bar plot, choose whether to draw \code{"stack"} or
+#' \code{"group"} bar plot. Default \code{"stack"}.
+#' @param legend,panelBorder,... ggplot theme setting arguments passed to
+#' \code{\link{.ggplotLigerTheme}}.
+#' @param inclRev Logical, for barplot, whether to reverse the specification for
+#' \code{class1} and \code{class2} and produce two plots. Default \code{FALSE}.
+#' @param combinePlot Logical, whether to combine the two plots with
+#' \code{\link[cowplot]{plot_grid}} when two plots are created. Default
+#' \code{TRUE}.
+#' @param useCluster For \code{plotClusterProportions}. Same as \code{class1}
+#' while \code{class2} is hardcoded with \code{"dataset"}.
+#' @param return.plot \bold{defuncted}.
+#' @return ggplot or list of ggplot
+#' @rdname plotProportion
+#' @export
+plotProportion <- function(
+        object,
+        class1 = "louvain_cluster",
+        class2 = "dataset",
+        method = c("stack", "group"),
+        ...
+) {
+    method <- match.arg(method)
+    p1 <- plotProportionDot(object, class1 = class1, class2 = class2, ...)
+    p2 <- plotProportionBar(object, class1 = class1, class2 = class2,
+                            inclRev = TRUE, combinePlot = TRUE,
+                            method = method, ...)
+    cowplot::plot_grid(p1, p2, nrow = 2, rel_heights = c(1, 2))
+}
+
+#' @rdname plotProportion
 #' @export
 plotProportionDot <- function(
         object,
@@ -210,6 +257,7 @@ plotProportionDot <- function(
     .ggplotLigerTheme(p, legend = legend, panelBorder = panelBorder, ...)
 }
 
+#' @rdname plotProportion
 #' @export
 plotProportionBar <- function(
         object,
@@ -258,6 +306,7 @@ plotProportionBar <- function(
     }
 }
 
+#' @rdname plotProportion
 #' @export
 plotClusterProportions <- function(
         object,
@@ -267,20 +316,4 @@ plotClusterProportions <- function(
 ) {
     .deprecateArgs(defunct = "return.plot")
     plotProportionDot(object, class1 = useCluster, class2 = "dataset", ...)
-}
-
-#' @export
-plotProportion <- function(
-        object,
-        class1 = "louvain_cluster",
-        class2 = "dataset",
-        method = c("stack", "group"),
-        ...
-) {
-    method <- match.arg(method)
-    p1 <- plotProportionDot(object, class1 = class1, class2 = class2, ...)
-    p2 <- plotProportionBar(object, class1 = class1, class2 = class2,
-                            inclRev = TRUE, combinePlot = TRUE,
-                            method = method, ...)
-    cowplot::plot_grid(p1, p2, nrow = 2, rel_heights = c(1, 2))
 }

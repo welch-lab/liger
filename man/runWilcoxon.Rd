@@ -29,6 +29,10 @@ vector of the index of the datasets to be normalized. Default
 \item{useCluster}{The name of the column in \code{cellMeta} slot storing the
 cluster assignment variable. Default \code{"louvain_cluster"}}
 
+\item{usePeak}{Logical, whether to test peak counts instead of gene
+expression. Requires presence of ATAC modility datasets. Default
+\code{FALSE}.}
+
 \item{verbose}{Logical. Whether to show information of the progress.
 Default \code{TRUE}.}
 

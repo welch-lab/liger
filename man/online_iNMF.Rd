@@ -17,6 +17,7 @@ online_iNMF(
   max.epochs = 5,
   miniBatch_max_iters = 1,
   miniBatch_size = 5000,
+  h5_chunk_size = 1000,
   seed = 123,
   verbose = TRUE
 )
@@ -57,13 +58,13 @@ Default \code{1}. Changing this parameter is not recommended.}
 \item{miniBatch_size}{Total number of cells in each minibatch. See detail.
 Default \code{5000}.}
 
+\item{h5_chunk_size}{Chunk size of input hdf5 files. Default \code{1000}. The
+chunk size should be no larger than the batch size.}
+
 \item{seed}{Random seed to allow reproducible results. Default \code{123}.}
 
 \item{verbose}{Logical. Whether to show information of the progress.
 Default \code{TRUE}.}
-
-\item{h5_chunk_size}{Chunk size of input hdf5 files. Default \code{1000}. The
-chunk size should be no larger than the batch size.}
 }
 \value{
 \code{object} with \code{W} slot updated with resulting \eqn{W}

@@ -33,6 +33,11 @@ perform. Default \code{100}.}
 
 \item{datasets.scale}{Names of datasets to rescale after subsetting.
 Default \code{NULL} does not rescale.}
+
+\item{...}{Additional arguments passed to \code{\link{optimizeALS}}}
+
+\item{cell.subset, cluster.subset}{\bold{Deprecated}. Please use
+\code{cellIdx} to explicitly specify.}
 }
 \value{
 Subset \code{object} with factorization matrices reset, including

@@ -10,6 +10,9 @@
 #' \code{"datasets"} compares between datasets within each cluster.
 #' @param useCluster The name of the column in \code{cellMeta} slot storing the
 #' cluster assignment variable. Default \code{"louvain_cluster"}
+#' @param usePeak Logical, whether to test peak counts instead of gene
+#' expression. Requires presence of ATAC modility datasets. Default
+#' \code{FALSE}.
 #' @param verbose Logical. Whether to show information of the progress.
 #' Default \code{TRUE}.
 #' @param data.use,compare.method \bold{Deprecated}. See Usage section for

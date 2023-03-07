@@ -33,6 +33,8 @@ matrices). Default \code{FALSE}.}
 \item{useDims}{Index of factors to use for computing UMAP embedding. Default
 \code{NULL} uses all factors.}
 
+\item{nDims}{Number of dimensions to reduce to. Default \code{2}.}
+
 \item{usePCA}{Whether to perform initial PCA step for Rtsne. Default
 \code{FALSE}.}
 
@@ -54,10 +56,8 @@ Description. Default \code{"Rtsne"}.}
 \item{verbose}{Logical. Whether to show information of the progress.
 Default \code{TRUE}.}
 
-\item{k}{Number of dimensions to reduce to. Default \code{2}.}
-
-\item{use.raw, dims.use, use.pca, fitsne.path, rand.seed}{\bold{Deprecated}. See
-Usage section for replacement.}
+\item{use.raw, dims.use, k, use.pca, fitsne.path, rand.seed}{\bold{Deprecated}.
+See Usage section for replacement.}
 }
 \value{
 The \code{object} where a \code{"TSNE"} variable is updated in the

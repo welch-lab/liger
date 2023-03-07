@@ -75,6 +75,9 @@ heatmap by specified variables. Default \code{NULL}.}
 
 \item{...}{Additional arguments passed to general function
 \code{\link{.plotHeatmap}} and \code{\link[ComplexHeatmap]{Heatmap}}.}
+
+\item{trim}{Numeric vector of two numbers. Higher value limits the maximum
+value and lower value limits the minimum value. Default \code{c(0, 0.03)}.}
 }
 \value{
 \code{\link[ComplexHeatmap]{HeatmapList-class}} object

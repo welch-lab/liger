@@ -54,12 +54,15 @@ Default \code{100}.}
 cluster in with the cluster they are most connected to. Default \code{TRUE},
 if \code{FALSE}, assign all singletons to a \code{"singleton"} group.}
 
+\item{clusterName}{Name of the variable that will store the clustering result
+in \code{cellMeta} slot of \code{object}. Default \code{"louvain_cluster"}.}
+
 \item{seed}{Seed of the random number generator. Default \code{1}.}
 
 \item{verbose}{Logical. Whether to show information of the progress.
 Default \code{TRUE}.}
 
-\item{dims.use, random.seed}{\bold{Deprecated}. See Usage section for
+\item{k, dims.use, random.seed}{\bold{Deprecated}. See Usage section for
 replacement.}
 }
 \value{

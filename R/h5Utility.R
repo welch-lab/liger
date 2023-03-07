@@ -1,11 +1,39 @@
 #ctrl.h5 <- hdf5r::H5File$new("pbmcs_ctrl.h5")
 
 #' Apply function to chunks of H5 data in ligerDataset object
-#' @description h5 calculation wrapper, that run user specified calculation with
+#' @description h5 calculation wrapper, that runs specified calculation with
 #' on-disk matrix in chunks
-#' @param h5file H5File object
-#' @param FUN A function where the first argument must be the chunk of data, the
-#' return value must be a vector.
+#' @param object A \linkS4class{ligerDataset} object.
+#' @param FUN A function that is applied to each chunk. See detail for
+#' restrictions.
+#' @param init Initialized result if it need to be updated iteratively. Default
+#' \code{NULL}.
+#' @param useData The slot name of the data to be processed. Choose from
+#' \code{"rawData"}, \code{"normData"}, \code{"scaleData"}. Default
+#' \code{"rawData"}.
+#' @param chunkSize Number if columns to be included in each chunk.
+#' Default \code{1000}.
+#' @param verbose Logical. Whether to show information of the progress.
+#' Default \code{TRUE}.
+#' @param ... Other arguments to be passed to \code{FUN}.
+#' @details The \code{FUN} function has to have the first four arguments ordered
+#' by:
+#' \enumerate{
+#' \item \bold{chunk data:} A sparse matrix (\code{\link[Matrix]{dgCMatrix-class}})
+#' containing maximum \code{chunkSize} columns.
+#' \item \bold{x-vector index:} The index that subscribes the vector of \code{x}
+#' slot of a dgCMatrix, which points to the values in each chunk. Mostly used
+#' when need to write a new sparse matrix to H5 file.
+#' \item \bold{cell index:} The column index of each chunk out of the whole
+#' original matrix
+#' \item \bold{Initialized result:} A customized object, the value passed to
+#' \code{H5Apply(init)} argument will be passed here in the first iteration. And
+#' the returned value of \code{FUN} will be iteratively passed here in next
+#' chunk iterations. So it is important to keep the object structure of the
+#' returned value consistent with \code{init}.
+#' }
+#' No default value to these four arguments should be pre-defined because
+#' \code{H5Apply} will automatically generate the input.
 H5Apply <- function(
         object,
         FUN,
@@ -25,8 +53,8 @@ H5Apply <- function(
     numChunks <- ceiling(numCells / chunkSize)
     ind <- 0
     h5file <- h5meta$H5File
-    indptr <- h5file[[h5meta$indptr.name]]
-    indices <- h5file[[h5meta$indices.name]]
+    indptr <- h5file[[h5meta$indptrName]]
+    indices <- h5file[[h5meta$indicesName]]
     data <- h5file[[h5meta[[useData]]]]
     if (isTRUE(verbose)) pb <- utils::txtProgressBar(0, numChunks, style = 3)
 
@@ -153,7 +181,7 @@ safeH5Create <- function(object,
 #' session, the links to HDF5 files would be corrupted. This functions enables
 #' the restoration of those links so that new analyses can be carried out.
 #' @param object liger or ligerDataset object.
-#' @param file.path Paths to HDF5 files. A single character path for
+#' @param filePath Paths to HDF5 files. A single character path for
 #' ligerDataset input or a list of paths named by the datasets for liger object
 #' input. Default \code{NULL} looks for the path(s) of the last valid loading.
 #' @return \code{object} with restored links.
@@ -187,11 +215,11 @@ restoreH5Liger <- function(object, filePath = NULL) {
                               collapse = "\n  ")
             stop(errorMsg)
         }
-        barcodes <- h5file[[h5.meta$barcodes.name]]
+        barcodes <- h5file[[h5.meta$barcodesName]]
         if (identical(barcodes, colnames(object))) {
             stop("Barcodes in the HDF5 file do not match to object.")
         }
-        features <- h5file[[h5.meta$genes.name]]
+        features <- h5file[[h5.meta$genesName]]
         if (identical(features, rownames(object))) {
             stop("Features in the HDF5 file do not match to object.")
         }

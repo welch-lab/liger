@@ -47,6 +47,9 @@ metadata, where \code{"dataset"} variable must exist.}
 \item{violinAlpha, boxAlpha}{The transparency of violins or boxes,
 respectively. \code{1} is opaque and \code{0} is transparent.}
 
+\item{xlab, ylab}{Title for x-/y-axis, respectively. Default \code{groupBy}
+and \code{metric}.}
+
 \item{...}{Theme setting parameters. Check \code{\link{.ggplotLigerTheme}}
 for more options and details.}
 }
