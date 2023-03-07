@@ -41,30 +41,17 @@ reference:
   - makeRiverplot
   - starts_with(".gg")
   - starts_with(".plot")
+  - .complexHeatmapDotPlot
 - title: "Evaluation Metrics"
 - contents:
   - starts_with("calc")
 - title: "Object Class"
 - contents:
   - ends_with("class")
-- title: "Object Data Access"
-- contents:
-  - cell.meta,liger,NULL-method
-  - commands,liger-method
-  - raw.data,ligerDataset-method
-  - dataset,liger,character_OR_NULL-method
-  - datasets,liger-method
-  - feature.meta,ligerDataset-method
-  - getH5File,ligerDataset,missing-method
-  - getMatrix,ligerDataset,ANY,missing,missing-method
-  - h5file.info,ligerDataset-method
+  - rawPeak
   - retrieveCellFeature
-  - "[,liger,character,missing,ANY-method"
-  - "[,ligerDataset,index,missing,ANY-method"
-  - var.features,liger-method
-  - show
-  - c.liger
-  - cbind.ligerDataset
+  - subsetLiger
+  - subsetLigerDataset
 - title: "Misc"
 - contents:
   - H5Apply
@@ -74,7 +61,6 @@ reference:
   - mergeH5
   - mergeSparseAll
   - modalOf
-  - fortify.liger
 - title: "Deprecated"
 - contents:
   - ends_with("deprecated")
