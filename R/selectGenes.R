@@ -60,6 +60,7 @@ selectGenes <- function(
         chunkSize = 1000,
         verbose = TRUE
 ) {
+    .checkObjVersion(object)
     # A bunch of input checks at first ####
     combine <- match.arg(combine)
     datasets.use <- .checkUseDatasets(object, datasets.use)

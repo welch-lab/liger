@@ -31,6 +31,7 @@ normalize <- function(
         chunk = 1000,
         verbose = TRUE
 ) {
+    .checkObjVersion(object)
     useDatasets <- .checkUseDatasets(object, useDatasets)
     object <- recordCommand(object, dependencies = "hdf5r")
     if (!is.null(scaleFactor) && (scaleFactor <= 0 | scaleFactor == 1))

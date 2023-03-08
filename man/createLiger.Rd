@@ -16,6 +16,7 @@ createLiger(
   genesName = NULL,
   barcodesName = NULL,
   verbose = TRUE,
+  ...,
   remove.missing = removeMissing,
   format.type = formatType,
   data.name = dataName,
@@ -57,6 +58,8 @@ cell barcodes. Default \code{NULL} uses \code{formatType} preset.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{TRUE}.}
+
+\item{...}{Additional slot values that should be directly placed in object.}
 
 \item{remove.missing, format.type, data.name, indices.name, indptr.name, genes.name, barcodes.name}{\bold{Deprecated.} See Usage section for replacement.}
 }

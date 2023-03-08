@@ -8,6 +8,14 @@
     message(pref, msg)
 }
 
+.checkObjVersion <- function(object) {
+    if (inherits(object, "liger")) {
+        if (!is.newLiger(object))
+            stop("Old version of liger object detected. Please update the ",
+                 "object with command:\nobject <- convertOldLiger(object)")
+    }
+}
+
 .collapseLongNames <- function(x) {
     if (length(x) < 5) {
         return(paste(x, collapse = ", "))
@@ -56,9 +64,9 @@
                  "select dataset to use.")
         }
         if (!is.null(modal)) {
-            passing <- sapply(useDatasets, function(d)
+            passing <- sapply(useDatasets, function(d) {
                 inherits(dataset(object, d), .modalClassDict[[modal]])
-            )
+            })
             if (!all(passing))
                 stop("Not all specified datasets are of `",
                      .modalClassDict[[modal]], "` class: ",
@@ -161,23 +169,24 @@
     if (!inherits(object, "ligerDataset"))
         stop("Please use a ligerDataset object.")
     avail <- c("rawData", "normData", "scaleData")
-    if (is.null(slot)) slot <- avail
-    else {
+    if (is.null(slot)) {
+        slot <- avail
+    } else {
         if (any(!slot %in% avail)) {
             notFound <- slot[!slot %in% avail]
             stop("Specified slot not availalble: ",
                  paste(notFound, collapse = ", "), ". Use one or more from ",
                  '"rawData", "normData" or "scaleData"')
         }
-        if ("rawData" %in% slot &
+        if ("rawData" %in% slot &&
             is.null(rawData(object))) {
             stop("`rawData` is not available for use.")
         }
-        if ("normData" %in% slot &
+        if ("normData" %in% slot &&
             is.null(normData(object))) {
             stop("`normData` is not available for use.")
         }
-        if ("scaleData" %in% slot &
+        if ("scaleData" %in% slot &&
             is.null(scaleData(object))) {
             stop("`scaleData` is not available for use.")
         }
@@ -185,7 +194,9 @@
     slot
 }
 
-.checkInit <- function(m, nCells, nGenes, k, type = c("W", "H", "V", "A", "V")) {
+.checkInit <- function(
+    m, nCells, nGenes, k, type = c("W", "H", "V", "A", "V")
+) {
     type <- match.arg(type)
     # Order of checklist:
     # islist = 0, rowGene = 0, colK = 0, rowK = 0, colCell = 0)
@@ -231,7 +242,7 @@
         warning("W matrix does not exist.")
         result <- FALSE
     } else {
-        nGenes <- nrow(object@W)
+        # nGenes <- nrow(object@W)
         k <- ncol(object@W)
 
         for (d in useDatasets) {
@@ -333,7 +344,9 @@
                         "Rasterizing the scatter plot is recommended but ",
                         "package \"scattermore\" is not available. ")
             }
-        } else raster <- FALSE
+        } else {
+            raster <- FALSE
+        }
     } else if (isTRUE(raster)) {
         if (!pkgAvail) {
             stop("Package \"scattermore\" needed for rasterizing the scatter ",
@@ -344,4 +357,3 @@
     }
     return(raster)
 }
-

@@ -1,9 +1,9 @@
 setClass("ligerDataset")
 setClassUnion("matrixLike", c("matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix"))
 
-##############################################
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # From other things to ligerDataset class ####
-##############################################
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #' Convert an object of various classes to a ligerDataset object
 #' @rdname as.ligerDataset
@@ -32,9 +32,9 @@ setMethod(
     signature(x = "SingleCellExperiment",
               modal = "ANY"),
     function(x, modal = c("default", "rna", "atac")) {
-        if (!requireNamespace("SingleCellExperiment",quietly = "TRUE"))
-            stop("Package \"SingleCellExperiment\" needed for this function to work. ",
-                 "Please install it by command:\n",
+        if (!requireNamespace("SingleCellExperiment", quietly = "TRUE"))
+            stop("Package \"SingleCellExperiment\" needed for this function ",
+                 "to work. Please install it by command:\n",
                  "BiocManager::install('SingleCellExperiment')",
                  call. = FALSE)
         if ("counts" %in% SummarizedExperiment::assayNames(x))
@@ -93,8 +93,8 @@ setMethod(
     "as.ligerDataset",
     signature(x = "Seurat",
               modal = "ANY"),
-    function(x, modal= c("default", "rna", "atac")) {
-        if (!requireNamespace("Seurat",quietly = "TRUE"))
+    function(x, modal = c("default", "rna", "atac")) {
+        if (!requireNamespace("Seurat", quietly = "TRUE"))
             stop("Package \"Seurat\" needed for this function to work. ",
                  "Please install it by command:\n",
                  "BiocManager::install('Seurat')",
@@ -122,9 +122,9 @@ setMethod(
     }
 )
 
-##############################################
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # From ligerDataset class to other things ####
-##############################################
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #setAs("ligerDataset", "SingleCellExperiment", function(from) {
 #    requireNamespace("SingleCellExperiment")
@@ -137,3 +137,164 @@ setMethod(
 #        assays = assays
 #    )
 #})
+
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# From old version to new version ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#' Convert old liger object to latest version
+#' @param object \code{liger} object from rliger version <1.2.0
+#' @export
+convertOldLiger <- function(object) {
+    ver120 <- package_version("1.2.0")
+    if (object@version >= ver120) return(object)
+    if (inherits(object@raw.data[[1]], "H5File")) {
+        convertOldLiger.H5(object)
+    } else {
+        convertOldLiger.mem(object)
+    }
+}
+
+convertOldLiger.mem <- function(object) {
+    dataLists <- list(
+        rawData = object@raw.data,
+        normData = object@norm.data,
+        scaleData = object@scale.data,
+        H = object@H,
+        V = object@V,
+        U = object@U
+    )
+
+    allDatasets <- Reduce(union, lapply(dataLists, names))
+
+    # 1. Deal with cell metadata which establish a correct mapping of cell
+    # barcodes and datasets belonging
+
+    cellMeta <- object@cell.data
+    cellMetaDatasets <- unique(as.vector(cellMeta$dataset))
+    if (!identical(sort(allDatasets), sort(cellMetaDatasets))) {
+        # Datasets entry for matrices don't match with cell metadata
+        # Only take the intersection
+        allDatasets <- intersect(allDatasets, cellMetaDatasets)
+        cellMeta <- cellMeta[cellMeta[["dataset"]] %in% allDatasets, ]
+    }
+
+    # Split `dataLists` by dataset
+    datasetLists <- list()
+    for (d in allDatasets) {
+        for (slot in names(dataLists)) {
+            datasetLists[[d]][[slot]] <- dataLists[[slot]][[d]]
+        }
+    }
+
+    # For each existing dataset
+    ldList <- list()
+    for (d in allDatasets) {
+        # "BC" for barcodes
+        # 2. Check and clean up cell barcodes and feature idx issue
+        cellMetaBC <- rownames(cellMeta)[cellMeta$dataset == d]
+        features <- NULL
+        varFeatures <- object@var.genes
+        dataList <- datasetLists[[d]]
+
+        # Check cell barcodes
+        bcPassing <- .checkIDIdentical(
+            ref = cellMetaBC,
+            onCol = dataList[c("rawData", "normData")],
+            onRow = dataList[c("scaleData", "H")]
+        )
+
+        # Check raw, norm data features
+        if (!is.null(dataList$rawData)) features <- rownames(dataList$rawData)
+        else features <- rownames(dataList$normData)
+        if (is.null(features)) {
+            warning("Cannot detect feature names for dataset \"", d, "\". ",
+                    "Skipped.")
+            next
+        }
+        ftPassing <- .checkIDIdentical(
+            ref = features,
+            onRow = dataList[c("rawData", "normData")]
+        )
+
+        # Check var features
+        if (!is.null(dataList$V) &&
+            is.null(colnames(dataList$V)) &&
+            !is.null(varFeatures)) {
+                ## This should not happen but unfortunately, old `V`s might not
+                ## have var features as their colnames
+                colnames(dataList$V) <- varFeatures
+        }
+        hvgPassing <- .checkIDIdentical(
+            ref = varFeatures,
+            onCol = dataList[c("scaleData", "V", "U")]
+        )
+
+        # Remove data that has inconsistent information
+        passing <- .combinePassingSignal(names(dataList), bcPassing, ftPassing,
+                                         hvgPassing)
+        dataList <- dataList[passing]
+        for (s in c("scaleData", "H", "V", "U")) {
+            if (!is.null(dataList[[s]])) dataList[[s]] <- t(dataList[[s]])
+        }
+        # 3. Construct ligerDataset objects for each dataset
+        ldList[[d]] <- do.call(createLigerDataset, dataList)
+    }
+    # 4. Wrap up liger object
+    cellMeta <- S4Vectors::DataFrame(cellMeta)
+    cellMeta$tsne.coords <- object@tsne.coords[rownames(cellMeta), ,
+                                               drop = FALSE]
+    cellMeta$clusters <- object@clusters[rownames(cellMeta)]
+    newObj <- createLiger(ldList, W = t(object@W), H.norm = object@H.norm,
+                          varFeatures = object@var.genes, cellMeta = cellMeta)
+
+    return(newObj)
+}
+
+convertOldLiger.H5 <- function(object, modal = c("default", "rna", "atac")) {
+    modal <- match.arg(modal)
+    stop("Not implemented yet")
+}
+
+.checkIDIdentical <- function(
+    ref,
+    onCol = NULL,
+    onRow = NULL
+) {
+    # ref - a character vector as a reference
+    # onCol - a list of matrix, where the colnames should match to reference
+    # onRow - a list of matrix, where the rownames should match to reference
+    # partialIn - Logical, whether matrix ID could be just a part of `ref` or
+    #             should be identical to `ref`
+    colPassing <- rep(TRUE, length(onCol))
+    names(colPassing) <- names(onCol)
+    for (slot in names(onCol)) {
+        if (is.na(slot)) next
+        if (!identical(colnames(onCol[[slot]]), ref)) {
+            warning("Inconsistent column ID in slot `", slot, "`.")
+            colPassing[slot] <- FALSE
+        }
+    }
+    rowPassing <- rep(TRUE, length(onRow))
+    names(rowPassing) <- names(onRow)
+    for (slot in names(onRow)) {
+        if (is.na(slot)) next
+        if (!identical(rownames(onRow[[slot]]), ref)) {
+            warning("Inconsistent row ID in slot `", slot, "`.")
+            rowPassing[slot] <- FALSE
+        }
+    }
+    return(unlist(list(colPassing, rowPassing)))
+}
+
+.combinePassingSignal <- function(slotNames, ...) {
+    passings <- list(...)
+    passings <- lapply(passings, function(x) {
+        x <- x[slotNames]
+        names(x) <- slotNames
+        x[is.na(x)] <- TRUE
+        x
+    })
+    Reduce("&", passings)
+}

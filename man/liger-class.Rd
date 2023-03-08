@@ -214,6 +214,10 @@ metadata and factorization result matrices.
 This manual provides explanation to the \code{liger} object structure as well
 as usage of class-specific methods. Please see detail sections for more
 information.
+
+For \code{liger} objects created with older versions of rliger package,
+please try updating the objects individually with
+\code{\link{convertOldLiger}}.
 }
 \section{Slots}{
 

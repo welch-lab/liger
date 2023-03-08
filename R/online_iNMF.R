@@ -92,6 +92,7 @@ online_iNMF <- function(
 ) {
     if (!inherits(object, "liger"))
         stop("Please use a liger object.")
+    .checkObjVersion(object)
     object <- recordCommand(object, dependencies = "hdf5r")
     nPrevDataset <- 0
     nNewDataset <- 0
@@ -367,12 +368,13 @@ online_iNMF <- function(
             for (j in seq_along(batchIdxs)) {
                 cellIdx <- batchIdxs[[j]]
                 batch <- scaleData(object, i)[1:nGenes, cellIdx]
-                H[[i]] = cbind(H[[i]],
-                               solveNNLS(rbind(W + V[[i]], sqrtLambda * V[[i]]),
-                                         rbind(batch, matrix(0, nGenes,length(cellIdx))))
-                               )
+                H[[i]] <- cbind(
+                    H[[i]],
+                    solveNNLS(rbind(W + V[[i]], sqrtLambda * V[[i]]),
+                              rbind(batch, matrix(0, nGenes,length(cellIdx))))
+                )
             }
-            colnames(H[[i]]) = barcodes[[i]]
+            colnames(H[[i]]) <- barcodes[[i]]
         }
         rownames(W) <- varFeatures(object)
         colnames(W) <- NULL
@@ -385,16 +387,16 @@ online_iNMF <- function(
         if (isTRUE(verbose))
             .log("Scenario 3, metagene projection")
         if (!is.null(W.init)) W <- W.init
-        H[dataIdxNew] = rep(list(NULL), nNewDataset)
-        V[dataIdxNew] = rep(list(NULL), nNewDataset)
+        H[dataIdxNew] <- rep(list(NULL), nNewDataset)
+        V[dataIdxNew] <- rep(list(NULL), nNewDataset)
         for (i in dataIdxNew) {
             batchIdxs <- .batchCellIdx(nCells[i], miniBatch_size)
             for (j in seq_along(batchIdxs)) {
                 batch <- scaleData(object, i)[1:nGenes, batchIdxs[[j]]]
                 H[[i]] <- cbind(H[[i]], solveNNLS(W, batch))
             }
-            colnames(H[[i]]) = barcodes[[i]]
-            V[[i]] = matrix(0, nGenes, k)
+            colnames(H[[i]]) <- barcodes[[i]]
+            V[[i]] <- matrix(0, nGenes, k)
         }
     }
     object@W <- W
@@ -414,11 +416,11 @@ online_iNMF <- function(
 .permuteChunkIdx <- function(object, dataset, chunkSize = NULL) {
     ld <- dataset(object, dataset)
     if (isH5Liger(ld)) chunkSize <- scaleData(ld)$chunk_dims[2]
-    nChunks <- ceiling(ncol(ld)/chunkSize)
+    nChunks <- ceiling(ncol(ld) / chunkSize)
     chunkIdx <- sample(nChunks, nChunks)
     unlist(lapply(chunkIdx, function(i) {
-        if (i != nChunks) seq(1 + chunkSize*(i - 1), i*chunkSize)
-        else seq((1 + chunkSize*(i - 1)), ncol(ld))
+        if (i != nChunks) seq(1 + chunkSize * (i - 1), i * chunkSize)
+        else seq((1 + chunkSize * (i - 1)), ncol(ld))
     }), use.names = FALSE)
 }
 
@@ -426,8 +428,8 @@ online_iNMF <- function(
     nBatch <- ceiling(nCell / size)
     result <- list()
     for (i in seq(nBatch)) {
-        result[[i]] <- if (i != nBatch) seq((i - 1)*size + 1, i*size)
-        else seq((i - 1)*size + 1, nCell)
+        result[[i]] <- if (i != nBatch) seq((i - 1) * size + 1, i * size)
+        else seq((i - 1) * size + 1, nCell)
     }
     result
 }
@@ -445,6 +447,6 @@ online_iNMF <- function(
 }
 
 nonneg <- function(x, eps = 1e-16) {
-    x[x < eps] = eps
+    x[x < eps] <- eps
     return(x)
 }

@@ -91,6 +91,7 @@ setMethod(
         seed = 1,
         verbose = TRUE
     ) {
+        .checkObjVersion(object)
         .checkValidFactorResult(object, useDatasets = names(object))
         if (is.null(reference)) {
             # If ref_dataset not given, set the one with the largest number of
@@ -169,7 +170,7 @@ setMethod(
         }
 
         if (is.null(useDims)) {
-            useDims <- seq(nrow(object[[1]]))
+            useDims <- seq_len(nrow(object[[1]]))
         }
         # Transposing all H to cell x k
         Hs <- lapply(object, t)

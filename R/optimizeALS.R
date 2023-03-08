@@ -112,6 +112,7 @@ setMethod(
     ) {
         .deprecateArgs(list(max.iters = "maxIter", use.unshared = "useUnshared",
                             rand.seed = "seed"), defunct = "print.obj")
+        .checkObjVersion(object)
         object <- recordCommand(object)
         if (isFALSE(useUnshared)) {
             object <- removeMissing(object, orient = "cell",
@@ -229,10 +230,10 @@ setMethod(
         E <- lapply(object, t)
         nDatasets <- length(E)
         nCells <- sapply(E, nrow)
-        tmp <- gc()
+        tmp <- gc() # nolint
         nGenes <- ncol(E[[1]])
         if (k >= nGenes) {
-            stop('Select k lower than the number of variable genes: ', nGenes)
+            stop("Select k lower than the number of variable genes: ", nGenes)
         }
         Wm <- matrix(0, k, nGenes)
         Vm <- rep(list(matrix(0, k, nGenes)), nDatasets)
@@ -246,19 +247,20 @@ setMethod(
             startTime <- Sys.time()
             if (!is.null(W.init))
                 W <- t(.checkInit(W.init, nCells, nGenes, k, "W"))
-            else W <- matrix(stats::runif(nGenes*k, 0, 2), k, nGenes)
+            else W <- matrix(stats::runif(nGenes * k, 0, 2), k, nGenes)
             if (!is.null(V.init)) {
                 V <- .checkInit(V.init, nCells, nGenes, k, "V")
                 V <- lapply(V, t)
             } else
                 V <- lapply(seq(nDatasets), function(i) {
-                    matrix(stats::runif(nGenes*k, 0, 2), k, nGenes)})
+                    matrix(stats::runif(nGenes * k, 0, 2), k, nGenes)})
             if (!is.null(H.init)) {
                 H <- .checkInit(H.init, nCells, nGenes, k, "H")
                 H <- lapply(H, t)
             } else
-                H <- lapply(nCells, function(n)
-                    matrix(stats::runif(n*k, 0, 2), n, k))
+                H <- lapply(nCells, function(n) {
+                    matrix(stats::runif(n * k, 0, 2), n, k)
+                })
             tmp <- gc()
             delta <- 1
             iters <- 0

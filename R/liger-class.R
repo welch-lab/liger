@@ -24,6 +24,10 @@ setClassUnion("dataframe", c("data.frame", "DataFrame", "NULL", "missing"))
 #' This manual provides explanation to the \code{liger} object structure as well
 #' as usage of class-specific methods. Please see detail sections for more
 #' information.
+#'
+#' For \code{liger} objects created with older versions of rliger package,
+#' please try updating the objects individually with
+#' \code{\link{convertOldLiger}}.
 #' @slot datasets list of \linkS4class{ligerDataset} objects.
 #' @slot cellMeta \linkS4class{DFrame} object for cell metadata.
 #' @slot varFeatures Character vector of feature names.
@@ -53,9 +57,9 @@ liger <- setClass(
     )
 )
 
-# ------------------------------------------------------------------------------
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Object constructor ####
-# ------------------------------------------------------------------------------
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #' Create liger object
 #' @description This function allows creating \linkS4class{liger} object from
@@ -84,6 +88,7 @@ liger <- setClass(
 #' cell barcodes. Default \code{NULL} uses \code{formatType} preset.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{TRUE}.
+#' @param ... Additional slot values that should be directly placed in object.
 #' @param remove.missing,format.type,data.name,indices.name,indptr.name,genes.name,barcodes.name
 #' \bold{Deprecated.} See Usage section for replacement.
 #' @export
@@ -100,6 +105,7 @@ createLiger <- function(
         genesName = NULL,
         barcodesName = NULL,
         verbose = TRUE,
+        ...,
         # Deprecated coding style
         remove.missing = removeMissing,
         format.type = formatType,
@@ -150,18 +156,20 @@ createLiger <- function(
     barcodes <- unlist(lapply(datasets, colnames), use.names = FALSE)
     if (is.null(cellMeta)) {
         cellMeta <- S4Vectors::DataFrame(
-            dataset = factor(rep(names(datasets), lapply(datasets, ncol))),
+            dataset = factor(rep(names(datasets), lapply(datasets, ncol)),
+                             levels = names(datasets)),
             row.names = barcodes)
     } else {
         cellMeta <- S4Vectors::DataFrame(cellMeta)
-        cellMeta <- cellMeta[barcodes,,drop = FALSE]
+        cellMeta <- cellMeta[barcodes, , drop = FALSE]
         # Force writing `dataset` variable as named by @datasets
         cellMeta$dataset <- factor(rep(names(datasets),
                                         lapply(datasets, ncol)))
     }
     obj <- methods::new("liger",
                         datasets = datasets,
-                        cellMeta = cellMeta)
+                        cellMeta = cellMeta,
+                        ...)
     obj <- runGeneralQC(obj, verbose = verbose)
     if (isTRUE(removeMissing)) {
         obj <- removeMissing(obj, "both", filenameSuffix = "qc",
@@ -197,9 +205,9 @@ createLiger <- function(
 .takeGeneUnion.rawData <- function(rawData) {
 
 }
-# ------------------------------------------------------------------------------
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Validity ####
-# ------------------------------------------------------------------------------
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 .checkLigerBarcodes <- function(x) {
     bcFromDatasets <- unlist(lapply(datasets(x), colnames), use.names = FALSE)
@@ -269,18 +277,15 @@ setValidity("liger", .valid.liger)
 #' 1.2.0. Otherwise \code{FALSE}
 #' @noRd
 is.newLiger <- function(object) {
-    v <- as.character(object@version)
-    result <- utils::compareVersion("1.2.0", v)
-    if (result == 0 | result == -1) {
-        return(TRUE)
-    } else {
-        return(FALSE)
-    }
+    v <- object@version
+    v120 <- package_version("1.2.0")
+    if (v >= v120) TRUE
+    else FALSE
 }
 
-# ------------------------------------------------------------------------------
-# Methods ####
-# ------------------------------------------------------------------------------
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Base Generic Methods ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #' @param x,object A \linkS4class{liger} object
 #' @param dataset Name or numeric index of a dataset
 #' @param value Check detail sections for requirements.
@@ -314,6 +319,7 @@ setMethod(
     f = "show",
     signature(object = "liger"),
     definition = function(object) {
+        .checkObjVersion(object)
         cat("An object of class liger with", ncol(object), "cells\n")
         cat(paste0("datasets(", length(object), "): "))
         datasetInfos <- paste0(names(object), " (",
@@ -370,6 +376,9 @@ setReplaceMethod("dimnames", c("liger", "list"), function(x, value) {
     x
 })
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Subsetting ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #' @section Subsetting:
 #' For more detail of subsetting a \code{liger} object or a
 #' \linkS4class{ligerDataset} object, please check out \code{\link{subsetLiger}}
@@ -404,6 +413,9 @@ setMethod(
     function(x, i, j, ...) subsetLiger(x, featureIdx = i, cellIdx = j, ...)
 )
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Datasets ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #' @section Dataset access:
 #' \code{datasets()} method only accesses the \code{datasets} slot, the list of
 #' \linkS4class{ligerDataset} objects. \code{dataset()} method accesses a single
@@ -602,6 +614,9 @@ setMethod("length", signature(x = "liger"), function(x) {
     length(datasets(x))
 })
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Cell metadata ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #' @export
 #' @rdname liger-class
 #' @section Cell metadata access:
@@ -723,8 +738,9 @@ setMethod(
     "[[",
     c("liger", "ANY", "missing"),
     function(x, i, j, ...) {
-        if (is.null(i)) return(NULL)
-            cellMeta(x, columns = i, ...)
+        if (is.null(i)) NULL
+        else if (!i %in% names(cellMeta(x))) NULL
+        else cellMeta(x, columns = i, ...)
     }
 )
 
@@ -744,10 +760,14 @@ setReplaceMethod(
 
 #' @export
 #' @rdname liger-class
-setMethod("$", signature(x = "liger"),
-          function(x, name) {
-              cellMeta(x, columns = name)
-          })
+setMethod(
+    "$",
+    signature(x = "liger"),
+    function(x, name) {
+        if (!name %in% colnames(cellMeta(x))) NULL
+        else cellMeta(x, columns = name)
+    }
+)
 
 #' @export
 #' @rdname liger-class
@@ -808,9 +828,9 @@ setReplaceMethod(
     }
 )
 
-# ------------------------------------------------------------------------------
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # S3 methods ####
-# ------------------------------------------------------------------------------
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #' @rdname liger-class
 #' @export

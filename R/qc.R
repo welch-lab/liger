@@ -34,6 +34,7 @@ runGeneralQC <- function(
         chunkSize = 1000,
         verbose = TRUE
 ) {
+    .checkObjVersion(object)
     useDatasets <- .checkUseDatasets(object, useDatasets)
     # Process the the two arguments all into one named list of feature names
     # before exactly calculate the percentage
@@ -203,14 +204,14 @@ removeMissing <- function(
         if (rmFeature) {
             featureIdx <- which(featureMeta(ld)$nCell > 0)
         } else {
-            featureIdx <- seq(nrow(ld))
+            featureIdx <- seq_len(nrow(ld))
         }
         if (length(featureIdx) == nrow(ld)) rmFeature <- FALSE
         if (rmCell) {
             cellIdx <- colnames(object)[object$dataset == d & object$nGene > 0]
             cellIdx <- which(colnames(ld) %in% cellIdx)
         } else {
-            cellIdx <- seq(ncol(ld))
+            cellIdx <- seq_len(ncol(ld))
         }
         if (length(cellIdx) == ncol(ld)) rmCell <- FALSE
         subsetted <- c(subsetted, any(c(rmFeature, rmCell)))
@@ -324,8 +325,6 @@ plotGeneDetectedViolin <- function(
     groupBy = "dataset",
     ...
 ) {
-    callArgs <- names(rlang::call_args(match.call()))
-
     plotCellViolin(object, y = "nGene", groupBy = groupBy,
                    ylab = "Number of Genes Detected", ...)
 }

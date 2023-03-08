@@ -21,6 +21,7 @@ scaleNotCenter <- function(
     chunk = 1000,
     verbose = TRUE
 ) {
+    .checkObjVersion(object)
     if (is.null(varFeatures(object)) ||
         length(varFeatures(object)) == 0) {
         stop("No variable feature found. ",

@@ -54,9 +54,9 @@ ligerDataset <- setClass(
     )
 )
 
-# ------------------------------------------------------------------------------
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Dataset creatinfg function ####
-# ------------------------------------------------------------------------------
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #' Create in-memory ligerDataset object
 #' @param rawData,normData,scaleData A \code{\link[Matrix]{dgCMatrix-class}}
@@ -85,7 +85,7 @@ createLigerDataset <- function(
     additional <- list(...)
     # TODO h5 file support
     # Necessary initialization of slots
-    if (is.null(rawData) & is.null(normData) & is.null(scaleData)) {
+    if (is.null(rawData) && is.null(normData) && is.null(scaleData)) {
         stop("At least one type of expression data (rawData, normData or ",
              "scaleData) has to be provided")
     }
@@ -281,11 +281,13 @@ modalOf <- function(object) {
     }
 }
 
-# ------------------------------------------------------------------------------
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Object validity ####
-# ------------------------------------------------------------------------------
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 .checkLigerDatasetBarcodes <- function(x) {
+    # TODO: Functions should have cyclomatic complexity of less than 15,
+    # this has 17
     # cell barcodes all consistant
     if (is.null(colnames(x))) {
         return(paste0("No valid cell barcode detected for ligerDataset.\n",
@@ -359,9 +361,9 @@ modalOf <- function(object) {
 
 setValidity("ligerDataset", .valid.ligerDataset)
 
-# ------------------------------------------------------------------------------
-# Generics ####
-# ------------------------------------------------------------------------------
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# S4 Methods ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #' @param x,object A \code{ligerDataset} object.
 #' @param dataset Not applicable for \code{ligerDataset} methods.
 #' @param value See detail sections for requirements
@@ -529,9 +531,9 @@ setMethod(
     }
 )
 
-#-------------------------------------------------------------------------------
-# Raw, norm, scale data access
-#-------------------------------------------------------------------------------
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Raw, norm, scale data access ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #' @section Matrix access:
 #' For \code{ligerDataset} object, \code{rawData()}, \code{normData},
@@ -817,9 +819,9 @@ setMethod(
         }
     })
 
-#-------------------------------------------------------------------------------
-# H5 related
-#-------------------------------------------------------------------------------
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# H5 related ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #' @section H5 file and information access:
 #' A \code{ligerDataset} object has a slot called \code{h5fileInfo}, which is a
@@ -943,6 +945,10 @@ setMethod("getH5File",
               results
           })
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Feature metadata ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 #' @section Feature metadata access:
 #' A slot \code{featureMeta} is included for each \code{ligerDataset} object.
 #' This slot requires a \code{\link[S4Vectors]{DataFrame-class}} object, which
@@ -953,11 +959,15 @@ setMethod("getH5File",
 #' \code{featureMeta(ligerD)[varFeatures(ligerObj), "gene_var"]}.
 #' @export
 #' @rdname ligerDataset-class
-setGeneric("featureMeta", function(x, check = NULL) standardGeneric("featureMeta"))
+setGeneric("featureMeta", function(x, check = NULL) {
+    standardGeneric("featureMeta")
+})
 
 #' @export
 #' @rdname ligerDataset-class
-setGeneric("featureMeta<-", function(x, check = TRUE, value) standardGeneric("featureMeta<-"))
+setGeneric("featureMeta<-", function(x, check = TRUE, value) {
+    standardGeneric("featureMeta<-")
+})
 
 #' @export
 #' @rdname ligerDataset-class
@@ -979,6 +989,10 @@ setReplaceMethod(
         x
     }
 )
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# S3 Method ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #' @section Concatenate ligerDataset:
 #' \code{cbind()} method is implemented for concatenating \code{ligerDataset}
