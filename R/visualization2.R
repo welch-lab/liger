@@ -210,6 +210,8 @@ plotGeneViolin <- function(
 #' \code{TRUE}.
 #' @param useCluster For \code{plotClusterProportions}. Same as \code{class1}
 #' while \code{class2} is hardcoded with \code{"dataset"}.
+#' @param labelSize,labelColor Settings on pie chart percentage label. Default
+#' \code{4} and \code{"white"}.
 #' @param return.plot \bold{defuncted}.
 #' @return ggplot or list of ggplot
 #' @rdname plotProportion
@@ -218,15 +220,23 @@ plotProportion <- function(
         object,
         class1 = "louvain_cluster",
         class2 = "dataset",
-        method = c("stack", "group"),
+        method = c("stack", "group", "pie"),
         ...
 ) {
     method <- match.arg(method)
     p1 <- plotProportionDot(object, class1 = class1, class2 = class2, ...)
-    p2 <- plotProportionBar(object, class1 = class1, class2 = class2,
-                            inclRev = TRUE, combinePlot = TRUE,
-                            method = method, ...)
-    cowplot::plot_grid(p1, p2, nrow = 2, rel_heights = c(1, 2))
+    if (method %in% c("stack", "group")) {
+        p2 <- plotProportionBar(object, class1 = class1, class2 = class2,
+                                inclRev = TRUE, combinePlot = TRUE,
+                                method = method, ...)
+        cowplot::plot_grid(p1, p2, nrow = 2, rel_heights = c(1, 2))
+    } else {
+        p2 <- plotProportionPie(object, class1 = class1, class2 = class2, ...)
+        p3 <- plotProportionPie(object, class1 = class2, class2 = class1, ...)
+        bottom <- cowplot::plot_grid(p2, p3, nrow = 1)
+        cowplot::plot_grid(p1, bottom, nrow = 2, rel_heights = c(1, 2))
+    }
+
 }
 
 #' @rdname plotProportion
@@ -323,6 +333,48 @@ plotClusterProportions <- function(
 ) {
     .deprecateArgs(defunct = "return.plot")
     plotProportionDot(object, class1 = useCluster, class2 = "dataset", ...)
+}
+
+#' @rdname plotProportion
+#' @export
+plotProportionPie <- function(
+        object,
+        class1 = "louvain_cluster",
+        class2 = "dataset",
+        labelSize = 4,
+        labelColor = "white",
+        ...
+) {
+    df <- .fetchCellMetaVar(object, c(class1, class2), drop = FALSE,
+                            checkCategorical = TRUE) %>%
+        dplyr::group_by(.data[[class2]]) %>%
+        dplyr::count(.data[[class1]]) %>%
+        dplyr::mutate(proportion = .data[["n"]] / sum(.data[["n"]])) %>%
+        dplyr::mutate(cumsumProp = cumsum(.data[["proportion"]]) -
+                          0.5*.data[["proportion"]]) %>%
+        dplyr::ungroup()
+
+    p <- ggplot2::ggplot(df, ggplot2::aes(x = .data[["cumsumProp"]],
+                                     y = .data[[class2]],
+                                     fill = .data[[class1]],
+                                     label = sprintf("%1.1f%%",
+                                                     100*.data[["proportion"]]),
+                                     width = .data[["proportion"]])) +
+        ggplot2::geom_tile(colour = "white", size = 0.3) +
+        ggplot2::coord_polar() +
+        ggrepel::geom_text_repel(size = labelSize, color = labelColor,
+                                 force = 0, max.overlaps = 4,
+                                 position = ggplot2::position_nudge(y = 0.3))# +
+        #ggplot2::annotate("text", x = 0, y = seq(nlevels(df[[class2]])),
+        #                  label = levels(df[[class2]]))
+    .ggplotLigerTheme(p, ...) +
+        ggplot2::theme(
+            axis.line = ggplot2::element_blank(),
+            axis.title.x = ggplot2::element_blank(),
+            axis.title.y = ggplot2::element_blank(),
+            axis.text.x = ggplot2::element_blank(),
+            axis.ticks.y = ggplot2::element_blank()
+        )
 }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

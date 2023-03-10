@@ -5,13 +5,14 @@
 \alias{plotProportionDot}
 \alias{plotProportionBar}
 \alias{plotClusterProportions}
+\alias{plotProportionPie}
 \title{Visualize proportion across two categorical variables}
 \usage{
 plotProportion(
   object,
   class1 = "louvain_cluster",
   class2 = "dataset",
-  method = c("stack", "group"),
+  method = c("stack", "group", "pie"),
   ...
 )
 
@@ -41,6 +42,15 @@ plotClusterProportions(
   return.plot = FALSE,
   ...
 )
+
+plotProportionPie(
+  object,
+  class1 = "louvain_cluster",
+  class2 = "dataset",
+  labelSize = 4,
+  labelColor = "white",
+  ...
+)
 }
 \arguments{
 \item{object}{A \linkS4class{liger} object.}
@@ -66,6 +76,9 @@ available in \code{cellMeta} slot. Number of cells in each categories in
 while \code{class2} is hardcoded with \code{"dataset"}.}
 
 \item{return.plot}{\bold{defuncted}.}
+
+\item{labelSize, labelColor}{Settings on pie chart percentage label. Default
+\code{4} and \code{"white"}.}
 }
 \value{
 ggplot or list of ggplot
