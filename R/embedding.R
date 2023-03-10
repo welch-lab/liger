@@ -29,6 +29,8 @@
 #' of manifold structure. Default \code{10}.
 #' @param minDist Numeric. Controls how tightly the embedding is allowed
 #' compress points together. Default \code{0.1}.
+#' @param dimredName Name of the variable in \code{cellMeta} slot to store the
+#' result matrix. Default \code{"UMAP"}.
 #' @param seed Random seed for reproducibility. Default \code{42}.
 #' @param verbose Logical. Whether to show information of the progress.
 #' Default \code{TRUE}.
@@ -46,6 +48,7 @@ runUMAP <- function(
         distance = c("euclidean", "cosine", "manhattan", "hamming"),
         nNeighbors = 20,
         minDist = 0.1,
+        dimredName = "UMAP",
         seed = 42,
         verbose = TRUE,
         # Deprecated coding style
@@ -79,7 +82,7 @@ runUMAP <- function(
                        min_dist = minDist)
     rownames(umap) <- colnames(object)
     colnames(umap) <- seq(nDims)
-    cellMeta(object, "UMAP", check = FALSE) <- umap
+    cellMeta(object, dimredName, check = FALSE) <- umap
     return(object)
 }
 
@@ -113,6 +116,8 @@ runUMAP <- function(
 #' \code{0.0} for exact TSNE. Default \code{0.5}.
 #' @param method Choose from \code{"Rtsne"} or \code{"fftRtsne"}. See
 #' Description. Default \code{"Rtsne"}.
+#' @param dimredName Name of the variable in \code{cellMeta} slot to store the
+#' result matrix. Default \code{"TSNE"}.
 #' @param fitsnePath Path to the cloned FIt-SNE directory (i.e.
 #' \code{'/path/to/dir/FIt-SNE'}). Required only when first time using
 #' \code{runTSNE} with \code{method = "fftRtsne"}. Default \code{NULL}.
@@ -134,6 +139,7 @@ runTSNE <- function(
         perplexity = 30,
         theta = 0.5,
         method = c("Rtsne", "fftRtsne"),
+        dimredName = "TSNE",
         fitsnePath = NULL,
         seed = 42,
         verbose = TRUE,
@@ -180,7 +186,7 @@ runTSNE <- function(
     }
     rownames(tsne) <- colnames(object)
     colnames(tsne) <- seq(nDims)
-    cellMeta(object, "TSNE", check = FALSE) <- tsne
+    cellMeta(object, dimredName, check = FALSE) <- tsne
     object@uns$TSNE <- list(method = method)
     return(object)
 }

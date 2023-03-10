@@ -19,7 +19,7 @@ plotProportionDot(
   object,
   class1 = "louvain_cluster",
   class2 = "dataset",
-  legend = FALSE,
+  showLegend = FALSE,
   panelBorder = TRUE,
   ...
 )
@@ -52,7 +52,7 @@ available in \code{cellMeta} slot. Number of cells in each categories in
 \item{method}{For bar plot, choose whether to draw \code{"stack"} or
 \code{"group"} bar plot. Default \code{"stack"}.}
 
-\item{legend, panelBorder, ...}{ggplot theme setting arguments passed to
+\item{showLegend, panelBorder, ...}{ggplot theme setting arguments passed to
 \code{\link{.ggplotLigerTheme}}.}
 
 \item{inclRev}{Logical, for barplot, whether to reverse the specification for

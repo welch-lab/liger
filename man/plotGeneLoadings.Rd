@@ -41,7 +41,7 @@ Default \code{12}.}
 plot. Default \code{30}.}
 
 \item{...}{Additional plot theme setting arguments passed to
-\code{\link{.ggCellScatter}} and \code{\link{.ggplotLigerTheme}}.}
+\code{\link{.ggScatter}} and \code{\link{.ggplotLigerTheme}}.}
 }
 \description{
 Visualize factor expression and gene loading

@@ -144,19 +144,32 @@ setMethod(
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #' Convert old liger object to latest version
-#' @param object \code{liger} object from rliger version <1.2.0
+#' @param object \code{liger} object from rliger version <1.99.0
+#' @param dimredName The name of variable in \code{cellMeta} slot to store the
+#' dimensionality reduction matrix, which originally located in
+#' \code{tsne.coords} slot. Default \code{"tsne.coords"}.
+#' @param clusterName The name of variable in \code{cellMeta} slot to store the
+#' clustering assignment, which originally located in \code{clusters} slot.
+#' Default \code{"clusters"}.
 #' @export
-convertOldLiger <- function(object) {
-    ver120 <- package_version("1.2.0")
+convertOldLiger <- function(
+        object,
+        dimredName = "tsne.coords",
+        clusterName = "clusters"
+) {
+    ver120 <- package_version("1.99.0")
     if (object@version >= ver120) return(object)
     if (inherits(object@raw.data[[1]], "H5File")) {
-        convertOldLiger.H5(object)
+        convertOldLiger.H5(object, dimredName = dimredName,
+                           clusterName = clusterName)
     } else {
-        convertOldLiger.mem(object)
+        convertOldLiger.mem(object, dimredName = dimredName,
+                            clusterName = clusterName)
     }
 }
 
-convertOldLiger.mem <- function(object) {
+convertOldLiger.mem <- function(object, dimredName = "tsne.coords",
+                                clusterName = "clusters") {
     dataLists <- list(
         rawData = object@raw.data,
         normData = object@norm.data,
@@ -165,12 +178,9 @@ convertOldLiger.mem <- function(object) {
         V = object@V,
         U = object@U
     )
-
-    allDatasets <- Reduce(union, lapply(dataLists, names))
-
     # 1. Deal with cell metadata which establish a correct mapping of cell
     # barcodes and datasets belonging
-
+    allDatasets <- Reduce(union, lapply(dataLists, names))
     cellMeta <- object@cell.data
     cellMetaDatasets <- unique(as.vector(cellMeta$dataset))
     if (!identical(sort(allDatasets), sort(cellMetaDatasets))) {
@@ -232,8 +242,8 @@ convertOldLiger.mem <- function(object) {
         )
 
         # Remove data that has inconsistent information
-        passing <- .combinePassingSignal(names(dataList), bcPassing, ftPassing,
-                                         hvgPassing)
+        passing <- .combinePassingSignal(names(dataList),
+                                         bcPassing, ftPassing, hvgPassing)
         dataList <- dataList[passing]
         for (s in c("scaleData", "H", "V", "U")) {
             if (!is.null(dataList[[s]])) dataList[[s]] <- t(dataList[[s]])
@@ -243,17 +253,18 @@ convertOldLiger.mem <- function(object) {
     }
     # 4. Wrap up liger object
     cellMeta <- S4Vectors::DataFrame(cellMeta)
-    cellMeta$tsne.coords <- object@tsne.coords[rownames(cellMeta), ,
+    # TODO: check default prototype of tsne.coords and clusters.
+    cellMeta[[dimredName]] <- object@tsne.coords[rownames(cellMeta), ,
                                                drop = FALSE]
-    cellMeta$clusters <- object@clusters[rownames(cellMeta)]
+    cellMeta[[clusterName]] <- object@clusters[rownames(cellMeta)]
     newObj <- createLiger(ldList, W = t(object@W), H.norm = object@H.norm,
                           varFeatures = object@var.genes, cellMeta = cellMeta)
 
     return(newObj)
 }
 
-convertOldLiger.H5 <- function(object, modal = c("default", "rna", "atac")) {
-    modal <- match.arg(modal)
+convertOldLiger.H5 <- function(object, dimredName = "tsne_coords",
+                               clusterName = "clusters") {
     stop("Not implemented yet")
 }
 
@@ -265,8 +276,6 @@ convertOldLiger.H5 <- function(object, modal = c("default", "rna", "atac")) {
     # ref - a character vector as a reference
     # onCol - a list of matrix, where the colnames should match to reference
     # onRow - a list of matrix, where the rownames should match to reference
-    # partialIn - Logical, whether matrix ID could be just a part of `ref` or
-    #             should be identical to `ref`
     colPassing <- rep(TRUE, length(onCol))
     names(colPassing) <- names(onCol)
     for (slot in names(onCol)) {

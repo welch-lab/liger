@@ -93,6 +93,6 @@ some text
 }
 \seealso{
 Please refer to \code{\link{plotCellScatter}},
-\code{\link{.ggCellScatter}}, \code{\link{.ggplotLigerTheme}} for additional
+\code{\link{.ggScatter}}, \code{\link{.ggplotLigerTheme}} for additional
 graphic setting
 }

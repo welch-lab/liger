@@ -44,7 +44,7 @@
 #' \code{NULL}.
 #' @param shapeBy Available variable name in \code{cellMeta} slot to look for
 #' categorical annotation to be reflected by dot shapes. Default \code{NULL}.
-#' @param ... More plot setting arguments. See \code{\link{.ggCellScatter}} and
+#' @param ... More plot setting arguments. See \code{\link{.ggScatter}} and
 #' \code{\link{.ggplotLigerTheme}}.
 #' @return A ggplot object when a single plot is intended. A list of ggplot
 #' objects, when multiple \code{colorBy} variables and/or \code{splitBy} are
@@ -107,7 +107,7 @@ plotCellScatter <- function(
 
     plotList <- list()
     for (i in seq_along(plotDFList)) {
-        plotList[[i]] <- .ggCellScatter(plotDF = plotDFList[[i]], x = x, y = y,
+        plotList[[i]] <- .ggScatter(plotDF = plotDFList[[i]], x = x, y = y,
                        colorBy = colorByParam[[i]], shapeBy = shapeBy, ...)
     }
     names(plotList) <- names(plotDFList)
@@ -138,6 +138,10 @@ plotCellScatter <- function(
 #' @param raster Logical, whether to rasterize the plot. Default \code{NULL}
 #' automatically rasterize the plot when number of total cells to be plotted
 #' exceeds 100,000.
+#' @param labelBy A variable name available in \code{plotDF}. If the variable is
+#' categorical (a factor), the label position will be the median coordinates of
+#' all dots within the same group. Unique labeling in character vector for each
+#' dot is also acceptable. Default \code{colorBy}.
 #' @param labelText Logical, whether to show text label at the median position
 #' of each categorical group specified by \code{colorBy}. Default \code{TRUE}.
 #' Does not work when continuous coloring is specified.
@@ -148,7 +152,7 @@ plotCellScatter <- function(
 #' \code{\link{.ggplotLigerTheme}}.
 #' @return ggplot object by default. When \code{plotly = TRUE}, returns
 #' plotly (htmlwidget) object.
-.ggCellScatter <- function(
+.ggScatter <- function(
         plotDF,
         x,
         y,
@@ -161,6 +165,7 @@ plotCellScatter <- function(
         trimLow = NULL,
         zeroAsNA = TRUE,
         raster = NULL,
+        labelBy = colorBy,
         labelText = TRUE,
         labelTextSize = 4,
         seed = 1,
@@ -225,9 +230,10 @@ plotCellScatter <- function(
     }
 
     # For categorical grouping
-    if (!is.null(colorBy) && is.factor(plotDF[[colorBy]])) {
-        if (isTRUE(labelText) & !is.null(colorBy)) {
-            textData <- dplyr::group_by(plotDF, .data[[colorBy]])
+    if (!is.null(labelBy) &&
+        (is.factor(plotDF[[labelBy]]) || is.character(plotDF[[labelBy]]))) {
+        if (isTRUE(labelText)) {
+            textData <- dplyr::group_by(plotDF, .data[[labelBy]])
             textData <- dplyr::summarise(textData,
                                          x = stats::median(.data[[x]]),
                                          y = stats::median(.data[[y]]))
@@ -235,7 +241,7 @@ plotCellScatter <- function(
                 data = textData,
                 mapping = ggplot2::aes(x = .data[["x"]],
                                        y = .data[["y"]],
-                                       label = .data[[colorBy]]),
+                                       label = .data[[labelBy]]),
                 color = "black", size = labelTextSize, inherit.aes = FALSE
             )
             # Important to have `inherit.aes = F` above, otherwise
@@ -476,7 +482,10 @@ plotCellViolin <- function(
 #' @param legendColorTitle,legendFillTitle,legendShapeTitle,legendSizeTitle Set
 #' alternative title text for legend on aes of color, fill, shape and size,
 #' respectively. Default \code{NULL} shows the original variable name.
-#' @param legend Whether to show the legend. Default \code{TRUE}.
+#' @param showLegend Whether to show the legend. Default \code{TRUE}.
+#' @param legendPosition Text indicating where to place the legend. Choose from
+#' \code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. Default
+#' \code{"right"}.
 #' @param baseSize One-parameter control of all text sizes. Individual text
 #' element sizes can be controlled by other size arguments. "Title" sizes are
 #' 2 points larger than "text" sizes when being controlled by this.
@@ -491,6 +500,11 @@ plotCellViolin <- function(
 #' the colors/shapes clearly. Default \code{4}.
 #' @param panelBorder Whether to show rectangle border of the panel instead of
 #' using ggplot classic bottom and left axis lines. Default \code{FALSE}.
+#' @param colorLabels,colorValues Each a vector with as many values as the
+#' number of categories for the categorical coloring aesthetics. Labels will be
+#' the shown text and values will be the color code. These are passed to
+#' \code{\link[ggplot2]{scale_color_manual}}. Default \code{NULL} uses default
+#' ggplot hues and plot original labels.
 #' @param legendNRow,legendNCol Integer, when too many categories in one
 #' variable, arranges number of rows or columns. Default \code{NULL},
 #' automatically split to \code{ceiling(levels(variable)/10)} columns.
@@ -521,7 +535,8 @@ plotCellViolin <- function(
         legendFillTitle = NULL,
         legendShapeTitle = NULL,
         legendSizeTitle = NULL,
-        legend = TRUE,
+        showLegend = TRUE,
+        legendPosition = "right",
         # All sizes
         baseSize = 10,
         titleSize = NULL,
@@ -539,6 +554,9 @@ plotCellViolin <- function(
         panelBorder = FALSE,
         legendNRow = NULL,
         legendNCol = NULL,
+        # Coloring
+        colorLabels = NULL,
+        colorValues = NULL,
         colorPalette = "magma",
         colorDirection = -1,
         naColor = "#F5F5F5",
@@ -594,7 +612,7 @@ plotCellViolin <- function(
             strip.text.x = ggplot2::element_text(size = xFacet),
             strip.text.y = ggplot2::element_text(size = yFacet),
             legend.text = ggplot2::element_text(size = legendText),
-            legend.title = ggplot2::element_text(size = legendTitle),
+            legend.title = ggplot2::element_text(size = legendTitle)
         )
 
     if (isTRUE(panelBorder)) {
@@ -605,75 +623,89 @@ plotCellViolin <- function(
         )
     }
 
-    # Whether to show legend
-    if (!isTRUE(legend))
-        plot <- plot + ggplot2::theme(legend.position = "none")
-    else {
-        # legend region settings. Need to prepare a list so we call
-        # `guides()` once, otherwise any previous calls will be overwritten.
-        guide <- list(colour = list(), fill = list(),
-                      shape = list(), size = list())
-        guideFunc <- list(colour = NULL, shape = NULL, size = NULL)
-        legendTitle <- list(colour = legendColorTitle,
-                            fill = legendFillTitle,
-                            shape = legendShapeTitle,
-                            size = legendSizeTitle)
-        for (a in names(guide)) {
-            varName <- rlang::as_label(plot$mapping[[a]])
-            if (varName == "NULL") next
-            if (is.factor(plot$data[[varName]])) {
-                # Categorical setting
-                guideFunc[[a]] <- ggplot2::guide_legend
-                # Set dot size in legend
-                guide[[a]]$override.aes <- list(size = legendDotSize)
-                # Set nrow/ncol to arrange the legend categories
-                if (is.null(legendNRow) & is.null(legendNCol)) {
-                    # When nothing set, ggplot automatically makes it one
-                    # column, which might be too long, so I add a auto-
-                    # arrangement to limit max nrow to 10 but still evenly
-                    # distribute the columns.
-                    nCategory <- length(levels(plot$data[[varName]]))
-                    if (nCategory > 10)
-                        legendNCol <- ceiling(nCategory/10)
-                }
-                guide[[a]]$nrow <- legendNRow
-                guide[[a]]$ncol <- legendNCol
-            } else {
-                # continuous setting
-                if (a %in% c("colour", "fill")) {
-                    guideFunc[[a]] <- ggplot2::guide_colourbar
-                    # Set continuous palette
-                    plot <- plot +
-                        .setColorBarPalette(aesType = a,
-                                            palette = colorPalette,
-                                            direction = colorDirection,
-                                            naColor = naColor,
-                                            low = colorLow, mid = colorMid,
-                                            high = colorHigh,
-                                            midPoint = colorMidPoint)
-                }
-                else
-                    guideFunc[[a]] <- ggplot2::guide_legend
-                if (a == "size") {
-                    guide[[a]]$fill <- "black"
-                }
-
+    # legend region settings. Need to prepare a list so we call
+    # `guides()` once, otherwise any previous calls will be overwritten.
+    guide <- list(colour = list(), fill = list(),
+                  shape = list(), size = list())
+    guideFunc <- list(colour = NULL, shape = NULL, size = NULL)
+    legendTitle <- list(colour = legendColorTitle,
+                        fill = legendFillTitle,
+                        shape = legendShapeTitle,
+                        size = legendSizeTitle)
+    for (a in names(guide)) {
+        varName <- rlang::as_label(plot$mapping[[a]])
+        if (varName == "NULL") next
+        if (is.factor(plot$data[[varName]])) {
+            # Categorical setting
+            guideFunc[[a]] <- ggplot2::guide_legend
+            # Set dot size in legend
+            guide[[a]]$override.aes <- list(size = legendDotSize)
+            # Set nrow/ncol to arrange the legend categories
+            if (is.null(legendNRow) & is.null(legendNCol)) {
+                # When nothing set, ggplot automatically makes it one
+                # column, which might be too long, so I add a auto-
+                # arrangement to limit max nrow to 10 but still evenly
+                # distribute the columns.
+                nCategory <- length(levels(plot$data[[varName]]))
+                if (nCategory > 10)
+                    legendNCol <- ceiling(nCategory/10)
             }
-            # Set title for the variable
-            if (!is.null(legendTitle[[a]]))
-                guide[[a]]$title <- legendTitle[[a]]
-            # Finalise the setting
-            guide[[a]] <- do.call(guideFunc[[a]], guide[[a]])
-        }
-        guide <- lapply(guide, function(x) if (!identical(x, list())) x else NULL)
+            guide[[a]]$nrow <- legendNRow
+            guide[[a]]$ncol <- legendNCol
+            if (is.null(colorLabels)) {
+                colorLabels <- levels(plot$data[[varName]])
+            }
+            if (is.null(colorValues)) {
+                colorValues <- scales::hue_pal()(
+                    length(levels(plot$data[[varName]]))
+                )
+            }
+            plot <- plot +
+                .setColorLegendPalette(aesType = a,
+                                       labels = colorLabels,
+                                       values = colorValues)
+        } else {
+            # continuous setting
+            if (a %in% c("colour", "fill")) {
+                guideFunc[[a]] <- ggplot2::guide_colourbar
+                # Set continuous palette
+                plot <- plot +
+                    .setColorBarPalette(aesType = a,
+                                        palette = colorPalette,
+                                        direction = colorDirection,
+                                        naColor = naColor,
+                                        low = colorLow, mid = colorMid,
+                                        high = colorHigh,
+                                        midPoint = colorMidPoint)
+            } else {
+                guideFunc[[a]] <- ggplot2::guide_legend
+            }
 
-        plot <- plot + ggplot2::guides(
+            if (a == "size") {
+                guide[[a]]$fill <- "black"
+            }
+
+        }
+        # Set title for the variable
+        if (!is.null(legendTitle[[a]]))
+            guide[[a]]$title <- legendTitle[[a]]
+        # Finalise the setting
+        guide[[a]] <- do.call(guideFunc[[a]], guide[[a]])
+    }
+    guide <- lapply(guide, function(x) if (!identical(x, list())) x else NULL)
+    plot <- plot +
+        ggplot2::guides(
             colour = guide$colour,
             shape = guide$shape,
             size = guide$size,
             fill = guide$fill
+        ) +
+        ggplot2::theme(
+            legend.position = legendPosition
         )
 
+    if (isFALSE(showLegend)) {
+        plot <- plot + ggplot2::theme(legend.position = "none")
     }
 
     if (isTRUE(plotly)) {
@@ -685,6 +717,25 @@ plotCellViolin <- function(
         }
     }
     return(plot)
+}
+
+.setColorLegendPalette <- function(
+        aesType = c("colour", "fill"),
+        labels = NULL,
+        values = NULL
+) {
+    aesType <- match.arg(aesType)
+    layer <- NULL
+    if (!is.null(labels) && !is.null(values)) {
+        if (aesType == "colour") {
+            layer <- ggplot2::scale_color_manual(values = values,
+                                                 labels = labels)
+        } else {
+            layer <- ggplot2::scale_fill_manual(values = values,
+                                                labels = labels)
+        }
+    }
+    return(layer)
 }
 
 .setColorBarPalette <- function(

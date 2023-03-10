@@ -13,6 +13,7 @@ runTSNE(
   perplexity = 30,
   theta = 0.5,
   method = c("Rtsne", "fftRtsne"),
+  dimredName = "TSNE",
   fitsnePath = NULL,
   seed = 42,
   verbose = TRUE,
@@ -46,6 +47,9 @@ neighbors). Default \code{30}.}
 
 \item{method}{Choose from \code{"Rtsne"} or \code{"fftRtsne"}. See
 Description. Default \code{"Rtsne"}.}
+
+\item{dimredName}{Name of the variable in \code{cellMeta} slot to store the
+result matrix. Default \code{"TSNE"}.}
 
 \item{fitsnePath}{Path to the cloned FIt-SNE directory (i.e.
 \code{'/path/to/dir/FIt-SNE'}). Required only when first time using

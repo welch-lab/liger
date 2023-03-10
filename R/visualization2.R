@@ -1,4 +1,7 @@
-# Scatter Plots of DimRed ######################################################
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Scatter Plots of DimRed ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 #' Generate Dimensionality Reduction Plot with Coloring
 #' @description some text
 #' @param object A \linkS4class{liger} object.
@@ -30,7 +33,7 @@
 #' @return ggplot object when only one feature (e.g. cluster variable, gene,
 #' factor) is set. List object when multiple of those are specified.
 #' @seealso Please refer to \code{\link{plotCellScatter}},
-#' \code{\link{.ggCellScatter}}, \code{\link{.ggplotLigerTheme}} for additional
+#' \code{\link{.ggScatter}}, \code{\link{.ggplotLigerTheme}} for additional
 #' graphic setting
 #' @rdname plotClusterDimRed
 #' @export
@@ -123,8 +126,9 @@ plotFactorDimRed <- function(
                     colorPalette = colorPalette, ...)
 }
 
-
-# Violin Plots #################################################################
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Violin Plots ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #' Visualize gene expression with violin plot
 #' @param object A \linkS4class{liger} object.
@@ -181,7 +185,9 @@ plotGeneViolin <- function(
     return(plotList)
 }
 
-# Others #######################################################################
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Proportion #####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #' Visualize proportion across two categorical variables
 #' @description \code{plotProportionBar} creates bar plots comparing the
@@ -195,7 +201,7 @@ plotGeneViolin <- function(
 #' \code{class2} will be served as the denominator when calculating proportions.
 #' @param method For bar plot, choose whether to draw \code{"stack"} or
 #' \code{"group"} bar plot. Default \code{"stack"}.
-#' @param legend,panelBorder,... ggplot theme setting arguments passed to
+#' @param showLegend,panelBorder,... ggplot theme setting arguments passed to
 #' \code{\link{.ggplotLigerTheme}}.
 #' @param inclRev Logical, for barplot, whether to reverse the specification for
 #' \code{class1} and \code{class2} and produce two plots. Default \code{FALSE}.
@@ -229,7 +235,7 @@ plotProportionDot <- function(
         object,
         class1 = "louvain_cluster",
         class2 = "dataset",
-        legend = FALSE,
+        showLegend = FALSE,
         panelBorder = TRUE,
         ...
 ) {
@@ -254,7 +260,8 @@ plotProportionDot <- function(
         ) +
         ggplot2::scale_y_discrete(position = "right") +
         ggplot2::coord_fixed(ratio = 0.5)
-    .ggplotLigerTheme(p, legend = legend, panelBorder = panelBorder, ...)
+    .ggplotLigerTheme(p, showLegend = showLegend, panelBorder = panelBorder,
+                      ...)
 }
 
 #' @rdname plotProportion
@@ -316,4 +323,131 @@ plotClusterProportions <- function(
 ) {
     .deprecateArgs(defunct = "return.plot")
     plotProportionDot(object, class1 = useCluster, class2 = "dataset", ...)
+}
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Volcano plot ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#' Create volcano plot for Wilcoxon test result
+#' @description \code{plotVolcano} is a simple implementation and shares
+#' most of arguments with other rliger plotting functions.
+#' \code{plotEnhancedVolcano} is a wrapper function of
+#' \code{\link[EnhancedVolcano]{EnhancedVolcano}}, which has provides
+#' substantial amount of arguments for graphical control. However, that requires
+#' the installation of package "EnhancedVolcano".
+#' @rdname plotVolcano
+#' @param result Data frame table returned by \code{\link{runWilcoxon}}
+#' @param group Selection of one group available from \code{result$group}
+#' @param logFCThresh Number for the threshold on the absolute value of the log2
+#' fold change statistics. Default \code{1}.
+#' @param padjThresh Number for the threshold on the adjusted p-value
+#' statistics. Default \code{0.01}.
+#' @param labelTopN Number of top differential expressed features to be labeled
+#' on the top of the dots. Default \code{20}.
+#' @param dotSize,dotAlpha Numbers for universal aesthetics control of dots.
+#' Default \code{2} and \code{0.8}.
+#' @param legendPosition Text indicating where to place the legend. Choose from
+#' \code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. Default
+#' \code{"top"}.
+#' @param labelSize Size of labeled top features and line annotations. Default
+#' \code{4}.
+#' @param ... For \code{plotVolcano}, more theme setting arguments passed to
+#' \code{\link{.ggplotLigerTheme}}. For \code{plotEnhancedVolcano}, arguments
+#' passed to \code{\link[EnhancedVolcano]{EnhancedVolcano}}.
+#' @return ggplot
+plotVolcano <- function(
+        result,
+        group,
+        logFCThresh = 1,
+        padjThresh = 0.01,
+        labelTopN = 20,
+        dotSize = 2,
+        dotAlpha = 0.8,
+        legendPosition = "top",
+        labelSize = 4,
+        ...
+) {
+    if (!group %in% result$group) {
+        stop("Selected group does not exist in `result`.")
+    }
+    result <- result[result$group == group, ]
+    result <- result[order(abs(result$logFC), decreasing = TRUE), ]
+    rownames(result) <- result$Gene
+    # Prepare for coloring that shows the filtering
+    result$Significance <- "Not significant"
+    result$Significance[abs(result$logFC) > logFCThresh] <- "logFC"
+    result$Significance[result$padj < padjThresh] <- "padj"
+    result$Significance[abs(result$logFC) > logFCThresh &
+                            result$padj < padjThresh] <- "padj & logFC"
+    result$Significance <- factor(result$Significance,
+                                  levels = c("Not significant",
+                                             "logFC", "padj", "padj & logFC"))
+    result$padj[result$padj == 0] <- min(result$padj[result$padj > 0]) / 10
+    result$padj <- -log10(result$padj)
+    # Prepare for Top result text labeling
+    passIdx <- result$Significance == "padj & logFC"
+    result$label <- NA
+    if (!is.null(labelTopN) && !isFALSE(labelTopN)) {
+        labelTopN <- min(labelTopN, length(which(passIdx)))
+        if (labelTopN > 0) {
+            labelIdx <- which(passIdx)[seq(labelTopN)]
+            result$label[labelIdx] <- result$feature[labelIdx]
+        }
+    }
+    # Prepare for lines that mark the cutoffs
+    vlineLab <- data.frame(
+        X = c(-logFCThresh, logFCThresh)
+    )
+    hlineLab <- data.frame(
+        Y = c(-log10(padjThresh))
+    )
+    p <- .ggScatter(result, x = "logFC", y = "padj",
+                    colorBy = "Significance", zeroAsNA = FALSE,
+                    labelBy = "label",
+                    xlab = "Log2 Fold Change",
+                    ylab = "-log10 Adjusted P-value",
+                    colorValues = c("black", "#ef2301", "#416ae1", "#238b22"),
+                    legendPosition = legendPosition, ...) +
+        ggplot2::xlim(-max(abs(result$logFC)), max(abs(result$logFC))) +
+        ggplot2::geom_vline(data = vlineLab,
+                            mapping = ggplot2::aes(xintercept = .data[["X"]]),
+                            linetype = "longdash") +
+        ggplot2::geom_hline(data = hlineLab,
+                            ggplot2::aes(yintercept = .data[["Y"]]),
+                            linetype = "longdash") +
+        ggplot2::annotate("text",
+                          x = c(logFCThresh + 3, -logFCThresh - 3),
+                          y = c(-10, -10),
+                          label = paste0(c("higher ", "lower "),
+                                         "log2FC cutoff: ",
+                                         c(logFCThresh, -logFCThresh)),
+                          size = labelSize) +
+        ggplot2::annotate("text",
+                          x = -max(abs(result$logFC)) + 2,
+                          y = 10,
+                          label = paste("p-adj cutoff:", padjThresh),
+                          size = labelSize)
+    return(p)
+}
+
+#' @rdname plotVolcano
+#' @export
+plotEnhancedVolcano <- function(
+        result,
+        group,
+        ...
+) {
+    if (!requireNamespace("EnhancedVolcano", quietly = TRUE)) {
+        stop("Package \"EnhancedVolcano\" needed for this function to work. ",
+             "Please install it by command:\n",
+             "BiocManager::install('EnhancedVolcano')",
+             call. = FALSE)
+    }
+    result <- result[result$group == group, ]
+    EnhancedVolcano::EnhancedVolcano(
+        toptable = result,
+        lab = result$feature, x = "logFC", y = "padj",
+        ...
+    )
 }

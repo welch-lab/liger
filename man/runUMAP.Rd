@@ -12,6 +12,7 @@ runUMAP(
   distance = c("euclidean", "cosine", "manhattan", "hamming"),
   nNeighbors = 20,
   minDist = 0.1,
+  dimredName = "UMAP",
   seed = 42,
   verbose = TRUE,
   k = nDims,
@@ -42,6 +43,9 @@ of manifold structure. Default \code{10}.}
 
 \item{minDist}{Numeric. Controls how tightly the embedding is allowed
 compress points together. Default \code{0.1}.}
+
+\item{dimredName}{Name of the variable in \code{cellMeta} slot to store the
+result matrix. Default \code{"UMAP"}.}
 
 \item{seed}{Random seed for reproducibility. Default \code{42}.}
 

@@ -620,36 +620,47 @@ nnzeroGroups.matrix <- function(X, y, MARGIN = 2) {
 ################################################################################
 # Visualization ####
 ################################################################################
-plotVolcano <- function(
-        result,
-        ...
-) {
-    if (!requireNamespace("EnhancedVolcano", quietly = TRUE))
-        stop("Package \"EnhancedVolcano\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "BiocManager::install('EnhancedVolcano')",
-             call. = FALSE)
-    EnhancedVolcano::EnhancedVolcano(result, )
-}
 
 plotMarkerHeatmap <- function(
         object,
         result,
+        topN = 5,
+        dedupBy = c("logFC", "padj"),
+        groupBy = c("dataset", "louvain_cluster"),
+        groupSize = 50,
+        column_title = NULL,
         ...
 ) {
-    # TODO
-    featureNames <- result$feature
-    if (any(duplicated(featureNames))) {
-        dups <- unique(featureNames[duplicated(featureNames)])
-        for (g in dups) {
-            idx <- which(featureNames == g)
-            featureNames[idx] <- paste0(g, "-", seq_along(idx))
-        }
+    dedupBy <- match.arg(dedupBy)
+    if (dedupBy == "logFC") {
+        result <- result[order(result[[dedupBy]], decreasing = TRUE), ]
+    } else if (dedupBy == "padj") {
+        result <- result[order(result[[dedupBy]], decreasing = FALSE), ]
     }
-    rownames(result) <- featureNames
+    result <- result[-which(duplicated(result$feature)), ]
+    # TODO
+    result <- result %>%
+        dplyr::group_by(.data[["group"]]) %>%
+        dplyr::top_n(topN, .data[["logFC"]]) %>%
+        dplyr::arrange(.data[["group"]]) %>%
+        as.data.frame()
+
+    object <- downsample(object, maxCells = groupSize,
+                         balance = groupBy,
+                         useSlot = "normData")
+    featureAnn <- result[, "group", drop = FALSE]
+    rownames(featureAnn) <- result$feature
     plotGeneHeatmap(object, features = result$feature,
-                    useCellMeta = c("louvain_cluster", "dataset"),
-                    featureAnnotation = list(group = result$group),
-                    cellSplitBy = c("dataset", "louvain_cluster"),
-                    cluster_column_slices = FALSE, ...)
+                    useCellMeta = groupBy,
+                    featureAnnotation = featureAnn,
+                    cellSplitBy = rev(groupBy),
+                    featureSplitBy = "group",
+                    showFeatureLegend = FALSE,
+                    cluster_columns = FALSE,
+                    cluster_column_slices = FALSE,
+                    cluster_rows = FALSE,
+                    cluster_row_slices = FALSE,
+                    column_title = column_title,
+                    ...)
 }
+

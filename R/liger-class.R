@@ -454,7 +454,9 @@ setGeneric(
 #' @export
 #' @rdname liger-class
 setMethod("datasets", signature(x = "liger", check = "ANY"),
-          function(x, check = NULL) x@datasets)
+          function(x, check = NULL) {
+              x@datasets
+    })
 
 #' @export
 #' @rdname liger-class
@@ -611,6 +613,7 @@ setReplaceMethod(
 #' @rdname liger-class
 #' @export
 setMethod("length", signature(x = "liger"), function(x) {
+    .checkObjVersion(x)
     length(datasets(x))
 })
 

@@ -43,7 +43,7 @@ to produce a scatter plot containing only the cells in each group. Default
 \item{shapeBy}{Available variable name in \code{cellMeta} slot to look for
 categorical annotation to be reflected by dot shapes. Default \code{NULL}.}
 
-\item{...}{More plot setting arguments. See \code{\link{.ggCellScatter}} and
+\item{...}{More plot setting arguments. See \code{\link{.ggScatter}} and
 \code{\link{.ggplotLigerTheme}}.}
 }
 \value{

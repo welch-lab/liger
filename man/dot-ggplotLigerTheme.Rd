@@ -14,7 +14,8 @@
   legendFillTitle = NULL,
   legendShapeTitle = NULL,
   legendSizeTitle = NULL,
-  legend = TRUE,
+  showLegend = TRUE,
+  legendPosition = "right",
   baseSize = 10,
   titleSize = NULL,
   subtitleSize = NULL,
@@ -30,6 +31,8 @@
   panelBorder = FALSE,
   legendNRow = NULL,
   legendNCol = NULL,
+  colorLabels = NULL,
+  colorValues = NULL,
   colorPalette = "magma",
   colorDirection = -1,
   naColor = "#F5F5F5",
@@ -52,7 +55,11 @@ the names of variables used for plotting. Use \code{NULL} to hide elements.
 alternative title text for legend on aes of color, fill, shape and size,
 respectively. Default \code{NULL} shows the original variable name.}
 
-\item{legend}{Whether to show the legend. Default \code{TRUE}.}
+\item{showLegend}{Whether to show the legend. Default \code{TRUE}.}
+
+\item{legendPosition}{Text indicating where to place the legend. Choose from
+\code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. Default
+\code{"right"}.}
 
 \item{baseSize}{One-parameter control of all text sizes. Individual text
 element sizes can be controlled by other size arguments. "Title" sizes are
@@ -77,6 +84,12 @@ using ggplot classic bottom and left axis lines. Default \code{FALSE}.}
 \item{legendNRow, legendNCol}{Integer, when too many categories in one
 variable, arranges number of rows or columns. Default \code{NULL},
 automatically split to \code{ceiling(levels(variable)/10)} columns.}
+
+\item{colorLabels, colorValues}{Each a vector with as many values as the
+number of categories for the categorical coloring aesthetics. Labels will be
+the shown text and values will be the color code. These are passed to
+\code{\link[ggplot2]{scale_color_manual}}. Default \code{NULL} uses default
+ggplot hues and plot original labels.}
 
 \item{colorPalette}{For continuous coloring, an index or a palette name to
 select from available options from ggplot

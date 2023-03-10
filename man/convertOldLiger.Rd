@@ -4,10 +4,18 @@
 \alias{convertOldLiger}
 \title{Convert old liger object to latest version}
 \usage{
-convertOldLiger(object)
+convertOldLiger(object, dimredName = "tsne.coords", clusterName = "clusters")
 }
 \arguments{
-\item{object}{\code{liger} object from rliger version <1.2.0}
+\item{object}{\code{liger} object from rliger version <1.99.0}
+
+\item{dimredName}{The name of variable in \code{cellMeta} slot to store the
+dimensionality reduction matrix, which originally located in
+\code{tsne.coords} slot. Default \code{"tsne.coords"}.}
+
+\item{clusterName}{The name of variable in \code{cellMeta} slot to store the
+clustering assignment, which originally located in \code{clusters} slot.
+Default \code{"clusters"}.}
 }
 \description{
 Convert old liger object to latest version

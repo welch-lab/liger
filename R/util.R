@@ -3,6 +3,7 @@
     pref <- paste0(date(), " ", line, " ")
     indent <- paste(rep(" ", nchar(pref)), collapse = "")
     content <- list(...)
+    content <- lapply(content, as.character)
     msg <- paste(content, collapse = "")
     msg <- gsub("\n", paste0("\n", indent), msg)
     message(pref, msg)

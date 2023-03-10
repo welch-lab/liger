@@ -240,96 +240,36 @@ read10X <-
         }
     }
 
-#' Merge hdf5 files
-#'
-#' This function merges hdf5 files generated from different libraries (cell ranger by default)
-#' before they are preprocessed through Liger pipeline.
-#'
-#' @param file.list List of path to hdf5 files.
-#' @param library.names Vector of library names (corresponding to file.list)
-#' @param new.filename String of new hdf5 file name after merging (default new.h5).
-#' @param format.type string of HDF5 format (10X CellRanger by default).
-#' @param data.name Path to the data values stored in HDF5 file.
-#' @param indices.name Path to the indices of data points stored in HDF5 file.
-#' @param indptr.name Path to the pointers stored in HDF5 file.
-#' @param genes.name Path to the gene names stored in HDF5 file.
-#' @param barcodes.name Path to the barcodes stored in HDF5 file.
-#'
-#' @return Directly generates newly merged hdf5 file.
-#'
+#' Read liger object from RDS file
+#' @param filename Path to an RDS file of a \code{liger} object of old versions.
+#' @param dimredName The name of variable in \code{cellMeta} slot to store the
+#' dimensionality reduction matrix, which originally located in
+#' \code{tsne.coords} slot. Default \code{"tsne.coords"}.
+#' @param clusterName The name of variable in \code{cellMeta} slot to store the
+#' clustering assignment, which originally located in \code{clusters} slot.
+#' Default \code{"clusters"}.
+#' @param update Logical, whether to update an old (<=1.0.0) \code{liger} object
+#' to the currect version of structure. Default \code{TRUE}.
+#' @return New version of \linkS4class{liger} object
 #' @export
-#' @examples
-#' \dontrun{
-#' # For instance, we want to merge two datasets saved in HDF5 files (10X CellRanger)
-#' # paths to datasets: "library1.h5","library2.h5"
-#' # dataset names: "lib1", "lib2"
-#' # name for output HDF5 file: "merged.h5"
-#' mergeH5(list("library1.h5","library2.h5"), c("lib1","lib2"), "merged.h5")
-#' }
-
-mergeH5 <- function(file.list,
-                    library.names,
-                    new.filename,
-                    format.type = "10X",
-                    data.name = NULL,
-                    indices.name = NULL,
-                    indptr.name = NULL,
-                    genes.name = NULL,
-                    barcodes.name = NULL) {
-    h5_merged = hdf5r::H5File$new(paste0(new.filename, ".h5"), mode = "w")
-    h5_merged$create_group("matrix")
-    h5_merged$create_group("matrix/features")
-    num_data_prev = 0
-    num_indptr_prev = 0
-    num_cells_prev = 0
-    last_inptr = 0
-    for (i in 1:length(file.list)) {
-        h5file = hdf5r::H5File$new(file.list[[i]], mode = "r")
-        if (format.type == "10X") {
-            data = h5file[["matrix/data"]][]
-            indices = h5file[["matrix/indices"]][]
-            indptr = h5file[["matrix/indptr"]][]
-            barcodes = paste0(library.names[i], "_", h5file[["matrix/barcodes"]][])
-            genes = h5file[["matrix/features/name"]][]
-        } else if (format.type == "AnnData") {
-            data = h5file[["raw.X/data"]][]
-            indices = h5file[["raw.X/indices"]][]
-            indptr = h5file[["raw.X/indptr"]][]
-            barcodes = paste0(library.names[i], "_", h5file[["obs"]][]$cell)
-            genes = h5file[["raw.var"]][]$index
-
-        } else {
-            data = h5file[[data.name]][]
-            indices = h5file[[indices.name]][]
-            indptr = h5file[[indptr.name]][]
-            barcodes = paste0(library.names[i], "_", h5file[[barcodes.name]][])
-            genes = h5file[[genes.name]][]
-        }
-
-        if (i != 1)
-            indptr = indptr[2:length(indptr)]
-        num_data = length(data)
-        num_indptr = length(indptr)
-        num_cells = length(barcodes)
-        indptr = indptr + last_inptr
-        last_inptr = indptr[num_indptr]
-        if (i == 1) {
-            h5_merged[["matrix/data"]] = data
-            h5_merged[["matrix/indices"]] = indices
-            h5_merged[["matrix/indptr"]] = indptr
-            h5_merged[["matrix/barcodes"]] = barcodes
-            h5_merged[["matrix/features/name"]] = genes
-        } else {
-            h5_merged[["matrix/data"]][(num_data_prev + 1):(num_data_prev + num_data)] = data
-            h5_merged[["matrix/indices"]][(num_data_prev + 1):(num_data_prev + num_data)] = indices
-            h5_merged[["matrix/indptr"]][(num_indptr_prev + 1):(num_indptr_prev + num_indptr)] = indptr
-            h5_merged[["matrix/barcodes"]][(num_cells_prev + 1):(num_cells_prev + num_cells)] = barcodes
-        }
-        num_data_prev = num_data_prev + num_data
-        num_indptr_prev = num_indptr_prev + num_indptr
-        num_cells_prev = num_cells_prev + num_cells
-        h5file$close_all()
+readLiger <- function(
+        filename,
+        dimredName = "tsne_coords",
+        clusterName = "clusters",
+        update = TRUE) {
+    oldObj <- readRDS(filename)
+    if (!inherits(oldObj, "liger"))
+        stop("Object is not of class \"liger\".")
+    oldVer <- oldObj@version
+    if (oldVer >= package_version("1.99.0")) return(oldObj)
+    .log("Older version (", oldVer, ") of liger object detected.")
+    if (isTRUE(update)) {
+        .log("Updating the object structure to make it compatible ",
+             "with current version (", utils::packageVersion("rliger"), ")")
+        return(convertOldLiger(oldObj, dimredName = dimredName,
+                               clusterName = clusterName))
+    } else {
+        .log("`update = FALSE` specified. Returning the original object.")
+        return(oldObj)
     }
-    h5_merged$close_all()
 }
-

@@ -10,7 +10,7 @@
 #' @param nPlot Integer, number of top genes to be shown in the loading rank
 #' plot. Default \code{30}.
 #' @param ... Additional plot theme setting arguments passed to
-#' \code{\link{.ggCellScatter}} and \code{\link{.ggplotLigerTheme}}.
+#' \code{\link{.ggScatter}} and \code{\link{.ggplotLigerTheme}}.
 #' @export
 plotGeneLoadings <- function(
         object,
@@ -83,7 +83,7 @@ plotGeneLoadingRank <- function(
                              xpos = seq(0, 1, length.out = length(sorted)),
                              top_k = names(sorted) %in% topGenes)
         ylimTxt <- max(geneDF$loadings)
-        plotList[[i]] <- .ggCellScatter(geneDF, "xpos", "loadings",
+        plotList[[i]] <- .ggScatter(geneDF, "xpos", "loadings",
                             title = titles[i], ...) +
             ggplot2::annotate(
                 "text",

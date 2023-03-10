@@ -14,7 +14,9 @@
   featureSplitVar = NULL,
   dataScaleFunc = NULL,
   showCellLabel = FALSE,
+  showCellLegend = TRUE,
   showFeatureLabel = TRUE,
+  showFeatureLegend = TRUE,
   scale = FALSE,
   trim = c(-2, 2),
   baseSize = 8,
@@ -53,6 +55,10 @@ that cell information is displayed by row. Default \code{FALSE}.}
 \item{showCellLabel, showFeatureLabel}{Logical, whether to show cell barcodes,
 gene symbols or factor names. Default \code{TRUE} for gene/factors but
 \code{FALSE} for cells.}
+
+\item{showCellLegend, showFeatureLegend}{Logical, whether to show cell or
+feature legends. Default \code{TRUE}. Can be a scalar for overall control
+or a vector matching with each given annotation variable.}
 
 \item{scale}{Logical, whether to take z-score to scale and center gene
 expression. Applied after \code{dataScaleFunc}. Default \code{FALSE}.}

@@ -144,6 +144,9 @@ plotFactorHeatmap <- function(
 #' @param showCellLabel,showFeatureLabel Logical, whether to show cell barcodes,
 #' gene symbols or factor names. Default \code{TRUE} for gene/factors but
 #' \code{FALSE} for cells.
+#' @param showCellLegend,showFeatureLegend Logical, whether to show cell or
+#' feature legends. Default \code{TRUE}. Can be a scalar for overall control
+#' or a vector matching with each given annotation variable.
 #' @param scale Logical, whether to take z-score to scale and center gene
 #' expression. Applied after \code{dataScaleFunc}. Default \code{FALSE}.
 #' @param trim Numeric vector of two values. Limit the z-score value into this
@@ -174,7 +177,9 @@ plotFactorHeatmap <- function(
         featureSplitVar = NULL,
         dataScaleFunc = NULL,
         showCellLabel = FALSE,
+        showCellLegend = TRUE,
         showFeatureLabel = TRUE,
+        showFeatureLegend = TRUE,
         scale = FALSE,
         trim = c(-2, 2),
         baseSize = 8,
@@ -190,8 +195,6 @@ plotFactorHeatmap <- function(
         ...
 ) {
     # Final data processing
-    if (!is.null(featureSplitVar))
-        featureSplitVar <- featureDF[,featureSplitVar]
     if (!is.null(dataScaleFunc)) dataMatrix <- dataScaleFunc(dataMatrix)
     if (isTRUE(scale)) {
         dataMatrix <- .zScore(dataMatrix, trim = trim)
@@ -241,10 +244,12 @@ plotFactorHeatmap <- function(
     ## Construct HeatmapAnnotation
     cellHA <- .constructHA(cellDF, legendTitleSize = legendTitle,
                            legendTextSize = legendText,
-                           which = ifelse(transpose, "row", "column"))
+                           which = ifelse(transpose, "row", "column"),
+                           showLegend = showCellLegend)
     featureHA <- .constructHA(featureDF, legendTitleSize = legendTitle,
                               legendTextSize = legendText,
-                              which = ifelse(transpose, "column", "row"))
+                              which = ifelse(transpose, "column", "row"),
+                              showLegend = showFeatureLegend)
 
     if (!isTRUE(transpose)) {
         hm <- ComplexHeatmap::Heatmap(
@@ -268,6 +273,7 @@ plotFactorHeatmap <- function(
             # Row settings
             left_annotation = featureHA,
             row_names_gp = grid::gpar(fontsize = featureText),
+            row_title_gp = grid::gpar(fontsize = featureTitle),
             show_row_names = showFeatureLabel,
             row_split = featureSplitVar,
             row_gap = grid::unit(0, "mm"),
@@ -329,7 +335,8 @@ plotFactorHeatmap <- function(
         if (!is.data.frame(annDF))
             annDF <- as.data.frame(annDF)
         annDF <- annDF[charIdx, , drop = FALSE]
-        AnnDF <- cbind(AnnDF, annDF)
+        if (is.null(AnnDF)) AnnDF <- annDF
+        else AnnDF <- cbind(AnnDF, annDF)
     } else if (!is.null(annDF)) {
         warning("`cellAnnotation` of class ", class(annDF),
                 " is not supported yet.")
@@ -351,7 +358,7 @@ plotFactorHeatmap <- function(
 
 # HA - HeatmapAnnotation()
 .constructHA <- function(df, legendTitleSize, legendTextSize,
-                         which = c("row", "column")) {
+                         which = c("row", "column"), showLegend = TRUE) {
     which <- match.arg(which)
     if (!is.null(df) && ncol(df) > 0) {
         annCol <- list()
@@ -366,11 +373,12 @@ plotFactorHeatmap <- function(
         }
         ha <- ComplexHeatmap::HeatmapAnnotation(
             df = df, which = which, col = annCol,
+            show_legend = showLegend,
             annotation_legend_param = list(
                 title_gp = grid::gpar(fontsize = legendTitleSize,
                                       fontface = "bold"),
                 labels_gp = grid::gpar(fontsize = legendTextSize)
-            )# TODO annotation label size
+            )
         )
     }
     else ha <- NULL
