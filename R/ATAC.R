@@ -438,7 +438,7 @@ makeInteractTrack <- function(
         genes.list = NULL,
         output_path = getwd()
 ) {
-    lifecycle::deprecate_warn("1.2.0", "makeInteractTrack()",
+    lifecycle::deprecate_warn("1.99.0", "makeInteractTrack()",
                               "exportInteractTrack()")
     exportInteractTrack(corrMat = corr.mat, pathToCoords = path_to_coords,
                         useGenes = genes.list, outputPath = output_path)

@@ -342,7 +342,7 @@ setMethod(
         rand.seed = 1,
         verbose = TRUE
     ) {
-        lifecycle::deprecate_warn("1.2.0", "quantile_norm()", "quantileNorm()")
+        lifecycle::deprecate_warn("1.99.0", "quantile_norm()", "quantileNorm()")
         quantileNorm(
             object = object,
             quantiles = quantiles,

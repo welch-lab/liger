@@ -306,7 +306,7 @@
             # User set old arg in their call
             what <- paste0(parentFuncName, "(", old, ")")
             with <- paste0(parentFuncName, "(", new, ")")
-            lifecycle::deprecate_warn("1.2.0", what, with, always = TRUE)
+            lifecycle::deprecate_warn("1.99.0", what, with, always = TRUE)
             if (!new %in% names(callArgs)) {
                 # If no setting with new argument is found in user call
                 p[[new]] <- p[[old]]
@@ -315,7 +315,7 @@
     }
     for (old in defunct) {
         if (old %in% names(callArgs)) {
-            lifecycle::deprecate_stop("1.2.0",
+            lifecycle::deprecate_stop("1.99.0",
                                       paste0(parentFuncName, "(", old, ")"))
         }
     }

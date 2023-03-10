@@ -274,12 +274,12 @@ setValidity("liger", .valid.liger)
 #' Check if given liger object if under new implementation
 #' @param object A liger object
 #' @return \code{TRUE} if the version of \code{object} is later than or equal to
-#' 1.2.0. Otherwise \code{FALSE}
+#' 1.99.0. Otherwise \code{FALSE}
 #' @noRd
 is.newLiger <- function(object) {
     v <- object@version
-    v120 <- package_version("1.2.0")
-    if (v >= v120) TRUE
+    v1990 <- package_version("1.99.0")
+    if (v >= v1990) TRUE
     else FALSE
 }
 

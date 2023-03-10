@@ -52,7 +52,7 @@ calcAgreement <- function(object,
                           use.aligned = TRUE,
                           rand.seed = 42,
                           by.dataset = FALSE) {
-    lifecycle::deprecate_stop("1.2.0", "calcAgreement()")
+    lifecycle::deprecate_stop("1.99.0", "calcAgreement()")
     # if (!requireNamespace("NNLM", quietly = TRUE) & dr.method == "NMF") {
     #   stop("Package \"NNLM\" needed for this function to perform NMF. Please install it.",
     #        call. = FALSE
@@ -326,7 +326,7 @@ calcAlignmentPerCluster <- function(object,
                                     rand.seed = 1,
                                     k = NULL,
                                     by.dataset = FALSE) {
-    lifecycle::deprecate_stop("1.2.0", "calcAlignmentPerCluster()")
+    lifecycle::deprecate_stop("1.99.0", "calcAlignmentPerCluster()")
     clusters <- levels(object@clusters)
     if (typeof(k) == "double") {
         if (length(k) == 1) {
@@ -388,7 +388,7 @@ NULL
 #' @section \code{calcARI}:
 #' \code{calcARI} is deprecated and is now defunct.
 calcARI <- function(object, clusters.compare, verbose = TRUE) {
-    lifecycle::deprecate_stop("1.2.0", "calcARI()")
+    lifecycle::deprecate_stop("1.99.0", "calcARI()")
     if (!requireNamespace("mclust", quietly = TRUE))
         stop("Package \"mclust\" needed for this function to work. ",
              "Please install it by command:\n",
@@ -437,7 +437,7 @@ NULL
 #' @section \code{calcPurity}:
 #' \code{calcPurity} is deprecated and is now defunct.
 calcPurity <- function(object, classes.compare, verbose = TRUE) {
-    lifecycle::deprecate_stop("1.2.0", "calcPurity()")
+    lifecycle::deprecate_stop("1.99.0", "calcPurity()")
     if (length(classes.compare) < length(object@clusters) && verbose) {
         print("Calculating purity for subset of full cells")
     }
