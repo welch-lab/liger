@@ -23,6 +23,9 @@
 #' in \code{cellMeta(object)}, as well as expression percentage value for each
 #' feature subset.
 #' @export
+#' @examples
+#' data("pbmc", package = "rliger")
+#' pbmc <- runGeneralQC(pbmc)
 runGeneralQC <- function(
         object,
         mito = TRUE,
@@ -159,8 +162,13 @@ runGeneralQC.Matrix <- function(
                           row.names = colnames(object))
     if (length(featureSubsets) > 0) {
         percentages <- lapply(featureSubsets, function(x) {
-            row.idx <- rownames(object) %in% x
-            colSums(rawData(object)[row.idx,]) / colSums(rawData(object)) * 100
+            rowIdx <- rownames(object) %in% x
+            if (sum(rowIdx) == 0) {
+                return(rep(0, ncol(object)))
+            } else {
+                return(colSums(rawData(object)[rowIdx, , drop = FALSE]) /
+                           colSums(rawData(object)) * 100)
+            }
         })
         results <- cbind(results, as.data.frame(percentages))
     }
@@ -182,6 +190,10 @@ runGeneralQC.Matrix <- function(
 #' @param ... Arguments passed to \code{\link{subsetLigerDataset}}
 #' @return Updated (subset) \code{object}.
 #' @export
+#' @examples
+#' data("pbmc", package = "rliger")
+#' # The example dataset does not contain non-expressing genes or empty barcodes
+#' pbmc <- removeMissing(pbmc)
 removeMissing <- function(
         object,
         orient = c("both", "feature", "cell"),
@@ -240,91 +252,4 @@ removeMissing <- function(
     } else {
         object
     }
-}
-
-#' Generate violin plot of QC metrics of each dataset
-#'
-#' By default, a violin plot grouped by dataset variable, overlaid by a box plot
-#' would be generated. Options are available for adding jittered dot plot
-#' behind.
-#' @param object \linkS4class{liger} object, or a data.frame like object of cell
-#' metadata, where \code{"dataset"} variable must exist.
-#' @param metric Metric to use. Should be found in \code{cellMeta(object)}.
-#' @param groupBy Group data by this categorical variable.
-#' @param colorBy Color the dot, violin and box plot with this variable.
-#' @param dotPlot,violinPlot,boxPlot Whether to add corresponding plot(s).
-#' @param dotColor Specify a color to set uniform color to all dots. Default
-#' \code{"black"}. Set \code{NULL} then colored by \code{colorBy}.
-#' @param dotSize Size of dots.
-#' @param violinAlpha,boxAlpha The transparency of violins or boxes,
-#' respectively. \code{1} is opaque and \code{0} is transparent.
-#' @param xlab,ylab Title for x-/y-axis, respectively. Default \code{groupBy}
-#' and \code{metric}.
-#' @param ... Theme setting parameters. Check \code{\link{.ggplotLigerTheme}}
-#' for more options and details.
-#' @export
-#' @rdname plotQCMetric
-plotQCMetric <- function(
-        object,
-        metric,
-        groupBy = "dataset",
-        colorBy = NULL,
-        dotPlot = FALSE,
-        dotColor = "black",
-        dotSize = 1,
-        violinPlot = TRUE,
-        violinAlpha = .8,
-        boxPlot = FALSE,
-        boxAlpha = 0,
-        xlab = groupBy,
-        ylab = metric,
-        ...
-) {
-    if (is.null(colorBy))
-        p <- ggplot2::ggplot(object, ggplot2::aes(x = .data[[groupBy]],
-                                                  y = .data[[metric]]))
-    else
-        p <- ggplot2::ggplot(object, ggplot2::aes(x = .data[[groupBy]],
-                                                  y = .data[[metric]],
-                                                  color = .data[[colorBy]]))
-    if (isTRUE(dotPlot)) {
-        if (is.null(dotColor))
-            p <- p + ggplot2::geom_jitter(size = dotSize,
-                                          stroke = 0.1,
-                                          height = 0)
-        else
-            p <- p + ggplot2::geom_jitter(color = dotColor,
-                                          size = dotSize,
-                                          stroke = 0.1,
-                                          height = 0)
-    }
-
-    if (isTRUE(violinPlot)) p <- p + ggplot2::geom_violin()
-
-    if (isTRUE(boxPlot)) p <- p + ggplot2::geom_boxplot(alpha = boxAlpha)
-
-    p <- .ggplotLigerTheme(p, xlab = xlab, ylab = ylab, ...)
-    p
-}
-
-#' @export
-#' @rdname plotQCMetric
-plotTotalCountViolin <- function(
-    object,
-    groupBy = "dataset",
-    ...
-) {
-    plotCellViolin(object, y = "nUMI", groupBy = groupBy,
-                   ylab = "Total counts", ...)
-}
-
-#' @export
-#' @rdname plotQCMetric
-plotGeneDetectedViolin <- function(
-    object,
-    groupBy = "dataset",
-    ...
-) {
-    plotCellViolin(object, y = "nGene", groupBy = groupBy,
-                   ylab = "Number of Genes Detected", ...)
 }

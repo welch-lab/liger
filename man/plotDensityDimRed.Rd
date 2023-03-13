@@ -9,6 +9,7 @@ plotDensityDimRed(
   useDimRed = "UMAP",
   splitBy = NULL,
   combinePlot = TRUE,
+  minDensity = 8,
   contour = TRUE,
   contourLineWidth = 0.3,
   contourBins = 5,
@@ -39,6 +40,9 @@ to produce a density plot containing only the cells in each group. Default
 \code{\link[cowplot]{plot_grid}} to combine multiple plots into one. Default
 \code{TRUE} returns combined ggplot. \code{FALSE} returns a list of ggplot
 or a single ggplot when only one plot is requested.}
+
+\item{minDensity}{A positive number to filter out low density region colored
+on plot. Default \code{8}. Setting zero will show density on the whole panel.}
 
 \item{contour}{Logical, whether to draw the contour line. Default
 \code{TRUE}.}
@@ -86,4 +90,9 @@ contour lines. A scatter plot of the dimensionality reduction is added as
 well. The density plot can be splitted by categorical variables (e.g.
 \code{"dataset"}), while the scatter plot will always be shown for all cells
 in subplots as a reference of the global structure.
+}
+\examples{
+data("pbmcPlot", package = "rliger")
+# Example dataset has small number of cells, thus cutoff adjusted.
+plotDensityDimRed(pbmcPlot, minDensity = 1)
 }

@@ -48,19 +48,22 @@
 #' @return dgCMatrix or matrix with all barcodes in \code{datalist} as columns
 #' and the union of genes in \code{datalist} as rows.
 #' @export
+#' @examples
+#' data("pbmc", package = "rliger")
+#' rawDataList <- getMatrix(pbmc, "rawData")
+#' merged <- mergeSparseAll(rawDataList, libraryNames = names(pbmc))
 mergeSparseAll <- function(datalist, libraryNames = NULL) {
     # Use summary to convert the sparse matrices into three-column indexes where
-    # `i` are the row numbers, `j` are the column numbers, and x are the nonzero
+    # i are the row numbers, j are the column numbers, and x are the nonzero
     # entries
     col_offset <- 0
     allGenes <- unique(unlist(lapply(datalist, rownames)))
     allCells <- c()
-    for (i in seq_along(datalist)) {
+    for (i in 1:length(datalist)) {
         curr <- datalist[[i]]
         curr_s <- summary(curr)
-
-        # Now, alter the indexes so that the two 3-column matrices can be properly
-        # merged.
+        # Now, alter the indexes so that the two 3-column matrices can be
+        # properly merged.
         # First, make the current and full column numbers non-overlapping.
         curr_s[, 2] <- curr_s[, 2] + col_offset
 
@@ -126,32 +129,29 @@ mergeDenseAll <- function(datalist, libraryNames = NULL) {
 }
 
 #' Merge hdf5 files
-#'
-#' This function merges hdf5 files generated from different libraries (cell ranger by default)
-#' before they are preprocessed through Liger pipeline.
-#'
+#' @description This function merges hdf5 files generated from different
+#' libraries (cell ranger by default) before they are preprocessed through Liger
+#' pipeline.
 #' @param file.list List of path to hdf5 files.
 #' @param library.names Vector of library names (corresponding to file.list)
-#' @param new.filename String of new hdf5 file name after merging (default new.h5).
+#' @param new.filename String of new hdf5 file name after merging (default
+#' new.h5).
 #' @param format.type string of HDF5 format (10X CellRanger by default).
 #' @param data.name Path to the data values stored in HDF5 file.
 #' @param indices.name Path to the indices of data points stored in HDF5 file.
 #' @param indptr.name Path to the pointers stored in HDF5 file.
 #' @param genes.name Path to the gene names stored in HDF5 file.
 #' @param barcodes.name Path to the barcodes stored in HDF5 file.
-#'
 #' @return Directly generates newly merged hdf5 file.
-#'
 #' @export
 #' @examples
 #' \dontrun{
-#' # For instance, we want to merge two datasets saved in HDF5 files (10X CellRanger)
-#' # paths to datasets: "library1.h5","library2.h5"
+#' # For instance, we want to merge two datasets saved in HDF5 files (10X
+#' # CellRanger) paths to datasets: "library1.h5","library2.h5"
 #' # dataset names: "lib1", "lib2"
 #' # name for output HDF5 file: "merged.h5"
 #' mergeH5(list("library1.h5","library2.h5"), c("lib1","lib2"), "merged.h5")
 #' }
-
 mergeH5 <- function(file.list,
                     library.names,
                     new.filename,

@@ -12,7 +12,7 @@
 #' \code{"scaleData"}, \code{colorBy} has to be a character vector of feature
 #' names. When \code{"H.norm"} or \code{"H"}, \code{colorBy} can be any valid
 #' index to select one factor of interests. Note that character index follows
-#' \code{"factor_[k]"} format, with replacing \code{[k]} with an integer.
+#' \code{"Factor_[k]"} format, with replacing \code{[k]} with an integer.
 #'
 #' When \code{"cellMeta"}, \code{colorBy} has to be an available column name in
 #' the table. Note that, for \code{colorBy} as well as \code{x}, \code{y},
@@ -51,6 +51,18 @@
 #' set. When \code{plotly = TRUE}, all ggplot objects become plotly (htmlwidget)
 #' objects.
 #' @export
+#' @examples
+#' data("pbmcPlot", package = "rliger")
+#' plotCellScatter(pbmcPlot, x = "UMAP.1", y = "UMAP.2",
+#'                 colorBy = "dataset", slot = "cellMeta",
+#'                 labelText = FALSE)
+#' plotCellScatter(pbmcPlot, x = "UMAP.1", y = "UMAP.2",
+#'                 colorBy = "S100A8", slot = "normData",
+#'                 dotOrder = "ascending", dotSize = 2)
+#' plotCellScatter(pbmcPlot, x = "UMAP.1", y = "UMAP.2",
+#'                 colorBy = 2, slot = "H.norm",
+#'                 dotOrder = "ascending", dotSize = 2,
+#'                 colorPalette = "viridis")
 plotCellScatter <- function(
         object,
         x,
@@ -80,6 +92,7 @@ plotCellScatter <- function(
                                               colorDF[, i, drop = FALSE])
             colorByParam[[colorBy[i]]] <- colorBy[i]
         }
+
     } else {
         plotDFList[[1]] <- plotDF
         colorByParam <- list(NULL)
@@ -242,7 +255,8 @@ plotCellScatter <- function(
                 mapping = ggplot2::aes(x = .data[["x"]],
                                        y = .data[["y"]],
                                        label = .data[[labelBy]]),
-                color = "black", size = labelTextSize, inherit.aes = FALSE
+                color = "black", size = labelTextSize, inherit.aes = FALSE,
+                bg.colour = "white", bg.r = .2
             )
             # Important to have `inherit.aes = F` above, otherwise
             # `geom_text_repel` looks for "shapeBy" setting which this newly
@@ -270,7 +284,7 @@ plotCellScatter <- function(
 #' \code{"scaleData"}, \code{y} has to be a character vector of feature names.
 #' When \code{"H.norm"} or \code{"H"}, \code{colorBy} can be any valid index to
 #' select one factor of interests. Note that character index follows
-#' \code{"factor_[k]"} format, with replacing \code{[k]} with an integer.
+#' \code{"Factor_[k]"} format, with replacing \code{[k]} with an integer.
 #'
 #' When \code{"cellMeta"}, \code{y} has to be an available column name in
 #' the table. Note that, for \code{y} as well as \code{groupBy}, \code{colorBy}
@@ -281,6 +295,12 @@ plotCellScatter <- function(
 #' attribute, the subscription goes with \code{"matrixVar.V1"},
 #' \code{"matrixVar.V2"} and etc. These are based on the nature of
 #' \code{as.data.frame} method on a \code{\link[S4Vectors]{DataFrame}} object.
+#'
+#' \code{groupBy} is basically send to \code{ggplot2::aes(x)}, while
+#' \code{colorBy} is for the "colour" aesthetics. Specifying \code{colorBy}
+#' without \code{groupBy} visually creates grouping but there will not be
+#' varying values on the x-axis, so \code{boxWidth} will be forced to the same
+#' value as \code{violinWidth} under this situation.
 #' @param object \linkS4class{liger} object
 #' @param y Available variable name in \code{slot} to look for the value to
 #' visualize.
@@ -303,6 +323,19 @@ plotCellScatter <- function(
 #' objects, when multiple \code{y} variables and/or \code{splitBy} are set. When
 #' \code{plotly = TRUE}, all ggplot objects become plotly (htmlwidget) objects.
 #' @export
+#' @examples
+#' data("pbmcPlot", package = "rliger")
+#' plotCellViolin(pbmcPlot, y = "nUMI", groupBy = "dataset", slot = "cellMeta")
+#' plotCellViolin(pbmcPlot, y = "nUMI", groupBy = "louvain_cluster",
+#'                slot = "cellMeta", splitBy = "dataset",
+#'                colorBy = "louvain_cluster",
+#'                box = TRUE, dot = TRUE,
+#'                ylab = "Total counts per cell",
+#'                colorValues = RColorBrewer::brewer.pal(8, "Set1"))
+#' plotCellViolin(pbmcPlot, y = "S100A8", slot = "normData",
+#'                yFunc = function(x) log2(10000*x + 1),
+#'                groupBy = "dataset", colorBy = "louvain_cluster",
+#'                box = TRUE, ylab = "S100A8 Expression")
 plotCellViolin <- function(
         object,
         y,
@@ -431,6 +464,7 @@ plotCellViolin <- function(
                                              y = .data[[y]],
                                              colour = .data[[colorBy]],
                                              fill = .data[[colorBy]]))
+        if (!identical(colorBy, groupBy)) boxWidth <- violinWidth
     }
 
     if (isTRUE(dot)) {

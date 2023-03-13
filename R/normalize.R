@@ -23,6 +23,9 @@
 #' result in its \code{normPeak} slot.
 #' @rdname normalize
 #' @export
+#' @examples
+#' data("pbmc", package = "rliger")
+#' pbmc <- normalize(pbmc)
 normalize <- function(
         object,
         log = FALSE,

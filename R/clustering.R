@@ -41,6 +41,9 @@
 #' \code{louvain_cluster} variable in \code{cellMeta} slot. Can be fetched
 #' with \code{object$louvain_cluster}
 #' @export
+#' @examples
+#' data("pbmcPlot", package = "rliger")
+#' pbmc <- louvainCluster(pbmcPlot)
 louvainCluster <- function(
         object,
         resolution = 1.0,

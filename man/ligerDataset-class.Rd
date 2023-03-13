@@ -275,3 +275,47 @@ objects by cells. When applying, all feature expression matrix will be merged
 with taking a union of all features for the rows.
 }
 
+\examples{
+data("pbmc", package = "rliger")
+ctrl <- dataset(pbmc, "ctrl")
+
+# Methods for base generics
+ctrl
+print(ctrl)
+dim(ctrl)
+ncol(ctrl)
+nrow(ctrl)
+colnames(ctrl)[1:5]
+rownames(ctrl)[1:5]
+ctrl[1:5, 1:5]
+
+# rliger generics
+## raw data
+m <- rawData(ctrl)
+class(m)
+dim(m)
+## normalized data
+pbmc <- normalize(pbmc)
+ctrl <- dataset(pbmc, "ctrl")
+m <- normData(ctrl)
+class(m)
+dim(m)
+## scaled data
+pbmc <- selectGenes(pbmc)
+pbmc <- scaleNotCenter(pbmc)
+ctrl <- dataset(pbmc, "ctrl")
+m <- scaleData(ctrl)
+class(m)
+dim(m)
+n <- scaleData(pbmc, "ctrl")
+identical(m, n)
+## Any other matrices
+pbmc <- online_iNMF(pbmc, k = 20, miniBatch_size = 100)
+ctrl <- dataset(pbmc, "ctrl")
+V <- getMatrix(ctrl, "V")
+V[1:5, 1:5]
+Vs <- getMatrix(pbmc, "V")
+length(Vs)
+names(Vs)
+identical(Vs$ctrl, V)
+}

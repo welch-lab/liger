@@ -68,7 +68,7 @@ and \code{"H"}. When \code{"rawData"}, \code{"normData"} or
 \code{"scaleData"}, \code{colorBy} has to be a character vector of feature
 names. When \code{"H.norm"} or \code{"H"}, \code{colorBy} can be any valid
 index to select one factor of interests. Note that character index follows
-\code{"factor_[k]"} format, with replacing \code{[k]} with an integer.
+\code{"Factor_[k]"} format, with replacing \code{[k]} with an integer.
 
 When \code{"cellMeta"}, \code{colorBy} has to be an available column name in
 the table. Note that, for \code{colorBy} as well as \code{x}, \code{y},
@@ -81,4 +81,17 @@ attribute, the subscription goes with \code{"matrixVar.V1"},
 \code{"TSNE.1"} or \code{"TSNE.2"} for the 2D embeddings generated with
 rliger package. These are based on the nature of \code{as.data.frame} method
 on a \code{\link[S4Vectors]{DataFrame}} object.
+}
+\examples{
+data("pbmcPlot", package = "rliger")
+plotCellScatter(pbmcPlot, x = "UMAP.1", y = "UMAP.2",
+                colorBy = "dataset", slot = "cellMeta",
+                labelText = FALSE)
+plotCellScatter(pbmcPlot, x = "UMAP.1", y = "UMAP.2",
+                colorBy = "S100A8", slot = "normData",
+                dotOrder = "ascending", dotSize = 2)
+plotCellScatter(pbmcPlot, x = "UMAP.1", y = "UMAP.2",
+                colorBy = 2, slot = "H.norm",
+                dotOrder = "ascending", dotSize = 2,
+                colorPalette = "viridis")
 }

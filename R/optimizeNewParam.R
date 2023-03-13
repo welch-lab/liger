@@ -23,6 +23,13 @@
 #' the new dataset specific \eqn{H} and \eqn{V} matrix, respectively.
 #' @export
 #' @seealso \code{\link{optimizeALS}}
+#' @examples
+#' data("pbmc", package = "rliger")
+#' pbmc <- normalize(pbmc)
+#' pbmc <- selectGenes(pbmc)
+#' pbmc <- scaleNotCenter(pbmc)
+#' pbmc <- optimizeALS(pbmc, k = 20, maxIter = 5)
+#' pbmc <- optimizeNewK(pbmc, k.new = 15, max.iters = 10)
 optimizeNewK <- function(
         object,
         k.new,
@@ -103,11 +110,11 @@ optimizeNewK <- function(
         k.new,
         lambda = lambda,
         thresh = thresh,
-        max.iters = max.iters,
+        maxIter = max.iters,
         H.init = H,
         W.init = W,
         V.init = V,
-        rand.seed = rand.seed,
+        seed = rand.seed,
         verbose = verbose
     )
     return(object)
@@ -258,6 +265,13 @@ optimizeNewData <- function(
 #' \code{V} matrices in each \linkS4class{ligerDataset} object in the
 #' \code{datasets} slot.
 #' @export
+#' @examples
+#' data("pbmc", package = "rliger")
+#' pbmc <- normalize(pbmc)
+#' pbmc <- selectGenes(pbmc)
+#' pbmc <- scaleNotCenter(pbmc)
+#' pbmc <- optimizeALS(pbmc, k = 20, maxIter = 5)
+#' pbmc <- optimizeNewLambda(pbmc, new = 5.5, max.iters = 10)
 optimizeNewLambda <- function(
         object,
         new.lambda,
@@ -279,7 +293,7 @@ optimizeNewLambda <- function(
         maxIter = max.iters,
         H.init = getMatrix(object, "H"),
         W.init = getMatrix(object, "W"),
-        rand.seed = rand.seed,
+        seed = rand.seed,
         verbose = verbose
     )
     return(object)
@@ -299,9 +313,11 @@ optimizeNewLambda <- function(
 #' perform. Default \code{100}.
 #' @param datasets.scale Names of datasets to rescale after subsetting.
 #' Default \code{NULL} does not rescale.
+#' @param seed Random seed to allow reproducible results. Default \code{1}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{TRUE}.
 #' @param cell.subset,cluster.subset \bold{Deprecated}. Please use
 #' \code{cellIdx} to explicitly specify.
-#' @param ... Additional arguments passed to \code{\link{optimizeALS}}
 #' @return Subset \code{object} with factorization matrices reset, including
 #' the \code{W} matrix in \linkS4class{liger} object, and \code{W} and \code{V}
 #' matrices in each \linkS4class{ligerDataset} object in the \code{datasets}
@@ -309,6 +325,14 @@ optimizeNewLambda <- function(
 #' datasets specified by \code{datasets.scale} will also be updated to reflect
 #' the subset.
 #' @export
+#' @examples
+#' data("pbmc", package = "rliger")
+#' pbmc <- normalize(pbmc)
+#' pbmc <- selectGenes(pbmc)
+#' pbmc <- scaleNotCenter(pbmc)
+#' pbmc <- optimizeALS(pbmc, k = 20, maxIter = 10)
+#' pbmc <- optimizeSubset(pbmc, cellIdx = sort(sample(ncol(pbmc), 200)),
+#'                        max.iters = 10)
 optimizeSubset <- function(
         object,
         cellIdx,
@@ -316,7 +340,8 @@ optimizeSubset <- function(
         thresh = 1e-4,
         max.iters = 100,
         datasets.scale = NULL,
-        ...,
+        seed = 1,
+        verbose = TRUE,
         # Deprecated
         cell.subset = NULL,
         cluster.subset = NULL
@@ -337,11 +362,12 @@ optimizeSubset <- function(
         k = object@uns$factorization$k,
         lambda = lambda,
         thresh = thresh,
-        max.iters = max.iters,
+        maxIter = max.iters,
         H.init = getMatrix(object, "H"),
         W.init = getMatrix(object, "W"),
         V.init = getMatrix(object, "V"),
-        ...
+        seed = seed,
+        verbose = verbose,
     )
     return(object)
 }

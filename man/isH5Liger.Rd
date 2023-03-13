@@ -19,3 +19,10 @@ If \code{NULL}, Check if all datasets are made of HDF5 file. Default
 \description{
 Check if a liger or ligerDataset object is made of HDF5 file
 }
+\examples{
+data("pbmc", package = "rliger")
+isH5Liger(pbmc)
+isH5Liger(pbmc, "ctrl")
+ctrl <- dataset(pbmc, "ctrl")
+isH5Liger(ctrl)
+}

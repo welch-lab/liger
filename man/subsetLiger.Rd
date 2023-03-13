@@ -59,6 +59,11 @@ not take the intersection (i.e. nothing done on the feature axis).
 a \linkS4class{ligerDataset} object is also allowed for now and meanwhile,
 setting \code{filename} is supported.
 }
+\examples{
+data("pbmc", package = "rliger")
+pbmc.small <- subsetLiger(pbmc, cellIdx = pbmc$nUMI > 200)
+pbmc.small <- pbmc[, pbmc$nGene > 50]
+}
 \seealso{
 \code{\link{subsetLigerDataset}}
 }

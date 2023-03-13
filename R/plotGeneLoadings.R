@@ -12,6 +12,10 @@
 #' @param ... Additional plot theme setting arguments passed to
 #' \code{\link{.ggScatter}} and \code{\link{.ggplotLigerTheme}}.
 #' @export
+#' @examples
+#' data("pbmcPlot", package = "rliger")
+#' result <- getFactorMarkers(pbmcPlot, "ctrl", "stim")
+#' plotGeneLoadings(pbmcPlot, result, useFactor = 2)
 plotGeneLoadings <- function(
         object,
         markerTable,

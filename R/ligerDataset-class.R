@@ -242,6 +242,12 @@ createH5LigerDataset <- function(
 #' \code{NULL}.
 #' @return \code{TRUE} or \code{FALSE} for the specified check.
 #' @export
+#' @examples
+#' data("pbmc", package = "rliger")
+#' isH5Liger(pbmc)
+#' isH5Liger(pbmc, "ctrl")
+#' ctrl <- dataset(pbmc, "ctrl")
+#' isH5Liger(ctrl)
 isH5Liger <- function(object, dataset = NULL) {
     if (inherits(object, "ligerDataset")) {
         if (length(object@h5fileInfo) == 0) {
@@ -267,6 +273,13 @@ isH5Liger <- function(object, dataset = NULL) {
 #' \linkS4class{ligerDataset} \code{object}, or a named vector for
 #' \linkS4class{liger} object, where the names are dataset names.
 #' @export
+#' @examples
+#' data("pbmc", package = "rliger")
+#' modalOf(pbmc)
+#' ctrl <- dataset(pbmc, "ctrl")
+#' modalOf(ctrl)
+#' ctrl.atac <- as.ligerDataset(ctrl, modal = "atac")
+#' modalOf(ctrl.atac)
 modalOf <- function(object) {
     if (inherits(object, "ligerDataset")) {
         if (class(object) %in% names(.classModalDict))
@@ -378,6 +391,49 @@ setValidity("ligerDataset", .valid.ligerDataset)
 #' @param ... See detailed sections for explanation.
 #' @rdname ligerDataset-class
 #' @export
+#' @examples
+#' data("pbmc", package = "rliger")
+#' ctrl <- dataset(pbmc, "ctrl")
+#'
+#' # Methods for base generics
+#' ctrl
+#' print(ctrl)
+#' dim(ctrl)
+#' ncol(ctrl)
+#' nrow(ctrl)
+#' colnames(ctrl)[1:5]
+#' rownames(ctrl)[1:5]
+#' ctrl[1:5, 1:5]
+#'
+#' # rliger generics
+#' ## raw data
+#' m <- rawData(ctrl)
+#' class(m)
+#' dim(m)
+#' ## normalized data
+#' pbmc <- normalize(pbmc)
+#' ctrl <- dataset(pbmc, "ctrl")
+#' m <- normData(ctrl)
+#' class(m)
+#' dim(m)
+#' ## scaled data
+#' pbmc <- selectGenes(pbmc)
+#' pbmc <- scaleNotCenter(pbmc)
+#' ctrl <- dataset(pbmc, "ctrl")
+#' m <- scaleData(ctrl)
+#' class(m)
+#' dim(m)
+#' n <- scaleData(pbmc, "ctrl")
+#' identical(m, n)
+#' ## Any other matrices
+#' pbmc <- online_iNMF(pbmc, k = 20, miniBatch_size = 100)
+#' ctrl <- dataset(pbmc, "ctrl")
+#' V <- getMatrix(ctrl, "V")
+#' V[1:5, 1:5]
+#' Vs <- getMatrix(pbmc, "V")
+#' length(Vs)
+#' names(Vs)
+#' identical(Vs$ctrl, V)
 setMethod(
     f = "show",
     signature(object = "ligerDataset"),

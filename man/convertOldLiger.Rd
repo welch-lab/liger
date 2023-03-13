@@ -20,3 +20,9 @@ Default \code{"clusters"}.}
 \description{
 Convert old liger object to latest version
 }
+\examples{
+\dontrun{
+# Suppose you have a liger object of old version (<1.99.0)
+newLig <- convertOldLiger(oldLig)
+}
+}

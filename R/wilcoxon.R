@@ -19,6 +19,11 @@
 #' replacement.
 #' @return A 10-columns data.frame with test results.
 #' @export
+#' @examples
+#' library(dplyr)
+#' data("pbmcPlot", package = "rliger")
+#' result <- runWilcoxon(pbmcPlot)
+#' result %>% group_by(group) %>% top_n(2, logFC)
 runWilcoxon <- function(
         object,
         useDatasets = NULL,
@@ -150,6 +155,13 @@ runWilcoxon <- function(
 #' \item{num_factors_V2}{A frequency table indicating the number of factors each
 #' marker appears, in dataset2}
 #' @export
+#' @examples
+#' library(dplyr)
+#' data("pbmcPlot", package = "rliger")
+#' result <- getFactorMarkers(pbmcPlot, dataset1 = "ctrl", dataset2 = "stim")
+#' print(class(result))
+#' print(names(result))
+#' result$shared %>% group_by(factor_num) %>% top_n(2, log2fc)
 getFactorMarkers <- function(
         object,
         dataset1,
@@ -185,7 +197,7 @@ getFactorMarkers <- function(
         datasetSpecificity <- calcDatasetSpecificity(object,
                                                      dataset1 = dataset1,
                                                      dataset2 = dataset2,
-                                                     do.plot = FALSE)[[3]]
+                                                     doPlot = FALSE)[[3]]
     }
     useFactors <- which(abs(datasetSpecificity) <= factorShareThresh)
     if (length(useFactors) == 0) {
@@ -225,7 +237,7 @@ getFactorMarkers <- function(
         V2 <- getMatrix(object, "V", dataset = dataset2)
 
         # if not max factor for any cell in either dataset
-        if (sum(labels[[dataset1]] == i) <= 1 |
+        if (sum(labels[[dataset1]] == i) <= 1 ||
             sum(labels[[dataset2]] == i) <= 1) {
             warning("Factor ", i, " did not appear as max in ",
                     "any cell in either dataset", immediate. = TRUE)

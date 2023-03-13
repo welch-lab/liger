@@ -32,3 +32,8 @@ For a list of dense matrices, usually the values in \code{scaleData} slot of
 a \linkS4class{ligerDataset} object, please use \code{mergeDenseAll} which
 works in the same way.
 }
+\examples{
+data("pbmc", package = "rliger")
+rawDataList <- getMatrix(pbmc, "rawData")
+merged <- mergeSparseAll(rawDataList, libraryNames = names(pbmc))
+}

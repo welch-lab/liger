@@ -84,6 +84,10 @@ only necessary for the first call to run \code{runTSNE}. For more detailed
 FIt-SNE installation instructions, see the liger repo
 \href{https://github.com/welch-lab/liger#readme}{README}.
 }
+\examples{
+data("pbmcPlot", package = "rliger")
+pbmc <- runTSNE(pbmcPlot)
+}
 \seealso{
 \code{\link{runUMAP}}
 }

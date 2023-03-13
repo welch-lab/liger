@@ -16,6 +16,8 @@
 #' \code{\link[cowplot]{plot_grid}} to combine multiple plots into one. Default
 #' \code{TRUE} returns combined ggplot. \code{FALSE} returns a list of ggplot
 #' or a single ggplot when only one plot is requested.
+#' @param minDensity A positive number to filter out low density region colored
+#' on plot. Default \code{8}. Setting zero will show density on the whole panel.
 #' @param contour Logical, whether to draw the contour line. Default
 #' \code{TRUE}.
 #' @param contourLineWidth Numeric, the width of the contour line. Default
@@ -43,11 +45,16 @@
 #' \code{combinePlot = TRUE}. A list of ggplot when multiple plots and
 #' \code{combinePlot = FALSE}.
 #' @export
+#' @examples
+#' data("pbmcPlot", package = "rliger")
+#' # Example dataset has small number of cells, thus cutoff adjusted.
+#' plotDensityDimRed(pbmcPlot, minDensity = 1)
 plotDensityDimRed <- function(
         object,
         useDimRed = "UMAP",
         splitBy = NULL,
         combinePlot = TRUE,
+        minDensity = 8,
         contour = TRUE,
         contourLineWidth = 0.3,
         contourBins = 5,
@@ -89,7 +96,8 @@ plotDensityDimRed <- function(
     if (length(drList) == 0) stop("No plot could be generated")
     if (length(drList) == 1) {
         return(.ggDensity(drList[[1]], dotCoordDF = drList[[1]],
-                          title = title, contour = contour,
+                          title = title, minDensity = minDensity,
+                          contour = contour,
                           contourLineWidth = contourLineWidth,
                           contourBins = contourBins, dot = dot,
                           dotColor = dotColor, dotSize = dotSize,
@@ -97,12 +105,14 @@ plotDensityDimRed <- function(
                           legendFillTitle = legendFillTitle,
                           colorPalette = colorPalette,
                           colorDirection = colorDirection,
-                          dotRaster = dotRaster,...))
+                          dotRaster = dotRaster, ...))
     } else {
         if (is.null(title)) title <- names(drList)
         for (i in seq_along(drList))
             plotList[[i]] <- .ggDensity(drList[[i]], dotCoordDF = dr,
-                                        title = title[i], contour = contour,
+                                        title = title[i],
+                                        minDensity = minDensity,
+                                        contour = contour,
                                         contourLineWidth = contourLineWidth,
                                         contourBins = contourBins,
                                         dotColor = dotColor, dot = dot,
@@ -123,6 +133,7 @@ plotDensityDimRed <- function(
 .ggDensity <- function(
         coordDF,
         dotCoordDF,
+        minDensity = 8,
         contour = TRUE,
         contourLineWidth = 0.3,
         contourBins = 5,
@@ -138,7 +149,7 @@ plotDensityDimRed <- function(
 ) {
     dotRaster <- .checkRaster(nrow(dotCoordDF), dotRaster)
     zeroAsNA <- function(x) {
-        x[x < 8] <- NA
+        x[x < minDensity] <- NA
         x
     }
     x <- colnames(coordDF)[1]

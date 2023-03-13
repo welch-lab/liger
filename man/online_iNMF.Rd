@@ -115,3 +115,11 @@ of calculation on all cells after a number of iterations of minibatches.
 Therefore, the total number of iterations is determined by the setting of
 \code{max.epochs}, total number of cells, and \code{miniBatch_size}.
 }
+\examples{
+data("pbmc", package = "rliger")
+pbmc <- normalize(pbmc)
+pbmc <- selectGenes(pbmc)
+pbmc <- scaleNotCenter(pbmc)
+# Minibatch size has to be less than number of cell in the smallest dataset
+pbmc <- online_iNMF(pbmc, miniBatch_size = 100)
+}

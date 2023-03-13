@@ -33,7 +33,18 @@
 #' \code{\link{.plotHeatmap}} and \code{\link[ComplexHeatmap]{Heatmap}}.
 #' @return \code{\link[ComplexHeatmap]{HeatmapList-class}} object
 #' @export
-#' @rdname plotGeneHeatmap
+#' @rdname plotHeatmap
+#' @examples
+#' data("pbmcPlot", package = "rliger")
+#' plotGeneHeatmap(pbmcPlot, varFeatures(pbmcPlot))
+#' plotGeneHeatmap(pbmcPlot, varFeatures(pbmcPlot),
+#'                 useCellMeta = c("louvain_cluster", "dataset"),
+#'                 cellSplitBy = "louvain_cluster")
+#'
+#' plotFactorHeatmap(pbmcPlot)
+#' plotFactorHeatmap(pbmcPlot, cellIdx = pbmcPlot$louvain_cluster %in% 1:3,
+#'                   useCellMeta = c("louvain_cluster", "dataset"),
+#'                   cellSplitBy = "louvain_cluster")
 plotGeneHeatmap <- function(
         object,
         features,
@@ -73,7 +84,7 @@ plotGeneHeatmap <- function(
 }
 
 #' @export
-#' @rdname plotGeneHeatmap
+#' @rdname plotHeatmap
 plotFactorHeatmap <- function(
         object,
         factors = NULL,
@@ -222,7 +233,7 @@ plotFactorHeatmap <- function(
 
     ## Customized color mapping requires a function object returned by
     ## colorRamp2
-    if (!isTRUE(scale))
+    if (!isTRUE(scale)) {
         # If not scaled (min = 0)
         col_fun <- circlize::colorRamp2(
             breaks = c(0, max(dataMatrix) / 2, max(dataMatrix)),
@@ -231,7 +242,7 @@ plotFactorHeatmap <- function(
                 direction = viridisDirection
             )[c(1, 10, 20)]
         )
-    else
+    } else {
         # If scaling/centering the matrix (z-score), use blue-white-red color
         # palette and let center value (zero) be white
         col_fun <- circlize::colorRamp2(
@@ -240,7 +251,7 @@ plotFactorHeatmap <- function(
                 9, RColorBrewerOption
             )[c(8, 5, 2)]
         )
-
+    }
     ## Construct HeatmapAnnotation
     cellHA <- .constructHA(cellDF, legendTitleSize = legendTitle,
                            legendTextSize = legendText,
@@ -385,11 +396,9 @@ plotFactorHeatmap <- function(
 }
 
 .zScore <- function(x, trim = NULL) {
-    # MARGIN = 1 applies to rows
-    x <- t(apply(x, MARGIN = 1, function(gene) {
-        if (all(gene == 0)) gene
-        else (gene - mean(gene)) / stats::sd(gene)
-    }))
+    gmean <- rowMeansFast(x)
+    gvar <- rowVarsFast(x, gmean)
+    x <- as.matrix((x - gmean) / sqrt(gvar))
     if (!is.null(trim)) {
         if (!is.numeric(trim) || length(trim) != 2)
             warning("`trim` must be a numeric vector of two values")
@@ -399,14 +408,4 @@ plotFactorHeatmap <- function(
         }
     }
     return(x)
-}
-
-.subsetLevels <- function(x) {
-    # `x` should be a factor
-    # Sometimes annotation comes as a factor subset, where the levels contains
-    # more elements than the subset has.
-    # This function reduces the levels not existing in the subset and maintain
-    # the original order of the remaining levels.
-    newLevel <- levels(x)[levels(x) %in% unique(x)]
-    factor(x, levels = newLevel)
 }

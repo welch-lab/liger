@@ -31,6 +31,10 @@
 #' @export
 #' @rdname subsetLiger
 #' @seealso \code{\link{subsetLigerDataset}}
+#' @examples
+#' data("pbmc", package = "rliger")
+#' pbmc.small <- subsetLiger(pbmc, cellIdx = pbmc$nUMI > 200)
+#' pbmc.small <- pbmc[, pbmc$nGene > 50]
 subsetLiger <- function(
         object,
         featureIdx = NULL,
@@ -136,6 +140,11 @@ subsetLiger <- function(
 #' @return A matrix object where rows are cells and columns are specified
 #' features.
 #' @export
+#' @examples
+#' data("pbmc", package = "rliger")
+#' S100A8Exp <- retrieveCellFeature(pbmc, "S100A8")
+#' qcMetrics <- retrieveCellFeature(pbmc, c("nUMI", "nGene", "mito"),
+#'                                  slot = "cellMeta")
 retrieveCellFeature <- function(
         object,
         feature,
@@ -220,6 +229,11 @@ retrieveCellFeature <- function(
 #' @return Subset \code{object}
 #' @export
 #' @rdname subsetLigerDataset
+#' @examples
+#' data("pbmc", package = "rliger")
+#' ctrl <- dataset(pbmc, "ctrl")
+#' ctrl.small <- subsetLigerDataset(ctrl, cellIdx = 1:5)
+#' ctrl.tiny <- ctrl[1:5, 1:5]
 subsetLigerDataset <- function(
     object,
     featureIdx = NULL,
@@ -638,25 +652,31 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
         subsetData$normData <- normData(object)[featureIdx, cellIdx,
                                                   drop = FALSE]
     }
+
+    if (!is.null(object@scaleUnsharedData)) {
+        scaleUnsFeatureIdx <- rownames(object@scaleUnsharedData) %in%
+            rownames(object)[featureIdx]
+    }
+    scaleFeatureIdx <- NULL
+    if (!is.null(scaleData(object))) {
+        scaleFeatureIdx <- rownames(scaleData(object)) %in%
+            rownames(object)[featureIdx]
+    } else if (!is.null(object@V)) {
+        scaleFeatureIdx <- rownames(object@V) %in% rownames(object)[featureIdx]
+    }
     if ("scaleData" %in% slotInvolved) {
         if (!is.null(scaleData(object))) {
-            scaleFeatureIdx <- rownames(scaleData(object)) %in%
-                rownames(object)[featureIdx]
             subsetData$scaleData <-
                 scaleData(object)[scaleFeatureIdx, cellIdx, drop = FALSE]
         }
         if (!is.null(object@scaleUnsharedData)) {
-            scaleUnsFeatureIdx <- rownames(object@scaleUnsharedData) %in%
-                rownames(object)[featureIdx]
             subsetData$scaleUnsharedData <-
                 object@scaleUnsharedData[scaleUnsFeatureIdx, cellIdx,
                                            drop = FALSE]
         }
     }
     if (is.null(useSlot)) {
-        # Users do not specify, subset the whole object
-        if (exists("scaleFeatureIdx")) sfi <- scaleFeatureIdx
-        else sfi <- seq(scaleData(object))
+        sfi <- scaleFeatureIdx
         subsetData <- c(subsetData,
                         list(H = object@H[, cellIdx, drop = FALSE],
                              V = object@V[sfi, , drop = FALSE],

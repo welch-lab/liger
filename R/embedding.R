@@ -40,6 +40,9 @@
 #' \code{cellMeta} slot with the whole 2D embedding matrix.
 #' @seealso \code{\link{runTSNE}}
 #' @export
+#' @examples
+#' data("pbmcPlot", package = "rliger")
+#' pbmc <- runUMAP(pbmcPlot)
 runUMAP <- function(
         object,
         useRaw = FALSE,
@@ -130,6 +133,9 @@ runUMAP <- function(
 #' \code{cellMeta} slot with the whole 2D embedding matrix.
 #' @seealso \code{\link{runUMAP}}
 #' @export
+#' @examples
+#' data("pbmcPlot", package = "rliger")
+#' pbmc <- runTSNE(pbmcPlot)
 runTSNE <- function(
         object,
         useRaw = FALSE,

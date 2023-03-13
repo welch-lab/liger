@@ -35,8 +35,15 @@
 #' @seealso Please refer to \code{\link{plotCellScatter}},
 #' \code{\link{.ggScatter}}, \code{\link{.ggplotLigerTheme}} for additional
 #' graphic setting
-#' @rdname plotClusterDimRed
+#' @rdname plotDimRed
 #' @export
+#' @examples
+#' data("pbmcPlot", package = "rliger")
+#' plotClusterDimRed(pbmcPlot)
+#' plotDatasetDimRed(pbmcPlot)
+#' plotByDatasetAndCluster(pbmcPlot)
+#' plotGeneDimRed(pbmcPlot, varFeatures(pbmcPlot)[1])
+#' plotFactorDimRed(pbmcPlot, 2)
 plotClusterDimRed <- function(
         object,
         useCluster = "louvain_cluster",
@@ -48,7 +55,7 @@ plotClusterDimRed <- function(
                     slot = "cellMeta", dotOrder = "shuffle", ...)
 }
 
-#' @rdname plotClusterDimRed
+#' @rdname plotDimRed
 #' @export
 plotDatasetDimRed <- function(
         object,
@@ -61,7 +68,7 @@ plotDatasetDimRed <- function(
                     dotOrder = "shuffle", ...)
 }
 
-#' @rdname plotClusterDimRed
+#' @rdname plotDimRed
 #' @export
 plotByDatasetAndCluster <- function(
         object,
@@ -82,7 +89,7 @@ plotByDatasetAndCluster <- function(
     return(plot)
 }
 
-#' @rdname plotClusterDimRed
+#' @rdname plotDimRed
 #' @export
 plotGeneDimRed <- function(
         object,
@@ -107,7 +114,7 @@ plotGeneDimRed <- function(
                     colorPalette = colorPalette, ...)
 }
 
-#' @rdname plotClusterDimRed
+#' @rdname plotDimRed
 #' @export
 plotFactorDimRed <- function(
         object,
@@ -130,7 +137,7 @@ plotFactorDimRed <- function(
 # Violin Plots ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#' Visualize gene expression with violin plot
+#' Visualize gene expression or cell metadata with violin plot
 #' @param object A \linkS4class{liger} object.
 #' @param gene Character gene names.
 #' @param byDataset Logical, whether the violin plot should be splitted by
@@ -142,6 +149,14 @@ plotFactorDimRed <- function(
 #' @return ggplot if using a single gene and not splitting by dataset.
 #' Otherwise, list of ggplot.
 #' @export
+#' @rdname plotViolin
+#' @examples
+#' data("pbmcPlot", package = "rliger")
+#' plotGeneViolin(pbmcPlot, varFeatures(pbmcPlot)[1],
+#'                groupBy = "louvain_cluster")
+#' data("pbmc", package = "rliger")
+#' plotTotalCountViolin(pbmc)
+#' plotGeneDetectedViolin(pbmc, dot = TRUE, box = TRUE, colorBy = "dataset")
 plotGeneViolin <- function(
         object,
         gene,
@@ -185,6 +200,28 @@ plotGeneViolin <- function(
     return(plotList)
 }
 
+#' @export
+#' @rdname plotViolin
+plotTotalCountViolin <- function(
+        object,
+        groupBy = "dataset",
+        ...
+) {
+    plotCellViolin(object, y = "nUMI", groupBy = groupBy,
+                   ylab = "Total counts", ...)
+}
+
+#' @export
+#' @rdname plotViolin
+plotGeneDetectedViolin <- function(
+        object,
+        groupBy = "dataset",
+        ...
+) {
+    plotCellViolin(object, y = "nGene", groupBy = groupBy,
+                   ylab = "Number of Genes Detected", ...)
+}
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Proportion #####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -216,6 +253,11 @@ plotGeneViolin <- function(
 #' @return ggplot or list of ggplot
 #' @rdname plotProportion
 #' @export
+#' @examples
+#' data("pbmcPlot", package = "rliger")
+#' plotProportion(pbmcPlot)
+#' plotProportionBar(pbmcPlot, method = "group")
+#' plotProportionPie(pbmcPlot)
 plotProportion <- function(
         object,
         class1 = "louvain_cluster",

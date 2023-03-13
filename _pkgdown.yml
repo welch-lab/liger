@@ -6,9 +6,12 @@ reference:
 - title: "Read Data"
 - contents:
   - starts_with("create")
+  - readLiger
   - read10X
   - restoreH5Liger
   - as.ligerDataset
+  - pbmc
+  - pbmcPlot
 - title: "Preprocessing"
 - contents:
   - runGeneralQC

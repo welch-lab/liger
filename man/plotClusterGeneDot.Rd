@@ -83,3 +83,14 @@ row_names_gp, row_split, row_labels, cluster_column_slices, cluster_columns,
 column_split, column_title_gp, column_title, column_labels, column_names_gp,
 top_annotation}.
 }
+\examples{
+data("pbmcPlot", package = "rliger")
+# Use character vector of genes
+features <- varFeatures(pbmcPlot)[1:10]
+plotClusterGeneDot(pbmcPlot, features = features)
+
+# Use data.frame with grouping information, with more tweak on plot
+features <- data.frame(features, rep(letters[1:5], 2))
+plotClusterGeneDot(pbmcPlot, features = features,
+                   clusterFeature = TRUE, clusterCell = TRUE, maxDotSize = 6)
+}

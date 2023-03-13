@@ -1,4 +1,5 @@
-#' @importFrom Matrix colSums rowSums t
+#' @importFrom Rcpp evalCpp
+#' @importFrom Matrix colSums rowSums t summary
 #' @importFrom foreach "%dopar%"
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data

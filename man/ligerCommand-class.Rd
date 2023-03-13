@@ -40,3 +40,9 @@ an alternative algorithm, which a call does not actually reach to, but it
 would still be included for this call.}
 }}
 
+\examples{
+data("pbmc", package = "rliger")
+pbmc <- normalize(pbmc)
+cmd <- commands(pbmc, "normalize")
+cmd
+}

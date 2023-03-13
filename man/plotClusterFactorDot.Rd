@@ -84,3 +84,7 @@ row_names_gp, row_split, row_labels, cluster_column_slices, cluster_columns,
 column_split, column_title_gp, column_title, column_labels, column_names_gp,
 top_annotation}.
 }
+\examples{
+data("pbmcPlot", package = "rliger")
+plotClusterFactorDot(pbmcPlot)
+}

@@ -51,3 +51,7 @@ feature subset.
 Calculate number of UMIs, number of detected features and
 percentage of feature subset (e.g. mito) expression per cell.
 }
+\examples{
+data("pbmc", package = "rliger")
+pbmc <- runGeneralQC(pbmc)
+}

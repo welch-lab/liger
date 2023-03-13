@@ -22,6 +22,9 @@
 #' \code{cellIdx} is occupied by internal implementation.
 #' @return Subset of \linkS4class{liger} \code{object}.
 #' @export
+#' @examples
+#' data("pbmc", package = "rliger")
+#' pbmc <- downsample(pbmc)
 downsample <- function(
     object,
     balance = NULL,

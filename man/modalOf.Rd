@@ -20,3 +20,11 @@ A single character of modality setting value for
 Return preset modality of a ligerDataset object or that of all datasets in a
 liger object
 }
+\examples{
+data("pbmc", package = "rliger")
+modalOf(pbmc)
+ctrl <- dataset(pbmc, "ctrl")
+modalOf(ctrl)
+ctrl.atac <- as.ligerDataset(ctrl, modal = "atac")
+modalOf(ctrl.atac)
+}

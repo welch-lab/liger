@@ -240,10 +240,12 @@ createLiger <- function(
                 return("Variable features do not match dimension of W matrix")
         for (d in names(x)) {
             ld <- dataset(x, d)
-            if (!is.null(ld@V))
+            if (!is.null(ld@V)) {
                 if (!identical(rownames(ld@V), varFeatures(x)))
                     return(paste("Variable features do not match dimension",
                                  "of V matrix in dataset", d))
+            }
+
             if (!is.null(scaleData(ld))) {
                 if (!isH5Liger(ld)) {
                     if (!identical(rownames(scaleData(ld)), varFeatures(x)))
@@ -315,6 +317,42 @@ is.newLiger <- function(object) {
 #' @return See detailed sections for explanetion.
 #' @export
 #' @rdname liger-class
+#' @examples
+#' data("pbmcPlot", package = "rliger")
+#' # Methods for base generics
+#' pbmcPlot
+#' print(pbmcPlot)
+#' dim(pbmcPlot)
+#' ncol(pbmcPlot)
+#' colnames(pbmcPlot)[1:5]
+#' pbmcPlot[varFeatures(pbmcPlot)[1:10], 1:10]
+#' names(pbmcPlot)
+#' length(pbmcPlot)
+#'
+#' # rliger generics
+#' ## Retrieving dataset(s), replacement methods available
+#' datasets(pbmcPlot)
+#' dataset(pbmcPlot, "ctrl")
+#' dataset(pbmcPlot, 2)
+#'
+#' ## Retrieving cell metadata, replacement methods available
+#' cellMeta(pbmcPlot)
+#' head(pbmcPlot[["nUMI"]])
+#' head(pbmcPlot$UMAP)
+#'
+#' ## Retrieving variable features, replacement methods available
+#' varFeatures(pbmcPlot)
+#'
+#' ## Command record/history
+#' pbmcPlot <- scaleNotCenter(pbmcPlot)
+#' commands(pbmcPlot)
+#' commands(pbmcPlot, funcName = "scaleNotCenter")
+#'
+#' # S3 methods
+#' c(pbmcPlot, pbmcPlot)
+#'
+#' library(ggplot2)
+#' ggplot(pbmcPlot, aes(x = UMAP.1, y = UMAP.2)) + geom_point()
 setMethod(
     f = "show",
     signature(object = "liger"),

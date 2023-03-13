@@ -55,3 +55,7 @@ result in its \code{normPeak} slot.
 Perform normalization on each rawData matrix from each dataset
 to account for total feature expression across a cell.
 }
+\examples{
+data("pbmc", package = "rliger")
+pbmc <- normalize(pbmc)
+}

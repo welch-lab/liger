@@ -19,7 +19,14 @@ setClassUnion("matrixLike", c("matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix"))
 #' @return A ligerDataset object by default, or a modality specific sub-class of
 #' ligerDataset object according to \code{modal}.
 #' @export
-#' @author Yichen Wang
+#' @examples
+#' data("pbmc", package = "rliger")
+#' ctrl <- dataset(pbmc, "ctrl")
+#' ctrl
+#' as.ligerDataset(ctrl, modal = "atac")
+#' rawCounts <- rawData(ctrl)
+#' class(rawCounts)
+#' as.ligerDataset(rawCounts)
 setGeneric("as.ligerDataset",
            function(x, modal = c("default", "rna", "atac")) {
                standardGeneric("as.ligerDataset")
@@ -152,6 +159,11 @@ setMethod(
 #' clustering assignment, which originally located in \code{clusters} slot.
 #' Default \code{"clusters"}.
 #' @export
+#' @examples
+#' \dontrun{
+#' # Suppose you have a liger object of old version (<1.99.0)
+#' newLig <- convertOldLiger(oldLig)
+#' }
 convertOldLiger <- function(
         object,
         dimredName = "tsne.coords",

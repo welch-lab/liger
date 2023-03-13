@@ -30,6 +30,18 @@ Maintainer: Chao Gao <gchao@umich.edu>
 BugReports: https://github.com/welch-lab/liger/issues
 URL: https://github.com/welch-lab/liger
 License: GPL-3 | file LICENSE
+biocViews:
+LazyData: true
+RoxygenNote: 7.2.3
+VignetteBuilder: knitr
+Encoding: UTF-8
+LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress
+Depends:
+    Matrix,
+    methods,
+    stats,
+    utils,
+    R (>= 2.10)
 Imports: 
     circlize,
     cowplot,
@@ -47,22 +59,13 @@ Imports:
     parallel,
     RANN,
     RColorBrewer,
+    Rcpp,
     rlang,
     Rtsne,
     S4Vectors,
     scales,
-    stats,
-    utils,
     uwot,
     viridis
-biocViews:
-LazyData: true
-LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress
-Depends:
-    Matrix,
-    methods,
-RoxygenNote: 7.2.3
-Encoding: UTF-8
 Suggests:
     AnnotationDbi,
     EnhancedVolcano,
@@ -86,4 +89,3 @@ Suggests:
     SingleCellExperiment,
     SummarizedExperiment,
     testthat
-VignetteBuilder: knitr

@@ -123,6 +123,11 @@ recordCommand <- function(
 #' @param object A \code{ligerCommand} object
 #' @export
 #' @rdname ligerCommand-class
+#' @examples
+#' data("pbmc", package = "rliger")
+#' pbmc <- normalize(pbmc)
+#' cmd <- commands(pbmc, "normalize")
+#' cmd
 setMethod(
     "show",
     signature(object = "ligerCommand"),
@@ -174,6 +179,12 @@ setMethod(
 #' @return If any difference found, a character vector summarizing all
 #' differences
 #' @export
+#' @examples
+#' data("pbmc", package = "rliger")
+#' pbmc <- normalize(pbmc)
+#' pbmc <- normalize(pbmc, log = TRUE, scaleFactor = 1e4)
+#' cmds <- commands(pbmc)
+#' commandDiff(pbmc, cmds[1], cmds[2])
 commandDiff <- function(object, cmd1, cmd2) {
     cmd1 <- commands(object, cmd1)
     if (!inherits(cmd1, "ligerCommand"))
@@ -238,12 +249,6 @@ commandDiff <- function(object, cmd1, cmd2) {
                              "Please print `x@dependencyVersion` and ",
                              "`y@dependencyVersion` to see the differences."))
     return(msg)
-}
-
-
-foo <- function(object, param1 = 1, arg2 = "yo", default = NULL) {
-    object <- recordCommand(object)
-    return(object)
 }
 
 #' @section Command records:

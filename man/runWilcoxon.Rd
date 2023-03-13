@@ -46,3 +46,9 @@ A 10-columns data.frame with test results.
 Perform Wilcoxon rank-sum tests on specified dataset using
 given method.
 }
+\examples{
+library(dplyr)
+data("pbmcPlot", package = "rliger")
+result <- runWilcoxon(pbmcPlot)
+result \%>\% group_by(group) \%>\% top_n(2, logFC)
+}

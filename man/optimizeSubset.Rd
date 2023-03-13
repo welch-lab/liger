@@ -11,7 +11,8 @@ optimizeSubset(
   thresh = 1e-04,
   max.iters = 100,
   datasets.scale = NULL,
-  ...,
+  seed = 1,
+  verbose = TRUE,
   cell.subset = NULL,
   cluster.subset = NULL
 )
@@ -34,7 +35,10 @@ perform. Default \code{100}.}
 \item{datasets.scale}{Names of datasets to rescale after subsetting.
 Default \code{NULL} does not rescale.}
 
-\item{...}{Additional arguments passed to \code{\link{optimizeALS}}}
+\item{seed}{Random seed to allow reproducible results. Default \code{1}.}
+
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{TRUE}.}
 
 \item{cell.subset, cluster.subset}{\bold{Deprecated}. Please use
 \code{cellIdx} to explicitly specify.}
@@ -50,4 +54,13 @@ the subset.
 \description{
 Uses an efficient strategy for updating that takes advantage of
 the information in the existing factorization.
+}
+\examples{
+data("pbmc", package = "rliger")
+pbmc <- normalize(pbmc)
+pbmc <- selectGenes(pbmc)
+pbmc <- scaleNotCenter(pbmc)
+pbmc <- optimizeALS(pbmc, k = 20, maxIter = 10)
+pbmc <- optimizeSubset(pbmc, cellIdx = sort(sample(ncol(pbmc), 200)),
+                       max.iters = 10)
 }

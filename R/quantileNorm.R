@@ -73,6 +73,9 @@ setGeneric(
 #' of \code{H.norm} and \code{clusters} will be returned.
 #' @rdname quantileNorm
 #' @export
+#' @examples
+#' data("pbmcPlot", package = "rliger")
+#' pbmc <- quantileNorm(pbmcPlot)
 setMethod(
     "quantileNorm",
     signature(object = "liger"),

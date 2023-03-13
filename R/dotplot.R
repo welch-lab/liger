@@ -47,6 +47,16 @@
 #' \code{\link[ComplexHeatmap]{Heatmap}}. See Details.
 #' @return \code{\link[ComplexHeatmap]{HeatmapList}} object.
 #' @export
+#' @examples
+#' data("pbmcPlot", package = "rliger")
+#' # Use character vector of genes
+#' features <- varFeatures(pbmcPlot)[1:10]
+#' plotClusterGeneDot(pbmcPlot, features = features)
+#'
+#' # Use data.frame with grouping information, with more tweak on plot
+#' features <- data.frame(features, rep(letters[1:5], 2))
+#' plotClusterGeneDot(pbmcPlot, features = features,
+#'                    clusterFeature = TRUE, clusterCell = TRUE, maxDotSize = 6)
 plotClusterGeneDot <- function(
         object,
         features,
@@ -75,7 +85,7 @@ plotClusterGeneDot <- function(
         # trivial data.frame operation
         features <- as.data.frame(features)
         features <- features[,c(1,2)]
-    } else {
+    } else if (is.character(features)) {
         features <- data.frame(feature = features)
     }
 
@@ -120,17 +130,6 @@ plotClusterGeneDot <- function(
         cellSplitVar = cellSplitVar, cellLabels = cellLabels, ...
     )
 }
-
-
-
-
-
-
-
-
-
-
-
 
 #' Make dot plot of factor loading in cell groups
 #' @description This function produces dot plots. Each column represent a group
@@ -180,6 +179,9 @@ plotClusterGeneDot <- function(
 #' \code{\link[ComplexHeatmap]{Heatmap}}. See Details.
 #' @return \code{\link[ComplexHeatmap]{HeatmapList}} object.
 #' @export
+#' @examples
+#' data("pbmcPlot", package = "rliger")
+#' plotClusterFactorDot(pbmcPlot)
 plotClusterFactorDot <- function(
         object,
         groupBy = "louvain_cluster",
@@ -226,7 +228,8 @@ plotClusterFactorDot <- function(
     if (ncol(cellSplitVar) == 0) cellSplitVar <- NULL
 
     .complexHeatmapDotPlot(
-        colorMat = expMat, sizeMat = percMat, featureAnnDF = colnames(mat),
+        colorMat = expMat, sizeMat = percMat,
+        featureAnnDF = data.frame(colnames(mat)),
         legendColorTitle = legendColorTitle, legendSizeTitle = legendSizeTitle,
         cellSplitVar = cellSplitVar, cellLabels = cellLabels,
         viridisOption = viridisOption, ...
@@ -389,7 +392,7 @@ plotClusterFactorDot <- function(
             featureSplitVar <- sliceLabel
         } else {
             # TODO whether to have better error messages on unknown classes?
-            featureLabels <- featureAnnDF
+            featureLabels <- featureAnnDF[,1]
         }
     }
     if (isFALSE(transpose)) {

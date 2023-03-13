@@ -38,3 +38,9 @@ a whole \linkS4class{liger} object of the subset. Useful for plotting.
 Internally used by \code{\link{plotCellScatter}} and
 \code{\link{plotCellViolin}}.
 }
+\examples{
+data("pbmc", package = "rliger")
+S100A8Exp <- retrieveCellFeature(pbmc, "S100A8")
+qcMetrics <- retrieveCellFeature(pbmc, c("nUMI", "nGene", "mito"),
+                                 slot = "cellMeta")
+}

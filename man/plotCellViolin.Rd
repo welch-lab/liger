@@ -63,7 +63,7 @@ and \code{"H"}. When \code{"rawData"}, \code{"normData"} or
 \code{"scaleData"}, \code{y} has to be a character vector of feature names.
 When \code{"H.norm"} or \code{"H"}, \code{colorBy} can be any valid index to
 select one factor of interests. Note that character index follows
-\code{"factor_[k]"} format, with replacing \code{[k]} with an integer.
+\code{"Factor_[k]"} format, with replacing \code{[k]} with an integer.
 
 When \code{"cellMeta"}, \code{y} has to be an available column name in
 the table. Note that, for \code{y} as well as \code{groupBy}, \code{colorBy}
@@ -74,4 +74,24 @@ table, using a column (e.g. named as \code{"column1"} in a certain matrix
 attribute, the subscription goes with \code{"matrixVar.V1"},
 \code{"matrixVar.V2"} and etc. These are based on the nature of
 \code{as.data.frame} method on a \code{\link[S4Vectors]{DataFrame}} object.
+
+\code{groupBy} is basically send to \code{ggplot2::aes(x)}, while
+\code{colorBy} is for the "colour" aesthetics. Specifying \code{colorBy}
+without \code{groupBy} visually creates grouping but there will not be
+varying values on the x-axis, so \code{boxWidth} will be forced to the same
+value as \code{violinWidth} under this situation.
+}
+\examples{
+data("pbmcPlot", package = "rliger")
+plotCellViolin(pbmcPlot, y = "nUMI", groupBy = "dataset", slot = "cellMeta")
+plotCellViolin(pbmcPlot, y = "nUMI", groupBy = "louvain_cluster",
+               slot = "cellMeta", splitBy = "dataset",
+               colorBy = "louvain_cluster",
+               box = TRUE, dot = TRUE,
+               ylab = "Total counts per cell",
+               colorValues = RColorBrewer::brewer.pal(8, "Set1"))
+plotCellViolin(pbmcPlot, y = "S100A8", slot = "normData",
+               yFunc = function(x) log2(10000*x + 1),
+               groupBy = "dataset", colorBy = "louvain_cluster",
+               box = TRUE, ylab = "S100A8 Expression")
 }

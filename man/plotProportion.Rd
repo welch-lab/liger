@@ -90,3 +90,9 @@ cross-category proportion. \code{plotProportionDot} creates dot plots.
 plot. \code{plotProportion} produces a combination of both bar plots and dot
 plot.
 }
+\examples{
+data("pbmcPlot", package = "rliger")
+plotProportion(pbmcPlot)
+plotProportionBar(pbmcPlot, method = "group")
+plotProportionPie(pbmcPlot)
+}

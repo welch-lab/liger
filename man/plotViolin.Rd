@@ -2,9 +2,15 @@
 % Please edit documentation in R/visualization2.R
 \name{plotGeneViolin}
 \alias{plotGeneViolin}
-\title{Visualize gene expression with violin plot}
+\alias{plotTotalCountViolin}
+\alias{plotGeneDetectedViolin}
+\title{Visualize gene expression or cell metadata with violin plot}
 \usage{
 plotGeneViolin(object, gene, byDataset = TRUE, groupBy = NULL, ...)
+
+plotTotalCountViolin(object, groupBy = "dataset", ...)
+
+plotGeneDetectedViolin(object, groupBy = "dataset", ...)
 }
 \arguments{
 \item{object}{A \linkS4class{liger} object.}
@@ -25,5 +31,13 @@ ggplot if using a single gene and not splitting by dataset.
 Otherwise, list of ggplot.
 }
 \description{
-Visualize gene expression with violin plot
+Visualize gene expression or cell metadata with violin plot
+}
+\examples{
+data("pbmcPlot", package = "rliger")
+plotGeneViolin(pbmcPlot, varFeatures(pbmcPlot)[1],
+               groupBy = "louvain_cluster")
+data("pbmc", package = "rliger")
+plotTotalCountViolin(pbmc)
+plotGeneDetectedViolin(pbmc, dot = TRUE, box = TRUE, colorBy = "dataset")
 }

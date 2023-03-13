@@ -73,6 +73,13 @@
 #' \linkS4class{ligerDataset} object in \code{datasets} slot is updated with the
 #' corresponding result matrices.
 #' @export
+#' @examples
+#' data("pbmc", package = "rliger")
+#' pbmc <- normalize(pbmc)
+#' pbmc <- selectGenes(pbmc)
+#' pbmc <- scaleNotCenter(pbmc)
+#' # Minibatch size has to be less than number of cell in the smallest dataset
+#' pbmc <- online_iNMF(pbmc, miniBatch_size = 100)
 online_iNMF <- function(
         object,
         X_new = NULL,
@@ -399,16 +406,23 @@ online_iNMF <- function(
             V[[i]] <- matrix(0, nGenes, k)
         }
     }
+    factorNames <- paste0("Factor_", seq(k))
+    colnames(W) <- factorNames
     object@W <- W
     for (i in dataIdx) {
         ld <- dataset(object, i)
+        rownames(H[[i]]) <- factorNames
         ld@H <- H[[i]]
+        colnames(V[[i]]) <- factorNames
         ld@V <- V[[i]]
+        dimnames(A[[i]]) <- list(factorNames, factorNames)
         ld@A <- A[[i]]
+        colnames(B[[i]]) <- factorNames
         ld@B <- B[[i]]
         datasets(object, check = FALSE)[[i]] <- ld
     }
-    object@uns$factorization$k <- ncol(W)
+    object@uns$factorization$k <- k
+    object@uns$factorization$lambda <- lambda
     object
 }
 

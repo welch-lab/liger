@@ -46,3 +46,8 @@ plot. Default \code{30}.}
 \description{
 Visualize factor expression and gene loading
 }
+\examples{
+data("pbmcPlot", package = "rliger")
+result <- getFactorMarkers(pbmcPlot, "ctrl", "stim")
+plotGeneLoadings(pbmcPlot, result, useFactor = 2)
+}

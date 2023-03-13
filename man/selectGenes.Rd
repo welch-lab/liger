@@ -81,6 +81,11 @@ downstream analysis. Assuming that gene expression approximately follows a
 Poisson distribution, this function identifies genes with gene expression
 variance above a given variance threshold (relative to mean gene expression).
 }
+\examples{
+data("pbmc", package = "rliger")
+pbmc <- normalize(pbmc)
+pbmc <- selectGenes(pbmc)
+}
 \seealso{
 \code{\link{plotVarFeatures}}
 }

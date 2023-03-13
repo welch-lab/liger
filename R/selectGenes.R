@@ -45,6 +45,10 @@
 #' @seealso \code{\link{plotVarFeatures}}
 #' @useDynLib rliger, .registration = TRUE
 #' @export
+#' @examples
+#' data("pbmc", package = "rliger")
+#' pbmc <- normalize(pbmc)
+#' pbmc <- selectGenes(pbmc)
 selectGenes <- function(
         object,
         var.thresh = 0.1,
@@ -95,6 +99,10 @@ selectGenes <- function(
         if (isTRUE(verbose))
             .log("Selecting HVG for dataset: ", d)
         ld <- dataset(object, d)
+        if (is.null(normData(ld))) {
+            warning("Dataset \"", d, "\" is not normalized, skipped")
+            next
+        }
         ## Make sure that all required feature meta values exist ####
         if (isH5Liger(ld)) {
             ld <- calcGeneVars.H5(ld, chunkSize = chunkSize,

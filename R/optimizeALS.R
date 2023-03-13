@@ -25,7 +25,7 @@
 #' @param thresh Convergence threshold. Convergence occurs when
 #' \eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-6}.
 #' @param maxIter Maximum number of block coordinate descent iterations to
-#' perform. Default \code{30}.
+#' perform. Default \code{10}.
 #' @param nrep Number of restarts to perform (iNMF objective function is
 #' non-convex, so taking the best objective from multiple successive
 #' initialization is recommended). For easier reproducibility, this increments
@@ -59,6 +59,12 @@
 #' the dataset specific \eqn{H} and \eqn{V} matrix, respectively.
 #' @rdname optimizeALS
 #' @export
+#' @examples
+#' data("pbmc", package = "rliger")
+#' pbmc <- normalize(pbmc)
+#' pbmc <- selectGenes(pbmc)
+#' pbmc <- scaleNotCenter(pbmc)
+#' pbmc <- optimizeALS(pbmc, k = 20, maxIter = 5)
 setGeneric(
     "optimizeALS",
     function(
@@ -66,7 +72,7 @@ setGeneric(
         k,
         lambda = 5.0,
         thresh = 1e-6,
-        maxIter = 30,
+        maxIter = 10,
         nrep = 1,
         H.init = NULL,
         W.init = NULL,
@@ -168,7 +174,6 @@ setMethod(
             )
             object@W <- out$W
             rownames(object@W) <- varFeatures(object)
-            object@uns$factorization$k <- ncol(out$W)
             for (d in names(object)) {
                 ld <- dataset(object, d)
                 ld@H <- out$H[[d]]
@@ -346,7 +351,7 @@ setMethod(
             }
         }
         out <- list(H = Hm, V = Vm, W = t(Wm))
-        factorNames <- paste0("factor_", seq(k))
+        factorNames <- paste0("Factor_", seq(k))
         for (i in seq(nDatasets)) {
             out$H[[i]] <- t(out$H[[i]])
             colnames(out$H[[i]]) <- colnames(object[[i]])

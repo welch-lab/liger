@@ -11,7 +11,7 @@ optimizeALS(
   k,
   lambda = 5,
   thresh = 1e-06,
-  maxIter = 30,
+  maxIter = 10,
   nrep = 1,
   H.init = NULL,
   W.init = NULL,
@@ -84,7 +84,7 @@ dataset-specific effects more strongly (i.e. alignment should increase as
 \eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-6}.}
 
 \item{maxIter}{Maximum number of block coordinate descent iterations to
-perform. Default \code{30}.}
+perform. Default \code{10}.}
 
 \item{nrep}{Number of restarts to perform (iNMF objective function is
 non-convex, so taking the best objective from multiple successive
@@ -142,4 +142,11 @@ a \eqn{V} matrix (k by genes), and a shared \eqn{W} matrix (k by genes). The
 consistent among all datasets, as it represents the shared components of the
 metagenes across datasets. The \eqn{V} matrices represent the
 dataset-specific components of the metagenes.
+}
+\examples{
+data("pbmc", package = "rliger")
+pbmc <- normalize(pbmc)
+pbmc <- selectGenes(pbmc)
+pbmc <- scaleNotCenter(pbmc)
+pbmc <- optimizeALS(pbmc, k = 20, maxIter = 5)
 }

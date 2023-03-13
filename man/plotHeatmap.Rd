@@ -85,3 +85,15 @@ value and lower value limits the minimum value. Default \code{c(0, 0.03)}.}
 \description{
 Plot Heatmap of Gene Expression or Factor Loading
 }
+\examples{
+data("pbmcPlot", package = "rliger")
+plotGeneHeatmap(pbmcPlot, varFeatures(pbmcPlot))
+plotGeneHeatmap(pbmcPlot, varFeatures(pbmcPlot),
+                useCellMeta = c("louvain_cluster", "dataset"),
+                cellSplitBy = "louvain_cluster")
+
+plotFactorHeatmap(pbmcPlot)
+plotFactorHeatmap(pbmcPlot, cellIdx = pbmcPlot$louvain_cluster \%in\% 1:3,
+                  useCellMeta = c("louvain_cluster", "dataset"),
+                  cellSplitBy = "louvain_cluster")
+}

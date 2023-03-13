@@ -91,6 +91,14 @@ factor) is set. List object when multiple of those are specified.
 \description{
 some text
 }
+\examples{
+data("pbmcPlot", package = "rliger")
+plotClusterDimRed(pbmcPlot)
+plotDatasetDimRed(pbmcPlot)
+plotByDatasetAndCluster(pbmcPlot)
+plotGeneDimRed(pbmcPlot, varFeatures(pbmcPlot)[1])
+plotFactorDimRed(pbmcPlot, 2)
+}
 \seealso{
 Please refer to \code{\link{plotCellScatter}},
 \code{\link{.ggScatter}}, \code{\link{.ggplotLigerTheme}} for additional

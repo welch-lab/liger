@@ -39,6 +39,12 @@ object, a \code{SingleCellExperiment} object, a \code{Seurat} object, and
 \code{AnnData} object. This method also supports modality setting to a
 \linkS4class{ligerDataset} inherited object.
 }
-\author{
-Yichen Wang
+\examples{
+data("pbmc", package = "rliger")
+ctrl <- dataset(pbmc, "ctrl")
+ctrl
+as.ligerDataset(ctrl, modal = "atac")
+rawCounts <- rawData(ctrl)
+class(rawCounts)
+as.ligerDataset(rawCounts)
 }
