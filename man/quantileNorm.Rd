@@ -19,7 +19,7 @@ quantileNorm(
   refineKNN = TRUE,
   clusterName = "H.norm_cluster",
   seed = 1,
-  verbose = TRUE
+  verbose = getOption("ligerVerbose")
 )
 
 \S4method{quantileNorm}{liger}(
@@ -35,7 +35,7 @@ quantileNorm(
   refineKNN = TRUE,
   clusterName = "H.norm_cluster",
   seed = 1,
-  verbose = TRUE
+  verbose = getOption("ligerVerbose")
 )
 
 \S4method{quantileNorm}{list}(
@@ -50,7 +50,7 @@ quantileNorm(
   eps = 0.9,
   refineKNN = TRUE,
   seed = 1,
-  verbose = TRUE
+  verbose = getOption("ligerVerbose")
 )
 }
 \arguments{
@@ -96,7 +96,7 @@ in \code{cellMeta} slot of \code{object}. Default \code{"H.norm_cluster"}.}
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{TRUE}.}
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 }
 \value{
 For method on \linkS4class{liger} object, the object will be returned

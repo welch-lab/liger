@@ -19,7 +19,7 @@ online_iNMF(
   miniBatch_size = 5000,
   h5_chunk_size = 1000,
   seed = 123,
-  verbose = TRUE
+  verbose = getOption("ligerVerbose")
 )
 }
 \arguments{
@@ -63,8 +63,8 @@ chunk size should be no larger than the batch size.}
 
 \item{seed}{Random seed to allow reproducible results. Default \code{123}.}
 
-\item{verbose}{Logical. Whether to show information of the progress.
-Default \code{TRUE}.}
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 }
 \value{
 \code{object} with \code{W} slot updated with resulting \eqn{W}

@@ -16,7 +16,7 @@
 #' of the same dataset can be run with one rep if necessary. Default \code{1}.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{TRUE}.
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @noRd
 optimizeUANLS <- function(
         object,
@@ -26,7 +26,7 @@ optimizeUANLS <- function(
         nrep = 1,
         thresh = 1e-10,
         seed = 1,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
 ) {
     set.seed(seed)
     if (isTRUE(verbose))

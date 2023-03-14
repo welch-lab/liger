@@ -66,8 +66,8 @@
 #' @param h5_chunk_size Chunk size of input hdf5 files. Default \code{1000}. The
 #' chunk size should be no larger than the batch size.
 #' @param seed Random seed to allow reproducible results. Default \code{123}.
-#' @param verbose Logical. Whether to show information of the progress.
-#' Default \code{TRUE}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @return \code{object} with \code{W} slot updated with resulting \eqn{W}
 #' matrix; the \code{H}, \code{V}, \code{A} and \code{B} slots of each
 #' \linkS4class{ligerDataset} object in \code{datasets} slot is updated with the
@@ -95,7 +95,7 @@ online_iNMF <- function(
         miniBatch_size = 5000,
         h5_chunk_size = 1000,
         seed = 123,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
 ) {
     if (!inherits(object, "liger"))
         stop("Please use a liger object.")
@@ -222,7 +222,7 @@ online_iNMF <- function(
         epochNext <- rep(FALSE, length(object))
         sqrtLambda <- sqrt(lambda)
 
-        .log("Initialization done.")
+        if (isTRUE(verbose)) .log("Initialization done.")
 
         # chunk permutation: shuffle cell index by H5 chunks
         allIdx <- rep(list(NULL), length(object))

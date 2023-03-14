@@ -13,8 +13,8 @@
 #' @param usePeak Logical, whether to test peak counts instead of gene
 #' expression. Requires presence of ATAC modility datasets. Default
 #' \code{FALSE}.
-#' @param verbose Logical. Whether to show information of the progress.
-#' Default \code{TRUE}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param data.use,compare.method \bold{Deprecated}. See Usage section for
 #' replacement.
 #' @return A 10-columns data.frame with test results.
@@ -30,7 +30,7 @@ runWilcoxon <- function(
         method = c("clusters", "datasets"),
         useCluster = "louvain_cluster",
         usePeak = FALSE,
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         # Deprecated coding style,
         data.use = useDatasets,
         compare.method = method
@@ -143,7 +143,7 @@ runWilcoxon <- function(
 #' @param printGenes Logical. Whether to print ordered markers passing logFC,
 #' UMI and frac thresholds, when \code{verbose = TRUE}. Default \code{FALSE}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{TRUE}.
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param factor.share.thresh,dataset.specificity,log.fc.thresh,pval.thresh,num.genes,print.genes
 #' \bold{Deprecated}. See Usage section for replacement.
 #' @return A list object consisting of the following entries:
@@ -172,7 +172,7 @@ getFactorMarkers <- function(
         pvalThresh = 0.05,
         nGenes = 30,
         printGenes = FALSE,
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         # Deprecated coding style
         factor.share.thresh = factorShareThresh,
         dataset.specificity = datasetSpecificity,
@@ -403,7 +403,7 @@ calcDatasetSpecificity <- function(
 wilcoxauc <- function(X,
                       y,
                       groups_use = NULL,
-                      verbose = TRUE) {
+                      verbose = getOption("ligerVerbose")) {
     ## Check and possibly correct input values
     if (methods::is(X, 'dgeMatrix'))
         X <- as.matrix(X)

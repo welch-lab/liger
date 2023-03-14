@@ -18,7 +18,7 @@
 #' @param chunkSize Integer number of cells to include in a chunk when working
 #' on HDF5 based dataset. Default \code{1000}
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{TRUE}.
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @return Updated \code{object} with \code{nUMI}, \code{nGene} updated
 #' in \code{cellMeta(object)}, as well as expression percentage value for each
 #' feature subset.
@@ -35,7 +35,7 @@ runGeneralQC <- function(
         pattern = NULL,
         useDatasets = names(object),
         chunkSize = 1000,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
 ) {
     .checkObjVersion(object)
     useDatasets <- .checkUseDatasets(object, useDatasets)
@@ -111,7 +111,7 @@ runGeneralQC.h5 <- function(
         object,
         featureSubsets = NULL,
         chunkSize = 1000,
-        verbose = TRUE) {
+        verbose = getOption("ligerVerbose")) {
     allFeatures <- rownames(object)
     # Initialize results
     cell <- data.frame(row.names = colnames(object))
@@ -153,7 +153,7 @@ runGeneralQC.h5 <- function(
 runGeneralQC.Matrix <- function(
         object,
         featureSubsets = NULL,
-        verbose = TRUE) {
+        verbose = getOption("ligerVerbose")) {
     nUMI <- Matrix::colSums(rawData(object))
     nonzero <- rawData(object) > 0
     nGene <- Matrix::colSums(nonzero)
@@ -186,7 +186,7 @@ runGeneralQC.Matrix <- function(
 #' @param filenameSuffix When subsetting H5 based datasets to new H5 files, this
 #' suffix will be added to all the filenames. Default \code{"removeMissing"}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{TRUE}.
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param ... Arguments passed to \code{\link{subsetLigerDataset}}
 #' @return Updated (subset) \code{object}.
 #' @export
@@ -199,7 +199,7 @@ removeMissing <- function(
         orient = c("both", "feature", "cell"),
         useDatasets = NULL,
         filenameSuffix = "removeMissing",
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         ...
 ) {
     if (!inherits(object, "liger")) {

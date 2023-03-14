@@ -10,7 +10,7 @@ H5Apply(
   init = NULL,
   useData = c("rawData", "normData", "scaleData"),
   chunkSize = 1000,
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   ...
 )
 }
@@ -30,8 +30,8 @@ restrictions.}
 \item{chunkSize}{Number if columns to be included in each chunk.
 Default \code{1000}.}
 
-\item{verbose}{Logical. Whether to show information of the progress.
-Default \code{TRUE}.}
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
 \item{...}{Other arguments to be passed to \code{FUN}.}
 }
@@ -43,8 +43,9 @@ on-disk matrix in chunks
 The \code{FUN} function has to have the first four arguments ordered
 by:
 \enumerate{
-\item \bold{chunk data:} A sparse matrix (\code{\link[Matrix]{dgCMatrix-class}})
-containing maximum \code{chunkSize} columns.
+\item \bold{chunk data:} A sparse matrix
+(\code{\link[Matrix]{dgCMatrix-class}}) containing maximum \code{chunkSize}
+columns.
 \item \bold{x-vector index:} The index that subscribes the vector of \code{x}
 slot of a dgCMatrix, which points to the values in each chunk. Mostly used
 when need to write a new sparse matrix to H5 file.

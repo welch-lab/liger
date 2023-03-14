@@ -29,7 +29,7 @@ louvainCluster(
   nRandomStarts = 10,
   nIterations = 100,
   random.seed = 1,
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   dims.use = NULL
 )
 
@@ -62,7 +62,7 @@ quantile_norm(
   refine.knn = TRUE,
   clusterName = "H.norm_cluster",
   rand.seed = 1,
-  verbose = TRUE
+  verbose = getOption("ligerVerbose")
 )
 
 \S4method{quantile_norm}{ANY}(
@@ -77,7 +77,7 @@ quantile_norm(
   eps = 0.9,
   refine.knn = TRUE,
   rand.seed = 1,
-  verbose = TRUE
+  verbose = getOption("ligerVerbose")
 )
 }
 \description{

@@ -14,7 +14,7 @@ getFactorMarkers(
   pvalThresh = 0.05,
   nGenes = 30,
   printGenes = FALSE,
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   factor.share.thresh = factorShareThresh,
   dataset.specificity = datasetSpecificity,
   log.fc.thresh = logFCThresh,
@@ -51,7 +51,7 @@ Default \code{30}.}
 UMI and frac thresholds, when \code{verbose = TRUE}. Default \code{FALSE}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{TRUE}.}
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
 \item{factor.share.thresh, dataset.specificity, log.fc.thresh, pval.thresh, num.genes, print.genes}{\bold{Deprecated}. See Usage section for replacement.}
 }

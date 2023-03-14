@@ -38,7 +38,8 @@
 #' @param chunkSize Integer. Number of maximum number of cells in each chunk,
 #' when gene selection is applied to any HDF5 based dataset. Default
 #' \code{1000}.
-#' @param verbose Logical. Whether to show the progress. Default \code{TRUE}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @return The input \code{object}, with the \code{varFeatures} slot updated.
 #' The \code{varUnsharedFeatures} slot of the \linkS4class{ligerDataset}
 #' object in the \code{datasets} slot will be updated if \code{unshared = TRUE}.
@@ -62,7 +63,7 @@ selectGenes <- function(
         unshared.datasets = NULL,
         unshared.thresh = NULL,
         chunkSize = 1000,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
 ) {
     .checkObjVersion(object)
     # A bunch of input checks at first ####
@@ -207,11 +208,13 @@ selectGenes <- function(
 #' @param object ligerDataset object
 #' @param chunkSize Integer for the maximum number of cells in each chunk.
 #' Default \code{1000}.
-#' @param verbose Logical. Whether to show a progress bar. Default \code{TRUE}.
+#' @param verbose Logical. Whether to show a progress bar. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @return The input \code{object} with calculated var updated in the H5 file.
 #' @noRd
 #' @useDynLib rliger, .registration = TRUE
-calcGeneVars.H5 <- function(object, chunkSize = 1000, verbose = TRUE,
+calcGeneVars.H5 <- function(object, chunkSize = 1000,
+                            verbose = getOption("ligerVerbose"),
                             rerun = FALSE) {
     h5file <- getH5File(object)
     geneVars <- rep(0, nrow(object))

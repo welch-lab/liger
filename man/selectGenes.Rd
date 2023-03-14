@@ -17,7 +17,7 @@ selectGenes(
   unshared.datasets = NULL,
   unshared.thresh = NULL,
   chunkSize = 1000,
-  verbose = TRUE
+  verbose = getOption("ligerVerbose")
 )
 }
 \arguments{
@@ -67,7 +67,8 @@ specified. Default \code{NULL}.}
 when gene selection is applied to any HDF5 based dataset. Default
 \code{1000}.}
 
-\item{verbose}{Logical. Whether to show the progress. Default \code{TRUE}.}
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 }
 \value{
 The input \code{object}, with the \code{varFeatures} slot updated.

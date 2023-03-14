@@ -15,7 +15,7 @@ setGeneric(
         refineKNN = TRUE,
         clusterName = "H.norm_cluster",
         seed = 1,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
     ) standardGeneric("quantileNorm")
 )
 
@@ -66,7 +66,7 @@ setGeneric(
 #' in \code{cellMeta} slot of \code{object}. Default \code{"H.norm_cluster"}.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{TRUE}.
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @return For method on \linkS4class{liger} object, the object will be returned
 #' with the \code{H.norm} slot and \code{clusterName} variable in
 #' \code{cellMeta} slot updated. For method on list, a result list with entries
@@ -92,7 +92,7 @@ setMethod(
         refineKNN = TRUE,
         clusterName = "H.norm_cluster",
         seed = 1,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
     ) {
         .checkObjVersion(object)
         .checkValidFactorResult(object, useDatasets = names(object))
@@ -143,7 +143,7 @@ setMethod(
         eps = 0.9,
         refineKNN = TRUE,
         seed = 1,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
     ) {
         set.seed(seed)
         if (!is.list(object))
@@ -320,7 +320,7 @@ setGeneric(
         refine.knn = TRUE,
         clusterName = "H.norm_cluster",
         rand.seed = 1,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
     ) standardGeneric("quantile_norm")
 )
 
@@ -343,7 +343,7 @@ setMethod(
         eps = 0.9,
         refine.knn = TRUE,
         rand.seed = 1,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
     ) {
         lifecycle::deprecate_warn("1.99.0", "quantile_norm()", "quantileNorm()")
         quantileNorm(

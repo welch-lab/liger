@@ -87,7 +87,7 @@ liger <- setClass(
 #' @param genesName,barcodesName The path in a H5 file for the gene names and
 #' cell barcodes. Default \code{NULL} uses \code{formatType} preset.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{TRUE}.
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param ... Additional slot values that should be directly placed in object.
 #' @param remove.missing,format.type,data.name,indices.name,indptr.name,genes.name,barcodes.name
 #' \bold{Deprecated.} See Usage section for replacement.
@@ -104,7 +104,7 @@ createLiger <- function(
         indptrName = NULL,
         genesName = NULL,
         barcodesName = NULL,
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         ...,
         # Deprecated coding style
         remove.missing = removeMissing,

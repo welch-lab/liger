@@ -15,7 +15,7 @@ createLiger(
   indptrName = NULL,
   genesName = NULL,
   barcodesName = NULL,
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   ...,
   remove.missing = removeMissing,
   format.type = formatType,
@@ -57,7 +57,7 @@ object. Default \code{NULL} uses \code{formatType} preset.}
 cell barcodes. Default \code{NULL} uses \code{formatType} preset.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{TRUE}.}
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
 \item{...}{Additional slot values that should be directly placed in object.}
 

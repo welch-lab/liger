@@ -17,7 +17,7 @@ suggestLambda(
   genNew = FALSE,
   nrep = 1,
   returnRaw = FALSE,
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   lambda.test = lambdaTest,
   rand.seed = seed,
   num.cores = nCores,
@@ -70,7 +70,7 @@ is matrix of alignment values for each lambda value tested (each column
 represents a different rep for nrep). Default \code{FALSE}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{TRUE}.}
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
 \item{lambda.test, rand.seed, num.cores, max.iters, knn_k, ref_dataset, gen.new, return.raw}{\bold{Deprecated}. See Usage section for replacement.}
 

@@ -22,7 +22,8 @@
 #' new dataset when more than 8000 cells from that dataset is subscribed.
 #' @param chunkSize Integer. Number of maximum number of cells in each chunk,
 #' Default \code{1000}.
-#' @param verbose Logical. Whether to show the progress. Default \code{TRUE}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param returnObject Logical, whether to return a \linkS4class{liger} object
 #' for result. Default \code{TRUE}. \code{FALSE} returns a list containing
 #' requested values.
@@ -41,7 +42,7 @@ subsetLiger <- function(
         cellIdx = NULL,
         useSlot = NULL,
         chunkSize = 1000,
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         newH5 = "auto",
         returnObject = TRUE,
         ...
@@ -221,7 +222,8 @@ retrieveCellFeature <- function(
 #' \code{original.h5.[suffix].h5}. Default \code{NULL}.
 #' @param chunkSize Integer. Number of maximum number of cells in each chunk,
 #' Default \code{1000}.
-#' @param verbose Logical. Whether to show the progress. Default \code{TRUE}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param returnObject Logical, whether to return a \linkS4class{ligerDataset}
 #' object for result. Default \code{TRUE}. \code{FALSE} returns a list
 #' containing requested values.
@@ -243,7 +245,7 @@ subsetLigerDataset <- function(
     filename = NULL,
     filenameSuffix = NULL,
     chunkSize = 1000,
-    verbose = TRUE,
+    verbose = getOption("ligerVerbose"),
     returnObject = TRUE,
     ...
 ) {
@@ -270,7 +272,7 @@ subsetH5LigerDataset <- function(
     filename = NULL,
     filenameSuffix = NULL,
     chunkSize = 1000,
-    verbose = TRUE,
+    verbose = getOption("ligerVerbose"),
     returnObject = TRUE
 ) {
     if (newH5 == "auto") {
@@ -302,7 +304,7 @@ subsetH5LigerDatasetToMem <- function(
     useSlot = NULL,
     returnObject = TRUE,
     chunkSize = 1000,
-    verbose = TRUE
+    verbose = getOption("ligerVerbose")
 ) {
     if (!inherits(object, "ligerDataset")) {
         warning("`object` is not a ligerDataset obejct. Nothing to be done.")
@@ -420,7 +422,7 @@ subsetH5LigerDatasetToH5 <- function(
         filename = NULL,
         filenameSuffix = NULL,
         chunkSize = 1000,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
 ) {
     # Input checks ####
     if (!inherits(object, "ligerDataset")) {

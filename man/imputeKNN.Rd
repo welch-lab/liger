@@ -12,7 +12,7 @@ imputeKNN(
   weight = TRUE,
   norm = TRUE,
   scale = FALSE,
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   ...,
   knn_k = nNeighbors
 )
@@ -40,8 +40,8 @@ reference.}
 \item{scale}{Logical. Whether to scale but not center the imputed data.
 Default \code{TRUE}.}
 
-\item{verbose}{Logical. Whether to show the progress and information. Default
-\code{TRUE}.}
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
 \item{...}{Optional arguments to be passed to \code{\link{normalize}} when
 \code{norm = TRUE}.}

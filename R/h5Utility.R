@@ -1,5 +1,3 @@
-#ctrl.h5 <- hdf5r::H5File$new("pbmcs_ctrl.h5")
-
 #' Apply function to chunks of H5 data in ligerDataset object
 #' @description h5 calculation wrapper, that runs specified calculation with
 #' on-disk matrix in chunks
@@ -13,14 +11,15 @@
 #' \code{"rawData"}.
 #' @param chunkSize Number if columns to be included in each chunk.
 #' Default \code{1000}.
-#' @param verbose Logical. Whether to show information of the progress.
-#' Default \code{TRUE}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param ... Other arguments to be passed to \code{FUN}.
 #' @details The \code{FUN} function has to have the first four arguments ordered
 #' by:
 #' \enumerate{
-#' \item \bold{chunk data:} A sparse matrix (\code{\link[Matrix]{dgCMatrix-class}})
-#' containing maximum \code{chunkSize} columns.
+#' \item \bold{chunk data:} A sparse matrix
+#' (\code{\link[Matrix]{dgCMatrix-class}}) containing maximum \code{chunkSize}
+#' columns.
 #' \item \bold{x-vector index:} The index that subscribes the vector of \code{x}
 #' slot of a dgCMatrix, which points to the values in each chunk. Mostly used
 #' when need to write a new sparse matrix to H5 file.
@@ -40,7 +39,7 @@ H5Apply <- function(
         init = NULL,
         useData = c("rawData", "normData", "scaleData"),
         chunkSize = 1000,
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         ...) {
     fun.args <- list(...)
     useData <- match.arg(useData)
@@ -113,7 +112,7 @@ safeH5Create <- function(object,
     # Check/Create H5Group ####
     # Inspect given `dataPath` b/c `hdf5r` does not allow creating dataset w/
     # "group" path(s)
-    if (length(dataPath) != 1 | !is.character(dataPath)) {
+    if (length(dataPath) != 1 || !is.character(dataPath)) {
         stop("`path` has to be a single character.")
     }
     dataPath <- trimws(dataPath, whitespace = "/")
@@ -125,7 +124,7 @@ safeH5Create <- function(object,
         dataPath <- list(groups = NULL, data = dataPath)
     }
     if (!is.null(dataPath$groups)) {
-        for (depth in seq(length(dataPath$groups))) {
+        for (depth in seq_along(dataPath$groups)) {
             pathNow <- paste(dataPath$groups[seq(depth)], collapse = "/")
             if (!h5file$exists(pathNow)) {
                 h5file$create_group(pathNow)
@@ -187,7 +186,7 @@ safeH5Create <- function(object,
 #' @return \code{object} with restored links.
 #' @export
 restoreH5Liger <- function(object, filePath = NULL) {
-    if (!inherits(object, "liger") & !inherits(object, "ligerDataset")) {
+    if (!inherits(object, "liger") && !inherits(object, "ligerDataset")) {
         stop("Please specify a liger or ligerDataset object to restore.")
     }
     if (inherits(object, "ligerDataset")) {
@@ -245,7 +244,8 @@ restoreH5Liger <- function(object, filePath = NULL) {
                 path <- NULL
                 if (d %in% names(filePath)) {
                     if (!hdf5r::is.h5file(filePath[[d]]))
-                        warning("Path for dataset \"", d, "\" is not an HDF5 file: ",
+                        warning("Path for dataset \"", d,
+                                "\" is not an HDF5 file: ",
                                 filePath[[d]])
                     else path <- filePath[[d]]
                 }
@@ -258,7 +258,7 @@ restoreH5Liger <- function(object, filePath = NULL) {
 }
 
 .inspectH5Path <- function(path) {
-    if (length(path) != 1 | !is.character(path)) {
+    if (length(path) != 1 || !is.character(path)) {
         stop("`path` has to be a single character.")
     }
     path <- trimws(path, whitespace = "/")
@@ -270,4 +270,3 @@ restoreH5Liger <- function(object, filePath = NULL) {
         list(folder = NULL, data = path)
     }
 }
-

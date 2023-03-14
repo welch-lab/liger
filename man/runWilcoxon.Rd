@@ -10,7 +10,7 @@ runWilcoxon(
   method = c("clusters", "datasets"),
   useCluster = "louvain_cluster",
   usePeak = FALSE,
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   data.use = useDatasets,
   compare.method = method
 )
@@ -33,8 +33,8 @@ cluster assignment variable. Default \code{"louvain_cluster"}}
 expression. Requires presence of ATAC modility datasets. Default
 \code{FALSE}.}
 
-\item{verbose}{Logical. Whether to show information of the progress.
-Default \code{TRUE}.}
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
 \item{data.use, compare.method}{\bold{Deprecated}. See Usage section for
 replacement.}

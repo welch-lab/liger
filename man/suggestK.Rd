@@ -16,7 +16,7 @@ suggestK(
   plotLog2 = TRUE,
   nrep = 1,
   returnRaw = FALSE,
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   k.test = kTest,
   max.iters = maxIter,
   num.cores = nCores,
@@ -62,7 +62,7 @@ is a list of matrices of K-L divergences (length(k.test) by n_cells). Length
 of list corresponds to \code{nrep}. (default FALSE)}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{TRUE}.}
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
 \item{k.test, max.iters, num.cores, rand.seed, gen.new, plot.log2, return.raw}{\bold{Deprecated}. See Usage section for replacement.}
 

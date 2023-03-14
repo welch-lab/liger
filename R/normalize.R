@@ -13,8 +13,8 @@
 #' valid datasets.
 #' @param chunk Integer. Number of maximum number of cells in each chunk, when
 #' normalization is applied to any HDF5 based dataset. Default \code{1000}.
-#' @param verbose Logical. Whether to show information of the progress.
-#' Default \code{TRUE}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @return Updated \code{object}. When using \code{normalize()}, the
 #' \code{normData} slot of each \linkS4class{ligerDataset} object in the
 #' \code{datasets} slot is updated with normalized values calculated from
@@ -32,7 +32,7 @@ normalize <- function(
         scaleFactor = NULL,
         useDatasets = NULL,
         chunk = 1000,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
 ) {
     .checkObjVersion(object)
     useDatasets <- .checkUseDatasets(object, useDatasets)
@@ -58,7 +58,7 @@ normalize <- function(
 #' @return Updated ligerDataset object
 #' @noRd
 normalizeDataset.Matrix <- function(object, log = TRUE, scaleFactor = 1e4,
-                                    verbose = TRUE) {
+                                    verbose = getOption("ligerVerbose")) {
     if (inherits(rawData(object), "dgCMatrix") |
         inherits(rawData(object), "dgTMatrix")) {
         normData(object, check = FALSE) <-
@@ -78,11 +78,12 @@ normalizeDataset.Matrix <- function(object, log = TRUE, scaleFactor = 1e4,
 #' Perform normalization on ligerDataset object with HDF5 file link
 #' @param object ligerDataset object
 #' @param chunkSize Integer for the maximum number of cells in each chunk
-#' @param verbose Logical. Whether to show a progress bar.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @return Updated ligerDataset object
 #' @noRd
 normalizeDataset.h5 <- function(object, log = TRUE, scaleFactor = 1e4,
-                                chunkSize = 1000, verbose = TRUE) {
+                                chunkSize = 1000, verbose = getOption("ligerVerbose")) {
     nFeature <- nrow(object)
     nCell <- ncol(object)
 
@@ -148,7 +149,7 @@ normalizePeak <- function(
         log = FALSE,
         scaleFactor = NULL,
         useDatasets = NULL,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
 ) {
     useDatasets <- .checkUseDatasets(object, useDatasets, modal = "atac")
     object <- recordCommand(object, dependencies = "hdf5r")

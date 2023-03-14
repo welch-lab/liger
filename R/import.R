@@ -29,7 +29,8 @@ NULL
 #'   (default NULL)
 #' @param data.type Indicates the protocol of the input data. If not specified, input data will be
 #' considered scRNA-seq data (default 'rna', alternatives: 'atac').
-#' @param verbose Print messages (TRUE by default)
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #'
 #' @return List of merged matrices across data types (returns sparse matrix if only one data type
 #'   detected), or nested list of matrices organized by sample if merge=F.
@@ -54,7 +55,7 @@ read10X <-
              use.filtered = FALSE,
              reference = NULL,
              data.type = "rna",
-             verbose = TRUE) {
+             verbose = getOption("ligerVerbose")) {
         datalist <- list()
         datatypes <- c("Gene Expression")
 

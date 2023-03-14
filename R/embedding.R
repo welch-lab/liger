@@ -32,8 +32,8 @@
 #' @param dimredName Name of the variable in \code{cellMeta} slot to store the
 #' result matrix. Default \code{"UMAP"}.
 #' @param seed Random seed for reproducibility. Default \code{42}.
-#' @param verbose Logical. Whether to show information of the progress.
-#' Default \code{TRUE}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param k,use.raw,dims.use,n_neighbors,min_dist,rand.seed \bold{Deprecated}.
 #' See Usage section for replacement.
 #' @return The \code{object} where a \code{"UMAP"} variable is updated in the
@@ -53,7 +53,7 @@ runUMAP <- function(
         minDist = 0.1,
         dimredName = "UMAP",
         seed = 42,
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         # Deprecated coding style
         k = nDims,
         use.raw = useRaw,
@@ -125,8 +125,8 @@ runUMAP <- function(
 #' \code{'/path/to/dir/FIt-SNE'}). Required only when first time using
 #' \code{runTSNE} with \code{method = "fftRtsne"}. Default \code{NULL}.
 #' @param seed Random seed for reproducibility. Default \code{42}.
-#' @param verbose Logical. Whether to show information of the progress.
-#' Default \code{TRUE}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param use.raw,dims.use,k,use.pca,fitsne.path,rand.seed \bold{Deprecated}.
 #' See Usage section for replacement.
 #' @return The \code{object} where a \code{"TSNE"} variable is updated in the
@@ -148,7 +148,7 @@ runTSNE <- function(
         dimredName = "TSNE",
         fitsnePath = NULL,
         seed = 42,
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         # Deprecated coding styles
         k = nDims,
         use.raw = useRaw,

@@ -19,7 +19,7 @@ optimizeALS(
   useUnshared = FALSE,
   seed = 1,
   readH5 = "auto",
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   max.iters = maxIter,
   use.unshared = useUnshared,
   rand.seed = seed,
@@ -39,7 +39,7 @@ optimizeALS(
   useUnshared = FALSE,
   seed = 1,
   readH5 = "auto",
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   max.iters = maxIter,
   use.unshared = useUnshared,
   rand.seed = seed,
@@ -59,7 +59,7 @@ optimizeALS(
   useUnshared = FALSE,
   seed = 1,
   readH5 = "auto",
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   max.iters = maxIter,
   use.unshared = useUnshared,
   rand.seed = seed,
@@ -115,7 +115,7 @@ conduct factorization. \code{"auto"} reads H5 dataset with less than 8000
 cells. \code{FALSE} will stop users from running if H5 data presents.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{TRUE}.}
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
 \item{max.iters, use.unshared, rand.seed}{\bold{Deprecated}. See Usage section
 for replacement.}

@@ -12,7 +12,7 @@ optimizeNewData(
   lambda = NULL,
   thresh = 1e-04,
   max.iters = 100,
-  verbose = TRUE
+  verbose = getOption("ligerVerbose")
 )
 }
 \arguments{

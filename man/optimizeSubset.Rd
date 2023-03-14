@@ -12,7 +12,7 @@ optimizeSubset(
   max.iters = 100,
   datasets.scale = NULL,
   seed = 1,
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   cell.subset = NULL,
   cluster.subset = NULL
 )
@@ -38,7 +38,7 @@ Default \code{NULL} does not rescale.}
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{TRUE}.}
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
 \item{cell.subset, cluster.subset}{\bold{Deprecated}. Please use
 \code{cellIdx} to explicitly specify.}

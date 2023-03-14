@@ -48,7 +48,7 @@
 #' conduct factorization. \code{"auto"} reads H5 dataset with less than 8000
 #' cells. \code{FALSE} will stop users from running if H5 data presents.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{TRUE}.
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param max.iters,use.unshared,rand.seed \bold{Deprecated}. See Usage section
 #' for replacement.
 #' @param print.obj \bold{Defunct}. Whether to print objective function values
@@ -80,7 +80,7 @@ setGeneric(
         useUnshared = FALSE,
         seed = 1,
         readH5 = "auto",
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         # Deprecated coding style
         max.iters = maxIter,
         use.unshared = useUnshared,
@@ -108,7 +108,7 @@ setMethod(
         useUnshared = FALSE,
         seed = 1,
         readH5 = "auto",
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         # Deprecated coding style
         max.iters = maxIter,
         use.unshared = useUnshared,
@@ -218,7 +218,7 @@ setMethod(
         useUnshared = FALSE,
         seed = 1,
         readH5 = "auto",
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         # Deprecated coding style
         max.iters = maxIter,
         use.unshared = useUnshared,

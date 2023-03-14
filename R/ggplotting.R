@@ -572,7 +572,7 @@ plotCellViolin <- function(
         showLegend = TRUE,
         legendPosition = "right",
         # All sizes
-        baseSize = 10,
+        baseSize = getOption("ligerBaseSize"),
         titleSize = NULL,
         subtitleSize = NULL,
         xTextSize = NULL,

@@ -16,7 +16,7 @@
 #' @param rand.seed Random seed to set. Only relevant if \code{k.new} is greater
 #' than \code{k}. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{TRUE}.
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @return \code{object} with \code{W} slot updated with the new \eqn{W}
 #' matrix, and the \code{H} and \code{V} slots of each
 #' \linkS4class{ligerDataset} object in the \code{datasets} slot updated with
@@ -37,7 +37,7 @@ optimizeNewK <- function(
         thresh = 1e-4,
         max.iters = 100,
         rand.seed = 1,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
 ) {
     .checkValidFactorResult(object)
     if (is.null(lambda)) lambda <- object@uns$factorization$lambda
@@ -163,7 +163,7 @@ optimizeNewData <- function(
         lambda = NULL,
         thresh = 1e-4,
         max.iters = 100,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
 ) {
     .checkValidFactorResult(object)
     object <- recordCommand(object)
@@ -259,7 +259,7 @@ optimizeNewData <- function(
 #' perform. Default \code{100}.
 #' @param rand.seed Random seed to allow reproducible results. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{TRUE}.
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @return Input \code{object} with optimized factorization values updated.
 #' including the \code{W} matrix in \linkS4class{liger} object, and \code{W} and
 #' \code{V} matrices in each \linkS4class{ligerDataset} object in the
@@ -278,7 +278,7 @@ optimizeNewLambda <- function(
         thresh = 1e-4,
         max.iters = 100,
         rand.seed = 1,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
 ) {
     .checkValidFactorResult(object, names(object))
     if (new.lambda < object@uns$factorization$lambda && isTRUE(verbose))
@@ -315,7 +315,7 @@ optimizeNewLambda <- function(
 #' Default \code{NULL} does not rescale.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{TRUE}.
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param cell.subset,cluster.subset \bold{Deprecated}. Please use
 #' \code{cellIdx} to explicitly specify.
 #' @return Subset \code{object} with factorization matrices reset, including
@@ -341,7 +341,7 @@ optimizeSubset <- function(
         max.iters = 100,
         datasets.scale = NULL,
         seed = 1,
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         # Deprecated
         cell.subset = NULL,
         cluster.subset = NULL

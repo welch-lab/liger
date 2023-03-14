@@ -11,7 +11,7 @@ linkGenesAndPeaks(
   useGenes = NULL,
   method = c("spearman", "pearson", "kendall"),
   alpha = 0.05,
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   path_to_coords = pathToCoords,
   genes.list = useGenes,
   dist = method
@@ -37,8 +37,8 @@ and normalized peak counts available.}
 Peak-gene correlations with p-values below this threshold are considered
 significant. Default \code{0.05}.}
 
-\item{verbose}{Logical. Whether to show information of the progress.
-Default \code{TRUE}.}
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
 \item{path_to_coords, genes.list, dist}{\bold{Deprecated}. See Usage section
 for replacement.}

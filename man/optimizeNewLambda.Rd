@@ -10,7 +10,7 @@ optimizeNewLambda(
   thresh = 1e-04,
   max.iters = 100,
   rand.seed = 1,
-  verbose = TRUE
+  verbose = getOption("ligerVerbose")
 )
 }
 \arguments{
@@ -29,7 +29,7 @@ perform. Default \code{100}.}
 \item{rand.seed}{Random seed to allow reproducible results. Default \code{1}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{TRUE}.}
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 }
 \value{
 Input \code{object} with optimized factorization values updated.

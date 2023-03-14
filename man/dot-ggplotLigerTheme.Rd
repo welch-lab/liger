@@ -16,7 +16,7 @@
   legendSizeTitle = NULL,
   showLegend = TRUE,
   legendPosition = "right",
-  baseSize = 10,
+  baseSize = getOption("ligerBaseSize"),
   titleSize = NULL,
   subtitleSize = NULL,
   xTextSize = NULL,

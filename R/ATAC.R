@@ -15,8 +15,8 @@
 #' \code{TRUE}.
 #' @param scale Logical. Whether to scale but not center the imputed data.
 #' Default \code{TRUE}.
-#' @param verbose Logical. Whether to show the progress and information. Default
-#' \code{TRUE}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param ... Optional arguments to be passed to \code{\link{normalize}} when
 #' \code{norm = TRUE}.
 #' @param knn_k \bold{Deprecated}. See Usage section for replacement.
@@ -34,7 +34,7 @@ imputeKNN <- function(
         weight = TRUE,
         norm = TRUE,
         scale = FALSE,
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         ...,
         # Deprecated coding style,
         knn_k = nNeighbors
@@ -140,8 +140,8 @@ imputeKNN <- function(
 #' @param alpha Numeric, significance threshold for correlation p-value.
 #' Peak-gene correlations with p-values below this threshold are considered
 #' significant. Default \code{0.05}.
-#' @param verbose Logical. Whether to show information of the progress.
-#' Default \code{TRUE}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param path_to_coords,genes.list,dist \bold{Deprecated}. See Usage section
 #' for replacement.
 #' @return A sparse matrix with peak names as rows and gene names as columns,
@@ -156,7 +156,7 @@ linkGenesAndPeaks <- function(
         useGenes = NULL,
         method = c("spearman", "pearson", "kendall"),
         alpha = 0.05,
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         # Deprecated coding style
         path_to_coords = pathToCoords,
         genes.list = useGenes,

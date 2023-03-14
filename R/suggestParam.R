@@ -32,7 +32,7 @@
 #' @param return.data \bold{Defuncted}. Will always return data now. Use
 #' \code{\link{plotSuggestK}} to show the plot.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{TRUE}.
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param k.test,max.iters,num.cores,rand.seed,gen.new,plot.log2,return.raw
 #' \bold{Deprecated}. See Usage section for replacement.
 #' @return Matrix of results
@@ -49,7 +49,7 @@ suggestK <- function(
         plotLog2 = TRUE,
         nrep = 1,
         returnRaw = FALSE,
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         # Deprecated coding style
         k.test = kTest,
         max.iters = maxIter,
@@ -268,7 +268,7 @@ kl_divergence_uniform <- function(object, Hs = NULL) {
 #' is matrix of alignment values for each lambda value tested (each column
 #' represents a different rep for nrep). Default \code{FALSE}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{TRUE}.
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param lambda.test,rand.seed,num.cores,max.iters,knn_k,ref_dataset,gen.new,return.raw
 #' \bold{Deprecated}. See Usage section for replacement.
 #' @param return.data \bold{Defuncted}. Will always return data now. Use
@@ -290,7 +290,7 @@ suggestLambda <- function(
         genNew = FALSE,
         nrep = 1,
         returnRaw = FALSE,
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         # Deprecated coding style
         lambda.test = lambdaTest,
         rand.seed = seed,

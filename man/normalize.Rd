@@ -11,7 +11,7 @@ normalize(
   scaleFactor = NULL,
   useDatasets = NULL,
   chunk = 1000,
-  verbose = TRUE
+  verbose = getOption("ligerVerbose")
 )
 
 normalizePeak(
@@ -19,7 +19,7 @@ normalizePeak(
   log = FALSE,
   scaleFactor = NULL,
   useDatasets = NULL,
-  verbose = TRUE
+  verbose = getOption("ligerVerbose")
 )
 }
 \arguments{
@@ -40,8 +40,8 @@ valid datasets.}
 \item{chunk}{Integer. Number of maximum number of cells in each chunk, when
 normalization is applied to any HDF5 based dataset. Default \code{1000}.}
 
-\item{verbose}{Logical. Whether to show information of the progress.
-Default \code{TRUE}.}
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 }
 \value{
 Updated \code{object}. When using \code{normalize()}, the

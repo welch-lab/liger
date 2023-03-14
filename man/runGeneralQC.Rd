@@ -13,7 +13,7 @@ runGeneralQC(
   pattern = NULL,
   useDatasets = names(object),
   chunkSize = 1000,
-  verbose = TRUE
+  verbose = getOption("ligerVerbose")
 )
 }
 \arguments{
@@ -40,7 +40,7 @@ vector of the index of the datasets to be included for QC. Default
 on HDF5 based dataset. Default \code{1000}}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{TRUE}.}
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 }
 \value{
 Updated \code{object} with \code{nUMI}, \code{nGene} updated

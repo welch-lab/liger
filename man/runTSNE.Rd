@@ -16,7 +16,7 @@ runTSNE(
   dimredName = "TSNE",
   fitsnePath = NULL,
   seed = 42,
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   k = nDims,
   use.raw = useRaw,
   dims.use = useDims,
@@ -57,8 +57,8 @@ result matrix. Default \code{"TSNE"}.}
 
 \item{seed}{Random seed for reproducibility. Default \code{42}.}
 
-\item{verbose}{Logical. Whether to show information of the progress.
-Default \code{TRUE}.}
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
 \item{use.raw, dims.use, k, use.pca, fitsne.path, rand.seed}{\bold{Deprecated}.
 See Usage section for replacement.}

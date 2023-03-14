@@ -35,8 +35,8 @@
 #' in \code{cellMeta} slot of \code{object}. Default \code{"leiden_cluster"} and
 #' \code{"louvain_cluster"}.
 #' @param seed Seed of the random number generator. Default \code{1}.
-#' @param verbose Logical. Whether to show information of the progress.
-#' Default \code{TRUE}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param partitionType Choose from \code{"ModularityVertexPartition",
 #' "RBConfigurationVertexPartition", "RBERVertexPartition",
 #' "SignificanceVertexPartition", "CPMVertexPartition",
@@ -75,7 +75,7 @@ runLeidenCluster <- function(
         groupSingletons = TRUE,
         clusterName = "leiden_cluster",
         seed = 1,
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         ...
 ) {
     partitionType <- match.arg(partitionType)
@@ -156,7 +156,7 @@ runLouvainCluster <- function(
         groupSingletons = TRUE,
         clusterName = "louvain_cluster",
         seed = 1,
-        verbose = TRUE
+        verbose = getOption("ligerVerbose")
 ) {
     object <- recordCommand(object, dependencies = "RANN")
     H.norm <- getMatrix(object, "H.norm")
@@ -247,7 +247,7 @@ louvainCluster <- function(
         nRandomStarts = 10,
         nIterations = 100,
         random.seed = 1,
-        verbose = TRUE,
+        verbose = getOption("ligerVerbose"),
         dims.use = NULL
 ) {
     lifecycle::deprecate_warn("1.99.0", "louvainCluster()",
@@ -256,7 +256,7 @@ louvainCluster <- function(
         object, resolution = resolution, nNeighbors = k, prune = prune,
         eps = eps, nRandomStarts = nRandomStarts, nIterations = nIterations,
         useDims = dims.use, groupSingletons = TRUE,
-        clusterName = "louvain_cluster", seed = random.seed, verbose = TRUE
+        clusterName = "louvain_cluster", seed = random.seed, verbose = verbose
     )
 }
 

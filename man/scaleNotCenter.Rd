@@ -4,7 +4,12 @@
 \alias{scaleNotCenter}
 \title{Scale genes by root-mean-square across cells}
 \usage{
-scaleNotCenter(object, useDatasets = NULL, chunk = 1000, verbose = TRUE)
+scaleNotCenter(
+  object,
+  useDatasets = NULL,
+  chunk = 1000,
+  verbose = getOption("ligerVerbose")
+)
 }
 \arguments{
 \item{object}{\linkS4class{liger} object, \code{link{selectGenes}} should
@@ -18,7 +23,7 @@ vector of the index of the datasets to be scaled but not centered. Default
 scaling is applied to any HDF5 based dataset. Default \code{1000}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{TRUE}.}
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 }
 \value{
 Updated \code{object}, where the \code{scaleData} slot of each

@@ -13,7 +13,7 @@ read10X(
   use.filtered = FALSE,
   reference = NULL,
   data.type = "rna",
-  verbose = TRUE
+  verbose = getOption("ligerVerbose")
 )
 }
 \arguments{
@@ -40,7 +40,8 @@ level 10X directory (only necessary if more than one reference used for sequenci
 \item{data.type}{Indicates the protocol of the input data. If not specified, input data will be
 considered scRNA-seq data (default 'rna', alternatives: 'atac').}
 
-\item{verbose}{Print messages (TRUE by default)}
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 }
 \value{
 List of merged matrices across data types (returns sparse matrix if only one data type

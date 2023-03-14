@@ -9,7 +9,7 @@ removeMissing(
   orient = c("both", "feature", "cell"),
   useDatasets = NULL,
   filenameSuffix = "removeMissing",
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   ...
 )
 }
@@ -28,7 +28,7 @@ vector of the index of the datasets to be processed. Default
 suffix will be added to all the filenames. Default \code{"removeMissing"}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{TRUE}.}
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
 \item{...}{Arguments passed to \code{\link{subsetLigerDataset}}}
 }

@@ -20,7 +20,7 @@ runLeidenCluster(
   groupSingletons = TRUE,
   clusterName = "leiden_cluster",
   seed = 1,
-  verbose = TRUE,
+  verbose = getOption("ligerVerbose"),
   ...
 )
 
@@ -36,7 +36,7 @@ runLouvainCluster(
   groupSingletons = TRUE,
   clusterName = "louvain_cluster",
   seed = 1,
-  verbose = TRUE
+  verbose = getOption("ligerVerbose")
 )
 }
 \arguments{
@@ -85,8 +85,8 @@ in \code{cellMeta} slot of \code{object}. Default \code{"leiden_cluster"} and
 
 \item{seed}{Seed of the random number generator. Default \code{1}.}
 
-\item{verbose}{Logical. Whether to show information of the progress.
-Default \code{TRUE}.}
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
 \item{...}{Additional arguments passed to
 \code{\link[leidenbase]{leiden_find_partition}}, including
