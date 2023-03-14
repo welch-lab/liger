@@ -326,15 +326,15 @@ plotCellScatter <- function(
 #' @examples
 #' data("pbmcPlot", package = "rliger")
 #' plotCellViolin(pbmcPlot, y = "nUMI", groupBy = "dataset", slot = "cellMeta")
-#' plotCellViolin(pbmcPlot, y = "nUMI", groupBy = "louvain_cluster",
+#' plotCellViolin(pbmcPlot, y = "nUMI", groupBy = "leiden_cluster",
 #'                slot = "cellMeta", splitBy = "dataset",
-#'                colorBy = "louvain_cluster",
+#'                colorBy = "leiden_cluster",
 #'                box = TRUE, dot = TRUE,
 #'                ylab = "Total counts per cell",
 #'                colorValues = RColorBrewer::brewer.pal(8, "Set1"))
 #' plotCellViolin(pbmcPlot, y = "S100A8", slot = "normData",
 #'                yFunc = function(x) log2(10000*x + 1),
-#'                groupBy = "dataset", colorBy = "louvain_cluster",
+#'                groupBy = "dataset", colorBy = "leiden_cluster",
 #'                box = TRUE, ylab = "S100A8 Expression")
 plotCellViolin <- function(
         object,

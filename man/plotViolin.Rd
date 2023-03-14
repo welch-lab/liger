@@ -36,7 +36,7 @@ Visualize gene expression or cell metadata with violin plot
 \examples{
 data("pbmcPlot", package = "rliger")
 plotGeneViolin(pbmcPlot, varFeatures(pbmcPlot)[1],
-               groupBy = "louvain_cluster")
+               groupBy = "leiden_cluster")
 data("pbmc", package = "rliger")
 plotTotalCountViolin(pbmc)
 plotGeneDetectedViolin(pbmc, dot = TRUE, box = TRUE, colorBy = "dataset")

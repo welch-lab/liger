@@ -10,7 +10,7 @@
 \usage{
 plotProportion(
   object,
-  class1 = "louvain_cluster",
+  class1 = "leiden_cluster",
   class2 = "dataset",
   method = c("stack", "group", "pie"),
   ...
@@ -18,7 +18,7 @@ plotProportion(
 
 plotProportionDot(
   object,
-  class1 = "louvain_cluster",
+  class1 = "leiden_cluster",
   class2 = "dataset",
   showLegend = FALSE,
   panelBorder = TRUE,
@@ -27,7 +27,7 @@ plotProportionDot(
 
 plotProportionBar(
   object,
-  class1 = "louvain_cluster",
+  class1 = "leiden_cluster",
   class2 = "dataset",
   method = c("stack", "group"),
   inclRev = FALSE,
@@ -38,14 +38,14 @@ plotProportionBar(
 
 plotClusterProportions(
   object,
-  useCluster = "louvain_cluster",
+  useCluster = "leiden_cluster",
   return.plot = FALSE,
   ...
 )
 
 plotProportionPie(
   object,
-  class1 = "louvain_cluster",
+  class1 = "leiden_cluster",
   class2 = "dataset",
   labelSize = 4,
   labelColor = "white",

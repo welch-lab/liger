@@ -10,7 +10,7 @@
 \usage{
 plotClusterDimRed(
   object,
-  useCluster = "louvain_cluster",
+  useCluster = "leiden_cluster",
   useDimRed = "UMAP",
   ...
 )
@@ -20,7 +20,7 @@ plotDatasetDimRed(object, useDimRed = "UMAP", ...)
 plotByDatasetAndCluster(
   object,
   useDimRed = "UMAP",
-  useCluster = "louvain_cluster",
+  useCluster = "leiden_cluster",
   combinePlots = TRUE,
   ...
 )
@@ -50,7 +50,7 @@ plotFactorDimRed(
 \item{object}{A \linkS4class{liger} object.}
 
 \item{useCluster}{Name of variable in \code{cellMeta} slot. Default
-\code{"louvain_cluster"}.}
+\code{"leiden_cluster"}.}
 
 \item{useDimRed}{Name of the variable storing dimensionality reduction result
 in the \code{cellMeta} slot. Default \code{"UMAP"}.}

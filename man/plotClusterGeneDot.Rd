@@ -7,7 +7,7 @@
 plotClusterGeneDot(
   object,
   features,
-  groupBy = "louvain_cluster",
+  groupBy = "leiden_cluster",
   splitBy = NULL,
   featureScaleFunc = function(x) log2(10000 * x + 1),
   cellIdx = NULL,
@@ -28,7 +28,7 @@ subset).}
 
 \item{groupBy}{The names of the columns in \code{cellMeta} slot storing
 categorical variables. Expression data would be aggregated basing on these,
-together with \code{splitBy}. Default \code{"louvain_cluster"}.}
+together with \code{splitBy}. Default \code{"leiden_cluster"}.}
 
 \item{splitBy}{The names of the columns in \code{cellMeta} slot storing
 categorical variables. Dotplot panel splitting would be based on these.

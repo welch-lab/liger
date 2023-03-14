@@ -6,7 +6,7 @@
 #' @description some text
 #' @param object A \linkS4class{liger} object.
 #' @param useCluster Name of variable in \code{cellMeta} slot. Default
-#' \code{"louvain_cluster"}.
+#' \code{"leiden_cluster"}.
 #' @param useDimRed Name of the variable storing dimensionality reduction result
 #' in the \code{cellMeta} slot. Default \code{"UMAP"}.
 #' @param combinePlots Logical, whether to utilize
@@ -46,7 +46,7 @@
 #' plotFactorDimRed(pbmcPlot, 2)
 plotClusterDimRed <- function(
         object,
-        useCluster = "louvain_cluster",
+        useCluster = "leiden_cluster",
         useDimRed = "UMAP",
         ...) {
     xVar <- paste0(useDimRed, ".1")
@@ -73,7 +73,7 @@ plotDatasetDimRed <- function(
 plotByDatasetAndCluster <- function(
         object,
         useDimRed = "UMAP",
-        useCluster = "louvain_cluster",
+        useCluster = "leiden_cluster",
         combinePlots = TRUE,
         ...
 ) {
@@ -153,7 +153,7 @@ plotFactorDimRed <- function(
 #' @examples
 #' data("pbmcPlot", package = "rliger")
 #' plotGeneViolin(pbmcPlot, varFeatures(pbmcPlot)[1],
-#'                groupBy = "louvain_cluster")
+#'                groupBy = "leiden_cluster")
 #' data("pbmc", package = "rliger")
 #' plotTotalCountViolin(pbmc)
 #' plotGeneDetectedViolin(pbmc, dot = TRUE, box = TRUE, colorBy = "dataset")
@@ -260,7 +260,7 @@ plotGeneDetectedViolin <- function(
 #' plotProportionPie(pbmcPlot)
 plotProportion <- function(
         object,
-        class1 = "louvain_cluster",
+        class1 = "leiden_cluster",
         class2 = "dataset",
         method = c("stack", "group", "pie"),
         ...
@@ -285,7 +285,7 @@ plotProportion <- function(
 #' @export
 plotProportionDot <- function(
         object,
-        class1 = "louvain_cluster",
+        class1 = "leiden_cluster",
         class2 = "dataset",
         showLegend = FALSE,
         panelBorder = TRUE,
@@ -320,7 +320,7 @@ plotProportionDot <- function(
 #' @export
 plotProportionBar <- function(
         object,
-        class1 = "louvain_cluster",
+        class1 = "leiden_cluster",
         class2 = "dataset",
         method = c("stack", "group"),
         inclRev = FALSE,
@@ -369,7 +369,7 @@ plotProportionBar <- function(
 #' @export
 plotClusterProportions <- function(
         object,
-        useCluster = "louvain_cluster",
+        useCluster = "leiden_cluster",
         return.plot = FALSE,
         ...
 ) {
@@ -381,7 +381,7 @@ plotClusterProportions <- function(
 #' @export
 plotProportionPie <- function(
         object,
-        class1 = "louvain_cluster",
+        class1 = "leiden_cluster",
         class2 = "dataset",
         labelSize = 4,
         labelColor = "white",

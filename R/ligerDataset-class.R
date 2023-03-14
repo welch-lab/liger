@@ -58,183 +58,6 @@ ligerDataset <- setClass(
 # Dataset creatinfg function ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#' Create in-memory ligerDataset object
-#' @param rawData,normData,scaleData A \code{\link[Matrix]{dgCMatrix-class}}
-#' object for the raw or normalized expression count or a dense matrix of scaled
-#' variable gene expression, respectively. Default \code{NULL} for all three but
-#' at lease one has to be specified.
-#' @param modal Name of modality for this dataset. Currently options of
-#' \code{"default"}, \code{"rna"}, and \code{"atac"} are supported. Default
-#' \code{"default"}.
-#' @param featureMeta Data frame of feature metadata. Default \code{NULL}.
-#' @param ... Additional slot data. See \linkS4class{ligerDataset} for detail.
-#' Given values will be directly placed at corresponding slots.
-#' @seealso \linkS4class{ligerDataset}, \linkS4class{ligerATACDataset},
-#' \code{\link{createH5LigerDataset}}
-#' @export
-createLigerDataset <- function(
-        rawData = NULL,
-        modal = c("default", "rna", "atac"),
-        normData = NULL,
-        scaleData = NULL,
-        featureMeta = NULL,
-        ...
-) {
-    modal <- match.arg(modal)
-    args <- as.list(environment())
-    additional <- list(...)
-    # TODO h5 file support
-    # Necessary initialization of slots
-    if (is.null(rawData) && is.null(normData) && is.null(scaleData)) {
-        stop("At least one type of expression data (rawData, normData or ",
-             "scaleData) has to be provided")
-    }
-    # Look for proper colnames and rownames
-    cn <- NULL
-    rn <- NULL
-    for (i in c("rawData", "normData", "scaleData")) {
-        cn <- colnames(args[[i]])
-        if (!is.null(cn)) break
-    }
-    if (!is.null(rawData)) {
-        rn <- rownames(rawData)
-        if (!inherits(rawData, "dgCMatrix"))
-            rawData <- methods::as(rawData, "CsparseMatrix")
-    }
-    if (!is.null(normData)) {
-        if (is.null(rn)) rn <- rownames(normData)
-        if (!inherits(normData, "dgCMatrix"))
-            rawData <- methods::as(normData, "CsparseMatrix")
-    }
-    if (!is.null(scaleData)) {
-        if (is.null(rn)) rn <- rownames(scaleData)
-    }
-    if (is.null(h5fileInfo)) h5fileInfo <- list()
-    if (is.null(featureMeta))
-        featureMeta <- S4Vectors::DataFrame(row.names = rn)
-    else if (!inherits(featureMeta, "DFrame"))
-        featureMeta <- S4Vectors::DataFrame(featureMeta)
-    # Create ligerDataset
-    allData <- list(.modalClassDict[[modal]],
-                    rawData = rawData, normData = normData,
-                    scaleData = scaleData, featureMeta = featureMeta,
-                    colnames = cn, rownames = rn)
-    allData <- c(allData, additional)
-    x <- do.call("new", allData)
-    return(x)
-}
-
-.modalClassDict <- list(
-    default = "ligerDataset",
-    rna = "ligerRNADataset",
-    atac = "ligerATACDataset"
-)
-
-.classModalDict <- list(
-    ligerDataset = "default",
-    ligerRNADataset = "rna",
-    ligerATACDataset = "atac"
-)
-
-#' Create on-disk ligerDataset Object
-#' @param h5file Filename of a H5 file
-#' @param formatType Select preset of H5 file structure. Current available
-#' options are \code{"10X"} and \code{"AnnData"}.
-#' @param rawData,indicesName,indptrName The path in a H5 file for the raw
-#' sparse matrix data. These three types of data stands for the \code{x},
-#' \code{i}, and \code{p} slots of a \code{\link[Matrix]{dgCMatrix-class}}
-#' object. Default \code{NULL} uses \code{formatType} preset.
-#' @param normData The path in a H5 file for the "x" vector of the normalized
-#' sparse matrix. Default \code{NULL}.
-#' @param scaleData The path in a H5 file for the dense 2D scaled matrix.
-#' Default \code{NULL}.
-#' @param genesName,barcodesName The path in a H5 file for the gene names and
-#' cell barcodes. Default \code{NULL} uses \code{formatType} preset.
-#' @param modal Name of modality for this dataset. Currently options of
-#' \code{"default"}, \code{"rna"}, and \code{"atac"} are supported. Default
-#' \code{"default"}.
-#' @param featureMeta Data frame for feature metadata. Default \code{NULL}.
-#' @param ... Additional slot data. See \linkS4class{ligerDataset} for detail.
-#' Given values will be directly placed at corresponding slots.
-createH5LigerDataset <- function(
-        h5file,
-        formatType = NULL,
-        rawData = NULL,
-        normData = NULL,
-        scaleData = NULL,
-        barcodesName = NULL,
-        genesName = NULL,
-        indicesName = NULL,
-        indptrName = NULL,
-        modal = c("default", "rna", "atac"),
-        featureMeta = NULL,
-        ...
-) {
-    if (!hdf5r::is_hdf5(h5file)) {
-        stop("Please specify an HDF5 filename to argument `h5file`.")
-    }
-    modal <- match.arg(modal)
-    additional <- list(...)
-    h5file <- hdf5r::H5File$new(h5file, mode = "r+")
-    if (!is.null(formatType) &&
-        formatType %in% c("10X", "AnnData")) {
-        if (formatType == "10X") {
-            barcodesName <- "matrix/barcodes"
-            barcodes <- h5file[[barcodesName]][]
-            rawData <- "matrix/data"
-            indicesName <- "matrix/indices"
-            indptrName <- "matrix/indptr"
-            genesName <- "matrix/features/name"
-            genes <- h5file[[genesName]][]
-        } else if (formatType == "AnnData") {
-            barcodesName <- "obs"
-            barcodes <- h5file[[barcodesName]][]$cell
-            rawData <- "raw.X/data"
-            indicesName <- "raw.X/indices"
-            indptrName <- "raw.X/indptr"
-            genesName <- "raw.var"
-            genes <- h5file[[genesName]][]
-        } else {
-            stop("Specified `formatType` '", formatType,
-                 "' is not supported for now.")
-        }
-    } else {
-        barcodes <- h5file[[barcodesName]][]
-        genes <- h5file[[genesName]][]
-    }
-    # The order of list elements matters. Put "paths" together so easier for
-    # checking link existence.
-    h5.meta <- list(
-        H5File = h5file,
-        filename = h5file$filename,
-        formatType = formatType,
-        indicesName = indicesName,
-        indptrName = indptrName,
-        barcodesName = barcodesName,
-        genesName = genesName,
-        rawData = rawData,
-        normData = normData,
-        scaleData = scaleData
-    )
-    if (!is.null(rawData)) rawData <- h5file[[rawData]]
-    if (!is.null(normData)) normData <- h5file[[normData]]
-    if (!is.null(scaleData)) scaleData <- h5file[[scaleData]]
-    if (is.null(featureMeta))
-        featureMeta <- S4Vectors::DataFrame(row.names = genes)
-    else if (!inherits(featureMeta, "DFrame"))
-        featureMeta <- S4Vectors::DataFrame(featureMeta)
-    allData <- list(.modalClassDict[[modal]],
-                    rawData = rawData,
-                    normData = normData,
-                    scaleData = scaleData,
-                    #H = H, V = V, A = A, B = B, U = U,
-                    h5fileInfo = h5.meta, featureMeta = featureMeta,
-                    colnames = barcodes, rownames = genes)
-    allData <- c(allData, additional)
-    x <- do.call("new", allData)
-    x
-}
-
 #' Check if a liger or ligerDataset object is made of HDF5 file
 #' @param object A liger or ligerDataset object.
 #' @param dataset If \code{object} is of liger class, check a specific dataset.
@@ -516,26 +339,21 @@ setReplaceMethod("dimnames", c("ligerDataset", "list"), function(x, value) {
         if (!is.null(scaleData(x))) {
             colnames(x@scaleData) <- value[[2L]]
             rownames(x@scaleData) <-
-                value[[1L]][x@rownames %in% rownames(x@scaleData)]
+                value[[1L]][.getVarFtIdx(x@rownames, rownames(x@scaleData))]
         }
         if (!is.null(x@scaleUnsharedData)) {
             colnames(x@scaleUnsharedData) <- value[[2L]]
             rownames(x@scaleUnsharedData) <-
-                value[[1L]][x@rownames %in% rownames(x@scaleUnsharedData)]
+                value[[1L]][.getVarFtIdx(x@rownames,
+                                         rownames(x@scaleUnsharedData))]
         }
     }
-    # else {
-        #h5file <- getH5File(x)
-        #h5meta <- h5fileInfo(x)
-        #h5file[[h5meta$genesName]][1:length(value[[1L]])] <- value[[1L]]
-        #h5file[[h5meta$barcodesName]][1:length(value[[2L]])] <- value[[2L]]
-    #}
     if (!is.null(x@H))
-        rownames(x@H) <- value[[2L]]
+        colnames(x@H) <- value[[2L]]
     if (!is.null(x@V))
-        colnames(x@V) <- value[[1L]][x@rownames %in% rownames(x@V)]
+        rownames(x@V) <- value[[1L]][.getVarFtIdx(x@rownames, rownames(x@V))]
     if (!is.null(x@B))
-        rownames(x@B) <- value[[1L]][x@rownames %in% rownames(x@V)]
+        rownames(x@B) <- value[[1L]][.getVarFtIdx(x@rownames, rownames(x@B))]
     if (!is.null(x@U)) colnames(x@U) <- value[[2L]]
     if ("rawPeak" %in% methods::slotNames(x)) {
         if (!is.null(rawPeak(x))) colnames(rawPeak(x)) <- value[[2L]]
@@ -547,6 +365,19 @@ setReplaceMethod("dimnames", c("ligerDataset", "list"), function(x, value) {
     x@colnames <- value[[2L]]
     return(x)
 })
+
+.getVarFtIdx <- function(full, var) {
+    # full - character vector of ligerDataset rownames
+    # var - character vector of var features (in scaleData, V), might not follow
+    # the original order of `full`
+    # return numeric value that select ordered corresponding replacement from
+    # `dimnames<-`'s value[[1]]
+    fullNamedIdx <- seq_along(full)
+    names(fullNamedIdx) <- full
+    varNumIdx <- fullNamedIdx[var]
+    names(varNumIdx) <- NULL
+    return(varNumIdx)
+}
 
 #' @section Subsetting:
 #' For more detail of subsetting a \code{liger} object or a

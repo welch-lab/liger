@@ -9,7 +9,7 @@
 #' \code{"clusters"} compares between clusters across all datasets, while
 #' \code{"datasets"} compares between datasets within each cluster.
 #' @param useCluster The name of the column in \code{cellMeta} slot storing the
-#' cluster assignment variable. Default \code{"louvain_cluster"}
+#' cluster assignment variable. Default \code{"leiden_cluster"}
 #' @param usePeak Logical, whether to test peak counts instead of gene
 #' expression. Requires presence of ATAC modility datasets. Default
 #' \code{FALSE}.
@@ -28,7 +28,7 @@ runWilcoxon <- function(
         object,
         useDatasets = NULL,
         method = c("clusters", "datasets"),
-        useCluster = "louvain_cluster",
+        useCluster = "leiden_cluster",
         usePeak = FALSE,
         verbose = getOption("ligerVerbose"),
         # Deprecated coding style,
@@ -638,7 +638,7 @@ plotMarkerHeatmap <- function(
         result,
         topN = 5,
         dedupBy = c("logFC", "padj"),
-        groupBy = c("dataset", "louvain_cluster"),
+        groupBy = c("dataset", "leiden_cluster"),
         groupSize = 50,
         column_title = NULL,
         ...

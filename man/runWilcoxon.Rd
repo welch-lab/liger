@@ -8,7 +8,7 @@ runWilcoxon(
   object,
   useDatasets = NULL,
   method = c("clusters", "datasets"),
-  useCluster = "louvain_cluster",
+  useCluster = "leiden_cluster",
   usePeak = FALSE,
   verbose = getOption("ligerVerbose"),
   data.use = useDatasets,
@@ -27,7 +27,7 @@ vector of the index of the datasets to be normalized. Default
 \code{"datasets"} compares between datasets within each cluster.}
 
 \item{useCluster}{The name of the column in \code{cellMeta} slot storing the
-cluster assignment variable. Default \code{"louvain_cluster"}}
+cluster assignment variable. Default \code{"leiden_cluster"}}
 
 \item{usePeak}{Logical, whether to test peak counts instead of gene
 expression. Requires presence of ATAC modility datasets. Default

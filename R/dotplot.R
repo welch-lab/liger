@@ -25,7 +25,7 @@
 #' subset).
 #' @param groupBy The names of the columns in \code{cellMeta} slot storing
 #' categorical variables. Expression data would be aggregated basing on these,
-#' together with \code{splitBy}. Default \code{"louvain_cluster"}.
+#' together with \code{splitBy}. Default \code{"leiden_cluster"}.
 #' @param splitBy The names of the columns in \code{cellMeta} slot storing
 #' categorical variables. Dotplot panel splitting would be based on these.
 #' Default \code{NULL}.
@@ -60,7 +60,7 @@
 plotClusterGeneDot <- function(
         object,
         features,
-        groupBy = "louvain_cluster",
+        groupBy = "leiden_cluster",
         splitBy = NULL,
         featureScaleFunc = function(x) log2(10000*x + 1),
         cellIdx = NULL,
@@ -154,7 +154,7 @@ plotClusterGeneDot <- function(
 #' @param object A \linkS4class{liger} object
 #' @param groupBy The names of the columns in \code{cellMeta} slot storing
 #' categorical variables. Loading data would be aggregated basing on these,
-#' together with \code{splitBy}. Default \code{"louvain_cluster"}.
+#' together with \code{splitBy}. Default \code{"leiden_cluster"}.
 #' @param useDims A Numeric vector to specify exact factors of interests.
 #' Default \code{NULL} uses all available factors.
 #' @param useRaw Whether to use un-aligned cell factor loadings (\eqn{H}
@@ -184,7 +184,7 @@ plotClusterGeneDot <- function(
 #' plotClusterFactorDot(pbmcPlot)
 plotClusterFactorDot <- function(
         object,
-        groupBy = "louvain_cluster",
+        groupBy = "leiden_cluster",
         useDims = NULL,
         useRaw = FALSE,
         splitBy = NULL,

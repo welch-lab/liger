@@ -258,20 +258,27 @@ convertOldLiger.mem <- function(object, dimredName = "tsne.coords",
                                          bcPassing, ftPassing, hvgPassing)
         dataList <- dataList[passing]
         for (s in c("scaleData", "H", "V", "U")) {
-            if (!is.null(dataList[[s]])) dataList[[s]] <- t(dataList[[s]])
+            if (!is.null(dataList[[s]])) {
+                dataList[[s]] <- t(dataList[[s]])
+            }
         }
         # 3. Construct ligerDataset objects for each dataset
         ldList[[d]] <- do.call(createLigerDataset, dataList)
+        colnames(ldList[[d]]) <- paste0(d, "_", colnames(ldList[[d]]))
     }
+    cellID <- unlist(lapply(ldList, colnames), use.names = FALSE)
     # 4. Wrap up liger object
     cellMeta <- S4Vectors::DataFrame(cellMeta)
     # TODO: check default prototype of tsne.coords and clusters.
-    cellMeta[[dimredName]] <- object@tsne.coords[rownames(cellMeta), ,
-                                               drop = FALSE]
+    dimred <- object@tsne.coords[rownames(cellMeta), , drop = FALSE]
+    colnames(dimred) <- seq_len(ncol(dimred))
+    cellMeta[[dimredName]] <- dimred
     cellMeta[[clusterName]] <- object@clusters[rownames(cellMeta)]
-    newObj <- createLiger(ldList, W = t(object@W), H.norm = object@H.norm,
-                          varFeatures = object@var.genes, cellMeta = cellMeta)
-
+    rownames(cellMeta) <- cellID
+    hnorm <- object@H.norm
+    rownames(hnorm) <- cellID
+    newObj <- createLiger(ldList, W = t(object@W), H.norm = hnorm,
+                          varFeatures = varFeatures, cellMeta = cellMeta)
     return(newObj)
 }
 

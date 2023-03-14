@@ -38,13 +38,13 @@
 #' data("pbmcPlot", package = "rliger")
 #' plotGeneHeatmap(pbmcPlot, varFeatures(pbmcPlot))
 #' plotGeneHeatmap(pbmcPlot, varFeatures(pbmcPlot),
-#'                 useCellMeta = c("louvain_cluster", "dataset"),
-#'                 cellSplitBy = "louvain_cluster")
+#'                 useCellMeta = c("leiden_cluster", "dataset"),
+#'                 cellSplitBy = "leiden_cluster")
 #'
 #' plotFactorHeatmap(pbmcPlot)
-#' plotFactorHeatmap(pbmcPlot, cellIdx = pbmcPlot$louvain_cluster %in% 1:3,
-#'                   useCellMeta = c("louvain_cluster", "dataset"),
-#'                   cellSplitBy = "louvain_cluster")
+#' plotFactorHeatmap(pbmcPlot, cellIdx = pbmcPlot$leiden_cluster %in% 1:3,
+#'                   useCellMeta = c("leiden_cluster", "dataset"),
+#'                   cellSplitBy = "leiden_cluster")
 plotGeneHeatmap <- function(
         object,
         features,

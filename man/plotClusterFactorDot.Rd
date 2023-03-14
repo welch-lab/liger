@@ -6,7 +6,7 @@
 \usage{
 plotClusterFactorDot(
   object,
-  groupBy = "louvain_cluster",
+  groupBy = "leiden_cluster",
   useDims = NULL,
   useRaw = FALSE,
   splitBy = NULL,
@@ -24,7 +24,7 @@ plotClusterFactorDot(
 
 \item{groupBy}{The names of the columns in \code{cellMeta} slot storing
 categorical variables. Loading data would be aggregated basing on these,
-together with \code{splitBy}. Default \code{"louvain_cluster"}.}
+together with \code{splitBy}. Default \code{"leiden_cluster"}.}
 
 \item{useDims}{A Numeric vector to specify exact factors of interests.
 Default \code{NULL} uses all available factors.}
