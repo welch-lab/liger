@@ -29,9 +29,10 @@ reference:
   - suggestLambda
 - title: "Downstream Analysis"
 - contents:
-  - runTSNE
   - runUMAP
-  - louvainCluster
+  - runTSNE
+  - runLeidenCluster
+  - runLouvainCluster
   - runWilcoxon
   - getFactorMarkers
   - runGSEA

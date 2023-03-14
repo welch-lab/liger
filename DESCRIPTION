@@ -54,6 +54,8 @@ Imports:
     ggrepel,
     grid,
     hdf5r,
+    igraph,
+    leidenbase,
     lifecycle,
     magrittr,
     parallel,
