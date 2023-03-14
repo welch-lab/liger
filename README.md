@@ -40,7 +40,7 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 * [scATAC and scRNA Integration using unshared features (UINMF)](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/SNAREseq_walkthrough.html)
 * [Cross-species Analysis with UINMF](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/cross_species_vig.html)
 * [Performing Parameter Selection](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/Parameter_selection.html) 
-* Integrating spatial transcriptomic and transcriptomic datasets using UINMF <a href="https://www.dropbox.com/s/ho62az1kshj59d2/STARmap_dropviz_vig.html?dl=0">Click to  Download</a>
+* [Integrating spatial transcriptomic and transcriptomic datasets using UINMF](https://www.dropbox.com/s/ho62az1kshj59d2/STARmap_dropviz_vig.html?dl=0) (Click to Download)
 * [Integrating Multiple Single-Cell RNA-seq Datasets](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/Integrating_multi_scRNA_data.html)
 
 * [Jointly Defining Cell Types from scRNA-seq and scATAC-seq](http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/Integrating_scRNA_and_scATAC_data.html)
