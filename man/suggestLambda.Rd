@@ -84,9 +84,10 @@ represents a different rep for nrep). Default \code{FALSE}.}
 Matrix of results
 }
 \description{
-Can be used to select appropriate value of lambda for factorization of particular dataset. Plot
-alignment and agreement for various test values of lambda. Most appropriate lambda
-is likely around the "elbow" of the alignment plot (when alignment stops increasing). This will
-likely also correspond to slower decrease in agreement. Depending on number of cores used,
-this process can take 10-20 minutes.
+Can be used to select appropriate value of lambda for factorization of
+particular dataset. Plot alignment and agreement for various test values of
+lambda. Most appropriate lambda is likely around the "elbow" of the alignment
+plot (when alignment stops increasing). This will likely also correspond to
+slower decrease in agreement. Depending on number of cores used, this process
+can take 10-20 minutes.
 }

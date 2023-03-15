@@ -145,12 +145,12 @@ calcAgreement <- function(object,
         } else {
             original <- object@H[[i]]
         }
-        fnn.1 <- FNN::get.knn(dr[[i]], k = k)
-        fnn.2 <- FNN::get.knn(original, k = k)
+        knn.1 <- RANN::nn2(dr[[i]], k = k)
+        knn.2 <- RANN::nn2(original, k = k)
         jaccard_inds_i <-
             c(jaccard_inds_i, sapply(1:ns[i], function(i) {
-                intersect <- intersect(fnn.1$nn.index[i,], fnn.2$nn.index[i,])
-                union <- union(fnn.1$nn.index[i,], fnn.2$nn.index[i,])
+                intersect <- intersect(knn.1$nn.idx[i,], knn.2$nn.idx[i,])
+                union <- union(knn.1$nn.idx[i, ], knn.2$nn.idx[i, ])
                 length(intersect) / length(union)
             }))
         jaccard_inds_i <- jaccard_inds_i[is.finite(jaccard_inds_i)]
@@ -253,8 +253,7 @@ calcAlignment <- function(
     } else if (k > max_k) {
         stop(paste0("Please select k <=", max_k))
     }
-    knn_graph <-
-        FNN::get.knn(nmf_factors[sampled_cells, 1:num_factors], k)
+    knn_graph <- RANN::nn2(nmf_factors[sampled_cells, seq(num_factors)], k)
     # Generate new "datasets" for desired cell groups
     if (!is.null(cells.comp)) {
         dataset <- unlist(sapply(1:N, function(x) {
@@ -273,7 +272,7 @@ calcAlignment <- function(
 
     alignment_per_cell <- c()
     for (i in 1:num_sampled) {
-        inds <- knn_graph$nn.index[i,]
+        inds <- knn_graph$nn.idx[i,]
         num_same_dataset[i] <- sum(dataset[inds] == dataset[i])
         alignment_per_cell[i] <-
             1 - (num_same_dataset[i] - (k / N)) / (k - k / N)

@@ -74,3 +74,7 @@ plotly (htmlwidget) object.
 \description{
 Produce single scatter plot with data frame passed from upstream
 }
+\details{
+Having package "ggrepel" installed can help adding tidier text
+labels on the scatter plot.
+}

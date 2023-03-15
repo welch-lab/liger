@@ -66,6 +66,27 @@ suggestK <- function(
                         gen.new = "genNew", plot.log2 = FALSE,
                         return.raw = "returnRaw"),
                    defunct = "return.data")
+    if (!requireNamespace("doParallel", quietly = TRUE)) {
+        stop("Package \"doParallel\" needed for this function to work. ",
+             "Please install it by command:\n",
+             "install.packages('doParallel')",
+             call. = FALSE)
+    }
+    if (!requireNamespace("parallel", quietly = TRUE)) {
+        stop("Package \"parallel\" needed for this function to work. ",
+             "Please install it by command:\n",
+             "install.packages('parallel')",
+             call. = FALSE)
+    }
+    if (!requireNamespace("foreach", quietly = TRUE)) {
+        stop("Package \"foreach\" needed for this function to work. ",
+             "Please install it by command:\n",
+             "install.packages('foreach')",
+             call. = FALSE)
+    }
+    `%dopar%` <- foreach::`%dopar%`
+    # namespaceImportFrom(ns = "foreach", self = rlang::current_env(),
+    #                     vars = "%dopar%")
     scaleData <- getMatrix(object, "scaleData")
     notScaled <- sapply(scaleData, is.null)
     if (any(notScaled))
@@ -98,7 +119,7 @@ suggestK <- function(
         )
 
         if (isTRUE(verbose)) {
-            .log('Testing different choices of k')
+            .log("Testing different choices of k")
         }
         cl <- parallel::makeCluster(nCores)
         doParallel::registerDoParallel(cl)
@@ -111,7 +132,7 @@ suggestK <- function(
         data_matrix <- foreach::foreach(
             i = seq_along(kTest),
             .combine = "rbind",
-            .packages = 'rliger'
+            .packages = "rliger"
         ) %dopar% {
             if (i != length(kTest)) {
                 if (isTRUE(genNew)) {
@@ -146,8 +167,9 @@ suggestK <- function(
         rep_data[[r]] <- data_matrix
     }
 
-    medians <- Reduce(cbind, lapply(rep_data, function(x)
-        apply(x, 1, stats::median)))
+    medians <- Reduce(cbind, lapply(rep_data, function(x) {
+        apply(x, 1, stats::median)
+    }))
     if (is.null(dim(medians))) {
         medians <- matrix(medians, ncol = 1)
     }
@@ -162,11 +184,12 @@ suggestK <- function(
     df_kl <- data.frame(
         median_kl = c(mean_kls, log2(kTest)),
         k = c(kTest, kTest),
-        calc = factor(c(rep('KL_div', length(kTest)), rep('log2(k)', length(kTest))))
+        calc = factor(c(rep("KL_div", length(kTest)),
+                        rep("log2(k)", length(kTest))))
     )
 
 
-    if (isFALSE(plotLog2)) df_kl <- df_kl[df_kl$calc == 'KL_div', ]
+    if (isFALSE(plotLog2)) df_kl <- df_kl[df_kl$calc == "KL_div", ]
 
     if (isTRUE(returnRaw)) {
         rep_data <- lapply(rep_data, function(x) {
@@ -188,7 +211,7 @@ suggestK <- function(
 plotSuggestK <- function(
         result,
         xlab = "k",
-        ylab = 'Median KL divergence (across all cells)',
+        ylab = "Median KL divergence (across all cells)",
         legendColorTitle = "",
         ...) {
     p <- ggplot2::ggplot(
@@ -226,18 +249,19 @@ kl_divergence_uniform <- function(object, Hs = NULL) {
         divs = apply(inflated, 1, function(x) {
             log2(n_factors) + sum(log2(x) * x)
         })
-        dataset_list[[i]] = divs
+        dataset_list[[i]] <- divs
     }
     return(dataset_list)
 }
 
 #' Visually suggest appropriate lambda value
 #'
-#' Can be used to select appropriate value of lambda for factorization of particular dataset. Plot
-#' alignment and agreement for various test values of lambda. Most appropriate lambda
-#' is likely around the "elbow" of the alignment plot (when alignment stops increasing). This will
-#' likely also correspond to slower decrease in agreement. Depending on number of cores used,
-#' this process can take 10-20 minutes.
+#' Can be used to select appropriate value of lambda for factorization of
+#' particular dataset. Plot alignment and agreement for various test values of
+#' lambda. Most appropriate lambda is likely around the "elbow" of the alignment
+#' plot (when alignment stops increasing). This will likely also correspond to
+#' slower decrease in agreement. Depending on number of cores used, this process
+#' can take 10-20 minutes.
 #'
 #'
 #' @param object A \linkS4class{liger} object with scaled data.
@@ -310,7 +334,25 @@ suggestLambda <- function(
                         knn_k = "nNeighbors", ref_dataset = "reference",
                         gen.new = "genNew", return.raw = "returnRaw"),
                    defunct = "return.data")
-
+    if (!requireNamespace("doParallel", quietly = TRUE)) {
+        stop("Package \"doParallel\" needed for this function to work. ",
+             "Please install it by command:\n",
+             "install.packages('doParallel')",
+             call. = FALSE)
+    }
+    if (!requireNamespace("parallel", quietly = TRUE)) {
+        stop("Package \"parallel\" needed for this function to work. ",
+             "Please install it by command:\n",
+             "install.packages('parallel')",
+             call. = FALSE)
+    }
+    if (!requireNamespace("foreach", quietly = TRUE)) {
+        stop("Package \"foreach\" needed for this function to work. ",
+             "Please install it by command:\n",
+             "install.packages('foreach')",
+             call. = FALSE)
+    }
+    `%dopar%` <- foreach::`%dopar%`
     if (is.null(lambdaTest)) {
         lambdaTest <- c(seq(0.25, 1, 0.25), seq(2, 10, 1), seq(15, 60, 5))
     }
@@ -319,15 +361,15 @@ suggestLambda <- function(
     # optimize smallest lambda value first to take advantage of efficient
     # updating
     if (isTRUE(verbose))
-        .log("Testing lambda values. This may take several minutes depending on ",
-             "the number of values being tested...")
+        .log("Testing lambda values. This may take several minutes depending ",
+             "on the number of values being tested...")
 
     rep_data <- list()
     for (r in seq(nrep)) {
         if (isTRUE(verbose))
             .log("Preprocessing for rep ", r,
-                 ": optimizing initial factorization with smallest test lambda=",
-                 lambdaTest[1])
+                 ": optimizing initial factorization with smallest test ",
+                 "lambda=", lambdaTest[1])
         object <- optimizeALS(
             object,
             k = k,
@@ -339,20 +381,15 @@ suggestLambda <- function(
             verbose = verbose
         )
         if (isTRUE(verbose)) {
-            .log('Testing different choices of lambda')
+            .log("Testing different choices of lambda")
         }
         cl <- parallel::makeCluster(nCores)
-        #registerDoSNOW(cl)
         doParallel::registerDoParallel(cl)
-        #pb <- txtProgressBar(min = 0, max = length(lambdaTest), style = 3, initial = 1, file = "")
-        # define progress bar function
-        #progress <- function(n) setTxtProgressBar(pb, n)
-        #opts <- list(progress = progress)
         i <- 0
         data_matrix <- foreach::foreach(
             i = seq_along(lambdaTest),
             .combine = "rbind",
-            .packages = 'rliger'
+            .packages = "rliger"
         ) %dopar% {
             if (i != 1) {
                 if (isTRUE(genNew)) {

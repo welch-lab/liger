@@ -133,6 +133,8 @@ plotCellScatter <- function(
 }
 
 #' Produce single scatter plot with data frame passed from upstream
+#' @details Having package "ggrepel" installed can help adding tidier text
+#' labels on the scatter plot.
 #' @param plotDF Data frame like object (fortifiable) that contains all
 #' necessary information to make the plot.
 #' @param x,y,colorBy,shapeBy See \code{\link{plotCellScatter}}.
@@ -250,14 +252,23 @@ plotCellScatter <- function(
             textData <- dplyr::summarise(textData,
                                          x = stats::median(.data[[x]]),
                                          y = stats::median(.data[[y]]))
-            p <- p + ggrepel::geom_text_repel(
-                data = textData,
-                mapping = ggplot2::aes(x = .data[["x"]],
-                                       y = .data[["y"]],
-                                       label = .data[[labelBy]]),
-                color = "black", size = labelTextSize, inherit.aes = FALSE,
-                bg.colour = "white", bg.r = .2
-            )
+            if (!requireNamespace("ggrepel", quietly = TRUE)) {
+                p <- p + ggplot2::annotate(
+                    "text", x = textData$x, y = textData$y,
+                    label = textData[[labelBy]], color = "black",
+                    size = labelTextSize
+                )
+            } else {
+                p <- p + ggrepel::geom_text_repel(
+                    data = textData,
+                    mapping = ggplot2::aes(x = .data[["x"]],
+                                           y = .data[["y"]],
+                                           label = .data[[labelBy]]),
+                    color = "black", size = labelTextSize, inherit.aes = FALSE,
+                    bg.colour = "white", bg.r = .2
+                )
+            }
+
             # Important to have `inherit.aes = F` above, otherwise
             # `geom_text_repel` looks for "shapeBy" setting which this newly
             # generated label coordinate table just doesn't have.
@@ -694,10 +705,12 @@ plotCellViolin <- function(
                     length(levels(plot$data[[varName]]))
                 )
             }
-            plot <- plot +
-                .setColorLegendPalette(aesType = a,
-                                       labels = colorLabels,
-                                       values = colorValues)
+            if (a %in% c("colour", "fill")) {
+                plot <- plot +
+                    .setColorLegendPalette(aesType = a,
+                                           labels = colorLabels,
+                                           values = colorValues)
+            }
         } else {
             # continuous setting
             if (a %in% c("colour", "fill")) {

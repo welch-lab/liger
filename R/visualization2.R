@@ -232,6 +232,9 @@ plotGeneDetectedViolin <- function(
 #' \code{plotClusterProportions} has variable pre-specified and calls the dot
 #' plot. \code{plotProportion} produces a combination of both bar plots and dot
 #' plot.
+#'
+#' Having package "ggrepel" installed can help adding tidier percentage
+#' annotation on the pie chart.
 #' @param object A \linkS4class{liger} object.
 #' @param class1,class2 Each should be a single name of a categorical variable
 #' available in \code{cellMeta} slot. Number of cells in each categories in
@@ -403,12 +406,18 @@ plotProportionPie <- function(
                                                      100*.data[["proportion"]]),
                                      width = .data[["proportion"]])) +
         ggplot2::geom_tile(colour = "white", size = 0.3) +
-        ggplot2::coord_polar() +
-        ggrepel::geom_text_repel(size = labelSize, color = labelColor,
-                                 force = 0, max.overlaps = 4,
-                                 position = ggplot2::position_nudge(y = 0.3))# +
-        #ggplot2::annotate("text", x = 0, y = seq(nlevels(df[[class2]])),
-        #                  label = levels(df[[class2]]))
+        ggplot2::coord_polar()
+    if (!requireNamespace("ggrepel", quietly = TRUE)) {
+        p <- p + ggplot2::geom_text(
+            size = labelSize, color = labelColor,
+            position = ggplot2::position_nudge(y = 0.25)
+        )
+    } else {
+        p <- p + ggrepel::geom_text_repel(
+            size = labelSize, color = labelColor, force = 0.001, max.overlaps = 4,
+            position = ggplot2::position_nudge(y = 0.25)
+        )
+    }
     .ggplotLigerTheme(p, ...) +
         ggplot2::theme(
             axis.line = ggplot2::element_blank(),

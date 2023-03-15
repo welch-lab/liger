@@ -173,12 +173,11 @@ assign.singletons.list <-
           ))
           cells.use <- singleton.list[[d]]
           if (length(x = cells.use) > 0) {
-            knn.idx <-  FNN::get.knnx(
+            knn.idx <-  RANN::nn2(
               data = H,
               query = matrix(H[cells.use,], ncol = ncol(x = H)),
               k = k.use,
-              algorithm = "CR"
-            )$nn.index
+            )$nn.idx
             o <- sapply(
               X = 1:length(x = cells.use),
               FUN = function(i) {

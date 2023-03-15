@@ -40,6 +40,12 @@ imputeKNN <- function(
         knn_k = nNeighbors
 ) {
     .deprecateArgs(list(knn_k = "nNeighbors"), defunct = "scale")
+    # if (!requireNamespace("FNN", quietly = TRUE)) {
+    #     stop("Package \"foreach\" needed for this function to work. ",
+    #          "Please install it by command:\n",
+    #          "install.packages('FNN')",
+    #          call. = FALSE)
+    # }
     if (is.null(getMatrix(object, "H.norm")))
         stop("Aligned factor loading has to be available for imputation. ",
              "Please run `quantileNorm()` in advance.")
@@ -60,7 +66,7 @@ imputeKNN <- function(
                 "datasets. Removed from query list.")
         queries <- queries[!queries %in% reference]
     }
-    object <- recordCommand(object, dependencies = c("FNN", "Matrix"))
+    object <- recordCommand(object, dependencies = c("RANN", "Matrix"))
     if (isTRUE(verbose)) {
         .log("Imputing all the datasets exept the reference dataset\n",
              "Reference dataset: ", reference, "\n",
@@ -75,25 +81,29 @@ imputeKNN <- function(
 
         # creating a (reference cell numbers X query cell numbers) weights
         # matrix for knn weights and unit weights
-        nn.k <- FNN::get.knnx(object@H.norm[referenceCells, ],
-                              object@H.norm[queryCells, ],
-                              k = nNeighbors,
-                              algorithm = "CR")
+        # knn <- FNN::get.knnx(object@H.norm[referenceCells, ],
+        #                       object@H.norm[queryCells, ],
+        #                       k = nNeighbors,
+        #                       algorithm = "CR")
+        knn <- RANN::nn2(object@H.norm[referenceCells, ],
+                         object@H.norm[queryCells, ],
+                         k = nNeighbors)
+
         weights <- Matrix::Matrix(0, nrow = length(referenceCells),
-                                  ncol = nrow(nn.k$nn.index), sparse = TRUE)
+                                  ncol = nrow(knn$nn.idx), sparse = TRUE)
         if (isTRUE(weight)) {
             # for weighted situation
             # find nearest neighbors for query cell in normed ref datasets
-            for (n in seq(nrow(nn.k$nn.index))) {
+            for (n in seq_len(nrow(knn$nn.idx))) {
                 # record ref-query cell-cell distances
-                weights[nn.k$nn.index[n, ], n] <-
-                    exp(-nn.k$nn.dist[n, ]) / sum(exp(-nn.k$nn.dist[n, ]))
+                weights[knn$nn.idx[n, ], n] <-
+                    exp(-knn$nn.dists[n, ]) / sum(exp(-knn$nn.dists[n, ]))
             }
         } else{
             # for unweighted situation
-            for (n in seq(nrow(nn.k$nn.index))) {
+            for (n in seq_len(nrow(knn$nn.idx))) {
                 # simply count the mean
-                weights[nn.k$nn.index[n, ], n] <- 1 / nNeighbors
+                weights[knn$nn.idx[n, ], n] <- 1 / nNeighbors
             }
         }
 

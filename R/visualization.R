@@ -43,6 +43,12 @@
 plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1,
                            max.size = 4, factor.share.thresh = 10, log.fc.thresh = 1, pval.thresh = 0.05,
                            do.spec.plot = TRUE, return.plots = FALSE, verbose = TRUE) {
+    if (!requireNamespace("ggrepel", quietly = TRUE)) {
+        stop("Package \"ggrepel\" needed for this function to work. ",
+             "Please install it by command:\n",
+             "install.packages(\"ggrepel\")",
+             call. = FALSE)
+    }
     if (is.null(dataset1) | is.null(dataset2)) {
         dataset1 <- names(object@H)[1]
         dataset2 <- names(object@H)[2]

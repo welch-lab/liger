@@ -2,23 +2,135 @@ setClass("ligerDataset")
 setClassUnion("matrixLike", c("matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix"))
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# From other things to liger class ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#' Converting other classes of data to a liger object
+#' @export
+#' @param object Object.
+#' @param sampleName If one or more datasets exist in the given object, specify
+#' a name for the single dataset; select a variable from existing metadata (e.g.
+#' colData column); specify a vector/factor that assign the dataset belonging.
+#' Default \code{NULL} gathers things into one dataset and names it "sample".
+#' @param modal Modality setting for each dataset.
+#' @param ... Additional arguments passed to \code{\link{createLiger}}
+#' @return a \linkS4class{liger} object.
+#' @rdname as.liger
+as.liger <- function(object, ...) UseMethod("as.liger", object)
+
+#' @rdname as.liger
+#' @export
+#' @method as.liger dgCMatrix
+as.liger.dgCMatrix <- function(
+        object,
+        sampleName = NULL,
+        modal = NULL,
+        ...
+) {
+    rawDataList <- list(sample = object)
+    if (!is.null(sampleName)) {
+        if (length(sampleName) == 1) names(rawDataList) <- sampleName
+        else if (length(sampleName) == ncol(rawDataList[[1]])) {
+            if (!is.factor(sampleName)) sampleName <- factor(sampleName)
+            rawDataList <- lapply(levels(sampleName), function(var) {
+                rawDataList[[1]][, sampleName == var, drop = FALSE]
+            })
+            names(rawDataList) <- levels(sampleName)
+        }
+    }
+    createLiger(rawData = rawDataList, ...)
+}
+
+#' @rdname as.liger
+#' @export
+#' @method as.liger SingleCellExperiment
+as.liger.SingleCellExperiment <- function(
+        object,
+        sampleName = NULL,
+        modal = NULL,
+        ...
+) {
+    if (!requireNamespace("SingleCellExperiment", quietly = "TRUE"))
+        stop("Package \"SingleCellExperiment\" needed for this function ",
+             "to work. Please install it by command:\n",
+             "BiocManager::install('SingleCellExperiment')",
+             call. = FALSE)
+    if ("counts" %in% SummarizedExperiment::assayNames(object))
+        rawDataList <- list(SingleCellExperiment::counts(object))
+    else rawDataList <- NULL
+    if ("logcounts" %in% SummarizedExperiment::assayNames(object))
+        normDataList <- list(SingleCellExperiment::logcounts(object))
+    else normDataList <- NULL
+    sampleCol <- NULL
+    setNames <- function(x, n) {
+        if (!is.null(x) && length(x) > 0) names(x) <- n
+        return(x)
+    }
+    if (is.null(sampleName)) {
+        # One dataset, no name so by default sce
+        rawDataList <- setNames(rawDataList, "sce")
+        normDataList <- setNames(normDataList, "sce")
+    } else {
+        if (length(sampleName) == 1) {
+            if (sampleName %in%
+                colnames(SummarizedExperiment::colData(object))) {
+                sampleCol <- sampleName
+                # Split by variable in colData
+                v <- SummarizedExperiment::colData(object)[[sampleName]]
+                if (!is.factor(v)) v <- factor(v)
+                rawDataList <- lapply(levels(v), function(var) {
+                    rawDataList[[1]][, v == var, drop = FALSE]
+                })
+                normDataList <- lapply(levels(v), function(var) {
+                    normDataList[[1]][, v == var, drop = FALSE]
+                })
+                rawDataList <- setNames(rawDataList, levels(v))
+                normDataList <- setNames(normDataList, levels(v))
+            } else {
+                # One dataset, use given name
+                rawDataList <- setNames(rawDataList, sampleName)
+                normDataList <- setNames(normDataList, sampleName)
+            }
+        } else if (length(sampleName) == ncol(rawDataList[[1]])) {
+            # Split by user given variable
+            if (!is.factor(sampleName)) sampleName <- factor(sampleName)
+            rawDataList <- lapply(levels(sampleName), function(var) {
+                rawDataList[[1]][, sampleName == var, drop = FALSE]
+            })
+            normDataList <- lapply(levels(sampleName), function(var) {
+                normDataList[[1]][, sampleName == var, drop = FALSE]
+            })
+            rawDataList <- setNames(rawDataList, levels(sampleName))
+            normDataList <- setNames(normDataList, levels(sampleName))
+        } else {
+            stop("Invalid `sampleName` specification.")
+        }
+
+    }
+    lig <- createLiger(rawData = rawDataList, ...)
+
+    cellMetadata <- SummarizedExperiment::colData(object)
+    if (!is.null(sampleCol)) {
+        cellMetadata <- cellMetadata[, colnames(cellMetadata) != sampleCol,
+                                     drop = FALSE]
+    }
+    cellMeta(lig)[, colnames(cellMetadata)] <- cellMetadata
+    for (rd in SingleCellExperiment::reducedDimNames(object)) {
+        cellMeta(lig, rd) <- SingleCellExperiment::reducedDim(object, rd)
+    }
+
+    return(lig)
+}
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # From other things to ligerDataset class ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-#' Convert an object of various classes to a ligerDataset object
-#' @rdname as.ligerDataset
-#' @description S4 method to convert objects of various types to a
-#' \linkS4class{ligerDataset} object or a modality specific sub-class of
-#' \linkS4class{ligerDataset} object. Supported classes include a matrix like
-#' object, a \code{SingleCellExperiment} object, a \code{Seurat} object, and
-#' \code{AnnData} object. This method also supports modality setting to a
-#' \linkS4class{ligerDataset} inherited object.
-#' @param x An object to be converted
-#' @param modal The modality of this dataset. Default \code{"default"} for RNA.
-#' Can choose from \code{"rna"}, \code{"atac"}.
-#' @return A ligerDataset object by default, or a modality specific sub-class of
-#' ligerDataset object according to \code{modal}.
+#' Converting other classes of data to a as.ligerDataset object
 #' @export
+#' @param object Object.
+#' @param modal Modality setting for each dataset.
+#' @param ... Additional arguments passed to \code{\link{createLigerDataset}}
+#' @return a \linkS4class{liger} object.
+#' @rdname as.ligerDataset
 #' @examples
 #' data("pbmc", package = "rliger")
 #' ctrl <- dataset(pbmc, "ctrl")
@@ -27,107 +139,81 @@ setClassUnion("matrixLike", c("matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix"))
 #' rawCounts <- rawData(ctrl)
 #' class(rawCounts)
 #' as.ligerDataset(rawCounts)
-setGeneric("as.ligerDataset",
-           function(x, modal = c("default", "rna", "atac")) {
-               standardGeneric("as.ligerDataset")
-           })
+as.ligerDataset <- function(object, ...) UseMethod("as.ligerDataset", object)
 
 #' @rdname as.ligerDataset
 #' @export
-setMethod(
-    "as.ligerDataset",
-    signature(x = "SingleCellExperiment",
-              modal = "ANY"),
-    function(x, modal = c("default", "rna", "atac")) {
-        if (!requireNamespace("SingleCellExperiment", quietly = "TRUE"))
-            stop("Package \"SingleCellExperiment\" needed for this function ",
-                 "to work. Please install it by command:\n",
-                 "BiocManager::install('SingleCellExperiment')",
-                 call. = FALSE)
-        if ("counts" %in% SummarizedExperiment::assayNames(x))
-            raw.data <- SingleCellExperiment::counts(x)
-        else raw.data <- NULL
-        if ("logcounts" %in% SummarizedExperiment::assayNames(x))
-            normData <- SingleCellExperiment::logcounts(x)
-        else normData <- NULL
-        if ("counts" %in% SummarizedExperiment::assayNames(x))
-            raw.data <- SingleCellExperiment::counts(x)
-        createLigerDataset(raw.data = raw.data, normData = normData,
-                           modal = modal)
+#' @method as.ligerDataset ligerDataset
+as.ligerDataset.ligerDataset <- function(
+        object,
+        modal = c("default", "rna", "atac"),
+        ...
+) {
+    modal <- match.arg(modal)
+    newClass <- .modalClassDict[[modal]]
+    if (inherits(object, newClass)) return(object)
+    slotFromClass <- methods::slotNames(class(object))
+    slotToClass <- methods::slotNames(newClass)
+    if (any(!slotFromClass %in% slotToClass))
+        warning("Will remove information in the following slots when ",
+                "converting class from `", class(object), "` to `", newClass,
+                "`: ", paste(slotFromClass[!slotFromClass %in% slotToClass],
+                             collapse = ", "))
+    newCallArgs <- list(Class = newClass)
+    for (s in slotFromClass) {
+        if (s %in% slotToClass)
+            newCallArgs[[s]] <- methods::slot(object, s)
     }
-)
+    do.call("new", newCallArgs)
+}
 
 #' @rdname as.ligerDataset
 #' @export
-setMethod(
-    "as.ligerDataset",
-    signature(x = "ligerDataset",
-              modal = "ANY"),
-    function(x, modal = c("default", "rna", "atac")) {
-        modal <- match.arg(modal)
-        newClass <- .modalClassDict[[modal]]
-        if (class(x) == newClass) return(x)
-        slotFromClass <- methods::slotNames(class(x))
-        slotToClass <- methods::slotNames(newClass)
-        if (any(!slotFromClass %in% slotToClass))
-            warning("Will remove information in the following slots when ",
-                    "converting class from `", class(x), "` to `", newClass,
-                    "`: ", paste(slotFromClass[!slotFromClass %in% slotToClass],
-                                 collapse = ", "))
-        newCallArgs <- list(Class = newClass)
-        for (s in slotFromClass) {
-            if (s %in% slotToClass)
-                newCallArgs[[s]] <- methods::slot(x, s)
-        }
-        do.call("new", newCallArgs)
-    }
-)
+#' @method as.ligerDataset matrixLike
+as.ligerDataset.matrixLike <- function(
+        object,
+        modal = c("default", "rna", "atac"),
+        ...
+) {
+    modal <- match.arg(modal)
+    createLigerDataset(object, modal, ...)
+}
 
 #' @rdname as.ligerDataset
 #' @export
-setMethod(
-    "as.ligerDataset",
-    signature(x = "matrixLike",
-              modal = "ANY"),
-    function(x, modal = c("default", "rna", "atac")) {
-        createLigerDataset(x, modal)
-    }
-)
-
-#' @rdname as.ligerDataset
-#' @export
-setMethod(
-    "as.ligerDataset",
-    signature(x = "Seurat",
-              modal = "ANY"),
-    function(x, modal = c("default", "rna", "atac")) {
-        if (!requireNamespace("Seurat", quietly = "TRUE"))
-            stop("Package \"Seurat\" needed for this function to work. ",
-                 "Please install it by command:\n",
-                 "BiocManager::install('Seurat')",
-                 call. = FALSE)
-        counts <- Seurat::GetAssayData(x, "counts")
-        normData <- Seurat::GetAssayData(x, "data")
-        if (identical(counts, normData)) normData <- NULL
-        scale.data <- Seurat::GetAssayData(x, "scale.data")
-        if (sum(dim(scale.data)) == 0) scale.data <- NULL
-        createLigerDataset(raw.data = counts, normData = normData,
-                           scale.data = scale.data, modal = modal)
-    }
-)
+#' @method as.ligerDataset Seurat
+as.ligerDataset.Seurat <- function(
+        object,
+        modal = c("default", "rna", "atac"),
+        ...
+) {
+    if (!requireNamespace("Seurat", quietly = "TRUE"))
+        stop("Package \"Seurat\" needed for this function to work. ",
+             "Please install it by command:\n",
+             "BiocManager::install('Seurat')",
+             call. = FALSE)
+    counts <- Seurat::GetAssayData(object, "counts")
+    normData <- Seurat::GetAssayData(object, "data")
+    if (identical(counts, normData)) normData <- NULL
+    scale.data <- Seurat::GetAssayData(object, "scale.data")
+    if (sum(dim(scale.data)) == 0) scale.data <- NULL
+    createLigerDataset(raw.data = counts, normData = normData,
+                       scale.data = scale.data, modal = modal, ...)
+}
 
 setClass("anndata._core.anndata.AnnData")
+
 #' @rdname as.ligerDataset
 #' @export
-setMethod(
-    "as.ligerDataset",
-    signature(x = "anndata._core.anndata.AnnData",
-              modal = "ANY"),
-    function(x, modal = c("default", "rna", "atac")) {
-        modal <- match.arg(modal)
-        message("Python object AnnData input. ")
-    }
-)
+#' @method as.ligerDataset anndata._core.anndata.AnnData
+as.ligerDataset.anndata._core.anndata.AnnData <- function(
+        object,
+        modal = c("default", "rna", "atac"),
+        ...
+) {
+    modal <- match.arg(modal)
+    message("Python object AnnData input. ")
+}
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # From ligerDataset class to other things ####

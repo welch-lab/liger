@@ -169,7 +169,7 @@ runLouvainCluster <- function(
     # Not transposing when cbind'ing becausing `t(NULL)` causes error
     if (type == " unnormalized ") H.norm <- t(H.norm)
 
-    edgeOutPath <- paste0('edge_', sub('\\s', '_', Sys.time()), '.txt')
+    edgeOutPath <- paste0("edge_", sub("\\s", "_", Sys.time()), '.txt')
     edgeOutPath <- gsub("-", "", edgeOutPath)
     edgeOutPath <- gsub(":", "", edgeOutPath)
 

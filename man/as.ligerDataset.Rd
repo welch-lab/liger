@@ -2,42 +2,34 @@
 % Please edit documentation in R/classConversion.R
 \name{as.ligerDataset}
 \alias{as.ligerDataset}
-\alias{as.ligerDataset,SingleCellExperiment-method}
-\alias{as.ligerDataset,ligerDataset-method}
-\alias{as.ligerDataset,matrixLike-method}
-\alias{as.ligerDataset,Seurat-method}
-\alias{as.ligerDataset,anndata._core.anndata.AnnData-method}
-\title{Convert an object of various classes to a ligerDataset object}
+\alias{as.ligerDataset.ligerDataset}
+\alias{as.ligerDataset.matrixLike}
+\alias{as.ligerDataset.Seurat}
+\alias{as.ligerDataset.anndata._core.anndata.AnnData}
+\title{Converting other classes of data to a as.ligerDataset object}
 \usage{
-as.ligerDataset(x, modal = c("default", "rna", "atac"))
+as.ligerDataset(object, ...)
 
-\S4method{as.ligerDataset}{SingleCellExperiment}(x, modal = c("default", "rna", "atac"))
+\method{as.ligerDataset}{ligerDataset}(object, modal = c("default", "rna", "atac"), ...)
 
-\S4method{as.ligerDataset}{ligerDataset}(x, modal = c("default", "rna", "atac"))
+\method{as.ligerDataset}{matrixLike}(object, modal = c("default", "rna", "atac"), ...)
 
-\S4method{as.ligerDataset}{matrixLike}(x, modal = c("default", "rna", "atac"))
+\method{as.ligerDataset}{Seurat}(object, modal = c("default", "rna", "atac"), ...)
 
-\S4method{as.ligerDataset}{Seurat}(x, modal = c("default", "rna", "atac"))
-
-\S4method{as.ligerDataset}{anndata._core.anndata.AnnData}(x, modal = c("default", "rna", "atac"))
+\method{as.ligerDataset}{anndata._core.anndata.AnnData}(object, modal = c("default", "rna", "atac"), ...)
 }
 \arguments{
-\item{x}{An object to be converted}
+\item{object}{Object.}
 
-\item{modal}{The modality of this dataset. Default \code{"default"} for RNA.
-Can choose from \code{"rna"}, \code{"atac"}.}
+\item{...}{Additional arguments passed to \code{\link{createLigerDataset}}}
+
+\item{modal}{Modality setting for each dataset.}
 }
 \value{
-A ligerDataset object by default, or a modality specific sub-class of
-ligerDataset object according to \code{modal}.
+a \linkS4class{liger} object.
 }
 \description{
-S4 method to convert objects of various types to a
-\linkS4class{ligerDataset} object or a modality specific sub-class of
-\linkS4class{ligerDataset} object. Supported classes include a matrix like
-object, a \code{SingleCellExperiment} object, a \code{Seurat} object, and
-\code{AnnData} object. This method also supports modality setting to a
-\linkS4class{ligerDataset} inherited object.
+Converting other classes of data to a as.ligerDataset object
 }
 \examples{
 data("pbmc", package = "rliger")

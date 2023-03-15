@@ -89,6 +89,9 @@ cross-category proportion. \code{plotProportionDot} creates dot plots.
 \code{plotClusterProportions} has variable pre-specified and calls the dot
 plot. \code{plotProportion} produces a combination of both bar plots and dot
 plot.
+
+Having package "ggrepel" installed can help adding tidier percentage
+annotation on the pie chart.
 }
 \examples{
 data("pbmcPlot", package = "rliger")
