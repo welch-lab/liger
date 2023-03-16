@@ -399,14 +399,30 @@ plotProportionPie <- function(
                           0.5*.data[["proportion"]]) %>%
         dplyr::ungroup()
 
+
     p <- ggplot2::ggplot(df, ggplot2::aes(x = .data[["cumsumProp"]],
                                      y = .data[[class2]],
                                      fill = .data[[class1]],
                                      label = sprintf("%1.1f%%",
                                                      100*.data[["proportion"]]),
                                      width = .data[["proportion"]])) +
-        ggplot2::geom_tile(colour = "white", size = 0.3) +
+        ggplot2::geom_tile(colour = "white", size = 0.3, height = 0.9) +
         ggplot2::coord_polar()
+    # Add class2 annotation
+    class2fct <- droplevels(df[[class2]])
+    class2Uniq <- levels(class2fct)
+    lgdDF <- data.frame(slope = 0, intercept = seq_along(class2Uniq) + 0.5,
+                        class2 = class2Uniq)
+    names(lgdDF)[3] <- class2
+    p <- p +
+        ggplot2::geom_abline(
+            data = lgdDF,
+            mapping = ggplot2::aes(slope = .data[["slope"]],
+                                   intercept = .data[["intercept"]],
+                                   colour = .data[[class2]]),
+            linewidth = 2
+        )
+
     if (!requireNamespace("ggrepel", quietly = TRUE)) {
         p <- p + ggplot2::geom_text(
             size = labelSize, color = labelColor,
@@ -424,6 +440,7 @@ plotProportionPie <- function(
             axis.title.x = ggplot2::element_blank(),
             axis.title.y = ggplot2::element_blank(),
             axis.text.x = ggplot2::element_blank(),
+            axis.text.y = ggplot2::element_blank(),
             axis.ticks.y = ggplot2::element_blank()
         )
 }
@@ -459,6 +476,7 @@ plotProportionPie <- function(
 #' \code{\link{.ggplotLigerTheme}}. For \code{plotEnhancedVolcano}, arguments
 #' passed to \code{\link[EnhancedVolcano]{EnhancedVolcano}}.
 #' @return ggplot
+#' @export
 plotVolcano <- function(
         result,
         group,

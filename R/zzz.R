@@ -33,7 +33,7 @@ NULL
 }
 
 .onAttach <- function(libname, pkgname) {
-    packageStartupMessage(
+    msg <- paste0(
         "Package `rliger` has been updated massively since version 1.99.0, ",
         "including the object structure which is not compatible with old ",
         "versions.\nWe recommand you backup your old analysis before ",
@@ -41,6 +41,12 @@ NULL
         "reading RDS file storing an old object and it converts it to the ",
         "up-to-date structure."
     )
+    ggrepelPath <- find.package("ggrepel", quiet = TRUE)
+    if (length(ggrepelPath) == 0) {
+        msg <- paste0(msg, "\n\nPackage \"ggrepel\" is highly recommended to ",
+                      "be installed for better plotting quality.")
+    }
+    packageStartupMessage(msg)
     return(invisible(NULL))
 }
 

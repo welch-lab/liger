@@ -10,6 +10,7 @@ reference:
   - read10X
   - restoreH5Liger
   - as.ligerDataset
+  - as.liger
   - pbmc
   - pbmcPlot
 - title: "Preprocessing"
