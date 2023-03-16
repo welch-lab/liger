@@ -69,7 +69,7 @@ cells than this before regular alignment (default 0 -- no small cluster extracti
 \code{liger} object with H.norm and cluster slots set.
 }
 \description{
-This is a deprecated function. Calling 'quantile_norm' instead.
+This is a deprecated function. Calling 'quantileNorm' instead.
 }
 \details{
 This process builds a shared factor neighborhood graph to jointly cluster cells, then quantile
