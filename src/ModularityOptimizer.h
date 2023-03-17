@@ -38,7 +38,7 @@ public:
   // Although we could have used friend classes, this allows for better mirroring of the original code.
   int nClusters;
   IVector cluster;
-  
+
   Clustering(int nNodes);
   Clustering(IVector cluster);
   int getNNodes() const {return nNodes;};
@@ -51,7 +51,7 @@ public:
   void initSingletonClusters();
   void orderClustersByNNodes();
   void mergeClusters(const Clustering& clustering);
-  
+
 };
 
 class Network {
@@ -67,24 +67,24 @@ protected:
 public:
   Network();
   Network(int nNodes, DVector* nodeWeight, std::vector<IVector>& edge, DVector* edgeWeight);
-  Network(int nNodes, std::vector<IVector>& edge) : 
+  Network(int nNodes, std::vector<IVector>& edge) :
     Network(nNodes, nullptr, edge, nullptr) { };
-  Network(int nNodes, DVector* nodeWeight, std::vector<IVector> edge) : 
+  Network(int nNodes, DVector* nodeWeight, std::vector<IVector> edge) :
     Network(nNodes, nodeWeight, edge, nullptr) {};
   Network(int nNodes, std::vector<IVector>& edge, DVector* edgeWeight) :
     Network(nNodes, nullptr, edge, edgeWeight) {};
-  
+
   Network(int nNodes, DVector* nodeWeight, IVector& firstNeighborIndex, IVector& neighbor, DVector* edgeWeight);
-  Network(int nNodes, IVector& firstNeighborIndex, IVector& neighbor) : 
+  Network(int nNodes, IVector& firstNeighborIndex, IVector& neighbor) :
     Network(nNodes, nullptr, firstNeighborIndex, neighbor, nullptr) {};
-  
+
   Network(int nNodes, DVector* nodeWeight, IVector& firstNeighborIndex, IVector& neighbor) :
     Network(nNodes, nodeWeight, firstNeighborIndex, neighbor, nullptr){};
-  
+
   Network(int nNodes, IVector& firstNeighborIndex, IVector& neighbor, DVector* edgeWeight) :
     Network(nNodes, nullptr, firstNeighborIndex, neighbor, edgeWeight) {};
-  
-  
+
+
   int getNNodes() {return nNodes;};
   double getTotalNodeWeight();
   DVector getNodeWeights();
@@ -112,13 +112,13 @@ public:
   int getNeighborValue(int index) const {
     return neighbor.at(index);
   }
-  
+
   std::vector<Network> createSubnetworks(Clustering clustering) const;
   Network createReducedNetwork(const Clustering& clustering) const;
   Clustering identifyComponents();
 private:
   double generateRandomNumber(int node1, int node2, const IVector& nodePermutation);
-  Network createSubnetwork(const Clustering& clustering, int cluster, IVector& node, 
+  Network createSubnetwork(const Clustering& clustering, int cluster, IVector& node,
                            IVector& subnetworkNode, IVector& subnetworkNeighbor, DVector& subnetworkEdgeWeight) const;
 };
 
@@ -128,7 +128,7 @@ private:
   std::shared_ptr<Network> network;
   std::shared_ptr<Clustering> clustering;
   double resolution;
-  
+
 public:
   VOSClusteringTechnique(std::shared_ptr<Network> network, double resolution);
   VOSClusteringTechnique(std::shared_ptr<Network> network, std::shared_ptr<Clustering> clustering, double resolution);
@@ -139,7 +139,7 @@ public:
   void setClustering(std::shared_ptr<Clustering> clustering) {this->clustering = clustering;}
   void setResolution(double resolution) {this->resolution = resolution;}
   double calcQualityFunction();
-  
+
   bool runLocalMovingAlgorithm(JavaRandom& random);
   bool runLouvainAlgorithm(JavaRandom& random);
   bool runIteratedLouvainAlgorithm(int maxNIterations, JavaRandom& random);
@@ -147,7 +147,7 @@ public:
   bool runIteratedLouvainAlgorithmWithMultilevelRefinement(int maxNIterations, JavaRandom& random);
   bool runSmartLocalMovingAlgorithm(JavaRandom& random);
   bool runIteratedSmartLocalMovingAlgorithm(int nIterations, JavaRandom& random);
-  
+
   int removeCluster(int cluster);
   void removeSmallClusters(int minNNodesPerCluster);
 };

@@ -59,15 +59,15 @@ normalize <- function(
 #' @noRd
 normalizeDataset.Matrix <- function(object, log = TRUE, scaleFactor = 1e4,
                                     verbose = getOption("ligerVerbose")) {
-    if (inherits(rawData(object), "dgCMatrix") |
-        inherits(rawData(object), "dgTMatrix")) {
-        normData(object, check = FALSE) <-
-            Matrix.column_norm(rawData(object))
-    } else {
-        normData(object, check = FALSE) <-
-            sweep(x = rawData(object), MARGIN = 2,
-                  STATS = colSums(rawData(object)), FUN = "/")
-    }
+    # Commented because only allowing dgCMatrix for rawData slot now
+    #if (inherits(rawData(object), "dgCMatrix") |
+    #    inherits(rawData(object), "dgTMatrix")) {
+    normData(object, check = FALSE) <- Matrix.column_norm(rawData(object))
+    #} else {
+    #    normData(object, check = FALSE) <-
+    #        sweep(x = rawData(object), MARGIN = 2,
+    #              STATS = colSums(rawData(object)), FUN = "/")
+    #}
     if (!is.null(scaleFactor))
         normData(object, check = FALSE) <- normData(object) * scaleFactor
     if (isTRUE(log))
@@ -159,13 +159,13 @@ normalizePeak <- function(
         # `d` is the name of each dataset
         if (isTRUE(verbose)) .log("Normalizing rawPeak counts in dataset: ", d)
         ld <- dataset(object, d)
-        if (inherits(rawPeak(ld), "dgCMatrix") |
-            inherits(rawPeak(ld), "dgTMatrix"))
+        if (inherits(rawPeak(ld), "dgCMatrix"))# |
+            #inherits(rawPeak(ld), "dgTMatrix"))
             normPeak(ld, check = FALSE) <- Matrix.column_norm(rawPeak(ld))
-        else
-            normPeak(ld, check = FALSE) <- sweep(x = rawPeak(ld), MARGIN = 2,
-                                                  STATS = colSums(rawPeak(ld)),
-                                                  FUN = "/")
+        #else
+        #    normPeak(ld, check = FALSE) <- sweep(x = rawPeak(ld), MARGIN = 2,
+        #                                          STATS = colSums(rawPeak(ld)),
+        #                                          FUN = "/")
 
         if (!is.null(scaleFactor))
             normPeak(ld, check = FALSE) <- normPeak(ld) * scaleFactor
@@ -179,10 +179,11 @@ normalizePeak <- function(
 # Perform fast and memory-efficient normalization operation on sparse matrix data.
 # param A Sparse matrix DGE.
 Matrix.column_norm <- function(A) {
-    if (class(A)[1] == "dgTMatrix") {
-        temp = summary(A)
-        A = Matrix::sparseMatrix(i = temp[, 1], j = temp[, 2], x = temp[, 3])
-    }
+    # Only dgCMatrix is allowed for rawData slot now
+    # if (class(A)[1] == "dgTMatrix") {
+    #     temp = summary(A)
+    #     A = Matrix::sparseMatrix(i = temp[, 1], j = temp[, 2], x = temp[, 3])
+    # }
     A@x <- A@x / rep.int(Matrix::colSums(A), diff(A@p))
     return(A)
 }

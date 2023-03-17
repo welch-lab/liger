@@ -69,7 +69,7 @@ runGeneralQC <- function(
             featureSubsets <- c(featureSubsets, pattern)
         } else if (is.vector(pattern)) {
             pattern <- grep(pattern, allFeatures, value = TRUE)
-            featureSubsets[["featureSubsets_pattern"]] <- pattern
+            featureSubsets[["featureSubset_pattern"]] <- pattern
         }
     }
 
@@ -137,7 +137,8 @@ runGeneralQC.h5 <- function(
             values$cell$nGene[cellIdx] <- colSums(nonzero)
             for (fs in names(rowIndices)) {
                 values$cell[[fs]][cellIdx] <-
-                    colSums(chunk[rowIndices[[fs]],]) / nUMI * 100
+                    colSums(chunk[rowIndices[[fs]], , drop = FALSE]) / nUMI *
+                    100
             }
             values$feature <- values$feature + Matrix::rowSums(nonzero)
             return(values)

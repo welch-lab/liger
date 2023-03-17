@@ -9,6 +9,7 @@ createLiger(
   modal = NULL,
   cellMeta = NULL,
   removeMissing = TRUE,
+  addPrefix = TRUE,
   formatType = "10X",
   dataName = NULL,
   indicesName = NULL,
@@ -42,6 +43,10 @@ an HDF5 file. See detail for HDF5 reading.}
 counts and features not expressed in any cells from each dataset. Default
 \code{TRUE}. H5 based dataset with less than 8000 cells will be subset into
 memory.}
+
+\item{addPrefix}{Logical. Whether to add "<dataset name>_" as a prefix of
+cell identifiers (e.g. barcodes) to avoid duplicates in multiple libraries (
+common with 10X data). Default \code{TRUE}}
 
 \item{formatType}{Select preset of H5 file structure. Current available
 options are \code{"10X"} and \code{"AnnData"}. Can be either a single

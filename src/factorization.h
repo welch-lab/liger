@@ -18,7 +18,7 @@ void cholesky_lowertriangular_cpu(LowerTriangularMatrix& G, LowerTriangularMatri
 			dtype crosssum = productsum(G.rowmajor+crossindex,G.rowmajor+startindex,col);
 			int currentcolindex = startindex+col;
 			int crossdiagonalindex = crossindex+col;
-			G.rowmajor[currentcolindex] = 
+			G.rowmajor[currentcolindex] =
 				1.0/G.rowmajor[crossdiagonalindex]
 				*(C.rowmajor[currentcolindex] - crosssum);
 			sqsum += G.rowmajor[currentcolindex]*G.rowmajor[currentcolindex];

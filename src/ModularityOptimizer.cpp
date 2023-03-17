@@ -38,7 +38,7 @@ JavaRandom::JavaRandom(uint64_t seed) {
 }
 
 void JavaRandom::setSeed(uint64_t seed) {
-  
+
   this->seed = (seed ^ uint64_t(0x5DEECE66D)) & ((uint64_t(1) << 48) - 1);
 }
 
@@ -81,7 +81,7 @@ IVector Arrays2::generateRandomPermutation(int nElements, JavaRandom& random)
 }
 
 
-Clustering::Clustering(int nNodes): 
+Clustering::Clustering(int nNodes):
   nNodes(nNodes),
   nClusters(1),
   cluster(nNodes)
@@ -89,9 +89,9 @@ Clustering::Clustering(int nNodes):
 
 Clustering::Clustering(IVector cluster) :
   nNodes(cluster.size()),
-  cluster(cluster.cbegin(), cluster.cend()) 
+  cluster(cluster.cbegin(), cluster.cend())
 {
-  nClusters = *std::max_element(cluster.cbegin(), cluster.cend()) + 1;  
+  nClusters = *std::max_element(cluster.cbegin(), cluster.cend()) + 1;
 }
 
 
@@ -138,12 +138,12 @@ void Clustering::orderClustersByNNodes() {
     clusterNNodes.push_back(std::make_pair(nNodesPerCluster.at(i), i));
   }
   // Note order is descending
-  stable_sort(clusterNNodes.begin(), clusterNNodes.end(), 
+  stable_sort(clusterNNodes.begin(), clusterNNodes.end(),
               [](const std::pair<int, int>&a, const std::pair<int, int>& b) {
                 return b.first < a.first;
               });
   //std::greater<ipair>());
-  
+
   // now make a map from old to new names
   IVector newCluster(nClusters, 0);
   int i=0;
@@ -175,10 +175,10 @@ Network::Network(int nNodes, DVector* nodeWeight, IVector& firstNeighborIndex, I
   edgeWeight(nEdges, 1.0),
   totalEdgeWeightSelfLinks(0)
 {
-  
+
   if (edgeWeight != nullptr)
     std::copy(edgeWeight->cbegin(), edgeWeight->cend(), this->edgeWeight.begin());
-  
+
   if (nodeWeight != nullptr) {
     std::copy(nodeWeight->cbegin(), nodeWeight->cend(), this->nodeWeight.begin());
   } else {
@@ -201,7 +201,7 @@ Network::Network(int nNodes, DVector* nodeWeight, std::vector<IVector>& edge, DV
   }
   IVector neighbor(edge.at(0).size(), 0);
   DVector edgeWeight2(edge.at(0).size(), 0.0);
-  
+
   int i = 1;
   for (size_t j = 0; j < edge[0].size(); j++)
     if (edge[0][j] != edge[1][j])
@@ -217,7 +217,7 @@ Network::Network(int nNodes, DVector* nodeWeight, std::vector<IVector>& edge, DV
       totalEdgeWeightSelfLinks += (edgeWeight != nullptr) ? (*edgeWeight)[j] : 1;
     for (; i <= nNodes; i++)
       firstNeighborIndex.at(i) = nEdges;
-    
+
     this->neighbor.resize(nEdges);
     std::copy(neighbor.begin(), neighbor.begin() + nEdges, this->neighbor.begin());
     this->edgeWeight.resize(nEdges);
@@ -322,7 +322,7 @@ std::vector<Network> Network::createSubnetworks(Clustering clustering) const {
 Network Network::createReducedNetwork(const Clustering& clustering) const {
   Network reducedNetwork;
   reducedNetwork.nNodes = clustering.nClusters;
-  
+
   reducedNetwork.nEdges = 0;
   reducedNetwork.nodeWeight = DVector(clustering.nClusters);
   reducedNetwork.firstNeighborIndex = IVector(clustering.nClusters + 1);
@@ -338,9 +338,9 @@ Network Network::createReducedNetwork(const Clustering& clustering) const {
     for (size_t k = 0; k < nodePerCluster[i].size(); k++)
     {
       int l = nodePerCluster[i][k];
-      
+
       reducedNetwork.nodeWeight[i] += nodeWeight[l];
-      
+
       for (int m = firstNeighborIndex[l]; m < firstNeighborIndex[l + 1]; m++)
       {
         int n = clustering.cluster[neighbor[m]];
@@ -357,7 +357,7 @@ Network Network::createReducedNetwork(const Clustering& clustering) const {
           reducedNetwork.totalEdgeWeightSelfLinks += edgeWeight[m];
       }
     }
-    
+
     for (int k = 0; k < j; k++)
     {
       reducedNetworkNeighbor1[reducedNetwork.nEdges + k] = reducedNetworkNeighbor2[k];
@@ -403,11 +403,11 @@ Clustering Network::identifyComponents() {
 }
 // private:
 // double generateRandomNumber(int node1, int node2, const IVector& nodePermutation);
-Network Network::createSubnetwork(const Clustering& clustering, int cluster, IVector& node, IVector& subnetworkNode, 
+Network Network::createSubnetwork(const Clustering& clustering, int cluster, IVector& node, IVector& subnetworkNode,
                                   IVector& subnetworkNeighbor, DVector& subnetworkEdgeWeight) const {
   Network subnetwork;
   subnetwork.nNodes = node.size();
-  
+
   if (subnetwork.nNodes == 1)
   {
     subnetwork.nEdges = 0;
@@ -420,7 +420,7 @@ Network Network::createSubnetwork(const Clustering& clustering, int cluster, IVe
   {
     for (size_t i = 0; i < node.size(); i++)
       subnetworkNode[node[i]] = i;
-    
+
     subnetwork.nEdges = 0;
     subnetwork.nodeWeight = DVector(subnetwork.nNodes, 0);
     subnetwork.firstNeighborIndex = IVector(subnetwork.nNodes + 1);
@@ -440,9 +440,9 @@ Network Network::createSubnetwork(const Clustering& clustering, int cluster, IVe
     subnetwork.neighbor = IVector(subnetworkNeighbor.cbegin(), subnetworkNeighbor.cbegin() + subnetwork.nEdges);
     subnetwork.edgeWeight = DVector(subnetworkEdgeWeight.cbegin(), subnetworkEdgeWeight.cbegin() + subnetwork.nEdges);
   }
-  
+
   subnetwork.totalEdgeWeightSelfLinks = 0;
-  
+
   return subnetwork;
 }
 
@@ -469,34 +469,34 @@ double VOSClusteringTechnique::calcQualityFunction() {
         qualityFunction += network->edgeWeight[k];
   }
   qualityFunction += network->totalEdgeWeightSelfLinks;
-  
+
   DVector clusterWeight(clustering->nClusters);
   for (int i = 0; i < network->nNodes; i++)
     clusterWeight[clustering->cluster[i]] += network->nodeWeight[i];
   for (int i = 0; i < clustering->nClusters; i++)
     qualityFunction -= clusterWeight[i] * clusterWeight[i] * resolution;
-  
+
   qualityFunction /= 2 * network->getTotalEdgeWeight() + network->totalEdgeWeightSelfLinks;
-  
+
   return qualityFunction;
 }
 
 bool VOSClusteringTechnique::runLocalMovingAlgorithm(JavaRandom& random){
   bool update = false;
   double maxQualityFunction, qualityFunction;
-  DVector clusterWeight(network->getNNodes(), 0); 
+  DVector clusterWeight(network->getNNodes(), 0);
   IVector nNodesPerCluster(network->getNNodes(), 0);
-  
+
   int bestCluster, j, k, l, nNeighboringClusters, nStableNodes;
   if (network->getNNodes() == 1)
     return false;
-  
+
   for (int i = 0; i < network->getNNodes(); i++)
   {
     clusterWeight[clustering->cluster[i]] += network->nodeWeight[i];
     nNodesPerCluster[clustering->cluster[i]]++;
   }
-  
+
   int nUnusedClusters = 0;
   IVector unusedCluster(network->getNNodes(), 0);
   for (int i = 0; i < network->getNNodes(); i++) {
@@ -506,7 +506,7 @@ bool VOSClusteringTechnique::runLocalMovingAlgorithm(JavaRandom& random){
       nUnusedClusters++;
     }
   }
-  
+
   IVector nodePermutation = Arrays2::generateRandomPermutation(network->nNodes, random);
   DVector edgeWeightPerCluster(network->getNNodes(), 0.0);
   IVector neighboringCluster(network->getNNodes() - 1, 0);
@@ -525,7 +525,7 @@ bool VOSClusteringTechnique::runLocalMovingAlgorithm(JavaRandom& random){
       }
       edgeWeightPerCluster[l] += network->edgeWeight[k];
     }
-    
+
     clusterWeight[clustering->cluster[j]] -= network->nodeWeight[j];
     nNodesPerCluster[clustering->cluster[j]]--;
     if (nNodesPerCluster[clustering->cluster[j]] == 0)
@@ -533,7 +533,7 @@ bool VOSClusteringTechnique::runLocalMovingAlgorithm(JavaRandom& random){
       unusedCluster[nUnusedClusters] = clustering->cluster[j];
       nUnusedClusters++;
     }
-    
+
     bestCluster = -1;
     maxQualityFunction = 0;
     for (k = 0; k < nNeighboringClusters; k++)
@@ -552,7 +552,7 @@ bool VOSClusteringTechnique::runLocalMovingAlgorithm(JavaRandom& random){
       bestCluster = unusedCluster[nUnusedClusters - 1];
       nUnusedClusters--;
     }
-    
+
     clusterWeight[bestCluster] += network->nodeWeight[j];
     nNodesPerCluster[bestCluster]++;
     if (bestCluster == clustering->cluster[j])
@@ -563,11 +563,11 @@ bool VOSClusteringTechnique::runLocalMovingAlgorithm(JavaRandom& random){
       nStableNodes = 1;
       update = true;
     }
-    
+
     i = (i < network->nNodes - 1) ? (i + 1) : 0;
   }
   while (nStableNodes < network->nNodes);
-  
+
   IVector newCluster(network->getNNodes());
   clustering->nClusters = 0;
   for (i = 0; i < network->nNodes; i++)
@@ -578,25 +578,25 @@ bool VOSClusteringTechnique::runLocalMovingAlgorithm(JavaRandom& random){
     }
     for (i = 0; i < network->nNodes; i++)
       clustering->cluster[i] = newCluster[clustering->cluster[i]];
-    
+
     return update;
 }
 
 bool VOSClusteringTechnique::runLouvainAlgorithm(JavaRandom& random) {
-  
+
   if (network->nNodes == 1)
     return false;
   bool update = runLocalMovingAlgorithm(random);
   if (clustering->nClusters < network->nNodes)
   {
     VOSClusteringTechnique vosClusteringTechnique(std::make_shared<Network>(network->createReducedNetwork(*clustering)), resolution);
-    
+
     bool update2 = vosClusteringTechnique.runLouvainAlgorithm(random);
-    
+
     if (update2)
     {
       update = true;
-      
+
       clustering->mergeClusters(*vosClusteringTechnique.clustering);
     }
   }
@@ -618,15 +618,15 @@ bool VOSClusteringTechnique::runIteratedLouvainAlgorithm(int maxNIterations, Jav
 bool VOSClusteringTechnique::runLouvainAlgorithmWithMultilevelRefinement(JavaRandom& random) {
   if (network->nNodes == 1)
     return false;
-  
+
   bool update = runLocalMovingAlgorithm(random);
-  
+
   if (clustering->nClusters < network->nNodes)
   {
     VOSClusteringTechnique vosClusteringTechnique(std::make_shared<Network>(network->createReducedNetwork(*clustering)), resolution);
-    
+
     bool update2 = vosClusteringTechnique.runLouvainAlgorithmWithMultilevelRefinement(random);
-    
+
     if (update2)
     {
       update = true;
@@ -651,9 +651,9 @@ bool VOSClusteringTechnique::runIteratedLouvainAlgorithmWithMultilevelRefinement
 bool VOSClusteringTechnique::runSmartLocalMovingAlgorithm(JavaRandom& random) {
   if (network->nNodes == 1)
     return false;
-  
+
   bool update = runLocalMovingAlgorithm(random);
-  
+
   if (clustering->nClusters < network->nNodes)
   {
     std::vector<Network> subnetwork = network->createSubnetworks(*clustering);
@@ -669,9 +669,9 @@ bool VOSClusteringTechnique::runSmartLocalMovingAlgorithm(JavaRandom& random) {
       clustering->nClusters += vosClusteringTechnique.clustering->nClusters;
       nNodesPerClusterReducedNetwork[i] = vosClusteringTechnique.clustering->nClusters;
     }
-    
+
     VOSClusteringTechnique vosClusteringTechnique2(std::make_shared<Network>(network->createReducedNetwork(*clustering)), resolution);
-    
+
     int i = 0;
     for (size_t j = 0; j < nNodesPerClusterReducedNetwork.size(); j++) {
       for (int k = 0; k < nNodesPerClusterReducedNetwork[j]; k++)
@@ -681,9 +681,9 @@ bool VOSClusteringTechnique::runSmartLocalMovingAlgorithm(JavaRandom& random) {
       }
     }
     vosClusteringTechnique2.clustering->nClusters = nNodesPerClusterReducedNetwork.size();
-    
+
     update |= vosClusteringTechnique2.runSmartLocalMovingAlgorithm(random);
-    
+
     clustering->mergeClusters(*vosClusteringTechnique2.clustering);
   }
   return update;
@@ -706,7 +706,7 @@ int VOSClusteringTechnique::removeCluster(int cluster) {
       for (int j = network->firstNeighborIndex[i]; j < network->firstNeighborIndex[i + 1]; j++)
         totalEdgeWeightPerCluster[clustering->cluster[network->neighbor[j]]] += network->edgeWeight[j];
   }
-  
+
   int i = -1;
   double maxQualityFunction = 0;
   for (int j = 0; j < clustering->nClusters; j++)
@@ -719,7 +719,7 @@ int VOSClusteringTechnique::removeCluster(int cluster) {
         maxQualityFunction = qualityFunction;
       }
     }
-    
+
     if (i >= 0)
     {
       for (int j = 0; j < network->nNodes; j++)
@@ -745,7 +745,7 @@ void VOSClusteringTechnique::removeSmallClusters(int minNNodesPerCluster) {
         i = k;
         j = nNodesPerCluster[k];
       }
-      
+
       if (i >= 0)
       {
         j = vosClusteringTechnique.removeCluster(i);
@@ -759,7 +759,7 @@ void VOSClusteringTechnique::removeSmallClusters(int minNNodesPerCluster) {
 }
 
 std::shared_ptr<Network> ModularityOptimizer::matrixToNetwork(IVector& node1, IVector& node2, DVector& edgeWeight1, int modularityFunction) {
-  
+
   int n1_max = *std::max_element(node1.cbegin(), node1.cend());
   int n2_max = *std::max_element(node2.cbegin(), node2.cend());
   int nNodes = std::max(n1_max, n2_max) + 1;
@@ -770,7 +770,7 @@ std::shared_ptr<Network> ModularityOptimizer::matrixToNetwork(IVector& node1, IV
       nNeighbors[node1[i]]++;
       nNeighbors[node2[i]]++;
     }
-    
+
     IVector firstNeighborIndex(nNodes + 1);
     int nEdges = 0;
     for (int i = 0; i < nNodes; i++)
@@ -779,7 +779,7 @@ std::shared_ptr<Network> ModularityOptimizer::matrixToNetwork(IVector& node1, IV
       nEdges += nNeighbors[i];
     }
     firstNeighborIndex[nNodes] = nEdges;
-    
+
     IVector neighbor(nEdges);
     DVector edgeWeight2(nEdges);
     std::fill(nNeighbors.begin(), nNeighbors.end(), 0);
@@ -795,7 +795,7 @@ std::shared_ptr<Network> ModularityOptimizer::matrixToNetwork(IVector& node1, IV
         edgeWeight2[j] = edgeWeight1[i];
         nNeighbors[node2[i]]++;
       }
-      
+
       if (modularityFunction == 1)
         return std::make_shared<Network>(nNodes, firstNeighborIndex, neighbor, &edgeWeight2);
       else
@@ -819,11 +819,11 @@ std::shared_ptr<Network> ModularityOptimizer::readInputFile(std::string fname, i
   }
   f.clear();
   f.seekg(0, std::ios::beg);
-  
+
   IVector node1(nLines);
   IVector node2(nLines);
   DVector edgeWeight1(nLines, 1.0);
-  
+
   for (int j = 0; j < nLines; j++)
   {
     std::getline(f, line);
@@ -870,20 +870,20 @@ void input(std::string msg, T& value) {
 
 
 int main(int argc, char* argv[]) {
-  
+
   std::string msg = "Modularity Optimizer version 1.3.0 by Ludo Waltman and Nees Jan van Eck";
   std::vector<std::string> args;
   std::string inputFileName, outputFileName;
-  
+
   bool printOutput, update;
   double modularity, maxModularity, resolution, resolution2;
   int algorithm, i, j, modularityFunction, nIterations, nRandomStarts;
-  
+
   unsigned long long int randomSeed;
   for(int i=0; i<argc; i++) {
     args.emplace_back(std::string(argv[i]));
   }
-  
+
   try {
     if (args.size() == 10)
     {
@@ -896,11 +896,11 @@ int main(int argc, char* argv[]) {
       nIterations = stoi(args[7]);
       randomSeed = stoull(args[8]);
       printOutput = (stoi(args[9]) > 0);
-      
+
       if (printOutput)
       {
         std::cout << msg << std::endl << std::endl;
-        
+
       }
     }
     else
@@ -919,15 +919,15 @@ int main(int argc, char* argv[]) {
       printOutput = tmp > 0;
       std::cout << std::endl;
     }
-    
-    
+
+
     if (printOutput)
     {
       std::cout << "Reading input file..." << std::endl << std::endl;
     }
-    
+
     std::shared_ptr<Network> network = readInputFile(inputFileName, modularityFunction);
-    
+
     if (printOutput)
     {
       std::printf("Number of nodes: %d\n", network->getNNodes());
@@ -936,9 +936,9 @@ int main(int argc, char* argv[]) {
       std::cout << "Running " <<  ((algorithm == 1) ? "Louvain algorithm" : ((algorithm == 2) ? "Louvain algorithm with multilevel refinement" : "smart local moving algorithm")) << "...";
       std::cout << std::endl;
     }
-    
+
     resolution2 = ((modularityFunction == 1) ? (resolution / (2 * network->getTotalEdgeWeight() + network->getTotalEdgeWeightSelfLinks())) : resolution);
-    
+
     auto beginTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     std::shared_ptr<Clustering> clustering;
     maxModularity = -std::numeric_limits<double>::infinity();
@@ -947,16 +947,16 @@ int main(int argc, char* argv[]) {
     {
       if (printOutput && (nRandomStarts > 1))
         std::printf("Random start: %d\n", i + 1);
-      
+
       VOSClusteringTechnique vosClusteringTechnique(network, resolution2);
-      
+
       j = 0;
       update = true;
       do
       {
         if (printOutput && (nIterations > 1))
           std::printf("Iteration: %d\n", j + 1);
-        
+
         if (algorithm == 1)
           update = vosClusteringTechnique.runLouvainAlgorithm(random);
         else if (algorithm == 2)
@@ -964,20 +964,20 @@ int main(int argc, char* argv[]) {
         else if (algorithm == 3)
           vosClusteringTechnique.runSmartLocalMovingAlgorithm(random);
         j++;
-        
+
         modularity = vosClusteringTechnique.calcQualityFunction();
-        
+
         if (printOutput && (nIterations > 1))
           std::printf("Modularity: %.4f\n", modularity);
       }
       while ((j < nIterations) && update);
-      
+
       if (modularity > maxModularity)
       {
         clustering = vosClusteringTechnique.getClustering();
         maxModularity = modularity;
       }
-      
+
       if (printOutput && (nRandomStarts > 1))
       {
         if (nIterations == 1)
@@ -986,7 +986,7 @@ int main(int argc, char* argv[]) {
       }
     }
     auto endTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-    
+
     if (printOutput)
     {
       if (nRandomStarts == 1)
@@ -1001,7 +1001,7 @@ int main(int argc, char* argv[]) {
       std::printf("Elapsed time: %d seconds\n", static_cast<int>((endTime - beginTime).count() / 1000.0));
       std::cout << std::endl << "Writing output file..." << std::endl;
     }
-    
+
     writeOutputFile(outputFileName, *clustering);
   } catch (std::exception a) {
     std::cout << a.what() << std::endl;

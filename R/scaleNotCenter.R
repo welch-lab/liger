@@ -55,10 +55,11 @@ scaleNotCenter <- function(
             }
         } else {
             # Scale in memory data
-            scaled <- .scaleMemMatrix(normData(ld)[varFeatures(object), ,drop = FALSE])
+            scaled <- .scaleMemMatrix(normData(ld)[varFeatures(object), ,
+                                                   drop = FALSE])
             scaleData(ld, check = FALSE) <- scaled
             # For unshared var features
-            if (!is.null(ld@varUnsharedFeatures)) {
+            if (length(ld@varUnsharedFeatures) > 0) {
                 scaled.unshared <- .scaleMemMatrix(
                     normData(ld)[ld@varUnsharedFeatures, ,drop = FALSE]
                 )
