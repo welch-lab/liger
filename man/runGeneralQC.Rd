@@ -11,7 +11,7 @@ runGeneralQC(
   hemo = TRUE,
   features = NULL,
   pattern = NULL,
-  useDatasets = names(object),
+  useDatasets = NULL,
   chunkSize = 1000,
   verbose = getOption("ligerVerbose")
 )
@@ -34,7 +34,7 @@ subset, or a named list for multiple subset. Default \code{NULL}.}
 
 \item{useDatasets}{A character vector of the names, a numeric or logical
 vector of the index of the datasets to be included for QC. Default
-\code{names(object)} (i.e. all datasets).}
+\code{NULL} performs QC on all datasets.}
 
 \item{chunkSize}{Integer number of cells to include in a chunk when working
 on HDF5 based dataset. Default \code{1000}}

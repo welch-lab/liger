@@ -275,9 +275,12 @@ plotVarFeatures <- function(
         data$geneVars <- log10(data$geneVars)
         data$is_variable <- factor(data$is_variable,
                                    levels = c("TRUE", "FALSE"))
-        p <- ggplot2::ggplot(data, ggplot2::aes_string(x = "geneMeans",
-                                                       y = "geneVars",
-                                                       color = "is_variable")) +
+        p <- ggplot2::ggplot(
+            data,
+            ggplot2::aes(x = .data[["geneMeans"]],
+                         y = .data[["geneVars"]],
+                         color = .data[["is_variable"]])
+        ) +
             ggplot2::geom_point(size = dotSize, stroke = 0) +
             ggplot2::scale_colour_discrete(name = "Variable\nfeature",
                                            type = c(`TRUE` = "red",

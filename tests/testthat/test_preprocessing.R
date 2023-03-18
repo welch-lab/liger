@@ -9,13 +9,22 @@ rawDataList <- getMatrix(pbmc, "rawData")
 withNewH5Copy <- function(fun) {
     ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger")
     stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
+    if (!file.exists(ctrlpath.orig))
+      stop("Cannot find original h5 file at: ", ctrlpath.orig)
     if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
     if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
-    file.copy(ctrlpath.orig, "ctrltest.h5")
-    file.copy(stimpath.orig, "stimtest.h5")
-    fun(list(ctrl = "ctrltest.h5", stim = "stimtest.h5"))
-    if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
-    if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
+    pwd <- getwd()
+    ctrlpath <- file.path(pwd, "ctrltest.h5")
+    stimpath <- file.path(pwd, "stimtest.h5")
+    file.copy(ctrlpath.orig, ctrlpath)
+    file.copy(stimpath.orig, stimpath)
+    if (!file.exists(ctrlpath))
+      stop("Cannot find copied h5 file at: ", ctrlpath)
+
+    fun(list(ctrl = ctrlpath, stim = stimpath))
+
+    if (file.exists(ctrlpath)) file.remove(ctrlpath)
+    if (file.exists(stimpath)) file.remove(stimpath)
 }
 
 closeH5Liger <- function(object) {
@@ -27,6 +36,14 @@ closeH5Liger <- function(object) {
     }
 }
 
+process <- function(object) {
+    object <- normalize(object)
+    object <- selectGenes(object)
+    object <- scaleNotCenter(object)
+    object <- online_iNMF(object, k = 20, miniBatch_size = 100)
+    object <- quantileNorm(object)
+    object <- runUMAP(object)
+}
 ### IMPORTANT DEVELOPER NOTICE below %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # When writing H5 related unit tests, please follow this template:
 test_that("<topic> - on-disk", {
@@ -43,93 +60,6 @@ test_that("<topic> - on-disk", {
     )
 })
 ### IMPORTANT DEVELOPER NOTICE above %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Object creation
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-context("Object creation")
-test_that("liger object creation - in memory", {
-    pbmc2 <- createLiger(rawData = rawDataList)
-    expect_is(pbmc2, "liger")
-    expect_error(createLiger(rawData = "hi"),
-                 "`rawData` has to be a named list.")
-    expect_error(createLiger(rawData = rawDataList, modal = letters[1:3]),
-                 "Wrong length of `modal`. ")
-    ldList <- datasets(pbmc)
-    cellmeta <- cellMeta(pbmc)
-    pbmc2 <- createLiger(rawData = ldList, cellMeta = cellmeta,
-                         addPrefix = FALSE)
-    expect_identical(cellMeta(pbmc), cellMeta(pbmc2))
-
-    pbmc <- removeMissing(pbmc)
-    pbmc <- runGeneralQC(pbmc, pattern = "^S100",
-                         features = rownames(ldList[[1]]))
-    expect_true(all(c("featureSubset_pattern", "featureSubset_name") %in%
-                      colnames(cellMeta(pbmc))))
-
-    pbmc <- runGeneralQC(pbmc, pattern = list(p1 = "^S100", p2 = "^MT"),
-                         features = list(f1 = letters,
-                                         f2 = rownames(ldList[[2]])[6:10]))
-    expect_true(all(c("p1", "p2", "f1", "f2") %in% colnames(cellMeta(pbmc))))
-})
-
-test_that("liger object creation - on disk", {
-    withNewH5Copy(
-        function(rawList) {
-            expect_error(createLiger(rawList, formatType = "rliger"),
-                         "Specified `formatType` '")
-
-            # Customized paths
-            barcodesName <- "matrix/barcodes"
-            rawData <- "matrix/data"
-            indicesName <- "matrix/indices"
-            indptrName <- "matrix/indptr"
-            genesName <- "matrix/features/name"
-            pbmc <- createLiger(rawList,
-                                formatType = NULL,
-                                barcodesName = barcodesName,
-                                dataName = rawData,
-                                indicesName = indicesName,
-                                indptrName = indptrName,
-                                genesName = genesName)
-            expect_is(pbmc, "liger")
-            expect_true(isH5Liger(pbmc))
-            closeH5Liger(pbmc)
-
-            # Preset paths
-            pbmc <- createLiger(rawList, formatType = "10X")
-            expect_is(pbmc, "liger")
-            expect_true(isH5Liger(pbmc))
-            expect_is(rawData(dataset(pbmc, "ctrl")), "H5D")
-            expect_is(rawData(dataset(pbmc, "stim")), "H5D")
-            expect_is(getH5File(pbmc, "ctrl"), "H5File")
-            expect_is(getH5File(pbmc, "stim"), "H5File")
-            closeH5Liger(pbmc)
-        }
-    )
-})
-
-test_that("ligerDataset (in memory) object creation", {
-    expect_error(createLigerDataset(),
-                 "At least one type of")
-
-    ld <- createLigerDataset(rawData = rawDataList[[1]], modal = "atac")
-    expect_is(ld, "ligerATACDataset")
-    data("pbmc")
-    pbmc <- normalize(pbmc)
-    normDataList <- getMatrix(pbmc, "normData")
-    ld <- createLigerDataset(normData = normDataList[[1]], modal = "rna")
-    expect_is(ld, "ligerRNADataset")
-    expect_null(rawData(ld))
-
-    pbmc <- selectGenes(pbmc)
-    pbmc <- scaleNotCenter(pbmc)
-    scaledMat <- scaleData(pbmc, dataset = "ctrl")
-    featuremeta <- featureMeta(dataset(pbmc, "ctrl"))
-    ld <- createLigerDataset(scaleData = scaledMat, featureMeta = featuremeta)
-    expect_equal(length(varFeatures(pbmc)), nrow(ld))
-})
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Tests for data merging
@@ -306,31 +236,5 @@ test_that("scaleNotCenter - on-disk", {
     )
 })
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# liger object methods
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-context("liger object S3/S4 methods")
-
-test_that("liger S4 methods - getters", {
-    expect_output(show(pbmc), "An object of class liger with 600 cells")
-    expect_equal(dim(pbmc), c(NA, 600))
-    expect_null(rownames(pbmc))
-    expect_identical(colnames(pbmc), rownames(cellMeta(pbmc)))
-    expect_equal(ncol(pbmc[,pbmc$dataset == "ctrl"]), 300)
-    expect_is(datasets(pbmc), "list")
-    expect_is(dataset(pbmc), "ligerDataset")
-    expect_is(dataset(pbmc, "ctrl"), "ligerDataset")
-    expect_is(dataset(pbmc, 2), "ligerDataset")
-    expect_equal(names(pbmc), c("ctrl", "stim"))
-    expect_equal(length(pbmc), 2)
-    expect_is(cellMeta(pbmc), "DFrame")
-    expect_null(cellMeta(pbmc, NULL))
-    expect_is(cellMeta(pbmc, "dataset"), "factor")
-    expect_is(pbmc[["nUMI"]], "numeric")
-    expect_is(pbmc$mito, "numeric")
-    expect_is(varFeatures(pbmc), "character")
-    expect_is(c(pbmc, pbmc), "liger")
-    expect_is(fortify(pbmc), "data.frame")
-})
 
 

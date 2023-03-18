@@ -261,8 +261,7 @@ setReplaceMethod("dimnames", c("liger", "list"), function(x, value) {
         colnames(x@datasets[[d]]) <- value[[2L]][dataset.idx]
     }
     rownames(cellMeta(x)) <- value[[2L]]
-    rownames(x@W) <- value[[1L]]
-    if (!is.null(x@H.norm)) colnames(x@H.norm) <- value[[2L]]
+    if (!is.null(x@H.norm)) rownames(x@H.norm) <- value[[2L]]
     x
 })
 
@@ -404,6 +403,25 @@ setMethod("dataset", signature(x = "liger", dataset = "numeric"),
               datasets(x)[[dataset]]
           })
 
+.expandDataFrame <- function(df, idx) {
+    dfList <- as.list(df)
+    dfList <- lapply(dfList, function(x, idx) {
+        if (is.null(dim(x))) {
+            x[idx] <- NA
+        } else {
+            empty <- matrix(NA, nrow = length(idx), ncol = ncol(x))
+            x <- rbind(x, empty)
+        }
+        x
+    }, idx = idx)
+    include <- sapply(dfList, function(x) {
+        is.vector(x) | is.factor(x)
+    })
+    newdf <- S4Vectors::DataFrame(dfList[include])
+    for (i in which(!include)) newdf[[names(dfList)[i]]] <- dfList[[i]]
+    newdf
+}
+
 #' @export
 #' @rdname liger-class
 setReplaceMethod("dataset", signature(x = "liger", dataset = "character",
@@ -416,11 +434,13 @@ setReplaceMethod("dataset", signature(x = "liger", dataset = "character",
                      new.idx <- seq(ncol(x) + 1, ncol(x) + ncol(value))
                      x@datasets[[dataset]] <- value
                      # TODO also add rows to cellMeta and H.norm
-                     x@cellMeta[new.idx, ] <- NA
-                     rownames(x@cellMeta)[new.idx] <- colnames(value)
-                     levels(x@cellMeta$dataset) <-
-                         c(levels(x@cellMeta$dataset), dataset)
-                     x@cellMeta$dataset[new.idx] <- dataset
+                     cm <- x@cellMeta
+                     remainingRowname <- rownames(cm)
+                     cm <- .expandDataFrame(cm, new.idx)
+                     rownames(cm) <- c(remainingRowname, colnames(value))
+                     levels(cm$dataset) <- c(levels(cm$dataset), dataset)
+                     cm$dataset[new.idx] <- dataset
+                     x@cellMeta <- cm
                      # x@W is genes x k, no need to worry
                      if (!is.null(x@H.norm)) {
                          message("Filling in NAs to H.norm matrix")
@@ -469,6 +489,7 @@ setReplaceMethod("dataset", signature(x = "liger", dataset = "character",
                          x@datasets[[dataset]] <- NULL
                          x@cellMeta <- x@cellMeta[!idxToRemove, , drop = FALSE]
                          x@H.norm <- x@H.norm[!idxToRemove, , drop = FALSE]
+                         x@cellMeta$dataset <- droplevels(x@cellMeta$dataset)
                      }
                      x
                  })
@@ -494,7 +515,7 @@ setReplaceMethod(
             for (i in seq_along(value)) {
                 x@cellMeta$dataset[dataset.idx[[i]]] <- value[i]
             }
-            x@cellMeta$dataset <- factor(x@cellMeta$dataset)
+            x@cellMeta$dataset <- factor(x@cellMeta$dataset, levels = value)
             names(x@datasets) <- value
         }
         x
