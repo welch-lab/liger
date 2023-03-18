@@ -13,6 +13,9 @@
 #' counts and features not expressed in any cells from each dataset. Default
 #' \code{TRUE}. H5 based dataset with less than 8000 cells will be subset into
 #' memory.
+#' @param addPrefix Logical. Whether to add "<dataset name>_" as a prefix of
+#' cell identifiers (e.g. barcodes) to avoid duplicates in multiple libraries (
+#' common with 10X data). Default \code{TRUE}
 #' @param formatType Select preset of H5 file structure. Current available
 #' options are \code{"10X"} and \code{"AnnData"}. Can be either a single
 #' specification for all datasets or a character vector that match with each
@@ -35,6 +38,7 @@ createLiger <- function(
         modal = NULL,
         cellMeta = NULL,
         removeMissing = TRUE,
+        addPrefix = TRUE,
         formatType = "10X",
         dataName = NULL,
         indicesName = NULL,
@@ -86,18 +90,13 @@ createLiger <- function(
                 indptrName = indptrName,
                 modal = modal[i]
             )
-            barcodesOrig <- c(barcodesOrig, colnames(datasets[[dname]]))
-            cellID <- paste0(dname, "_", colnames(datasets[[dname]]))
-            colnames(datasets[[dname]]) <- cellID
-        } else if (inherits(data, c("matrixLike"))) {
-            datasets[[dname]] <- as.ligerDataset(data, modal = modal[i])
-            barcodesOrig <- c(barcodesOrig, colnames(datasets[[dname]]))
-            cellID <- paste0(dname, "_", colnames(datasets[[dname]]))
-            colnames(datasets[[dname]]) <- cellID
         } else {
             datasets[[dname]] <- as.ligerDataset(data, modal = modal[i])
-            barcodesOrig <- c(barcodesOrig, colnames(datasets[[dname]]))
-            cellID <- colnames(datasets[[dname]])
+        }
+        barcodesOrig <- c(barcodesOrig, colnames(datasets[[dname]]))
+        if (isTRUE(addPrefix)) {
+            cellID <- paste0(dname, "_", colnames(datasets[[dname]]))
+            colnames(datasets[[dname]]) <- cellID
         }
     }
 
@@ -181,7 +180,7 @@ createLigerDataset <- function(
     if (!is.null(normData)) {
         if (is.null(rn)) rn <- rownames(normData)
         if (!inherits(normData, "dgCMatrix"))
-            rawData <- methods::as(normData, "CsparseMatrix")
+            normData <- methods::as(normData, "CsparseMatrix")
     }
     if (!is.null(scaleData)) {
         if (is.null(rn)) rn <- rownames(scaleData)
@@ -203,9 +202,9 @@ createLigerDataset <- function(
 }
 
 #' Create on-disk ligerDataset Object
-#' @param h5file Filename of a H5 file
-#' @param formatType Select preset of H5 file structure. Current available
-#' options are \code{"10X"} and \code{"AnnData"}.
+#' @param h5file Filename of an H5 file
+#' @param formatType Select preset of H5 file structure. Default \code{"10X"}.
+#' Current available options are \code{"10X"} and \code{"AnnData"}.
 #' @param rawData,indicesName,indptrName The path in a H5 file for the raw
 #' sparse matrix data. These three types of data stands for the \code{x},
 #' \code{i}, and \code{p} slots of a \code{\link[Matrix]{dgCMatrix-class}}
@@ -224,7 +223,7 @@ createLigerDataset <- function(
 #' Given values will be directly placed at corresponding slots.
 createH5LigerDataset <- function(
         h5file,
-        formatType = NULL,
+        formatType = "10X",
         rawData = NULL,
         normData = NULL,
         scaleData = NULL,
@@ -242,8 +241,7 @@ createH5LigerDataset <- function(
     modal <- match.arg(modal)
     additional <- list(...)
     h5file <- hdf5r::H5File$new(h5file, mode = "r+")
-    if (!is.null(formatType) &&
-        formatType %in% c("10X", "AnnData")) {
+    if (!is.null(formatType)) {
         if (formatType == "10X") {
             barcodesName <- "matrix/barcodes"
             barcodes <- h5file[[barcodesName]][]

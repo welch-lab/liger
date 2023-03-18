@@ -13,6 +13,5 @@
 ^.vscode/*
 ^vignettes/*
 \.rds$
-\.h5$
 \.RDS$
 ^\.lintr$

@@ -30,7 +30,7 @@ IntegerVector RunModularityClusteringCpp(Eigen::SparseMatrix<double> SNN,
                                          int randomSeed,
                                          bool printOutput,
                                          std::string edgefilename) {
-  
+
   // validate arguments
   if(modularityFunction != 1 && modularityFunction != 2)
     stop("Modularity parameter must be equal to 1 or 2.");
@@ -46,11 +46,11 @@ IntegerVector RunModularityClusteringCpp(Eigen::SparseMatrix<double> SNN,
     bool update;
     double modularity, maxModularity, resolution2;
     int i, j;
-    
+
     std::string msg = "Modularity Optimizer version 1.3.0 by Ludo Waltman and Nees Jan van Eck";
     if (printOutput)
       Rcout << msg << std::endl << std::endl;
-    
+
     // Load netwrok
     std::shared_ptr<Network> network;
     if(edgefilename != "") {
@@ -83,11 +83,11 @@ IntegerVector RunModularityClusteringCpp(Eigen::SparseMatrix<double> SNN,
       if(node1.size() == 0) {
         stop("Matrix contained no network data.  Check format.");
       }
-      
+
       network = matrixToNetwork(node1, node2, edgeweights, modularityFunction);
       Rcpp::checkUserInterrupt();
     }
-    
+
     if (printOutput)
     {
       Rprintf("Number of nodes: %d\n", network->getNNodes());
@@ -96,22 +96,22 @@ IntegerVector RunModularityClusteringCpp(Eigen::SparseMatrix<double> SNN,
       Rcout << "Running " <<  ((algorithm == 1) ? "Louvain algorithm" : ((algorithm == 2) ? "Louvain algorithm with multilevel refinement" : "smart local moving algorithm")) << "...";
       Rcout << std::endl;
     }
-    
+
     resolution2 = ((modularityFunction == 1) ? (resolution / (2 * network->getTotalEdgeWeight() + network->getTotalEdgeWeightSelfLinks())) : resolution);
-    
+
     auto beginTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     std::shared_ptr<Clustering> clustering;
     maxModularity = -std::numeric_limits<double>::infinity();
     JavaRandom random(randomSeed);
-    
+
     Progress p(nRandomStarts, printOutput);
     for (i = 0; i < nRandomStarts; i++)
     {
       //if (printOutput && (nRandomStarts > 1))
       //Rprintf("Random start: %d\n", i + 1);
-      
+
       VOSClusteringTechnique vosClusteringTechnique(network, resolution2);
-      
+
       j = 0;
       update = true;
       do
@@ -126,21 +126,21 @@ IntegerVector RunModularityClusteringCpp(Eigen::SparseMatrix<double> SNN,
         else if (algorithm == 3)
           vosClusteringTechnique.runSmartLocalMovingAlgorithm(random);
         j++;
-        
+
         modularity = vosClusteringTechnique.calcQualityFunction();
-        
+
         //if (printOutput && (nIterations > 1))
         //  Rprintf("Modularity: %.4f\n", modularity);
         Rcpp::checkUserInterrupt();
       }
       while ((j < nIterations) && update);
-      
+
       if (modularity > maxModularity)
       {
         clustering = vosClusteringTechnique.getClustering();
         maxModularity = modularity;
       }
-      
+
       /*if (printOutput && (nRandomStarts > 1))
        {
        if (nIterations == 1)
@@ -166,7 +166,7 @@ IntegerVector RunModularityClusteringCpp(Eigen::SparseMatrix<double> SNN,
       Rprintf("Number of communities: %d\n", clustering->getNClusters());
       Rprintf("Elapsed time: %d seconds\n", static_cast<int>((endTime - beginTime).count() / 1000.0));
     }
-    
+
     // Return results
     clustering->orderClustersByNNodes();
     IntegerVector iv(clustering->cluster.cbegin(), clustering->cluster.cend());

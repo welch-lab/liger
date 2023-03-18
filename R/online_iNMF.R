@@ -383,13 +383,6 @@ online_iNMF <- function(
             }
             colnames(H[[i]]) <- barcodes[[i]]
         }
-        rownames(W) <- varFeatures(object)
-        colnames(W) <- NULL
-
-        for (i in dataIdx) {
-            rownames(V[[i]]) <- varFeatures(object)
-            colnames(V[[i]]) <- NULL
-        }
     } else {
         if (isTRUE(verbose))
             .log("Scenario 3, metagene projection")
@@ -408,12 +401,14 @@ online_iNMF <- function(
     }
     factorNames <- paste0("Factor_", seq(k))
     colnames(W) <- factorNames
+    rownames(W) <- varFeatures(object)
     object@W <- W
     for (i in dataIdx) {
         ld <- dataset(object, i)
         rownames(H[[i]]) <- factorNames
         ld@H <- H[[i]]
         colnames(V[[i]]) <- factorNames
+        rownames(V[[i]]) <- varFeatures(object)
         ld@V <- V[[i]]
         dimnames(A[[i]]) <- list(factorNames, factorNames)
         ld@A <- A[[i]]

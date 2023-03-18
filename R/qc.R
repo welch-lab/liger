@@ -14,7 +14,7 @@
 #' subset, or a named list for multiple subset. Default \code{NULL}.
 #' @param useDatasets A character vector of the names, a numeric or logical
 #' vector of the index of the datasets to be included for QC. Default
-#' \code{names(object)} (i.e. all datasets).
+#' \code{NULL} performs QC on all datasets.
 #' @param chunkSize Integer number of cells to include in a chunk when working
 #' on HDF5 based dataset. Default \code{1000}
 #' @param verbose Logical. Whether to show information of the progress. Default
@@ -33,7 +33,7 @@ runGeneralQC <- function(
         hemo = TRUE,
         features = NULL,
         pattern = NULL,
-        useDatasets = names(object),
+        useDatasets = NULL,
         chunkSize = 1000,
         verbose = getOption("ligerVerbose")
 ) {
@@ -69,14 +69,18 @@ runGeneralQC <- function(
             featureSubsets <- c(featureSubsets, pattern)
         } else if (is.vector(pattern)) {
             pattern <- grep(pattern, allFeatures, value = TRUE)
-            featureSubsets[["featureSubsets_pattern"]] <- pattern
+            featureSubsets[["featureSubset_pattern"]] <- pattern
         }
     }
 
     # Start calculation on each dataset
     newResultNames <- c("nUMI", "nGene", names(featureSubsets))
     # Not using S4 cellMeta() method below because no need to do so
-    for (nrn in newResultNames) object[[nrn]] <- 0
+    for (nrn in newResultNames) {
+        if (!nrn %in% colnames(cellMeta(object))) {
+            object[[nrn]] <- NA
+        }
+    }
     for (d in useDatasets) {
         ld <- dataset(object, d)
         if (isTRUE(verbose)) .log('calculating QC for dataset "', d, '"')
@@ -137,7 +141,8 @@ runGeneralQC.h5 <- function(
             values$cell$nGene[cellIdx] <- colSums(nonzero)
             for (fs in names(rowIndices)) {
                 values$cell[[fs]][cellIdx] <-
-                    colSums(chunk[rowIndices[[fs]],]) / nUMI * 100
+                    colSums(chunk[rowIndices[[fs]], , drop = FALSE]) / nUMI *
+                    100
             }
             values$feature <- values$feature + Matrix::rowSums(nonzero)
             return(values)
