@@ -308,6 +308,9 @@ createH5LigerDataset <- function(
 #' @param clusterName The name of variable in \code{cellMeta} slot to store the
 #' clustering assignment, which originally located in \code{clusters} slot.
 #' Default \code{"clusters"}.
+#' @param h5FilePath Named list, to specify the path to the H5 file of each
+#' dataset if location has been changed. Default \code{NULL} looks at the file
+#' paths stored in object.
 #' @param update Logical, whether to update an old (<=1.0.0) \code{liger} object
 #' to the currect version of structure. Default \code{TRUE}.
 #' @return New version of \linkS4class{liger} object
@@ -316,6 +319,7 @@ readLiger <- function(
         filename,
         dimredName = "tsne_coords",
         clusterName = "clusters",
+        h5FilePath = NULL,
         update = TRUE) {
     oldObj <- readRDS(filename)
     if (!inherits(oldObj, "liger"))
@@ -327,7 +331,8 @@ readLiger <- function(
         .log("Updating the object structure to make it compatible ",
              "with current version (", utils::packageVersion("rliger"), ")")
         return(convertOldLiger(oldObj, dimredName = dimredName,
-                               clusterName = clusterName))
+                               clusterName = clusterName,
+                               h5FilePath = h5FilePath))
     } else {
         .log("`update = FALSE` specified. Returning the original object.")
         return(oldObj)

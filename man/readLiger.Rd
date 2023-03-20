@@ -8,6 +8,7 @@ readLiger(
   filename,
   dimredName = "tsne_coords",
   clusterName = "clusters",
+  h5FilePath = NULL,
   update = TRUE
 )
 }
@@ -21,6 +22,10 @@ dimensionality reduction matrix, which originally located in
 \item{clusterName}{The name of variable in \code{cellMeta} slot to store the
 clustering assignment, which originally located in \code{clusters} slot.
 Default \code{"clusters"}.}
+
+\item{h5FilePath}{Named list, to specify the path to the H5 file of each
+dataset if location has been changed. Default \code{NULL} looks at the file
+paths stored in object.}
 
 \item{update}{Logical, whether to update an old (<=1.0.0) \code{liger} object
 to the currect version of structure. Default \code{TRUE}.}

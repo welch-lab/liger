@@ -244,6 +244,9 @@ as.ligerDataset.anndata._core.anndata.AnnData <- function(
 #' @param clusterName The name of variable in \code{cellMeta} slot to store the
 #' clustering assignment, which originally located in \code{clusters} slot.
 #' Default \code{"clusters"}.
+#' @param h5FilePath Named list, to specify the path to the H5 file of each
+#' dataset if location has been changed. Default \code{NULL} looks at the file
+#' paths stored in object.
 #' @export
 #' @examples
 #' \dontrun{
@@ -253,21 +256,36 @@ as.ligerDataset.anndata._core.anndata.AnnData <- function(
 convertOldLiger <- function(
         object,
         dimredName = "tsne.coords",
-        clusterName = "clusters"
+        clusterName = "clusters",
+        h5FilePath = NULL
 ) {
     ver120 <- package_version("1.99.0")
     if (object@version >= ver120) return(object)
     if (inherits(object@raw.data[[1]], "H5File")) {
-        convertOldLiger.H5(object, dimredName = dimredName,
-                           clusterName = clusterName)
+        ldList <- convertOldLiger.H5(object, h5FilePath = h5FilePath)
     } else {
-        convertOldLiger.mem(object, dimredName = dimredName,
-                            clusterName = clusterName)
+        ldList <- convertOldLiger.mem(object)
     }
+    cellMeta <- object@cell.data
+    varFeatures <- object@var.genes
+    cellID <- unlist(lapply(ldList, colnames), use.names = FALSE)
+    # 4. Wrap up liger object
+    cellMeta <- S4Vectors::DataFrame(cellMeta)
+    # TODO: check default prototype of tsne.coords and clusters.
+    dimred <- object@tsne.coords[rownames(cellMeta), , drop = FALSE]
+    colnames(dimred) <- seq_len(ncol(dimred))
+    cellMeta[[dimredName]] <- dimred
+    cellMeta[[clusterName]] <- object@clusters[rownames(cellMeta)]
+    rownames(cellMeta) <- cellID
+    hnorm <- object@H.norm
+    rownames(hnorm) <- cellID
+    newObj <- createLiger(ldList, W = t(object@W), H.norm = hnorm,
+                          varFeatures = varFeatures, cellMeta = cellMeta,
+                          addPrefix = FALSE, removeMissing = FALSE)
+    return(newObj)
 }
 
-convertOldLiger.mem <- function(object, dimredName = "tsne.coords",
-                                clusterName = "clusters") {
+convertOldLiger.mem <- function(object) {
     dataLists <- list(
         rawData = object@raw.data,
         normData = object@norm.data,
@@ -352,25 +370,122 @@ convertOldLiger.mem <- function(object, dimredName = "tsne.coords",
         ldList[[d]] <- do.call(createLigerDataset, dataList)
         colnames(ldList[[d]]) <- paste0(d, "_", colnames(ldList[[d]]))
     }
-    cellID <- unlist(lapply(ldList, colnames), use.names = FALSE)
-    # 4. Wrap up liger object
-    cellMeta <- S4Vectors::DataFrame(cellMeta)
-    # TODO: check default prototype of tsne.coords and clusters.
-    dimred <- object@tsne.coords[rownames(cellMeta), , drop = FALSE]
-    colnames(dimred) <- seq_len(ncol(dimred))
-    cellMeta[[dimredName]] <- dimred
-    cellMeta[[clusterName]] <- object@clusters[rownames(cellMeta)]
-    rownames(cellMeta) <- cellID
-    hnorm <- object@H.norm
-    rownames(hnorm) <- cellID
-    newObj <- createLiger(ldList, W = t(object@W), H.norm = hnorm,
-                          varFeatures = varFeatures, cellMeta = cellMeta)
-    return(newObj)
+    return(ldList)
 }
 
-convertOldLiger.H5 <- function(object, dimredName = "tsne_coords",
-                               clusterName = "clusters") {
-    stop("Not implemented yet")
+convertOldLiger.H5 <- function(object, h5FilePath = NULL) {
+    .log("Please use caution when restoring an H5 based liger object, because ",
+         "old version does not have solid restriction on cell/feature ",
+         "identifier matching. New rliger assumes all data were produced ",
+         "with standard old rliger workflow.")
+    dataLists <- list(
+        # rawData = object@raw.data,
+        # normData = object@norm.data,
+        # scaleData = object@scale.data,
+        H = object@H,
+        V = object@V,
+        U = object@U
+    )
+
+    # 1. Deal with cell metadata which establish a correct mapping of cell
+    # barcodes and datasets belonging
+    allDatasets <- Reduce(union, lapply(dataLists, names))
+    cellMeta <- object@cell.data
+    cellMetaDatasets <- unique(as.vector(cellMeta$dataset))
+    if (!identical(sort(allDatasets), sort(cellMetaDatasets))) {
+        # Datasets entry for matrices don't match with cell metadata
+        # Only take the intersection
+        allDatasets <- intersect(allDatasets, cellMetaDatasets)
+        cellMeta <- cellMeta[cellMeta[["dataset"]] %in% allDatasets, ]
+    }
+
+    # Split `dataLists` by dataset
+    datasetLists <- list()
+    for (d in allDatasets) {
+        for (slot in names(dataLists)) {
+            datasetLists[[d]][[slot]] <- dataLists[[slot]][[d]]
+        }
+    }
+
+    # For each existing dataset
+    ldList <- list()
+    for (d in allDatasets) {
+        # "BC" for barcodes
+        # 2. Check and clean up cell barcodes and feature idx issue
+        cellMetaBC <- rownames(cellMeta)[cellMeta$dataset == d]
+        #features <- NULL
+        varFeatures <- object@var.genes
+        dataList <- datasetLists[[d]]
+
+        # Check cell barcodes
+        bcPassing <- .checkIDIdentical(
+            ref = cellMetaBC,
+            #onCol = dataList[c("rawData", "normData")],
+            onRow = dataList[c("H")]
+        )
+
+        # Check raw, norm data features
+        # if (!is.null(dataList$rawData)) features <- rownames(dataList$rawData)
+        # else features <- rownames(dataList$normData)
+        # if (is.null(features)) {
+        #     warning("Cannot detect feature names for dataset \"", d, "\". ",
+        #             "Skipped.")
+        #     next
+        # }
+        # ftPassing <- .checkIDIdentical(
+        #     ref = features,
+        #     onRow = dataList[c("rawData", "normData")]
+        # )
+
+        # Check var features
+        if (!is.null(dataList$V) &&
+            is.null(colnames(dataList$V)) &&
+            !is.null(varFeatures)) {
+            ## This should not happen but unfortunately, old `V`s might not
+            ## have var features as their colnames
+            colnames(dataList$V) <- varFeatures
+        }
+        hvgPassing <- .checkIDIdentical(
+            ref = varFeatures,
+            onCol = dataList[c("V", "U")]
+        )
+
+        # Remove data that has inconsistent information
+        passing <- .combinePassingSignal(names(dataList),
+                                         bcPassing, hvgPassing)
+        dataList <- dataList[passing]
+        for (s in c("H", "V", "U")) {
+            if (!is.null(dataList[[s]])) {
+                dataList[[s]] <- t(dataList[[s]])
+            }
+        }
+        # 3. Construct H5 ligerDataset objects for each dataset
+        if (!is.null(h5FilePath[[d]])) h5Path <- h5FilePath[[d]]
+        else h5Path <- object@h5file.info[[d]]$file.path
+        if (!hdf5r::is_hdf5(name = h5Path)) {
+            stop("File path for dataset \"", d, "\" not found or is not an H5 ",
+                 "file: ", h5Path)
+        }
+        h5Format <- object@h5file.info[[d]]$format.type
+        ldList[[d]] <- do.call(createH5LigerDataset, c(
+            list(h5file = h5Path, formatType = h5Format),
+            dataList
+        ))
+        colnames(ldList[[d]]) <- paste0(d, "_", colnames(ldList[[d]]))
+
+        # 4. Check for potential existing processed result
+        newSlotNameMap <- list(norm.data = "normData",
+                               "scale.data" = "scaleData",
+                               "scale.unshared.data" = "scaleUnsharedData")
+        for (s in c("norm.data", "scale.data", "scale.unshared.data")) {
+            h5file <- getH5File(ldList[[d]])
+            if (h5file$link_exists(s)) {
+                h5fileInfo(ldList[[d]], newSlotNameMap[[s]], check = FALSE) <- s
+            }
+        }
+    }
+
+    return(ldList)
 }
 
 .checkIDIdentical <- function(
