@@ -4,7 +4,12 @@
 \alias{convertOldLiger}
 \title{Convert old liger object to latest version}
 \usage{
-convertOldLiger(object, dimredName = "tsne.coords", clusterName = "clusters")
+convertOldLiger(
+  object,
+  dimredName = "tsne.coords",
+  clusterName = "clusters",
+  h5FilePath = NULL
+)
 }
 \arguments{
 \item{object}{\code{liger} object from rliger version <1.99.0}
@@ -16,6 +21,10 @@ dimensionality reduction matrix, which originally located in
 \item{clusterName}{The name of variable in \code{cellMeta} slot to store the
 clustering assignment, which originally located in \code{clusters} slot.
 Default \code{"clusters"}.}
+
+\item{h5FilePath}{Named list, to specify the path to the H5 file of each
+dataset if location has been changed. Default \code{NULL} looks at the file
+paths stored in object.}
 }
 \description{
 Convert old liger object to latest version
