@@ -286,14 +286,13 @@ convertOldLiger <- function(
 }
 
 convertOldLiger.mem <- function(object) {
-    dataLists <- list(
-        rawData = object@raw.data,
-        normData = object@norm.data,
-        scaleData = object@scale.data,
-        H = object@H,
-        V = object@V,
-        U = object@U
-    )
+    dataLists <- list()
+    if (.hasSlot(object, "raw.data")) dataLists$rawData <- object@raw.data
+    if (.hasSlot(object, "norm.data")) dataLists$normData <- object@norm.data
+    if (.hasSlot(object, "scale.data")) dataLists$scaleData <- object@scale.data
+    if (.hasSlot(object, "H")) dataLists$H <- object@H
+    if (.hasSlot(object, "V")) dataLists$V <- object@V
+    if (.hasSlot(object, "U")) dataLists$U <- object@U
     # 1. Deal with cell metadata which establish a correct mapping of cell
     # barcodes and datasets belonging
     allDatasets <- Reduce(union, lapply(dataLists, names))
@@ -376,16 +375,12 @@ convertOldLiger.mem <- function(object) {
 convertOldLiger.H5 <- function(object, h5FilePath = NULL) {
     .log("Please use caution when restoring an H5 based liger object, because ",
          "old version does not have solid restriction on cell/feature ",
-         "identifier matching. New rliger assumes all data were produced ",
+         "identifier matching. New rliger assumes all data was produced ",
          "with standard old rliger workflow.")
-    dataLists <- list(
-        # rawData = object@raw.data,
-        # normData = object@norm.data,
-        # scaleData = object@scale.data,
-        H = object@H,
-        V = object@V,
-        U = object@U
-    )
+    dataLists <- list()
+    if (.hasSlot(object, "H")) dataLists$H <- object@H
+    if (.hasSlot(object, "V")) dataLists$V <- object@V
+    if (.hasSlot(object, "U")) dataLists$U <- object@U
 
     # 1. Deal with cell metadata which establish a correct mapping of cell
     # barcodes and datasets belonging
@@ -526,4 +521,21 @@ convertOldLiger.H5 <- function(object, h5FilePath = NULL) {
         x
     })
     Reduce("&", passings)
+}
+
+.hasSlot <- function(object, name) {
+    tryCatch(
+        expr = {
+            methods::slot(object, name)
+            return(TRUE)
+        },
+        error = function(e) {
+            .log("Skipped slot `", name, "` which is not available.")
+            return(FALSE)
+        },
+        warining = function(w) {
+            .log(w)
+            return(FALSE)
+        }
+    )
 }
