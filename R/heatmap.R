@@ -35,7 +35,6 @@
 #' @export
 #' @rdname plotHeatmap
 #' @examples
-#' data("pbmcPlot", package = "rliger")
 #' plotGeneHeatmap(pbmcPlot, varFeatures(pbmcPlot))
 #' plotGeneHeatmap(pbmcPlot, varFeatures(pbmcPlot),
 #'                 useCellMeta = c("leiden_cluster", "dataset"),

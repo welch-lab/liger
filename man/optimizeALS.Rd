@@ -144,7 +144,6 @@ metagenes across datasets. The \eqn{V} matrices represent the
 dataset-specific components of the metagenes.
 }
 \examples{
-data("pbmc", package = "rliger")
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)

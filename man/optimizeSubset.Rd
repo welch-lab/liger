@@ -56,7 +56,6 @@ Uses an efficient strategy for updating that takes advantage of
 the information in the existing factorization.
 }
 \examples{
-data("pbmc", package = "rliger")
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)

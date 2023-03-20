@@ -33,7 +33,6 @@
 #' @rdname subsetLiger
 #' @seealso \code{\link{subsetLigerDataset}}
 #' @examples
-#' data("pbmc", package = "rliger")
 #' pbmc.small <- subsetLiger(pbmc, cellIdx = pbmc$nUMI > 200)
 #' pbmc.small <- pbmc[, pbmc$nGene > 50]
 subsetLiger <- function(
@@ -142,7 +141,6 @@ subsetLiger <- function(
 #' features.
 #' @export
 #' @examples
-#' data("pbmc", package = "rliger")
 #' S100A8Exp <- retrieveCellFeature(pbmc, "S100A8")
 #' qcMetrics <- retrieveCellFeature(pbmc, c("nUMI", "nGene", "mito"),
 #'                                  slot = "cellMeta")
@@ -232,7 +230,6 @@ retrieveCellFeature <- function(
 #' @export
 #' @rdname subsetLigerDataset
 #' @examples
-#' data("pbmc", package = "rliger")
 #' ctrl <- dataset(pbmc, "ctrl")
 #' ctrl.small <- subsetLigerDataset(ctrl, cellIdx = 1:5)
 #' ctrl.tiny <- ctrl[1:5, 1:5]

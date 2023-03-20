@@ -1,9 +1,9 @@
-data("pbmc", package = "rliger")
+data("pbmc", package = "rliger2")
 rawDataList <- getMatrix(pbmc, "rawData")
 
 withNewH5Copy <- function(fun) {
-    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger")
-    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
+    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger2")
+    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger2")
     if (!file.exists(ctrlpath.orig))
         stop("Cannot find original h5 file at: ", ctrlpath.orig)
     if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
@@ -73,7 +73,7 @@ test_that("liger object creation - in memory", {
 test_that("liger object creation - on disk", {
     withNewH5Copy(
         function(rawList) {
-            expect_error(createLiger(rawList, formatType = "rliger"),
+            expect_error(createLiger(rawList, formatType = "Hello"),
                          "Specified `formatType` '")
 
             # Customized paths

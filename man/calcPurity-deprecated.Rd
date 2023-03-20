@@ -35,5 +35,5 @@ ari2 <- calcPurity(ligerex, cluster2)
 }
 }
 \seealso{
-\code{\link{rliger-deprecated}}
+\code{\link{rliger2-deprecated}}
 }

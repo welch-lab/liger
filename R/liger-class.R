@@ -25,7 +25,7 @@ setClassUnion("dataframe", c("data.frame", "DataFrame", "NULL", "missing"))
 #' as usage of class-specific methods. Please see detail sections for more
 #' information.
 #'
-#' For \code{liger} objects created with older versions of rliger package,
+#' For \code{liger} objects created with older versions of rliger2 package,
 #' please try updating the objects individually with
 #' \code{\link{convertOldLiger}}.
 #' @slot datasets list of \linkS4class{ligerDataset} objects.
@@ -36,7 +36,7 @@ setClassUnion("dataframe", c("data.frame", "DataFrame", "NULL", "missing"))
 #' @slot commands List of \linkS4class{ligerCommand} objects. Record of
 #' analysis.
 #' @slot uns List for unstructured meta-info of analyses
-#' @slot version Record of version of rliger package
+#' @slot version Record of version of rliger2 package
 #' @importClassesFrom S4Vectors DataFrame
 #' @importFrom ggplot2 fortify
 liger <- setClass(
@@ -53,7 +53,7 @@ liger <- setClass(
     ),
     methods::prototype(
         cellMeta = methods::new("DFrame"),
-        version = utils::packageVersion("rliger")
+        version = utils::packageVersion("rliger2")
     )
 )
 
@@ -170,7 +170,6 @@ is.newLiger <- function(object) {
 #' @export
 #' @rdname liger-class
 #' @examples
-#' data("pbmcPlot", package = "rliger")
 #' # Methods for base generics
 #' pbmcPlot
 #' print(pbmcPlot)
@@ -181,7 +180,7 @@ is.newLiger <- function(object) {
 #' names(pbmcPlot)
 #' length(pbmcPlot)
 #'
-#' # rliger generics
+#' # rliger2 generics
 #' ## Retrieving dataset(s), replacement methods available
 #' datasets(pbmcPlot)
 #' dataset(pbmcPlot, "ctrl")
@@ -781,5 +780,5 @@ c.liger <- function(...) {
     }
     methods::new("liger", datasets = allDatasets, cellMeta = allCellMeta,
                  varFeatures = varFeatures, commands = allCommands,
-                 version = utils::packageVersion("rliger"))
+                 version = utils::packageVersion("rliger2"))
 }

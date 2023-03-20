@@ -132,7 +132,7 @@ suggestK <- function(
         data_matrix <- foreach::foreach(
             i = seq_along(kTest),
             .combine = "rbind",
-            .packages = "rliger"
+            .packages = "rliger2"
         ) %dopar% {
             if (i != length(kTest)) {
                 if (isTRUE(genNew)) {
@@ -389,7 +389,7 @@ suggestLambda <- function(
         data_matrix <- foreach::foreach(
             i = seq_along(lambdaTest),
             .combine = "rbind",
-            .packages = "rliger"
+            .packages = "rliger2"
         ) %dopar% {
             if (i != 1) {
                 if (isTRUE(genNew)) {

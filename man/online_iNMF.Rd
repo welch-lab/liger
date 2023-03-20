@@ -116,7 +116,6 @@ Therefore, the total number of iterations is determined by the setting of
 \code{max.epochs}, total number of cells, and \code{miniBatch_size}.
 }
 \examples{
-data("pbmc", package = "rliger")
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)

@@ -9,7 +9,7 @@ setClassUnion("POSIXct_or_NULL", c("POSIXct", "NULL"))
 #' @slot objSummary List of attributes of the \linkS4class{liger} object as a
 #' snapshot when command is operated.
 #' @slot ligerVersion Character string converted from
-#' \code{packageVersion("rliger")}.
+#' \code{packageVersion("rliger2")}.
 #' @slot dependencyVersion Named character vector of version number, if any
 #' dependency library has a chance to be included by the function. A
 #' dependency might only be invoked under certain conditions, such as using
@@ -105,7 +105,7 @@ recordCommand <- function(
         "ligerCommand", funcName = funcName,
         objSummary = objSummary,
         parameters = args,
-        ligerVersion = as.character(utils::packageVersion("rliger")),
+        ligerVersion = as.character(utils::packageVersion("rliger2")),
         dependencyVersion = dependVer
     )
     # Do a hash tag to see if an identical operation has been done before
@@ -124,7 +124,6 @@ recordCommand <- function(
 #' @export
 #' @rdname ligerCommand-class
 #' @examples
-#' data("pbmc", package = "rliger")
 #' pbmc <- normalize(pbmc)
 #' cmd <- commands(pbmc, "normalize")
 #' cmd
@@ -180,7 +179,6 @@ setMethod(
 #' differences
 #' @export
 #' @examples
-#' data("pbmc", package = "rliger")
 #' pbmc <- normalize(pbmc)
 #' pbmc <- normalize(pbmc, log = TRUE, scaleFactor = 1e4)
 #' cmds <- commands(pbmc)
@@ -242,7 +240,7 @@ commandDiff <- function(object, cmd1, cmd2) {
     }
     # Versions
     if (x@ligerVersion != y@ligerVersion)
-        msg <- c(msg, paste0("\"rliger\" versions differ: ", x@ligerVersion,
+        msg <- c(msg, paste0("\"rliger2\" versions differ: ", x@ligerVersion,
                              " VS ", y@ligerVersion))
     if (!identical(x@dependencyVersion, y@dependencyVersion))
         msg <- c(msg, paste0("Dependency versions differ. ",

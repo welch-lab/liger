@@ -81,7 +81,6 @@ accurately with regard to local structure. Sensible values are in the range
 0.001 to 0.5, with 0.1 being a reasonable default.
 }
 \examples{
-data("pbmcPlot", package = "rliger")
 pbmc <- runUMAP(pbmcPlot)
 }
 \seealso{

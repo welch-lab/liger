@@ -3,12 +3,12 @@
 # pbmc.file <- system.file('tests', 'testdata', 'small_pbmc_data.RDS', package = 'liger')
 #pbmc.file <- "../testdata/small_pbmc_data.RDS"
 #pbmc.small <- readRDS(pbmc.file)
-data("pbmc", package = "rliger")
+data("pbmc", package = "rliger2")
 rawDataList <- getMatrix(pbmc, "rawData")
 
 withNewH5Copy <- function(fun) {
-    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger")
-    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
+    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger2")
+    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger2")
     if (!file.exists(ctrlpath.orig))
       stop("Cannot find original h5 file at: ", ctrlpath.orig)
     if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")

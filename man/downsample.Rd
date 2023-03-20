@@ -49,6 +49,5 @@ However, if users want to balance the downsampling solely basing on dataset
 origin, users have to explicitly set \code{balance = "dataset"}.
 }
 \examples{
-data("pbmc", package = "rliger")
 pbmc <- downsample(pbmc)
 }

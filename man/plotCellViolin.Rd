@@ -82,7 +82,6 @@ varying values on the x-axis, so \code{boxWidth} will be forced to the same
 value as \code{violinWidth} under this situation.
 }
 \examples{
-data("pbmcPlot", package = "rliger")
 plotCellViolin(pbmcPlot, y = "nUMI", groupBy = "dataset", slot = "cellMeta")
 plotCellViolin(pbmcPlot, y = "nUMI", groupBy = "leiden_cluster",
                slot = "cellMeta", splitBy = "dataset",

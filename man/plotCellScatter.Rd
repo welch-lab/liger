@@ -83,7 +83,6 @@ rliger package. These are based on the nature of \code{as.data.frame} method
 on a \code{\link[S4Vectors]{DataFrame}} object.
 }
 \examples{
-data("pbmcPlot", package = "rliger")
 plotCellScatter(pbmcPlot, x = "UMAP.1", y = "UMAP.2",
                 colorBy = "dataset", slot = "cellMeta",
                 labelText = FALSE)

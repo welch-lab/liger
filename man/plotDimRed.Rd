@@ -92,7 +92,6 @@ factor) is set. List object when multiple of those are specified.
 some text
 }
 \examples{
-data("pbmcPlot", package = "rliger")
 plotClusterDimRed(pbmcPlot)
 plotDatasetDimRed(pbmcPlot)
 plotByDatasetAndCluster(pbmcPlot)

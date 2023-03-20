@@ -60,7 +60,6 @@
 #' @rdname optimizeALS
 #' @export
 #' @examples
-#' data("pbmc", package = "rliger")
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)

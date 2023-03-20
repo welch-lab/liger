@@ -39,7 +39,6 @@ Updated (subset) \code{object}.
 Remove missing cells or features from liger object
 }
 \examples{
-data("pbmc", package = "rliger")
 # The example dataset does not contain non-expressing genes or empty barcodes
 pbmc <- removeMissing(pbmc)
 }

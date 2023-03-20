@@ -49,7 +49,6 @@
 #' and the union of genes in \code{datalist} as rows.
 #' @export
 #' @examples
-#' data("pbmc", package = "rliger")
 #' rawDataList <- getMatrix(pbmc, "rawData")
 #' merged <- mergeSparseAll(rawDataList, libraryNames = names(pbmc))
 mergeSparseAll <- function(datalist, libraryNames = NULL) {

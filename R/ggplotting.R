@@ -52,7 +52,6 @@
 #' objects.
 #' @export
 #' @examples
-#' data("pbmcPlot", package = "rliger")
 #' plotCellScatter(pbmcPlot, x = "UMAP.1", y = "UMAP.2",
 #'                 colorBy = "dataset", slot = "cellMeta",
 #'                 labelText = FALSE)
@@ -335,7 +334,6 @@ plotCellScatter <- function(
 #' \code{plotly = TRUE}, all ggplot objects become plotly (htmlwidget) objects.
 #' @export
 #' @examples
-#' data("pbmcPlot", package = "rliger")
 #' plotCellViolin(pbmcPlot, y = "nUMI", groupBy = "dataset", slot = "cellMeta")
 #' plotCellViolin(pbmcPlot, y = "nUMI", groupBy = "leiden_cluster",
 #'                slot = "cellMeta", splitBy = "dataset",

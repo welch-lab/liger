@@ -38,10 +38,10 @@
 #' agreement <- calcAgreement(ligerex, dr.method = "NMF")
 #' }
 #' @name calcAgreement-deprecated
-#' @seealso \code{\link{rliger-deprecated}}
+#' @seealso \code{\link{rliger2-deprecated}}
 NULL
 
-#' @rdname rliger-deprecated
+#' @rdname rliger2-deprecated
 #' @export
 #' @section \code{calcAgreement}:
 #' \code{calcAgreement} is deprecated and is now defunct.
@@ -314,10 +314,10 @@ calcAlignment <- function(
 #' alignment_per_cluster <- calcAlignmentPerCluster(ligerex)
 #' }
 #' @name calcAlignmentPerCluster-deprecated
-#' @seealso \code{\link{rliger-deprecated}}
+#' @seealso \code{\link{rliger2-deprecated}}
 NULL
 
-#' @rdname rliger-deprecated
+#' @rdname rliger2-deprecated
 #' @export
 #' @section \code{calcAlignmentPerCluster}:
 #' \code{calcAlignmentPerCluster} is deprecated and is now defunct.
@@ -379,10 +379,10 @@ calcAlignmentPerCluster <- function(object,
 #' ari2 <- calcARI(ligerex, cluster2)
 #' }
 #' @name calcARI-deprecated
-#' @seealso \code{\link{rliger-deprecated}}
+#' @seealso \code{\link{rliger2-deprecated}}
 NULL
 
-#' @rdname rliger-deprecated
+#' @rdname rliger2-deprecated
 #' @export
 #' @section \code{calcARI}:
 #' \code{calcARI} is deprecated and is now defunct.
@@ -428,10 +428,10 @@ calcARI <- function(object, clusters.compare, verbose = TRUE) {
 #' ari2 <- calcPurity(ligerex, cluster2)
 #' }
 #' @name calcPurity-deprecated
-#' @seealso \code{\link{rliger-deprecated}}
+#' @seealso \code{\link{rliger2-deprecated}}
 NULL
 
-#' @rdname rliger-deprecated
+#' @rdname rliger2-deprecated
 #' @export
 #' @section \code{calcPurity}:
 #' \code{calcPurity} is deprecated and is now defunct.

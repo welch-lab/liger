@@ -84,7 +84,7 @@ column_split, column_title_gp, column_title, column_labels, column_names_gp,
 top_annotation}.
 }
 \examples{
-data("pbmcPlot", package = "rliger")
+data("pbmcPlot", package = "rliger2")
 # Use character vector of genes
 features <- varFeatures(pbmcPlot)[1:10]
 plotClusterGeneDot(pbmcPlot, features = features)

@@ -92,7 +92,6 @@ well. The density plot can be splitted by categorical variables (e.g.
 in subplots as a reference of the global structure.
 }
 \examples{
-data("pbmcPlot", package = "rliger")
 # Example dataset has small number of cells, thus cutoff adjusted.
 plotDensityDimRed(pbmcPlot, minDensity = 1)
 }

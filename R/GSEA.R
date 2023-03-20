@@ -2,7 +2,7 @@
 #' @description Identify the biological pathways (gene sets from Reactome) that
 #' each metagene (factor) might belongs to.
 #' @param object A \linkS4class{liger} object with valid factorization result.
-#' @param genesets Character vecotr of the Reactome gene sets names to be
+#' @param genesets Character vector of the Reactome gene sets names to be
 #' tested. Default \code{NULL} uses all the gene sets from the Reactome.
 #' @param useW Logical, whether to use the shared factor loadings (\eqn{W}).
 #' Default \code{TRUE}.
@@ -15,6 +15,8 @@
 #' section for replacement.
 #' @return A list of matrices with GSEA analysis for each factor
 #' @export
+#' @examples
+#' runGSEA(pbmcPlot)
 runGSEA <- function(
         object,
         genesets = NULL,
@@ -95,8 +97,6 @@ runGSEA <- function(
         }
     }
 
-    # TODO: bugs for using certain pathways, still don't know why
-    # TODO: Try other GSEA packages
     gsea <- apply(geneRanks, MARGIN = 1, function(x) {
         fgsea::fgsea(
             pathways,
@@ -105,11 +105,10 @@ runGSEA <- function(
             maxSize = 500,
             nperm = 10000
         )
-        #scgsea
     })
-    return(gsea)
     gsea <- lapply(gsea, function(x) {
-        as.matrix(x[order(x$pval), ])
+        as.data.frame(x[order(x$padj), ])
     })
+    names(gsea) <- paste0("Factor_", seq_along(gsea))
     return(gsea)
 }

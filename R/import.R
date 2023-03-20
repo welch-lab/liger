@@ -329,7 +329,7 @@ readLiger <- function(
     .log("Older version (", oldVer, ") of liger object detected.")
     if (isTRUE(update)) {
         .log("Updating the object structure to make it compatible ",
-             "with current version (", utils::packageVersion("rliger"), ")")
+             "with current version (", utils::packageVersion("rliger2"), ")")
         return(convertOldLiger(oldObj, dimredName = dimredName,
                                clusterName = clusterName,
                                h5FilePath = h5FilePath))

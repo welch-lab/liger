@@ -50,5 +50,5 @@ agreement <- calcAgreement(ligerex, dr.method = "NMF")
 }
 }
 \seealso{
-\code{\link{rliger-deprecated}}
+\code{\link{rliger2-deprecated}}
 }

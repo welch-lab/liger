@@ -3,6 +3,7 @@
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
 #' @importFrom methods new show
+#' @useDynLib rliger2, .registration = TRUE
 NULL
 
 
@@ -51,6 +52,6 @@ NULL
 }
 
 .onUnload <- function(libpath) {
-    library.dynam.unload("rliger", libpath)
+    library.dynam.unload("rliger2", libpath)
     return(invisible(NULL))
 }

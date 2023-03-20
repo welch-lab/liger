@@ -74,7 +74,6 @@ setGeneric(
 #' @rdname quantileNorm
 #' @export
 #' @examples
-#' data("pbmcPlot", package = "rliger")
 #' pbmc <- quantileNorm(pbmcPlot)
 setMethod(
     "quantileNorm",
@@ -298,10 +297,10 @@ setMethod(
 #' \code{cellMeta} slot updated. For method on list, a result list with entries
 #' of \code{H.norm} and \code{clusters} will be returned.
 #' @name quantile_norm-deprecated
-#' @seealso \code{\link{rliger-deprecated}}
+#' @seealso \code{\link{rliger2-deprecated}}
 NULL
 
-#' @rdname rliger-deprecated
+#' @rdname rliger2-deprecated
 #' @section \code{quantile_norm}:
 #' For \code{quantile_norm}, use \code{\link{quantileNorm}}.
 #' @export
@@ -324,7 +323,7 @@ setGeneric(
     ) standardGeneric("quantile_norm")
 )
 
-#' @rdname rliger-deprecated
+#' @rdname rliger2-deprecated
 #' @section \code{quantile_norm}:
 #' For \code{quantile_norm}, use \code{\link{quantileNorm}}.
 #' @export

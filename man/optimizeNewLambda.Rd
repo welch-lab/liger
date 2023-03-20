@@ -44,7 +44,6 @@ mainly when re-optimizing for higher lambda and when new lambda value is
 significantly different; otherwise may not return optimal results.
 }
 \examples{
-data("pbmc", package = "rliger")
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)

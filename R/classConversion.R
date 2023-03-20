@@ -132,7 +132,6 @@ as.liger.SingleCellExperiment <- function(
 #' @return a \linkS4class{liger} object.
 #' @rdname as.ligerDataset
 #' @examples
-#' data("pbmc", package = "rliger")
 #' ctrl <- dataset(pbmc, "ctrl")
 #' ctrl
 #' as.ligerDataset(ctrl, modal = "atac")

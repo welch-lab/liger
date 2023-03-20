@@ -66,7 +66,6 @@ ligerDataset <- setClass(
 #' @return \code{TRUE} or \code{FALSE} for the specified check.
 #' @export
 #' @examples
-#' data("pbmc", package = "rliger")
 #' isH5Liger(pbmc)
 #' isH5Liger(pbmc, "ctrl")
 #' ctrl <- dataset(pbmc, "ctrl")
@@ -97,7 +96,6 @@ isH5Liger <- function(object, dataset = NULL) {
 #' \linkS4class{liger} object, where the names are dataset names.
 #' @export
 #' @examples
-#' data("pbmc", package = "rliger")
 #' modalOf(pbmc)
 #' ctrl <- dataset(pbmc, "ctrl")
 #' modalOf(ctrl)
@@ -215,7 +213,6 @@ setValidity("ligerDataset", .valid.ligerDataset)
 #' @rdname ligerDataset-class
 #' @export
 #' @examples
-#' data("pbmc", package = "rliger")
 #' ctrl <- dataset(pbmc, "ctrl")
 #'
 #' # Methods for base generics

@@ -21,7 +21,6 @@
 #' @export
 #' @examples
 #' library(dplyr)
-#' data("pbmcPlot", package = "rliger")
 #' result <- runWilcoxon(pbmcPlot)
 #' result %>% group_by(group) %>% top_n(2, logFC)
 runWilcoxon <- function(
@@ -157,7 +156,6 @@ runWilcoxon <- function(
 #' @export
 #' @examples
 #' library(dplyr)
-#' data("pbmcPlot", package = "rliger")
 #' result <- getFactorMarkers(pbmcPlot, dataset1 = "ctrl", dataset2 = "stim")
 #' print(class(result))
 #' print(names(result))

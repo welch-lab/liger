@@ -49,7 +49,6 @@ which is set when running \code{\link{optimizeALS}}), where it
 is more likely to speed up the factorization.
 }
 \examples{
-data("pbmc", package = "rliger")
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)

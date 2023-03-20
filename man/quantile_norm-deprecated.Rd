@@ -70,5 +70,5 @@ This function will be deprecated. Please use \code{\link{quantileNorm}}
 instead.
 }
 \seealso{
-\code{\link{rliger-deprecated}}
+\code{\link{rliger2-deprecated}}
 }

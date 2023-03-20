@@ -276,7 +276,6 @@ with taking a union of all features for the rows.
 }
 
 \examples{
-data("pbmc", package = "rliger")
 ctrl <- dataset(pbmc, "ctrl")
 
 # Methods for base generics

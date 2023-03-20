@@ -109,7 +109,6 @@ unnormalized factor loadings (result from \code{\link{optimizeALS}} or
 \code{\link{online_iNMF}}) when the former is not available.
 }
 \examples{
-data("pbmcPlot", package = "rliger")
 pbmcPlot <- runLeidenCluster(pbmcPlot)
 head(pbmcPlot$leiden_cluster)
 pbmcPlot <- runLouvainCluster(pbmcPlot)

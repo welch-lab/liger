@@ -24,7 +24,6 @@
 #' @export
 #' @seealso \code{\link{optimizeALS}}
 #' @examples
-#' data("pbmc", package = "rliger")
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
@@ -266,7 +265,6 @@ optimizeNewData <- function(
 #' \code{datasets} slot.
 #' @export
 #' @examples
-#' data("pbmc", package = "rliger")
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
@@ -326,7 +324,6 @@ optimizeNewLambda <- function(
 #' the subset.
 #' @export
 #' @examples
-#' data("pbmc", package = "rliger")
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)

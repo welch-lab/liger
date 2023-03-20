@@ -31,7 +31,7 @@ Large object are summarized to short string.}
 snapshot when command is operated.}
 
 \item{\code{ligerVersion}}{Character string converted from
-\code{packageVersion("rliger")}.}
+\code{packageVersion("rliger2")}.}
 
 \item{\code{dependencyVersion}}{Named character vector of version number, if any
 dependency library has a chance to be included by the function. A
@@ -41,7 +41,6 @@ would still be included for this call.}
 }}
 
 \examples{
-data("pbmc", package = "rliger")
 pbmc <- normalize(pbmc)
 cmd <- commands(pbmc, "normalize")
 cmd

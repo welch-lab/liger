@@ -94,7 +94,6 @@ Having package "ggrepel" installed can help adding tidier percentage
 annotation on the pie chart.
 }
 \examples{
-data("pbmcPlot", package = "rliger")
 plotProportion(pbmcPlot)
 plotProportionBar(pbmcPlot, method = "group")
 plotProportionPie(pbmcPlot)

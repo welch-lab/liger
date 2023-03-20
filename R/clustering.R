@@ -52,7 +52,6 @@
 #' @rdname clustering
 #' @export
 #' @examples
-#' data("pbmcPlot", package = "rliger")
 #' pbmcPlot <- runLeidenCluster(pbmcPlot)
 #' head(pbmcPlot$leiden_cluster)
 #' pbmcPlot <- runLouvainCluster(pbmcPlot)
@@ -230,10 +229,10 @@ runLouvainCluster <- function(
 #' \code{"louvain_cluster"} variable in \code{cellMeta} slot. Can be fetched
 #' with \code{object$louvain_cluster}
 #' @name louvainCluster-deprecated
-#' @seealso \code{\link{rliger-deprecated}}
+#' @seealso \code{\link{rliger2-deprecated}}
 NULL
 
-#' @rdname rliger-deprecated
+#' @rdname rliger2-deprecated
 #' @section \code{louvainCluster}:
 #' For \code{louvainCluster}, use \code{\link{runLouvainCluster}} as the
 #' replacement, while \code{\link{runLeidenCluster}} is more recommended.

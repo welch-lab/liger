@@ -19,7 +19,7 @@ runGSEA(
 \arguments{
 \item{object}{A \linkS4class{liger} object with valid factorization result.}
 
-\item{genesets}{Character vecotr of the Reactome gene sets names to be
+\item{genesets}{Character vector of the Reactome gene sets names to be
 tested. Default \code{NULL} uses all the gene sets from the Reactome.}
 
 \item{useW}{Logical, whether to use the shared factor loadings (\eqn{W}).
@@ -41,4 +41,7 @@ A list of matrices with GSEA analysis for each factor
 \description{
 Identify the biological pathways (gene sets from Reactome) that
 each metagene (factor) might belongs to.
+}
+\examples{
+runGSEA(pbmcPlot)
 }

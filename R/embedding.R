@@ -41,7 +41,6 @@
 #' @seealso \code{\link{runTSNE}}
 #' @export
 #' @examples
-#' data("pbmcPlot", package = "rliger")
 #' pbmc <- runUMAP(pbmcPlot)
 runUMAP <- function(
         object,
@@ -134,7 +133,6 @@ runUMAP <- function(
 #' @seealso \code{\link{runUMAP}}
 #' @export
 #' @examples
-#' data("pbmcPlot", package = "rliger")
 #' pbmc <- runTSNE(pbmcPlot)
 runTSNE <- function(
         object,

@@ -43,5 +43,5 @@ algorithm for community detection, which is widely used in single-cell
 analysis and excels at merging small clusters into broad cell classes.
 }
 \seealso{
-\code{\link{rliger-deprecated}}
+\code{\link{rliger2-deprecated}}
 }
