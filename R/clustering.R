@@ -116,11 +116,11 @@ runLeidenCluster <- function(
             seed = seed,
             ...
         )
-        if (is.null(part$quality)) {
-            clusts <- part$membership
-            if (isTRUE(verbose)) utils::setTxtProgressBar(pb, nRandomStarts)
-            break
-        }
+        #if (is.null(part$quality)) {
+        #    clusts <- part$membership
+        #    if (isTRUE(verbose)) utils::setTxtProgressBar(pb, nRandomStarts)
+        #    break
+        #}
         if (part$quality > maxQuality) {
             clusts <- part$membership
             maxQuality <- part$quality

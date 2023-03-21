@@ -145,8 +145,6 @@ setMethod(
         verbose = getOption("ligerVerbose")
     ) {
         set.seed(seed)
-        if (!is.list(object))
-            stop("`object` should be a list of matrices")
         if (is.null(names(object))) {
             stop("`object` should be a named list of matrices")
         }
@@ -168,7 +166,7 @@ setMethod(
                      "(logical `reference` wrong length or ",
                      "too many selection)")
         } else {
-            stop("Unable to understand `reference`. See `?quantile_norm`.")
+            stop("Unable to understand `reference`. See `?quantileNorm`.")
         }
 
         if (is.null(useDims)) {

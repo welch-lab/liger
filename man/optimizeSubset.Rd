@@ -59,7 +59,8 @@ the information in the existing factorization.
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
-pbmc <- optimizeALS(pbmc, k = 20, maxIter = 10)
+# Only running a few iterations for fast examples
+pbmc <- optimizeALS(pbmc, k = 20, maxIter = 2)
 pbmc <- optimizeSubset(pbmc, cellIdx = sort(sample(ncol(pbmc), 200)),
-                       max.iters = 10)
+                       max.iters = 2)
 }

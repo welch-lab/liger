@@ -666,7 +666,7 @@ setMethod(
                            returnList = "missing"),
     function(x,
              slot = c("rawData", "normData", "scaleData",
-                      "scaleUnsharedData", "H", "V", "U"),
+                      "scaleUnsharedData", "H", "V", "U", "A", "B"),
              dataset = NULL) {
         # TODO: Currently directly find the data with slot, but need to
         # think about maintainability when we need to change slot name.
@@ -680,7 +680,8 @@ setMethod(
     "getMatrix", signature(x = "liger"),
     function(x,
              slot = c("rawData", "normData", "scaleData",
-                      "scaleUnsharedData", "H", "V", "U", "W", "H.norm"),
+                      "scaleUnsharedData", "H", "V", "U", "A", "B",
+                      "W", "H.norm"),
              dataset = NULL,
              returnList = FALSE) {
         slot <- match.arg(slot)
@@ -816,13 +817,10 @@ setMethod("getH5File",
 #' @export
 #' @rdname liger-class
 setMethod("getH5File",
-          signature = signature(x = "liger", dataset = "character"),
+          signature = signature(x = "liger", dataset = "ANY"),
           function(x, dataset = NULL) {
               if (is.null(dataset)) dataset <- names(x)
-              if (any(!dataset %in% names(x))) {
-                  stop("Specified dataset name(s) not found: ",
-                       paste(dataset[!dataset %in% names(x)], collapse = ", "))
-              }
+              dataset <- .checkUseDatasets(x, dataset)
               results <- lapply(datasets(x)[dataset],
                                 function(ld) h5fileInfo(ld, "H5File"))
               if (length(results) == 1) results <- results[[1]]

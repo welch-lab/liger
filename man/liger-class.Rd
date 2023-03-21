@@ -52,7 +52,7 @@
 \alias{scaleUnsharedData,liger,character-method}
 \alias{scaleUnsharedData,liger,numeric-method}
 \alias{getMatrix,liger,ANY,ANY,ANY-method}
-\alias{getH5File,liger,character-method}
+\alias{getH5File,liger,ANY-method}
 \title{liger class}
 \usage{
 \S4method{show}{liger}(object)
@@ -149,13 +149,13 @@ commands(x, funcName = NULL, arg = NULL)
 
 \S4method{getMatrix}{liger,ANY,ANY,ANY}(
   x,
-  slot = c("rawData", "normData", "scaleData", "scaleUnsharedData", "H", "V", "U", "W",
-    "H.norm"),
+  slot = c("rawData", "normData", "scaleData", "scaleUnsharedData", "H", "V", "U", "A",
+    "B", "W", "H.norm"),
   dataset = NULL,
   returnList = FALSE
 )
 
-\S4method{getH5File}{liger,character}(x, dataset = NULL)
+\S4method{getH5File}{liger,ANY}(x, dataset = NULL)
 }
 \arguments{
 \item{x, object}{A \linkS4class{liger} object}

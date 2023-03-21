@@ -16,45 +16,59 @@ optimizeNewData(
 )
 }
 \arguments{
-\item{object}{\code{liger} object. Should call optimizeALS before calling.}
+\item{object}{\linkS4class{liger} object. Should call
+\code{\link{optimizeALS}} in advance.}
 
-\item{new.data}{List of rawData matrices (one or more). Each list entry should be named.}
+\item{new.data}{Named list of raw count matrices (one or more).}
 
-\item{which.datasets}{List of datasets to append new.data to if add.to.existing is true.
-Otherwise, the most similar existing datasets for each entry in new.data.}
+\item{which.datasets}{Names of datasets to append new data to if
+\code{add.to.existing = TRUE}, or the names of datasets to inherit \eqn{V}
+matrices from and initialize the optimization when \code{add.to.existing =
+FALSE}. Should match the length and order of \code{new.data}.}
 
-\item{add.to.existing}{Add the new data to existing datasets or treat as totally new datasets
-(calculate new Vs?) (default TRUE)}
+\item{add.to.existing}{Logical, whether to add the new data to existing
+datasets or treat as totally new datasets (i.e. calculate new \eqn{V}
+matrices). Default \code{TRUE}.}
 
-\item{lambda}{Regularization parameter. By default, this will use the lambda last used with
-optimizeALS.}
+\item{lambda}{Regularization parameter. Default \code{NULL} uses the lambda
+last used for factorization, stored at
+\code{object@uns$factorization$lambda}.}
 
-\item{thresh}{Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
-(default 1e-4).}
+\item{thresh}{Convergence threshold. Convergence occurs when
+\eqn{|obj_0-obj|/(mean(obj0,obj)) < thresh}. Default \code{1e-4}.}
 
-\item{max.iters}{Maximum number of block coordinate descent iterations to perform (default 100).}
+\item{max.iters}{Maximum number of block coordinate descent iterations to
+perform. Default \code{100}.}
 
-\item{verbose}{Print progress bar/messages (TRUE by default)}
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 }
 \value{
-\code{liger} object with H, W, and V slots reset. Raw.data, normData, and scaleData will
-  also be updated to include the new data.
+\code{object} with \code{W} slot updated with the new \eqn{W}
+matrix, and the \code{H} and \code{V} slots of each
+\linkS4class{ligerDataset} object in the \code{datasets} slot updated with
+the new dataset specific \eqn{H} and \eqn{V} matrix, respectively.
 }
 \description{
-Uses an efficient strategy for updating that takes advantage of the information in the existing
-factorization. Assumes that selected genes (var.genes) are represented in the new datasets.
+Uses an efficient strategy for updating that takes advantage of
+the information in the existing factorization. Assumes that variable featuers
+are represented in the new datasets.
 }
 \examples{
-\dontrun{
-# Given preprocessed liger object: ligerex (contains two datasets Y and Z)
-# get factorization using three restarts and 20 factors
-ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
-# acquire new data (Y_new, Z_new) from the same cell type, let's add it to existing datasets
-new_data <- list(Y_set = Y_new, Z_set = Z_new)
-ligerex2 <- optimizeNewData(ligerex, new.data = new_data, which.datasets = list('y_set', 'z_set'))
-# acquire new data from different cell type (X), we'll just add another dataset
-# it's probably most similar to y_set
-ligerex <- optimizeNewData(ligerex, new.data = list(x_set = X), which.datasets = list('y_set'),
-                           add.to.existing = FALSE)
+pbmc <- normalize(pbmc)
+pbmc <- selectGenes(pbmc)
+pbmc <- scaleNotCenter(pbmc)
+# Only running a few iterations for fast examples
+pbmc <- optimizeALS(pbmc, k = 20, maxIter = 2)
+# Create fake new data by increasing all non-zero count in "ctrl" by 1,
+# and make unique cell identiciers
+ctrl2 <- rawData(dataset(pbmc, "ctrl"))
+ctrl2@x <- ctrl2@x + 1
+colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
+pbmcNew <- optimizeNewData(pbmc, new.data = list(ctrl2 = ctrl2),
+                           which.datasets = "ctrl", max.iters = 2)
+pbmcNew
 }
+\seealso{
+\code{\link{optimizeALS}}
 }

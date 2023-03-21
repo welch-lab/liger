@@ -120,5 +120,16 @@ pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
 # Minibatch size has to be less than number of cell in the smallest dataset
+# Scenario 1
 pbmc <- online_iNMF(pbmc, miniBatch_size = 100)
+# Scenario 2
+# Fake new dataset by increasing all non-zero value in "ctrl" by 1
+ctrl2 <- rawData(dataset(pbmc, "ctrl"))
+ctrl2@x <- ctrl2@x + 1
+colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
+pbmc2 <- online_iNMF(pbmc, k = 20, X_new = list(ctrl2 = ctrl2),
+                     miniBatch_size = 100)
+# Scenario 3
+pbmc3 <- online_iNMF(pbmc, k = 20, X_new = list(ctrl2 = ctrl2),
+                     miniBatch_size = 100, projection = TRUE)
 }

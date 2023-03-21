@@ -27,8 +27,9 @@
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
-#' pbmc <- optimizeALS(pbmc, k = 20, maxIter = 5)
-#' pbmc <- optimizeNewK(pbmc, k.new = 15, max.iters = 10)
+#' # Only running a few iterations for fast examples
+#' pbmc <- optimizeALS(pbmc, k = 20, maxIter = 2)
+#' pbmc <- optimizeNewK(pbmc, k.new = 15, max.iters = 2)
 optimizeNewK <- function(
         object,
         k.new,
@@ -121,39 +122,48 @@ optimizeNewK <- function(
 
 #' Perform factorization for new data
 #'
-#' Uses an efficient strategy for updating that takes advantage of the information in the existing
-#' factorization. Assumes that selected genes (var.genes) are represented in the new datasets.
-#'
-#' @param object \code{liger} object. Should call optimizeALS before calling.
-#' @param new.data List of rawData matrices (one or more). Each list entry should be named.
-#' @param which.datasets List of datasets to append new.data to if add.to.existing is true.
-#'   Otherwise, the most similar existing datasets for each entry in new.data.
-#' @param add.to.existing Add the new data to existing datasets or treat as totally new datasets
-#'   (calculate new Vs?) (default TRUE)
-#' @param lambda Regularization parameter. By default, this will use the lambda last used with
-#'   optimizeALS.
-#' @param thresh Convergence threshold. Convergence occurs when |obj0-obj|/(mean(obj0,obj)) < thresh
-#'   (default 1e-4).
-#' @param max.iters Maximum number of block coordinate descent iterations to perform (default 100).
-#' @param verbose Print progress bar/messages (TRUE by default)
-#'
-#' @return \code{liger} object with H, W, and V slots reset. Raw.data, normData, and scaleData will
-#'   also be updated to include the new data.
-#'
+#' @description Uses an efficient strategy for updating that takes advantage of
+#' the information in the existing factorization. Assumes that variable featuers
+#' are represented in the new datasets.
+#' @param object \linkS4class{liger} object. Should call
+#' \code{\link{optimizeALS}} in advance.
+#' @param new.data Named list of raw count matrices (one or more).
+#' @param add.to.existing Logical, whether to add the new data to existing
+#' datasets or treat as totally new datasets (i.e. calculate new \eqn{V}
+#' matrices). Default \code{TRUE}.
+#' @param which.datasets Names of datasets to append new data to if
+#' \code{add.to.existing = TRUE}, or the names of datasets to inherit \eqn{V}
+#' matrices from and initialize the optimization when \code{add.to.existing =
+#' FALSE}. Should match the length and order of \code{new.data}.
+#' @param lambda Regularization parameter. Default \code{NULL} uses the lambda
+#' last used for factorization, stored at
+#' \code{object@uns$factorization$lambda}.
+#' @param thresh Convergence threshold. Convergence occurs when
+#' \eqn{|obj_0-obj|/(mean(obj0,obj)) < thresh}. Default \code{1e-4}.
+#' @param max.iters Maximum number of block coordinate descent iterations to
+#' perform. Default \code{100}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' @return \code{object} with \code{W} slot updated with the new \eqn{W}
+#' matrix, and the \code{H} and \code{V} slots of each
+#' \linkS4class{ligerDataset} object in the \code{datasets} slot updated with
+#' the new dataset specific \eqn{H} and \eqn{V} matrix, respectively.
 #' @export
+#' @seealso \code{\link{optimizeALS}}
 #' @examples
-#' \dontrun{
-#' # Given preprocessed liger object: ligerex (contains two datasets Y and Z)
-#' # get factorization using three restarts and 20 factors
-#' ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
-#' # acquire new data (Y_new, Z_new) from the same cell type, let's add it to existing datasets
-#' new_data <- list(Y_set = Y_new, Z_set = Z_new)
-#' ligerex2 <- optimizeNewData(ligerex, new.data = new_data, which.datasets = list('y_set', 'z_set'))
-#' # acquire new data from different cell type (X), we'll just add another dataset
-#' # it's probably most similar to y_set
-#' ligerex <- optimizeNewData(ligerex, new.data = list(x_set = X), which.datasets = list('y_set'),
-#'                            add.to.existing = FALSE)
-#' }
+#' pbmc <- normalize(pbmc)
+#' pbmc <- selectGenes(pbmc)
+#' pbmc <- scaleNotCenter(pbmc)
+#' # Only running a few iterations for fast examples
+#' pbmc <- optimizeALS(pbmc, k = 20, maxIter = 2)
+#' # Create fake new data by increasing all non-zero count in "ctrl" by 1,
+#' # and make unique cell identiciers
+#' ctrl2 <- rawData(dataset(pbmc, "ctrl"))
+#' ctrl2@x <- ctrl2@x + 1
+#' colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
+#' pbmcNew <- optimizeNewData(pbmc, new.data = list(ctrl2 = ctrl2),
+#'                            which.datasets = "ctrl", max.iters = 2)
+#' pbmcNew
 optimizeNewData <- function(
         object,
         new.data,
@@ -165,6 +175,11 @@ optimizeNewData <- function(
         verbose = getOption("ligerVerbose")
 ) {
     .checkValidFactorResult(object)
+    if (length(which.datasets) != length(new.data)) {
+        stop("Length and order of `which.datasets` should match with
+             `new.data`.")
+    }
+    which.datasets <- .checkUseDatasets(object, useDatasets = which.datasets)
     object <- recordCommand(object)
     if (is.null(lambda)) lambda <- object@uns$factorization$lambda
     sqrtLambda <- sqrt(lambda)
@@ -172,72 +187,83 @@ optimizeNewData <- function(
     k <- object@uns$factorization$k
     # W: g x k
     W <- getMatrix(object, "W")
-    # V: g x k
-    V <- getMatrix(object, "V")
     if (isTRUE(verbose)) .log("Initializing with new data...")
     if (isTRUE(add.to.existing)) {
+        H.orig <- getMatrix(object, "H")
         # TODO Establish dataset merging/extending functionality first
-        for (i in 1:length(new.data)) {
-            if (verbose) {
-                message(dim(object@rawData[[which.datasets[[i]]]]))
-            }
-            object@rawData[[which.datasets[[i]]]] <-
-                cbind(object@rawData[[which.datasets[[i]]]],
-                      new.data[[i]])
-            if (verbose) {
-                message(dim(object@rawData[[which.datasets[[i]]]]))
-            }
+        for (i in seq_along(which.datasets)) {
+            rawOld <- rawData(dataset(object, which.datasets[i]))
+            rawNew <- mergeSparseAll(list(rawOld, new.data[[i]]))
+            ld <- createLigerDataset(rawData = rawNew,
+                                     V = getMatrix(object, "V",
+                                                   dataset = which.datasets[i],
+                                                   returnList = FALSE))
+            dataset(object, which.datasets[i]) <- ld
         }
-        object <- normalize(object)
-        object <- scaleNotCenter(object)
+        object <- normalize(object, useDatasets = which.datasets)
+        object <- scaleNotCenter(object, useDatasets = which.datasets)
+        # scaleData: g x c
+        E <- getMatrix(object, "scaleData")
+        # V: g x k
+        V <- getMatrix(object, "V")
+        # H: k x c
         H_new <- lapply(1:length(new.data), function(i) {
-            t(solveNNLS(rbind(
-                t(W + V[[which.datasets[[i]]]]),
-                sqrtLambda * t(V[[which.datasets[[i]]]])
-            ),
-            rbind(
-                t(object@scaleData[[which.datasets[[i]]]][colnames(new.data[[i]]), ]),
-                matrix(0, nGenes, ncol(new.data[[i]]))
-            )))
+            solveNNLS(
+                rbind(
+                    W + V[[which.datasets[i]]],
+                    sqrtLambda * V[[which.datasets[i]]]
+                ),
+                rbind(
+                    E[[which.datasets[i]]][,colnames(new.data[[i]])],
+                    matrix(0, nGenes, ncol(new.data[[i]]))
+                )
+            )
         })
-        for (i in 1:length(new.data)) {
-            object@H[[which.datasets[[i]]]] <-
-                rbind(object@H[[which.datasets[[i]]]], H_new[[i]])
+        names(H_new) <- which.datasets
+        for (n in which.datasets) {
+            ld <- dataset(object, n)
+            ld@H <- cbind(H.orig[[n]], H_new[[n]])
+            datasets(object, check = FALSE)[[n]] <- ld
         }
     } else {
         new.names <- names(new.data)
+        if (is.null(new.names)) {
+            stop("`new.names` has to be a named list when ",
+                 "`add.to.existing` = FALSE.")
+        }
         for (i in seq_along(new.names)) {
-            ld <- createLigerDataset(rawData = new.data[[i]],
-                                     V = dataset(object, which.datasets[i])@V)
+            ld <- as.ligerDataset(new.data[[i]])
+            ld@V <- getMatrix(object, "V", dataset = which.datasets[i])
             dataset(object, new.names[i]) <- ld
         }
-        object <- normalize(object)
-        object <- scaleNotCenter(object)
+        object <- normalize(object, useDatasets = new.names)
+        object <- scaleNotCenter(object, useDatasets = new.names)
         nCells <- lapply(datasets(object), ncol)
         # scaleData: g x c
-        E <- lapply(datasets(object), function(ld) scaleData(ld))
+        E <- getMatrix(object, "scaleData")
+        # V: g x k
+        V <- getMatrix(object, "V")
         # H: k x c
         H_new <- lapply(new.names, function(n) {
             solveNNLS(rbind(W + V[[n]], sqrtLambda*V[[n]]),
                       rbind(E[[n]], matrix(0, nGenes, nCells[[n]])))
         })
+        names(H_new) <- new.names
         for (n in new.names) {
             ld <- dataset(object, n)
             ld@H <- H_new[[n]]
             datasets(object, check = FALSE)[[n]] <- ld
         }
     }
-    # H: k x c
-    H <- lapply(datasets(object), function(ld) ld@H)
     object <- optimizeALS(
         object,
         k,
         lambda,
         thresh,
         max.iters,
-        H.init = H,
-        W.init = W,
-        V.init = V,
+        H.init = getMatrix(object, "H"),
+        W.init = getMatrix(object, "W"),
+        V.init = getMatrix(object, "V"),
         verbose = verbose
     )
     return(object)
@@ -268,8 +294,9 @@ optimizeNewData <- function(
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
-#' pbmc <- optimizeALS(pbmc, k = 20, maxIter = 5)
-#' pbmc <- optimizeNewLambda(pbmc, new = 5.5, max.iters = 10)
+#' # Only running a few iterations for fast examples
+#' pbmc <- optimizeALS(pbmc, k = 20, maxIter = 2)
+#' pbmc <- optimizeNewLambda(pbmc, new = 5.5, max.iters = 2)
 optimizeNewLambda <- function(
         object,
         new.lambda,
@@ -327,9 +354,10 @@ optimizeNewLambda <- function(
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
-#' pbmc <- optimizeALS(pbmc, k = 20, maxIter = 10)
+#' # Only running a few iterations for fast examples
+#' pbmc <- optimizeALS(pbmc, k = 20, maxIter = 2)
 #' pbmc <- optimizeSubset(pbmc, cellIdx = sort(sample(ncol(pbmc), 200)),
-#'                        max.iters = 10)
+#'                        max.iters = 2)
 optimizeSubset <- function(
         object,
         cellIdx,

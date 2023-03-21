@@ -47,6 +47,7 @@ significantly different; otherwise may not return optimal results.
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
-pbmc <- optimizeALS(pbmc, k = 20, maxIter = 5)
-pbmc <- optimizeNewLambda(pbmc, new = 5.5, max.iters = 10)
+# Only running a few iterations for fast examples
+pbmc <- optimizeALS(pbmc, k = 20, maxIter = 2)
+pbmc <- optimizeNewLambda(pbmc, new = 5.5, max.iters = 2)
 }

@@ -78,7 +78,18 @@
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
 #' # Minibatch size has to be less than number of cell in the smallest dataset
+#' # Scenario 1
 #' pbmc <- online_iNMF(pbmc, miniBatch_size = 100)
+#' # Scenario 2
+#' # Fake new dataset by increasing all non-zero value in "ctrl" by 1
+#' ctrl2 <- rawData(dataset(pbmc, "ctrl"))
+#' ctrl2@x <- ctrl2@x + 1
+#' colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
+#' pbmc2 <- online_iNMF(pbmc, k = 20, X_new = list(ctrl2 = ctrl2),
+#'                      miniBatch_size = 100)
+#' # Scenario 3
+#' pbmc3 <- online_iNMF(pbmc, k = 20, X_new = list(ctrl2 = ctrl2),
+#'                      miniBatch_size = 100, projection = TRUE)
 online_iNMF <- function(
         object,
         X_new = NULL,
@@ -112,20 +123,16 @@ online_iNMF <- function(
             nNewDataset <- length(X_new)
         } else if (is.list(X_new)) {
             # Add new dataset from the list to `object`
-            for (i in length(X_new)) {
-                if (inherits(X_new[[i]], "liger")) {
-                    for (d in names(X_new[[i]])) {
-                        dataset(object, d, qc = FALSE) <- dataset(X_new[[i]], d)
-                    }
-                    nNewDataset <- nNewDataset + length(X_new[[i]])
-                } else {
-                    ld <- as.ligerDataset(X_new)
-                    dataset(object, names(X_new)[i], qc = FALSE) <- ld
-                    nNewDataset <- nNewDataset + 1
-                }
+            for (i in seq_along(X_new)) {
+                ld <- as.ligerDataset(X_new[[i]])
+                dataset(object, names(X_new)[i], qc = FALSE) <- ld
+                nNewDataset <- nNewDataset + 1
             }
-            object <- normalize(object)
-            object <- scaleNotCenter(object)
+            object <- normalize(object, useDatasets = names(X_new))
+            object <- scaleNotCenter(object, useDatasets = names(X_new))
+        } else {
+            stop("`X_new` of class \"", class(X_new), "\" is not supported. ",
+                 "Please use either a liger object or a named list.")
         }
     } else {
         nNewDataset <- length(object)
@@ -409,9 +416,9 @@ online_iNMF <- function(
         colnames(V[[i]]) <- factorNames
         rownames(V[[i]]) <- varFeatures(object)
         ld@V <- V[[i]]
-        dimnames(A[[i]]) <- list(factorNames, factorNames)
+        #dimnames(A[[i]]) <- list(factorNames, factorNames)
         ld@A <- A[[i]]
-        colnames(B[[i]]) <- factorNames
+        #colnames(B[[i]]) <- factorNames
         ld@B <- B[[i]]
         datasets(object, check = FALSE)[[i]] <- ld
     }

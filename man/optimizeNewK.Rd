@@ -52,8 +52,9 @@ is more likely to speed up the factorization.
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
-pbmc <- optimizeALS(pbmc, k = 20, maxIter = 5)
-pbmc <- optimizeNewK(pbmc, k.new = 15, max.iters = 10)
+# Only running a few iterations for fast examples
+pbmc <- optimizeALS(pbmc, k = 20, maxIter = 2)
+pbmc <- optimizeNewK(pbmc, k.new = 15, max.iters = 2)
 }
 \seealso{
 \code{\link{optimizeALS}}
