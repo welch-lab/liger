@@ -212,8 +212,8 @@ getFactorMarkers <- function(
     })
     labels <- list()
     for (i in seq_along(H_scaled)) {
-        labels[[i]] <- useFactors[apply(H_scaled[[i]][, useFactors],
-                                        1, which.max)]
+        idx <- apply(H_scaled[[i]][, useFactors, drop = FALSE], 1, which.max)
+        labels[[i]] <- useFactors[idx]
     }
     names(labels) <- names(H_scaled)
 

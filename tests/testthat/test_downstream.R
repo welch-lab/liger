@@ -65,3 +65,42 @@ test_that("dimensionality reduction", {
     expect_error(runTSNE(pbmc, method = "fft"),
                  "Please pass in path to FIt-SNE directory as fitsne.path.")
 })
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Differential Expression
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+context("Differential Expression")
+test_that("wilcoxon", {
+    expect_error(runWilcoxon(pbmc),
+                 "All datasets being involved has to be normalized")
+    pbmc <- process(pbmc)
+    pbmc <- runLeidenCluster(pbmc, nRandomStarts = 1)
+    expect_error(runWilcoxon(pbmc, method = "dataset", useDatasets = 1),
+                 "Should have at least 2 datasets as input ")
+    res1 <- runWilcoxon(pbmc)
+    expect_equal(dim(res1), c(1992, 10))
+    expect_equal(res1[1,4], -3.6828172, tolerance = 1e-6)
+    res2 <- runWilcoxon(pbmc, method = "dataset")
+    expect_equal(dim(res2), c(3984, 10))
+    expect_equal(res2[1,7], 2.936397e-24, tolerance = 1e-6)
+    hm1 <- plotMarkerHeatmap(pbmc, res1, dedupBy = "l")
+    hm2 <- plotMarkerHeatmap(pbmc, res1, dedupBy = "p")
+    expect_is(hm1, "HeatmapList")
+    expect_is(hm2, "HeatmapList")
+
+    expect_error(getFactorMarkers(pbmc, "ctrl", "stim", factorShareThresh = 0),
+                 "No factor passed the dataset specificity threshold")
+    expect_warning(
+        getFactorMarkers(pbmc, "ctrl", "stim", factorShareThresh = 0.01),
+        "Only 1 factor passed the dataset specificity threshold"
+    )
+    expect_message(
+        getFactorMarkers(pbmc, "ctrl", "stim", printGenes = TRUE),
+        "GAPDH, LGALS1, CXCR4, ACTB, FTL, ISG15, GBP1, SELL, RSAD2, TEX264, "
+    )
+    res3 <- getFactorMarkers(pbmc, "ctrl", "stim")
+    expect_is(res3, "list")
+    expect_identical(names(res3), c("ctrl", "shared", "stim", "num_factors_V1",
+                                   "num_factors_V2"))
+})
