@@ -4,14 +4,14 @@
 \name{makeInteractTrack}
 \alias{makeInteractTrack}
 \alias{louvainCluster}
-\alias{rliger-deprecated}
+\alias{rliger2-deprecated}
 \alias{calcAgreement}
 \alias{calcAlignmentPerCluster}
 \alias{calcARI}
 \alias{calcPurity}
 \alias{quantile_norm}
 \alias{quantile_norm,ANY-method}
-\title{Deprecated functions in package \pkg{rliger}.}
+\title{Deprecated functions in package \pkg{rliger2}.}
 \usage{
 makeInteractTrack(
   corr.mat,

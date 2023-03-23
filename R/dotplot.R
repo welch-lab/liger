@@ -48,7 +48,7 @@
 #' @return \code{\link[ComplexHeatmap]{HeatmapList}} object.
 #' @export
 #' @examples
-#' data("pbmcPlot", package = "rliger")
+#' data("pbmcPlot", package = "rliger2")
 #' # Use character vector of genes
 #' features <- varFeatures(pbmcPlot)[1:10]
 #' plotClusterGeneDot(pbmcPlot, features = features)
@@ -180,7 +180,6 @@ plotClusterGeneDot <- function(
 #' @return \code{\link[ComplexHeatmap]{HeatmapList}} object.
 #' @export
 #' @examples
-#' data("pbmcPlot", package = "rliger")
 #' plotClusterFactorDot(pbmcPlot)
 plotClusterFactorDot <- function(
         object,
@@ -474,8 +473,10 @@ plotClusterFactorDot <- function(
             ...
         )
     }
-
-    ComplexHeatmap::draw(hm, annotation_legend_list = sizeLgd,
-                         merge_legend = TRUE)
+    grDevices::pdf(nullfile())
+    dp <- ComplexHeatmap::draw(hm, annotation_legend_list = sizeLgd,
+                               merge_legend = TRUE)
+    grDevices::dev.off()
+    return(dp)
 }
 

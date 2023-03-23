@@ -56,11 +56,11 @@ Uses an efficient strategy for updating that takes advantage of
 the information in the existing factorization.
 }
 \examples{
-data("pbmc", package = "rliger")
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
-pbmc <- optimizeALS(pbmc, k = 20, maxIter = 10)
+# Only running a few iterations for fast examples
+pbmc <- optimizeALS(pbmc, k = 20, maxIter = 2)
 pbmc <- optimizeSubset(pbmc, cellIdx = sort(sample(ncol(pbmc), 200)),
-                       max.iters = 10)
+                       max.iters = 2)
 }

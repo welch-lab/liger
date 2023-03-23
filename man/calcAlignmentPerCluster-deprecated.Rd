@@ -29,5 +29,5 @@ alignment_per_cluster <- calcAlignmentPerCluster(ligerex)
 }
 }
 \seealso{
-\code{\link{rliger-deprecated}}
+\code{\link{rliger2-deprecated}}
 }

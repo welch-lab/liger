@@ -24,7 +24,6 @@
 #' feature subset.
 #' @export
 #' @examples
-#' data("pbmc", package = "rliger")
 #' pbmc <- runGeneralQC(pbmc)
 runGeneralQC <- function(
         object,
@@ -196,7 +195,6 @@ runGeneralQC.Matrix <- function(
 #' @return Updated (subset) \code{object}.
 #' @export
 #' @examples
-#' data("pbmc", package = "rliger")
 #' # The example dataset does not contain non-expressing genes or empty barcodes
 #' pbmc <- removeMissing(pbmc)
 removeMissing <- function(

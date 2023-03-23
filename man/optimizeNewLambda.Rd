@@ -44,10 +44,10 @@ mainly when re-optimizing for higher lambda and when new lambda value is
 significantly different; otherwise may not return optimal results.
 }
 \examples{
-data("pbmc", package = "rliger")
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
-pbmc <- optimizeALS(pbmc, k = 20, maxIter = 5)
-pbmc <- optimizeNewLambda(pbmc, new = 5.5, max.iters = 10)
+# Only running a few iterations for fast examples
+pbmc <- optimizeALS(pbmc, k = 20, maxIter = 2)
+pbmc <- optimizeNewLambda(pbmc, new = 5.5, max.iters = 2)
 }

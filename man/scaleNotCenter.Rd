@@ -36,7 +36,6 @@ before scaling because expression values must remain positive (NMF only
 accepts positive values).
 }
 \examples{
-data("pbmc", package = "rliger")
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)

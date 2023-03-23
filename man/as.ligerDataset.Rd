@@ -32,7 +32,6 @@ a \linkS4class{liger} object.
 Converting other classes of data to a as.ligerDataset object
 }
 \examples{
-data("pbmc", package = "rliger")
 ctrl <- dataset(pbmc, "ctrl")
 ctrl
 as.ligerDataset(ctrl, modal = "atac")

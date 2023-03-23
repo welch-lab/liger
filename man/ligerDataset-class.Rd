@@ -104,7 +104,8 @@ getMatrix(x, slot = "rawData", dataset = NULL, returnList = FALSE)
 
 \S4method{getMatrix}{ligerDataset,ANY,missing,missing}(
   x,
-  slot = c("rawData", "normData", "scaleData", "scaleUnsharedData", "H", "V", "U"),
+  slot = c("rawData", "normData", "scaleData", "scaleUnsharedData", "H", "V", "U", "A",
+    "B"),
   dataset = NULL
 )
 
@@ -276,7 +277,6 @@ with taking a union of all features for the rows.
 }
 
 \examples{
-data("pbmc", package = "rliger")
 ctrl <- dataset(pbmc, "ctrl")
 
 # Methods for base generics

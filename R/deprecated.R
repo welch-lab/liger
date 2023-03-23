@@ -1,9 +1,9 @@
-#' @title Deprecated functions in package \pkg{rliger}.
+#' @title Deprecated functions in package \pkg{rliger2}.
 #' @description The functions listed below are deprecated and will be defunct in
 #'   the near future. When possible, alternative functions with similar
 #'   functionality or a replacement are also mentioned. Help pages for
 #'   deprecated functions are available at \code{help("<function>-deprecated")}.
-#' @name rliger-deprecated
+#' @name rliger2-deprecated
 #' @keywords internal
 NULL
 
@@ -237,7 +237,7 @@ SLMCluster <-
       # NULL random.seed disallowed for this program.
       random.seed = 0
     }
-    liger.dir <- "."#system.file(package = "rliger")
+    liger.dir <- "."#system.file(package = "rliger2")
     ModularityJarFile <-
       paste0(liger.dir, "/java/ModularityOptimizer.jar")
     command <-

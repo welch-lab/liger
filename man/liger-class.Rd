@@ -52,7 +52,7 @@
 \alias{scaleUnsharedData,liger,character-method}
 \alias{scaleUnsharedData,liger,numeric-method}
 \alias{getMatrix,liger,ANY,ANY,ANY-method}
-\alias{getH5File,liger,character-method}
+\alias{getH5File,liger,ANY-method}
 \title{liger class}
 \usage{
 \S4method{show}{liger}(object)
@@ -149,13 +149,13 @@ commands(x, funcName = NULL, arg = NULL)
 
 \S4method{getMatrix}{liger,ANY,ANY,ANY}(
   x,
-  slot = c("rawData", "normData", "scaleData", "scaleUnsharedData", "H", "V", "U", "W",
-    "H.norm"),
+  slot = c("rawData", "normData", "scaleData", "scaleUnsharedData", "H", "V", "U", "A",
+    "B", "W", "H.norm"),
   dataset = NULL,
   returnList = FALSE
 )
 
-\S4method{getH5File}{liger,character}(x, dataset = NULL)
+\S4method{getH5File}{liger,ANY}(x, dataset = NULL)
 }
 \arguments{
 \item{x, object}{A \linkS4class{liger} object}
@@ -215,7 +215,7 @@ This manual provides explanation to the \code{liger} object structure as well
 as usage of class-specific methods. Please see detail sections for more
 information.
 
-For \code{liger} objects created with older versions of rliger package,
+For \code{liger} objects created with older versions of rliger2 package,
 please try updating the objects individually with
 \code{\link{convertOldLiger}}.
 }
@@ -237,7 +237,7 @@ analysis.}
 
 \item{\code{uns}}{List for unstructured meta-info of analyses}
 
-\item{\code{version}}{Record of version of rliger package}
+\item{\code{version}}{Record of version of rliger2 package}
 }}
 
 \section{Dimensionality}{
@@ -351,7 +351,6 @@ all louvain cluster attempts: \code{commands(ligerObj, "louvainCluster",
 }
 
 \examples{
-data("pbmcPlot", package = "rliger")
 # Methods for base generics
 pbmcPlot
 print(pbmcPlot)
@@ -362,7 +361,7 @@ pbmcPlot[varFeatures(pbmcPlot)[1:10], 1:10]
 names(pbmcPlot)
 length(pbmcPlot)
 
-# rliger generics
+# rliger2 generics
 ## Retrieving dataset(s), replacement methods available
 datasets(pbmcPlot)
 dataset(pbmcPlot, "ctrl")

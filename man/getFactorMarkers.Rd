@@ -73,7 +73,6 @@ dataset-specific way).
 }
 \examples{
 library(dplyr)
-data("pbmcPlot", package = "rliger")
 result <- getFactorMarkers(pbmcPlot, dataset1 = "ctrl", dataset2 = "stim")
 print(class(result))
 print(names(result))

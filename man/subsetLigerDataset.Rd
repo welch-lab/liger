@@ -93,7 +93,6 @@ features, will select the intersection between the wanted features and the
 set available from scaled data.
 }
 \examples{
-data("pbmc", package = "rliger")
 ctrl <- dataset(pbmc, "ctrl")
 ctrl.small <- subsetLigerDataset(ctrl, cellIdx = 1:5)
 ctrl.tiny <- ctrl[1:5, 1:5]

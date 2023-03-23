@@ -74,7 +74,6 @@ setGeneric(
 #' @rdname quantileNorm
 #' @export
 #' @examples
-#' data("pbmcPlot", package = "rliger")
 #' pbmc <- quantileNorm(pbmcPlot)
 setMethod(
     "quantileNorm",
@@ -146,8 +145,6 @@ setMethod(
         verbose = getOption("ligerVerbose")
     ) {
         set.seed(seed)
-        if (!is.list(object))
-            stop("`object` should be a list of matrices")
         if (is.null(names(object))) {
             stop("`object` should be a named list of matrices")
         }
@@ -169,7 +166,7 @@ setMethod(
                      "(logical `reference` wrong length or ",
                      "too many selection)")
         } else {
-            stop("Unable to understand `reference`. See `?quantile_norm`.")
+            stop("Unable to understand `reference`. See `?quantileNorm`.")
         }
 
         if (is.null(useDims)) {
@@ -298,10 +295,10 @@ setMethod(
 #' \code{cellMeta} slot updated. For method on list, a result list with entries
 #' of \code{H.norm} and \code{clusters} will be returned.
 #' @name quantile_norm-deprecated
-#' @seealso \code{\link{rliger-deprecated}}
+#' @seealso \code{\link{rliger2-deprecated}}
 NULL
 
-#' @rdname rliger-deprecated
+#' @rdname rliger2-deprecated
 #' @section \code{quantile_norm}:
 #' For \code{quantile_norm}, use \code{\link{quantileNorm}}.
 #' @export
@@ -324,7 +321,7 @@ setGeneric(
     ) standardGeneric("quantile_norm")
 )
 
-#' @rdname rliger-deprecated
+#' @rdname rliger2-deprecated
 #' @section \code{quantile_norm}:
 #' For \code{quantile_norm}, use \code{\link{quantileNorm}}.
 #' @export

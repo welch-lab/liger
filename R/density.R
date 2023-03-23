@@ -46,7 +46,6 @@
 #' \code{combinePlot = FALSE}.
 #' @export
 #' @examples
-#' data("pbmcPlot", package = "rliger")
 #' # Example dataset has small number of cells, thus cutoff adjusted.
 #' plotDensityDimRed(pbmcPlot, minDensity = 1)
 plotDensityDimRed <- function(

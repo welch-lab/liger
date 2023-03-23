@@ -21,7 +21,6 @@
 #' @export
 #' @examples
 #' library(dplyr)
-#' data("pbmcPlot", package = "rliger")
 #' result <- runWilcoxon(pbmcPlot)
 #' result %>% group_by(group) %>% top_n(2, logFC)
 runWilcoxon <- function(
@@ -157,7 +156,6 @@ runWilcoxon <- function(
 #' @export
 #' @examples
 #' library(dplyr)
-#' data("pbmcPlot", package = "rliger")
 #' result <- getFactorMarkers(pbmcPlot, dataset1 = "ctrl", dataset2 = "stim")
 #' print(class(result))
 #' print(names(result))
@@ -214,8 +212,8 @@ getFactorMarkers <- function(
     })
     labels <- list()
     for (i in seq_along(H_scaled)) {
-        labels[[i]] <- useFactors[apply(H_scaled[[i]][, useFactors],
-                                        1, which.max)]
+        idx <- apply(H_scaled[[i]][, useFactors, drop = FALSE], 1, which.max)
+        labels[[i]] <- useFactors[idx]
     }
     names(labels) <- names(H_scaled)
 
@@ -316,6 +314,7 @@ getFactorMarkers <- function(
             rep(i, length(topGenesW)), topGenesW, log2fc[topGenesW], pvals$W
         ))
     }
+    if (isTRUE(verbose) && !isTRUE(printGenes)) cat("\n")
     V1_genes <- data.frame(Reduce(rbind, V1_matrices), stringsAsFactors = FALSE)
     V2_genes <- data.frame(Reduce(rbind, V2_matrices), stringsAsFactors = FALSE)
     W_genes <- data.frame(Reduce(rbind, W_matrices), stringsAsFactors = FALSE)

@@ -20,7 +20,6 @@ differences
 Check difference of two liger command
 }
 \examples{
-data("pbmc", package = "rliger")
 pbmc <- normalize(pbmc)
 pbmc <- normalize(pbmc, log = TRUE, scaleFactor = 1e4)
 cmds <- commands(pbmc)

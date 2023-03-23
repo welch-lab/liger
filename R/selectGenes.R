@@ -44,10 +44,8 @@
 #' The \code{varUnsharedFeatures} slot of the \linkS4class{ligerDataset}
 #' object in the \code{datasets} slot will be updated if \code{unshared = TRUE}.
 #' @seealso \code{\link{plotVarFeatures}}
-#' @useDynLib rliger, .registration = TRUE
 #' @export
 #' @examples
-#' data("pbmc", package = "rliger")
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 selectGenes <- function(
@@ -212,7 +210,6 @@ selectGenes <- function(
 #' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @return The input \code{object} with calculated var updated in the H5 file.
 #' @noRd
-#' @useDynLib rliger, .registration = TRUE
 calcGeneVars.H5 <- function(object, chunkSize = 1000,
                             verbose = getOption("ligerVerbose"),
                             rerun = FALSE) {

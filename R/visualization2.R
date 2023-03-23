@@ -38,7 +38,6 @@
 #' @rdname plotDimRed
 #' @export
 #' @examples
-#' data("pbmcPlot", package = "rliger")
 #' plotClusterDimRed(pbmcPlot)
 #' plotDatasetDimRed(pbmcPlot)
 #' plotByDatasetAndCluster(pbmcPlot)
@@ -151,10 +150,8 @@ plotFactorDimRed <- function(
 #' @export
 #' @rdname plotViolin
 #' @examples
-#' data("pbmcPlot", package = "rliger")
 #' plotGeneViolin(pbmcPlot, varFeatures(pbmcPlot)[1],
 #'                groupBy = "leiden_cluster")
-#' data("pbmc", package = "rliger")
 #' plotTotalCountViolin(pbmc)
 #' plotGeneDetectedViolin(pbmc, dot = TRUE, box = TRUE, colorBy = "dataset")
 plotGeneViolin <- function(
@@ -257,7 +254,6 @@ plotGeneDetectedViolin <- function(
 #' @rdname plotProportion
 #' @export
 #' @examples
-#' data("pbmcPlot", package = "rliger")
 #' plotProportion(pbmcPlot)
 #' plotProportionBar(pbmcPlot, method = "group")
 #' plotProportionPie(pbmcPlot)

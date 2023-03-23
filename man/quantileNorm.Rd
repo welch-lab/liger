@@ -123,6 +123,5 @@ This function is a replacement of \code{quantile_norm()}, which will be
 deprecated. See \code{help("quantile_norm-deprecated")}.
 }
 \examples{
-data("pbmcPlot", package = "rliger")
 pbmc <- quantileNorm(pbmcPlot)
 }

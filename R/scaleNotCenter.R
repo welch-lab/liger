@@ -16,7 +16,6 @@
 #' \linkS4class{ligerDataset} object in the \code{datasets} slot is updated.
 #' @export
 #' @examples
-#' data("pbmc", package = "rliger")
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)

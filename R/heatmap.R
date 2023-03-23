@@ -35,7 +35,6 @@
 #' @export
 #' @rdname plotHeatmap
 #' @examples
-#' data("pbmcPlot", package = "rliger")
 #' plotGeneHeatmap(pbmcPlot, varFeatures(pbmcPlot))
 #' plotGeneHeatmap(pbmcPlot, varFeatures(pbmcPlot),
 #'                 useCellMeta = c("leiden_cluster", "dataset"),
@@ -319,8 +318,10 @@ plotFactorHeatmap <- function(
             ...
         )
     }
-
-    ComplexHeatmap::draw(hm, merge_legend = TRUE)
+    grDevices::pdf(nullfile())
+    hml <- ComplexHeatmap::draw(hm, merge_legend = TRUE)
+    grDevices::dev.off()
+    return(hml)
 }
 
 .formatAnn <- function(
@@ -409,3 +410,5 @@ plotFactorHeatmap <- function(
     }
     return(x)
 }
+
+
