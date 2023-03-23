@@ -473,8 +473,10 @@ plotClusterFactorDot <- function(
             ...
         )
     }
-
-    ComplexHeatmap::draw(hm, annotation_legend_list = sizeLgd,
-                         merge_legend = TRUE)
+    grDevices::pdf(nullfile())
+    dp <- ComplexHeatmap::draw(hm, annotation_legend_list = sizeLgd,
+                               merge_legend = TRUE)
+    grDevices::dev.off()
+    return(dp)
 }
 

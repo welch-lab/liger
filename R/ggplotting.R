@@ -75,7 +75,10 @@ plotCellScatter <- function(
         ...
 ) {
     slot <- match.arg(slot)
-    plotDF <- cellMeta(object, c(x, y, shapeBy, splitBy), as.data.frame = TRUE)
+    plotDF <- cellMeta(object, c(x, y), as.data.frame = TRUE)
+    ann <- .fetchCellMetaVar(object, variables = c(shapeBy, splitBy),
+                             checkCategorical = TRUE, drop = FALSE)
+    if (!is.null(ann)) plotDF <- cbind(plotDF, ann)
     # Create copies of `plotDF` in `plotDFList`, where each `plotDF` has only
     # one `colorBy` variable
     plotDFList <- list()
@@ -87,8 +90,14 @@ plotCellScatter <- function(
         if (!is.null(colorByFunc))
             colorDF[, colorBy] <- colorByFunc(colorDF[, colorBy])
         for (i in seq_along(colorBy)) {
-            plotDFList[[colorBy[i]]] <- cbind(plotDF,
-                                              colorDF[, i, drop = FALSE])
+            if (!colorBy[i] %in% colnames(plotDF)) {
+                plotDFList[[colorBy[i]]] <- cbind(plotDF,
+                                                  colorDF[, i, drop = FALSE])
+            } else {
+                plotDFList[[colorBy[i]]] <- plotDF
+                plotDFList[[colorBy[i]]][[colorBy[i]]] <- colorDF[, i]
+            }
+
             colorByParam[[colorBy[i]]] <- colorBy[i]
         }
 
@@ -109,12 +118,14 @@ plotCellScatter <- function(
                                             names(plotDFList[[i]]),
                                             sep = ".")
             colorByParam[[i]] <- rep(colorByParam[[i]],
-                                     length(names(plotDFList[[i]])))
+                                     length(plotDFList[[i]]))
         }
         # Then flatten the nested list by concatenating each colorBy-list.
         plotDFList <- Reduce(c, plotDFList)
         colorByParam <- Reduce(c, colorByParam)
-        names(colorByParam) <- names(plotDFList)
+        if (!is.null(colorByParam)) {
+            names(colorByParam) <- names(plotDFList)
+        }
     }
 
     plotList <- list()

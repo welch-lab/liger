@@ -318,8 +318,10 @@ plotFactorHeatmap <- function(
             ...
         )
     }
-
-    ComplexHeatmap::draw(hm, merge_legend = TRUE)
+    grDevices::pdf(nullfile())
+    hml <- ComplexHeatmap::draw(hm, merge_legend = TRUE)
+    grDevices::dev.off()
+    return(hml)
 }
 
 .formatAnn <- function(
@@ -408,3 +410,5 @@ plotFactorHeatmap <- function(
     }
     return(x)
 }
+
+

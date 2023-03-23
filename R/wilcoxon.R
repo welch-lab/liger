@@ -314,6 +314,7 @@ getFactorMarkers <- function(
             rep(i, length(topGenesW)), topGenesW, log2fc[topGenesW], pvals$W
         ))
     }
+    if (isTRUE(verbose) && !isTRUE(printGenes)) cat("\n")
     V1_genes <- data.frame(Reduce(rbind, V1_matrices), stringsAsFactors = FALSE)
     V2_genes <- data.frame(Reduce(rbind, V2_matrices), stringsAsFactors = FALSE)
     W_genes <- data.frame(Reduce(rbind, W_matrices), stringsAsFactors = FALSE)

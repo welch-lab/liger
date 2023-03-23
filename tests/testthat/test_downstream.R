@@ -88,6 +88,7 @@ test_that("wilcoxon", {
     hm2 <- plotMarkerHeatmap(pbmc, res1, dedupBy = "p")
     expect_is(hm1, "HeatmapList")
     expect_is(hm2, "HeatmapList")
+    expect_is(plotVolcano(res1, 0), "ggplot")
 
     expect_error(getFactorMarkers(pbmc, "ctrl", "stim", factorShareThresh = 0),
                  "No factor passed the dataset specificity threshold")
@@ -95,11 +96,15 @@ test_that("wilcoxon", {
         getFactorMarkers(pbmc, "ctrl", "stim", factorShareThresh = 0.01),
         "Only 1 factor passed the dataset specificity threshold"
     )
-    expect_message(
-        getFactorMarkers(pbmc, "ctrl", "stim", printGenes = TRUE),
-        "GAPDH, LGALS1, CXCR4, ACTB, FTL, ISG15, GBP1, SELL, RSAD2, TEX264, "
+    expect_warning(
+        expect_message(
+            getFactorMarkers(pbmc, "ctrl", "stim", printGenes = TRUE),
+            "GAPDH, LGALS1, CXCR4, ACTB, FTL, ISG15, GBP1, SELL, RSAD2, TEX264"
+        ),
+        "Factor 16 did not appear as max in any cell in either dataset"
     )
-    res3 <- getFactorMarkers(pbmc, "ctrl", "stim")
+    expect_warning(res3 <- getFactorMarkers(pbmc, "ctrl", "stim"),
+                   "Factor 16 did not appear as max in any cell in either")
     expect_is(res3, "list")
     expect_identical(names(res3), c("ctrl", "shared", "stim", "num_factors_V1",
                                    "num_factors_V2"))
