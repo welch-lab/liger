@@ -90,7 +90,6 @@ Suggests:
     Seurat,
     SeuratObject,
     SingleCellExperiment,
-    singleseqgset,
     SummarizedExperiment,
     testthat
 Remotes:
