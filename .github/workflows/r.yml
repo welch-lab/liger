@@ -10,9 +10,9 @@ name: R
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "newObj" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "newObj" ]
 
 permissions:
   contents: read
