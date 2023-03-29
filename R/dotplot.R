@@ -88,22 +88,17 @@ plotClusterGeneDot <- function(
     } else if (is.character(features)) {
         features <- data.frame(feature = features)
     }
-
     # Retrieved expression matrix would always be cell x feature, designed for
     # ggplot
-    mat <- retrieveCellFeature(object, feature = features[,1],
+    mat <- retrieveCellFeature(object, feature = unique(features[,1]),
                                slot = "normData", cellIdx = cellIdx,
                                verbose = verbose)
-
+    if (any(duplicated(features[,1]))) {
+        mat <- mat[,features[,1]]
+    }
     # In case specified features not found
     features <- features[features[,1] %in% colnames(mat), , drop = FALSE]
-    # Deduplicate feature names
-    allFeatures <- features[,1]
-    dups <- unique(allFeatures[duplicated(allFeatures)])
-    for (f in dups) {
-        idx <- which(allFeatures == f)
-        allFeatures[idx] <- paste0(f, ".", seq_along(idx))
-    }
+    allFeatures <- make.unique(features[,1])
     # Make sure everything consistent
     colnames(mat) <- allFeatures
     rownames(features) <- allFeatures

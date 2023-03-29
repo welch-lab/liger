@@ -77,6 +77,30 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// denseZScore
+NumericMatrix denseZScore(NumericMatrix& x, NumericVector m);
+RcppExport SEXP _rliger2_denseZScore(SEXP xSEXP, SEXP mSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type m(mSEXP);
+    rcpp_result_gen = Rcpp::wrap(denseZScore(x, m));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rowVarsDense
+NumericVector rowVarsDense(arma::mat x, arma::vec m);
+RcppExport SEXP _rliger2_rowVarsDense(SEXP xSEXP, SEXP mSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type m(mSEXP);
+    rcpp_result_gen = Rcpp::wrap(rowVarsDense(x, m));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_sumGroups_dgc
 arma::mat cpp_sumGroups_dgc(const arma::vec& x, const arma::uvec& p, const arma::vec& i, unsigned ncol, const arma::uvec& groups, unsigned ngroups);
 RcppExport SEXP _rliger2_cpp_sumGroups_dgc(SEXP xSEXP, SEXP pSEXP, SEXP iSEXP, SEXP ncolSEXP, SEXP groupsSEXP, SEXP ngroupsSEXP) {
@@ -338,6 +362,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rliger2_rowMeansFast", (DL_FUNC) &_rliger2_rowMeansFast, 1},
     {"_rliger2_rowVarsFast", (DL_FUNC) &_rliger2_rowVarsFast, 2},
     {"_rliger2_sumSquaredDeviations", (DL_FUNC) &_rliger2_sumSquaredDeviations, 2},
+    {"_rliger2_denseZScore", (DL_FUNC) &_rliger2_denseZScore, 2},
+    {"_rliger2_rowVarsDense", (DL_FUNC) &_rliger2_rowVarsDense, 2},
     {"_rliger2_cpp_sumGroups_dgc", (DL_FUNC) &_rliger2_cpp_sumGroups_dgc, 6},
     {"_rliger2_cpp_sumGroups_dgc_T", (DL_FUNC) &_rliger2_cpp_sumGroups_dgc_T, 7},
     {"_rliger2_cpp_sumGroups_dense", (DL_FUNC) &_rliger2_cpp_sumGroups_dense, 3},

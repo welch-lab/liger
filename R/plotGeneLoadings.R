@@ -56,11 +56,11 @@ plotGeneLoadingRank <- function(
     geneList <- list()
     # subset to specific factor and sort by p-value
     geneList$V1 <- markerTable[[1]][markerTable[[1]]$factor_num == useFactor, ]
-    geneList$V1 <- geneList$V1[order(geneList$V1$p_value), ]$gene
+    geneList$V1 <- geneList$V1[order(geneList$V1$pval), ]$feature
     geneList$V2 <- markerTable[[3]][markerTable[[3]]$factor_num == useFactor, ]
-    geneList$V2 <- geneList$V2[order(geneList$V2$p_value), ]$gene
+    geneList$V2 <- geneList$V2[order(geneList$V2$pval), ]$feature
     # don't sort for W
-    geneList$W <- markerTable[[2]][markerTable[[2]]$factor_num == useFactor,]$gene
+    geneList$W <- markerTable[[2]][markerTable[[2]]$factor_num == useFactor,]$feature
     geneList <- lapply(geneList, function(g) g[seq(min(nLabel, length(g)))])
 
     loadingList <- getMatrix(object, "V", dataset = c(dataset1, dataset2))

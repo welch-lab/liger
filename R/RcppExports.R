@@ -21,6 +21,14 @@ sumSquaredDeviations <- function(x, means) {
     .Call(`_rliger2_sumSquaredDeviations`, x, means)
 }
 
+denseZScore <- function(x, m) {
+    .Call(`_rliger2_denseZScore`, x, m)
+}
+
+rowVarsDense <- function(x, m) {
+    .Call(`_rliger2_rowVarsDense`, x, m)
+}
+
 cpp_sumGroups_dgc <- function(x, p, i, ncol, groups, ngroups) {
     .Call(`_rliger2_cpp_sumGroups_dgc`, x, p, i, ncol, groups, ngroups)
 }

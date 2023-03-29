@@ -89,6 +89,7 @@ test_that("wilcoxon", {
     expect_is(hm1, "HeatmapList")
     expect_is(hm2, "HeatmapList")
     expect_is(plotVolcano(res1, 0), "ggplot")
+    expect_is(plotEnhancedVolcano(res1, 0), "ggplot")
 
     expect_error(getFactorMarkers(pbmc, "ctrl", "stim", factorShareThresh = 0),
                  "No factor passed the dataset specificity threshold")
@@ -108,4 +109,28 @@ test_that("wilcoxon", {
     expect_is(res3, "list")
     expect_identical(names(res3), c("ctrl", "shared", "stim", "num_factors_V1",
                                    "num_factors_V2"))
+})
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# GSEA
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+context("GSEA")
+custom <- list(
+    `Immune System` = c("9636", "2633", "6282", "6280", "6279", "2207", "2214",
+                        "6402", "91543", "6233", "10578", "3553", "5473",
+                        "3627", "51316", "929", "972")
+)
+test_that("gsea", {
+    expect_warning({
+        expect_is(runGSEA(pbmcPlot, genesets = "Immune System"), "list")
+        expect_is(runGSEA(pbmcPlot, customGenesets = custom), "list")
+    })
+
+    res1 <- runFactorGeneGO(pbmcPlot)
+    expect_identical(unique(res1$result$query), c("Factor_13", "Factor_19"))
+    res2 <- runFactorGeneGO(pbmcPlot, sumLoading = FALSE)
+    expect_identical(unique(res2$result$query),
+                     c("ctrl_Factor_13", "ctrl_Factor_19",
+                       "stim_Factor_13", "stim_Factor_19"))
 })

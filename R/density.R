@@ -92,7 +92,7 @@ plotDensityDimRed <- function(
         drList <- list(dr)
     }
     plotList <- list()
-    if (length(drList) == 0) stop("No plot could be generated")
+    #if (length(drList) == 0) stop("No plot could be generated")
     if (length(drList) == 1) {
         return(.ggDensity(drList[[1]], dotCoordDF = drList[[1]],
                           title = title, minDensity = minDensity,

@@ -376,14 +376,18 @@ plotCellViolin <- function(
                              row.names = colnames(object))
         colnames(plotDF) <- groupBy
     } else {
-        plotDF <- cellMeta(object, groupBy, as.data.frame = TRUE, drop = FALSE)
+        plotDF <- .fetchCellMetaVar(object, groupBy, checkCategorical = TRUE,
+                                    drop = FALSE)
+        #plotDF <- cellMeta(object, groupBy, as.data.frame = TRUE, drop = FALSE)
     }
     plotDF[,splitBy] <- cellMeta(object, splitBy, as.data.frame = TRUE,
                                   drop = FALSE)
 
     if (!is.null(colorBy))
-        plotDF[,colorBy] <- cellMeta(object, colorBy, as.data.frame = TRUE,
-                                      drop = FALSE)
+        plotDF[,colorBy] <- .fetchCellMetaVar(object, colorBy,
+                                              checkCategorical = TRUE)
+        #plotDF[,colorBy] <- cellMeta(object, colorBy, as.data.frame = TRUE,
+        #                              drop = FALSE)
 
     plotDFList <- list()
     yParam <- list()
@@ -817,7 +821,8 @@ plotCellViolin <- function(
         # are specified
         layer <- ggplot2::scale_colour_gradient2(low = low, mid = mid,
                                                  high = high,
-                                                 midpoint = midPoint)
+                                                 midpoint = midPoint,
+                                                 na.value = naColor)
     } else if (!is.null(palette)) {
         # Otherwise, choose a palette based on non-NULL name
         if (palette %in% viridisOptions) {
@@ -832,9 +837,13 @@ plotCellViolin <- function(
         }
         else
             if (aesType == "colour")
-                layer <- ggplot2::scale_colour_distiller(palette = palette)
+                layer <- ggplot2::scale_colour_distiller(palette = palette,
+                                                         direction = direction,
+                                                         na.value = naColor)
             else
-                layer <- ggplot2::scale_fill_distiller(palette = palette)
+                layer <- ggplot2::scale_fill_distiller(palette = palette,
+                                                       direction = direction,
+                                                       na.value = naColor)
     }
     # When nothing set, return NULL. "+ NULL" on a ggplot object doesn't
     # change anything

@@ -691,7 +691,6 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
             subsetData$normPeak <- normPeak(object)[, cellIdx, drop = FALSE]
         }
     }
-
     if (isTRUE(returnObject)) {
         subsetData$modal <- modal
         return(do.call("createLigerDataset", subsetData))

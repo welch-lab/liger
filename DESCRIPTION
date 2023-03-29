@@ -72,6 +72,7 @@ Suggests:
     foreach,
     GenomicRanges,
     ggrepel,
+    gprofiler2,
     ica,
     IRanges,
     irlba,
@@ -89,6 +90,7 @@ Suggests:
     Seurat,
     SeuratObject,
     SingleCellExperiment,
+    singleseqgset,
     SummarizedExperiment,
     testthat
 Remotes:

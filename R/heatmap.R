@@ -79,6 +79,7 @@ plotGeneHeatmap <- function(
                  cellSplitVar = cellAnn$split,
                  featureSplitVar = featureAnn$split,
                  dataScaleFunc = dataScaleFunc,
+                 viridisOption = viridisOption,
                  ...)
 }
 
@@ -116,7 +117,8 @@ plotFactorHeatmap <- function(
                  featureDF = featureAnn$ann,
                  cellSplitVar = cellAnn$split,
                  featureSplitVar = featureAnn$split,
-                 viridisOption = "D", trim = trim,
+                 viridisOption = viridisOption,
+                 trim = trim,
                  ...)
 }
 
@@ -397,9 +399,14 @@ plotFactorHeatmap <- function(
 }
 
 .zScore <- function(x, trim = NULL) {
-    gmean <- rowMeansFast(x)
-    gvar <- rowVarsFast(x, gmean)
-    x <- as.matrix((x - gmean) / sqrt(gvar))
+    if (inherits(x, "dgCMatrix")) {
+        m <- rowMeansFast(x)
+        v <- rowVarsFast(x, m)
+    } else {
+        m <- rowMeans(x)
+        v <- rowVarsDense(x, m)
+    }
+    x <- (x - m) / sqrt(v)
     if (!is.null(trim)) {
         if (!is.numeric(trim) || length(trim) != 2)
             warning("`trim` must be a numeric vector of two values")

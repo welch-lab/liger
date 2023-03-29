@@ -55,12 +55,7 @@ runGSEA <- function(
     .checkValidFactorResult(object, useDatasets)
 
     # list of V matrices: gene x k
-    Vs <- getMatrix(object, "V", dataset = useDatasets)
-    if (length(useDatasets) == 1) {
-        # getMatrix directly returns the matrix when only one dataset
-        Vs <- list(Vs)
-        names(Vs) <- useDatasets
-    }
+    Vs <- getMatrix(object, "V", dataset = useDatasets, returnList = TRUE)
     # Get gene ranks in each factor
     geneLoading <- Reduce("+", Vs)
     if (isTRUE(useW)) geneLoading <- geneLoading + getMatrix(object, "W")
@@ -112,3 +107,79 @@ runGSEA <- function(
     names(gsea) <- paste0("Factor_", seq_along(gsea))
     return(gsea)
 }
+
+#' Run Gene Ontology enrichment analysis on metagenes
+#' @description
+#' This function forms genesets basing on the non-zero gene loading in each
+#' factor, and calls gene ontology (GO) analysis method provided by gprofiler2.
+#' @param object A \linkS4class{liger} object with valid factorization result.
+#' @param useW Logical, whether to consider shared gene loading value (i.e.
+#' \eqn{W} matrix) when forming the genesets. Default \code{TRUE}.
+#' @param useDatasets A character vector of the names, a numeric or logical
+#' vector of the index of the datasets where the gene loading need to be
+#' considered. Default \code{NULL} considers all datasets.
+#' @param sumLoading Logical, whether to sum up the gene loading from all
+#' considered datasets for each factor, or to query a geneset per factor and
+#' dataset. Default \code{TRUE}.
+#' @param ... Additional arguments passed to \code{\link[gprofiler2]{gost}}.
+#' @references Kolberg, L. et al, 2020 and Raudvere, U. et al, 2019
+#' @return A list object with the following entries
+#' \item{result}{data.frame of main GO analysis result.}
+#' \item{meta}{Meta information for the query.}
+#' @export
+#' @examples
+#' go <- runFactorGeneGO(pbmcPlot)
+#' head(go$result)
+runFactorGeneGO <- function(
+        object,
+        useW = TRUE,
+        useDatasets = NULL,
+        sumLoading = TRUE,
+        ...
+) {
+    if (!requireNamespace("gprofiler2", quietly = TRUE))
+        stop("Package \"gprofiler2\" needed for this function to work. ",
+             "Please install it by command:\n",
+             "install.packages('gprofiler2')",
+             call. = FALSE)
+    useDatasets <- .checkUseDatasets(object, useDatasets = useDatasets)
+    .checkValidFactorResult(object, useDatasets)
+
+    # list of V matrices: gene x k
+    geneLoading <- getMatrix(object, "V", dataset = useDatasets,
+                             returnList = TRUE)
+    k <- ncol(geneLoading[[1]])
+    # Get gene ranks in each factor
+    if (isTRUE(sumLoading)) {
+        geneLoading <- list(Reduce("+", geneLoading))
+    }
+
+    if (isTRUE(useW)) {
+        geneLoading <- lapply(geneLoading, function(v) {
+            v + getMatrix(object, "W")
+        })
+    }
+    genes <- rownames(geneLoading)
+    gsLists <- lapply(geneLoading, function(v) {
+        genes <- rownames(v)
+        gs <- lapply(seq_len(ncol(v)), function(j) {
+            genes <- genes[order(v[, j], decreasing = TRUE)]
+            genes[v[genes, j] > 0]
+        })
+        names(gs) <- colnames(v)
+        return(gs)
+    })
+    if (is.null(names(gsLists))) {
+        # Summing up loadings from all used datasets
+        gsLists <- gsLists[[1]]
+    } else {
+        prefix <- rep(names(gsLists), each = k)
+        gsLists <- Reduce(c, gsLists)
+        names(gsLists) <- paste0(prefix, "_", names(gsLists))
+    }
+    output <- gprofiler2::gost(query = gsLists, ...)
+    output$meta$query_metadata$useW <- useW
+    output$meta$query_metadata$sumLoading <- sumLoading
+    return(output)
+}
+
