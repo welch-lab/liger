@@ -44,6 +44,10 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
+      - name: Install hdf5 on Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get install libhdf5-dev
+
       - name: Install dependencies
         run: |
           install.packages(c("remotes", "rcmdcheck"))
