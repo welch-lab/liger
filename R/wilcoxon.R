@@ -159,7 +159,7 @@ runWilcoxon <- function(
 #' result <- getFactorMarkers(pbmcPlot, dataset1 = "ctrl", dataset2 = "stim")
 #' print(class(result))
 #' print(names(result))
-#' result$shared %>% group_by(factor_num) %>% top_n(2, log2fc)
+#' result$shared %>% group_by(factor_num) %>% top_n(2, logFC)
 getFactorMarkers <- function(
         object,
         dataset1,
@@ -304,32 +304,29 @@ getFactorMarkers <- function(
                              wilcoxResult$group == dataset1, "pval"]
         })
         # bind values in matrices
-        V1_matrices[[j]] <- Reduce(cbind, list(
-            rep(i, length(topGenesV1)), topGenesV1, log2fc[topGenesV1], pvals$V1
-        ))
-        V2_matrices[[j]] <- Reduce(cbind, list(
-            rep(i, length(topGenesV2)), topGenesV2, log2fc[topGenesV2], pvals$V2
-        ))
-        W_matrices[[j]] <- Reduce(cbind, list(
-            rep(i, length(topGenesW)), topGenesW, log2fc[topGenesW], pvals$W
-        ))
+        V1_matrices[[j]] <- data.frame(feature = topGenesV1,
+                                       factor_num = rep(i, length(topGenesV1)),
+                                       logFC = log2fc[topGenesV1],
+                                       pval = pvals$V1)
+        V2_matrices[[j]] <- data.frame(feature = topGenesV2,
+                                       factor_num = rep(i, length(topGenesV2)),
+                                       logFC = log2fc[topGenesV2],
+                                       pval = pvals$V2)
+        W_matrices[[j]] <- data.frame(feature = topGenesW,
+                                      factor_num = rep(i, length(topGenesW)),
+                                      logFC = log2fc[topGenesW],
+                                      pval = pvals$W)
     }
     if (isTRUE(verbose) && !isTRUE(printGenes)) cat("\n")
-    V1_genes <- data.frame(Reduce(rbind, V1_matrices), stringsAsFactors = FALSE)
-    V2_genes <- data.frame(Reduce(rbind, V2_matrices), stringsAsFactors = FALSE)
-    W_genes <- data.frame(Reduce(rbind, W_matrices), stringsAsFactors = FALSE)
-    df_cols <- c("factor_num", "gene", "log2fc", "p_value")
+    V1_genes <- Reduce(rbind, V1_matrices)
+    V2_genes <- Reduce(rbind, V2_matrices)
+    W_genes <- Reduce(rbind, W_matrices)
     outputList <- list(V1_genes, W_genes, V2_genes)
     outputList <- lapply(seq_along(outputList), function(x) {
         df <- outputList[[x]]
-        colnames(df) <- df_cols
-        df <- transform(df, factor_num = as.numeric(df$factor_num),
-                        gene = as.character(df$gene),
-                        log2fc = as.numeric(df$log2fc),
-                        p_value = as.numeric(df$p_value))
         # Cutoff only applies to dataset-specific dfs
         if (x != 2) {
-            df[which(df$p_value < pvalThresh), ]
+            df[which(df$pval < pvalThresh), ]
         } else {
             df
         }

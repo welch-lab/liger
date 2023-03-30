@@ -72,6 +72,7 @@ Suggests:
     foreach,
     GenomicRanges,
     ggrepel,
+    gprofiler2,
     ica,
     IRanges,
     irlba,

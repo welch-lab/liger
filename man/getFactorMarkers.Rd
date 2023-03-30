@@ -76,5 +76,5 @@ library(dplyr)
 result <- getFactorMarkers(pbmcPlot, dataset1 = "ctrl", dataset2 = "stim")
 print(class(result))
 print(names(result))
-result$shared \%>\% group_by(factor_num) \%>\% top_n(2, log2fc)
+result$shared \%>\% group_by(factor_num) \%>\% top_n(2, logFC)
 }

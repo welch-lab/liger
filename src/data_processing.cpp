@@ -9,7 +9,7 @@ using namespace arma;
 // [[Rcpp::export]]
 arma::sp_mat scaleNotCenterFast(arma::sp_mat x) {
   int nrow = x.n_rows, ncol = x.n_cols;
-  
+
   NumericVector sum_of_squares(ncol);
   for(arma::sp_mat::const_iterator i = x.begin(); i != x.end(); ++i)
   {
@@ -29,7 +29,7 @@ arma::sp_mat scaleNotCenterFast(arma::sp_mat x) {
 // [[Rcpp::export]]
 NumericVector rowMeansFast(arma::sp_mat x) {
   int nrow = x.n_rows, ncol = x.n_cols;
-  
+
   NumericVector means(nrow);
   for (int i = 0; i < nrow; ++i)
   {
@@ -49,17 +49,17 @@ NumericVector rowMeansFast(arma::sp_mat x) {
 // [[Rcpp::export]]
 NumericVector rowVarsFast(arma::sp_mat x, NumericVector means) {
   int nrow = x.n_rows, ncol = x.n_cols;
-  
+
   NumericVector vars(nrow);
   NumericVector nonzero_vals(nrow);
-  
+
   for(arma::sp_mat::const_iterator i = x.begin(); i != x.end(); ++i)
   {
-    vars(i.row()) += (*i-means(i.row()))*(*i-means(i.row())); 
+    vars(i.row()) += (*i-means(i.row()))*(*i-means(i.row()));
     nonzero_vals(i.row()) += 1;
   }
   // Add back square mean error for zero elements
-  // const_iterator only loops over nonzero elements 
+  // const_iterator only loops over nonzero elements
   for (int i = 0; i < nrow; ++i)
   {
     vars(i) += (ncol - nonzero_vals(i))*(means(i)*means(i));
@@ -71,17 +71,17 @@ NumericVector rowVarsFast(arma::sp_mat x, NumericVector means) {
 // [[Rcpp::export]]
 NumericVector sumSquaredDeviations(arma::sp_mat x, NumericVector means) {
   int nrow = x.n_rows, ncol = x.n_cols;
-  
+
   NumericVector ssd(nrow);
   NumericVector nonzero_vals(nrow);
-  
+
   for(arma::sp_mat::const_iterator i = x.begin(); i != x.end(); ++i)
   {
-    ssd(i.row()) += (*i-means(i.row()))*(*i-means(i.row())); 
+    ssd(i.row()) += (*i-means(i.row()))*(*i-means(i.row()));
     nonzero_vals(i.row()) += 1;
   }
   // Add back square mean error for zero elements
-  // const_iterator only loops over nonzero elements 
+  // const_iterator only loops over nonzero elements
   for (int i = 0; i < nrow; ++i)
   {
     ssd(i) += (ncol - nonzero_vals(i))*(means(i)*means(i));
@@ -89,3 +89,37 @@ NumericVector sumSquaredDeviations(arma::sp_mat x, NumericVector means) {
   return ssd;
 }
 
+//  [[Rcpp::export]]
+NumericMatrix denseZScore(NumericMatrix & x, NumericVector m){
+  int nrow = x.nrow(), ncol = x.ncol();
+  NumericVector v(nrow);
+  NumericVector nz(nrow);
+  NumericMatrix Z = clone(x);
+  NumericVector r(ncol);
+  for(int i = 0; i < nrow; i++){
+    r = Z(i, _);
+    for(NumericVector::iterator j = r.begin(); j != r.end(); ++j){
+      v(i) += (*j - m(i)) * (*j - m(i));
+    }
+    v(i) /= ncol - 1;
+    v(i) = sqrt(v(i));
+    for (NumericVector::iterator j = r.begin(); j != r.end(); ++j) {
+      *j -= m(i);
+      *j /= v(i);
+    }
+  }
+  return Z;
+}
+
+//  [[Rcpp::export]]
+NumericVector rowVarsDense(arma::mat x, arma::vec m) {
+  int nrow = x.n_rows;
+  int ncol = x.n_cols;
+  NumericVector out(nrow);
+  for (int i = 0; i < nrow; ++i) {
+    arma::rowvec row_i = x.row(i);
+    arma::vec diff = row_i.t() - m[i];
+    out(i) = arma::accu(arma::square(diff)) / (ncol - 1);
+  }
+  return out;
+}
