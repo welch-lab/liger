@@ -1,4 +1,4 @@
-![liger logo](https://github.com/mvfki/liger/raw/newObj/inst/extdata/logo.png)
+<img src="https://github.com/mvfki/liger/raw/newObj/inst/extdata/logo.png" width="120">
 
 [![R](https://github.com/mvfki/liger/actions/workflows/r.yml/badge.svg?branch=newObj)](https://github.com/mvfki/liger/actions/workflows/r.yml)[![codecov](https://codecov.io/gh/mvfki/liger/branch/newObj/graph/badge.svg?token=77TTU4GY8A)](https://codecov.io/gh/mvfki/liger)
 
