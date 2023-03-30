@@ -1,8 +1,6 @@
-[![R](https://github.com/mvfki/liger/actions/workflows/r.yml/badge.svg?branch=newObj)](https://github.com/mvfki/liger/actions/workflows/r.yml)
-
 <img src="img/liger_cropped.png" width="150">
 
-[![Build Status](https://api.travis-ci.com/welch-lab/liger.svg?branch=master)](https://api.travis-ci.com/welch-lab/liger.svg?branch=master)
+[![R](https://github.com/mvfki/liger/actions/workflows/r.yml/badge.svg?branch=newObj)](https://github.com/mvfki/liger/actions/workflows/r.yml)
 
 # LIGER (Linked Inference of Genomic Experimental Relationships)
 
