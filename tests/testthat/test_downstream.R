@@ -1,5 +1,42 @@
 data("pbmc", package = "rliger2")
 
+withNewH5Copy <- function(fun) {
+    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger2")
+    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger2")
+    if (!file.exists(ctrlpath.orig))
+        stop("Cannot find original h5 file at: ", ctrlpath.orig)
+    if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
+    if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
+    pwd <- getwd()
+    # Temp setting for GitHub Actions
+    if (Sys.info()["sysname"] == "Windows") {
+        pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents")
+    }
+
+    ctrlpath <- file.path(pwd, "ctrltest.h5")
+    stimpath <- file.path(pwd, "stimtest.h5")
+    cat("Working ctrl H5 file path: ", ctrlpath, "\n")
+    cat("Working stim H5 file path: ", stimpath, "\n")
+    file.copy(ctrlpath.orig, ctrlpath)
+    file.copy(stimpath.orig, stimpath)
+    if (!file.exists(ctrlpath))
+        stop("Cannot find copied h5 file at: ", ctrlpath)
+
+    fun(list(ctrl = ctrlpath, stim = stimpath))
+
+    if (file.exists(ctrlpath)) file.remove(ctrlpath)
+    if (file.exists(stimpath)) file.remove(stimpath)
+}
+
+closeH5Liger <- function(object) {
+    for (d in names(object)) {
+        if (isH5Liger(object, d)) {
+            h5file <- getH5File(object, d)
+            h5file$close()
+        }
+    }
+}
+
 process <- function(object, f = TRUE, q = TRUE) {
     object <- normalize(object)
     object <- selectGenes(object)

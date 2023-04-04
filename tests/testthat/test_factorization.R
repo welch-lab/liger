@@ -9,8 +9,15 @@ withNewH5Copy <- function(fun) {
     if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
     if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
     pwd <- getwd()
+    # Temp setting for GitHub Actions
+    if (Sys.info()["sysname"] == "Windows") {
+        pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents")
+    }
+
     ctrlpath <- file.path(pwd, "ctrltest.h5")
     stimpath <- file.path(pwd, "stimtest.h5")
+    cat("Working ctrl H5 file path: ", ctrlpath, "\n")
+    cat("Working stim H5 file path: ", stimpath, "\n")
     file.copy(ctrlpath.orig, ctrlpath)
     file.copy(stimpath.orig, stimpath)
     if (!file.exists(ctrlpath))
@@ -50,7 +57,7 @@ test_that("optimizeALS - in-memory", {
     pbmc <- scaleNotCenter(pbmc)
     expect_error(pbmc <- optimizeALS(pbmc, k = 5000),
                  "Select k lower than the number of variable genes: ")
-    pbmc <- optimizeALS(pbmc, k = 10, max.iters = 2)
+    pbmc <- optimizeALS(pbmc, k = 10, maxIter = 2)
     expect_no_error(.checkValidFactorResult(pbmc))
 })
 

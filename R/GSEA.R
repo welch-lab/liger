@@ -177,7 +177,7 @@ runFactorGeneGO <- function(
         gsLists <- Reduce(c, gsLists)
         names(gsLists) <- paste0(prefix, "_", names(gsLists))
     }
-    output <- gprofiler2::gost(query = gsLists, ...)
+    output <- gprofiler2::gost(query = gsLists, ...)#sdcustom_bg, domain_scope, ...)
     output$meta$query_metadata$useW <- useW
     output$meta$query_metadata$sumLoading <- sumLoading
     return(output)

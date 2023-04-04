@@ -610,7 +610,7 @@ subsetH5LigerDatasetToH5 <- function(
     if (!"scaleData" %in% useSlot) newH5Meta$scaleData <- NULL
     # New object construction ####
     newObj <- createH5LigerDataset(
-        h5file = filename,
+        h5file = filename, formatType = NULL,
         rawData = newH5Meta$rawData, normData = newH5Meta$normData,
         scaleData = newH5Meta$scaleData,
         barcodesName = newH5Meta$barcodesName,
@@ -620,6 +620,7 @@ subsetH5LigerDatasetToH5 <- function(
         modal = modal,
         featureMeta = featureMeta(object)[featureIdx, , drop = FALSE]
     )
+    h5fileInfo(newObj, info = "formatType") <- newH5Meta$formatType
     newObj@H <- object@H[, cellIdx, drop = FALSE]
     newObj@V <- object@V[scaleFeatureIdx, , drop = FALSE]
     newObj@A <- object@A

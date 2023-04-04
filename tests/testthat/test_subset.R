@@ -8,8 +8,15 @@ withNewH5Copy <- function(fun) {
     if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
     if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
     pwd <- getwd()
+    # Temp setting for GitHub Actions
+    if (Sys.info()["sysname"] == "Windows") {
+        pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents")
+    }
+
     ctrlpath <- file.path(pwd, "ctrltest.h5")
     stimpath <- file.path(pwd, "stimtest.h5")
+    cat("Working ctrl H5 file path: ", ctrlpath, "\n")
+    cat("Working stim H5 file path: ", stimpath, "\n")
     file.copy(ctrlpath.orig, ctrlpath)
     file.copy(stimpath.orig, stimpath)
     if (!file.exists(ctrlpath))
@@ -78,39 +85,42 @@ test_that("subsetH5LigerDataset", {
             )
             expect_true(hdf5r::is.h5file("ctrltest.h5.small.h5"))
             expect_warning(
-                subsetH5LigerDatasetToMem(letters),
+                rliger2:::subsetH5LigerDatasetToMem(letters),
                 "`object` is not a ligerDataset obejct."
             )
             expect_warning(
-                subsetH5LigerDatasetToMem(dataset(pbmc, "ctrl")),
+                rliger2:::subsetH5LigerDatasetToMem(dataset(pbmc, "ctrl")),
                 "`object` is not HDF5 based."
             )
-            valueList <- subsetH5LigerDatasetToMem(ctrl, 1:20, 1:20,
-                                                   returnObject = FALSE)
+            valueList <- rliger2:::subsetH5LigerDatasetToMem(
+                ctrl, 1:20, 1:20, returnObject = FALSE
+            )
             expect_is(valueList, "list")
 
             expect_warning(
-                subsetH5LigerDatasetToH5(letters),
+                rliger2:::subsetH5LigerDatasetToH5(letters),
                 "`object` is not a ligerDataset obejct."
             )
             expect_warning(
-                subsetH5LigerDatasetToH5(dataset(pbmc, "ctrl")),
+                rliger2:::subsetH5LigerDatasetToH5(dataset(pbmc, "ctrl")),
                 "`object` is not HDF5 based."
             )
             expect_no_error(
-                subsetH5LigerDatasetToH5(ctrl, 1:20, 1:20)
+                rliger2:::subsetH5LigerDatasetToH5(ctrl, 1:20, 1:20)
             )
 
-            ctrlSmallH5 <- subsetH5LigerDatasetToH5(ctrl, 1:20, 1:20,
-                                                    filenameSuffix = "small")
+            ctrlSmallH5 <- rliger2:::subsetH5LigerDatasetToH5(
+                ctrl, 1:20, 1:20, filenameSuffix = "small"
+            )
             expect_true(hdf5r::is.h5file("ctrltest.h5.small.h5"))
             expect_no_error(
-                subsetH5LigerDatasetToH5(ctrl, 1:20, 1:20, useSlot = "normData",
-                                         filenameSuffix = "small")
+                rliger2:::subsetH5LigerDatasetToH5(ctrl, 1:20, 1:20,
+                                                   useSlot = "normData",
+                                                   filenameSuffix = "small")
             )
             file.remove("ctrltest.h5.small.h5")
             expect_no_error(
-                subsetH5LigerDatasetToH5(ctrl, 1:20, 1:20,
+                rliger2:::subsetH5LigerDatasetToH5(ctrl, 1:20, 1:20,
                                          useSlot = "scaleData")
             )
             #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
