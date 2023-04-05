@@ -4,6 +4,7 @@
 ^travis_setup\.sh$
 ^_config\.yml$
 ^_pkgdown\.yml$
+^codecov\.yml$
 ^appveyor\.yml$
 \.png$
 ^vignettes/walkthrough_pbmc\.Rmd$
@@ -15,3 +16,4 @@
 \.rds$
 \.RDS$
 ^\.lintr$
+^\.github/*

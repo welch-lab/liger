@@ -10,16 +10,17 @@ withNewH5Copy <- function(fun) {
     if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
     pwd <- getwd()
     # Temp setting for GitHub Actions
+    fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
     if (Sys.info()["sysname"] == "Windows") {
-        pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents")
+        pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
     }
 
-    ctrlpath <- file.path(pwd, "ctrltest.h5")
-    stimpath <- file.path(pwd, "stimtest.h5")
+    ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
+    stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
     cat("Working ctrl H5 file path: ", ctrlpath, "\n")
     cat("Working stim H5 file path: ", stimpath, "\n")
-    file.copy(ctrlpath.orig, ctrlpath)
-    file.copy(stimpath.orig, stimpath)
+    file.copy(ctrlpath.orig, ctrlpath, copy.mode = TRUE)
+    file.copy(stimpath.orig, stimpath, copy.mode = TRUE)
     if (!file.exists(ctrlpath))
         stop("Cannot find copied h5 file at: ", ctrlpath)
 
@@ -307,4 +308,30 @@ test_that("H5 ligerDataset methods", {
             expect_warning(show(ctrl), "Link to HDF5 file fails.")
         }
     )
+})
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# class conversion
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+test_that("as.liger methods", {
+    # dgCMatrix
+    ctrlRaw <- rawDataList$ctrl
+    lig <- as.liger(ctrlRaw, sampleName = "ctrl")
+    expect_is(lig, "liger")
+
+    lig <- as.liger(ctrlRaw, sampleName = rep("ctrl", ncol(ctrlRaw)))
+    expect_is(lig, "liger")
+})
+
+test_that("as.ligerDataset methods", {
+    # ligerDataset
+    ctrlLD <- dataset(pbmc, "ctrl")
+    ld <- as.ligerDataset(ctrlLD)
+    expect_is(ld, "ligerDataset")
+    ld <- as.ligerDataset(ctrlLD, modal = "atac")
+    expect_is(ld, "ligerATACDataset")
+    expect_warning(ld <- as.ligerDataset(ld, modal = "rna"),
+                   "Will remove information in the following slots when ")
+    expect_is(ld, "ligerDataset")
 })

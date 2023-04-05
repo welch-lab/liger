@@ -52,19 +52,30 @@ jobs:
 
       - name: Install dependencies
         run: |
-          install.packages(c("remotes", "rcmdcheck"))
+          install.packages(c("remotes", "rcmdcheck", "covr"))
           remotes::install_deps(dependencies = TRUE)
         shell: Rscript {0}
 
-      - name: Check
-        run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "warning")
+      - name: Check on Unix
+        if: runner.os != 'Windows'
+        run: rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran", "--no-tests"), error_on = "warning")
         shell: Rscript {0}
 
-      - name: Run codecov
+      - name: Check on Windows
+        if: runner.os == 'Windows'
         run: |
-          install.packages("covr")
+          runas /user:administrator "R CMD check --no-manual --as-cran --no-tests"
+
+      - name: Run codecov on Unix
+        if: runner.os != 'Windows'
+        run: |
           covr::codecov()
         shell: Rscript {0}
+
+      - name: Run codecov on Windows
+        if: runner.os == 'Windows'
+        run: |
+          runas /user:administrator "Rscript -e 'covr::codecov()'"
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3

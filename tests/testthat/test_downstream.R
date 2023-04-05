@@ -9,16 +9,17 @@ withNewH5Copy <- function(fun) {
     if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
     pwd <- getwd()
     # Temp setting for GitHub Actions
+    fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
     if (Sys.info()["sysname"] == "Windows") {
-        pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents")
+        pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
     }
 
-    ctrlpath <- file.path(pwd, "ctrltest.h5")
-    stimpath <- file.path(pwd, "stimtest.h5")
+    ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
+    stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
     cat("Working ctrl H5 file path: ", ctrlpath, "\n")
     cat("Working stim H5 file path: ", stimpath, "\n")
-    file.copy(ctrlpath.orig, ctrlpath)
-    file.copy(stimpath.orig, stimpath)
+    file.copy(ctrlpath.orig, ctrlpath, copy.mode = TRUE)
+    file.copy(stimpath.orig, stimpath, copy.mode = TRUE)
     if (!file.exists(ctrlpath))
         stop("Cannot find copied h5 file at: ", ctrlpath)
 
@@ -146,6 +147,20 @@ test_that("wilcoxon", {
     expect_is(res3, "list")
     expect_identical(names(res3), c("ctrl", "shared", "stim", "num_factors_V1",
                                    "num_factors_V2"))
+
+    expect_error(runGOEnrich(res1, group = "a"),
+                 "Selected groups not available")
+    expect_error(runGOEnrich(res1, group = 0, orderBy = c("logFC", "pval")),
+                 "Only one `orderBy`")
+    expect_error(runGOEnrich(res1, orderBy = "score"),
+                 "`orderBy` should be one of")
+    go1 <- runGOEnrich(res1, group = 0, orderBy = "logFC", significant = FALSE)
+    expect_is(go1, "list")
+    expect_is(go1$result, "data.frame")
+    go2 <- runGOEnrich(res1, group = 0, orderBy = "pval", significant = FALSE)
+    expect_is(go2, "list")
+    expect_is(go2$result, "data.frame")
+
 })
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -163,11 +178,4 @@ test_that("gsea", {
         expect_is(runGSEA(pbmcPlot, genesets = "Immune System"), "list")
         expect_is(runGSEA(pbmcPlot, customGenesets = custom), "list")
     })
-
-    res1 <- runFactorGeneGO(pbmcPlot)
-    expect_identical(unique(res1$result$query), c("Factor_13", "Factor_19"))
-    res2 <- runFactorGeneGO(pbmcPlot, sumLoading = FALSE)
-    expect_identical(unique(res2$result$query),
-                     c("ctrl_Factor_13", "ctrl_Factor_19",
-                       "stim_Factor_13", "stim_Factor_19"))
 })

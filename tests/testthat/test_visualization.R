@@ -9,16 +9,17 @@ withNewH5Copy <- function(fun) {
     if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
     pwd <- getwd()
     # Temp setting for GitHub Actions
+    fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
     if (Sys.info()["sysname"] == "Windows") {
-        pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents")
+        pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
     }
 
-    ctrlpath <- file.path(pwd, "ctrltest.h5")
-    stimpath <- file.path(pwd, "stimtest.h5")
+    ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
+    stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
     cat("Working ctrl H5 file path: ", ctrlpath, "\n")
     cat("Working stim H5 file path: ", stimpath, "\n")
-    file.copy(ctrlpath.orig, ctrlpath)
-    file.copy(stimpath.orig, stimpath)
+    file.copy(ctrlpath.orig, ctrlpath, copy.mode = TRUE)
+    file.copy(stimpath.orig, stimpath, copy.mode = TRUE)
     if (!file.exists(ctrlpath))
         stop("Cannot find copied h5 file at: ", ctrlpath)
 
