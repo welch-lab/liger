@@ -402,7 +402,7 @@ plotProportionPie <- function(
                                      label = sprintf("%1.1f%%",
                                                      100*.data[["proportion"]]),
                                      width = .data[["proportion"]])) +
-        ggplot2::geom_tile(colour = "white", size = 0.3, height = 0.9) +
+        ggplot2::geom_tile(colour = "white", linewidth = 0.3, height = 0.9) +
         ggplot2::coord_polar()
     # Add class2 annotation
     class2fct <- droplevels(df[[class2]])

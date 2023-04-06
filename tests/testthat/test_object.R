@@ -335,3 +335,21 @@ test_that("as.ligerDataset methods", {
                    "Will remove information in the following slots when ")
     expect_is(ld, "ligerDataset")
 })
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Importing data
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+test_that("Importing data", {
+    expect_error(importDataset("hello"),
+                 "Requested dataset")
+    obj <- importDataset("bmmc")
+    expect_is(obj, "liger")
+    expect_is(obj@datasets[[1]], "ligerDataset")
+    expect_is(obj@datasets[[3]], "ligerATACDataset")
+    expect_equal(ncol(obj), 16710)
+    expect_warning(
+        obj <- importDataset("bmmc"),
+        "File already exists"
+    )
+})

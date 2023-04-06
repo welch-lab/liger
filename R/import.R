@@ -338,3 +338,82 @@ readLiger <- function(
         return(oldObj)
     }
 }
+
+#' Import prepared dataset publically available
+#' @param dataset Name of dataset, see available options with
+#' \code{names(.manifest)}.
+#' @param overwrite Logical, if a file exists at corresponding download
+#' location, whether to re-download or directly use this file. Default
+#' \code{FALSE}.
+#' @param dir Path to download datasets. Default \code{getwd()}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' @param ... Additional arguments passed to \code{\link{download.file}}
+#' @return \code{\linkS4class{liger}} object of specified dataset.
+#' @export
+#' @examples
+#' if (FALSE) {
+#'     pbmc <- importDataset("pbmc")
+#' }
+importDataset <- function(
+        dataset,
+        overwrite = FALSE,
+        dir = getwd(),
+        verbose = getOption("ligerVerbose"),
+        ...
+) {
+    if (!dataset %in% names(.manifest)) {
+        stop("Requested dataset \"", dataset, "\" not supported yet. \n",
+             "Available options: ", paste(names(.manifest), collapse = ", "))
+    }
+    fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
+
+    info <- .manifest[[dataset]]
+    url <- sapply(info, function(x) x$url)
+    dataNames <- names(info)
+    filenames <- sapply(info, function(x) x$filename)
+    modal <- sapply(info, function(x) x$modal)
+
+    # ATAC assay specific processing
+    # If non of them, peakURL and peakFilename should be empty lists
+    atacIdx <- modal == "atac"
+    peakURL <- sapply(info[atacIdx], function(x) x$peak$url)
+
+    peakFilename <- sapply(info[atacIdx], function(x) x$peak$filename)
+    peakFilename <- file.path(dir, peakFilename, fsep = fsep)
+    names(peakFilename) <- names(info[atacIdx])
+
+    filenames <- file.path(dir, filenames, fsep = fsep)
+
+    allURLs <- c(url, peakURL)
+    allFiles <- c(filenames, peakFilename)
+
+    doDownload <- rep(TRUE, length(allURLs))
+    for (i in seq_along(allURLs)) {
+        f <- allFiles[i]
+        if (file.exists(f) && isFALSE(overwrite)) {
+            warning("File already exists, skipped. set `overwrite = TRUE` ",
+                    "to force downloading: ", f)
+            doDownload[i] <- FALSE
+            next
+        }
+        if (isTRUE(verbose)) .log("Downloading from ", allURLs[i], " to ", f)
+    }
+    if (sum(doDownload) > 0) {
+        allURLs <- allURLs[doDownload]
+        allURLs <- unlist(allURLs)
+        utils::download.file(allURLs,
+                             destfile = allFiles[doDownload],
+                             mode = "w", quiet = !verbose, ...)
+    }
+
+    rawList <- lapply(filenames, readRDS)
+    names(rawList) <- dataNames
+    object <- createLiger(rawList, modal = modal, verbose = verbose)
+    for (i in which(atacIdx)) {
+        name <- names(object)[i]
+        rawPeak(object, dataset = name) <- readRDS(peakFilename[name])
+    }
+    return(object)
+}
+
