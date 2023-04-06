@@ -56,26 +56,19 @@ jobs:
           remotes::install_deps(dependencies = TRUE)
         shell: Rscript {0}
 
-      - name: Check on Unix
-        if: runner.os != 'Windows'
+      - name: Check
         run: rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran", "--no-tests"), error_on = "warning")
         shell: Rscript {0}
 
       - name: Check on Windows
         if: runner.os == 'Windows'
         run: |
-          runas /user:administrator "R CMD check --no-manual --as-cran --no-tests"
+          R CMD check --no-manual --as-cran --no-tests
 
-      - name: Run codecov on Unix
-        if: runner.os != 'Windows'
+      - name: Run codecov
         run: |
           covr::codecov()
         shell: Rscript {0}
-
-      - name: Run codecov on Windows
-        if: runner.os == 'Windows'
-        run: |
-          runas /user:administrator "Rscript -e 'covr::codecov()'"
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3

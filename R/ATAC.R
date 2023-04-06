@@ -26,6 +26,14 @@
 #' \code{rawPeak} to store the imputed peak counts, and \code{normPeak} for
 #' normalized imputed peak counts if \code{norm = TRUE}.
 #' @export
+#' @examples
+#' bmmc <- normalize(bmmc)
+#' bmmc <- selectGenes(bmmc)
+#' bmmc <- scaleNotCenter(bmmc)
+#' bmmc <- online_iNMF(bmmc, miniBatch_size = 80)
+#' bmmc <- quantileNorm(bmmc)
+#' bmmc <- normalizePeak(bmmc)
+#' bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
 imputeKNN <- function(
         object,
         reference,
@@ -49,11 +57,7 @@ imputeKNN <- function(
     if (is.null(getMatrix(object, "H.norm")))
         stop("Aligned factor loading has to be available for imputation. ",
              "Please run `quantileNorm()` in advance.")
-    if (isTRUE(verbose)) {
-        warning("This function will discard the rawData previously stored ",
-                "in the liger object and replace the `rawData` slot with the ",
-                "imputed data.", immediate. = TRUE)
-    }
+
     if (length(reference) > 1) {
         stop("Can only have ONE reference dataset")
     }
@@ -159,6 +163,18 @@ imputeKNN <- function(
 #' the gene and peak are not significantly linked.
 #' @seealso \code{\link{imputeKNN}}
 #' @export
+#' @examples
+#' bmmc <- normalize(bmmc)
+#' bmmc <- selectGenes(bmmc)
+#' bmmc <- scaleNotCenter(bmmc)
+#' bmmc <- online_iNMF(bmmc, miniBatch_size = 80)
+#' bmmc <- quantileNorm(bmmc)
+#' bmmc <- normalizePeak(bmmc)
+#' bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
+#' corr <- linkGenesAndPeaks(
+#'     bmmc, useDataset = "rna",
+#'     pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2")
+#' )
 linkGenesAndPeaks <- function(
         object,
         useDataset,

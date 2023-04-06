@@ -179,3 +179,27 @@ test_that("gsea", {
         expect_is(runGSEA(pbmcPlot, customGenesets = custom), "list")
     })
 })
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# ATAC
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+context("ATAC")
+data("bmmc")
+test_that("ATAC", {
+    bmmc <- normalize(bmmc)
+    bmmc <- selectGenes(bmmc)
+    bmmc <- scaleNotCenter(bmmc)
+    bmmc <- online_iNMF(bmmc, miniBatch_size = 80)
+    bmmc <- quantileNorm(bmmc)
+    bmmc <- normalizePeak(bmmc)
+    bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
+    expect_is(dataset(bmmc, "rna"), "ligerATACDataset")
+    corr <- linkGenesAndPeaks(
+        bmmc, useDataset = "rna",
+        pathToCoords = system.file("extdata/hg19_genes.bed",
+                                   package = "rliger2")
+    )
+    expect_is(corr, "dgCMatrix")
+})
+
