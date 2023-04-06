@@ -60,11 +60,6 @@ jobs:
         run: rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran", "--no-tests"), error_on = "warning")
         shell: Rscript {0}
 
-      - name: Check on Windows
-        if: runner.os == 'Windows'
-        run: |
-          R CMD check --no-manual --as-cran --no-tests
-
       - name: Run codecov
         run: |
           covr::codecov()
