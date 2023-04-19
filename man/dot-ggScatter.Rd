@@ -11,7 +11,7 @@
   colorBy = NULL,
   shapeBy = NULL,
   dotOrder = c("shuffle", "ascending", "descending"),
-  dotSize = 1,
+  dotSize = getOption("ligerDotSize"),
   dotAlpha = 0.9,
   trimHigh = NULL,
   trimLow = NULL,
@@ -38,7 +38,7 @@ variable (e.g. gene expression) where high values needs more
 highlight. \code{NULL} use default order.}
 
 \item{dotSize, dotAlpha}{Numeric, controls the size or transparency of all
-dots. Default \code{0.6} and \code{0.9}.}
+dots. Default \code{getOption("ligerDotSize")} (1) and \code{0.9}.}
 
 \item{trimHigh, trimLow}{Numeric, limit the largest or smallest value of
 continuous \code{colorBy} variable. Default \code{NULL}.}

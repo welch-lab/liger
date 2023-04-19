@@ -85,6 +85,7 @@
         cellIdx = NULL,
         checkCategorical = FALSE,
         drop = TRUE,
+        droplevels = TRUE,
         returnList = FALSE
 ) {
     df <- cellMeta(object, variables, cellIdx, as.data.frame = TRUE,
@@ -115,6 +116,14 @@
                  "categorical. Please use something else or try converting ",
                  "them to factor class to force passing checks.\n",
                  paste(notPassed, collapse = ", "))
+        }
+    }
+    for (v in colnames(df)) {
+        if (is.factor(df[[v]]) && isTRUE(droplevels)) {
+            df[[v]] <- droplevels(df[[v]])
+        }
+        if (is.character(df[[v]]) && isTRUE(checkCategorical)) {
+            df[[v]] <- factor(df[[v]])
         }
     }
     if (isTRUE(returnList)) {
@@ -357,4 +366,21 @@
         }
     }
     return(raster)
+}
+
+.checkArgLen <- function(arg, n, repN = TRUE, .stop = TRUE) {
+    argname <- deparse(substitute(arg))
+    if (!is.null(arg)) {
+        if (length(arg) == 1 && isTRUE(repN)) {
+            arg <- rep(arg, n)
+        }
+        if (length(arg) != n) {
+            if (isTRUE(.stop))
+                stop("`", argname, "` has to be a vector of length ", n)
+            else {
+                warning("`", argname, "` has to be a vector of length ", n)
+            }
+        }
+    }
+    return(arg)
 }

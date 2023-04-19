@@ -69,22 +69,14 @@ selectGenes <- function(
     datasets.use <- .checkUseDatasets(object, datasets.use)
     object <- recordCommand(object, dependencies = "hdf5r")
 
-    if (length(var.thresh) != 1 & length(var.thresh) != length(datasets.use))
-        stop("Wrong length of `var.thresh`. Use 1 or `length(object)` values.")
-    if (length(var.thresh) == 1)
-        var.thresh <- rep(var.thresh, length(datasets.use))
+    var.thresh <- .checkArgLen(var.thresh, length(datasets.use))
     datasets.involved <- datasets.use
 
     ## Checks for the same thing for unshared variable features ####
     if (isTRUE(unshared)) {
         unshared.datasets <- .checkUseDatasets(object, unshared.datasets)
-        if (length(unshared.thresh) != 1 &
-            length(unshared.thresh) != length(unshared.datasets))
-            stop("Wrong length of `unshared.thresh`. ",
-                 "Use 1 or `length(object)` values.")
-        if (length(unshared.thresh) == 1)
-            unshared.thresh <- rep(unshared.thresh, length(unshared.datasets))
-
+        unshared.thresh <- .checkArgLen(unshared.thresh,
+                                        length(unshared.datasets))
         datasets.involved <- unique(c(datasets.involved, unshared.datasets))
     } else unshared.datasets <- NULL
 

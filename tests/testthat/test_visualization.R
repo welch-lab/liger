@@ -154,9 +154,8 @@ test_that("ggplot themes", {
 context("Density plot")
 test_that("Density plot", {
     expect_gg(
-        expect_warning(plotDensityDimRed(pbmcPlot, splitBy = "dataset",
-                                         title = "one"),
-                       "Length of `title` does"),
+        expect_no_warning(plotDensityDimRed(pbmcPlot, splitBy = "dataset",
+                                            title = "one")),
         expect_warning(plotDensityDimRed(pbmcPlot, title = letters[1:3],
                                          dotRaster = TRUE),
                        "`title` has length greater than")

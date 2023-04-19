@@ -6,7 +6,7 @@
 #' @param useDimRed Name of the variable storing dimensionality reduction result
 #' in the \code{cellMeta} slot. Default \code{"UMAP"}.
 #' @param nLabel Integer, number of top genes to be shown with text labels.
-#' Default \code{12}.
+#' Default \code{15}.
 #' @param nPlot Integer, number of top genes to be shown in the loading rank
 #' plot. Default \code{30}.
 #' @param ... Additional plot theme setting arguments passed to
@@ -20,7 +20,7 @@ plotGeneLoadings <- function(
         markerTable,
         useFactor,
         useDimRed = "UMAP",
-        nLabel = 12,
+        nLabel = 15,
         nPlot = 30,
         ...
 ) {
@@ -43,7 +43,7 @@ plotGeneLoadingRank <- function(
         object,
         markerTable,
         useFactor,
-        nLabel = 12,
+        nLabel = 15,
         nPlot = 30,
         ...
 ) {
@@ -84,10 +84,13 @@ plotGeneLoadingRank <- function(
                              # The top gene annotation can be shown at a fixed
                              # position
                              xpos = seq(0, 1, length.out = length(sorted)),
-                             top_k = names(sorted) %in% topGenes)
+                             top_k = factor(names(sorted) %in% topGenes,
+                                            levels = c(TRUE, FALSE)))
+
         ylimTxt <- max(geneDF$loadings)
-        plotList[[i]] <- .ggScatter(geneDF, "xpos", "loadings",
-                            title = titles[i], ...) +
+        plotList[[i]] <- .ggScatter(geneDF, "xpos", "loadings", "top_k",
+                            title = titles[i], labelText = FALSE,
+                            colorValues = c("#8227A0", "black"), ...) +
             ggplot2::annotate(
                 "text",
                 x = 1.1,
@@ -101,7 +104,8 @@ plotGeneLoadingRank <- function(
                 axis.title.x = ggplot2::element_blank(),
                 axis.title.y = ggplot2::element_blank(),
                 panel.grid.major.x = ggplot2::element_blank(),
-                panel.grid.minor.x = ggplot2::element_blank()
+                panel.grid.minor.x = ggplot2::element_blank(),
+                legend.position = "none"
             ) +
             ggplot2::coord_cartesian(
                 xlim = c(0, 1),

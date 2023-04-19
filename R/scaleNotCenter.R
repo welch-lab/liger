@@ -125,3 +125,45 @@ scaleNotCenter <- function(
     colnames(scaled) <- colnames(norm.subset)
     return(scaled)
 }
+
+#' Create "scaled data" for DNA methylation datasets
+#' @description
+#' Because gene body mCH proportions are negatively correlated with gene
+#' expression level in neurons, we need to reverse the direction of the
+#' methylation data. We do this by simply subtracting all values from the
+#' maximum methylation value. The resulting values are positively correlated
+#' with gene expression. This will only be applied to variable genes detected in
+#' prior.
+#' @param object A \linkS4class{liger} object, with variable genes identified.
+#' @param useDatasets Required. A character vector of the names, a numeric or
+#' logical vector of the index of the datasets that should be identified as
+#' methylation data where the reversed data will be created.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' @return The input \linkS4class{liger} object, where the \code{scaleData} slot
+#' of the specified datasets will be updated with value as described in
+#' Description.
+#' @export
+#' @examples
+#' # Assuming the second dataset in example data "pbmc" is methylation data
+#' pbmc <- normalize(pbmc, useDatasets = 1)
+#' pbmc <- selectGenes(pbmc, datasets.use = 1)
+#' pbmc <- scaleNotCenter(pbmc, useDatasets = 1)
+#' pbmc <- reverseMethData(pbmc, useDatasets = 2)
+reverseMethData <- function(object, useDatasets,
+                            verbose = getOption("ligerVerbose")) {
+    useDatasets <- .checkUseDatasets(object, useDatasets)
+    if (is.null(varFeatures(object)) || length(varFeatures(object)) == 0) {
+        stop("Variable genes have to be identified first. ",
+             "Please run `selectGenes(object)`.")
+    }
+    for (d in useDatasets) {
+        ld <- dataset(object, d)
+        raw <- rawData(ld)
+        if (isTRUE(verbose)) .log("Substracting methylation data: ", d)
+        scaleData(ld, check = FALSE) <- max(raw) -
+            as.matrix(raw[varFeatures(object),])
+        datasets(object, check = FALSE)[[d]] <- ld
+    }
+    return(object)
+}

@@ -25,7 +25,7 @@
 #' @param thresh Convergence threshold. Convergence occurs when
 #' \eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-6}.
 #' @param maxIter Maximum number of block coordinate descent iterations to
-#' perform. Default \code{10}.
+#' perform. Default \code{30}.
 #' @param nrep Number of restarts to perform (iNMF objective function is
 #' non-convex, so taking the best objective from multiple successive
 #' initialization is recommended). For easier reproducibility, this increments
@@ -72,7 +72,7 @@ setGeneric(
         k,
         lambda = 5.0,
         thresh = 1e-6,
-        maxIter = 10,
+        maxIter = 30,
         nrep = 1,
         H.init = NULL,
         W.init = NULL,

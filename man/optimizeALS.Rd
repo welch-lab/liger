@@ -11,7 +11,7 @@ optimizeALS(
   k,
   lambda = 5,
   thresh = 1e-06,
-  maxIter = 10,
+  maxIter = 30,
   nrep = 1,
   H.init = NULL,
   W.init = NULL,
@@ -84,7 +84,7 @@ dataset-specific effects more strongly (i.e. alignment should increase as
 \eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-6}.}
 
 \item{maxIter}{Maximum number of block coordinate descent iterations to
-perform. Default \code{10}.}
+perform. Default \code{30}.}
 
 \item{nrep}{Number of restarts to perform (iNMF objective function is
 non-convex, so taking the best objective from multiple successive

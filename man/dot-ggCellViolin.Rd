@@ -17,7 +17,7 @@
   boxWidth = 0.4,
   dot = FALSE,
   dotColor = "black",
-  dotSize = 0.6,
+  dotSize = getOption("ligerDotSize"),
   raster = NULL,
   seed = 1,
   ...
@@ -40,7 +40,7 @@ Default \code{0.8}, \code{0.6}, respectively.}
 bounding box. Default \code{0.9} and \code{0.4}.}
 
 \item{dotColor, dotSize}{Numeric, globally controls the appearance of all
-dots. Default \code{"black"} and \code{0.6}.}
+dots. Default \code{"black"} and \code{getOption("ligerDotSize")} (1).}
 
 \item{raster}{Logical, whether to rasterize the dot plot. Default \code{NULL}
 automatically rasterizes the dot plot when number of total cells to be

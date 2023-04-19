@@ -158,14 +158,18 @@ normalizePeak <- function(
         # `d` is the name of each dataset
         if (isTRUE(verbose)) .log("Normalizing rawPeak counts in dataset: ", d)
         ld <- dataset(object, d)
-        if (inherits(rawPeak(ld), "dgCMatrix"))# |
+        if (inherits(rawPeak(ld), "dgCMatrix")) {
+            # |
             #inherits(rawPeak(ld), "dgTMatrix"))
-            normPeak(ld, check = FALSE) <- Matrix.column_norm(rawPeak(ld))
+            normed <- Matrix.column_norm(rawPeak(ld))
+            rownames(normed) <- rownames(rawPeak(ld))
+
+            normPeak(ld, check = FALSE) <- normed
         #else
         #    normPeak(ld, check = FALSE) <- sweep(x = rawPeak(ld), MARGIN = 2,
         #                                          STATS = colSums(rawPeak(ld)),
         #                                          FUN = "/")
-
+        }
         if (!is.null(scaleFactor))
             normPeak(ld, check = FALSE) <- normPeak(ld) * scaleFactor
         if (isTRUE(log))

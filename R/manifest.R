@@ -31,5 +31,17 @@
                 filename = "liger_BMMC_atac_D5T1_peak.rds"
             )
         )
+    ),
+    cge = list(
+        rna = list(
+            url = "https://figshare.com/ndownloader/files/40222699",
+            filename = "liger_CGE_rna.rds",
+            modal = "default"
+        ),
+        met = list(
+            url = "https://figshare.com/ndownloader/files/40222702",
+            filename = "liger_CGE_met.rds",
+            modal = "default"
+        )
     )
 )

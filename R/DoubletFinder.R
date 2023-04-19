@@ -43,21 +43,9 @@ runDoubletFinder <- function(
         stop("Seurat need to be installed")
     }
     useDatasets <- .checkUseDatasets(object, useDatasets = useDatasets)
-    if (length(nNeighbors) == 1) {
-        nNeighbors <- rep(nNeighbors, length(useDatasets))
-    }
-    if (length(nNeighbors) != length(useDatasets)) {
-        stop("`nNeighbors` should be a single value for all used datasets ",
-             "or an integer vector with number for each used dataset.")
-    }
+    nNeighbors <- .checkArgLen(nNeighbors, length(useDatasets), repN = TRUE)
     if (!is.null(nExp)) {
-        if (length(nExp) == 1) {
-            nExp <- rep(nExp, length(useDatasets))
-        }
-        if (length(nExp) != length(useDatasets)) {
-            stop("`nExp` should be a single value for all used datasets ",
-                 "or an integer vector with number for each used dataset.")
-        }
+        nExp <- .checkArgLen(nExp, length(useDatasets), repN = TRUE)
     } else {
         nExp <- sapply(useDatasets, function(d) {
             round(0.15 * ncol(dataset(object, d)))

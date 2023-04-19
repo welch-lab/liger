@@ -5,6 +5,7 @@
 \alias{plotDatasetDimRed}
 \alias{plotByDatasetAndCluster}
 \alias{plotGeneDimRed}
+\alias{plotPeakDimRed}
 \alias{plotFactorDimRed}
 \title{Generate Dimensionality Reduction Plot with Coloring}
 \usage{
@@ -26,6 +27,17 @@ plotByDatasetAndCluster(
 )
 
 plotGeneDimRed(
+  object,
+  features,
+  useDimRed = "UMAP",
+  log = TRUE,
+  scaleFactor = 10000,
+  zeroAsNA = TRUE,
+  colorPalette = "C",
+  ...
+)
+
+plotPeakDimRed(
   object,
   features,
   useDimRed = "UMAP",

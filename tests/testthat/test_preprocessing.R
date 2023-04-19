@@ -158,12 +158,12 @@ context("Select variable genes")
 test_that("selectGenes", {
     pbmc <- normalize(pbmc, useDatasets = 1)
     expect_error(selectGenes(pbmc, var.thresh = 1:3),
-                 "Wrong length of `var.thresh`.")
+                 "`var.thresh` has to be a vector of length 2")
     expect_warning(selectGenes(pbmc, var.thresh = 0.1),
                    "Dataset \"stim\" is not normalized, skipped")
     pbmc <- normalize(pbmc, useDatasets = 2)
     expect_error(selectGenes(pbmc, unshared = TRUE, unshared.thresh = 1:3),
-                 "Wrong length of `unshared.thresh`. ")
+                 "`unshared.thresh` has to be a vector of length 2")
 
     pbmc <- selectGenes(pbmc, unshared = TRUE, unshared.thresh = 0)
     expect_identical(dataset(pbmc, "ctrl")@varUnsharedFeatures, character())

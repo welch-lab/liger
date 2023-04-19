@@ -115,6 +115,31 @@ plotGeneDimRed <- function(
 
 #' @rdname plotDimRed
 #' @export
+plotPeakDimRed <- function(
+        object,
+        features,
+        useDimRed = "UMAP",
+        log = TRUE,
+        scaleFactor = 1e4,
+        zeroAsNA = TRUE,
+        colorPalette = "C",
+        ...
+) {
+    xVar <- paste0(useDimRed, ".1")
+    yVar <- paste0(useDimRed, ".2")
+    scaleFunc <- function(x) {
+        if (!is.null(scaleFactor)) x <- scaleFactor*x
+        if (isTRUE(log)) x <- log2(x + 1)
+        x
+    }
+    plotCellScatter(object, x = xVar, y = yVar, colorBy = features,
+                    slot = "normPeak", colorByFunc = scaleFunc,
+                    dotOrder = "ascending", zeroAsNA = zeroAsNA,
+                    colorPalette = colorPalette, ...)
+}
+
+#' @rdname plotDimRed
+#' @export
 plotFactorDimRed <- function(
         object,
         factors,
@@ -184,15 +209,6 @@ plotGeneViolin <- function(
         splitBy = splitBy,
         ...
     )
-
-    if (!is.null(splitBy)) {
-        datasetNames <- names(object)
-        plotTitles <- rep(datasetNames, length(gene))
-        for (i in seq_along(plotList)) {
-            plotList[[i]] <- plotList[[i]] +
-                ggplot2::ggtitle(paste0("Dataset: ", plotTitles[i]))
-        }
-    }
 
     return(plotList)
 }

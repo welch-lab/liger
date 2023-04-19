@@ -346,6 +346,9 @@ readLiger <- function(
 #' location, whether to re-download or directly use this file. Default
 #' \code{FALSE}.
 #' @param dir Path to download datasets. Default \code{getwd()}.
+#' @param method \code{method} argument directly passed to
+#' \code{\link[utils]{download.file}}. Using \code{"libcurl"} while other
+#' options might not work depending on platform.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param ... Additional arguments passed to \code{\link{download.file}}
@@ -353,12 +356,13 @@ readLiger <- function(
 #' @export
 #' @examples
 #' if (FALSE) {
-#'     pbmc <- importDataset("pbmc")
+#'     pbmc <- importVignetteData("pbmc")
 #' }
-importDataset <- function(
+importVignetteData <- function(
         dataset,
         overwrite = FALSE,
         dir = getwd(),
+        method = "libcurl",
         verbose = getOption("ligerVerbose"),
         ...
 ) {
@@ -404,7 +408,8 @@ importDataset <- function(
         allURLs <- unlist(allURLs)
         utils::download.file(allURLs,
                              destfile = allFiles[doDownload],
-                             mode = "w", quiet = !verbose, ...)
+                             mode = "w", quiet = !verbose, method = method,
+                             ...)
     }
 
     rawList <- lapply(filenames, readRDS)

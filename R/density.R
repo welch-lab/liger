@@ -77,11 +77,7 @@ plotDensityDimRed <- function(
     if (!is.null(splitVar) && ncol(splitVar) > 0) {
         # Will be splitting into subplots
         drList <- split(dr, splitVar)
-        if (!is.null(title) && length(title) != length(drList)) {
-            warning("Length of `title` does not match to number of categories ",
-                    "identified from `splitBy`. Using default titles. ")
-            title <- NULL
-        }
+        title <- .checkArgLen(title, length(drList), .stop = FALSE)
     } else {
         # Will return a single ggplot
         if (length(title) > 1) {

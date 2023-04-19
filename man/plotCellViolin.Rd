@@ -10,8 +10,10 @@ plotCellViolin(
   groupBy = NULL,
   slot = c("cellMeta", "rawData", "normData", "scaleData", "H.norm", "H"),
   yFunc = NULL,
+  cellIdx = NULL,
   colorBy = NULL,
   splitBy = NULL,
+  titles = NULL,
   ...
 )
 }
@@ -33,9 +35,16 @@ retrieved by \code{y} as the only input, and returns an object of the same
 size, so that the y-axis is replaced by this output. Useful when, for
 example, users need to scale the gene expression shown on plot.}
 
+\item{cellIdx}{Character, logical or numeric index that can subscribe cells.
+Missing or \code{NULL} for all cells.}
+
 \item{splitBy}{Character vector of categorical variable names in
 \code{cellMeta} slot. Split all cells by groupings on this/these variable(s)
 to produce a violin plot containing only the cells in each group. Default
+\code{NULL}.}
+
+\item{titles}{Title text. A character scalar or a character vector with as
+many elements as multiple plots are supposed to be generated. Default
 \code{NULL}.}
 
 \item{...}{More plot setting arguments. See \code{\link{.ggCellViolin}} and

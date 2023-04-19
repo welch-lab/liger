@@ -22,7 +22,8 @@ NULL
 
 .ligerOptions <- list(
     ligerBaseSize = 10,
-    ligerVerbose = TRUE
+    ligerVerbose = TRUE,
+    ligerDotSize = 1
 )
 
 .onLoad <- function(libname, pkgname) {

@@ -148,7 +148,8 @@ retrieveCellFeature <- function(
         object,
         feature,
         slot = c("rawData", "normData", "scaleData",
-                 "H", "H.norm", "cellMeta"),
+                 "H", "H.norm", "cellMeta",
+                 "rawPeak", "normPeak"),
         cellIdx = NULL,
         ...
 ) {
@@ -183,6 +184,33 @@ retrieveCellFeature <- function(
         value <- as.data.frame(t(value[feature, cellIdx, drop = FALSE]))
     } else if (slot == "H.norm") {
         value <- getMatrix(object, "H.norm")[cellIdx, feature, drop = FALSE]
+    } else if (endsWith(slot, "Peak")) {
+        if (length(cellIdx) != ncol(object)) {
+            object <- subsetLiger(object, cellIdx = cellIdx)
+        }
+        value <- lapply(names(object), function(d) {
+            ld <- dataset(object, d)
+            value <- lapply(feature, function(x) rep(NA, ncol(ld)))
+            value <- data.frame(value, row.names = colnames(ld))
+            colnames(value) <- feature
+            if (!inherits(ld, "ligerATACDataset")) {
+                warning("Dataset ", d, " is not of ATAC modality, returning ",
+                        "NAs for cells belonging to this dataset.",
+                        immediate. = TRUE)
+                return(value)
+            } else {
+                peak <- methods::slot(ld, slot)
+                if (any(!feature %in% rownames(peak))) {
+                    nf <- feature[!feature %in% rownames(peak)]
+                    warning("Specified feature not found in dataset ", d,
+                            ", returning NAs.", immediate. = TRUE)
+                    feature <- feature[feature %in% rownames(peak)]
+                }
+                value[,feature] <- peak[feature, ]
+                return(value)
+            }
+        })
+        value <- Reduce(rbind, value)
     } else {
         value <- cellMeta(object, feature, cellIdx = cellIdx,
                            as.data.frame = TRUE, drop = FALSE)

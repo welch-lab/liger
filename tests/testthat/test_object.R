@@ -341,15 +341,15 @@ test_that("as.ligerDataset methods", {
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 test_that("Importing data", {
-    expect_error(importDataset("hello"),
+    expect_error(importVignetteData("hello"),
                  "Requested dataset")
-    obj <- importDataset("bmmc")
+    obj <- importVignetteData("bmmc", method = "libcurl")
     expect_is(obj, "liger")
     expect_is(obj@datasets[[1]], "ligerDataset")
     expect_is(obj@datasets[[3]], "ligerATACDataset")
     expect_equal(ncol(obj), 16710)
     expect_warning(
-        obj <- importDataset("bmmc"),
+        obj <- importVignetteData("bmmc"),
         "File already exists"
     )
 })

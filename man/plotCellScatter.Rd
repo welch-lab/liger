@@ -9,10 +9,13 @@ plotCellScatter(
   x,
   y,
   colorBy = NULL,
-  slot = c("cellMeta", "rawData", "normData", "scaleData", "H.norm", "H"),
+  slot = c("cellMeta", "rawData", "normData", "scaleData", "H.norm", "H", "normPeak",
+    "rawPeak"),
   colorByFunc = NULL,
+  cellIdx = NULL,
   splitBy = NULL,
   shapeBy = NULL,
+  titles = NULL,
   ...
 )
 }
@@ -35,6 +38,9 @@ returns an object of the same size, so that the all color "aes" are replaced
 by this output. Useful when, for example, users need to scale the gene
 expression shown on plot.}
 
+\item{cellIdx}{Character, logical or numeric index that can subscribe cells.
+Missing or \code{NULL} for all cells.}
+
 \item{splitBy}{Character vector of categorical variable names in
 \code{cellMeta} slot. Split all cells by groupings on this/these variable(s)
 to produce a scatter plot containing only the cells in each group. Default
@@ -42,6 +48,10 @@ to produce a scatter plot containing only the cells in each group. Default
 
 \item{shapeBy}{Available variable name in \code{cellMeta} slot to look for
 categorical annotation to be reflected by dot shapes. Default \code{NULL}.}
+
+\item{titles}{Title text. A character scalar or a character vector with as
+many elements as multiple plots are supposed to be generated. Default
+\code{NULL}.}
 
 \item{...}{More plot setting arguments. See \code{\link{.ggScatter}} and
 \code{\link{.ggplotLigerTheme}}.}
