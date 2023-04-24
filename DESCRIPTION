@@ -65,6 +65,7 @@ Imports:
     viridis
 Suggests:
     AnnotationDbi,
+    DESeq2,
     doParallel,
     DoubletFinder,
     EnhancedVolcano,

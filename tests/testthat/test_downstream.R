@@ -163,6 +163,126 @@ test_that("wilcoxon", {
 
 })
 
+test_that("pseudo bulk", {
+    expect_error(runPseudoBulkDEG("hey"), "Please use a `liger` object.")
+
+    rawData(datasets(pbmcPlot)[[1]]) <- rawData(dataset(pbmc, 1))
+    rawData(datasets(pbmcPlot)[[2]]) <- rawData(dataset(pbmc, 2))
+    expect_error(runPseudoBulkDEG(pbmcPlot, comparison = 1:10),
+                 "Please use a named list for `comparison`")
+    expect_error(runPseudoBulkDEG(pbmcPlot,
+                                  comparison = list(1)),
+                 "Please use 2 elements in `comparison` list")
+    # Auto naming when un-named comparison group
+    expect_message(
+        res <- runPseudoBulkDEG(
+            pbmcPlot,
+            comparison = list(
+                pbmcPlot$leiden_cluster == 1,
+                pbmcPlot$leiden_cluster == 2
+            )
+        ),
+        "Generating pseudo-bulks for condition \"group1\""
+    )
+    expect_is(res, "data.frame")
+
+    res <- runPseudoBulkDEG(
+        pbmcPlot,
+        comparison = list(
+            pbmcPlot$leiden_cluster == 1,
+            pbmcPlot$leiden_cluster == 2
+        ),
+        useCellMetaVar = "dataset"
+    )
+    expect_is(res, "data.frame")
+
+    expect_error(
+        res <- runPseudoBulkDEG(
+            pbmcPlot,
+            comparison = list(
+                c1 = pbmcPlot$leiden_cluster == 1,
+                c2 = pbmcPlot$leiden_cluster == 2
+            ),
+            replicateAnn = list()
+        ),
+        "Please use a `data.frame` or a `factor` to specify replicate "
+    )
+
+    ann <- cellMeta(pbmcPlot, "dataset", as.data.frame = TRUE, drop = FALSE)
+
+    ann1 <- data.frame(v1 = ann$dataset)
+    expect_error(
+        res <- runPseudoBulkDEG(
+            pbmcPlot,
+            comparison = list(
+                c1 = pbmcPlot$leiden_cluster == 1,
+                c2 = pbmcPlot$leiden_cluster == 2
+            ),
+            replicateAnn = ann1
+        ),
+        "Not all cells involved in `comparison` are annotated in "
+    )
+
+    ann2 <- ann$dataset
+    expect_no_error(
+        runPseudoBulkDEG(
+            pbmcPlot,
+            comparison = list(
+                c1 = pbmcPlot$leiden_cluster == 1,
+                c2 = pbmcPlot$leiden_cluster == 2
+            ),
+            replicateAnn = ann2
+        )
+    )
+
+    expect_error(
+        runPseudoBulkDEG(
+            pbmcPlot,
+            comparison = list(
+                c1 = pbmcPlot$leiden_cluster == 1,
+                c2 = pbmcPlot$leiden_cluster == 2
+            ),
+            replicateAnn = ann2[pbmcPlot$leiden_cluster == 1]
+        ),
+        "Unable to format replicate annotation with given"
+    )
+
+    ann3 <- ann2
+    names(ann3) <- colnames(pbmcPlot)
+    expect_no_error(
+        runPseudoBulkDEG(
+            pbmcPlot,
+            comparison = list(
+                c1 = pbmcPlot$leiden_cluster == 1,
+                c2 = pbmcPlot$leiden_cluster == 2
+            ),
+            replicateAnn = ann3[pbmcPlot$leiden_cluster %in% 1:3]
+        )
+    )
+    expect_error(
+        runPseudoBulkDEG(
+            pbmcPlot,
+            comparison = list(
+                c1 = pbmcPlot$leiden_cluster == 1,
+                c2 = pbmcPlot$leiden_cluster == 2
+            ),
+            replicateAnn = ann3[pbmcPlot$leiden_cluster == 1]
+        ),
+        "Missing cells: ctrl_AAGGCTTGGTTCGA.1"
+    )
+
+    expect_warning(
+        runPseudoBulkDEG(
+            pbmcPlot,
+            comparison = list(
+                c1 = pbmcPlot$leiden_cluster == 1 & pbmcPlot$dataset == "ctrl",
+                c2 = pbmcPlot$leiden_cluster == 0 & pbmcPlot$dataset == "stim"
+            ),
+            useCellMetaVar = "dataset"
+        ),
+        "will not create pseudo-bulks but test at single cell level"
+    )
+})
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # GSEA
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

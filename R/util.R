@@ -384,3 +384,10 @@
     }
     return(arg)
 }
+
+# Format "not found" string. When we need `need` elements from some source
+# `from` format the string of ", " separeted list of not found elements.
+.nfstr <- function(need, from) {
+    nf <- need[!need %in% from]
+    paste(nf, collapse = ", ")
+}

@@ -9,10 +9,12 @@ reference:
   - readLiger
   - read10X
   - restoreH5Liger
+  - importVignetteData
   - as.ligerDataset
   - as.liger
   - pbmc
   - pbmcPlot
+  - bmmc
 - title: "Preprocessing"
 - contents:
   - runGeneralQC
@@ -20,7 +22,9 @@ reference:
   - normalize
   - selectGenes
   - scaleNotCenter
+  - reverseMethData
   - downsample
+  - runDoubletFinder
 - title: "Factorization"
 - contents:
   - starts_with("optimize")
@@ -35,8 +39,10 @@ reference:
   - runLeidenCluster
   - runLouvainCluster
   - runWilcoxon
+  - runPseudoBulkDEG
   - getFactorMarkers
   - runGSEA
+  - runGOEnrich
   - imputeKNN
   - linkGenesAndPeaks
   - exportInteractTrack
