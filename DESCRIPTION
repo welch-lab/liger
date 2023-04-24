@@ -84,7 +84,6 @@ Suggests:
     plotly,
     psych,
     reactome.db,
-    reticulate,
     riverplot,
     rmarkdown,
     scattermore (>= 0.7),

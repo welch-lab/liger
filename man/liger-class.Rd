@@ -131,7 +131,7 @@ varFeatures(x, check = TRUE) <- value
 
 \S4method{varFeatures}{liger,ANY,character}(x, check = TRUE) <- value
 
-\method{fortify}{liger}(x)
+\method{fortify}{liger}(model, data, ...)
 
 \method{c}{liger}(...)
 
@@ -158,7 +158,7 @@ commands(x, funcName = NULL, arg = NULL)
 \S4method{getH5File}{liger,ANY}(x, dataset = NULL)
 }
 \arguments{
-\item{x, object}{A \linkS4class{liger} object}
+\item{x, object, model}{A \linkS4class{liger} object}
 
 \item{value}{Check detail sections for requirements.}
 
@@ -191,6 +191,8 @@ specify what type the matrix is. Choose from \code{"rawData"},
 \code{\link[base]{as.data.frame}} on the subscription. Default \code{FALSE}.}
 
 \item{name}{The name of available variables in \code{cellMeta} slot.}
+
+\item{data}{fortify method required argument. Not used.}
 
 \item{funcName, arg}{See Command records section.}
 

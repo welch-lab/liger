@@ -140,7 +140,7 @@ is.newLiger <- function(object) {
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Base Generic Methods ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#' @param x,object A \linkS4class{liger} object
+#' @param x,object,model A \linkS4class{liger} object
 #' @param dataset Name or numeric index of a dataset
 #' @param value Check detail sections for requirements.
 #' @param type When using \code{dataset<-} with a matrix like \code{value},
@@ -165,6 +165,7 @@ is.newLiger <- function(object) {
 #' dataset-specific matrix (i.e. expression matrices, H, V or U) is requested.
 #' Default \code{FALSE}.
 #' @param funcName,arg See Command records section.
+#' @param data fortify method required argument. Not used.
 #' @param ... See detailed sections for explanation.
 #' @return See detailed sections for explanetion.
 #' @export
@@ -748,9 +749,9 @@ setReplaceMethod(
 #' @rdname liger-class
 #' @export
 #' @method fortify liger
-fortify.liger <- function(x) {
-    df <- cellMeta(x, as.data.frame = TRUE)
-    if (!is.null(x@H.norm)) df <- cbind(df, x@H.norm)
+fortify.liger <- function(model, data, ...) {
+    df <- cellMeta(model, as.data.frame = TRUE)
+    if (!is.null(model@H.norm)) df <- cbind(df, model@H.norm)
     df
 }
 
