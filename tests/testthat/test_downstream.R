@@ -25,8 +25,8 @@ withNewH5Copy <- function(fun) {
 
     fun(list(ctrl = ctrlpath, stim = stimpath))
 
-    if (file.exists(ctrlpath)) file.remove(ctrlpath)
-    if (file.exists(stimpath)) file.remove(stimpath)
+    if (file.exists(ctrlpath)) unlink(ctrlpath)
+    if (file.exists(stimpath)) unlink(stimpath)
 }
 
 closeH5Liger <- function(object) {

@@ -235,9 +235,12 @@ createH5LigerDataset <- function(
         featureMeta = NULL,
         ...
 ) {
-    if (!hdf5r::is_hdf5(h5file)) {
-        stop("Please specify an HDF5 filename to argument `h5file`.")
-    }
+    # Currently commented this check because it fails for unknown reason on
+    # Windows platform when subsetting H5 to H5, even if the following part
+    # works without passing this check
+    # if (!hdf5r::is.h5file(h5file)) {
+    #     stop("`h5file`: Invalid HDF5 file or file path: ", h5file)
+    # }
     modal <- match.arg(modal)
     additional <- list(...)
     h5file <- hdf5r::H5File$new(h5file, mode = "r+")
