@@ -172,7 +172,7 @@ test_that("pseudo bulk", {
                  "Please use a named list for `comparison`")
     expect_error(runPseudoBulkDEG(pbmcPlot,
                                   comparison = list(1)),
-                 "Please use 2 elements in `comparison` list")
+                 "Please use at least 2 elements in `comparison` list")
     # Auto naming when un-named comparison group
     expect_message(
         res <- runPseudoBulkDEG(

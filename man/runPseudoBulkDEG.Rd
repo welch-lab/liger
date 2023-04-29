@@ -7,6 +7,7 @@
 runPseudoBulkDEG(
   object,
   comparison,
+  method = c("DESeq2", "limma", "edgeR"),
   useCellMetaVar = NULL,
   replicateAnn = NULL,
   nRep = 5,
@@ -20,6 +21,9 @@ runPseudoBulkDEG(
 \item{comparison}{A named list with two elements, where each is a vector of
 valid cell specification (numeric or logical indexing should be based on the
 whole object).}
+
+\item{method}{Choose from \code{"DESeq2"}, \code{"limma"} or \code{"edgeR"}.
+Default \code{"DESeq2"}}
 
 \item{useCellMetaVar}{Name(s) of \code{cellMeta} variable that specify the
 replicate annotation. Default \code{NULL}.}

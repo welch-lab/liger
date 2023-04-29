@@ -187,7 +187,7 @@ as.ligerDataset.matrix <- function(
         ...
 ) {
     modal <- match.arg(modal)
-    object <- as(object, "CsparseMatrix")
+    object <- methods::as(object, "CsparseMatrix")
     createLigerDataset(object, modal, ...)
 }
 

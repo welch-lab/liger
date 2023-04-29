@@ -136,7 +136,7 @@ runGeneralQC.h5 <- function(
         FUN = function(chunk, sparseXIdx, cellIdx, values) {
             nUMI <- colSums(chunk)
             values$cell$nUMI[cellIdx] <- nUMI
-            nonzero <- as(chunk, "lMatrix")
+            nonzero <- methods::as(chunk, "lMatrix")
             values$cell$nGene[cellIdx] <- colSums(nonzero)
             for (fs in names(rowIndices)) {
                 values$cell[[fs]][cellIdx] <-
@@ -163,7 +163,7 @@ runGeneralQC.Matrix <- function(
     # matrix, keep it sparse with 1 for TRUE
     # nonzero <- rawData(object)
     # nonzero@x <- rep(1, length(nonzero@x))
-    nonzero <- as(rawData(object), "lMatrix")
+    nonzero <- methods::as(rawData(object), "lMatrix")
     nGene <- Matrix::colSums(nonzero)
     nCell <- Matrix::rowSums(nonzero)
     results <- data.frame(nUMI = nUMI, nGene = nGene,
