@@ -1,130 +1,122 @@
 ---
 title: "UINMF integration of Dual-omics data"
 author: "April Kriebel and Joshua Welch"
-date: "12/03/2021"
+date: "04/25/2023"
 output: html_document
 ---
-# Data integration
-Here we integrate the scATAC and scRNA reads from the dual-omics dataset SNARE-seq as an illustration of how UINMF can be used to integrate cross-modality data.
+
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-library(rliger)
-library(Seurat)
-library(stringr)
-rna = readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Vignette/SNARE_seqvig/SNAREseq_RNA.RDS")
-shared_atac = readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Vignette/SNARE_seqvig/SNAREseq_chromatin_accessibility_shared.RDS")
-unshared_atac = readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Vignette/SNARE_seqvig/SNARE_seq_unshared_chromatin_features.RDS")
-
-```
-```{r eval = FALSE}
-install.packages('devtools')
-library(devtools)
-install_github('welch-lab/liger')
-library(rliger)
-library(Seurat)
-library(stringr)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
-## Step 1: Download the data
+Here we integrate the scATAC and scRNA reads from the dual-omics dataset SNARE-seq as an illustration of how UINMF can be used to integrate cross-modality data.
+
+## 1. Download the data
+
 First, read in your datasets. For this tutorial, we will use three matrices, which can all be downloaded at https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0 .
 
-The transcriptomic measures (SNAREseq_RNA.RDS) is the SNARE-seq scRNA dataset (31,367 genes by 10,309 cells).
+The transcriptomic measures `SNAREseq_RNA.RDS` is the SNARE-seq scRNA dataset (31,367 genes by 10,309 cells).
 
-For the shared epigenomic features (SNARE_seq_shared_chromatin_features.RDS), we create a gene-centric matrix, such that we sum of the number of accessibiltiy peaks that occur over the gene body and promoter regions for each gene. For a detailed walkthough of how to generate such a matrix, please see our 'Integrating scRNA and scATAC data vignette ( http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/Integrating_scRNA_and_scATAC_data.html ). The resulting matrix of gene-centric chromatin accessibility is 22,379 genes by 10,309 cells
+For the shared epigenomic features `SNARE_seq_shared_chromatin_features.RDS`, we create a gene-centric matrix, such that we sum of the number of accessibiltiy peaks that occur over the gene body and promoter regions for each gene. For a detailed walkthough of how to generate such a matrix, please see our [Integrating scRNA and scATAC data vignette](Integrating_scRNA_and_scATAC_data.html). The resulting matrix of gene-centric chromatin accessibility is 22,379 genes by 10,309 cells
 
-For the unshared epigenomic features, we binned the genome into bins of 100,000 bp, and summed the number of peaks occuring in each bin. We then filtered this matrix for all bins that overlapped with ENCODE Blacklist regions, ,genes, and promoters. Our filtered matrix (SNARE_seq_unshared_chromatin_features.RDS) is 10,309 cells by 7,437 bins.
+For the unshared epigenomic features, we binned the genome into bins of 100,000 bp, and summed the number of peaks occuring in each bin. We then filtered this matrix for all bins that overlapped with ENCODE Blacklist regions, ,genes, and promoters. Our filtered matrix `SNARE_seq_unshared_chromatin_features.RDS` is 10,309 cells by 7,437 bins.
 
-
-```{r eval = FALSE}
-rna = readRDS("SNAREseq_RNA.RDS")
-shared_atac = readRDS("SNARE_seqvig/SNAREseq_chromatin_accessibility_shared.RDS")
-unshared_atac = readRDS("SNARE_seq_unshared_chromatin_features.RDS")
+```{r}
+library(rliger2)
+rna <- readRDS("SNAREseq_RNA.RDS")
+atac_shared <- readRDS("SNAREseq_chromatin_accessibility_shared.RDS")
+atac_unshared <- readRDS("SNARE_seq_unshared_chromatin_features.RDS")
 ```
 
-## Step 2: Selecting the unshared features
-When selecting unshared features for the UINMF integration, it is critical to consider the type of data you are working with. For unshared features that gene-centric, the user should follow the feature selection process outlined in the 'Integrating unshared features with UINMF' tutorial ( http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/UINMF_vignette.html ).
-However, when dealing with features that are not gene-centric (as is the case with our binned intergenic peak counts), we must select the most variable features using an appropriate method. Here, we opt to use Seurat's `FindVariableFeatures` function.
+## 2. Selecting the unshared features
+
+When selecting unshared features for the UINMF integration, it is critical to consider the type of data you are working with. For unshared features that gene-centric, the user should follow the feature selection process outlined in the ['Integrating unshared features with UINMF' tutorial](UINMF_vignette.html).
+
+However, when dealing with features that are **not gene-centric** (as is the case with our binned intergenic peak counts), we must select the most variable features using an appropriate method. Here, we opt to use Seurat's `FindVariableFeatures()` function.
+
 First, we normalize the unshared features:
 
-```{r normunshared, warnings = FALSE}
-liger <- createLiger(list(peaks = unshared_atac))
-liger <- normalize(liger)
-norm <- liger@norm.data$peaks
+```{r normunshared}
+unshareNormed <- normalize(atac_unshared)
 ```
-Then we select the top 2,000 variable features:
+
+Then we select the top 2,000 variable features with Seurat VST method:
+
 ```{r selectfeat}
-se = CreateSeuratObject(norm)
-vars_2000 <- FindVariableFeatures(se, selection.method = "vst", nfeatures = 2000)
-top2000 <- head(VariableFeatures(vars_2000),2000)
-top2000_feats <-  norm[top2000,]   
+library(Seurat)
+se <- CreateSeuratObject(unshareNormed)
+se <- FindVariableFeatures(se, selection.method = "vst", nfeatures = 2000)
+top2000 <- VariableFeatures(se)
 ```
+
 Then we scale, but do not center the unshared features
 
 ```{r Scaleunshared}
-liger <- selectGenes(liger)
-liger@var.genes <- top2000
-liger <- scaleNotCenter(liger)
-unshared_feats = liger@scale.data$peaks
+unshareScaled <- scaleNotCenter(unshareNormed[top2000,])
 ```
 
-# Step 3: Preprocessing and normalization
+## 3. Preprocessing and normalization
+
 Create a LIGER object and normalize the shared data.
 
 ```{r normalize}
-liger <- createLiger(list(rna = rna, atac = shared_atac))
-liger <- normalize(liger)
+lig <- createLiger(list(rna = rna, atac = atac_shared))
+lig <- normalize(lig)
 ```
+
 Note that when we select the variable genes between the shared features, we use the RNA dataset to select variable shared features.
 
 ```{r selectvargenes, message = FALSE}
-liger <- selectGenes(liger, var.thresh = 0.1, datasets.use =1 , unshared = TRUE,  unshared.datasets = list(2), unshared.thresh= 0.2)
+lig <- selectGenes(lig, var.thresh = 0.1, datasets.use = "rna", 
+                   unshared = TRUE, unshared.datasets = "atac",
+                   unshared.thresh = 0.2)
 ```
 
-Scale the data.
+Scale the data, still, not centered.
 
 ```{r scaleshared}
-liger <- scaleNotCenter(liger)
+lig <- scaleNotCenter(lig)
 ```
-
 
 Add the unshared features that have been properly selected, such that they are added as a genes by cells matrix. 
+
 ```{r addunshared}
-peak_names <- rownames(unshared_feats)
-liger@var.unshared.features[[2]] = peak_names
-liger@scale.unshared.data[[2]] = t(unshared_feats)
+# Fetch the dataset specific object
+ld.atac <- dataset(lig, "atac")
+# Insert prepared information
+ld.atac@varUnsharedFeatures <- top2000
+scaleUnsharedData(ld.atac, check = FALSE) <- unshareScaled
+# Put the updated dataset back
+datasets(lig)[["atac"]] <- ld.atac
 ```
 
+>The latest version of rliger package is equipped with strict checkpoints on object validity, including the matching of features and cells between matrices belonging to the same dataset. Given that the special processing method we are introducing in this vignette, that we use the intergenic bins as unshared features, we have to turn the checks off with `check = FALSE` when inserting the scaled unshared features into the object.
 
-# Step 4: Joint Matrix Factorization
+## 4. Joint Matrix Factorization (20-30 min)
 
-To factorize the datasets and include the unshared datasets, set the use.unshared parameter to TRUE. 
-```{r factorization}
-liger <- optimizeALS(liger, k=30, use.unshared = TRUE, max_iters =30,thresh=1e-10)
+To factorize the datasets and include the unshared datasets, set `useUnshared = TRUE`. 
+
+```{r factorization, results=FALSE}
+lig <- optimizeALS(lig, k = 30, maxIter = 30, useUnshared = TRUE, thresh = 1e-10)
 ```
-# Step 5: Quantile Normalization and Joint Clustering
+
+## 5. Quantile Normalization and Joint Clustering (~ 5 min)
 
 After factorization, the resulting Liger object can be used in all downstream LIGER functions without adjustment. The default reference dataset for quantile normalization is the larger dataset, but the user should select the higher quality dataset as the reference dataset, even if it is the smaller dataset.
 
 
 ```{r quantilenorm, results = FALSE}
-liger <- quantile_norm(liger)
-liger <- louvainCluster(liger)
+lig <- quantileNorm(lig)
+lig <- runLeidenCluster(lig, resolution = 0.8, nNeighbors = 30)
 ```
-# Step 6: Visualizations and Downstream processing
+## 6. Visualizations and Downstream processing (< 1 min)
 
 ```{r runumap, results = FALSE, warnings = FALSE, message = FALSE}
-liger <- runUMAP(liger)
+lig <- runUMAP(lig, nNeighbors = 30)
 ```
 Next, we can visualize our returned factorized object by dataset to check the alignment between datasets, as well as by cluster determined in the factorization.
-```{r visualizations, message = FALSE, warning = FALSE}
-umap_plots <-plotByDatasetAndCluster(liger, axis.labels = c("UMAP1","UMAP2"), return.plots = TRUE)
-umap_plots[[2]]
-```
-
-We can quantify the alignment between the two dataset with the `calcAlignment` function.
-```{r calcalign}
-calcAlignment(liger)
-
+```{r visualizations, message = FALSE, warning = FALSE, fig.width = 10}
+plotByDatasetAndCluster(lig, dotSize = 0.5)
 ```
 

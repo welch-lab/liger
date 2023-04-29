@@ -24,12 +24,12 @@
 \alias{scaleData}
 \alias{scaleData<-}
 \alias{scaleData,ligerDataset,missing-method}
-\alias{scaleData<-,ligerDataset,ANY,matrixLike_OR_NULL-method}
+\alias{scaleData<-,ligerDataset,ANY,matrix_OR_NULL-method}
 \alias{scaleData<-,ligerDataset,ANY,H5D-method}
 \alias{scaleUnsharedData}
 \alias{scaleUnsharedData<-}
 \alias{scaleUnsharedData,ligerDataset,missing-method}
-\alias{scaleUnsharedData<-,ligerDataset,ANY,matrixLike_OR_NULL-method}
+\alias{scaleUnsharedData<-,ligerDataset,ANY,matrix_OR_NULL-method}
 \alias{scaleUnsharedData<-,ligerDataset,ANY,H5D-method}
 \alias{getMatrix}
 \alias{getMatrix,ligerDataset,ANY,missing,missing-method}
@@ -86,7 +86,7 @@ scaleData(x, check = TRUE) <- value
 
 \S4method{scaleData}{ligerDataset,missing}(x, dataset = NULL)
 
-\S4method{scaleData}{ligerDataset,ANY,matrixLike_OR_NULL}(x, check = TRUE) <- value
+\S4method{scaleData}{ligerDataset,ANY,matrix_OR_NULL}(x, check = TRUE) <- value
 
 \S4method{scaleData}{ligerDataset,ANY,H5D}(x, check = TRUE) <- value
 
@@ -96,7 +96,7 @@ scaleUnsharedData(x, check = TRUE) <- value
 
 \S4method{scaleUnsharedData}{ligerDataset,missing}(x, dataset = NULL)
 
-\S4method{scaleUnsharedData}{ligerDataset,ANY,matrixLike_OR_NULL}(x, check = TRUE) <- value
+\S4method{scaleUnsharedData}{ligerDataset,ANY,matrix_OR_NULL}(x, check = TRUE) <- value
 
 \S4method{scaleUnsharedData}{ligerDataset,ANY,H5D}(x, check = TRUE) <- value
 

@@ -297,3 +297,75 @@ plotVarFeatures <- function(
     else return(plotList)
 }
 
+
+#' Select variable gene from one dataset with VST method
+#' @description
+#' A re-implimentation of Seurat FindVariableFeatures VST method. This allows
+#' the selection of a fixed number of variable features from one dataset.
+#' @param object A \linkS4class{liger} object
+#' @param useDataset The names, a numeric or logical index of the ONE dataset to
+#' be considered for selection.
+#' @param n Number of variable features needed. Default \code{2000}.
+#' @param loessSpan Loess span parameter used when fitting the variance-mean
+#' relationship. Default \code{0.3}.
+#' @param clipMax After standardization values larger than \code{clipMax} will
+#' be set to \code{clipMax}. Default \code{"auto"} sets this value to the square
+#' root of the number of cells.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' @references Seurat::FindVariableFeatures.default(selection.method = "vst")
+#' @export
+#' @examples
+#' pbmc <- selectGenesVST(pbmc, "ctrl", n = 50)
+selectGenesVST <- function(
+        object,
+        useDataset,
+        n = 2000,
+        loessSpan = 0.3,
+        clipMax = "auto",
+        verbose = getOption("ligerVerbose"))
+{
+    useDataset <- .checkUseDatasets(object, useDataset)
+    if (length(useDataset) != 1) {
+        stop("Can only use one dataset with VST method.")
+    }
+    if (isTRUE(verbose)) {
+        .log("Selecting top ", n, " HVGs with VST method for dataset: ",
+             useDataset)
+    }
+    ld <- dataset(object, useDataset)
+    data <- rawData(ld)
+
+    if (clipMax == "auto") {
+        clipMax <- sqrt(ncol(data))
+    }
+    hvf.info <- data.frame(mean = rowMeansFast(data))
+    hvf.info$variance <- rowVarsFast(data, hvf.info$mean)
+    not.const <- hvf.info$variance > 0
+    hvf.info$variance.expected <- 0
+    fit <- stats::loess(formula = log10(variance) ~ log10(mean),
+                        data = hvf.info[not.const, ],
+                        span = loessSpan)
+    hvf.info$variance.expected[not.const] <- 10^fit$fitted
+
+    # `SparseRowVarStd` Rcpp function reimplemented with Armadillo,
+    # Seurat original uses Eigen
+    hvf.info$variance.standardized <- SparseRowVarStd(
+        x = data,
+        mu = hvf.info$mean,
+        sd = sqrt(hvf.info$variance.expected),
+        vmax = clipMax
+    )
+    colnames(hvf.info) <- c("mean", "var", "vst.variance.expected",
+                            "vst.variance.standardized")
+    rank <- order(hvf.info$vst.variance.standardized, decreasing = TRUE)
+    varFeatures(object) <- rownames(ld)[rank][seq(n)]
+    fm <- featureMeta(ld)
+    for (col in colnames(hvf.info)) fm[[col]] <- hvf.info[[col]]
+    fm$selected <- FALSE
+    fm$selected[rank[seq(n)]] <- TRUE
+    featureMeta(ld, check = FALSE) <- fm
+    datasets(object, check = FALSE)[[useDataset]] <- ld
+    return(object)
+}
+

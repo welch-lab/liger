@@ -33,6 +33,12 @@ normalize <- function(
         chunk = 1000,
         verbose = getOption("ligerVerbose")
 ) {
+    if (inherits(object, "dgCMatrix")) {
+        normed <- Matrix.column_norm(object)
+        if (!is.null(scaleFactor)) normed <- normed * scaleFactor
+        if (isTRUE(log)) normed <- log1p(normed)
+        return(normed)
+    }
     .checkObjVersion(object)
     useDatasets <- .checkUseDatasets(object, useDatasets)
     object <- recordCommand(object, dependencies = "hdf5r")
@@ -45,7 +51,7 @@ normalize <- function(
         if (isH5Liger(ld))
             ld <- normalizeDataset.h5(ld, log, scaleFactor, chunk, verbose)
         else
-            ld <- normalizeDataset.Matrix(ld, log, scaleFactor, verbose)
+            ld <- normalizeDataset.mem(ld, log, scaleFactor, verbose)
         datasets(object, check = FALSE)[[d]] <- ld
     }
     object
@@ -56,7 +62,7 @@ normalize <- function(
 #' @param verbose Not used yet
 #' @return Updated ligerDataset object
 #' @noRd
-normalizeDataset.Matrix <- function(object, log = TRUE, scaleFactor = 1e4,
+normalizeDataset.mem <- function(object, log = TRUE, scaleFactor = 1e4,
                                     verbose = getOption("ligerVerbose")) {
     # Commented because only allowing dgCMatrix for rawData slot now
     #if (inherits(rawData(object), "dgCMatrix") |
@@ -163,12 +169,7 @@ normalizePeak <- function(
             #inherits(rawPeak(ld), "dgTMatrix"))
             normed <- Matrix.column_norm(rawPeak(ld))
             rownames(normed) <- rownames(rawPeak(ld))
-
             normPeak(ld, check = FALSE) <- normed
-        #else
-        #    normPeak(ld, check = FALSE) <- sweep(x = rawPeak(ld), MARGIN = 2,
-        #                                          STATS = colSums(rawPeak(ld)),
-        #                                          FUN = "/")
         }
         if (!is.null(scaleFactor))
             normPeak(ld, check = FALSE) <- normPeak(ld) * scaleFactor

@@ -123,3 +123,27 @@ NumericVector rowVarsDense(arma::mat x, arma::vec m) {
   }
   return out;
 }
+
+/* standardize matrix rows using given mean and standard deviation,
+ clip values larger than vmax to vmax,
+ then return variance for each row */
+// [[Rcpp::export(rng = false)]]
+NumericVector SparseRowVarStd(arma::sp_mat x,
+                              NumericVector mu,
+                              NumericVector sd,
+                              double vmax){
+  x = x.t();
+  NumericVector allVars(x.n_cols);
+  NumericVector colSum(x.n_cols);
+  NumericVector nNonZero(x.n_cols);
+  for (arma::sp_mat::const_iterator i = x.begin(); i != x.end(); ++i) {
+    int k = i.col();
+    if (sd[k] == 0) continue;
+    nNonZero[k] += 1;
+    colSum[k] += pow(std::min(vmax, (*i - mu[k]) / sd[k]), 2);
+  }
+  for (int k=0; k<x.n_cols; ++k) {
+    allVars[k] = (colSum[k] + pow((0 - mu[k]) / sd[k], 2) * (x.n_rows - nNonZero[k])) / (x.n_rows - 1);
+  }
+  return(allVars);
+}

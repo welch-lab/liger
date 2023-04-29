@@ -25,6 +25,9 @@ scaleNotCenter <- function(
     chunk = 1000,
     verbose = getOption("ligerVerbose")
 ) {
+    if (inherits(object, "dgCMatrix")) {
+        return(.scaleMemMatrix(object))
+    }
     .checkObjVersion(object)
     if (is.null(varFeatures(object)) ||
         length(varFeatures(object)) == 0) {

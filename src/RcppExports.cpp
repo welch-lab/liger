@@ -101,6 +101,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// SparseRowVarStd
+NumericVector SparseRowVarStd(arma::sp_mat x, NumericVector mu, NumericVector sd, double vmax);
+RcppExport SEXP _rliger2_SparseRowVarStd(SEXP xSEXP, SEXP muSEXP, SEXP sdSEXP, SEXP vmaxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type sd(sdSEXP);
+    Rcpp::traits::input_parameter< double >::type vmax(vmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(SparseRowVarStd(x, mu, sd, vmax));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_sumGroups_dgc
 arma::mat cpp_sumGroups_dgc(const arma::vec& x, const arma::uvec& p, const arma::vec& i, unsigned ncol, const arma::uvec& groups, unsigned ngroups);
 RcppExport SEXP _rliger2_cpp_sumGroups_dgc(SEXP xSEXP, SEXP pSEXP, SEXP iSEXP, SEXP ncolSEXP, SEXP groupsSEXP, SEXP ngroupsSEXP) {
@@ -364,6 +377,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rliger2_sumSquaredDeviations", (DL_FUNC) &_rliger2_sumSquaredDeviations, 2},
     {"_rliger2_denseZScore", (DL_FUNC) &_rliger2_denseZScore, 2},
     {"_rliger2_rowVarsDense", (DL_FUNC) &_rliger2_rowVarsDense, 2},
+    {"_rliger2_SparseRowVarStd", (DL_FUNC) &_rliger2_SparseRowVarStd, 4},
     {"_rliger2_cpp_sumGroups_dgc", (DL_FUNC) &_rliger2_cpp_sumGroups_dgc, 6},
     {"_rliger2_cpp_sumGroups_dgc_T", (DL_FUNC) &_rliger2_cpp_sumGroups_dgc_T, 7},
     {"_rliger2_cpp_sumGroups_dense", (DL_FUNC) &_rliger2_cpp_sumGroups_dense, 3},

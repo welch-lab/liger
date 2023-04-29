@@ -29,6 +29,10 @@ rowVarsDense <- function(x, m) {
     .Call(`_rliger2_rowVarsDense`, x, m)
 }
 
+SparseRowVarStd <- function(x, mu, sd, vmax) {
+    .Call(`_rliger2_SparseRowVarStd`, x, mu, sd, vmax)
+}
+
 cpp_sumGroups_dgc <- function(x, p, i, ncol, groups, ngroups) {
     .Call(`_rliger2_cpp_sumGroups_dgc`, x, p, i, ncol, groups, ngroups)
 }

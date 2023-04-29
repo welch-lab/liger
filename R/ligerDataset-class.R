@@ -40,7 +40,7 @@ ligerDataset <- setClass(
         rawData = "dgCMatrix_OR_H5D_OR_NULL",
         normData = "dgCMatrix_OR_H5D_OR_NULL",
         scaleData = "matrix_OR_H5D_OR_NULL",
-        scaleUnsharedData = "ANY",
+        scaleUnsharedData = "matrix_OR_H5D_OR_NULL",
         varUnsharedFeatures = "character",
         H = "matrix_OR_NULL",
         V = "matrix_OR_NULL",
@@ -559,7 +559,7 @@ setMethod(
 #' @rdname ligerDataset-class
 setReplaceMethod(
     "scaleData",
-    signature(x = "ligerDataset", check = "ANY", value = "matrixLike_OR_NULL"),
+    signature(x = "ligerDataset", check = "ANY", value = "matrix_OR_NULL"),
     function(x, check = TRUE, value) {
         if (isH5Liger(x))
             stop("Cannot replace slot with in-memory data for H5 based object.")
@@ -626,7 +626,7 @@ setMethod(
 #' @rdname ligerDataset-class
 setReplaceMethod(
     "scaleUnsharedData",
-    signature(x = "ligerDataset", check = "ANY", value = "matrixLike_OR_NULL"),
+    signature(x = "ligerDataset", check = "ANY", value = "matrix_OR_NULL"),
     function(x, check = TRUE, value) {
         if (isH5Liger(x))
             stop("Cannot replace slot with in-memory data for H5 based object.")

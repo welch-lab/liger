@@ -4,6 +4,7 @@
 \alias{as.ligerDataset}
 \alias{as.ligerDataset.ligerDataset}
 \alias{as.ligerDataset.matrixLike}
+\alias{as.ligerDataset.matrix}
 \alias{as.ligerDataset.Seurat}
 \alias{as.ligerDataset.anndata._core.anndata.AnnData}
 \title{Converting other classes of data to a as.ligerDataset object}
@@ -13,6 +14,8 @@ as.ligerDataset(object, ...)
 \method{as.ligerDataset}{ligerDataset}(object, modal = c("default", "rna", "atac"), ...)
 
 \method{as.ligerDataset}{matrixLike}(object, modal = c("default", "rna", "atac"), ...)
+
+\method{as.ligerDataset}{matrix}(object, modal = c("default", "rna", "atac"), ...)
 
 \method{as.ligerDataset}{Seurat}(object, modal = c("default", "rna", "atac"), ...)
 

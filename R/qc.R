@@ -136,7 +136,7 @@ runGeneralQC.h5 <- function(
         FUN = function(chunk, sparseXIdx, cellIdx, values) {
             nUMI <- colSums(chunk)
             values$cell$nUMI[cellIdx] <- nUMI
-            nonzero <- chunk > 0
+            nonzero <- as(chunk, "lMatrix")
             values$cell$nGene[cellIdx] <- colSums(nonzero)
             for (fs in names(rowIndices)) {
                 values$cell[[fs]][cellIdx] <-
@@ -159,7 +159,11 @@ runGeneralQC.Matrix <- function(
         featureSubsets = NULL,
         verbose = getOption("ligerVerbose")) {
     nUMI <- Matrix::colSums(rawData(object))
-    nonzero <- rawData(object) > 0
+    # Instead of using `nonzero <- rawData > 0` which generates dense logical
+    # matrix, keep it sparse with 1 for TRUE
+    # nonzero <- rawData(object)
+    # nonzero@x <- rep(1, length(nonzero@x))
+    nonzero <- as(rawData(object), "lMatrix")
     nGene <- Matrix::colSums(nonzero)
     nCell <- Matrix::rowSums(nonzero)
     results <- data.frame(nUMI = nUMI, nGene = nGene,

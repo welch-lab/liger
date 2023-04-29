@@ -180,6 +180,19 @@ as.ligerDataset.matrixLike <- function(
 
 #' @rdname as.ligerDataset
 #' @export
+#' @method as.ligerDataset matrix
+as.ligerDataset.matrix <- function(
+        object,
+        modal = c("default", "rna", "atac"),
+        ...
+) {
+    modal <- match.arg(modal)
+    object <- as(object, "CsparseMatrix")
+    createLigerDataset(object, modal, ...)
+}
+
+#' @rdname as.ligerDataset
+#' @export
 #' @method as.ligerDataset Seurat
 as.ligerDataset.Seurat <- function(
         object,
