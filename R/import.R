@@ -408,7 +408,7 @@ importVignetteData <- function(
         allURLs <- unlist(allURLs)
         utils::download.file(allURLs,
                              destfile = allFiles[doDownload],
-                             mode = "w", quiet = !verbose, method = method,
+                             mode = "wb", quiet = !verbose, method = method,
                              ...)
     }
 
