@@ -6,7 +6,8 @@
 \usage{
 runPseudoBulkDEG(
   object,
-  comparison,
+  groups = NULL,
+  markerBy = NULL,
   method = c("DESeq2", "limma", "edgeR"),
   useCellMetaVar = NULL,
   replicateAnn = NULL,
@@ -18,9 +19,12 @@ runPseudoBulkDEG(
 \arguments{
 \item{object}{A \linkS4class{liger} object.}
 
-\item{comparison}{A named list with two elements, where each is a vector of
-valid cell specification (numeric or logical indexing should be based on the
-whole object).}
+\item{groups}{A named list with at least two elements, where each is a vector
+of valid cell specification (numeric or logical indexing should be based on
+the whole object). See Details. Default \code{NULL}.}
+
+\item{markerBy}{\code{cellMeta} categorical variable name(s) to group cells.
+See Details. Default \code{NULL}.}
 
 \item{method}{Choose from \code{"DESeq2"}, \code{"limma"} or \code{"edgeR"}.
 Default \code{"DESeq2"}}
@@ -58,21 +62,32 @@ through \code{replicateAnn}. To use pseudo replicates, users should leave the
 two mentioned argument as default \code{NULL}.
 }
 \details{
+The differential expression test can be run in two mode:
+\itemize{
+\item{Group wise test: Users need to explicitly specify the cell groups with
+a named list through \code{groups}, and leave \code{markerBy} as \code{NULL}.
+The DE test will be performed pairwisely between groups.}
+\item{Biomarker test: Users need to pass the grouping (e.g. clustering)
+variable(s) to \code{markerBy}, and leave \code{groups} as \code{NULL}. The
+DE test will be performed by comparing one group against all the rest
+iteratively. }
+}
+
 For using \code{replicateAnn}. When passing a data.frame, rownames have to be
 available and it should cover all cells involved in both comparison group.
 When using a named factor/vector, the names should as well cover all involved
 cells. When using a un-named factor/vector, it is recommended to have its
 length matched with the total number of cells of the whole object. When the
-length of the un-named factor/vector equals to \code{length(comparison[[1]])
-+ length(comparison[[2]])}, it is assumed that the order matches to
-\code{c(comparison[[1]], comparison[[2]])}.
+length of the un-named factor/vector equals to \code{length(groups[[1]])
++ length(groups[[2]])}, it is assumed that the order matches to
+\code{c(groups[[1]], groups[[2]])}.
 }
 \examples{
 rawData(datasets(pbmcPlot)[[1]]) <- rawData(dataset(pbmc, 1))
 rawData(datasets(pbmcPlot)[[2]]) <- rawData(dataset(pbmc, 2))
 res <- runPseudoBulkDEG(
     pbmcPlot,
-    comparison = list(
+    groups = list(
         c1 = pbmcPlot$leiden_cluster == 1,
         c2 = pbmcPlot$leiden_cluster == 2
     )

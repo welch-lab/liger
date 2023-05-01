@@ -163,21 +163,27 @@ test_that("wilcoxon", {
 
 })
 
-test_that("pseudo bulk", {
+test_that("pseudo bulk - group wise", {
     expect_error(runPseudoBulkDEG("hey"), "Please use a `liger` object.")
 
     rawData(datasets(pbmcPlot)[[1]]) <- rawData(dataset(pbmc, 1))
     rawData(datasets(pbmcPlot)[[2]]) <- rawData(dataset(pbmc, 2))
-    expect_error(runPseudoBulkDEG(pbmcPlot, comparison = 1:10),
-                 "Please use a named list for `comparison`")
+
+    expect_error(runPseudoBulkDEG(pbmcPlot),
+                 "Either `groups` or `markerBy`")
+    expect_error(runPseudoBulkDEG(pbmcPlot, groups = 1, markerBy = "dataset"),
+                 "Only one of `groups` and `markerBy`")
+
+    expect_error(runPseudoBulkDEG(pbmcPlot, groups = 1:10),
+                 "Please use a named list for `groups`")
     expect_error(runPseudoBulkDEG(pbmcPlot,
-                                  comparison = list(1)),
-                 "Please use at least 2 elements in `comparison` list")
+                                  groups = list(1)),
+                 "Please use at least 2 elements in `groups` list")
     # Auto naming when un-named comparison group
     expect_message(
         res <- runPseudoBulkDEG(
             pbmcPlot,
-            comparison = list(
+            groups = list(
                 pbmcPlot$leiden_cluster == 1,
                 pbmcPlot$leiden_cluster == 2
             )
@@ -188,7 +194,7 @@ test_that("pseudo bulk", {
 
     res <- runPseudoBulkDEG(
         pbmcPlot,
-        comparison = list(
+        groups = list(
             pbmcPlot$leiden_cluster == 1,
             pbmcPlot$leiden_cluster == 2
         ),
@@ -199,7 +205,7 @@ test_that("pseudo bulk", {
     expect_error(
         res <- runPseudoBulkDEG(
             pbmcPlot,
-            comparison = list(
+            groups = list(
                 c1 = pbmcPlot$leiden_cluster == 1,
                 c2 = pbmcPlot$leiden_cluster == 2
             ),
@@ -214,20 +220,20 @@ test_that("pseudo bulk", {
     expect_error(
         res <- runPseudoBulkDEG(
             pbmcPlot,
-            comparison = list(
+            groups = list(
                 c1 = pbmcPlot$leiden_cluster == 1,
                 c2 = pbmcPlot$leiden_cluster == 2
             ),
             replicateAnn = ann1
         ),
-        "Not all cells involved in `comparison` are annotated in "
+        "Not all cells involved in `groups` are annotated in "
     )
 
     ann2 <- ann$dataset
     expect_no_error(
         runPseudoBulkDEG(
             pbmcPlot,
-            comparison = list(
+            groups = list(
                 c1 = pbmcPlot$leiden_cluster == 1,
                 c2 = pbmcPlot$leiden_cluster == 2
             ),
@@ -238,7 +244,7 @@ test_that("pseudo bulk", {
     expect_error(
         runPseudoBulkDEG(
             pbmcPlot,
-            comparison = list(
+            groups = list(
                 c1 = pbmcPlot$leiden_cluster == 1,
                 c2 = pbmcPlot$leiden_cluster == 2
             ),
@@ -252,7 +258,7 @@ test_that("pseudo bulk", {
     expect_no_error(
         runPseudoBulkDEG(
             pbmcPlot,
-            comparison = list(
+            groups = list(
                 c1 = pbmcPlot$leiden_cluster == 1,
                 c2 = pbmcPlot$leiden_cluster == 2
             ),
@@ -262,7 +268,7 @@ test_that("pseudo bulk", {
     expect_error(
         runPseudoBulkDEG(
             pbmcPlot,
-            comparison = list(
+            groups = list(
                 c1 = pbmcPlot$leiden_cluster == 1,
                 c2 = pbmcPlot$leiden_cluster == 2
             ),
@@ -274,7 +280,7 @@ test_that("pseudo bulk", {
     expect_warning(
         runPseudoBulkDEG(
             pbmcPlot,
-            comparison = list(
+            groups = list(
                 c1 = pbmcPlot$leiden_cluster == 1 & pbmcPlot$dataset == "ctrl",
                 c2 = pbmcPlot$leiden_cluster == 0 & pbmcPlot$dataset == "stim"
             ),
@@ -282,7 +288,13 @@ test_that("pseudo bulk", {
         ),
         "will not create pseudo-bulks but test at single cell level"
     )
+
+    res2 <- runPseudoBulkDEG(
+        pbmcPlot, markerBy = "leiden_cluster"
+    )
+    expect_equal(ncol(res2), 5)
 })
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # GSEA
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

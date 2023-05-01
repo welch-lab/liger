@@ -633,6 +633,7 @@ plotMarkerHeatmap <- function(
         object,
         result,
         topN = 5,
+        lfcThresh = 2,
         dedupBy = c("logFC", "padj"),
         groupBy = c("dataset", "leiden_cluster"),
         groupSize = 50,
@@ -647,8 +648,9 @@ plotMarkerHeatmap <- function(
     }
     result <- result[-which(duplicated(result$feature)), ]
     # TODO
-    result <- result %>%
+    result <- result %>% dplyr::filter(.data[["logFC"]] > lfcThresh) %>%
         dplyr::group_by(.data[["group"]]) %>%
+        dplyr::top_n(-topN, .data[["padj"]]) %>%
         dplyr::top_n(topN, .data[["logFC"]]) %>%
         dplyr::arrange(.data[["group"]]) %>%
         as.data.frame()
