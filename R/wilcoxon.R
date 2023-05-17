@@ -93,21 +93,16 @@ runWilcoxon <- function(
                 suppressWarnings(split(seq(nfeatures),
                                        seq(nfeatures / 100000))),
                 function(index) {
-                    time1 <- Sys.time()
-                    fm <- log(featureMatrix[index, ] + 1e-10)
-                    print(Sys.time() - time1)
+                    fm <- featureMatrix[index, ]
                     wilcoxauc(fm, clusters)
                 }))
         } else {
             # TODO: If we add log-transformation to normalization method in the
             # future, remember to have conditions here.
-            time1 <- Sys.time()
-            fm <- log(featureMatrix + 1e-10)
-            print(Sys.time() - time1)
+            fm <- featureMatrix
             results <- wilcoxauc(fm, clusters)
         }
     } else {
-        print("here?")
         # compare between datasets within each cluster
         results <- Reduce(rbind, lapply(levels(clusters), function(cluster) {
             clusterIdx <- clusters == cluster
@@ -119,7 +114,7 @@ runWilcoxon <- function(
                 return()
             } else {
                 subMatrix <- featureMatrix[, clusterIdx]
-                return(wilcoxauc(log(subMatrix + 1e-10), subLabel))
+                return(wilcoxauc(subMatrix, subLabel))
             }
         }))
     }
@@ -474,12 +469,9 @@ wilcoxauc <- function(X,
         sweep(group_sums, 1, as.numeric(table(y)), "/") %>% t()
     cs <- colSums(group_sums)
     gs <- as.numeric(table(y))
-    lfc <-
-        Reduce(cbind, lapply(seq_len(length(levels(
-            y
-        ))), function(g) {
-            group_means[, g] - ((cs - group_sums[g,]) / (length(y) - gs[g]))
-        }))
+    lfc <- Reduce(cbind, lapply(seq_along(levels(y)), function(g) {
+        log(group_means[, g] / ((cs - group_sums[g,]) / (length(y) - gs[g])))
+    }))
 
     data.frame(
         feature = rep(row.names(X), times = length(levels(y))),
