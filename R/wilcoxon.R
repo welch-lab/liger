@@ -93,14 +93,21 @@ runWilcoxon <- function(
                 suppressWarnings(split(seq(nfeatures),
                                        seq(nfeatures / 100000))),
                 function(index) {
-                    wilcoxauc(log(featureMatrix[index, ] + 1e-10), clusters)
+                    time1 <- Sys.time()
+                    fm <- log(featureMatrix[index, ] + 1e-10)
+                    print(Sys.time() - time1)
+                    wilcoxauc(fm, clusters)
                 }))
         } else {
             # TODO: If we add log-transformation to normalization method in the
             # future, remember to have conditions here.
-            results <- wilcoxauc(log(featureMatrix + 1e-10), clusters)
+            time1 <- Sys.time()
+            fm <- log(featureMatrix + 1e-10)
+            print(Sys.time() - time1)
+            results <- wilcoxauc(fm, clusters)
         }
     } else {
+        print("here?")
         # compare between datasets within each cluster
         results <- Reduce(rbind, lapply(levels(clusters), function(cluster) {
             clusterIdx <- clusters == cluster

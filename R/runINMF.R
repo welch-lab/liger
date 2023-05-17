@@ -77,6 +77,7 @@ setGeneric(
         H.init = NULL,
         W.init = NULL,
         V.init = NULL,
+        method = c("planc", "liger", "rcppml"),
         useUnshared = FALSE,
         seed = 1,
         readH5 = "auto",
@@ -105,6 +106,7 @@ setMethod(
         H.init = NULL,
         W.init = NULL,
         V.init = NULL,
+        method = c("planc", "liger", "rcppml"),
         useUnshared = FALSE,
         seed = 1,
         readH5 = "auto",
@@ -119,6 +121,7 @@ setMethod(
         .deprecateArgs(list(max.iters = "maxIter", use.unshared = "useUnshared",
                             rand.seed = "seed"), defunct = "print.obj")
         .checkObjVersion(object)
+        method <- match.arg(method)
         object <- recordCommand(object)
         if (isFALSE(useUnshared)) {
             object <- removeMissing(object, orient = "cell",
@@ -168,6 +171,7 @@ setMethod(
                 H.init = H.init,
                 W.init = W.init,
                 V.init = V.init,
+                method = method,
                 useUnshared = FALSE,
                 seed = seed,
                 verbose = verbose
@@ -216,6 +220,7 @@ setMethod(
         H.init = NULL,
         W.init = NULL,
         V.init = NULL,
+        method = c("planc", "liger", "rcppml"),
         useUnshared = FALSE,
         seed = 1,
         readH5 = "auto",
@@ -229,10 +234,11 @@ setMethod(
     ) {
         .deprecateArgs(list(max.iters = "maxIter", use.unshared = "useUnshared",
                             rand.seed = "seed"), defunct = "print.obj")
-        if (!all(sapply(object, is.matrix))) {
-            stop("All values in 'object' must be a matrix")
-        }
+        # if (!all(sapply(object, is.matrix))) {
+        #     stop("All values in 'object' must be a matrix")
+        # }
         # E ==> cell x gene scaled matrices
+        method <- match.arg(method)
         E <- lapply(object, t)
         nDatasets <- length(E)
         nCells <- sapply(E, nrow)
@@ -244,7 +250,7 @@ setMethod(
         Wm <- matrix(0, k, nGenes)
         Vm <- rep(list(matrix(0, k, nGenes)), nDatasets)
         Hm <- lapply(nCells, function(n) matrix(0, n, k))
-        tmp <- gc()
+
         bestObj <- Inf
         bestSeed <- seed
         runStats <- matrix(0, nrep, 2)
@@ -267,83 +273,59 @@ setMethod(
                 H <- lapply(nCells, function(n) {
                     matrix(stats::runif(n * k, 0, 2), n, k)
                 })
-            tmp <- gc()
+
             delta <- 1
             iters <- 0
             sqrtLambda <- sqrt(lambda)
-
-            obj0 <- sum(sapply(
-                seq(nDatasets),
-                function(i) norm(E[[i]] - H[[i]] %*% (W + V[[i]]), "F") ^ 2
-            )) +
-                sum(sapply(
-                    seq(nDatasets),
-                    function(i) lambda*norm(H[[i]] %*% V[[i]], "F") ^ 2
-                ))
-            tmp <- gc()
+            obj0 <- inmf_calcObj(E, H, W, V, lambda)
+            # tmp <- gc()
             if (isTRUE(verbose)) {
                 .log("Start iNMF with seed: ", seed + i - 1, "...")
                 pb <- utils::txtProgressBar(0, maxIter, style = 3)
             }
             # return(list(E = E, W = W, V = V))
             while (delta > thresh & iters < maxIter) {
+                # .log("Iter: ", iters)
+                # .log("Solving for H")
                 H <- lapply(
                     seq(nDatasets),
                     function(i) {
-                        # A <- rbind(t(E[[i]]), matrix(0, nGenes, nCells[i]))
-                        # A <- methods::as(A, "CsparseMatrix")
-                        # B <- cbind((W + V[[i]]), sqrtLambda*V[[i]])
-                        #RcppPlanc::bppnnls(A, B)
-                        t(RcppPlanc::bppnnls2(
+                        t(callNNLS(
                             C = rbind(t(W + V[[i]]), sqrtLambda*t(V[[i]])),
-                            B = methods::as(rbind(t(E[[i]]), matrix(0, nGenes, nCells[i])), "CsparseMatrix")
+                            B = expandSpZeroRow(t(E[[i]])),
+                            method = method
                         ))
-
-                        # t(solveNNLS(
-                        #     C = rbind(t(W + V[[i]]), sqrtLambda*t(V[[i]])),
-                        #     B = rbind(t(E[[i]]), matrix(0, nGenes, nCells[i]))
-                        # ))
                     }
                 )
-                tmp <- gc()
+                # tmp <- gc()
+                # .log("Solving for V")
                 # c x k, c x g ->  g x k
                 V <- lapply(
                     seq(nDatasets),
                     function(i) {
-                        A <- rbind(E[[i]] - H[[i]] %*% W,
-                                   matrix(0, nCells[[i]], nGenes))
-                        A <- methods::as(A, "CsparseMatrix")
-                        B <- t(rbind(H[[i]], sqrtLambda*H[[i]]))
-                        t(RcppPlanc::bppnnls(A, B))
-                        # solveNNLS(C = rbind(H[[i]], sqrtLambda*H[[i]]),
-                        #           B = rbind(E[[i]] - H[[i]] %*% W,
-                        #                     matrix(0, nCells[[i]], nGenes)))
+                        callNNLS(
+                            C = rbind(H[[i]], sqrtLambda*H[[i]]),
+                            B = rbind(
+                                E[[i]] - H[[i]] %*% W,
+                                matrix(0, nCells[[i]], nGenes)
+                            ),
+                            method = method
+                        )
                     }
                 )
-                tmp <- gc()
-                W <- t(RcppPlanc::bppnnls(
-                    A = methods::as(rbindlist(
-                        lapply(seq(nDatasets),
-                               function(i) E[[i]] - H[[i]] %*% V[[i]]
-                        )
-                    ), "CsparseMatrix"),
-                    B = t(rbindlist(H))
-                ))
-                # W <- solveNNLS(C = rbindlist(H),
-                #                B = rbindlist(lapply(seq(nDatasets),
-                #                                     function(i) E[[i]] - H[[i]] %*% V[[i]]
-                #                )))
-                tmp <- gc()
-                obj <- sum(sapply(
-                    seq(nDatasets),
-                    function(i) norm(E[[i]] - H[[i]] %*% (W + V[[i]]), "F") ^ 2
-                )) +
-                    sum(sapply(
-                        seq(nDatasets),
-                        function(i)
-                            lambda*norm(H[[i]] %*% V[[i]], "F") ^ 2
+                # tmp <- gc()
+                # .log("Solving for W")
+                # .log("calc B")
+                wB <- rbindlist(
+                    lapply(seq(nDatasets),
+                           function(i) E[[i]] - H[[i]] %*% V[[i]]
                     ))
-                tmp <- gc()
+                # .log("bppnnls")
+                W <- callNNLS(C = rbindlist(H), B = wB,
+                              method = method)
+                # tmp <- gc()
+                obj <- inmf_calcObj(E, H, W, V, lambda)
+                # tmp <- gc()
                 delta <- abs(obj0 - obj) / (mean(obj0, obj))
                 obj0 <- obj
                 iters <- iters + 1
@@ -396,3 +378,30 @@ setMethod(
 
 # Binds list of matrices row-wise (vertical stack)
 rbindlist <- function(mat_list) do.call(rbind, mat_list)
+
+expandSpZeroRow <- function(E) {
+    dimnames(E) <- list(NULL, NULL)
+    E@Dim <- c(as.integer(2*nrow(E)), as.integer(ncol(E)))
+    return(E)
+}
+
+inmf_calcObj <- function(E, H, W, V, lambda) {
+    # E - dgCMatrix
+    # H, W, V - matrix
+    obj <- 0
+    for (i in seq_along(H)) {
+        obj <- obj +
+            Matrix::norm(E[[i]] - H[[i]] %*% (W + V[[i]]), "F") ^ 2 +
+            lambda*norm(H[[i]] %*% V[[i]], "F") ^ 2
+    }
+    return(obj)
+}
+
+callNNLS <- function(C, B, method = c("planc", "liger", "rcppml")) {
+    method <- match.arg(method)
+    switch(method,
+        planc = RcppPlanc::bppnnls2(C, as(B, "CsparseMatrix")),
+        liger = solveNNLS(C, as.matrix(B)),
+        rcppml = RcppML::project(w = C, data = B)
+    )
+}

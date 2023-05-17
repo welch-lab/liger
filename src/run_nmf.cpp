@@ -12,7 +12,7 @@
 #include "mask.h"
 #include "nnls.h"
 
-// NNLS implementation based on source code written by Robert Lee 
+// NNLS implementation based on source code written by Robert Lee
 // Original code available at https://github.com/rlee32/nmf
 #include <RcppArmadillo.h>
 // [[Rcpp::depends("RcppArmadillo")]]
@@ -140,3 +140,4 @@ arma::mat solveNNLS(const arma::mat& C, const arma::mat& B)
 	cpp_to_arma(X,res);
 	return res;
 }
+

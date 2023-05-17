@@ -93,6 +93,7 @@ liger <- setClass(
         for (d in names(x)) {
             ld <- dataset(x, d)
             if (!is.null(ld@V)) {
+                print(all.equal(rownames(ld@V), varFeatures(x)))
                 if (!identical(rownames(ld@V), varFeatures(x)))
                     return(paste("Variable features do not match dimension",
                                  "of V matrix in dataset", d))
@@ -581,7 +582,7 @@ setGeneric(
     }
     if (!is.null(cellIdx)) {
         cellIdx <- .idxCheck(object, idx = cellIdx, orient = "cell")
-        if (is.vector(res)) res <- res[cellIdx]
+        if (is.vector(res) || is.factor(res)) res <- res[cellIdx]
         else if (!is.null(dim(res))) res <- res[cellIdx, , ...]
         else stop("Result before idx subscription corrupted")
     }

@@ -7,7 +7,7 @@ setClassUnion("matrixLike_OR_NULL", c("matrixLike", "NULL"))
 setOldClass("H5D")
 suppressWarnings(setClassUnion("dgCMatrix_OR_H5D_OR_NULL", c("dgCMatrix", "H5D", "NULL")))
 setClassUnion("matrix_OR_H5D_OR_NULL", c("matrix", "H5D", "NULL"))
-
+setClassUnion("matrixLike_OR_H5D_OR_NULL", c("matrixLike", "H5D", "NULL"))
 setClassUnion("index",
               members = c("logical", "numeric", "character"))
 
@@ -39,8 +39,8 @@ ligerDataset <- setClass(
     representation(
         rawData = "dgCMatrix_OR_H5D_OR_NULL",
         normData = "dgCMatrix_OR_H5D_OR_NULL",
-        scaleData = "matrix_OR_H5D_OR_NULL",
-        scaleUnsharedData = "matrix_OR_H5D_OR_NULL",
+        scaleData = "matrixLike_OR_H5D_OR_NULL",
+        scaleUnsharedData = "matrixLike_OR_H5D_OR_NULL",
         varUnsharedFeatures = "character",
         H = "matrix_OR_NULL",
         V = "matrix_OR_NULL",
@@ -559,7 +559,7 @@ setMethod(
 #' @rdname ligerDataset-class
 setReplaceMethod(
     "scaleData",
-    signature(x = "ligerDataset", check = "ANY", value = "matrix_OR_NULL"),
+    signature(x = "ligerDataset", check = "ANY", value = "matrixLike_OR_NULL"),
     function(x, check = TRUE, value) {
         if (isH5Liger(x))
             stop("Cannot replace slot with in-memory data for H5 based object.")
@@ -626,7 +626,7 @@ setMethod(
 #' @rdname ligerDataset-class
 setReplaceMethod(
     "scaleUnsharedData",
-    signature(x = "ligerDataset", check = "ANY", value = "matrix_OR_NULL"),
+    signature(x = "ligerDataset", check = "ANY", value = "matrixLike_OR_NULL"),
     function(x, check = TRUE, value) {
         if (isH5Liger(x))
             stop("Cannot replace slot with in-memory data for H5 based object.")

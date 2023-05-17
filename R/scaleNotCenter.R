@@ -119,9 +119,9 @@ scaleNotCenter <- function(
     if (nrow(norm.subset) == 0)
         return(matrix(nrow = 0, ncol = ncol(norm.subset),
                       dimnames = list(NULL, colnames(norm.subset))))
-    scaled <- scaleNotCenterFast(t(norm.subset))
+    scaled <- t(scaleNotCenterFast(t(norm.subset)))
     # scaled: g x c
-    scaled <- as.matrix(t(scaled))
+    # scaled <- as.matrix(t(scaled))
     scaled[is.na(scaled)] <- 0
     scaled[scaled == Inf] = 0
     rownames(scaled) <- rownames(norm.subset)
