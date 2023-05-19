@@ -93,13 +93,13 @@ runWilcoxon <- function(
                 suppressWarnings(split(seq(nfeatures),
                                        seq(nfeatures / 100000))),
                 function(index) {
-                    fm <- featureMatrix[index, ]
+                    fm <- log1p(1e10*featureMatrix[index, ])
                     wilcoxauc(fm, clusters)
                 }))
         } else {
             # TODO: If we add log-transformation to normalization method in the
             # future, remember to have conditions here.
-            fm <- featureMatrix
+            fm <- log1p(1e10*featureMatrix)
             results <- wilcoxauc(fm, clusters)
         }
     } else {
@@ -113,7 +113,7 @@ runWilcoxon <- function(
                         " since it has only one dataset source.")
                 return()
             } else {
-                subMatrix <- featureMatrix[, clusterIdx]
+                subMatrix <- log1p(1e10*featureMatrix[, clusterIdx])
                 return(wilcoxauc(subMatrix, subLabel))
             }
         }))
@@ -470,7 +470,7 @@ wilcoxauc <- function(X,
     cs <- colSums(group_sums)
     gs <- as.numeric(table(y))
     lfc <- Reduce(cbind, lapply(seq_along(levels(y)), function(g) {
-        log(group_means[, g] / ((cs - group_sums[g,]) / (length(y) - gs[g])))
+        group_means[, g] - (cs - group_sums[g,]) / (length(y) - gs[g])
     }))
 
     data.frame(
@@ -632,8 +632,11 @@ plotMarkerHeatmap <- function(
         object,
         result,
         topN = 5,
-        lfcThresh = 2,
-        dedupBy = c("logFC", "padj"),
+        lfcThresh = 1,
+        padjThresh = 0.01,
+        pctInThresh = 50,
+        pctOutThresh = 50,
+        dedupBy = c("padj", "logFC"),
         groupBy = c("dataset", "leiden_cluster"),
         groupSize = 50,
         column_title = NULL,
@@ -645,11 +648,14 @@ plotMarkerHeatmap <- function(
     } else if (dedupBy == "padj") {
         result <- result[order(result[[dedupBy]], decreasing = FALSE), ]
     }
-    result <- result[-which(duplicated(result$feature)), ]
+    result <- result[-duplicated(result$feature), ]
     # TODO
-    result <- result %>% dplyr::filter(.data[["logFC"]] > lfcThresh) %>%
+    result <- result %>% dplyr::filter(.data$logFC > lfcThresh,
+                                       .data$padj < padjThresh,
+                                       .data$pct_in > pctInThresh,
+                                       .data$pct_out < pctOutThresh) %>%
         dplyr::group_by(.data[["group"]]) %>%
-        dplyr::top_n(-topN, .data[["padj"]]) %>%
+        # dplyr::top_n(-topN, .data[["padj"]]) %>%
         dplyr::top_n(topN, .data[["logFC"]]) %>%
         dplyr::arrange(.data[["group"]]) %>%
         as.data.frame()
