@@ -13,8 +13,8 @@ using namespace std;
 
 
 // [[Rcpp::export]]
-arma::mat cpp_sumGroups_dgc(const arma::vec& x, const arma::uvec& p, 
-                            const arma::vec& i, unsigned ncol, 
+arma::mat cpp_sumGroups_dgc(const arma::vec& x, const arma::uvec& p,
+                            const arma::vec& i, unsigned ncol,
                             const arma::uvec& groups, unsigned ngroups) {
     // Here, columns are genes
     arma::mat res = arma::zeros<arma::mat>(ngroups, ncol);
@@ -24,13 +24,13 @@ arma::mat cpp_sumGroups_dgc(const arma::vec& x, const arma::uvec& p,
             // group_map gives the group num of that row
             res(groups[i[j]], c) += x[j];
         }
-    }    
+    }
     return res;
 }
 
 // [[Rcpp::export]]
-arma::mat cpp_sumGroups_dgc_T(const arma::vec& x, const arma::vec& p, 
-                              const arma::vec& i, int ncol, int nrow, 
+arma::mat cpp_sumGroups_dgc_T(const arma::vec& x, const arma::vec& p,
+                              const arma::vec& i, int ncol, int nrow,
                               const arma::uvec& groups, int ngroups) {
     arma::mat res = arma::zeros<arma::mat>(ngroups, nrow);
     for (int c = 0; c < ncol; c++) {
@@ -39,7 +39,7 @@ arma::mat cpp_sumGroups_dgc_T(const arma::vec& x, const arma::vec& p,
             // group_map gives the group num of that row
             res(groups[c], i[j]) += x[j];
         }
-    }    
+    }
     return res;
 }
 
@@ -49,7 +49,7 @@ arma::mat cpp_sumGroups_dense(const arma::mat& X, const arma::uvec& groups,
     arma::mat res = arma::zeros<arma::mat>(ngroups, X.n_cols);
     for (unsigned r = 0; r < X.n_rows; r++) {
         res.row(groups[r]) += sum(X.row(r), 0);
-    }    
+    }
     return res;
 }
 
@@ -59,7 +59,7 @@ arma::mat cpp_sumGroups_dense_T(const arma::mat& X, const arma::uvec& groups,
     arma::mat res = arma::zeros<arma::mat>(ngroups, X.n_rows);
     for (unsigned c = 0; c < X.n_cols; c++) {
         res.row(groups[c]) += sum(X.col(c), 1).t();
-    }    
+    }
     return res;
 }
 
@@ -73,13 +73,13 @@ arma::mat cpp_nnzeroGroups_dense(const arma::mat& X, const arma::uvec& groups,
             if (X(r, c) != 0)
                 res(groups[r], c)++;
         }
-    }    
+    }
     return res;
 }
 
 // [[Rcpp::export]]
 arma::mat cpp_nnzeroGroups_dense_T(const arma::mat& X,
-                                   const arma::uvec& groups, 
+                                   const arma::uvec& groups,
                                    unsigned ngroups) {
     arma::mat res = arma::zeros<arma::mat>(ngroups, X.n_rows);
     for (unsigned c = 0; c < X.n_cols; c++) {
@@ -88,7 +88,7 @@ arma::mat cpp_nnzeroGroups_dense_T(const arma::mat& X,
                 res(groups[c], r)++;
 //             res.row(groups[c]) += sum(X.col(c), 1).t();
         }
-    }    
+    }
     return res;
 }
 
@@ -103,41 +103,41 @@ arma::mat cpp_nnzeroGroups_dgc(const arma::uvec& p, const arma::vec& i,
         for (unsigned j = p[c]; j < p[c + 1]; j++) {
             res(groups[i[j]], c)++;
         }
-    }    
+    }
     return res;
 }
 
 
 // [[Rcpp::export]]
-std::list<float> cpp_in_place_rank_mean(arma::vec& v_temp, int idx_begin, 
+std::list<float> cpp_in_place_rank_mean(arma::vec& v_temp, int idx_begin,
                                         int idx_end) {
     std::list<float> ties;
-    
+
     if (idx_begin > idx_end) return ties;
     std::vector<pair<float, size_t> > v_sort(idx_end - idx_begin + 1);
     for (size_t i = idx_begin; i <= idx_end; i++) {
         v_sort[i - idx_begin] = make_pair(v_temp[i], i - idx_begin);
     }
-    
-    
+
+
     sort(v_sort.begin(), v_sort.end());
 
-    float rank_sum = 0, n = 1;    
+    float rank_sum = 0, n = 1;
     size_t i;
     for (i = 1U; i < v_sort.size(); i++) {
         if (v_sort[i].first != v_sort[i - 1].first) {
             // if current val != prev val
             // set prev val to something
             for (unsigned j = 0; j < n; j++) {
-                v_temp[v_sort[i - 1 - j].second + idx_begin] = 
-                    (rank_sum / n) + 1;  
-            }            
+                v_temp[v_sort[i - 1 - j].second + idx_begin] =
+                    (rank_sum / n) + 1;
+            }
             // restart count ranks
             rank_sum = i;
             if (n > 1) ties.push_back(n);
             n = 1;
         } else {
-            // if curr val is a tie, 
+            // if curr val is a tie,
             // don't set anything yet, start computing mean rank
             rank_sum += i;
             n++;
@@ -145,7 +145,7 @@ std::list<float> cpp_in_place_rank_mean(arma::vec& v_temp, int idx_begin,
     }
     // set the last element(s)
     for (unsigned j = 0; j < n; j++)
-        v_temp[v_sort[i - 1 - j].second + idx_begin] = (rank_sum / n) + 1;  
+        v_temp[v_sort[i - 1 - j].second + idx_begin] = (rank_sum / n) + 1;
 
     return ties;
 }
@@ -169,40 +169,38 @@ std::vector<std::list<float> > cpp_rank_matrix_dgc(
 
 // [[Rcpp::export]]
 Rcpp::List cpp_rank_matrix_dense(arma::mat& X) {
-    // sizes of tied groups
     arma::inplace_trans(X);
-    vector<list<float> > ties(X.n_cols);
-    
+    vector<list<double> > ties(X.n_cols);
     std::vector<pair<float, size_t> > v_sort(X.n_rows);
+
     for (unsigned c = 0; c < X.n_cols; c++) {
+        // Get the elements sorted, while using the pair to record their
+        // original position
         for (size_t i = 0; i < X.n_rows; i++) {
             v_sort[i] = make_pair(X.col(c)[i], i);
         }
         sort(v_sort.begin(), v_sort.end());
 
-        float rank_sum = 0, n = 1;
-        size_t i;
-        for (i = 1U; i < v_sort.size(); i++) {
+        // Use `tieStartRank` to record where a tie starts
+        double tieStartRank = 0;
+        // Starting from the second element in the sort result, if the value
+        // changes, it marks the end of a tie from `tieStartRank` to `i - 1`
+        for (int i = 1; i < v_sort.size(); i++) {
             if (v_sort[i].first != v_sort[i - 1].first) {
-                // if current val != prev val
-                // set prev val to something
-                for (unsigned j = 0; j < n; j++) {
-                    X.col(c)[v_sort[i - 1 - j].second] = (rank_sum / n) + 1;  
-                }            
-                // restart count ranks
-                rank_sum = i;
-                if (n > 1) ties[c].push_back(n);
-                n = 1;
-            } else {
-                // if curr val is a tie, 
-                // don't set anything yet, start computing mean rank
-                rank_sum += i;
-                n++;
+                double tieRank = (tieStartRank + i - 1) / 2 + 1;
+                for (unsigned j = tieStartRank; j < i; j++) {
+                    X.col(c)[v_sort[j].second] = tieRank;
+                }
+                // Record the tie length
+                if ((i - tieStartRank) > 1) ties[c].push_back(i - tieStartRank);
+                // Reset the start of a tie
+                tieStartRank = i;
             }
         }
         // set the last element(s)
-        for (unsigned j = 0; j < n; j++)
-            X.col(c)[v_sort[i - 1 - j].second] = (rank_sum / n) + 1;
+        double tieRank = (tieStartRank + v_sort.size() - 1) / 2 + 1;
+        for (unsigned j = tieStartRank; j < v_sort.size(); j++)
+            X.col(c)[v_sort[j].second] = tieRank;
     }
     return Rcpp::List::create(Named("X_ranked") = X, Named("ties") = ties);
 }
@@ -211,7 +209,7 @@ Rcpp::List cpp_rank_matrix_dense(arma::mat& X) {
 
 
 // [[Rcpp::export]]
-arma::mat cpp_nnzeroGroups_dgc_T(const arma::vec& p, const arma::vec& i, 
+arma::mat cpp_nnzeroGroups_dgc_T(const arma::vec& p, const arma::vec& i,
                                  int ncol, int nrow, const arma::uvec& groups,
                                  int ngroups) {
     // Here, columns are samples
@@ -222,6 +220,6 @@ arma::mat cpp_nnzeroGroups_dgc_T(const arma::vec& p, const arma::vec& i,
             // group_map gives the group num of that row
             res(groups[c], i[j])++;
         }
-    }    
+    }
     return res;
 }

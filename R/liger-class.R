@@ -670,8 +670,12 @@ setReplaceMethod(
     }
 )
 
-.DollarNames.liger <- function(x, pattern = "")
+#' @export
+#' @method .DollarNames liger
+.DollarNames.liger <- function(x, pattern = "") {
     grep(pattern, colnames(x@cellMeta), value = TRUE)
+}
+
 
 #' @export
 #' @rdname liger-class
