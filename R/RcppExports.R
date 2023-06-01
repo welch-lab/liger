@@ -33,6 +33,10 @@ SparseRowVarStd <- function(x, mu, sd, vmax) {
     .Call(`_rliger2_SparseRowVarStd`, x, mu, sd, vmax)
 }
 
+colAggregateSums_sparse <- function(x, group, ngroups) {
+    .Call(`_rliger2_colAggregateSums_sparse`, x, group, ngroups)
+}
+
 cpp_sumGroups_dgc <- function(x, p, i, ncol, groups, ngroups) {
     .Call(`_rliger2_cpp_sumGroups_dgc`, x, p, i, ncol, groups, ngroups)
 }

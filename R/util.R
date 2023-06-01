@@ -163,7 +163,7 @@
         }
         idx <- which(idx)
     } else if (is.numeric(idx)) {
-        if (max(idx) > getNumber(object)) {
+        if (max(idx) > getNumber(object) || min(idx) < 1) {
             stop("Numeric ", paramName, " subscription out of bound.")
         }
     } else if (is.null(idx)) {

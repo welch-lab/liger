@@ -147,3 +147,15 @@ NumericVector SparseRowVarStd(arma::sp_mat x,
   }
   return(allVars);
 }
+
+
+// [[Rcpp::export()]]
+arma::sp_mat colAggregateSums_sparse(const arma::sp_mat& x,
+                                     const arma::uvec& group,
+                                     const arma::uword& ngroups) {
+    arma::sp_mat out(x.n_rows, ngroups);
+    for (arma::sp_mat::const_iterator it = x.begin(); it != x.end(); ++it) {
+        out(it.row(), group(it.col())) += *it;
+    }
+    return out;
+}
