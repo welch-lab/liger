@@ -237,8 +237,8 @@ test_that("ligerDataset methods", {
     expect_error(rawData(ctrl) <- t(rawData(ctrl)), "invalid class")
 
     expect_is(normData(ctrl), "dgCMatrix")
-    expect_is(scaleData(ctrl), "matrix")
-    expect_is(scaleData(pbmc, 2), "matrix")
+    expect_is(scaleData(ctrl), "dgCMatrix")
+    expect_is(scaleData(pbmc, 2), "dgCMatrix")
     expect_null(scaleUnsharedData(ctrl))
     expect_null(scaleUnsharedData(pbmc, 2))
     expect_no_error(scaleUnsharedData(ctrl) <- scaleData(ctrl))

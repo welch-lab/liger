@@ -45,6 +45,7 @@ optimizeUANLS <- function(
     # Return what datasets have unshared features,
     # and the dimensions of those unshared features
     ulist <- getMatrix(object, "scaleUnsharedData", returnList = TRUE)
+    ulist <- lapply(ulist, as.matrix)
     udim <- lapply(ulist, dim)
     unshared <- which(sapply(ulist, function(x) !is.null(x)))
     max_feats <- max(unlist(lapply(ulist, nrow)))
@@ -87,7 +88,8 @@ optimizeUANLS <- function(
         # Establish V from only the RNA dimensions
         # V matrices: g x k
         V <- list()
-        for (i in seq_along(X)) V[[i]] <- scaleData(object, i)[, idX[[i]]]
+        for (i in seq_along(X))
+            V[[i]] <- as.matrix(scaleData(object, i)[, idX[[i]]])
         # Establish W from the shared gene dimensions
         # W matrices: g x k
         W <- matrix(stats::runif(nGenes*k, 0, 2), nGenes, k)

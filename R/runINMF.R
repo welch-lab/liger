@@ -406,7 +406,7 @@ inmf_calcObj <- function(E, H, W, V, lambda) {
 callNNLS <- function(C, B, method = c("planc", "liger", "rcppml")) {
     method <- match.arg(method)
     switch(method,
-        planc = RcppPlanc::bppnnls2(C, methods::as(B, "CsparseMatrix")),
+        planc = RcppPlanc::bppnnls(C, methods::as(B, "CsparseMatrix")),
         liger = solveNNLS(C, as.matrix(B)),
         rcppml = RcppML::project(w = C, data = B)
     )

@@ -91,7 +91,7 @@ test_that("optimizeUANLS", {
     pbmc@datasets$stim@varUnsharedFeatures <- unshare[11:20]
     pbmc <- scaleNotCenter(pbmc)
     pbmc <- optimizeALS(pbmc, k = 10, maxIter = 2, useUnshared = TRUE)
-    expect_no_error(.checkValidFactorResult(pbmc))
+    expect_no_error(rliger2:::.checkValidFactorResult(pbmc))
 })
 
 test_that("Optimize new parameters", {

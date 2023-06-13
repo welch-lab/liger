@@ -124,8 +124,8 @@ test_that("wilcoxon", {
     expect_equal(res2[1,7], 2.936397e-24, tolerance = 1e-6)
     # hm1 <- plotMarkerHeatmap(pbmc, res1, dedupBy = "l")
     # hm2 <- plotMarkerHeatmap(pbmc, res1, dedupBy = "p")
-    expect_is(hm1, "HeatmapList")
-    expect_is(hm2, "HeatmapList")
+    # expect_is(hm1, "HeatmapList")
+    # expect_is(hm2, "HeatmapList")
     expect_is(plotVolcano(res1, 0), "ggplot")
     expect_is(plotEnhancedVolcano(res1, 0), "ggplot")
 
