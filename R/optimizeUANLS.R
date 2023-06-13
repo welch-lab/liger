@@ -39,6 +39,7 @@ optimizeUANLS <- function(
     # Get a list of all the matrices
     # scaleData in mlist: gene x cell
     mlist <- getMatrix(object, "scaleData", returnList = TRUE)
+    mlist <- lapply(mlist, as.matrix)
     xdim <- lapply(mlist, dim)
 
     # Return what datasets have unshared features,

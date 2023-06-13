@@ -106,6 +106,9 @@ Default \code{NULL}.}
 each element is the initial \eqn{V} matrix of each dataset. Default
 \code{NULL}.}
 
+\item{method}{NNLS subproblem solver. Choose from \code{"liger"} (default
+original implementation), \code{"planc"} or \code{"rcppml"}.}
+
 \item{useUnshared}{Logical, whether to include unshared variable features and
 run optimizeUANLS algorithm. Defaul \code{FALSE}. Running
 \code{\link{selectGenes}} with \code{unshared = TRUE} and then running

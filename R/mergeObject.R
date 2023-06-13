@@ -122,7 +122,9 @@ mergeDenseAll <- function(datalist, libraryNames = NULL) {
         if (nrow(dat) == 0)
             dat <- matrix(NA, nrow = length(allRows), ncol = ncol(dat),
                           dimnames = list(allRows, colnames(dat)))
-        data.frame(rn = rownames(dat), dat)
+        dat <- as.data.frame(dat)
+        rnCol <- data.frame(rn = rownames(dat))
+        cbind(rnCol, dat)
     })
 
     # Could have use reduce. but `Reduce` doesn't allow additional arguments,

@@ -155,7 +155,7 @@ setMethod(
                              "set to FALSE.")
                     }
                 } else {
-                    return(scaleData(ld))
+                    return(as.matrix(scaleData(ld)))
                 }
             })
             out <- optimizeALS(

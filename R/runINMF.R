@@ -39,6 +39,8 @@
 #' @param V.init Initial values to use for \eqn{V} matrices. A list object where
 #' each element is the initial \eqn{V} matrix of each dataset. Default
 #' \code{NULL}.
+#' @param method NNLS subproblem solver. Choose from \code{"liger"} (default
+#' original implementation), \code{"planc"} or \code{"rcppml"}.
 #' @param useUnshared Logical, whether to include unshared variable features and
 #' run optimizeUANLS algorithm. Defaul \code{FALSE}. Running
 #' \code{\link{selectGenes}} with \code{unshared = TRUE} and then running
@@ -239,6 +241,10 @@ setMethod(
         # }
         # E ==> cell x gene scaled matrices
         method <- match.arg(method)
+        if (method == "planc" && !requireNamespace("RcppPlanc", quietly = TRUE))
+            stop("RcppPlanc installation required")
+        if (method == "rcppml" && !requireNamespace("RcppML", quietly = TRUE))
+            stop("RcppML installation required")
         E <- lapply(object, t)
         nDatasets <- length(E)
         nCells <- sapply(E, nrow)
@@ -400,7 +406,7 @@ inmf_calcObj <- function(E, H, W, V, lambda) {
 callNNLS <- function(C, B, method = c("planc", "liger", "rcppml")) {
     method <- match.arg(method)
     switch(method,
-        planc = RcppPlanc::bppnnls2(C, as(B, "CsparseMatrix")),
+        planc = RcppPlanc::bppnnls2(C, methods::as(B, "CsparseMatrix")),
         liger = solveNNLS(C, as.matrix(B)),
         rcppml = RcppML::project(w = C, data = B)
     )

@@ -181,7 +181,7 @@ online_iNMF <- function(
             for (i in dataIdx) {
                 VInitIdx <- sample(nCells[i], k)
                 # pick k sample from datasets as initial H matrix
-                V[[i]] = scaleData(object, i)[1:nGenes, VInitIdx]
+                V[[i]] = as.matrix(scaleData(object, i)[1:nGenes, VInitIdx])
                 for (j in seq(k)) {
                     # normalize columns of dictionaries
                     V[[i]][, j] = V[[i]][, j] / sqrt(sum(V[[i]][, j]^2))
@@ -205,7 +205,7 @@ online_iNMF <- function(
             for (i in dataIdxNew) {
                 VInitIdx <- sample(nCells[i], k)
                 # initialize the Vi for new dataset
-                V[[i]] <- scaleData(object, i)[1:nGenes, VInitIdx]
+                V[[i]] <- as.matrix(scaleData(object, i)[1:nGenes, VInitIdx])
                 for (j in seq(k))
                     V[[i]][, j] <- V[[i]][, j] / sqrt(sum(V[[i]][, j]^2))
             }
@@ -282,7 +282,7 @@ online_iNMF <- function(
 
             X_minibatch = rep(list(NULL), length(object))
             for (i in dataIdxNew) {
-                X_minibatch[[i]] = scaleData(object, i)[1:nGenes, minibatchIdx[[i]]]
+                X_minibatch[[i]] = as.matrix(scaleData(object, i)[1:nGenes, minibatchIdx[[i]]])
             }
 
             # update H_i by ANLS Hi_minibatch[[i]]
@@ -380,7 +380,7 @@ online_iNMF <- function(
             batchIdxs <- .batchCellIdx(nCells[i], miniBatch_size)
             for (j in seq_along(batchIdxs)) {
                 cellIdx <- batchIdxs[[j]]
-                batch <- scaleData(object, i)[1:nGenes, cellIdx]
+                batch <- as.matrix(scaleData(object, i)[1:nGenes, cellIdx])
                 H[[i]] <- cbind(
                     H[[i]],
                     solveNNLS(rbind(W + V[[i]], sqrtLambda * V[[i]]),
@@ -398,7 +398,7 @@ online_iNMF <- function(
         for (i in dataIdxNew) {
             batchIdxs <- .batchCellIdx(nCells[i], miniBatch_size)
             for (j in seq_along(batchIdxs)) {
-                batch <- scaleData(object, i)[1:nGenes, batchIdxs[[j]]]
+                batch <- as.matrix(scaleData(object, i)[1:nGenes, batchIdxs[[j]]])
                 H[[i]] <- cbind(H[[i]], solveNNLS(W, batch))
             }
             colnames(H[[i]]) <- barcodes[[i]]

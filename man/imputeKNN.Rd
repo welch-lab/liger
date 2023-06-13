@@ -60,9 +60,9 @@ Impute query features from a reference dataset using KNN.
 }
 \examples{
 bmmc <- normalize(bmmc)
-bmmc <- selectGenes(bmmc)
+bmmc <- selectGenes(bmmc, datasets.use = "rna")
 bmmc <- scaleNotCenter(bmmc)
-bmmc <- online_iNMF(bmmc, miniBatch_size = 80)
+bmmc <- runINMF(bmmc, k = 20)
 bmmc <- quantileNorm(bmmc)
 bmmc <- normalizePeak(bmmc)
 bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")

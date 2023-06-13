@@ -48,6 +48,7 @@ optimizeNewK <- function(
     }
     # g x c
     E <- getMatrix(object, "scaleData", returnList = TRUE)
+    E <- lapply(E, as.matrix)
     # g x k
     W <- getMatrix(object, "W")
     # g x k
@@ -204,6 +205,7 @@ optimizeNewData <- function(
         object <- scaleNotCenter(object, useDatasets = which.datasets)
         # scaleData: g x c
         E <- getMatrix(object, "scaleData")
+        E <- lapply(E, as.matrix)
         # V: g x k
         V <- getMatrix(object, "V")
         # H: k x c
@@ -241,6 +243,7 @@ optimizeNewData <- function(
         nCells <- lapply(datasets(object), ncol)
         # scaleData: g x c
         E <- getMatrix(object, "scaleData")
+        E <- lapply(E, as.matrix)
         # V: g x k
         V <- getMatrix(object, "V")
         # H: k x c
