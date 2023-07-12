@@ -209,8 +209,8 @@ as.ligerDataset.Seurat <- function(
     if (identical(counts, normData)) normData <- NULL
     scale.data <- Seurat::GetAssayData(object, "scale.data")
     if (sum(dim(scale.data)) == 0) scale.data <- NULL
-    createLigerDataset(raw.data = counts, normData = normData,
-                       scale.data = scale.data, modal = modal, ...)
+    createLigerDataset(rawData = counts, normData = normData,
+                       scaleData = scale.data, modal = modal, ...)
 }
 
 setClass("anndata._core.anndata.AnnData")

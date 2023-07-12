@@ -289,7 +289,7 @@ setMethod(
                 .log("Start iNMF with seed: ", seed + i - 1, "...")
                 pb <- utils::txtProgressBar(0, maxIter, style = 3)
             }
-            # return(list(E = E, W = W, V = V))
+            # return(list(E = E, H = H, W = W, V = V))
             while (delta > thresh & iters < maxIter) {
                 # .log("Iter: ", iters)
                 # .log("Solving for H")
