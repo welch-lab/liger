@@ -18,3 +18,4 @@
 ^\.lintr$
 ^\.github/*
 ^pkgdown/*
+^/cmake*
