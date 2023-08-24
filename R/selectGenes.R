@@ -253,6 +253,14 @@ plotVarFeatures <- function(
         ...
 ) {
     plotList <- list()
+    maxVar <- max(sapply(datasets(object),
+                         function(ld) max(log10(featureMeta(ld)$geneVars))))
+    minVar <- min(sapply(datasets(object),
+                         function(ld) min(log10(featureMeta(ld)$geneVars))))
+    maxMean <- max(sapply(datasets(object),
+                          function(ld) max(log10(featureMeta(ld)$geneMeans))))
+    minMean <- min(sapply(datasets(object),
+                          function(ld) min(log10(featureMeta(ld)$geneMeans))))
     for (d in names(object)) {
         ld <- dataset(object, d)
         trx_per_cell <- cellMeta(object, "nUMI", cellIdx = object$dataset == d)
@@ -271,15 +279,17 @@ plotVarFeatures <- function(
                          color = .data[["is_variable"]])
         ) +
             ggplot2::geom_point(size = dotSize, stroke = 0) +
-            ggplot2::scale_colour_discrete(name = "Variable\nfeature",
-                                           type = c(`TRUE` = "red",
-                                                    `FALSE` = "black")) +
             ggplot2::geom_abline(intercept = log10(nolan_constant), slope = 1,
-                                 color = "purple")
+                                 color = "purple") +
+            ggplot2::xlim(minMean, maxMean) +
+            ggplot2::ylim(minVar, maxVar)
         p <- .ggplotLigerTheme(p, title = d,
                                subtitle = paste0(nSelect, " variable features"),
                                xlab = "Gene Expression Mean (log10)",
                                ylab = "Gene Expression Variance (log10)",
+                               legendColorTitle = "Variable\nfeature",
+                               colorLabels = c("TRUE", "FALSE"),
+                               colorValues = c("RED", "BLACK"),
                                ...)
         plotList[[d]] <- p
     }

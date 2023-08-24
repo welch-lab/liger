@@ -37,6 +37,10 @@ colAggregateSums_sparse <- function(x, group, ngroups) {
     .Call(`_rliger2_colAggregateSums_sparse`, x, group, ngroups)
 }
 
+sample_cpp <- function(x, size) {
+    .Call(`_rliger2_sample_cpp`, x, size)
+}
+
 cpp_sumGroups_dgc <- function(x, p, i, ncol, groups, ngroups) {
     .Call(`_rliger2_cpp_sumGroups_dgc`, x, p, i, ncol, groups, ngroups)
 }
@@ -97,6 +101,21 @@ cpp_nnzeroGroups_dgc_T <- function(p, i, ncol, nrow, groups, ngroups) {
 #' }
 makeFeatureMatrix <- function(bedmat, barcodes) {
     .Call(`_rliger2_makeFeatureMatrix`, bedmat, barcodes)
+}
+
+#' Refer to the R function find_partition()
+#' For notes of the graph object, refer to https://igraph.org/c/doc/igraph-Basic.html
+#'
+#' @param edgelist The graph edge list
+#' @param edgelist_length integer The length of the graph edge list
+#' @param num_vertices integer The number of vertices in the graph
+#' @param direction boolean Whether the graph is directed or undirected
+#' @param edge_weights Vector of edge weights. In weighted graphs, a real number is assigned to each (directed or undirected) edge. For an unweighted graph, this is set to 1. Refer to igraph, weighted graphs.
+#' @param resolution Integer resoluiton parameter controlling communities detected (default=1.0) Higher resolutions lead to more communities, while lower resolutions lead to fewer communities.
+#' @param niter Number of iterations that the algorithm should be run for (default=2)
+#' @return A vector of membership values
+leidenalg_find_partition_rcpp <- function(edgelist, edgelist_length, num_vertices, direction, edge_weights, resolution = 1.0, nStart = 10L, nIter = 2L, seed = 123L, verbose = TRUE) {
+    .Call(`_rliger2_leidenalg_find_partition_rcpp`, edgelist, edgelist_length, num_vertices, direction, edge_weights, resolution, nStart, nIter, seed, verbose)
 }
 
 cluster_vote <- function(nn_ranked, clusts) {

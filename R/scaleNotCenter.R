@@ -43,17 +43,23 @@ scaleNotCenter <- function(
             # Scale H5 based data
             featureIdx <- .getOrderedSubsetIdx(rownames(ld),
                                                varFeatures(object))
-            ld <- .scaleH5Matrix(ld, featureIdx = featureIdx,
-                                 resultH5Path = "scaleData",
-                                 chunk = chunk, verbose = verbose)
+            # ld <- .scaleH5Matrix(ld, featureIdx = featureIdx,
+            #                      resultH5Path = "scaleData",
+            #                      chunk = chunk, verbose = verbose)
+            ld <- .scaleH5SpMatrix(ld, featureIdx = featureIdx,
+                                   resultH5Path = "scaleDataSparse",
+                                   chunk = chunk, verbose = verbose)
 
-            if (!is.null(ld@varUnsharedFeatures) &
+            if (!is.null(ld@varUnsharedFeatures) &&
                 length(ld@varUnsharedFeatures) > 0) {
                 unsharedIdx <- .getOrderedSubsetIdx(rownames(ld),
                                                     ld@varUnsharedFeatures)
-                ld <- .scaleH5Matrix(ld, featureIdx = unsharedIdx,
-                                     resultH5Path = "scaleUnsharedData",
-                                     chunk = chunk, verbose = verbose)
+                # ld <- .scaleH5Matrix(ld, featureIdx = unsharedIdx,
+                #                      resultH5Path = "scaleUnsharedData",
+                #                      chunk = chunk, verbose = verbose)
+                ld <- .scaleH5SpMatrix(ld, featureIdx = unsharedIdx,
+                                       resultH5Path = "scaleUnsharedDataSparse",
+                                       chunk = chunk, verbose = verbose)
             }
         } else {
             # Scale in memory data
@@ -71,6 +77,67 @@ scaleNotCenter <- function(
         datasets(object, check = FALSE)[[d]] <- ld
     }
     object
+}
+
+.scaleH5SpMatrix <- function(ld, featureIdx, resultH5Path, chunk, verbose) {
+    features <- rownames(ld)[featureIdx]
+    geneSumSq <- featureMeta(ld)$geneSumSq[featureIdx]
+    nCells <- ncol(ld)
+    geneRootMeanSumSq = sqrt(geneSumSq / (nCells - 1))
+    h5file <- getH5File(ld)
+    # Count the subset nnz first before creating data space
+    nnz <- 0
+    H5Apply(
+        ld, useData = "normData", chunkSize = chunk, verbose = FALSE,
+        FUN = function(chunk, sparseXIdx, cellIdx, values) {
+            chunk <- chunk[featureIdx, , drop = FALSE]
+            nnz <- nnz + length(chunk@x)
+        }
+    )
+    # Create datasets
+    dataPath <- paste0(resultH5Path, "/data")
+    rowindPath <- paste0(resultH5Path, "/indices")
+    colptrPath <- paste0(resultH5Path, "/indptr")
+    safeH5Create(ld, dataPath = dataPath, dims = nnz,
+                 dtype = "double", chunkSize = 2048)
+    safeH5Create(ld, dataPath = rowindPath, dims = nnz,
+        dtype = "int", chunkSize = 2048)
+    safeH5Create(ld, dataPath = colptrPath, dims = nCells + 1,
+        dtype = "int", chunkSize = 1024)
+    # Process chunks of sparse normData, and write to sparse scaleData
+    h5file[[colptrPath]][1] <- 0
+    H5Apply(
+        ld,
+        useData = "normData",
+        init = c(1, 0), # [1] record of nnz idx start [2] record of last colptr
+        chunkSize = chunk,
+        verbose = verbose,
+        FUN = function(chunk, sparseXIdx, cellIdx, values) {
+            # Subset variable features
+            chunk <- chunk[featureIdx, , drop = FALSE]
+            # Calculate scale not center
+            chunk <- sweep(chunk, 1, geneRootMeanSumSq, "/")
+            chunk[is.na(chunk)] = 0
+            chunk[chunk == Inf] = 0
+            # Make sure of the sparse format, could be skipped
+            chunk <- methods::as(chunk, "CsparseMatrix")
+            # Write
+            nnzRange <- seq(from = values[1], length.out = length(chunk@i))
+            h5file[[rowindPath]][nnzRange] <- chunk@i
+            h5file[[dataPath]][nnzRange] <- chunk@x
+            values[1] <- values[1] + length(nnzRange)
+            increColptr <- chunk@p + values[2]
+            h5file[[colptrPath]][cellIdx + 1] =
+                increColptr[seq(2, length(increColptr))]
+            values[2] <- increColptr[length(increColptr)]
+            return(values)
+        }
+    )
+    safeH5Create(ld, dataPath = paste0(resultH5Path, "/featureIdx"),
+                 dims = length(features), dtype = "int")
+    h5file[[paste0(resultH5Path, "/featureIdx")]][1:length(featureIdx)] <-
+        featureIdx
+    return(ld)
 }
 
 .scaleH5Matrix <- function(ld, featureIdx, resultH5Path, chunk, verbose) {
@@ -107,7 +174,7 @@ scaleNotCenter <- function(
         ld,
         dataPath = paste0(resultH5Path, ".featureIdx"),
         dims = length(features),
-        dtype = "double"
+        dtype = "int"
     )
     h5file[[paste0(resultH5Path, ".featureIdx")]][1:length(featureIdx)] <-
         featureIdx

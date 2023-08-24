@@ -187,7 +187,7 @@ runLouvainCluster <- function(
         nIterations = nIterations,
         algorithm = 1,
         randomSeed = seed,
-        printOutput = FALSE,
+        printOutput = TRUE,
         edgefilename = edgeOutPath
     )
     names(clusts) <- colnames(object)

@@ -155,7 +155,7 @@ online_iNMF <- function(
     minibatchSizes <- rep(0, length(object))
     nGenes <- length(varFeatures(object))
     for (i in dataIdxNew) {
-        minibatchSizes[i] <- round(nCells[i] / sum(nCells[dataIdxNew]) *
+        minibatchSizes[i] <- round(nCells[i] / sum(nCellsNew) *
                                        miniBatch_size)
         if (minibatchSizes[i] > nCells[i]) {
             stop("Number of cells to be sampled (n = ",  minibatchSizes[i],
@@ -176,10 +176,10 @@ online_iNMF <- function(
             W <- matrix(stats::runif(nGenes * k, 0, 2), nGenes, k)
             # TODO: W <- W / sqrt(colSums(W ^ 2))
             for (j in seq(k)) W[, j] <- W[, j] / sqrt(sum(W[, j] ^ 2))
-
             V <- list()
             for (i in dataIdx) {
-                VInitIdx <- sample(nCells[i], k)
+                # VInitIdx <- sample(nCells[i], k)
+                VInitIdx <- sample_cpp(nCells[i], k)#as.numeric(RcppPlanc::sample_cpp(nCells[i]))[1:k] + 1
                 # pick k sample from datasets as initial H matrix
                 V[[i]] = as.matrix(scaleData(object, i)[1:nGenes, VInitIdx])
                 for (j in seq(k)) {
@@ -203,7 +203,7 @@ online_iNMF <- function(
                                      function(v)
                                          .checkMatrixValid(v, k, name = "V"))
             for (i in dataIdxNew) {
-                VInitIdx <- sample(nCells[i], k)
+                VInitIdx <- sample_cpp(nCells[i], k)
                 # initialize the Vi for new dataset
                 V[[i]] <- as.matrix(scaleData(object, i)[1:nGenes, VInitIdx])
                 for (j in seq(k))
@@ -259,13 +259,20 @@ online_iNMF <- function(
                         epochNext[i] <- TRUE
                         epochPrev[i] <- epoch[i]
                         minibatchIdx[[i]] <- allIdx[[i]][batchStartIdx:nCells[i]]
+                        # print(paste0(
+                        #     "start: ", batchStartIdx-1, ", end: ", nCells[i]-1, " + "
+                        # ))
                         allIdx[[i]] <- .permuteChunkIdx(object, i, h5_chunk_size)
                         if ((iter * minibatchSizes[i]) %% nCells[i] != 0) {
+                            # print(paste0("start: 0, end: ", (iter * minibatchSizes[i]) %% nCells[i] - 1))
                             minibatchIdx[[i]] <- c(minibatchIdx[[i]],
                                                   allIdx[[i]][seq((iter * minibatchSizes[i]) %% nCells[i])])
                         }
                     } else {
                         # if current iter stays within a epoch
+                        # print(
+                        #     paste0("start: ", batchStartIdx-1, ", end: ", ((iter * minibatchSizes[i]) %% nCells[i]) - 1)
+                        # )
                         minibatchIdx[[i]] <- allIdx[[i]][batchStartIdx:((iter * minibatchSizes[i]) %% nCells[i])]
                     }
                 }
@@ -308,6 +315,7 @@ online_iNMF <- function(
             }
 
             for (i in dataIdxNew) {
+                # print(scale_param[i])
                 if (epoch[dataIdxNew[1]] > 0 & epochNext[dataIdxNew[1]]) {
                     # remove information older than 2 epochs
                     A[[i]] <- A[[i]] - AOld[[i]]
@@ -326,6 +334,8 @@ online_iNMF <- function(
                 # XiHit
                 B[[i]] <- scale_param[i] * B[[i]] +
                     X_minibatch[[i]] %*% t(H_minibatch[[i]]) / minibatchSizes[i]
+                # print(A[[i]][1:4,1:4])
+                # print(B[[i]][1:4, 1:4])
             }
 
             # update W, V_i by HALS
@@ -360,7 +370,6 @@ online_iNMF <- function(
                         )
                     }
                 }
-
                 iter_miniBatch <- iter_miniBatch + 1
             }
             # reset epoch change indicator
@@ -432,7 +441,8 @@ online_iNMF <- function(
     ld <- dataset(object, dataset)
     if (isH5Liger(ld)) chunkSize <- scaleData(ld)$chunk_dims[2]
     nChunks <- ceiling(ncol(ld) / chunkSize)
-    chunkIdx <- sample(nChunks, nChunks)
+    chunkIdx <- sample_cpp(nChunks, nChunks)#as.numeric(RcppPlanc::sample_cpp(nChunks)) + 1
+    # chunkIdx <- sample(nChunks, nChunks)
     unlist(lapply(chunkIdx, function(i) {
         if (i != nChunks) seq(1 + chunkSize * (i - 1), i * chunkSize)
         else seq((1 + chunkSize * (i - 1)), ncol(ld))

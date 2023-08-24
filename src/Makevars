@@ -1,19 +1,38 @@
 
-## With R 3.1.0 or later, you can uncomment the following line to tell R to
-## enable compilation with C++11 (where available)
-##
-## Also, OpenMP support in Armadillo prefers C++11 support. However, for wider
-## availability of the package we do not yet enforce this here.  It is however
-## recommended for client packages to set it.
-##
-## And with R 3.4.0, and RcppArmadillo 0.7.960.*, we turn C++11 on as OpenMP
-## support within Armadillo prefers / requires it
-##
-## Ensure support for 64bit int sparse matrices with -DARMA_64BIT_WORD=1
+## include OpenMP
 
-## CXX_STD = CXX11
-
-PKG_CXXFLAGS = -DARMA_DONT_USE_OPENMP
+PKG_CXXFLAGS= -I"/opt/homebrew/opt/gmp/include" -I"../inst/include"  -I"./rigraph/include" -I"./leidenalg/include" $(SHLIB_OPENMP_CXXFLAGS) -DARMA_DONT_USE_OPENMP
 PKG_CPPFLAGS = -DARMA_64BIT_WORD=1
-PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+PKG_CFLAGS = -pthread
+PKG_CFLAGS += -I"./include"  -I"../rigraph/include"
+LDFLAGS += -lpthread
 
+
+PKG_LIBS=-L/usr/lib/ -L"." -lpthread -lstdc++ -lleidenalg -lrigraph -lm `$(R_HOME)/bin/Rscript -e "Rcpp:::LdFlags()"` $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CXXFLAGS)
+MkInclude = $(R_HOME)/etc${R_ARCH}/Makeconf
+
+#.PHONY: all sublibs
+
+#OBJECTS = $(.cpp=.o)
+SUBDIRS = rigraph leidenalg
+SUBLIBS = librigraph.a leidenalg.a
+
+
+all: $(SHLIB)
+
+$(SHLIB): sublibs
+sublibs: sublibraries
+
+sublibraries:
+	@for d in $(SUBDIRS); do \
+          (cd $${d} && CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" MAKE="$(MAKE) -f \"$(MkInclude)\" -f Makefile" $(MAKE) -f "$(MkInclude)" -f Makefile lib) || exit 1; \
+        done
+
+clean: subclean
+	@-rm -f *.o $(SHLIB)
+
+subclean:
+	@-rm -f *.a
+	@for d in $(SUBDIRS); do \
+	 (cd $${d} && MkInclude="$(MkInclude)" $(MAKE) clean) || exit 1; \
+	done

@@ -127,6 +127,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// sample_cpp
+Rcpp::NumericVector sample_cpp(const int x, const int size);
+RcppExport SEXP _rliger2_sample_cpp(SEXP xSEXP, SEXP sizeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const int >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const int >::type size(sizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(sample_cpp(x, size));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_sumGroups_dgc
 arma::mat cpp_sumGroups_dgc(const arma::vec& x, const arma::uvec& p, const arma::vec& i, unsigned ncol, const arma::uvec& groups, unsigned ngroups);
 RcppExport SEXP _rliger2_cpp_sumGroups_dgc(SEXP xSEXP, SEXP pSEXP, SEXP iSEXP, SEXP ncolSEXP, SEXP groupsSEXP, SEXP ngroupsSEXP) {
@@ -293,6 +305,26 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// leidenalg_find_partition_rcpp
+std::vector<size_t> leidenalg_find_partition_rcpp(std::vector<int>& edgelist, int edgelist_length, int num_vertices, bool direction, std::vector<double>& edge_weights, double resolution, int nStart, int nIter, int seed, bool verbose);
+RcppExport SEXP _rliger2_leidenalg_find_partition_rcpp(SEXP edgelistSEXP, SEXP edgelist_lengthSEXP, SEXP num_verticesSEXP, SEXP directionSEXP, SEXP edge_weightsSEXP, SEXP resolutionSEXP, SEXP nStartSEXP, SEXP nIterSEXP, SEXP seedSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<int>& >::type edgelist(edgelistSEXP);
+    Rcpp::traits::input_parameter< int >::type edgelist_length(edgelist_lengthSEXP);
+    Rcpp::traits::input_parameter< int >::type num_vertices(num_verticesSEXP);
+    Rcpp::traits::input_parameter< bool >::type direction(directionSEXP);
+    Rcpp::traits::input_parameter< std::vector<double>& >::type edge_weights(edge_weightsSEXP);
+    Rcpp::traits::input_parameter< double >::type resolution(resolutionSEXP);
+    Rcpp::traits::input_parameter< int >::type nStart(nStartSEXP);
+    Rcpp::traits::input_parameter< int >::type nIter(nIterSEXP);
+    Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(leidenalg_find_partition_rcpp(edgelist, edgelist_length, num_vertices, direction, edge_weights, resolution, nStart, nIter, seed, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cluster_vote
 IntegerVector cluster_vote(const Eigen::MatrixXd& nn_ranked, IntegerVector clusts);
 RcppExport SEXP _rliger2_cluster_vote(SEXP nn_rankedSEXP, SEXP clustsSEXP) {
@@ -392,6 +424,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rliger2_rowVarsDense", (DL_FUNC) &_rliger2_rowVarsDense, 2},
     {"_rliger2_SparseRowVarStd", (DL_FUNC) &_rliger2_SparseRowVarStd, 4},
     {"_rliger2_colAggregateSums_sparse", (DL_FUNC) &_rliger2_colAggregateSums_sparse, 3},
+    {"_rliger2_sample_cpp", (DL_FUNC) &_rliger2_sample_cpp, 2},
     {"_rliger2_cpp_sumGroups_dgc", (DL_FUNC) &_rliger2_cpp_sumGroups_dgc, 6},
     {"_rliger2_cpp_sumGroups_dgc_T", (DL_FUNC) &_rliger2_cpp_sumGroups_dgc_T, 7},
     {"_rliger2_cpp_sumGroups_dense", (DL_FUNC) &_rliger2_cpp_sumGroups_dense, 3},
@@ -404,6 +437,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rliger2_cpp_rank_matrix_dense", (DL_FUNC) &_rliger2_cpp_rank_matrix_dense, 1},
     {"_rliger2_cpp_nnzeroGroups_dgc_T", (DL_FUNC) &_rliger2_cpp_nnzeroGroups_dgc_T, 6},
     {"_rliger2_makeFeatureMatrix", (DL_FUNC) &_rliger2_makeFeatureMatrix, 2},
+    {"_rliger2_leidenalg_find_partition_rcpp", (DL_FUNC) &_rliger2_leidenalg_find_partition_rcpp, 10},
     {"_rliger2_cluster_vote", (DL_FUNC) &_rliger2_cluster_vote, 2},
     {"_rliger2_scale_columns_fast", (DL_FUNC) &_rliger2_scale_columns_fast, 3},
     {"_rliger2_max_factor", (DL_FUNC) &_rliger2_max_factor, 3},

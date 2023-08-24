@@ -4,15 +4,15 @@
 \alias{runBPPINMF}
 \alias{runBPPINMF.liger}
 \alias{runBPPINMF.list}
+\alias{runBPPINMF.Seurat}
 \title{Perform iNMF on scaled datasets}
 \usage{
 runBPPINMF(
   object,
   k,
   lambda = 5,
-  thresh = 1e-06,
-  maxIter = 30,
-  nrep = 1,
+  nIteration = 30,
+  nRandomStarts = 1,
   HInit = NULL,
   WInit = NULL,
   VInit = NULL,
@@ -25,9 +25,8 @@ runBPPINMF(
   object,
   k,
   lambda = 5,
-  thresh = 1e-06,
-  maxIter = 30,
-  nrep = 1,
+  nIteration = 30,
+  nRandomStarts = 1,
   HInit = NULL,
   WInit = NULL,
   VInit = NULL,
@@ -41,9 +40,8 @@ runBPPINMF(
   object,
   k,
   lambda = 5,
-  thresh = 1e-06,
-  maxIter = 30,
-  nrep = 1,
+  nIteration = 30,
+  nRandomStarts = 1,
   HInit = NULL,
   WInit = NULL,
   VInit = NULL,
@@ -53,11 +51,27 @@ runBPPINMF(
   features = NULL,
   ...
 )
+
+\method{runBPPINMF}{Seurat}(
+  object,
+  datasetVar,
+  k,
+  lambda = 5,
+  nIteration = 30,
+  nRandomStarts = 1,
+  HInit = NULL,
+  WInit = NULL,
+  VInit = NULL,
+  seed = 1,
+  verbose = getOption("ligerVerbose"),
+  ...
+)
 }
 \arguments{
-\item{object}{A \linkS4class{liger} object or a named list of matrix object,
-where the names represents dataset names and matrices are scaled on the same
-set of variable features, with rows as features and columns as cells.}
+\item{object}{A \linkS4class{liger} object, a Seurat object or a named list
+of matrix, dgCMatrix, H5D objects, where the names represents dataset names
+and matrices are scaled on the same set of variable features, with rows as
+features and columns as cells.}
 
 \item{k}{Inner dimension of factorization (number of factors). Run
 \code{\link{suggestK}} to determine appropriate value; a general rule of
@@ -68,14 +82,11 @@ sub-structure.}
 dataset-specific effects more strongly (i.e. alignment should increase as
 \code{lambda} increases). Default \code{5}.}
 
-\item{thresh}{Convergence threshold. Convergence occurs when
-\eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-6}.}
-
-\item{maxIter}{Maximum number of block coordinate descent iterations to
+\item{nIteration}{Total number of block coordinate descent iterations to
 perform. Default \code{30}.}
 
-\item{nrep}{Number of restarts to perform (iNMF objective function is
-non-convex, so taking the best objective from multiple successive
+\item{nRandomStarts}{Number of restarts to perform (iNMF objective function
+is non-convex, so taking the best objective from multiple successive
 initialization is recommended). For easier reproducibility, this increments
 the random seed by 1 for each consecutive restart, so future factorization
 of the same dataset can be run with one rep if necessary. Default \code{1}.}
@@ -109,32 +120,53 @@ of matrices in the \code{object}.}
 \item{features}{Character vector of feature names, for setting dimnames of
 output \eqn{V} and \eqn{W} matrices. Default \code{NULL} uses \code{rownames}
 of matrices in the \code{object}.}
+
+\item{datasetVar}{Variable name in metadata indicating a factor of dataset
+belonging, or directly a factor that match with the number of cells.}
 }
 \value{
-\code{object} with \code{W} slot updated with the result \eqn{W}
-matrix, and the \code{H} and \code{V} slots of each
-\linkS4class{ligerDataset} object in the \code{datasets} slot updated with
-the dataset specific \eqn{H} and \eqn{V} matrix, respectively.
+The liger method returns the input \linkS4class{liger} object with
+factorization result updated. A list of all \eqn{H} matrices can be accessed
+with \code{getMatrix(object, "H")}, a list of all \eqn{V} matrices can be
+accessed with \code{getMatrix(object, "V")}, and the \eqn{W} matrix can be
+accessed with \code{getMatrix(object, "W")}.
+
+The list method returns a list of entries \code{H}, \code{V} and
+\code{W}. \code{H} is a list of \eqn{H} matrices for each dataset. \code{V}
+is a list of \eqn{V} matrices for each dataset. \code{W} is the shared
+\eqn{W} matrix.
+
+The Seurat method returns a list of entries \code{H}, \code{V} and
+\code{W}. \code{H} is a list of \eqn{H} matrices for each dataset. \code{V}
+is a list of \eqn{V} matrices for each dataset. \code{W} is the shared
+\eqn{W} matrix.
 }
 \description{
-Performs integrative non-negative matrix (iNMF) factorization to return
-factorized \eqn{H}, \eqn{W}, and \eqn{V} matrices, using highly optimized
-fast and memory efficient implementation extended from Planc (Kannan, 2016).
-Pre-installation of extension package \code{RcppPlanc} is required. The
-underlying algorithm adopts the identical ANLS strategy as
-\code{\link{optimizeALS}} in the old version of LIGER.
+Performs integrative non-negative matrix factorization (iNMF) (J.D. Welch,
+2019) to return factorized \eqn{H}, \eqn{W}, and \eqn{V} matrices. The
+objective function is stated as
 
-For each dataset, this factorization produces an \eqn{H} matrix (cells by k),
-a \eqn{V} matrix (k by genes), and a shared \eqn{W} matrix (k by genes). The
-\eqn{H} matrices represent the cell factor loadings. \eqn{W} is held
+\deqn{\arg\min_{H\ge0,W\ge0,V\ge0}\sum_{i}^{d}||E_i-(W+V_i)Hi||^2_F+\lambda\sum_{i}^{d}||V_iH_i||_F^2}
+
+where \eqn{E_i} is the input non-negative matrix of the i'th dataset, \eqn{d}
+is the total number of datasets.
+
+The factorization produces a shared \eqn{W} matrix (genes by k), and for each
+dataset, an \eqn{H} matrix (k by cells) and a \eqn{V} matrix (genes by k).
+The \eqn{H} matrices represent the cell factor loadings. \eqn{W} is held
 consistent among all datasets, as it represents the shared components of the
 metagenes across datasets. The \eqn{V} matrices represent the
 dataset-specific components of the metagenes.
+
+This function adopts highly optimized fast and memory efficient
+implementation extended from Planc (Kannan, 2016). Pre-installation of
+extension package \code{RcppPlanc} is required. The underlying algorithm
+adopts the identical ANLS strategy as \code{\link{optimizeALS}} in the old
+version of LIGER.
 }
 \examples{
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
-# Only running a few iterations for fast examples
-pbmc <- runINMF(pbmc, k = 20, maxIter = 2)
+pbmc <- runBPPINMF(pbmc, k = 20)
 }

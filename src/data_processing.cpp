@@ -159,3 +159,10 @@ arma::sp_mat colAggregateSums_sparse(const arma::sp_mat& x,
     }
     return out;
 }
+
+// [[Rcpp::export()]]
+Rcpp::NumericVector sample_cpp(const int x, const int size) {
+    arma::uvec rand = arma::randperm<arma::uvec>(x);
+    arma::uvec head = rand.head(size) + 1; // 0-base to R's 1-base
+    return Rcpp::NumericVector(head.begin(), head.end());
+}

@@ -116,6 +116,7 @@ IntegerVector RunModularityClusteringCpp(Eigen::SparseMatrix<double> SNN,
       update = true;
       do
       {
+        std::cout << "Starting iter " << j << std::endl;
         /*if (printOutput && (nIterations > 1))
          Rprintf("Iteration: %d\n", j + 1);
          */
