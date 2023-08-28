@@ -36,7 +36,7 @@ LazyData: true
 RoxygenNote: 7.2.3
 VignetteBuilder: knitr
 Encoding: UTF-8
-LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress
+LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress, leidenAlg
 Depends:
     Matrix,
     methods,
@@ -52,7 +52,7 @@ Imports:
     grid,
     hdf5r,
     igraph,
-    leidenbase,
+    leidenAlg,
     lifecycle,
     magrittr,
     RANN,
