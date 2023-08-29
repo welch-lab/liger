@@ -114,8 +114,8 @@ makeFeatureMatrix <- function(bedmat, barcodes) {
 #' @param resolution Integer resoluiton parameter controlling communities detected (default=1.0) Higher resolutions lead to more communities, while lower resolutions lead to fewer communities.
 #' @param niter Number of iterations that the algorithm should be run for (default=2)
 #' @return A vector of membership values
-leidenalg_find_partition_rcpp <- function(edgelist, edgelist_length, num_vertices, direction, edge_weights, resolution = 1.0, nStart = 10L, nIter = 2L, seed = 123L, verbose = TRUE) {
-    .Call(`_rliger2_leidenalg_find_partition_rcpp`, edgelist, edgelist_length, num_vertices, direction, edge_weights, resolution, nStart, nIter, seed, verbose)
+find_partition_rcpp <- function(edgelist, edgelist_length, num_vertices, direction, edge_weights, resolution = 1.0, nIter = 2L) {
+    .Call(`_rliger2_find_partition_rcpp`, edgelist, edgelist_length, num_vertices, direction, edge_weights, resolution, nIter)
 }
 
 cluster_vote <- function(nn_ranked, clusts) {
