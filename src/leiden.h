@@ -33,7 +33,7 @@ extern "C" {
 //' @param niter Number of iterations that the algorithm should be run for (default=2)
 //' @return A vector of membership values
 // [[Rcpp::export]]
-std::vector<size_t> find_partition_rcpp(std::vector<int> &edgelist, int edgelist_length, int num_vertices, bool direction, std::vector<double> &edge_weights, double resolution, int niter)
+std::vector<size_t> find_partition_rcpp(std::vector<int> &edgelist, int edgelist_length, int num_vertices, bool direction, std::vector<double> &edge_weights, double resolution = 1.0, int nIter = 2)
 {
     static SEXP (*fun)(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP) = (SEXP(*)(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP))R_GetCCallable("leidenAlg", "find_partition_rcpp");
     return fun(edgelist, edgelist_length, num_vertices, direction, edge_weights, resolution, niter);

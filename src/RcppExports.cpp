@@ -306,8 +306,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // find_partition_rcpp
-std::vector<size_t> find_partition_rcpp(std::vector<int>& edgelist, int edgelist_length, int num_vertices, bool direction, std::vector<double>& edge_weights, double resolution, int niter);
-RcppExport SEXP _rliger2_find_partition_rcpp(SEXP edgelistSEXP, SEXP edgelist_lengthSEXP, SEXP num_verticesSEXP, SEXP directionSEXP, SEXP edge_weightsSEXP, SEXP resolutionSEXP, SEXP niterSEXP) {
+std::vector<size_t> find_partition_rcpp(std::vector<int>& edgelist, int edgelist_length, int num_vertices, bool direction, std::vector<double>& edge_weights, double resolution, int nIter);
+RcppExport SEXP _rliger2_find_partition_rcpp(SEXP edgelistSEXP, SEXP edgelist_lengthSEXP, SEXP num_verticesSEXP, SEXP directionSEXP, SEXP edge_weightsSEXP, SEXP resolutionSEXP, SEXP nIterSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -317,8 +317,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type direction(directionSEXP);
     Rcpp::traits::input_parameter< std::vector<double>& >::type edge_weights(edge_weightsSEXP);
     Rcpp::traits::input_parameter< double >::type resolution(resolutionSEXP);
-    Rcpp::traits::input_parameter< int >::type niter(niterSEXP);
-    rcpp_result_gen = Rcpp::wrap(find_partition_rcpp(edgelist, edgelist_length, num_vertices, direction, edge_weights, resolution, niter));
+    Rcpp::traits::input_parameter< int >::type nIter(nIterSEXP);
+    rcpp_result_gen = Rcpp::wrap(find_partition_rcpp(edgelist, edgelist_length, num_vertices, direction, edge_weights, resolution, nIter));
     return rcpp_result_gen;
 END_RCPP
 }
