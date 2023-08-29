@@ -25,7 +25,8 @@ Author: Joshua Welch [aut],
         Paul Hoffman [ctb],
         Ilya Korsunsky [ctb],
         Robert Lee [ctb],
-        Yichen Wang [aut, cre]
+        Yichen Wang [aut, cre],
+        Andrew Robbins [ctb]
 Maintainer: Chao Gao <gchao@umich.edu>
 BugReports: https://github.com/welch-lab/liger/issues
 URL: https://github.com/welch-lab/liger
@@ -35,7 +36,7 @@ LazyData: true
 RoxygenNote: 7.2.3
 VignetteBuilder: knitr
 Encoding: UTF-8
-LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress
+LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress, leidenAlg
 Depends:
     Matrix,
     methods,
@@ -51,7 +52,7 @@ Imports:
     grid,
     hdf5r,
     igraph,
-    leidenbase,
+    leidenAlg,
     lifecycle,
     magrittr,
     RANN,
