@@ -127,7 +127,6 @@ runBPPINMF.liger <- function(
         features = varFeatures(object)
     )
 
-    return(out)
     object@W <- out$W
     for (d in names(object)) {
         ld <- dataset(object, d)
@@ -195,10 +194,7 @@ runBPPINMF.list <- function(
     if (k >= nGenes) {
         stop("Select k lower than the number of variable genes: ", nGenes)
     }
-    Wm <- matrix(0, k, nGenes)
-    Vm <- rep(list(matrix(0, k, nGenes)), nDatasets)
-    Hm <- lapply(nCells, function(n) matrix(0, n, k))
-
+    Wm <- Vm <- Hm <- NULL
     bestObj <- Inf
     bestSeed <- seed
     for (i in seq(nRandomStarts)) {
@@ -232,8 +228,6 @@ runBPPINMF.list <- function(
                 objectList = object, k = k, lambda = lambda, niter = nIteration,
                 verbose = verbose)
         }
-
-        # return(out)
         if (out$objErr < bestObj) {
             Wm <- out$W
             Hm <- out$H
@@ -246,6 +240,8 @@ runBPPINMF.list <- function(
         .log("Best objective error: ", bestObj, "\nBest seed: ", bestSeed)
     }
     factorNames <- paste0("Factor_", seq(k))
+    Hm <- lapply(Hm, function(h) matrix(h, ncol = k))
+    Vm <- lapply(Vm, function(v) matrix(v, ncol = k))
     for (i in seq(nDatasets)) {
         Hm[[i]] <- t(Hm[[i]])
         colnames(Hm[[i]]) <- barcodeList[[i]]
