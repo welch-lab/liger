@@ -305,23 +305,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// find_partition_rcpp
-std::vector<size_t> find_partition_rcpp(std::vector<int>& edgelist, int edgelist_length, int num_vertices, bool direction, std::vector<double>& edge_weights, double resolution, int nIter);
-RcppExport SEXP _rliger2_find_partition_rcpp(SEXP edgelistSEXP, SEXP edgelist_lengthSEXP, SEXP num_verticesSEXP, SEXP directionSEXP, SEXP edge_weightsSEXP, SEXP resolutionSEXP, SEXP nIterSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< std::vector<int>& >::type edgelist(edgelistSEXP);
-    Rcpp::traits::input_parameter< int >::type edgelist_length(edgelist_lengthSEXP);
-    Rcpp::traits::input_parameter< int >::type num_vertices(num_verticesSEXP);
-    Rcpp::traits::input_parameter< bool >::type direction(directionSEXP);
-    Rcpp::traits::input_parameter< std::vector<double>& >::type edge_weights(edge_weightsSEXP);
-    Rcpp::traits::input_parameter< double >::type resolution(resolutionSEXP);
-    Rcpp::traits::input_parameter< int >::type nIter(nIterSEXP);
-    rcpp_result_gen = Rcpp::wrap(find_partition_rcpp(edgelist, edgelist_length, num_vertices, direction, edge_weights, resolution, nIter));
-    return rcpp_result_gen;
-END_RCPP
-}
 // cluster_vote
 IntegerVector cluster_vote(const Eigen::MatrixXd& nn_ranked, IntegerVector clusts);
 RcppExport SEXP _rliger2_cluster_vote(SEXP nn_rankedSEXP, SEXP clustsSEXP) {
@@ -434,7 +417,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rliger2_cpp_rank_matrix_dense", (DL_FUNC) &_rliger2_cpp_rank_matrix_dense, 1},
     {"_rliger2_cpp_nnzeroGroups_dgc_T", (DL_FUNC) &_rliger2_cpp_nnzeroGroups_dgc_T, 6},
     {"_rliger2_makeFeatureMatrix", (DL_FUNC) &_rliger2_makeFeatureMatrix, 2},
-    {"_rliger2_find_partition_rcpp", (DL_FUNC) &_rliger2_find_partition_rcpp, 7},
     {"_rliger2_cluster_vote", (DL_FUNC) &_rliger2_cluster_vote, 2},
     {"_rliger2_scale_columns_fast", (DL_FUNC) &_rliger2_scale_columns_fast, 3},
     {"_rliger2_max_factor", (DL_FUNC) &_rliger2_max_factor, 3},
