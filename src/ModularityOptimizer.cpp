@@ -584,12 +584,10 @@ bool VOSClusteringTechnique::runLouvainAlgorithm(JavaRandom& random) {
 
   if (network->nNodes == 1)
     return false;
-  bool update = runLocalMovingAlgorithm(random);
-  std::cout << "After calling localMove, update: " << update << std::endl;
+  bool update = runLocalMovingAlgorithm(random);\
   if (clustering->nClusters < network->nNodes)
   {
     VOSClusteringTechnique vosClusteringTechnique(std::make_shared<Network>(network->createReducedNetwork(*clustering)), resolution);
-    std::cout << "Calling recursive" << std::endl;
     bool update2 = vosClusteringTechnique.runLouvainAlgorithm(random);
 
     if (update2)
@@ -598,9 +596,7 @@ bool VOSClusteringTechnique::runLouvainAlgorithm(JavaRandom& random) {
 
       clustering->mergeClusters(*vosClusteringTechnique.clustering);
     }
-    std::cout << "After call recursive, update: " << update << std::endl;
   }
-  std::cout << "Returning " << update << std::endl;
   return update;
 }
 

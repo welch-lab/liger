@@ -36,7 +36,7 @@
 \alias{cellMeta<-,liger,missing-method}
 \alias{cellMeta<-,liger,character-method}
 \alias{[[,liger,ANY,missing-method}
-\alias{[[<-,liger,ANY,missing,ANY-method}
+\alias{[[<-,liger,ANY,missing-method}
 \alias{$,liger-method}
 \alias{$<-,liger-method}
 \alias{varFeatures}
@@ -117,7 +117,7 @@ cellMeta(x, columns = NULL, check = FALSE) <- value
 
 \S4method{[[}{liger,ANY,missing}(x, i, j, ...)
 
-\S4method{[[}{liger,ANY,missing,ANY}(x, i, j, ...) <- value
+\S4method{[[}{liger,ANY,missing}(x, i, j, ...) <- value
 
 \S4method{$}{liger}(x, name)
 

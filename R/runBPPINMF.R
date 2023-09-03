@@ -100,7 +100,7 @@ runBPPINMF.liger <- function(
         ...
 ) {
     .checkObjVersion(object)
-    object <- recordCommand(object)
+    object <- recordCommand(object, dependencies = "RcppPlanc")
     object <- removeMissing(object, orient = "cell", verbose = verbose)
     data <- lapply(datasets(object), function(ld) {
         if (is.null(scaleData(ld)))
@@ -198,7 +198,7 @@ runBPPINMF.list <- function(
     bestObj <- Inf
     bestSeed <- seed
     for (i in seq(nRandomStarts)) {
-        if (isTRUE(verbose)) {
+        if (isTRUE(verbose) && nRandomStarts > 1) {
             .log("Replicate run ", i, "...")
         }
         set.seed(seed = seed + i - 1)
@@ -236,12 +236,10 @@ runBPPINMF.list <- function(
             bestSeed <- seed + i - 1
         }
     }
-    if (isTRUE(verbose)) {
+    if (isTRUE(verbose) && nRandomStarts > 1) {
         .log("Best objective error: ", bestObj, "\nBest seed: ", bestSeed)
     }
     factorNames <- paste0("Factor_", seq(k))
-    Hm <- lapply(Hm, function(h) matrix(h, ncol = k))
-    Vm <- lapply(Vm, function(v) matrix(v, ncol = k))
     for (i in seq(nDatasets)) {
         Hm[[i]] <- t(Hm[[i]])
         colnames(Hm[[i]]) <- barcodeList[[i]]
