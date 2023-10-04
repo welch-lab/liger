@@ -36,7 +36,7 @@
 \alias{cellMeta<-,liger,missing-method}
 \alias{cellMeta<-,liger,character-method}
 \alias{[[,liger,ANY,missing-method}
-\alias{[[<-,liger,ANY,missing,ANY-method}
+\alias{[[<-,liger,ANY,missing-method}
 \alias{$,liger-method}
 \alias{$<-,liger-method}
 \alias{varFeatures}
@@ -81,7 +81,7 @@ datasets(x, check = TRUE) <- value
 
 dataset(x, dataset = NULL)
 
-dataset(x, dataset, type = NULL, qc = TRUE) <- value
+dataset(x, dataset, type = NULL, qc = FALSE) <- value
 
 \S4method{dataset}{liger,character_OR_NULL}(x, dataset = NULL)
 
@@ -89,9 +89,9 @@ dataset(x, dataset, type = NULL, qc = TRUE) <- value
 
 \S4method{dataset}{liger,numeric}(x, dataset = NULL)
 
-\S4method{dataset}{liger,character,missing,ANY,ligerDataset}(x, dataset, type = NULL, qc = TRUE) <- value
+\S4method{dataset}{liger,character,missing,ANY,ligerDataset}(x, dataset, type = NULL, qc = FALSE) <- value
 
-\S4method{dataset}{liger,character,ANY,ANY,matrixLike}(x, dataset, type = c("rawData", "normData", "scaleData"), qc = TRUE) <- value
+\S4method{dataset}{liger,character,ANY,ANY,matrixLike}(x, dataset, type = c("rawData", "normData", "scaleData"), qc = FALSE) <- value
 
 \S4method{dataset}{liger,character,missing,ANY,`NULL`}(x, dataset, type = NULL, qc = TRUE) <- value
 
@@ -117,7 +117,7 @@ cellMeta(x, columns = NULL, check = FALSE) <- value
 
 \S4method{[[}{liger,ANY,missing}(x, i, j, ...)
 
-\S4method{[[}{liger,ANY,missing,ANY}(x, i, j, ...) <- value
+\S4method{[[}{liger,ANY,missing}(x, i, j, ...) <- value
 
 \S4method{$}{liger}(x, name)
 

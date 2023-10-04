@@ -39,6 +39,8 @@
 #' @param V.init Initial values to use for \eqn{V} matrices. A list object where
 #' each element is the initial \eqn{V} matrix of each dataset. Default
 #' \code{NULL}.
+#' @param method NNLS subproblem solver. Choose from \code{"liger"} (default
+#' original implementation), \code{"planc"} or \code{"rcppml"}.
 #' @param useUnshared Logical, whether to include unshared variable features and
 #' run optimizeUANLS algorithm. Defaul \code{FALSE}. Running
 #' \code{\link{selectGenes}} with \code{unshared = TRUE} and then running
@@ -57,16 +59,16 @@
 #' matrix, and the \code{H} and \code{V} slots of each
 #' \linkS4class{ligerDataset} object in the \code{datasets} slot updated with
 #' the dataset specific \eqn{H} and \eqn{V} matrix, respectively.
-#' @rdname optimizeALS
+#' @rdname runINMF_R
 #' @export
 #' @examples
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
 #' # Only running a few iterations for fast examples
-#' pbmc <- optimizeALS(pbmc, k = 20, maxIter = 2)
+#' pbmc <- runINMF(pbmc, k = 20, maxIter = 2)
 setGeneric(
-    "optimizeALS",
+    "runINMF_R",
     function(
         object,
         k,
@@ -77,23 +79,18 @@ setGeneric(
         H.init = NULL,
         W.init = NULL,
         V.init = NULL,
+        method = c("planc", "liger", "rcppml"),
         useUnshared = FALSE,
         seed = 1,
         readH5 = "auto",
-        verbose = getOption("ligerVerbose"),
-        # Deprecated coding style
-        max.iters = maxIter,
-        use.unshared = useUnshared,
-        rand.seed = seed,
-        # Deprecated functionality
-        print.obj = NULL
-    ) standardGeneric("optimizeALS")
+        verbose = getOption("ligerVerbose")
+    ) standardGeneric("runINMF_R")
 )
 
-#' @rdname optimizeALS
+#' @rdname runINMF_R
 #' @export
 setMethod(
-    "optimizeALS",
+    "runINMF_R",
     signature(object = "liger"),
     function(
         object,
@@ -108,16 +105,8 @@ setMethod(
         useUnshared = FALSE,
         seed = 1,
         readH5 = "auto",
-        verbose = getOption("ligerVerbose"),
-        # Deprecated coding style
-        max.iters = maxIter,
-        use.unshared = useUnshared,
-        rand.seed = seed,
-        # Deprecated functionality
-        print.obj = NULL
+        verbose = getOption("ligerVerbose")
     ) {
-        .deprecateArgs(list(max.iters = "maxIter", use.unshared = "useUnshared",
-                            rand.seed = "seed"), defunct = "print.obj")
         .checkObjVersion(object)
         object <- recordCommand(object)
         if (isFALSE(useUnshared)) {
@@ -155,10 +144,10 @@ setMethod(
                              "set to FALSE.")
                     }
                 } else {
-                    return(as.matrix(scaleData(ld)))
+                    return(scaleData(ld))
                 }
             })
-            out <- optimizeALS(
+            out <- runINMF_R(
                 object = data,
                 k = k,
                 lambda = lambda,
@@ -173,19 +162,16 @@ setMethod(
                 verbose = verbose
             )
             object@W <- out$W
-            rownames(object@W) <- varFeatures(object)
             for (d in names(object)) {
                 ld <- dataset(object, d)
                 ld@H <- out$H[[d]]
-                colnames(ld@H) <- colnames(ld)
                 ld@V <- out$V[[d]]
-                rownames(ld@V) <- varFeatures(object)
                 datasets(object, check = FALSE)[[d]] <- ld
             }
             object@uns$factorization$k <- k
             object@uns$factorization$lambda <- lambda
         } else {
-            object <- optimizeUANLS(
+            object <- runUINMF(
                 object = object,
                 k = k,
                 lambda = lambda,
@@ -200,65 +186,53 @@ setMethod(
     }
 )
 
-#' @rdname optimizeALS
+#' @rdname runINMF_R
 #' @export
 setMethod(
-    "optimizeALS",
+    "runINMF_R",
     signature(object = "list"),
     function(
         object,
         k,
         lambda = 5.0,
-        thresh = 1e-6,
         maxIter = 30,
         nrep = 1,
         H.init = NULL,
         W.init = NULL,
         V.init = NULL,
+        method = c("planc", "liger", "rcppml"),
         useUnshared = FALSE,
         seed = 1,
         readH5 = "auto",
-        verbose = getOption("ligerVerbose"),
-        # Deprecated coding style
-        max.iters = maxIter,
-        use.unshared = useUnshared,
-        rand.seed = seed,
-        # Deprecated functionality
-        print.obj = NULL
+        verbose = getOption("ligerVerbose")
     ) {
-        .deprecateArgs(list(max.iters = "maxIter", use.unshared = "useUnshared",
-                            rand.seed = "seed"), defunct = "print.obj")
-        if (!all(sapply(object, is.matrix))) {
-            stop("All values in 'object' must be a matrix")
-        }
         # E ==> cell x gene scaled matrices
-        E <- lapply(object, t)
+        E <- object
         nDatasets <- length(E)
-        nCells <- sapply(E, nrow)
-        tmp <- gc() # nolint
-        nGenes <- ncol(E[[1]])
+        nCells <- sapply(E, ncol)
+        nGenes <- nrow(E[[1]])
         if (k >= nGenes) {
             stop("Select k lower than the number of variable genes: ", nGenes)
         }
-        Wm <- matrix(0, k, nGenes)
-        Vm <- rep(list(matrix(0, k, nGenes)), nDatasets)
+        Wm <- matrix(0, nGenes, k)
+        Vm <- rep(list(matrix(0, nGenes, k)), nDatasets)
         Hm <- lapply(nCells, function(n) matrix(0, n, k))
-        tmp <- gc()
+
         bestObj <- Inf
         bestSeed <- seed
-        runStats <- matrix(0, nrep, 2)
         for (i in seq(nrep)) {
             set.seed(seed = seed + i - 1)
             startTime <- Sys.time()
             if (!is.null(W.init))
-                W <- t(.checkInit(W.init, nCells, nGenes, k, "W"))
-            else W <- matrix(stats::runif(nGenes * k, 0, 2), k, nGenes)
+                W <- .checkInit(W.init, nCells, nGenes, k, "W")
+            else W <- matrix(stats::runif(nGenes * k, 0, 2), nGenes, k)
+
             if (!is.null(V.init)) {
                 V <- .checkInit(V.init, nCells, nGenes, k, "V")
-                V <- lapply(V, t)
             } else
                 V <- lapply(seq(nDatasets), function(i) {
-                    matrix(stats::runif(nGenes * k, 0, 2), k, nGenes)})
+                    matrix(stats::runif(nGenes * k, 0, 2), nGenes, k)})
+
             if (!is.null(H.init)) {
                 H <- .checkInit(H.init, nCells, nGenes, k, "H")
                 H <- lapply(H, t)
@@ -266,71 +240,27 @@ setMethod(
                 H <- lapply(nCells, function(n) {
                     matrix(stats::runif(n * k, 0, 2), n, k)
                 })
-            tmp <- gc()
-            delta <- 1
-            iters <- 0
-            sqrtLambda <- sqrt(lambda)
 
-            obj0 <- sum(sapply(
-                seq(nDatasets),
-                function(i) norm(E[[i]] - H[[i]] %*% (W + V[[i]]), "F") ^ 2
-            )) +
-                sum(sapply(
-                    seq(nDatasets),
-                    function(i) lambda*norm(H[[i]] %*% V[[i]], "F") ^ 2
-                ))
-            tmp <- gc()
             if (isTRUE(verbose)) {
                 .log("Start iNMF with seed: ", seed + i - 1, "...")
-                pb <- utils::txtProgressBar(0, maxIter, style = 3)
+                if (maxIter > 0)
+                    pb <- utils::txtProgressBar(0, maxIter, style = 3)
             }
-            while (delta > thresh & iters < maxIter) {
-                H <- lapply(
-                    seq(nDatasets),
-                    function(i)
-                        t(solveNNLS(
-                            C = rbind(t(W + V[[i]]), sqrtLambda*t(V[[i]])),
-                            B = rbind(t(E[[i]]), matrix(0, nGenes, nCells[i]))
-                        ))
-                )
-                tmp <- gc()
-                V <- lapply(
-                    seq(nDatasets),
-                    function(i)
-                        solveNNLS(C = rbind(H[[i]], sqrtLambda*H[[i]]),
-                            B = rbind(E[[i]] - H[[i]] %*% W,
-                                      matrix(0, nCells[[i]], nGenes)))
-                )
-                tmp <- gc()
-                W <- solveNNLS(C = rbindlist(H),
-                               B = rbindlist(lapply(seq(nDatasets),
-                                   function(i) E[[i]] - H[[i]] %*% V[[i]]
-                               )))
-                tmp <- gc()
-                obj <- sum(sapply(
-                    seq(nDatasets),
-                    function(i) norm(E[[i]] - H[[i]] %*% (W + V[[i]]), "F") ^ 2
-                )) +
-                    sum(sapply(
-                        seq(nDatasets),
-                        function(i)
-                            lambda*norm(H[[i]] %*% V[[i]], "F") ^ 2
-                    ))
-                tmp <- gc()
-                delta <- abs(obj0 - obj) / (mean(obj0, obj))
-                obj0 <- obj
-                iters <- iters + 1
-                if (isTRUE(verbose))
-                    utils::setTxtProgressBar(pb, value = iters)
+            iter <- 0
+            while (iter < maxIter) {
+                H <- inmfSolveH(W = W, V = V, E = E, lambda = lambda)
+                V <- inmfSolveV(W = W, H = H, E = E, lambda = lambda)
+                W <- inmfSolveW(H = H, V = V, E = E, lambda = lambda)
+                iter <- iter + 1
+                if (isTRUE(verbose) && maxIter > 0)
+                    utils::setTxtProgressBar(pb, value = iter)
+
             }
-            if (isTRUE(verbose)) {
+            if (isTRUE(verbose) && maxIter > 0) {
                 utils::setTxtProgressBar(pb, value = maxIter)
                 cat("\n")
             }
-            # if (iters == maxIter) {
-            #   print("Warning: failed to converge within the allowed number of iterations.
-            #         Re-running with a higher maxIter is recommended.")
-            # }
+            obj <- inmf_calcObj(E, H, W, V, lambda)
             if (obj < bestObj) {
                 Wm <- W
                 Hm <- H
@@ -339,33 +269,68 @@ setMethod(
                 bestSeed <- seed + i - 1
             }
             endTime <- difftime(time1 = Sys.time(), time2 = startTime,
-                                 units = "auto")
-            runStats[i, 1] <- as.double(endTime)
-            runStats[i, 2] <- iters
+                                units = "auto")
             if (isTRUE(verbose)) {
-                .log("Finished in ", runStats[i, 1], " ", units(endTime),
-                     ", ", iters, " iterations. \nMax iterations set: ",
-                     maxIter, "\nFinal objective delta: ", delta)
+                .log("Finished in ", endTime, " ", units(endTime),
+                     "\nObjective error: ", bestObj)
                 .log("Objective: ", obj)
                 .log("Best results with seed ", bestSeed)
             }
         }
-        out <- list(H = Hm, V = Vm, W = t(Wm))
+        out <- list(H = lapply(Hm, t), V = Vm, W = Wm)
         factorNames <- paste0("Factor_", seq(k))
         for (i in seq(nDatasets)) {
-            out$H[[i]] <- t(out$H[[i]])
-            colnames(out$H[[i]]) <- colnames(object[[i]])
-            rownames(out$H[[i]]) <- factorNames
-            out$V[[i]] <- t(out$V[[i]])
-            rownames(out$V[[i]]) <- rownames(object[[i]])
-            colnames(out$V[[i]]) <- factorNames
+            dimnames(out$H[[i]]) <- list(factorNames, colnames(object[[i]]))
+            dimnames(out$V[[i]]) <- list(rownames(object[[i]]), factorNames)
         }
         names(out$V) <- names(out$H) <- names(object)
-        rownames(out$W) <- rownames(object[[1]])
-        colnames(out$W) <- factorNames
+        dimnames(out$W) <- list(rownames(object[[1]]), factorNames)
         return(out)
     }
 )
 
-# Binds list of matrices row-wise (vertical stack)
-rbindlist <- function(mat_list) do.call(rbind, mat_list)
+inmf_calcObj <- function(E, H, W, V, lambda) {
+    # E - dgCMatrix
+    # H, W, V - matrix
+    obj <- 0
+    for (i in seq_along(E)) {
+        obj <- obj +
+            Matrix::norm(E[[i]] - (W + V[[i]]) %*% t(H[[i]]), "F") ^ 2 +
+            lambda*norm(V[[i]] %*% t(H[[i]]), "F") ^ 2
+    }
+    return(obj)
+}
+
+inmfSolveH <- function(W, V, E, lambda) {
+    H <- list()
+    for (i in seq_along(E)) {
+        CtC <- t(W + V[[i]]) %*% (W + V[[i]]) + lambda*(t(V[[i]]) %*% V[[i]])
+        CtB <- as.matrix(t(W + V[[i]]) %*% E[[i]])
+        H[[i]] <- t(RcppPlanc::bppnnls_prod(CtC, CtB))
+    }
+    return(H)
+}
+
+inmfSolveV <- function(W, H, E, lambda) {
+    V <- list()
+    for (i in seq_along(E)) {
+        CtC <- (1 + lambda)*(t(H[[i]]) %*% H[[i]])
+        CtB <- as.matrix(t(H[[i]]) %*% t(E[[i]]))
+        CtB <- CtB - t(H[[i]]) %*% H[[i]] %*% t(W)
+        V[[i]] <- t(RcppPlanc::bppnnls_prod(CtC, CtB))
+    }
+    return(V)
+}
+
+inmfSolveW <- function(H, V, E, lambda) {
+    m <- nrow(E[[1]])
+    k <- ncol(H[[1]])
+    CtC <- matrix(0, k, k)
+    CtB <- matrix(0, k, m)
+    for (i in seq_along(E)) {
+        CtC <- CtC + t(H[[i]]) %*% H[[i]]
+        CtB <- CtB + as.matrix(t(H[[i]]) %*% t(E[[i]])) -
+            t(H[[i]]) %*% H[[i]] %*% t(V[[i]])
+    }
+    return(t(RcppPlanc::bppnnls_prod(CtC, CtB)))
+}

@@ -13,7 +13,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "")
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
 set(srclist ModularityOptimizer.cpp RModularityOptimizer.cpp RcppExports.cpp
-data_processing.cpp fast_wilcox.cpp feature_mat.cpp quantile_norm.cpp run_nmf.cpp snn.cpp)
+data_processing.cpp fast_wilcox.cpp feature_mat.cpp quantile_norm.cpp snn.cpp)
 list(TRANSFORM srclist PREPEND "${PROJECT_SOURCE_DIR}/src/")
 add_library(rliger2 SHARED ${srclist})
 set_target_properties(rliger2 PROPERTIES PREFIX "")

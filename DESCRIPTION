@@ -27,7 +27,7 @@ Author: Joshua Welch [aut],
         Robert Lee [ctb],
         Yichen Wang [aut, cre],
         Andrew Robbins [ctb]
-Maintainer: Chao Gao <gchao@umich.edu>
+Maintainer: Yichen Wang <wayichen@umich.edu>
 BugReports: https://github.com/welch-lab/liger/issues
 URL: https://github.com/welch-lab/liger
 License: GPL-3 | file LICENSE

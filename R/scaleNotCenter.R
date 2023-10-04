@@ -137,6 +137,7 @@ scaleNotCenter <- function(
                  dims = length(features), dtype = "int")
     h5file[[paste0(resultH5Path, "/featureIdx")]][1:length(featureIdx)] <-
         featureIdx
+    h5fileInfo(ld, "scaleData", check = FALSE) <- resultH5Path
     return(ld)
 }
 
@@ -169,7 +170,7 @@ scaleNotCenter <- function(
                                    cellIdx] <- chunk
         }
     )
-    h5fileInfo(ld, resultH5Path, check = FALSE) <- resultH5Path
+    h5fileInfo(ld, "scaleData", check = FALSE) <- resultH5Path
     safeH5Create(
         ld,
         dataPath = paste0(resultH5Path, ".featureIdx"),
@@ -188,9 +189,8 @@ scaleNotCenter <- function(
                       dimnames = list(NULL, colnames(norm.subset))))
     scaled <- t(scaleNotCenterFast(t(norm.subset)))
     # scaled: g x c
-    # scaled <- as.matrix(t(scaled))
-    scaled[is.na(scaled)] <- 0
-    scaled[scaled == Inf] = 0
+    scaled@x[is.na(scaled@x)] <- 0
+    scaled@x[scaled@x == Inf] <- 0
     rownames(scaled) <- rownames(norm.subset)
     colnames(scaled) <- colnames(norm.subset)
     return(scaled)

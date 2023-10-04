@@ -115,10 +115,6 @@ max_factor <- function(H, dims_use, center_cols = FALSE) {
     .Call(`_rliger2_max_factor`, H, dims_use, center_cols)
 }
 
-solveNNLS <- function(C, B) {
-    .Call(`_rliger2_solveNNLS`, C, B)
-}
-
 ComputeSNN <- function(nn_ranked, prune) {
     .Call(`_rliger2_ComputeSNN`, nn_ranked, prune)
 }

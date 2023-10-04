@@ -31,6 +31,7 @@ runUINMF <- function(
 
 #' @export
 #' @rdname runUINMF
+#' @method runUINMF liger
 runUINMF.liger <- function(
         object,
         k = 20,
@@ -41,25 +42,40 @@ runUINMF.liger <- function(
         verbose = getOption("ligerVerbose"),
         ...
 ) {
+    .checkObjVersion(object)
     object <- recordCommand(object, dependencies = "RcppPlanc")
-    Elist <- getMatrix(object, "scaleData", returnList = TRUE)
+    object <- removeMissing(object, orient = "cell", verbose = verbose)
+    # Elist <- getMatrix(object, "scaleData", returnList = TRUE)
+
+    Elist <- lapply(datasets(object), function(ld) {
+        if (is.null(scaleData(ld)))
+            stop("Scaled data not available. ",
+                 "Run `scaleNotCenter(object)` first")
+        return(scaleData(ld))
+    })
     Ulist <- getMatrix(object, "scaleUnsharedData", returnList = TRUE)
+    if (all(sapply(Ulist, is.null))) {
+        stop("No scaled data for unshared feature found. Run `selectGenes()` ",
+             "with `unshared = TRUE` and then `scaleNotCenter()`.")
+    }
     res <- runUINMF.list(Elist, Ulist, k = k, lambda = lambda,
                          nIteration = nIteration, nRandomStarts = nRandomStarts,
                          seed = seed, verbose = verbose, ...)
     for (i in seq_along(object)) {
         ld <- dataset(object, i)
-        ld@H <- t(res$H[[i]])
+        ld@H <- res$H[[i]]
         ld@V <- res$V[[i]]
         if (!is.null(ld@scaleUnsharedData)) ld@U <- res$U[[i]]
         datasets(object, check = FALSE)[[i]] <- ld
     }
     object@W <- res$W
+    object@uns$factorization <- list(k = k, lambda = lambda)
     return(object)
 }
 
 #' @export
 #' @rdname runUINMF
+#' @method runUINMF list
 #' @param unsharedList List of matrices for unshared features
 runUINMF.list <- function(
         object,
@@ -72,27 +88,9 @@ runUINMF.list <- function(
         verbose = getOption("ligerVerbose"),
         ...
 ) {
-    nGene <- sapply(object, nrow)
-    if (!all(nGene == nGene[1])) {
-        stop("Number of rows must be the same in all matrices in `object`")
-    }
-    for (i in seq_along(object)) {
-        # Force sparse, and create 0xN matrix for dataset without unshared
-        object[[i]] <- as(object[[i]], "CsparseMatrix")
-        if (!is.null(unsharedList[[i]])) {
-            if (ncol(unsharedList[[i]]) != ncol(object[[i]])) {
-                stop("Number of columns in each matrix from `unsharedList` ",
-                     "must match with the corresponding matrix from `object`")
-            }
-            unsharedList[[i]] <- as(unsharedList[[i]], "CsparseMatrix")
-        } else {
-            unsharedList[[i]] <- as(as(as(Matrix::Matrix(
-                nrow = 0, ncol = ncol(object[[i]])
-            ), "dMatrix"), "generalMatrix"), "CsparseMatrix")
-        }
-    }
     bestObj <- Inf
     bestRes <- NULL
+    bestSeed <- NULL
     for (i in seq(nRandomStarts)) {
         seed <- seed + i - 1
         set.seed(seed)
@@ -101,28 +99,32 @@ runUINMF.list <- function(
         if (res$objErr < bestObj) {
             bestRes <- res
             bestObj <- res$objErr
+            bestSeed <- seed
         }
     }
+    if (isTRUE(verbose) && nRandomStarts > 1) {
+        .log("Best objective error: ", bestObj, "\nBest seed: ", bestSeed)
+    }
     rm(res)
-    genes <- rownames(object[[1]])
+    features <- rownames(object[[1]])
     unsharedFeatures <- lapply(unsharedList, rownames)
     factorNames <- paste0("Factor_", seq(k))
     barcodes <- lapply(object, colnames)
     for (i in seq_along(object)) {
-        rownames(bestRes$H[[i]]) <- barcodes[[i]]
-        colnames(bestRes$H[[i]]) <- factorNames
-        rownames(bestRes$V[[i]]) <- genes
-        colnames(bestRes$V[[i]]) <- factorNames
+        bestRes$H[[i]] <- t(bestRes$H[[i]])
+        dimnames(bestRes$H[[i]]) <- list(factorNames, barcodes[[i]])
+        dimnames(bestRes$V[[i]]) <- list(features, factorNames)
+        dimnames(bestRes$U[[i]]) <- list(unsharedFeatures[[i]], factorNames)
         rownames(bestRes$U[[i]]) <- unsharedFeatures[[i]]
         colnames(bestRes$U[[i]]) <- factorNames
     }
-    rownames(bestRes$W) <- genes
-    colnames(bestRes$W) <- factorNames
+    dimnames(bestRes$W) <- list(features, factorNames)
     return(bestRes)
 }
 
 #' @export
 #' @rdname runUINMF
+#' @method runUINMF Seurat
 #' @param datasetVar Variable for dataset belonging.
 runUINMF.Seurat <- function(
         object,

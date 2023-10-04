@@ -26,11 +26,13 @@
 \alias{scaleData,ligerDataset,missing-method}
 \alias{scaleData<-,ligerDataset,ANY,matrixLike_OR_NULL-method}
 \alias{scaleData<-,ligerDataset,ANY,H5D-method}
+\alias{scaleData<-,ligerDataset,ANY,H5Group-method}
 \alias{scaleUnsharedData}
 \alias{scaleUnsharedData<-}
 \alias{scaleUnsharedData,ligerDataset,missing-method}
 \alias{scaleUnsharedData<-,ligerDataset,ANY,matrixLike_OR_NULL-method}
 \alias{scaleUnsharedData<-,ligerDataset,ANY,H5D-method}
+\alias{scaleUnsharedData<-,ligerDataset,ANY,H5Group-method}
 \alias{getMatrix}
 \alias{getMatrix,ligerDataset,ANY,missing,missing-method}
 \alias{h5fileInfo}
@@ -90,6 +92,8 @@ scaleData(x, check = TRUE) <- value
 
 \S4method{scaleData}{ligerDataset,ANY,H5D}(x, check = TRUE) <- value
 
+\S4method{scaleData}{ligerDataset,ANY,H5Group}(x, check = TRUE) <- value
+
 scaleUnsharedData(x, dataset = NULL)
 
 scaleUnsharedData(x, check = TRUE) <- value
@@ -99,6 +103,8 @@ scaleUnsharedData(x, check = TRUE) <- value
 \S4method{scaleUnsharedData}{ligerDataset,ANY,matrixLike_OR_NULL}(x, check = TRUE) <- value
 
 \S4method{scaleUnsharedData}{ligerDataset,ANY,H5D}(x, check = TRUE) <- value
+
+\S4method{scaleUnsharedData}{ligerDataset,ANY,H5Group}(x, check = TRUE) <- value
 
 getMatrix(x, slot = "rawData", dataset = NULL, returnList = FALSE)
 

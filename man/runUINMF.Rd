@@ -66,8 +66,8 @@ Default \code{20}.}
 
 \item{nIteration}{Total number of iterations to perform. Default \code{30}.}
 
-\item{nRandomStarts}{Number of restarts to perform (iNMF objective function is
-non-convex, so taking the best objective from multiple successive
+\item{nRandomStarts}{Number of restarts to perform (iNMF objective function
+is non-convex, so taking the best objective from multiple successive
 initializations is recommended). For easier reproducibility, this increments
 the random seed by 1 for each consecutive restart, so future factorizations
 of the same dataset can be run with one rep if necessary. Default \code{1}.}

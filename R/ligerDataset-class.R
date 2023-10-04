@@ -5,9 +5,10 @@ setClassUnion("matrixLike_OR_NULL", c("matrixLike", "NULL"))
 # It is quite hard to handle "H5D here, which is indeed defined as an R6 class.
 # I'm not sure if this is a proper solution
 setOldClass("H5D")
+setOldClass("H5Group")
 suppressWarnings(setClassUnion("dgCMatrix_OR_H5D_OR_NULL", c("dgCMatrix", "H5D", "NULL")))
 setClassUnion("matrix_OR_H5D_OR_NULL", c("matrix", "H5D", "NULL"))
-setClassUnion("matrixLike_OR_H5D_OR_NULL", c("matrixLike", "H5D", "NULL"))
+setClassUnion("matrixLike_OR_H5D_OR_H5Group_OR_NULL", c("matrixLike", "H5D", "H5Group", "NULL"))
 setClassUnion("index",
               members = c("logical", "numeric", "character"))
 
@@ -39,8 +40,8 @@ ligerDataset <- setClass(
     representation(
         rawData = "dgCMatrix_OR_H5D_OR_NULL",
         normData = "dgCMatrix_OR_H5D_OR_NULL",
-        scaleData = "matrixLike_OR_H5D_OR_NULL",
-        scaleUnsharedData = "matrixLike_OR_H5D_OR_NULL",
+        scaleData = "matrixLike_OR_H5D_OR_H5Group_OR_NULL",
+        scaleUnsharedData = "matrixLike_OR_H5D_OR_H5Group_OR_NULL",
         varUnsharedFeatures = "character",
         H = "matrix_OR_NULL",
         V = "matrix_OR_NULL",
@@ -182,10 +183,10 @@ modalOf <- function(object) {
 
 .valid.ligerDataset <- function(object) {
     if (isH5Liger(object)) {
-        message("Checking h5 ligerDataset validity")
+        # message("Checking h5 ligerDataset validity")
         .checkH5LigerDatasetLink(object)
     } else {
-        message("Checking in memory ligerDataset validity")
+        # message("Checking in memory ligerDataset validity")
         .checkLigerDatasetBarcodes(object)
     }
     # TODO more checks
@@ -276,8 +277,18 @@ setMethod(
                     cat(paste0(slot, ":"), nrow(data), "features\n")
                 }
                 if (inherits(data, "H5D")) {
-                    cat(paste0(slot, ":"), paste(data$dims, collapse = " x "),
-                        "values in H5D object\n")
+                    if (length(data$dims) == 1) {
+                        cat(paste0(slot, ":"), data$dims,
+                            "non-zero values in H5D object\n")
+                    } else {
+                        cat(paste0(slot, ":"),
+                            paste(data$dims, collapse = " x "),
+                            "values in H5D object\n")
+                    }
+                }
+                if (inherits(data, "H5Group")) {
+                    cat(paste0(slot, ":"), data[["data"]]$dims,
+                        "non-zero values in H5Group object\n")
                 }
             }
         }
@@ -585,6 +596,20 @@ setReplaceMethod(
 
 #' @export
 #' @rdname ligerDataset-class
+setReplaceMethod(
+    "scaleData",
+    signature(x = "ligerDataset", check = "ANY", value = "H5Group"),
+    function(x, check = TRUE, value) {
+        if (!isH5Liger(x))
+            stop("Cannot replace slot with on-disk data for in-memory object.")
+        x@scaleData <- value
+        if (isTRUE(check)) methods::validObject(x)
+        x
+    }
+)
+
+#' @export
+#' @rdname ligerDataset-class
 setGeneric(
     "scaleUnsharedData",
     function(x, dataset = NULL) standardGeneric("scaleUnsharedData")
@@ -641,6 +666,20 @@ setReplaceMethod(
 setReplaceMethod(
     "scaleUnsharedData",
     signature(x = "ligerDataset", check = "ANY", value = "H5D"),
+    function(x, check = TRUE, value) {
+        if (!isH5Liger(x))
+            stop("Cannot replace slot with on-disk data for in-memory object.")
+        x@scaleUnsharedData <- value
+        if (isTRUE(check)) methods::validObject(x)
+        x
+    }
+)
+
+#' @export
+#' @rdname ligerDataset-class
+setReplaceMethod(
+    "scaleUnsharedData",
+    signature(x = "ligerDataset", check = "ANY", value = "H5Group"),
     function(x, check = TRUE, value) {
         if (!isH5Liger(x))
             stop("Cannot replace slot with on-disk data for in-memory object.")

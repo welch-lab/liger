@@ -343,18 +343,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// solveNNLS
-arma::mat solveNNLS(const arma::mat& C, const arma::mat& B);
-RcppExport SEXP _rliger2_solveNNLS(SEXP CSEXP, SEXP BSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::mat& >::type C(CSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type B(BSEXP);
-    rcpp_result_gen = Rcpp::wrap(solveNNLS(C, B));
-    return rcpp_result_gen;
-END_RCPP
-}
 // ComputeSNN
 Eigen::SparseMatrix<double> ComputeSNN(Eigen::MatrixXd nn_ranked, double prune);
 RcppExport SEXP _rliger2_ComputeSNN(SEXP nn_rankedSEXP, SEXP pruneSEXP) {
@@ -420,7 +408,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rliger2_cluster_vote", (DL_FUNC) &_rliger2_cluster_vote, 2},
     {"_rliger2_scale_columns_fast", (DL_FUNC) &_rliger2_scale_columns_fast, 3},
     {"_rliger2_max_factor", (DL_FUNC) &_rliger2_max_factor, 3},
-    {"_rliger2_solveNNLS", (DL_FUNC) &_rliger2_solveNNLS, 2},
     {"_rliger2_ComputeSNN", (DL_FUNC) &_rliger2_ComputeSNN, 2},
     {"_rliger2_WriteEdgeFile", (DL_FUNC) &_rliger2_WriteEdgeFile, 3},
     {"_rliger2_DirectSNNToFile", (DL_FUNC) &_rliger2_DirectSNNToFile, 4},

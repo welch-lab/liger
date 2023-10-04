@@ -195,11 +195,14 @@ restoreH5Liger <- function(object, filePath = NULL) {
         }
         h5.meta <- h5fileInfo(object)
         if (is.null(filePath)) filePath <- h5.meta$filename
+        if (is.null(filePath)) {
+            stop("No filename identified")
+        }
         if (!file.exists(filePath)) {
             stop("HDF5 file path does not exist:\n",
                  filePath)
         }
-        .log("Restoring ligerDataset from: ", filePath)
+        .log("filename identified: ", filePath)
         h5file <- hdf5r::H5File$new(filePath, mode = "r+")
         h5.meta$filename <- h5file$filename
         pathChecks <- unlist(lapply(h5.meta[4:10], function(x) {
@@ -228,16 +231,15 @@ restoreH5Liger <- function(object, filePath = NULL) {
         rawData(object, check = FALSE) <- h5file[[h5.meta$rawData]]
         if (!is.null(h5.meta$normData))
             normData(object, check = FALSE) <- h5file[[h5.meta$normData]]
-        if (!is.null(h5.meta$scaleData))
+        if (!is.null(h5.meta$scaleData)) {
             scaleData(object, check = FALSE) <- h5file[[h5.meta$scaleData]]
+        }
         methods::validObject(object)
     } else {
         # Working for liger object
         if (!is.null(filePath)) {
             if (!is.list(filePath) || is.null(names(filePath)))
                 stop("`filePath` has to be a named list for liger object.")
-            if (!any(names(filePath) %in% names(object)))
-                stop("names of `filePath` must be found in `names(object)`.")
         }
         for (d in names(object)) {
             if (isH5Liger(object, d)) {
@@ -249,7 +251,8 @@ restoreH5Liger <- function(object, filePath = NULL) {
                                 filePath[[d]])
                     else path <- filePath[[d]]
                 }
-                dataset(object, d, qc = FALSE) <-
+                .log("Restoring dataset \"", d, "\"")
+                datasets(object, check = FALSE)[[d]] <-
                     restoreH5Liger(dataset(object, d), filePath[[d]])
             }
         }
@@ -269,4 +272,40 @@ restoreH5Liger <- function(object, filePath = NULL) {
     } else {
         list(folder = NULL, data = path)
     }
+}
+
+#' Close all links (to HDF5 files) of a liger object
+#' @description When need to interact with the data embedded in HDF5 files out
+#' of the currect R session, the HDF5 files has to be closed in order to be
+#' available to other processes.
+#' @param object liger object.
+#' @return \code{object} with links closed.
+#' @export
+closeAllH5 <- function(object) {
+    if (!isH5Liger(object)) return(object)
+    for (dn in names(object)) {
+        if (!isH5Liger(object, dn)) next
+        ld <- dataset(object, dn)
+        # if (!is.null(rawData(ld))) rawData(ld)$close()
+        # if (!is.null(normData(ld))) normData(ld)$close()
+        # if (!is.null(scaleData(ld))) scaleData(ld)$close()
+        # if (!is.null(scaleUnsharedData(ld))) scaleUnsharedData(ld)$close()
+        h5f <- getH5File(object, dn)
+        h5f$close_all()
+    }
+    return(object)
+}
+
+.H5GroupToH5SpMat <- function(obj, dims) {
+    groupPath <- obj$get_obj_name()
+    RcppPlanc::H5SpMat(filename = obj$get_filename(),
+                       valuePath = paste0(groupPath, "/data"),
+                       rowindPath = paste0(groupPath, "/indices"),
+                       colptrPath = paste0(groupPath, "/indptr"),
+                       nrow = dims[1], ncol = dims[2])
+}
+
+.H5DToH5Mat <- function(obj) {
+    RcppPlanc::H5Mat(filename = obj$get_filename(),
+                     dataPath = obj$get_obj_name())
 }

@@ -324,21 +324,24 @@ readLiger <- function(
         clusterName = "clusters",
         h5FilePath = NULL,
         update = TRUE) {
-    oldObj <- readRDS(filename)
-    if (!inherits(oldObj, "liger"))
+    obj <- readRDS(filename)
+    if (!inherits(obj, "liger"))
         stop("Object is not of class \"liger\".")
-    oldVer <- oldObj@version
-    if (oldVer >= package_version("1.99.0")) return(oldObj)
-    .log("Older version (", oldVer, ") of liger object detected.")
+    ver <- obj@version
+    if (ver >= package_version("1.99.0")) {
+        if (isH5Liger(obj)) obj <- restoreH5Liger(obj)
+        return(obj)
+    }
+    .log("Older version (", ver, ") of liger object detected.")
     if (isTRUE(update)) {
         .log("Updating the object structure to make it compatible ",
              "with current version (", utils::packageVersion("rliger2"), ")")
-        return(convertOldLiger(oldObj, dimredName = dimredName,
+        return(convertOldLiger(obj, dimredName = dimredName,
                                clusterName = clusterName,
                                h5FilePath = h5FilePath))
     } else {
         .log("`update = FALSE` specified. Returning the original object.")
-        return(oldObj)
+        return(obj)
     }
 }
 

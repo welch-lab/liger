@@ -93,7 +93,6 @@ liger <- setClass(
         for (d in names(x)) {
             ld <- dataset(x, d)
             if (!is.null(ld@V)) {
-                print(all.equal(rownames(ld@V), varFeatures(x)))
                 if (!identical(rownames(ld@V), varFeatures(x)))
                     return(paste("Variable features do not match dimension",
                                  "of V matrix in dataset", d))
@@ -105,9 +104,18 @@ liger <- setClass(
                         return(paste("Variable features do not match dimension",
                                      "of scaleData in dataset", d))
                 } else {
-                    if (scaleData(ld)$dims[1] != length(varFeatures(x)))
-                        return(paste("Variable features do not match dimension",
-                                     "of scaleData in dataset (H5)", d))
+                    if (inherits(scaleData(ld), "H5D")) {
+                        if (scaleData(ld)$dims[1] != length(varFeatures(x)))
+                            return(paste("Variable features do not match ",
+                                         "dimension of scaleData in dataset ",
+                                         "(H5)", d))
+                    } else if (inherits(scaleData(ld), "H5Group")) {
+                        if (scaleData(ld)[["featureIdx"]]$dims != length(varFeatures(x))) {
+                            return(paste("Variable features do not match ",
+                                         "dimension of scaleData in dataset ",
+                                         "(H5)", d))
+                        }
+                    }
                 }
             }
         }
@@ -116,7 +124,7 @@ liger <- setClass(
 }
 
 .valid.liger <- function(object) {
-    message("Checking liger object validity")
+    # message("Checking liger object validity")
     res <- .checkLigerBarcodes(object)
     if (!is.null(res)) return(res)
     res <- .checkLigerVarFeature(object)
@@ -372,7 +380,7 @@ setGeneric("dataset", function(x, dataset = NULL) standardGeneric("dataset"))
 
 #' @export
 #' @rdname liger-class
-setGeneric("dataset<-", function(x, dataset, type = NULL, qc = TRUE, value) {
+setGeneric("dataset<-", function(x, dataset, type = NULL, qc = FALSE, value) {
     standardGeneric("dataset<-")
 })
 
@@ -404,6 +412,56 @@ setMethod("dataset", signature(x = "liger", dataset = "numeric"),
               datasets(x)[[dataset]]
           })
 
+.mergeCellMeta <- function(cm1, cm2) {
+    newDF <- S4Vectors::DataFrame(row.names = c(rownames(cm1), rownames(cm2)))
+    for (var in names(cm1)) {
+        value <- cm1[[var]]
+        if (var %in% names(cm2)) {
+            # TODO: check type
+            tryCatch(
+                expr = {
+                    if (is.null(dim(value))) {
+                        value <- c(value, cm2[[var]])
+                    } else {
+                        value <- rbind(value, cm2[[var]])
+                    }
+                },
+                finally = {
+                    cm2Idx <- seq(nrow(cm1) + 1, nrow(cm1) + nrow(cm2))
+                    if (is.null(dim(value))) value[cm2Idx] <- NA
+                    else {
+                        empty <- matrix(NA, nrow = nrow(cm2), ncol = ncol(value))
+                        value <- rbind(value, empty)
+                    }
+                }
+            )
+        } else {
+            cm2Idx <- seq(nrow(cm1) + 1, nrow(cm1) + nrow(cm2))
+            if (is.null(dim(value))) value[cm2Idx] <- NA
+            else {
+                empty <- matrix(NA, nrow = nrow(cm2), ncol = ncol(value))
+                value <- rbind(value, empty)
+            }
+        }
+        newDF[[var]] <- value
+    }
+    for (var in names(cm2)[!names(cm2) %in% names(cm1)]) {
+        value <- cm2[[var]]
+        if (is.null(dim(value))) {
+            if (is.factor(value)) {
+                value <- factor(c(rep(NA, nrow(cm1)), value),
+                                levels = levels(value))
+            } else {
+                value <- c(rep(NA, nrow(cm1)), value)
+            }
+        } else {
+            empty <- matrix(NA, nrow = nrow(cm1), ncol = ncol(value))
+            value <- rbind(empty, value)
+        }
+        newDF[[var]] <- value
+    }
+    return(newDF)
+}
 .expandDataFrame <- function(df, idx) {
     dfList <- as.list(df)
     dfList <- lapply(dfList, function(x, idx) {
@@ -428,19 +486,20 @@ setMethod("dataset", signature(x = "liger", dataset = "numeric"),
 setReplaceMethod("dataset", signature(x = "liger", dataset = "character",
                                       type = "missing", qc = "ANY",
                                       value = "ligerDataset"),
-                 function(x, dataset, type = NULL, qc = TRUE, value) {
+                 function(x, dataset, type = NULL, qc = FALSE, value) {
                      if (dataset %in% names(x)) {
                          dataset(x, dataset) <- NULL
                      }
                      new.idx <- seq(ncol(x) + 1, ncol(x) + ncol(value))
                      x@datasets[[dataset]] <- value
-                     # TODO also add rows to cellMeta and H.norm
                      cm <- x@cellMeta
                      remainingRowname <- rownames(cm)
                      cm <- .expandDataFrame(cm, new.idx)
                      rownames(cm) <- c(remainingRowname, colnames(value))
+
                      levels(cm$dataset) <- c(levels(cm$dataset), dataset)
                      cm$dataset[new.idx] <- dataset
+                     cm$barcode[new.idx] <- colnames(value)
                      x@cellMeta <- cm
                      # x@W is genes x k, no need to worry
                      if (!is.null(x@H.norm)) {
@@ -462,11 +521,12 @@ setReplaceMethod("dataset", signature(x = "liger", dataset = "character",
                                       value = "matrixLike"),
                  function(x, dataset,
                           type = c("rawData", "normData", "scaleData"),
-                          qc = TRUE,
+                          qc = FALSE,
                           value) {
                      type <- match.arg(type)
                      if (type == "rawData") {
                          ld <- createLigerDataset(rawData = value)
+                         colnames(ld) <- paste0(dataset, "_", colnames(ld))
                      } else if (type == "normData") {
                          ld <- createLigerDataset(normData = value)
                      } else if (type == "scaleData") {
