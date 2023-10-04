@@ -1,0 +1,33 @@
+#!/bin/sh
+
+if test -z "$CMAKE"; then CMAKE="`which cmake`"; fi
+if test -z "$CMAKE"; then CMAKE=/Applications/CMake.app/Contents/bin/cmake; fi
+if ! test -f "$CMAKE"; then echo "no ‘cmake’ command found"; exit 1; fi
+
+: ${R_HOME=`R RHOME`}
+if test -z "${R_HOME}"; then
+  echo "could not determine R_HOME"
+  exit 1
+fi
+CC=`"${R_HOME}/bin/R" CMD config CC`
+CXX=`"${R_HOME}/bin/R" CMD config CXX`
+CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
+CPPFLAGS=`"${R_HOME}/bin/R" CMD config --cppflags`
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
+LDFLAGS=`"${R_HOME}/bin/R" CMD config --ldflags`
+FC=`"${R_HOME}/bin/R" CMD config FC`
+FLIBS=`"${R_HOME}/bin/R" CMD config FLIBS`
+BLAS_LIBS=`"${R_HOME}/bin/R" CMD config BLAS_LIBS`
+LAPACK_LIBS=`"${R_HOME}/bin/R" CMD config LAPACK_LIBS`
+
+CFLAGS="$CPPFLAGS $CFLAGS"
+CXXFLAGS="$CPPFLAGS $CXXFLAGS"
+LDFLAGS="$BLAS_LIBS $LAPACK_LIBS $LDFLAGS"
+
+cd src
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_POSITION_INDEPENDENT_CODE:bool=ON \
+  -DR_HOME="$R_HOME"
+
+mv Makefile Makefile.ucrt
