@@ -324,8 +324,10 @@
     }
     for (old in defunct) {
         if (old %in% names(callArgs)) {
-            lifecycle::deprecate_stop("1.99.0",
-                                      paste0(parentFuncName, "(", old, ")"))
+            lifecycle::deprecate_warn("1.99.0",
+                                      paste0(parentFuncName, "(", old, ")"), details = "Ignored.")
+            # lifecycle::deprecate_stop("1.99.0",
+            #                           paste0(parentFuncName, "(", old, ")"))
         }
     }
     rm(list = c(names(replace), defunct), envir = p)
@@ -390,4 +392,50 @@
 .nfstr <- function(need, from) {
     nf <- need[!need %in% from]
     paste(nf, collapse = ", ")
+}
+
+
+
+
+.getSeuratData <- function(object, layer, slot, assay = NULL) {
+    if (!requireNamespace("Seurat", quietly = TRUE)) {
+        stop("Seurat package has to be installed in advance.")
+    }
+    if (!requireNamespace("SeuratObject", quietly = TRUE)) {
+        stop("SeuratObject package has to be installed in advance.")
+    }
+    assayObj <- Seurat::GetAssay(object, assay = assay)
+    if (!"layers" %in% methods::slotNames(assayObj)) {
+        # An old version Assay object,
+        layer <- slot
+    }
+    if (utils::packageVersion("SeuratObject") >= package_version("4.9.9")) {
+        data <- SeuratObject::LayerData(object, assay = assay, layer = layer)
+    } else {
+        data <- SeuratObject::GetAssayData(object, assay = assay, slot = layer)
+    }
+    return(data)
+}
+
+.setSeuratData <- function(object, layer, slot, value, assay = NULL,
+                           denseIfNeeded = FALSE) {
+    if (!requireNamespace("Seurat", quietly = TRUE)) {
+        stop("Seurat package has to be installed in advance.")
+    }
+    if (!requireNamespace("SeuratObject", quietly = TRUE)) {
+        stop("SeuratObject package has to be installed in advance.")
+    }
+    assayObj <- Seurat::GetAssay(object, assay = assay)
+    if (!"layers" %in% methods::slotNames(assayObj)) {
+        # An old version Assay object,
+        layer <- slot
+        if (isTRUE(denseIfNeeded)) value <- as.matrix(value)
+    }
+    if (utils::packageVersion("SeuratObject") >= package_version("4.9.9")) {
+        SeuratObject::LayerData(object, assay = assay, layer = layer) <- value
+    } else {
+        object <- SeuratObject::SetAssayData(object, assay = assay,
+                                             slot = layer, new.data = value)
+    }
+    return(object)
 }

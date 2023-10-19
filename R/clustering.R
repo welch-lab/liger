@@ -156,8 +156,9 @@ NULL
 
 #' @rdname rliger2-deprecated
 #' @section \code{louvainCluster}:
-#' For \code{louvainCluster}, use \code{\link{runLouvainCluster}} as the
-#' replacement, while \code{\link{runLeidenCluster}} is more recommended.
+#' For \code{louvainCluster}, use \code{\link{runCluster}(method = "louvain")}
+#' as the replacement, while \code{\link{runCluster}} with default
+#' \code{method = "leiden"} is more recommended.
 #' @export
 louvainCluster <- function(
         object,

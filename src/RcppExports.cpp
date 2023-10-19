@@ -31,37 +31,51 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// scaleNotCenterFast
-arma::sp_mat scaleNotCenterFast(arma::sp_mat x);
-RcppExport SEXP _rliger2_scaleNotCenterFast(SEXP xSEXP) {
+// scaleNotCenter_byRow_rcpp
+arma::sp_mat scaleNotCenter_byRow_rcpp(arma::sp_mat x);
+RcppExport SEXP _rliger2_scaleNotCenter_byRow_rcpp(SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(scaleNotCenterFast(x));
+    rcpp_result_gen = Rcpp::wrap(scaleNotCenter_byRow_rcpp(x));
     return rcpp_result_gen;
 END_RCPP
 }
-// rowMeansFast
-NumericVector rowMeansFast(arma::sp_mat x);
-RcppExport SEXP _rliger2_rowMeansFast(SEXP xSEXP) {
+// scaleNotCenter_byRow_perDataset_rcpp
+arma::sp_mat scaleNotCenter_byRow_perDataset_rcpp(arma::sp_mat x, const arma::uvec& ann, const arma::uword& n);
+RcppExport SEXP _rliger2_scaleNotCenter_byRow_perDataset_rcpp(SEXP xSEXP, SEXP annSEXP, SEXP nSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(rowMeansFast(x));
+    Rcpp::traits::input_parameter< const arma::uvec& >::type ann(annSEXP);
+    Rcpp::traits::input_parameter< const arma::uword& >::type n(nSEXP);
+    rcpp_result_gen = Rcpp::wrap(scaleNotCenter_byRow_perDataset_rcpp(x, ann, n));
     return rcpp_result_gen;
 END_RCPP
 }
-// rowVarsFast
-NumericVector rowVarsFast(arma::sp_mat x, NumericVector means);
-RcppExport SEXP _rliger2_rowVarsFast(SEXP xSEXP, SEXP meansSEXP) {
+// rowVars_sparse_rcpp
+NumericVector rowVars_sparse_rcpp(const arma::sp_mat& x, const NumericVector& means);
+RcppExport SEXP _rliger2_rowVars_sparse_rcpp(SEXP xSEXP, SEXP meansSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type means(meansSEXP);
+    rcpp_result_gen = Rcpp::wrap(rowVars_sparse_rcpp(x, means));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rowDivide_rcpp
+arma::sp_mat rowDivide_rcpp(arma::sp_mat x, const arma::vec& v);
+RcppExport SEXP _rliger2_rowDivide_rcpp(SEXP xSEXP, SEXP vSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type means(meansSEXP);
-    rcpp_result_gen = Rcpp::wrap(rowVarsFast(x, means));
+    Rcpp::traits::input_parameter< const arma::vec& >::type v(vSEXP);
+    rcpp_result_gen = Rcpp::wrap(rowDivide_rcpp(x, v));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -305,41 +319,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// cluster_vote
-IntegerVector cluster_vote(const Eigen::MatrixXd& nn_ranked, IntegerVector clusts);
-RcppExport SEXP _rliger2_cluster_vote(SEXP nn_rankedSEXP, SEXP clustsSEXP) {
+// cluster_vote_rcpp
+IntegerVector cluster_vote_rcpp(const arma::mat& nn_ranked, IntegerVector clusts);
+RcppExport SEXP _rliger2_cluster_vote_rcpp(SEXP nn_rankedSEXP, SEXP clustsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type nn_ranked(nn_rankedSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type nn_ranked(nn_rankedSEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type clusts(clustsSEXP);
-    rcpp_result_gen = Rcpp::wrap(cluster_vote(nn_ranked, clusts));
+    rcpp_result_gen = Rcpp::wrap(cluster_vote_rcpp(nn_ranked, clusts));
     return rcpp_result_gen;
 END_RCPP
 }
-// scale_columns_fast
-Eigen::MatrixXd scale_columns_fast(Eigen::MatrixXd mat, bool scale, bool center);
-RcppExport SEXP _rliger2_scale_columns_fast(SEXP matSEXP, SEXP scaleSEXP, SEXP centerSEXP) {
+// max_factor_rcpp
+IntegerVector max_factor_rcpp(arma::mat H, const arma::uvec& dims_use, bool center);
+RcppExport SEXP _rliger2_max_factor_rcpp(SEXP HSEXP, SEXP dims_useSEXP, SEXP centerSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type mat(matSEXP);
-    Rcpp::traits::input_parameter< bool >::type scale(scaleSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type H(HSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type dims_use(dims_useSEXP);
     Rcpp::traits::input_parameter< bool >::type center(centerSEXP);
-    rcpp_result_gen = Rcpp::wrap(scale_columns_fast(mat, scale, center));
-    return rcpp_result_gen;
-END_RCPP
-}
-// max_factor
-IntegerVector max_factor(Eigen::MatrixXd H, IntegerVector dims_use, bool center_cols);
-RcppExport SEXP _rliger2_max_factor(SEXP HSEXP, SEXP dims_useSEXP, SEXP center_colsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type H(HSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type dims_use(dims_useSEXP);
-    Rcpp::traits::input_parameter< bool >::type center_cols(center_colsSEXP);
-    rcpp_result_gen = Rcpp::wrap(max_factor(H, dims_use, center_cols));
+    rcpp_result_gen = Rcpp::wrap(max_factor_rcpp(H, dims_use, center));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -384,9 +385,10 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_rliger2_RunModularityClusteringCpp", (DL_FUNC) &_rliger2_RunModularityClusteringCpp, 9},
-    {"_rliger2_scaleNotCenterFast", (DL_FUNC) &_rliger2_scaleNotCenterFast, 1},
-    {"_rliger2_rowMeansFast", (DL_FUNC) &_rliger2_rowMeansFast, 1},
-    {"_rliger2_rowVarsFast", (DL_FUNC) &_rliger2_rowVarsFast, 2},
+    {"_rliger2_scaleNotCenter_byRow_rcpp", (DL_FUNC) &_rliger2_scaleNotCenter_byRow_rcpp, 1},
+    {"_rliger2_scaleNotCenter_byRow_perDataset_rcpp", (DL_FUNC) &_rliger2_scaleNotCenter_byRow_perDataset_rcpp, 3},
+    {"_rliger2_rowVars_sparse_rcpp", (DL_FUNC) &_rliger2_rowVars_sparse_rcpp, 2},
+    {"_rliger2_rowDivide_rcpp", (DL_FUNC) &_rliger2_rowDivide_rcpp, 2},
     {"_rliger2_sumSquaredDeviations", (DL_FUNC) &_rliger2_sumSquaredDeviations, 2},
     {"_rliger2_denseZScore", (DL_FUNC) &_rliger2_denseZScore, 2},
     {"_rliger2_rowVarsDense", (DL_FUNC) &_rliger2_rowVarsDense, 2},
@@ -405,9 +407,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rliger2_cpp_rank_matrix_dense", (DL_FUNC) &_rliger2_cpp_rank_matrix_dense, 1},
     {"_rliger2_cpp_nnzeroGroups_dgc_T", (DL_FUNC) &_rliger2_cpp_nnzeroGroups_dgc_T, 6},
     {"_rliger2_makeFeatureMatrix", (DL_FUNC) &_rliger2_makeFeatureMatrix, 2},
-    {"_rliger2_cluster_vote", (DL_FUNC) &_rliger2_cluster_vote, 2},
-    {"_rliger2_scale_columns_fast", (DL_FUNC) &_rliger2_scale_columns_fast, 3},
-    {"_rliger2_max_factor", (DL_FUNC) &_rliger2_max_factor, 3},
+    {"_rliger2_cluster_vote_rcpp", (DL_FUNC) &_rliger2_cluster_vote_rcpp, 2},
+    {"_rliger2_max_factor_rcpp", (DL_FUNC) &_rliger2_max_factor_rcpp, 3},
     {"_rliger2_ComputeSNN", (DL_FUNC) &_rliger2_ComputeSNN, 2},
     {"_rliger2_WriteEdgeFile", (DL_FUNC) &_rliger2_WriteEdgeFile, 3},
     {"_rliger2_DirectSNNToFile", (DL_FUNC) &_rliger2_DirectSNNToFile, 4},

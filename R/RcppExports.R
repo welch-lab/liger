@@ -5,16 +5,20 @@ RunModularityClusteringCpp <- function(SNN, modularityFunction, resolution, algo
     .Call(`_rliger2_RunModularityClusteringCpp`, SNN, modularityFunction, resolution, algorithm, nRandomStarts, nIterations, randomSeed, printOutput, edgefilename)
 }
 
-scaleNotCenterFast <- function(x) {
-    .Call(`_rliger2_scaleNotCenterFast`, x)
+scaleNotCenter_byRow_rcpp <- function(x) {
+    .Call(`_rliger2_scaleNotCenter_byRow_rcpp`, x)
 }
 
-rowMeansFast <- function(x) {
-    .Call(`_rliger2_rowMeansFast`, x)
+scaleNotCenter_byRow_perDataset_rcpp <- function(x, ann, n) {
+    .Call(`_rliger2_scaleNotCenter_byRow_perDataset_rcpp`, x, ann, n)
 }
 
-rowVarsFast <- function(x, means) {
-    .Call(`_rliger2_rowVarsFast`, x, means)
+rowVars_sparse_rcpp <- function(x, means) {
+    .Call(`_rliger2_rowVars_sparse_rcpp`, x, means)
+}
+
+rowDivide_rcpp <- function(x, v) {
+    .Call(`_rliger2_rowDivide_rcpp`, x, v)
 }
 
 sumSquaredDeviations <- function(x, means) {
@@ -103,16 +107,12 @@ makeFeatureMatrix <- function(bedmat, barcodes) {
     .Call(`_rliger2_makeFeatureMatrix`, bedmat, barcodes)
 }
 
-cluster_vote <- function(nn_ranked, clusts) {
-    .Call(`_rliger2_cluster_vote`, nn_ranked, clusts)
+cluster_vote_rcpp <- function(nn_ranked, clusts) {
+    .Call(`_rliger2_cluster_vote_rcpp`, nn_ranked, clusts)
 }
 
-scale_columns_fast <- function(mat, scale = TRUE, center = TRUE) {
-    .Call(`_rliger2_scale_columns_fast`, mat, scale, center)
-}
-
-max_factor <- function(H, dims_use, center_cols = FALSE) {
-    .Call(`_rliger2_max_factor`, H, dims_use, center_cols)
+max_factor_rcpp <- function(H, dims_use, center = FALSE) {
+    .Call(`_rliger2_max_factor_rcpp`, H, dims_use, center)
 }
 
 ComputeSNN <- function(nn_ranked, prune) {

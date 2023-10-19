@@ -1,4 +1,509 @@
+selectGeneGlobalRank <- function(
+        object,
+        n = 4000,
+        alpha = 0.99,
+        useDatasets = NULL,
+        unsharedDatasets = NULL,
+        chunk = 1000,
+        verbose = getOption("ligerVerbose")
+) {
+    .checkObjVersion(object)
+    # A bunch of input checks at first ####
+    useDatasets <- .checkUseDatasets(object, useDatasets)
+    object <- recordCommand(object, dependencies = "hdf5r")
+    if (!is.null(unsharedDatasets))
+        unsharedDatasets <- .checkUseDatasets(object, unsharedDatasets)
+    involved <- unique(c(useDatasets, unsharedDatasets))
+
+    shared.features <- Reduce(intersect, lapply(datasets(object)[involved],
+                                                rownames))
+    perDatasetSelect <- list()
+    for (d in involved) {
+        ld <- dataset(object, d)
+        if (is.null(normData(ld))) {
+            warning("Dataset \"", d, "\" is not normalized, skipped")
+            next
+        }
+        ## Make sure that all required feature meta values exist ####
+        if (isH5Liger(ld)) {
+            ld <- calcGeneVars.H5(ld, chunkSize = chunk,
+                                  verbose = verbose)
+        } else {
+            featureMeta(ld, check = FALSE)$geneMeans <-
+                Matrix::rowMeans(normData(ld))
+            featureMeta(ld, check = FALSE)$geneVars <-
+                rowVars_sparse_rcpp(normData(ld), featureMeta(ld)$geneMeans)
+        }
+        datasets(object, check = FALSE)[[d]] <- ld
+        ## The real calculation starts here ####
+        geneMeans <- featureMeta(ld)$geneMeans
+        geneVars <- featureMeta(ld)$geneVars
+        trx_per_cell <- cellMeta(object, "nUMI", cellIdx = object$dataset == d)
+        nolan_constant <- mean((1 / trx_per_cell))
+        alphathresh.corrected <- alpha / nrow(ld)
+        geneMeanUpper <- geneMeans +
+            stats::qnorm(1 - alphathresh.corrected / 2) *
+            sqrt(geneMeans * nolan_constant / ncol(ld))
+        basegenelower <- log10(geneMeans * nolan_constant)
+        pass.upper <- geneVars / nolan_constant > geneMeanUpper
+        pass.lower <- log10(geneVars) > basegenelower
+        preselected <- data.frame(
+            gene = rownames(ld),
+            dataset = d,
+            shared = d %in% useDatasets,
+            unshared = d %in% unsharedDatasets,
+            varianceDiff = geneVars - basegenelower
+        )
+        perDatasetSelect[[d]] <- preselected[pass.upper & pass.lower,]
+    }
+    perDatasetSelect <- Reduce(rbind, perDatasetSelect)
+    # For shared
+    shareTable <- perDatasetSelect[perDatasetSelect$gene %in% shared.features,]
+    rank <- order(shareTable$varianceDiff, decreasing = TRUE)
+    shareTable <- shareTable[rank,]
+    line <- 1
+    while (length(unique(shareTable$gene[seq(line)])) < n) line <- line + 1
+    return(unique(shareTable$gene[seq(line)]))
+}
+
+
+.scaleH5Matrix <- function(ld, featureIdx, resultH5Path, chunk, verbose) {
+    features <- rownames(ld)[featureIdx]
+    geneSumSq <- featureMeta(ld)$geneSumSq[featureIdx]
+    nCells <- ncol(ld)
+    geneRootMeanSumSq = sqrt(geneSumSq / (nCells - 1))
+    h5file <- getH5File(ld)
+    safeH5Create(
+        ld,
+        dataPath = resultH5Path,
+        dims = c(length(features), nCells),
+        dtype = "double",
+        chunkSize = c(length(features), chunk)
+    )
+    H5Apply(
+        ld,
+        useData = "normData",
+        chunkSize = chunk,
+        verbose = verbose,
+        FUN = function(chunk, sparseXIdx, cellIdx, values) {
+            chunk <- chunk[featureIdx, , drop = FALSE]
+            chunk = as.matrix(chunk)
+            chunk = sweep(chunk, 1, geneRootMeanSumSq, "/")
+            rownames(chunk) <- features
+            chunk[is.na(chunk)] = 0
+            chunk[chunk == Inf] = 0
+            h5file[[resultH5Path]][seq_along(features),
+                                   cellIdx] <- chunk
+        }
+    )
+    h5fileInfo(ld, "scaleData", check = FALSE) <- resultH5Path
+    safeH5Create(
+        ld,
+        dataPath = paste0(resultH5Path, ".featureIdx"),
+        dims = length(features),
+        dtype = "int"
+    )
+    h5file[[paste0(resultH5Path, ".featureIdx")]][1:length(featureIdx)] <-
+        featureIdx
+    return(ld)
+}
+
+
+#' #' Perform iNMF on scaled datasets
+#' #' @description
+#' #' Performs integrative non-negative matrix (iNMF) factorization to return
+#' #' factorized \eqn{H}, \eqn{W}, and \eqn{V} matrices. It optimizes the iNMF
+#' #' objective function using block coordinate descent (alternating non-negative
+#' #' least squares), where the number of factors is set by \code{k}. TODO: include
+#' #' objective function equation here in documentation (using deqn)
+#' #'
+#' #' For each dataset, this factorization produces an \eqn{H} matrix (cells by k),
+#' #' a \eqn{V} matrix (k by genes), and a shared \eqn{W} matrix (k by genes). The
+#' #' \eqn{H} matrices represent the cell factor loadings. \eqn{W} is held
+#' #' consistent among all datasets, as it represents the shared components of the
+#' #' metagenes across datasets. The \eqn{V} matrices represent the
+#' #' dataset-specific components of the metagenes.
+#' #' @param object A \linkS4class{liger} object or a named list of matrix object,
+#' #' where the names represents dataset names and matrices are scaled on the same
+#' #' set of variable features, with rows as features and columns as cells.
+#' #' @param k Inner dimension of factorization (number of factors). Run
+#' #' \code{\link{suggestK}} to determine appropriate value; a general rule of
+#' #' thumb is that a higher \code{k} will be needed for datasets with more
+#' #' sub-structure.
+#' #' @param lambda Regularization parameter. Larger values penalize
+#' #' dataset-specific effects more strongly (i.e. alignment should increase as
+#' #' \code{lambda} increases). Default \code{5}.
+#' #' @param thresh Convergence threshold. Convergence occurs when
+#' #' \eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-6}.
+#' #' @param maxIter Maximum number of block coordinate descent iterations to
+#' #' perform. Default \code{30}.
+#' #' @param nrep Number of restarts to perform (iNMF objective function is
+#' #' non-convex, so taking the best objective from multiple successive
+#' #' initialization is recommended). For easier reproducibility, this increments
+#' #' the random seed by 1 for each consecutive restart, so future factorization
+#' #' of the same dataset can be run with one rep if necessary. Default \code{1}.
+#' #' @param H.init Initial values to use for \eqn{H} matrices. A list object where
+#' #' each element is the initial \eqn{H} matrix of each dataset. Default
+#' #' \code{NULL}.
+#' #' @param W.init Initial values to use for \eqn{W} matrix. A matrix object.
+#' #' Default \code{NULL}.
+#' #' @param V.init Initial values to use for \eqn{V} matrices. A list object where
+#' #' each element is the initial \eqn{V} matrix of each dataset. Default
+#' #' \code{NULL}.
+#' #' @param method NNLS subproblem solver. Choose from \code{"liger"} (default
+#' #' original implementation), \code{"planc"} or \code{"rcppml"}.
+#' #' @param useUnshared Logical, whether to include unshared variable features and
+#' #' run optimizeUANLS algorithm. Defaul \code{FALSE}. Running
+#' #' \code{\link{selectGenes}} with \code{unshared = TRUE} and then running
+#' #' \code{\link{scaleNotCenter}} is required.
+#' #' @param seed Random seed to allow reproducible results. Default \code{1}.
+#' #' @param readH5 \code{TRUE} to force reading H5 based data into memory and
+#' #' conduct factorization. \code{"auto"} reads H5 dataset with less than 8000
+#' #' cells. \code{FALSE} will stop users from running if H5 data presents.
+#' #' @param verbose Logical. Whether to show information of the progress. Default
+#' #' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' #' @param max.iters,use.unshared,rand.seed \bold{Deprecated}. See Usage section
+#' #' for replacement.
+#' #' @param print.obj \bold{Defunct}. Whether to print objective function values
+#' #' after convergence when \code{verbose = TRUE}. Now always print when verbose.
+#' #' @return \code{object} with \code{W} slot updated with the result \eqn{W}
+#' #' matrix, and the \code{H} and \code{V} slots of each
+#' #' \linkS4class{ligerDataset} object in the \code{datasets} slot updated with
+#' #' the dataset specific \eqn{H} and \eqn{V} matrix, respectively.
+#' #' @rdname runINMF_R
+#' #' @examples
+#' #' pbmc <- normalize(pbmc)
+#' #' pbmc <- selectGenes(pbmc)
+#' #' pbmc <- scaleNotCenter(pbmc)
+#' #' # Only running a few iterations for fast examples
+#' #' pbmc <- runINMF(pbmc, k = 20, maxIter = 2)
+#' setGeneric(
+#'     "runINMF_R",
+#'     function(
+#'         object,
+#'         k,
+#'         lambda = 5.0,
+#'         thresh = 1e-6,
+#'         maxIter = 30,
+#'         nrep = 1,
+#'         H.init = NULL,
+#'         W.init = NULL,
+#'         V.init = NULL,
+#'         method = c("planc", "liger", "rcppml"),
+#'         useUnshared = FALSE,
+#'         seed = 1,
+#'         readH5 = "auto",
+#'         verbose = getOption("ligerVerbose")
+#'     ) standardGeneric("runINMF_R")
+#' )
+#'
+#' #' @rdname runINMF_R
+#' setMethod(
+#'     "runINMF_R",
+#'     signature(object = "liger"),
+#'     function(
+#'         object,
+#'         k,
+#'         lambda = 5.0,
+#'         thresh = 1e-6,
+#'         maxIter = 30,
+#'         nrep = 1,
+#'         H.init = NULL,
+#'         W.init = NULL,
+#'         V.init = NULL,
+#'         useUnshared = FALSE,
+#'         seed = 1,
+#'         readH5 = "auto",
+#'         verbose = getOption("ligerVerbose")
+#'     ) {
+#'         .checkObjVersion(object)
+#'         object <- recordCommand(object)
+#'         if (isFALSE(useUnshared)) {
+#'             object <- removeMissing(object, orient = "cell",
+#'                                     verbose = verbose)
+#'             data <- lapply(datasets(object), function(ld) {
+#'                 if (is.null(scaleData(ld)))
+#'                     stop("Scaled data not available. ",
+#'                          "Run `scaleNotCenter(object)` first")
+#'                 if (isH5Liger(ld)) {
+#'                     if (!isFALSE(readH5)) {
+#'                         h5d <- scaleData(ld)
+#'                         if (readH5 == "auto") {
+#'                             if (h5d$dims[2] <= 8000) {
+#'                                 warning("Automatically reading H5 based ",
+#'                                         "scaled dense matrix into memory. ",
+#'                                         "Dim: ", h5d$dims[1], "x", h5d$dims[2],
+#'                                         immediate. = verbose)
+#'                                 return(h5d[,])
+#'                             } else {
+#'                                 stop("Scaled data in H5 based dataset with ",
+#'                                      "more than 8000 cells will not be ",
+#'                                      "automatically read into memory. Use ",
+#'                                      "`readH5 = TRUE` to force reading, or ",
+#'                                      "try `online_iNMF()` instead.")
+#'                             }
+#'                         } else if (isTRUE(readH5)) {
+#'                             return(h5d[,])
+#'                         } else {
+#'                             stop("Can only set `readH5` to TRUE, FALSE, ",
+#'                                  "or 'auto'.")
+#'                         }
+#'                     } else {
+#'                         stop("H5 based dataset detected while `readH5` is ",
+#'                              "set to FALSE.")
+#'                     }
+#'                 } else {
+#'                     return(scaleData(ld))
+#'                 }
+#'             })
+#'             out <- runINMF_R(
+#'                 object = data,
+#'                 k = k,
+#'                 lambda = lambda,
+#'                 thresh = thresh,
+#'                 maxIter = maxIter,
+#'                 nrep = nrep,
+#'                 H.init = H.init,
+#'                 W.init = W.init,
+#'                 V.init = V.init,
+#'                 useUnshared = FALSE,
+#'                 seed = seed,
+#'                 verbose = verbose
+#'             )
+#'             object@W <- out$W
+#'             for (d in names(object)) {
+#'                 ld <- dataset(object, d)
+#'                 ld@H <- out$H[[d]]
+#'                 ld@V <- out$V[[d]]
+#'                 datasets(object, check = FALSE)[[d]] <- ld
+#'             }
+#'             object@uns$factorization$k <- k
+#'             object@uns$factorization$lambda <- lambda
+#'         } else {
+#'             object <- runUINMF(
+#'                 object = object,
+#'                 k = k,
+#'                 lambda = lambda,
+#'                 thresh = thresh,
+#'                 maxIter = maxIter,
+#'                 nrep = nrep,
+#'                 seed = seed,
+#'                 verbose = verbose
+#'             )
+#'         }
+#'         return(object)
+#'     }
+#' )
+#'
+#' #' @rdname runINMF_R
+#' setMethod(
+#'     "runINMF_R",
+#'     signature(object = "list"),
+#'     function(
+#'         object,
+#'         k,
+#'         lambda = 5.0,
+#'         maxIter = 30,
+#'         nrep = 1,
+#'         H.init = NULL,
+#'         W.init = NULL,
+#'         V.init = NULL,
+#'         method = c("planc", "liger", "rcppml"),
+#'         useUnshared = FALSE,
+#'         seed = 1,
+#'         readH5 = "auto",
+#'         verbose = getOption("ligerVerbose")
+#'     ) {
+#'         # E ==> cell x gene scaled matrices
+#'         E <- object
+#'         nDatasets <- length(E)
+#'         nCells <- sapply(E, ncol)
+#'         nGenes <- nrow(E[[1]])
+#'         if (k >= nGenes) {
+#'             stop("Select k lower than the number of variable genes: ", nGenes)
+#'         }
+#'         Wm <- matrix(0, nGenes, k)
+#'         Vm <- rep(list(matrix(0, nGenes, k)), nDatasets)
+#'         Hm <- lapply(nCells, function(n) matrix(0, n, k))
+#'
+#'         bestObj <- Inf
+#'         bestSeed <- seed
+#'         for (i in seq(nrep)) {
+#'             set.seed(seed = seed + i - 1)
+#'             startTime <- Sys.time()
+#'             if (!is.null(W.init))
+#'                 W <- .checkInit(W.init, nCells, nGenes, k, "W")
+#'             else W <- matrix(stats::runif(nGenes * k, 0, 2), nGenes, k)
+#'
+#'             if (!is.null(V.init)) {
+#'                 V <- .checkInit(V.init, nCells, nGenes, k, "V")
+#'             } else
+#'                 V <- lapply(seq(nDatasets), function(i) {
+#'                     matrix(stats::runif(nGenes * k, 0, 2), nGenes, k)})
+#'
+#'             if (!is.null(H.init)) {
+#'                 H <- .checkInit(H.init, nCells, nGenes, k, "H")
+#'                 H <- lapply(H, t)
+#'             } else
+#'                 H <- lapply(nCells, function(n) {
+#'                     matrix(stats::runif(n * k, 0, 2), n, k)
+#'                 })
+#'
+#'             if (isTRUE(verbose)) {
+#'                 .log("Start iNMF with seed: ", seed + i - 1, "...")
+#'                 if (maxIter > 0)
+#'                     pb <- utils::txtProgressBar(0, maxIter, style = 3)
+#'             }
+#'             iter <- 0
+#'             while (iter < maxIter) {
+#'                 H <- inmfSolveH(W = W, V = V, E = E, lambda = lambda)
+#'                 V <- inmfSolveV(W = W, H = H, E = E, lambda = lambda)
+#'                 W <- inmfSolveW(H = H, V = V, E = E, lambda = lambda)
+#'                 iter <- iter + 1
+#'                 if (isTRUE(verbose) && maxIter > 0)
+#'                     utils::setTxtProgressBar(pb, value = iter)
+#'
+#'             }
+#'             if (isTRUE(verbose) && maxIter > 0) {
+#'                 utils::setTxtProgressBar(pb, value = maxIter)
+#'                 cat("\n")
+#'             }
+#'             obj <- inmf_calcObj(E, H, W, V, lambda)
+#'             if (obj < bestObj) {
+#'                 Wm <- W
+#'                 Hm <- H
+#'                 Vm <- V
+#'                 bestObj <- obj
+#'                 bestSeed <- seed + i - 1
+#'             }
+#'             endTime <- difftime(time1 = Sys.time(), time2 = startTime,
+#'                                 units = "auto")
+#'             if (isTRUE(verbose)) {
+#'                 .log("Finished in ", endTime, " ", units(endTime),
+#'                      "\nObjective error: ", bestObj)
+#'                 .log("Objective: ", obj)
+#'                 .log("Best results with seed ", bestSeed)
+#'             }
+#'         }
+#'         out <- list(H = lapply(Hm, t), V = Vm, W = Wm)
+#'         factorNames <- paste0("Factor_", seq(k))
+#'         for (i in seq(nDatasets)) {
+#'             dimnames(out$H[[i]]) <- list(factorNames, colnames(object[[i]]))
+#'             dimnames(out$V[[i]]) <- list(rownames(object[[i]]), factorNames)
+#'         }
+#'         names(out$V) <- names(out$H) <- names(object)
+#'         dimnames(out$W) <- list(rownames(object[[1]]), factorNames)
+#'         return(out)
+#'     }
+#' )
+#'
+#' inmf_calcObj <- function(E, H, W, V, lambda) {
+#'     # E - dgCMatrix
+#'     # H, W, V - matrix
+#'     obj <- 0
+#'     for (i in seq_along(E)) {
+#'         obj <- obj +
+#'             Matrix::norm(E[[i]] - (W + V[[i]]) %*% t(H[[i]]), "F") ^ 2 +
+#'             lambda*norm(V[[i]] %*% t(H[[i]]), "F") ^ 2
+#'     }
+#'     return(obj)
+#' }
+#'
+#' inmfSolveH <- function(W, V, E, lambda) {
+#'     H <- list()
+#'     for (i in seq_along(E)) {
+#'         CtC <- t(W + V[[i]]) %*% (W + V[[i]]) + lambda*(t(V[[i]]) %*% V[[i]])
+#'         CtB <- as.matrix(t(W + V[[i]]) %*% E[[i]])
+#'         H[[i]] <- t(RcppPlanc::bppnnls_prod(CtC, CtB))
+#'     }
+#'     return(H)
+#' }
+#'
+#' inmfSolveV <- function(W, H, E, lambda) {
+#'     V <- list()
+#'     for (i in seq_along(E)) {
+#'         CtC <- (1 + lambda)*(t(H[[i]]) %*% H[[i]])
+#'         CtB <- as.matrix(t(H[[i]]) %*% t(E[[i]]))
+#'         CtB <- CtB - t(H[[i]]) %*% H[[i]] %*% t(W)
+#'         V[[i]] <- t(RcppPlanc::bppnnls_prod(CtC, CtB))
+#'     }
+#'     return(V)
+#' }
+#'
+#' inmfSolveW <- function(H, V, E, lambda) {
+#'     m <- nrow(E[[1]])
+#'     k <- ncol(H[[1]])
+#'     CtC <- matrix(0, k, k)
+#'     CtB <- matrix(0, k, m)
+#'     for (i in seq_along(E)) {
+#'         CtC <- CtC + t(H[[i]]) %*% H[[i]]
+#'         CtB <- CtB + as.matrix(t(H[[i]]) %*% t(E[[i]])) -
+#'             t(H[[i]]) %*% H[[i]] %*% t(V[[i]])
+#'     }
+#'     return(t(RcppPlanc::bppnnls_prod(CtC, CtB)))
+#' }
+
+
+#' #' @export
+#' #' @rdname runUINMF
+#' #' @method runUINMF Seurat
+#' #' @param datasetVar Metadata variable name that stores the dataset source
+#' #' annotation. Default \code{"orig.ident"}.
+#' #' @param useLayer For Seurat>=4.9.9, the name of layer to retrieve input
+#' #' non-negative scaled data. Default \code{"ligerScaleData"}. For older Seurat,
+#' #' always retrieve from \code{scale.data} slot.
+#' #' @param assay Name of assay to use. Default \code{NULL} uses current active
+#' #' assay.
+#' runUINMF.Seurat <- function(
+#'         object,
+#'         unsharedList,
+#'         k = 20,
+#'         lambda = 5,
+#'         datasetVar = "orig.ident",
+#'         useLayer = "ligerScaleData",
+#'         assay = NULL,
+#'         nIteration = 30,
+#'         nRandomStarts = 1,
+#'         seed = 1,
+#'         verbose = getOption("ligerVerbose"),
+#'         ...
+#' ) {
+#'     mat <- .getSeuratData(object, layer = useLayer, slot = "scale.data",
+#'                           assay = assay)
+#'     if (any(mat < 0)) {
+#'         stop("Negative data encountered for integrative Non-negative Matrix ",
+#'              "Factorization. Please run `scaleNotCenter()` first.")
+#'     }
+#'     # the last [,1] converts data.frame to the vector/factor
+#'     datasetVar <- object[[datasetVar]][,1]
+#'     if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
+#'     datasetVar <- droplevels(datasetVar)
+#'
+#'     Es <- lapply(levels(datasetVar), function(d) {
+#'         as(mat[, datasetVar == d], "CsparseMatrix")
+#'     })
+#'     names(Es) <- levels(datasetVar)
+#'     .runUINMF.list(
+#'         object = Es,
+#'         unsharedList = unsharedList,
+#'         k = k,
+#'         lambda = lambda,
+#'         nIteration = nIteration,
+#'         nRandomStarts = nRandomStarts,
+#'         seed = seed,
+#'         verbose = verbose
+#'     )
+#' }
+
+
+
+
+
+
+
+
 #' Perform online iNMF on scaled datasets
+#' @noRd
 #' @description Perform online integrative non-negative matrix factorization to
 #' represent multiple single-cell datasets in terms of \eqn{H}, \eqn{W}, and
 #' \eqn{V} matrices. It optimizes the iNMF objective function using online
@@ -72,7 +577,6 @@
 #' matrix; the \code{H}, \code{V}, \code{A} and \code{B} slots of each
 #' \linkS4class{ligerDataset} object in \code{datasets} slot is updated with the
 #' corresponding result matrices.
-#' @export
 #' @examples
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
@@ -90,7 +594,7 @@
 #' # Scenario 3
 #' pbmc3 <- online_iNMF(pbmc, k = 20, X_new = list(ctrl2 = ctrl2),
 #'                      miniBatch_size = 100, projection = TRUE)
-online_iNMF <- function(
+online_iNMFOld <- function(
         object,
         X_new = NULL,
         projection = FALSE,
@@ -266,7 +770,7 @@ online_iNMF <- function(
                         if ((iter * minibatchSizes[i]) %% nCells[i] != 0) {
                             # print(paste0("start: 0, end: ", (iter * minibatchSizes[i]) %% nCells[i] - 1))
                             minibatchIdx[[i]] <- c(minibatchIdx[[i]],
-                                                  allIdx[[i]][seq((iter * minibatchSizes[i]) %% nCells[i])])
+                                                   allIdx[[i]][seq((iter * minibatchSizes[i]) %% nCells[i])])
                         }
                     } else {
                         # if current iter stays within a epoch
@@ -298,7 +802,7 @@ online_iNMF <- function(
                 H_minibatch[[i]] <- solveNNLS(
                     rbind(W + V[[i]], sqrtLambda * V[[i]]),
                     rbind(X_minibatch[[i]],
-                              matrix(0, nGenes, minibatchSizes[i]))
+                          matrix(0, nGenes, minibatchSizes[i]))
                 )
             }
 

@@ -37,10 +37,11 @@ H5Apply <- function(
         object,
         FUN,
         init = NULL,
-        useData = c("rawData", "normData", "scaleData"),
+        useData = c("rawData", "normData"),
         chunkSize = 1000,
         verbose = getOption("ligerVerbose"),
-        ...) {
+        ...
+) {
     fun.args <- list(...)
     useData <- match.arg(useData)
     h5meta <- h5fileInfo(object)
@@ -52,44 +53,32 @@ H5Apply <- function(
     numChunks <- ceiling(numCells / chunkSize)
     ind <- 0
     h5file <- h5meta$H5File
-    indptr <- h5file[[h5meta$indptrName]]
-    indices <- h5file[[h5meta$indicesName]]
+    colptr <- h5file[[h5meta$indptrName]]
+    rowind <- h5file[[h5meta$indicesName]]
     data <- h5file[[h5meta[[useData]]]]
     if (isTRUE(verbose)) pb <- utils::txtProgressBar(0, numChunks, style = 3)
+    for (i in seq(numChunks)) {
+        start <- (i - 1)*chunkSize + 1
+        end <- if (i*chunkSize > ncol(object)) ncol(object) else i*chunkSize
+        colptrStart <- start
+        colptrEnd <- end + 1
+        chunkColptr <- colptr[colptrStart:colptrEnd]
+        nnzStart <- chunkColptr[1] + 1
+        nnzEnd <- chunkColptr[length(chunkColptr)]
+        chunkData <- data[nnzStart:nnzEnd] # This step is freaking slow
+        chunkRowind <- rowind[nnzStart:nnzEnd] # This step is freaking slow
 
-    while (prev_end_col < numCells) {
-        ind <- ind + 1
-        # Calculate the proper position/index for extract the data of the chunk
-        if (numCells - prev_end_col < chunkSize) {
-            chunkSize <- numCells - prev_end_col + 1
-        }
-        start_inds <- indptr[prev_end_col:(prev_end_col + chunkSize)]
-        sparseXIdx <- (prev_end_data):(utils::tail(start_inds, 1))
-        cellIdx <- prev_end_col:(prev_end_col + chunkSize - 1)
-        row_inds <- indices[sparseXIdx]
-        counts <- data[sparseXIdx]
-        # Construct sparse matrix of the chunk
-        chunkData <- Matrix::sparseMatrix(
-            i = row_inds[seq_along(counts)] + 1,
-            p = start_inds[seq(chunkSize + 1)] - prev_end_data + 1,
-            x = counts,
-            dims = c(numFeatures, chunkSize),
-            dimnames = list(rownames(object),
-                            colnames(object)[cellIdx])
-        )
-        # Process chunk data with given function and additional arguments if
-        # applicable. Then insert value to initialized output data.
-        init <- do.call(FUN, c(list(chunkData,
-                                    sparseXIdx,
-                                    cellIdx,
-                                    init),
+        chunkColptr <- chunkColptr - chunkColptr[1]
+
+        chunk <- Matrix::sparseMatrix(i = chunkRowind + 1, p = chunkColptr,
+                                      x = chunkData,
+                                      dims = c(numFeatures, end - start + 1),
+                                      dimnames = list(rownames(object),
+                                                      colnames(object)[start:end]))
+        init <- do.call(FUN, c(list(chunk, nnzStart:nnzEnd,
+                                    start:end, init),
                                fun.args))
-        ############################
-        # Post-processing updates on indices for the next iteration
-        prev_end_col <- prev_end_col + chunkSize
-        prev_end_data <- prev_end_data + length(chunkData@x)
-
-        if (isTRUE(verbose)) utils::setTxtProgressBar(pb, ind)
+        if (isTRUE(verbose)) utils::setTxtProgressBar(pb, i)
     }
     # Break a new line otherwise next message comes right after the "%" sign.
     if (isTRUE(verbose)) cat("\n")
@@ -179,11 +168,13 @@ safeH5Create <- function(object,
 #' @description When loading the saved liger object with HDF5 data in a new R
 #' session, the links to HDF5 files would be corrupted. This functions enables
 #' the restoration of those links so that new analyses can be carried out.
-#' @param object liger or ligerDataset object.
+#' @param object \linkS4class{liger} or \linkS4class{ligerDataset} object.
 #' @param filePath Paths to HDF5 files. A single character path for
-#' ligerDataset input or a list of paths named by the datasets for liger object
-#' input. Default \code{NULL} looks for the path(s) of the last valid loading.
+#' \linkS4class{ligerDataset} input or a list of paths named by the datasets for
+#' \linkS4class{liger} object input. Default \code{NULL} looks for the path(s)
+#' of the last valid loading.
 #' @return \code{object} with restored links.
+#' @rdname restoreH5Liger
 #' @export
 restoreH5Liger <- function(object, filePath = NULL) {
     if (!inherits(object, "liger") && !inherits(object, "ligerDataset")) {
@@ -258,6 +249,19 @@ restoreH5Liger <- function(object, filePath = NULL) {
         }
     }
     return(object)
+}
+
+#' @note
+#' \code{restoreOnlineLiger} will be deprecated for clarifying the terms used
+#' for data structure.
+#' @rdname restoreH5Liger
+#' @export
+#' @param file.path Will be deprecated with \code{restoreOnlineLiger}. The same
+#' as \code{filePath}.
+restoreOnlineLiger <- function(object, file.path = NULL) {
+    lifecycle::deprecate_warn("1.99.0", "restoreOnlineLiger()",
+                              "restoreH5Liger(object, filePath)")
+    restoreH5Liger(object, file.path)
 }
 
 .inspectH5Path <- function(path) {

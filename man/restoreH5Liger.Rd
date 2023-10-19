@@ -2,16 +2,23 @@
 % Please edit documentation in R/h5Utility.R
 \name{restoreH5Liger}
 \alias{restoreH5Liger}
+\alias{restoreOnlineLiger}
 \title{Restore links (to HDF5 files) for reloaded liger/ligerDataset object}
 \usage{
 restoreH5Liger(object, filePath = NULL)
+
+restoreOnlineLiger(object, file.path = NULL)
 }
 \arguments{
-\item{object}{liger or ligerDataset object.}
+\item{object}{\linkS4class{liger} or \linkS4class{ligerDataset} object.}
 
 \item{filePath}{Paths to HDF5 files. A single character path for
-ligerDataset input or a list of paths named by the datasets for liger object
-input. Default \code{NULL} looks for the path(s) of the last valid loading.}
+\linkS4class{ligerDataset} input or a list of paths named by the datasets for
+\linkS4class{liger} object input. Default \code{NULL} looks for the path(s)
+of the last valid loading.}
+
+\item{file.path}{Will be deprecated with \code{restoreOnlineLiger}. The same
+as \code{filePath}.}
 }
 \value{
 \code{object} with restored links.
@@ -20,4 +27,8 @@ input. Default \code{NULL} looks for the path(s) of the last valid loading.}
 When loading the saved liger object with HDF5 data in a new R
 session, the links to HDF5 files would be corrupted. This functions enables
 the restoration of those links so that new analyses can be carried out.
+}
+\note{
+\code{restoreOnlineLiger} will be deprecated for clarifying the terms used
+for data structure.
 }

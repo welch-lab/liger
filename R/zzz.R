@@ -1,7 +1,7 @@
 #' @importFrom Rcpp evalCpp
 #' @importFrom Matrix colSums rowSums t summary
 #' @importFrom magrittr %>%
-#' @importFrom rlang .data
+#' @importFrom rlang .data %||%
 #' @importFrom methods new show
 #' @importFrom utils .DollarNames
 #' @useDynLib rliger2, .registration = TRUE

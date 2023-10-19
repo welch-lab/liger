@@ -400,8 +400,8 @@ plotFactorHeatmap <- function(
 
 .zScore <- function(x, trim = NULL) {
     if (inherits(x, "dgCMatrix")) {
-        m <- rowMeansFast(x)
-        v <- rowVarsFast(x, m)
+        m <- Matrix::rowMeans(x)
+        v <- rowVars_sparse_rcpp(x, m)
     } else {
         m <- rowMeans(x)
         v <- rowVarsDense(x, m)
