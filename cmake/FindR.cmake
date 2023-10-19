@@ -19,12 +19,13 @@ if(R_EXECUTABLE)
     execute_process(
         COMMAND ${R_EXECUTABLE} --version
         OUTPUT_VARIABLE R_VERSION_STRING
+        ERROR_VARIABLE R_VERSION_STRING
         RESULT_VARIABLE RESULT
     )
 
     if(RESULT EQUAL 0)
         string(REGEX REPLACE ".*([0-9]+\\.[0-9]+\\.[0-9]+).*" "\\1"
-            R_VERSION_STRING ${R_VERSION_STRING})
+            R_VERSION_STRING "${R_VERSION_STRING}")
     endif()
 
     set(R_HOME ${R_BASE_DIR} CACHE PATH "R home directory obtained from R RHOME")
@@ -32,25 +33,24 @@ if(R_EXECUTABLE)
 endif()
 
 # Find the Rscript program.
-find_program(RSCRIPT_EXECUTABLE Rscript DOC "Rscript executable.")
+find_program(RSCRIPT_EXECUTABLE Rscript DOC "Rscript executable." HINTS "${R_HOME}/bin")
 
 set(CMAKE_FIND_APPBUNDLE ${TEMP_CMAKE_FIND_APPBUNDLE})
 
 # Search for non-standard R.h include path if header missing
-
 execute_process(COMMAND ${RSCRIPT_EXECUTABLE} "-e" "R.home('include')"
     RESULT_VARIABLE _haveR_h
     OUTPUT_VARIABLE _R_INCLUDE_location
-    ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+    ERROR_VARIABLE _R_INCLUDE_location
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     # Some cleanup in location of R.
     string(REGEX MATCHALL "\".*\"" _R_INCLUDE_location "${_R_INCLUDE_location}")
     string(REGEX REPLACE "\"" "" _R_INCLUDE_location "${_R_INCLUDE_location}")
     set(R_INCLUDE_DIR ${_R_INCLUDE_location})
 
-
 mark_as_advanced(RSCRIPT_EXECUTABLE R_EXECUTABLE)
-set(_REQUIRED_R_VARIABLES R_EXECUTABLE RSCRIPT_EXECUTABLE)
+set(_REQUIRED_R_VARIABLES R_EXECUTABLE RSCRIPT_EXECUTABLE R_INCLUDE_DIR)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
