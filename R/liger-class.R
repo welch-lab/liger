@@ -25,17 +25,28 @@ setClassUnion("dataframe", c("data.frame", "DataFrame", "NULL", "missing"))
 #' as usage of class-specific methods. Please see detail sections for more
 #' information.
 #'
-#' For \code{liger} objects created with older versions of rliger2 package,
+#' For \code{liger} objects created with older versions of rliger package,
 #' please try updating the objects individually with
 #' \code{\link{convertOldLiger}}.
-#' @slot datasets list of \linkS4class{ligerDataset} objects.
-#' @slot cellMeta \linkS4class{DFrame} object for cell metadata.
-#' @slot varFeatures Character vector of feature names.
-#' @slot W Matrix of gene loading for each factor.
-#' @slot H.norm Matrix of aligned factor loading for each cell.
+#' @slot datasets list of \linkS4class{ligerDataset} objects. Use generic
+#' \code{dataset}, \code{dataset<-}, \code{datasets} or \code{datasets<-} to
+#' interact with. See detailed section accordingly.
+#' @slot cellMeta \linkS4class{DFrame} object for cell metadata. Pre-existing
+#' metadata, QC metrics, cluster labeling, low-dimensional embedding and etc.
+#' are all stored here. Use generic \code{cellMeta}, \code{cellMeta<-},
+#' \code{$}, \code{[[]]} or \code{[[]]<-} to interact with. See detailed section
+#' accordingly.
+#' @slot varFeatures Character vector of feature names. Use generic
+#' \code{varFeatures} or \code{varFeatures<-} to interact with. See detailed
+#' section accordingly.
+#' @slot W Matrix of gene loading for each factor. See
+#' \code{\link{runIntegration}}.
+#' @slot H.norm Matrix of aligned factor loading for each cell. See
+#' \code{\link{quantileNorm}} and \code{\link{runIntegration}}.
 #' @slot commands List of \linkS4class{ligerCommand} objects. Record of
-#' analysis.
-#' @slot uns List for unstructured meta-info of analyses
+#' analysis. Use \code{commands} to retrieve information. See detailed section
+#' accordingly.
+#' @slot uns List for unstructured meta-info of analyses or presets.
 #' @slot version Record of version of rliger2 package
 #' @importClassesFrom S4Vectors DataFrame
 #' @importFrom ggplot2 fortify
@@ -157,22 +168,26 @@ is.newLiger <- function(object) {
 #' \code{"normData"} or \code{"scaleData"}.
 #' @param qc Logical, whether to perform general qc on added new dataset.
 #' @param check Logical, whether to perform object validity check on setting new
-#' value.
+#' value. Users are not supposed to set \code{FALSE} here.
 #' @param columns The names of available variables in \code{cellMeta} slot. When
 #' \code{as.data.frame = TRUE}, please use variable names after coercion.
-#' @param name The name of available variables in \code{cellMeta} slot.
+#' @param name The name of available variables in \code{cellMeta} slot or the
+#' name of a new variable to store.
 #' @param cellIdx Valid cell subscription to subset retrieved variables. Default
 #' \code{NULL} uses all cells.
 #' @param as.data.frame Logical, whether to apply
 #' \code{\link[base]{as.data.frame}} on the subscription. Default \code{FALSE}.
 #' @param i,j Feature and cell index for \code{`[`} method. For \code{`[[`}
-#' method, use a single variable name with \code{i} and \code{j} is not
+#' method, use a single variable name with \code{i} while \code{j} is not
 #' applicable.
 #' @param drop Not applicable.
 #' @param slot Name of slot to retrieve matrix from. Options shown in Usage.
 #' @param returnList Logical, whether to force return a list even when only one
 #' dataset-specific matrix (i.e. expression matrices, H, V or U) is requested.
 #' Default \code{FALSE}.
+#' @param useDatasets Setter or getter method should only apply on cells in
+#' specified datasets. Any valid character, numeric or logical subscriber is
+#' acceptable. Default \code{NULL} works with all datasets.
 #' @param funcName,arg See Command records section.
 #' @param data fortify method required argument. Not used.
 #' @param ... See detailed sections for explanation.
@@ -606,6 +621,19 @@ setMethod("length", signature(x = "liger"), function(x) {
 #' the hook, users can create simple ggplots by directly starting with
 #' \code{ggplot(ligerObj, aes(...))} where cell metadata variables can be
 #' directly thrown into \code{aes()}.
+#'
+#' The generic \code{defaultCluster} works as both getter and setter. As a
+#' setter, users can do \code{defaultCluster(obj) <- "existingVariableName"} to
+#' set a categorical variable as default cluster used for visualization or
+#' downstream analysis. Users can also do \code{defaultCluster(obj,
+#' "newVarName") <- factorOfLabels} to push new labeling into the object and set
+#' as default. For getter method, the function returns a factor object of the
+#' default cluster labeling. Argument \code{useDatasets} can be used for
+#' requiring that given or retrieved labeling should match with cells in
+#' specified datasets. We generally don't recommend setting \code{"dataset"} as
+#' a default cluster because it is a preserved (always existing) field in
+#' metadata and can lead to meaningless result when running analysis that
+#' utilizes both clustering information and the dataset source information.
 setGeneric(
     "cellMeta",
     function(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
@@ -755,7 +783,271 @@ setReplaceMethod("$", signature(x = "liger"),
                      cellMeta(x, columns = name) <- value
                      return(x)
                  })
+#' @export
+#' @rdname liger-class
+setGeneric(
+    "defaultCluster",
+    function(x, useDatasets = NULL, ...) {
+        standardGeneric("defaultCluster")
+    }
+)
 
+#' @export
+#' @rdname liger-class
+setGeneric(
+    "defaultCluster<-",
+    function(x, name = NULL, useDatasets = NULL, ..., value) {
+        standardGeneric("defaultCluster<-")
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setMethod(
+    "defaultCluster",
+    signature = c(x = "liger", useDatasets = "ANY"),
+    function(x, useDatasets = NULL, droplevels = FALSE, ...) {
+        # No name given, retrieve default
+        useDatasets <- .checkUseDatasets(x, useDatasets)
+        name <- x@uns$defaultCluster
+        if (is.null(name)) return(NULL)
+        cluster <- cellMeta(x, name, x$dataset %in% useDatasets)
+        names(cluster) <- colnames(x)[x$dataset %in% useDatasets]
+        if (isTRUE(droplevels)) cluster <- droplevels(cluster)
+        return(cluster)
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "defaultCluster",
+    signature(x = "liger", value = "character"),
+    function(x, name = NULL, useDatasets = NULL, ..., value) {
+        useDatasets <- .checkUseDatasets(x, useDatasets)
+        cellIdx <- x$dataset %in% useDatasets
+        if (length(value) == 1) {
+            # If doing defaultCluster(obj) <- "someName"
+            if (!is.null(name)) {
+                warning("Cannot have `name` when selecting a name with ",
+                        "`value`.")
+            }
+            name <- value
+            if (!name %in% colnames(cellMeta(x))) {
+                stop("Selected name does not exist in `cellMeta(x)`")
+            }
+            x@uns$defaultCluster <- name
+        } else {
+            # If doing defaultCluster(obj) <- c(blah, blah, blah, ...)
+            defaultCluster(x, name, useDatasets) <- factor(value)
+        }
+        return(x)
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "defaultCluster",
+    signature(x = "liger", value = "factor"),
+    function(x, name = NULL, useDatasets = NULL, droplevels = TRUE, ..., value) {
+        if (isTRUE(droplevels)) value <- droplevels(value)
+        useDatasets <- .checkUseDatasets(x, useDatasets)
+        cellIdx <- x$dataset %in% useDatasets
+        if (length(value) != sum(cellIdx)) {
+            stop("Length of `value` does not match with the number of cells")
+        }
+        if (is.null(name)) {
+            .log("Storing given cluster labels to cellMeta(x) field: ",
+                 "\"defaultCluster\"")
+            name <- "defaultCluster"
+        }
+        if (is.null(names(value))) names(value) <- colnames(x)[cellIdx]
+        cellMeta(x, name, cellIdx) <- value
+        x@uns$defaultCluster <- name
+        return(x)
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "defaultCluster",
+    signature(x = "liger", value = "NULL"),
+    function(x, name = NULL, useDatasets = NULL, ..., value) {
+        x@uns$defaultCluster <- NULL
+        if ("defaultCluster" %in% colnames(cellMeta(x))) {
+            cellMeta(x, "defaultCluster") <- NULL
+        }
+        return(x)
+    }
+)
+
+#' @export
+#' @rdname liger-class
+#' @section Dimension reduction access:
+#' Currently, low-dimensional representaion of cells, presented as dense
+#' matrices, are all stored in \code{cellMeta} slot, and can totally be accessed
+#' with generics \code{cellMeta} and \code{cellMeta<-}. In addition to that,
+#' we provide specific generics \code{dimRed} and \code{dimRed<-} for getting
+#' and setting matrix like cell metadata, respectively. Adding a matrix to the
+#' object looks as simple as \code{dimRed(obj, "name") <- matrixLike}. It can
+#' be retrived back with \code{dimRed(obj, "name")}. Similar to having a default
+#' cluster labeling, we also constructed the feature of default dimRed. It can
+#' be set with \code{defaultDimRed(obj) <- "existingMatLikeVar"} and the matrix
+#' can be retrieved with \code{defaultDimRed(obj)}.
+setGeneric(
+    "dimRed",
+    function(x, name = NULL, useDatasets = NULL, ...) {
+        standardGeneric("dimRed")
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setGeneric(
+    "dimRed<-",
+    function(x, name = NULL, useDatasets = NULL, ..., value) {
+        standardGeneric("dimRed<-")
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setMethod(
+    "dimRed",
+    signature = c(x = "liger", name = "missing", useDatasets = "ANY"),
+    function(x, name = NULL, useDatasets = NULL, ...) {
+        # No name given, retrieve default
+        useDatasets <- .checkUseDatasets(x, useDatasets)
+        name <- x@uns$defaultDimRed
+        dimred <- NULL
+        if (is.null(name)) {
+            for (i in seq_along(cellMeta(x))) {
+                if (!is.null(dim(cellMeta(x)[[i]]))) {
+                    warning("No default dimRed recorded. Returning the first ",
+                            "matrix like object in cellMeta(object)")
+                    dimred <- cellMeta(x)[[i]]
+                    break
+                }
+            }
+            if (is.null(dimred)) {
+                stop("No possible dimRed can be found in this liger object.")
+            }
+        } else {
+            dimred <- cellMeta(x, name, x$dataset %in% useDatasets)
+        }
+        dimred <- as.matrix(dimred)
+        rownames(dimred) <- colnames(x)[x$dataset %in% useDatasets]
+        colnames(dimred) <- paste0(name, "_", seq_len(ncol(dimred)))
+        return(dimred)
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setMethod(
+    "dimRed",
+    signature = c(x = "liger", name = "character", useDatasets = "ANY"),
+    function(x, name, useDatasets = NULL, ...) {
+        # No name given, retrieve default
+        useDatasets <- .checkUseDatasets(x, useDatasets)
+        dimred <- cellMeta(x, name, x$dataset %in% useDatasets)
+        if (is.null(dim(dimred))) {
+            stop("Retrieved data for \"", name, "\" is not a matrix.")
+        }
+        dimred <- as.matrix(dimred)
+        rownames(dimred) <- colnames(x)[x$dataset %in% useDatasets]
+        colnames(dimred) <- paste0(name, "_", seq_len(ncol(dimred)))
+        return(dimred)
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "dimRed",
+    signature(x = "liger", name = "character", value = "matrixLike"),
+    function(x, name = NULL, useDatasets = NULL, asDefault = NULL, ..., value) {
+        useDatasets <- .checkUseDatasets(x, useDatasets)
+        cellIdx <- x$dataset %in% useDatasets
+        value <- as.matrix(value)
+        if (is.null(asDefault)) {
+            if (!is.null(x@uns$defaultDimRed)) asDefault <- FALSE
+            else asDefault <- TRUE
+        }
+        colnames(value) <- seq_len(ncol(value))
+        rownames(value) <- colnames(x)[cellIdx]
+        cellMeta(x, name, cellIdx) <- value
+        if (isTRUE(asDefault)) defaultDimRed(x) <- name
+        return(x)
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setGeneric(
+    "defaultDimRed",
+    function(x, useDatasets = NULL) {
+        standardGeneric("defaultDimRed")
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setGeneric(
+    "defaultDimRed<-",
+    function(x, name, useDatasets = NULL, value) {
+        standardGeneric("defaultDimRed<-")
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setMethod(
+    "defaultDimRed",
+    signature(x = "liger", useDatasets = "ANY"),
+    function(x, useDatasets = NULL) {
+        name <- x@uns$defaultDimRed
+        if (is.null(name)) return(NULL)
+        else dimRed(x, name = name, useDatasets = useDatasets)
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "defaultDimRed",
+    signature(x = "liger", name = "missing", value = "character"),
+    function(x, name = NULL, useDatasets = NULL, value) {
+        value <- value[1]
+        dimred <- cellMeta(x, value)
+        if (is.null(dim(dimred))) {
+            stop("Specified variable is not matrix like.")
+        }
+        if (ncol(dimred) == 0) {
+            stop("Cannot set unexisting variable as default dimRed.")
+        }
+        x@uns$defaultDimRed <- value
+        return(x)
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "defaultDimRed",
+    signature(x = "liger", name = "character", value = "matrixLike"),
+    function(x, name, useDatasets = NULL, value) {
+        useDatasets <- .checkUseDatasets(x, useDatasets)
+        cellIdx <- x$dataset %in% useDatasets
+        colnames(value) <- seq_len(ncol(value))
+        rownames(value) <- colnames(x)[cellIdx]
+        cellMeta(x, name, cellIdx) <- value
+        x@uns$defaultDimRed <- name
+        return(x)
+    }
+)
 #' @export
 #' @rdname liger-class
 #' @section Variable feature access:

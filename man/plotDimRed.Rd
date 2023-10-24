@@ -9,19 +9,14 @@
 \alias{plotFactorDimRed}
 \title{Generate Dimensionality Reduction Plot with Coloring}
 \usage{
-plotClusterDimRed(
-  object,
-  useCluster = "leiden_cluster",
-  useDimRed = "UMAP",
-  ...
-)
+plotClusterDimRed(object, useCluster = NULL, useDimRed = NULL, ...)
 
-plotDatasetDimRed(object, useDimRed = "UMAP", ...)
+plotDatasetDimRed(object, useDimRed = NULL, ...)
 
 plotByDatasetAndCluster(
   object,
-  useDimRed = "UMAP",
-  useCluster = "leiden_cluster",
+  useDimRed = NULL,
+  useCluster = NULL,
   combinePlots = TRUE,
   ...
 )
@@ -29,7 +24,7 @@ plotByDatasetAndCluster(
 plotGeneDimRed(
   object,
   features,
-  useDimRed = "UMAP",
+  useDimRed = NULL,
   log = TRUE,
   scaleFactor = 10000,
   zeroAsNA = TRUE,
@@ -40,7 +35,7 @@ plotGeneDimRed(
 plotPeakDimRed(
   object,
   features,
-  useDimRed = "UMAP",
+  useDimRed = NULL,
   log = TRUE,
   scaleFactor = 10000,
   zeroAsNA = TRUE,
@@ -51,7 +46,7 @@ plotPeakDimRed(
 plotFactorDimRed(
   object,
   factors,
-  useDimRed = "UMAP",
+  useDimRed = NULL,
   trimHigh = 0.03,
   zeroAsNA = TRUE,
   colorPalette = "D",
@@ -62,10 +57,10 @@ plotFactorDimRed(
 \item{object}{A \linkS4class{liger} object.}
 
 \item{useCluster}{Name of variable in \code{cellMeta} slot. Default
-\code{"leiden_cluster"}.}
+\code{NULL} uses default cluster.}
 
 \item{useDimRed}{Name of the variable storing dimensionality reduction result
-in the \code{cellMeta} slot. Default \code{"UMAP"}.}
+in the \code{cellMeta} slot. Default \code{NULL} use default dimRed.}
 
 \item{...}{Additional graphic setting arguments passed to
 \code{\link{plotCellScatter}}.}

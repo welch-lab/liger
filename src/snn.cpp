@@ -1,5 +1,4 @@
 #include <RcppEigen.h>
-// #include "data_manipulation.h"
 #include <progress.hpp>
 #include <cmath>
 #include <unordered_map>

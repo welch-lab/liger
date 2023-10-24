@@ -121,6 +121,7 @@ runCluster <- function(
                               groupSingletons = groupSingletons,
                               verbose = verbose)
     cellMeta(object, clusterName, check = FALSE) <- clusts
+    object@uns$defaultCluster <- object@uns$defaultCluster %||% clusterName
     return(object)
 }
 

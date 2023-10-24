@@ -4,25 +4,31 @@
 \alias{as.liger}
 \alias{as.liger.dgCMatrix}
 \alias{as.liger.SingleCellExperiment}
+\alias{as.liger.Seurat}
 \title{Converting other classes of data to a liger object}
 \usage{
 as.liger(object, ...)
 
-\method{as.liger}{dgCMatrix}(object, sampleName = NULL, modal = NULL, ...)
+\method{as.liger}{dgCMatrix}(object, datasetVar = NULL, modal = NULL, ...)
 
-\method{as.liger}{SingleCellExperiment}(object, sampleName = NULL, modal = NULL, ...)
+\method{as.liger}{SingleCellExperiment}(object, datasetVar = NULL, modal = NULL, ...)
+
+\method{as.liger}{Seurat}(object, datasetVar = "orig.ident", modal = NULL, assay = NULL, ...)
 }
 \arguments{
 \item{object}{Object.}
 
 \item{...}{Additional arguments passed to \code{\link{createLiger}}}
 
-\item{sampleName}{If one or more datasets exist in the given object, specify
+\item{datasetVar}{If one or more datasets exist in the given object, specify
 a name for the single dataset; select a variable from existing metadata (e.g.
 colData column); specify a vector/factor that assign the dataset belonging.
 Default \code{NULL} gathers things into one dataset and names it "sample".}
 
 \item{modal}{Modality setting for each dataset.}
+
+\item{assay}{Name of assay to use. Default \code{NULL} uses current active
+assay.}
 }
 \value{
 a \linkS4class{liger} object.

@@ -7,7 +7,7 @@ setClassUnion("matrixLike", c("matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix"))
 #' Converting other classes of data to a liger object
 #' @export
 #' @param object Object.
-#' @param sampleName If one or more datasets exist in the given object, specify
+#' @param datasetVar If one or more datasets exist in the given object, specify
 #' a name for the single dataset; select a variable from existing metadata (e.g.
 #' colData column); specify a vector/factor that assign the dataset belonging.
 #' Default \code{NULL} gathers things into one dataset and names it "sample".
@@ -22,22 +22,28 @@ as.liger <- function(object, ...) UseMethod("as.liger", object)
 #' @method as.liger dgCMatrix
 as.liger.dgCMatrix <- function(
         object,
-        sampleName = NULL,
+        datasetVar = NULL,
         modal = NULL,
         ...
 ) {
     rawDataList <- list(sample = object)
-    if (!is.null(sampleName)) {
-        if (length(sampleName) == 1) names(rawDataList) <- sampleName
-        else if (length(sampleName) == ncol(rawDataList[[1]])) {
-            if (!is.factor(sampleName)) sampleName <- factor(sampleName)
-            rawDataList <- lapply(levels(sampleName), function(var) {
-                rawDataList[[1]][, sampleName == var, drop = FALSE]
+    if (!is.null(datasetVar)) {
+        if (length(datasetVar) == 1) names(rawDataList) <- datasetVar
+        else if (length(datasetVar) == ncol(rawDataList[[1]])) {
+            if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
+            datasetVar <- droplevels(datasetVar)
+            rawDataList <- lapply(levels(datasetVar), function(var) {
+                rawDataList[[1]][, datasetVar == var, drop = FALSE]
             })
-            names(rawDataList) <- levels(sampleName)
+            names(rawDataList) <- levels(datasetVar)
+        } else {
+            stop("Unable to understand `datasetVar`")
         }
+    } else {
+        datasetVar <- "sample"
     }
-    createLiger(rawData = rawDataList, ...)
+    modal <- .checkArgLen(modal, length(datasetVar))
+    createLiger(rawData = rawDataList, modal = modal, ...)
 }
 
 #' @rdname as.liger
@@ -45,7 +51,7 @@ as.liger.dgCMatrix <- function(
 #' @method as.liger SingleCellExperiment
 as.liger.SingleCellExperiment <- function(
         object,
-        sampleName = NULL,
+        datasetVar = NULL,
         modal = NULL,
         ...
 ) {
@@ -54,71 +60,83 @@ as.liger.SingleCellExperiment <- function(
              "to work. Please install it by command:\n",
              "BiocManager::install('SingleCellExperiment')",
              call. = FALSE)
-    if ("counts" %in% SummarizedExperiment::assayNames(object))
-        rawDataList <- list(SingleCellExperiment::counts(object))
-    else rawDataList <- NULL
-    if ("logcounts" %in% SummarizedExperiment::assayNames(object))
-        normDataList <- list(SingleCellExperiment::logcounts(object))
-    else normDataList <- NULL
+    rawDataList <- list(SingleCellExperiment::counts(object))
     sampleCol <- NULL
-    setNames <- function(x, n) {
-        if (!is.null(x) && length(x) > 0) names(x) <- n
-        return(x)
-    }
-    if (is.null(sampleName)) {
+    # setNames <- function(x, n) {
+    #     if (!is.null(x) && length(x) > 0) names(x) <- n
+    #     return(x)
+    # }
+    if (is.null(datasetVar)) {
         # One dataset, no name so by default sce
-        rawDataList <- setNames(rawDataList, "sce")
-        normDataList <- setNames(normDataList, "sce")
+        names(rawDataList) <- "sce"
+        datasetVar <- factor("sce")
+        # rawDataList <- setNames(rawDataList, "sce")
     } else {
-        if (length(sampleName) == 1) {
-            if (sampleName %in%
+        if (length(datasetVar) == 1) {
+            if (datasetVar %in%
                 colnames(SummarizedExperiment::colData(object))) {
-                sampleCol <- sampleName
+                sampleCol <- datasetVar
                 # Split by variable in colData
-                v <- SummarizedExperiment::colData(object)[[sampleName]]
-                if (!is.factor(v)) v <- factor(v)
-                rawDataList <- lapply(levels(v), function(var) {
-                    rawDataList[[1]][, v == var, drop = FALSE]
+                datasetVar <- SummarizedExperiment::colData(object)[[datasetVar]]
+                if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
+                datasetVar <- droplevels(datasetVar)
+                rawDataList <- lapply(levels(datasetVar), function(var) {
+                    rawDataList[[1]][, datasetVar == var, drop = FALSE]
                 })
-                normDataList <- lapply(levels(v), function(var) {
-                    normDataList[[1]][, v == var, drop = FALSE]
-                })
-                rawDataList <- setNames(rawDataList, levels(v))
-                normDataList <- setNames(normDataList, levels(v))
+                names(rawDataList) <- levels(datasetVar)
             } else {
                 # One dataset, use given name
-                rawDataList <- setNames(rawDataList, sampleName)
-                normDataList <- setNames(normDataList, sampleName)
+                names(rawDataList) <- datasetVar
+                datasetVar <- factor(datasetVar)
             }
-        } else if (length(sampleName) == ncol(rawDataList[[1]])) {
+        } else if (length(datasetVar) == ncol(rawDataList[[1]])) {
             # Split by user given variable
-            if (!is.factor(sampleName)) sampleName <- factor(sampleName)
-            rawDataList <- lapply(levels(sampleName), function(var) {
-                rawDataList[[1]][, sampleName == var, drop = FALSE]
+            if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
+            datasetVar <- droplevels(datasetVar)
+            rawDataList <- lapply(levels(datasetVar), function(var) {
+                rawDataList[[1]][, datasetVar == var, drop = FALSE]
             })
-            normDataList <- lapply(levels(sampleName), function(var) {
-                normDataList[[1]][, sampleName == var, drop = FALSE]
-            })
-            rawDataList <- setNames(rawDataList, levels(sampleName))
-            normDataList <- setNames(normDataList, levels(sampleName))
+            names(rawDataList) <- levels(datasetVar)
         } else {
-            stop("Invalid `sampleName` specification.")
+            stop("Invalid `datasetVar` specification.")
         }
 
     }
-    lig <- createLiger(rawData = rawDataList, ...)
+    modal <- .checkArgLen(modal, nlevels(datasetVar))
+    lig <- createLiger(rawData = rawDataList, modal = modal, ...)
 
     cellMetadata <- SummarizedExperiment::colData(object)
-    if (!is.null(sampleCol)) {
-        cellMetadata <- cellMetadata[, colnames(cellMetadata) != sampleCol,
-                                     drop = FALSE]
-    }
-    cellMeta(lig)[, colnames(cellMetadata)] <- cellMetadata
+    cellMeta(lig, colnames(cellMetadata)) <- cellMetadata
     for (rd in SingleCellExperiment::reducedDimNames(object)) {
         cellMeta(lig, rd) <- SingleCellExperiment::reducedDim(object, rd)
     }
 
     return(lig)
+}
+
+#' @param assay Name of assay to use. Default \code{NULL} uses current active
+#' assay.
+#' @rdname as.liger
+#' @method as.liger Seurat
+#' @export
+as.liger.Seurat <- function(
+        object,
+        datasetVar = "orig.ident",
+        modal = NULL,
+        assay = NULL,
+        ...
+) {
+    mat <- .getSeuratData(object, layer = "counts", slot = "counts",
+                          assay = assay)
+    datasetVar <- object[[datasetVar]][,1]
+    if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
+    datasetVar <- droplevels(datasetVar)
+    rawDataList <- lapply(levels(datasetVar), function(d) {
+        mat[, datasetVar == d, drop = FALSE]
+    })
+    names(rawDataList) <- levels(datasetVar)
+    modal <- .checkArgLen(modal, nlevels(datasetVar))
+    createLiger(rawDataList, modal, object[[]], ...)
 }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -168,8 +186,8 @@ as.ligerDataset.ligerDataset <- function(
 
 #' @rdname as.ligerDataset
 #' @export
-#' @method as.ligerDataset matrixLike
-as.ligerDataset.matrixLike <- function(
+#' @method as.ligerDataset default
+as.ligerDataset.default <- function(
         object,
         modal = c("default", "rna", "atac"),
         ...
@@ -194,38 +212,49 @@ as.ligerDataset.matrix <- function(
 #' @rdname as.ligerDataset
 #' @export
 #' @method as.ligerDataset Seurat
+#' @param assay Name of assay to use. Default \code{NULL} uses current active
+#' assay.
 as.ligerDataset.Seurat <- function(
         object,
         modal = c("default", "rna", "atac"),
+        assay = NULL,
         ...
 ) {
-    if (!requireNamespace("Seurat", quietly = "TRUE"))
-        stop("Package \"Seurat\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "BiocManager::install('Seurat')",
-             call. = FALSE)
-    counts <- Seurat::GetAssayData(object, "counts")
-    normData <- Seurat::GetAssayData(object, "data")
-    if (identical(counts, normData)) normData <- NULL
-    scale.data <- Seurat::GetAssayData(object, "scale.data")
-    if (sum(dim(scale.data)) == 0) scale.data <- NULL
-    createLigerDataset(rawData = counts, normData = normData,
-                       scaleData = scale.data, modal = modal, ...)
+    modal <- match.arg(modal)
+    mat <- .getSeuratData(object, "counts", "counts", assay = assay)
+    createLigerDataset(rawData = mat, modal = modal, ...)
 }
 
-setClass("anndata._core.anndata.AnnData")
 
 #' @rdname as.ligerDataset
 #' @export
-#' @method as.ligerDataset anndata._core.anndata.AnnData
-as.ligerDataset.anndata._core.anndata.AnnData <- function(
+#' @method as.ligerDataset SingleCellExperiment
+as.ligerDataset.SingleCellExperiment <- function(
         object,
         modal = c("default", "rna", "atac"),
         ...
 ) {
+    if (!requireNamespace("SingleCellExperiment", quietly = "TRUE"))
+        stop("Package \"SingleCellExperiment\" needed for this function ",
+             "to work. Please install it by command:\n",
+             "BiocManager::install('SingleCellExperiment')",
+             call. = FALSE)
     modal <- match.arg(modal)
-    message("Python object AnnData input. ")
+    mat <- SingleCellExperiment::counts(object)
+    createLigerDataset(rawData = mat, modal = modal, ...)
 }
+
+#' #' @rdname as.ligerDataset
+#' #' @export
+#' #' @method as.ligerDataset anndata._core.anndata.AnnData
+#' as.ligerDataset.anndata._core.anndata.AnnData <- function(
+#'         object,
+#'         modal = c("default", "rna", "atac"),
+#'         ...
+#' ) {
+#'     modal <- match.arg(modal)
+#'     message("Python object AnnData input. ")
+#' }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # From ligerDataset class to other things ####
@@ -243,7 +272,137 @@ as.ligerDataset.anndata._core.anndata.AnnData <- function(
 #    )
 #})
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# From liger class to other things ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+#' Convert between liger and Seurat object
+#'
+#' For converting a \linkS4class{liger} object to a Seurat object, the
+#' \code{rawData}, \code{normData}, and \code{scaleData} from each dataset,
+#' the \code{cellMeta}, \code{H.norm} and \code{varFeatures} slot will be
+#' included. Compatible with V4 and V5. It is not recommended to use this
+#' conversion if your \linkS4class{liger} object contains datasets from
+#' various modalities.
+#' @param object A \linkS4class{liger} object to be converted
+#' @param assay Name of assay to store the data. Default \code{NULL} detects by
+#' dataset modality. If the object contains various modality, default to
+#' \code{"liger"}.
+#' @param identByDataset Logical, whether to combine dataset variable and default
+#' cluster labeling to set the Idents. Default \code{FALSE}.
+#' @param by.dataset [Deprecated]. Use \code{identByDataset} instead.
+#' @param nms [Defunct] Will be ignored because new object structure does not
+#' have related problem.
+#' @param renormalize [Defunct] Will be ignored because since Seurat V5, layers
+#' of data can exist at the same time and it is better to left it for users to
+#' do it by theirselves.
+#' @param use.liger.genes [Defunct] Will be ignored and will always set LIGER
+#' variable features to the place.
+#' @export
+ligerToSeurat <- function(
+        object,
+        assay = NULL,
+        identByDataset = FALSE,
+        nms = NULL,
+        renormalize = NULL,
+        use.liger.genes = NULL,
+        by.dataset = identByDataset
+) {
+    .checkObjVersion(object)
+    .deprecateArgs(
+        list(by.dataset = "identByDataset"),
+        defunct = c("nms", "renormalize", "use.liger.genes"))
+    if (is.null(assay)) {
+        allModal <- toupper(modalOf(object))
+        if (all(allModal == allModal[1])) {
+            assay <- allModal[1]
+        } else {
+            assay <- "liger"
+        }
+        if (assay == "default") assay <- "RNA"
+    }
+
+    rawDataList <- getMatrix(object, "rawData", returnList = TRUE)
+    if (any(sapply(rawDataList, is.null))) counts <- NULL
+    else counts <- mergeSparseAll(rawDataList)
+    normDataList <- getMatrix(object, "normData", returnList = TRUE)
+    if (any(sapply(normDataList, is.null))) data <- NULL
+    else data <- mergeSparseAll(normDataList)
+    scaleDataList <- getMatrix(object, "scaleData", returnList = TRUE)
+    if (any(sapply(scaleDataList, is.null))) scale.data <- NULL
+    else scale.data <- mergeSparseAll(scaleDataList)
+
+    orig.ident <- object$dataset
+    idents <- defaultCluster(object)
+    if (is.null(idents)) {
+        idents <- orig.ident
+    } else {
+        if (isTRUE(identByDataset)) {
+            idents <- factor(paste0(as.character(orig.ident), "_",
+                                    as.character(idents)))
+        }
+    }
+
+    # Split normal data.frame compatible info and dimReds
+    metadata <- data.frame(row.names = colnames(object))
+    dimReds <- list()
+    for (i in seq_along(cellMeta(object))) {
+        varname <- names(cellMeta(object))[i]
+        var <- cellMeta(object)[[i]]
+        if (is.null(dim(var))) metadata[[varname]] <- var
+        else dimReds[[varname]] <- var
+    }
+    srt <- Seurat::CreateSeuratObject(counts = counts, assay = assay,
+                                      meta.data = metadata)
+
+    srt$orig.ident <- orig.ident
+    Seurat::Idents(srt) <- idents
+
+    if (!is.null(data)) {
+        srt <- .setSeuratData(srt, layer = "ligerNormData", slot = "data",
+                              value = data, assay = assay, denseIfNeeded = FALSE)
+    }
+    if (!is.null(scale.data)) {
+        srt <- .setSeuratData(srt, layer = "ligerScaleData", slot = "scale.data",
+                              value = scale.data, assay = assay,
+                              denseIfNeeded = TRUE)
+    }
+    # Attempt to get H.norm primarily. If it is NULL, then turn to H
+    h <- getMatrix(object, "H.norm") %||%
+        getMatrix(pbmc, "H", returnList = TRUE)
+    if (is.list(h)) {
+        # Not from H.norm but H list. Only get merged when all datasets have H.
+        if (any(sapply(h, is.null))) h <- NULL
+        else h <- t(Reduce(cbind, h))
+    }
+    if (!is.null(h)) {
+        hDR <- SeuratObject::CreateDimReducObject(
+            embeddings = h,
+            loadings = getMatrix(object, "W", returnList = FALSE),
+            assay = assay,
+            misc = list(
+                H = getMatrix(object, "H", returnList = TRUE),
+                V = getMatrix(object, "V", returnList = TRUE)
+            ),
+            key = "iNMF_"
+        )
+        srt[["inmf"]] <- hDR
+    }
+
+    for (var in names(dimReds)) {
+        dimred <- SeuratObject::CreateDimReducObject(
+            embeddings = dimReds[[var]],
+            assay = assay,
+            key = paste0(var, "_")
+        )
+        srt[[var]] <- dimred
+    }
+    Seurat::VariableFeatures(srt) <- varFeatures(object)
+    return(srt)
+}
+
+
+seuratToLiger <- as.liger.Seurat
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # From old version to new version ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

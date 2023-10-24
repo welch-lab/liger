@@ -19,12 +19,12 @@
         normData <- mergeSparseAll(lapply(args, normData),
                                    libraryNames = libraryNames)
     else normData <- NULL
-    if (all(sapply(args, function(ld) !is.null(scaleData(ld)))))
-        scaleData <- mergeSparseAll(lapply(args, scaleData),
-                                    libraryNames = libraryNames)
-    else scaleData <- NULL
-    createLigerDataset(rawData = rawData, normData = normData,
-                       scaleData = scaleData)
+    # if (all(sapply(args, function(ld) !is.null(scaleData(ld)))))
+    #     scaleData <- mergeSparseAll(lapply(args, scaleData),
+    #                                 libraryNames = libraryNames)
+    # else scaleData <- NULL
+    createLigerDataset(rawData = rawData, normData = normData)#,
+                       # scaleData = scaleData)
 }
 
 .cbind.ligerDataset.h5 <- function(args) stop("Not implemented yet")

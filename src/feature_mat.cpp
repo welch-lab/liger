@@ -1,9 +1,6 @@
-#include <RcppArmadillo.h>
-// [[Rcpp::depends(RcppArmadillo)]]
 #include <Rcpp.h>
 
 using namespace Rcpp;
-using namespace arma;
 using namespace std;
 
 //' Fast calculation of feature count matrix

@@ -82,9 +82,7 @@ runUMAP <- function(
                        metric = distance,
                        n_neighbors = as.integer(nNeighbors),
                        min_dist = minDist)
-    rownames(umap) <- colnames(object)
-    colnames(umap) <- seq(nDims)
-    cellMeta(object, dimredName, check = FALSE) <- umap
+    dimRed(object, dimredName) <- umap
     return(object)
 }
 
@@ -188,9 +186,7 @@ runTSNE <- function(
                           theta = theta,
                           perplexity = perplexity)
     }
-    rownames(tsne) <- colnames(object)
-    colnames(tsne) <- seq(nDims)
-    cellMeta(object, dimredName, check = FALSE) <- tsne
+    dimRed(object, dimredName) <- tsne
     object@uns$TSNE <- list(method = method)
     return(object)
 }

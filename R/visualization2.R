@@ -6,9 +6,9 @@
 #' @description some text
 #' @param object A \linkS4class{liger} object.
 #' @param useCluster Name of variable in \code{cellMeta} slot. Default
-#' \code{"leiden_cluster"}.
+#' \code{NULL} uses default cluster.
 #' @param useDimRed Name of the variable storing dimensionality reduction result
-#' in the \code{cellMeta} slot. Default \code{"UMAP"}.
+#' in the \code{cellMeta} slot. Default \code{NULL} use default dimRed.
 #' @param combinePlots Logical, whether to utilize
 #' \code{\link[cowplot]{plot_grid}} to combine multiple plots into one. Default
 #' \code{TRUE} returns combined ggplot. \code{FALSE} returns a list of ggplot.
@@ -45,12 +45,15 @@
 #' plotFactorDimRed(pbmcPlot, 2)
 plotClusterDimRed <- function(
         object,
-        useCluster = "leiden_cluster",
-        useDimRed = "UMAP",
+        useCluster = NULL,
+        useDimRed = NULL,
         ...) {
+    useDimRed <- useDimRed %||% object@uns$defaultDimRed
+    useCluster <- useCluster %||% object@uns$defaultCluster
     xVar <- paste0(useDimRed, ".1")
     yVar <- paste0(useDimRed, ".2")
-    plotCellScatter(object, x = xVar, y = yVar, colorBy = useCluster,
+    plotCellScatter(object, x = xVar, y = yVar,
+                    colorBy = useCluster,
                     slot = "cellMeta", dotOrder = "shuffle", ...)
 }
 
@@ -58,8 +61,9 @@ plotClusterDimRed <- function(
 #' @export
 plotDatasetDimRed <- function(
         object,
-        useDimRed = "UMAP",
+        useDimRed = NULL,
         ...) {
+    useDimRed <- useDimRed %||% object@uns$defaultDimRed
     xVar <- paste0(useDimRed, ".1")
     yVar <- paste0(useDimRed, ".2")
     plotCellScatter(object, x = xVar, y = yVar, colorBy = "dataset",
@@ -71,11 +75,13 @@ plotDatasetDimRed <- function(
 #' @export
 plotByDatasetAndCluster <- function(
         object,
-        useDimRed = "UMAP",
-        useCluster = "leiden_cluster",
+        useDimRed = NULL,
+        useCluster = NULL,
         combinePlots = TRUE,
         ...
 ) {
+    useDimRed <- useDimRed %||% object@uns$defaultDimRed
+    useCluster <- useCluster %||% object@uns$defaultCluster
     plot <- list(
         dataset = plotDatasetDimRed(object, useDimRed = useDimRed, ...),
         cluster = plotClusterDimRed(object, useCluster = useCluster,
@@ -93,13 +99,14 @@ plotByDatasetAndCluster <- function(
 plotGeneDimRed <- function(
         object,
         features,
-        useDimRed = "UMAP",
+        useDimRed = NULL,
         log = TRUE,
         scaleFactor = 1e4,
         zeroAsNA = TRUE,
         colorPalette = "C",
         ...
 ) {
+    useDimRed <- useDimRed %||% object@uns$defaultDimRed
     xVar <- paste0(useDimRed, ".1")
     yVar <- paste0(useDimRed, ".2")
     scaleFunc <- function(x) {
@@ -118,13 +125,14 @@ plotGeneDimRed <- function(
 plotPeakDimRed <- function(
         object,
         features,
-        useDimRed = "UMAP",
+        useDimRed = NULL,
         log = TRUE,
         scaleFactor = 1e4,
         zeroAsNA = TRUE,
         colorPalette = "C",
         ...
 ) {
+    useDimRed <- useDimRed %||% object@uns$defaultDimRed
     xVar <- paste0(useDimRed, ".1")
     yVar <- paste0(useDimRed, ".2")
     scaleFunc <- function(x) {
@@ -143,12 +151,13 @@ plotPeakDimRed <- function(
 plotFactorDimRed <- function(
         object,
         factors,
-        useDimRed = "UMAP",
+        useDimRed = NULL,
         trimHigh = 0.03,
         zeroAsNA = TRUE,
         colorPalette = "D",
         ...
 ) {
+    useDimRed <- useDimRed %||% object@uns$defaultDimRed
     xVar <- paste0(useDimRed, ".1")
     yVar <- paste0(useDimRed, ".2")
     plotCellScatter(object, x = xVar, y = yVar, colorBy = factors,
@@ -189,16 +198,8 @@ plotGeneViolin <- function(
     splitBy <- NULL
     if (isTRUE(byDataset)) splitBy <- "dataset"
 
-    if (is.null(groupBy)) {
-        if ("leiden_cluster" %in% names(cellMeta(object)))
-            groupBy <- "leiden_cluster"
-        else if ("louvain_cluster" %in% names(cellMeta(object)))
-            groupBy <- "louvain_cluster"
-        else if ("H.norm_cluster" %in% names(cellMeta(object)))
-            groupBy <- "H.norm_cluster"
-    } else if (isFALSE(groupBy)) {
-        groupBy <- NULL
-    }
+    groupBy <- groupBy %||% object@uns$defaultCluster
+    if (isFALSE(groupBy)) groupBy <- NULL
 
     plotList <- plotCellViolin(
         object,
@@ -252,6 +253,8 @@ plotGeneDetectedViolin <- function(
 #' @param class1,class2 Each should be a single name of a categorical variable
 #' available in \code{cellMeta} slot. Number of cells in each categories in
 #' \code{class2} will be served as the denominator when calculating proportions.
+#' By default \code{class1 = NULL} and uses default clusters and \code{class2 =
+#' "dataset"}.
 #' @param method For bar plot, choose whether to draw \code{"stack"} or
 #' \code{"group"} bar plot. Default \code{"stack"}.
 #' @param showLegend,panelBorder,... ggplot theme setting arguments passed to
@@ -275,11 +278,12 @@ plotGeneDetectedViolin <- function(
 #' plotProportionPie(pbmcPlot)
 plotProportion <- function(
         object,
-        class1 = "leiden_cluster",
+        class1 = NULL,
         class2 = "dataset",
         method = c("stack", "group", "pie"),
         ...
 ) {
+    class1 <- class1 %||% object@uns$defaultCluster
     method <- match.arg(method)
     p1 <- plotProportionDot(object, class1 = class1, class2 = class2, ...)
     if (method %in% c("stack", "group")) {
@@ -300,12 +304,13 @@ plotProportion <- function(
 #' @export
 plotProportionDot <- function(
         object,
-        class1 = "leiden_cluster",
+        class1 = NULL,
         class2 = "dataset",
         showLegend = FALSE,
         panelBorder = TRUE,
         ...
 ) {
+    class1 <- class1 %||% object@uns$defaultCluster
     if (length(class1) != 1 ||
         length(class2) != 1)
         stop("`class1` and `class2` must be name of one categorical variable ",
@@ -335,7 +340,7 @@ plotProportionDot <- function(
 #' @export
 plotProportionBar <- function(
         object,
-        class1 = "leiden_cluster",
+        class1 = NULL,
         class2 = "dataset",
         method = c("stack", "group"),
         inclRev = FALSE,
@@ -343,6 +348,7 @@ plotProportionBar <- function(
         combinePlot = TRUE,
         ...
 ) {
+    class1 <- class1 %||% object@uns$defaultCluster
     if (length(class1) != 1 ||
         length(class2) != 1)
         stop("`class1` and `class2` must be name of one categorical variable ",
@@ -384,11 +390,17 @@ plotProportionBar <- function(
 #' @export
 plotClusterProportions <- function(
         object,
-        useCluster = "leiden_cluster",
+        useCluster = NULL,
         return.plot = FALSE,
         ...
 ) {
     .deprecateArgs(defunct = "return.plot")
+    lifecycle::deprecate_warn(
+        when = "1.99.0", what = "plotClusterProportions()",
+        with = "plotProportionDot()",
+        details = "See help(\"plotProportion\") for more new options."
+    )
+    useCluster <- useCluster %||% object@uns$defaultCluster
     plotProportionDot(object, class1 = useCluster, class2 = "dataset", ...)
 }
 
@@ -396,12 +408,13 @@ plotClusterProportions <- function(
 #' @export
 plotProportionPie <- function(
         object,
-        class1 = "leiden_cluster",
+        class1 = NULL,
         class2 = "dataset",
         labelSize = 4,
         labelColor = "white",
         ...
 ) {
+    class1 <- class1 %||% object@uns$defaultCluster
     df <- .fetchCellMetaVar(object, c(class1, class2), drop = FALSE,
                             checkCategorical = TRUE) %>%
         dplyr::group_by(.data[[class2]]) %>%

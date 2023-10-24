@@ -3,23 +3,23 @@
 \name{as.ligerDataset}
 \alias{as.ligerDataset}
 \alias{as.ligerDataset.ligerDataset}
-\alias{as.ligerDataset.matrixLike}
+\alias{as.ligerDataset.default}
 \alias{as.ligerDataset.matrix}
 \alias{as.ligerDataset.Seurat}
-\alias{as.ligerDataset.anndata._core.anndata.AnnData}
+\alias{as.ligerDataset.SingleCellExperiment}
 \title{Converting other classes of data to a as.ligerDataset object}
 \usage{
 as.ligerDataset(object, ...)
 
 \method{as.ligerDataset}{ligerDataset}(object, modal = c("default", "rna", "atac"), ...)
 
-\method{as.ligerDataset}{matrixLike}(object, modal = c("default", "rna", "atac"), ...)
+\method{as.ligerDataset}{default}(object, modal = c("default", "rna", "atac"), ...)
 
 \method{as.ligerDataset}{matrix}(object, modal = c("default", "rna", "atac"), ...)
 
-\method{as.ligerDataset}{Seurat}(object, modal = c("default", "rna", "atac"), ...)
+\method{as.ligerDataset}{Seurat}(object, modal = c("default", "rna", "atac"), assay = NULL, ...)
 
-\method{as.ligerDataset}{anndata._core.anndata.AnnData}(object, modal = c("default", "rna", "atac"), ...)
+\method{as.ligerDataset}{SingleCellExperiment}(object, modal = c("default", "rna", "atac"), ...)
 }
 \arguments{
 \item{object}{Object.}
@@ -27,6 +27,9 @@ as.ligerDataset(object, ...)
 \item{...}{Additional arguments passed to \code{\link{createLigerDataset}}}
 
 \item{modal}{Modality setting for each dataset.}
+
+\item{assay}{Name of assay to use. Default \code{NULL} uses current active
+assay.}
 }
 \value{
 a \linkS4class{liger} object.

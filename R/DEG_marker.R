@@ -19,7 +19,7 @@
 #'
 #' When \code{variable1} is "celltype" and \code{variable2} is "gender",
 #' \code{group1} should be a valid cell type from \code{object$celltype} and
-#' \code{group1} should be a valid class from \code{object$gender}.
+#' \code{group2} should be a valid class from \code{object$gender}.
 #'
 #' When both \code{variable1} and \code{variable2} are missing, \code{group1}
 #' and \code{group2} should be valid index of cells in \code{object}.
@@ -76,8 +76,8 @@ runPairwiseDEG <- function(
         names(groups) <- c("group1", "group2")
     } else if (!is.null(variable1)) {
         var1 <- .fetchCellMetaVar(object, variable1,
-                                       checkCategorical = TRUE, drop = TRUE,
-                                       droplevels = TRUE)
+                                  checkCategorical = TRUE, drop = TRUE,
+                                  droplevels = TRUE)
         group1Idx <- which(var1 %in% group1)
         group1Name <- paste(group1, collapse = ".")
         if (is.null(variable2)) {
