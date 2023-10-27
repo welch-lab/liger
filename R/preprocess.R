@@ -638,6 +638,7 @@ selectGenes.liger <- function(
                                   unshared.datasets = "useUnsharedDatasets",
                                   unshared.thresh = "unsharedThresh"),
                    defunct = c("tol", "do.plot", "cex.use"))
+    lig <- recordCommand(lig)
     datasetShared <- .checkUseDatasets(object, useDatasets)
     if (!is.null(useUnsharedDatasets))
         datasetUnshared <- .checkUseDatasets(object, useUnsharedDatasets)
@@ -656,7 +657,7 @@ selectGenes.liger <- function(
         nGenes_i <- nGenes[datasetShared == d]
         unsharedThresh_i <- unsharedThresh[datasetUnshared == d]
         ld <- .selectGenes.ligerDataset(
-            ld, shared = sharedFeature, thresh = thresh_i,
+            ld, sharedFeature = sharedFeature, thresh = thresh_i,
             nGenes = nGenes_i, unshared = d %in% datasetUnshared,
             unsharedThresh = unsharedThresh_i,
             nUMI = cellMeta(object, "nUMI", object$dataset == d),
