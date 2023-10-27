@@ -244,17 +244,17 @@ as.ligerDataset.SingleCellExperiment <- function(
     createLigerDataset(rawData = mat, modal = modal, ...)
 }
 
-#' #' @rdname as.ligerDataset
-#' #' @export
-#' #' @method as.ligerDataset anndata._core.anndata.AnnData
-#' as.ligerDataset.anndata._core.anndata.AnnData <- function(
-#'         object,
-#'         modal = c("default", "rna", "atac"),
-#'         ...
-#' ) {
-#'     modal <- match.arg(modal)
-#'     message("Python object AnnData input. ")
-#' }
+# #' @rdname as.ligerDataset
+# #' @export
+# #' @method as.ligerDataset anndata._core.anndata.AnnData
+# as.ligerDataset.anndata._core.anndata.AnnData <- function(
+#         object,
+#         modal = c("default", "rna", "atac"),
+#         ...
+# ) {
+#     modal <- match.arg(modal)
+#     message("Python object AnnData input. ")
+# }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # From ligerDataset class to other things ####
@@ -276,8 +276,8 @@ as.ligerDataset.SingleCellExperiment <- function(
 # From liger class to other things ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#' Convert between liger and Seurat object
-#'
+#' @title Convert between liger and Seurat object
+#' @description
 #' For converting a \linkS4class{liger} object to a Seurat object, the
 #' \code{rawData}, \code{normData}, and \code{scaleData} from each dataset,
 #' the \code{cellMeta}, \code{H.norm} and \code{varFeatures} slot will be
@@ -303,6 +303,7 @@ ligerToSeurat <- function(
         object,
         assay = NULL,
         identByDataset = FALSE,
+        # Rename or defunct
         nms = NULL,
         renormalize = NULL,
         use.liger.genes = NULL,

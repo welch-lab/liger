@@ -2,26 +2,16 @@
 % Please edit documentation in R/classConversion.R
 \name{ligerToSeurat}
 \alias{ligerToSeurat}
-\title{#' @rdname as.ligerDataset
-#' @export
-#' @method as.ligerDataset anndata._core.anndata.AnnData
-as.ligerDataset.anndata._core.anndata.AnnData <- function(
-        object,
-        modal = c("default", "rna", "atac"),
-        ...
-) {
-    modal <- match.arg(modal)
-    message("Python object AnnData input. ")
-}
-Convert between liger and Seurat object}
+\title{Convert between liger and Seurat object}
 \usage{
 ligerToSeurat(
   object,
   assay = NULL,
+  identByDataset = FALSE,
   nms = NULL,
   renormalize = NULL,
   use.liger.genes = NULL,
-  by.dataset = FALSE
+  by.dataset = identByDataset
 )
 }
 \arguments{
@@ -30,6 +20,9 @@ ligerToSeurat(
 \item{assay}{Name of assay to store the data. Default \code{NULL} detects by
 dataset modality. If the object contains various modality, default to
 \code{"liger"}.}
+
+\item{identByDataset}{Logical, whether to combine dataset variable and default
+cluster labeling to set the Idents. Default \code{FALSE}.}
 
 \item{nms}{[Defunct] Will be ignored because new object structure does not
 have related problem.}
@@ -41,7 +34,7 @@ do it by theirselves.}
 \item{use.liger.genes}{[Defunct] Will be ignored and will always set LIGER
 variable features to the place.}
 
-\item{by.dataset}{TODO. I don't know what this is.}
+\item{by.dataset}{[Deprecated]. Use \code{identByDataset} instead.}
 }
 \description{
 For converting a \linkS4class{liger} object to a Seurat object, the

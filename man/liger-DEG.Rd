@@ -93,7 +93,7 @@ For example, when \code{variable1 = "celltype"} and \code{variable2 = NULL},
 
 When \code{variable1} is "celltype" and \code{variable2} is "gender",
 \code{group1} should be a valid cell type from \code{object$celltype} and
-\code{group1} should be a valid class from \code{object$gender}.
+\code{group2} should be a valid class from \code{object$gender}.
 
 When both \code{variable1} and \code{variable2} are missing, \code{group1}
 and \code{group2} should be valid index of cells in \code{object}.

@@ -304,7 +304,7 @@
 .deprecateArgs <- function(replace = NULL, defunct = NULL) {
     # This retrieves the exact user call
     call <- match.call(definition = sys.function(-1),
-                       call = sys.call(-1))
+                       call = sys.call(-1), envir = parent.frame(2))
     callArgs <- rlang::call_args(call)
     parentFuncName <- as.list(call)[[1]]
     # This gives access to variable in the function operation environment
