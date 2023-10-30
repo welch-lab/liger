@@ -8,6 +8,8 @@
 removeMissing(
   object,
   orient = c("both", "feature", "cell"),
+  minCells = NULL,
+  minFeatures = NULL,
   useDatasets = NULL,
   filenameSuffix = "removeMissing",
   verbose = getOption("ligerVerbose"),
@@ -22,6 +24,15 @@ removeMissingObs(object, slot.use = NULL, use.cols = TRUE, verbose = TRUE)
 \item{orient}{Choose to remove non-expressing features (\code{"feature"}),
 empty barcodes (\code{"cell"}), or both of them (\code{"both"}). Default
 \code{"both"}.}
+
+\item{minCells}{Keep features that are expressed in at least this number of
+cells, calculated on a per-dataset base. A single value for all datasets or
+a vector for each dataset. Default \code{NULL} only removes none expressing
+features.}
+
+\item{minFeatures}{Keep cells that express at least this number of features,
+calculated on a per-dataset base. A single value for all datasets or a vector
+for each dataset. Default \code{NULL} only removes none expressing cells.}
 
 \item{useDatasets}{A character vector of the names, a numeric or logical
 vector of the index of the datasets to be processed. Default

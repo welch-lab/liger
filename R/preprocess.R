@@ -231,6 +231,13 @@ getProportionMito <- function(object, use.norm = FALSE, pattern = "^mt-") {
 #' @param orient Choose to remove non-expressing features (\code{"feature"}),
 #' empty barcodes (\code{"cell"}), or both of them (\code{"both"}). Default
 #' \code{"both"}.
+#' @param minCells Keep features that are expressed in at least this number of
+#' cells, calculated on a per-dataset base. A single value for all datasets or
+#' a vector for each dataset. Default \code{NULL} only removes none expressing
+#' features.
+#' @param minFeatures Keep cells that express at least this number of features,
+#' calculated on a per-dataset base. A single value for all datasets or a vector
+#' for each dataset. Default \code{NULL} only removes none expressing cells.
 #' @param useDatasets A character vector of the names, a numeric or logical
 #' vector of the index of the datasets to be processed. Default
 #' \code{NULL} removes empty entries from all datasets.
@@ -248,6 +255,8 @@ getProportionMito <- function(object, use.norm = FALSE, pattern = "^mt-") {
 removeMissing <- function(
         object,
         orient = c("both", "feature", "cell"),
+        minCells = NULL,
+        minFeatures = NULL,
         useDatasets = NULL,
         filenameSuffix = "removeMissing",
         verbose = getOption("ligerVerbose"),
@@ -258,6 +267,12 @@ removeMissing <- function(
     }
     orient <- match.arg(orient)
     useDatasets <- .checkUseDatasets(object, useDatasets)
+    minCells <- .checkArgLen(minCells, length(useDatasets))
+    minCells <- minCells %||% rep(0, length(useDatasets))
+    names(minCells) <- useDatasets
+    minFeatures <- .checkArgLen(minFeatures, length(useDatasets))
+    minFeatures <- minFeatures %||% rep(0, length(useDatasets))
+    names(minFeatures) <- useDatasets
     rmFeature <- ifelse(orient %in% c("both", "feature"), TRUE, FALSE)
     rmCell <- ifelse(orient %in% c("both", "cell"), TRUE, FALSE)
     datasets.new <- list()
@@ -265,13 +280,14 @@ removeMissing <- function(
     for (d in useDatasets) {
         ld <- dataset(object, d)
         if (rmFeature) {
-            featureIdx <- which(featureMeta(ld)$nCell > 0)
+            featureIdx <- which(featureMeta(ld)$nCell > minCells[d])
         } else {
             featureIdx <- seq_len(nrow(ld))
         }
         if (length(featureIdx) == nrow(ld)) rmFeature <- FALSE
         if (rmCell) {
-            cellIdx <- colnames(object)[object$dataset == d & object$nGene > 0]
+            cellIdx <- object$dataset == d & object$nGene > minFeatures[d]
+            cellIdx <- colnames(object)[cellIdx]
             cellIdx <- which(colnames(ld) %in% cellIdx)
         } else {
             cellIdx <- seq_len(ncol(ld))
@@ -292,13 +308,15 @@ removeMissing <- function(
         }
     }
     if (any(subsetted)) {
+        allCells <- unlist(lapply(datasets.new, colnames), use.names = FALSE)
+        print(allCells)
         methods::new(
             "liger",
             datasets = datasets.new,
-            cellMeta = cellMeta(object, cellIdx = object$nGene > 0,
+            cellMeta = cellMeta(object, cellIdx = allCells,
                                 drop = FALSE),
             varFeatures = character(),
-            H.norm = object@H.norm[cellIdx, , drop = FALSE]
+            H.norm = object@H.norm[allCells, , drop = FALSE]
         )
     } else {
         object
