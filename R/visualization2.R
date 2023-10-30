@@ -49,6 +49,9 @@ plotClusterDimRed <- function(
         useDimRed = NULL,
         ...) {
     useDimRed <- useDimRed %||% object@uns$defaultDimRed
+    if (is.null(useDimRed)) {
+        stop("No `useDimRed` given or default dimRed not set.")
+    }
     useCluster <- useCluster %||% object@uns$defaultCluster
     xVar <- paste0(useDimRed, ".1")
     yVar <- paste0(useDimRed, ".2")
@@ -64,6 +67,9 @@ plotDatasetDimRed <- function(
         useDimRed = NULL,
         ...) {
     useDimRed <- useDimRed %||% object@uns$defaultDimRed
+    if (is.null(useDimRed)) {
+        stop("No `useDimRed` given or default dimRed not set.")
+    }
     xVar <- paste0(useDimRed, ".1")
     yVar <- paste0(useDimRed, ".2")
     plotCellScatter(object, x = xVar, y = yVar, colorBy = "dataset",

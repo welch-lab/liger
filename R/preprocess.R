@@ -638,7 +638,7 @@ selectGenes.liger <- function(
                                   unshared.datasets = "useUnsharedDatasets",
                                   unshared.thresh = "unsharedThresh"),
                    defunct = c("tol", "do.plot", "cex.use"))
-    lig <- recordCommand(lig)
+    object <- recordCommand(object)
     datasetShared <- .checkUseDatasets(object, useDatasets)
     if (!is.null(useUnsharedDatasets))
         datasetUnshared <- .checkUseDatasets(object, useUnsharedDatasets)
