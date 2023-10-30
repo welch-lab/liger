@@ -21,7 +21,7 @@ runPairwiseDEG(
 
 runMarkerDEG(
   object,
-  conditionBy,
+  conditionBy = NULL,
   splitBy = NULL,
   method = c("wilcoxon", "pseudoBulk"),
   useDatasets = NULL,
@@ -59,7 +59,7 @@ will create \code{nPsdRep} pseudo replicates per group.}
 
 \item{conditionBy}{\code{cellMeta} variable(s). Marker detection will be
 performed for each level of this variable. Multiple variables will be
-combined.}
+combined. Default \code{NULL} uses default cluster.}
 
 \item{splitBy}{Split data by \code{cellMeta} variable(s) here and identify
 markers for \code{conditionBy} within each chunk. Default \code{NULL}.}
