@@ -309,7 +309,6 @@ removeMissing <- function(
     }
     if (any(subsetted)) {
         allCells <- unlist(lapply(datasets.new, colnames), use.names = FALSE)
-        print(allCells)
         methods::new(
             "liger",
             datasets = datasets.new,
