@@ -569,12 +569,13 @@ plotVolcano <- function(
                             ggplot2::aes(yintercept = .data[["Y"]]),
                             linetype = "longdash") +
         ggplot2::annotate("text",
-                          x = c(logFCThresh + 3, -logFCThresh - 3),
-                          y = c(-10, -10),
-                          label = paste0(c("higher ", "lower "),
-                                         "log2FC cutoff: ",
-                                         c(logFCThresh, -logFCThresh)),
-                          size = labelSize) +
+                          x = -logFCThresh - 0.5, y = -10,
+                          label = paste0("lower log2FC cutoff: ", -logFCThresh),
+                          size = labelSize, hjust = 1) +
+        ggplot2::annotate("text",
+                          x = logFCThresh + 0.5, y = -10,
+                          label = paste0("higher log2FC cutoff: ", logFCThresh),
+                          size = labelSize, hjust = 0) +
         ggplot2::annotate("text",
                           x = -max(abs(result$logFC)) + 2,
                           y = 10,

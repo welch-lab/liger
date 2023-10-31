@@ -101,7 +101,7 @@ subsetLiger <- function(
         if (!is.null(featureIdx)) {
             W <- object@W[featureIdx, , drop = FALSE]
             varFeature <- varFeatures(object)[varFeatures(object) %in%
-                                                   featureIdx]
+                                                  featureIdx]
         } else {
             W <- object@W
             varFeature <- varFeatures(object)
@@ -110,7 +110,7 @@ subsetLiger <- function(
             "liger",
             datasets = datasets.new,
             cellMeta = cellMeta(object, cellIdx = orderedCellIdx,
-                                  drop = FALSE),
+                                drop = FALSE),
             varFeatures = varFeature,
             W = W,
             H.norm = object@H.norm[orderedCellIdx, , drop = FALSE],
@@ -166,19 +166,19 @@ retrieveCellFeature <- function(
         #    |--------slot2 subset matrix (Though multi-slot not supported here)
         # |--dataset2
         # ......
-        value <- list()
-        for (d in names(object)) {
-            value[[d]] <- subsetData[[d]][[slot]]
-        }
+        # value <- list()
+        # for (d in names(object)) {
+        #     value[[d]] <- subsetData[[d]][[slot]]
+        # }
+        subsetData <- lapply(subsetData, `[[`, i = slot)
         # Condition for scaleData
         #if (all(sapply(value, function(x) dim(x)[1] == 0)))
         #    stop("No feature could be retrieved. ",
         #         "Please check feature names or slot")
-        value <- lapply(value, as.matrix)
-        value <- as.data.frame(t(mergeDenseAll(value)))
-        orderedCellIdx <- sort(cellIdx)
-        revIdx <- sapply(cellIdx, function(x) which(orderedCellIdx == x))
-        value <- value[revIdx, , drop = FALSE]
+        subsetData <- lapply(subsetData, t)
+        subsetData <- Reduce(rbind, subsetData)
+        subsetData <- as.data.frame(as.matrix(subsetData))
+        value <- subsetData[colnames(object)[cellIdx], , drop = FALSE]
     } else if (slot == "H") {
         value <- Reduce(cbind, getMatrix(object, "H"))
         value <- as.data.frame(t(value[feature, cellIdx, drop = FALSE]))
@@ -213,7 +213,7 @@ retrieveCellFeature <- function(
         value <- Reduce(rbind, value)
     } else {
         value <- cellMeta(object, feature, cellIdx = cellIdx,
-                           as.data.frame = TRUE, drop = FALSE)
+                          as.data.frame = TRUE, drop = FALSE)
     }
     return(value)
 }
@@ -261,17 +261,17 @@ retrieveCellFeature <- function(
 #' ctrl.small <- subsetLigerDataset(ctrl, cellIdx = 1:5)
 #' ctrl.tiny <- ctrl[1:5, 1:5]
 subsetLigerDataset <- function(
-    object,
-    featureIdx = NULL,
-    cellIdx = NULL,
-    useSlot = NULL,
-    newH5 = "auto",
-    filename = NULL,
-    filenameSuffix = NULL,
-    chunkSize = 1000,
-    verbose = getOption("ligerVerbose"),
-    returnObject = TRUE,
-    ...
+        object,
+        featureIdx = NULL,
+        cellIdx = NULL,
+        useSlot = NULL,
+        newH5 = "auto",
+        filename = NULL,
+        filenameSuffix = NULL,
+        chunkSize = 1000,
+        verbose = getOption("ligerVerbose"),
+        returnObject = TRUE,
+        ...
 ) {
     if (isH5Liger(object))
         subsetH5LigerDataset(object, featureIdx = featureIdx, cellIdx = cellIdx,
@@ -288,16 +288,16 @@ subsetLigerDataset <- function(
 #' @export
 #' @rdname subsetLigerDataset
 subsetH5LigerDataset <- function(
-    object,
-    featureIdx = NULL,
-    cellIdx = NULL,
-    useSlot = NULL,
-    newH5 = "auto",
-    filename = NULL,
-    filenameSuffix = NULL,
-    chunkSize = 1000,
-    verbose = getOption("ligerVerbose"),
-    returnObject = TRUE
+        object,
+        featureIdx = NULL,
+        cellIdx = NULL,
+        useSlot = NULL,
+        newH5 = "auto",
+        filename = NULL,
+        filenameSuffix = NULL,
+        chunkSize = 1000,
+        verbose = getOption("ligerVerbose"),
+        returnObject = TRUE
 ) {
     if (newH5 == "auto") {
         cellIdx <- .idxCheck(object, cellIdx, "cell")
@@ -322,13 +322,13 @@ subsetH5LigerDataset <- function(
 }
 
 subsetH5LigerDatasetToMem <- function(
-    object,
-    featureIdx = NULL,
-    cellIdx = NULL,
-    useSlot = NULL,
-    returnObject = TRUE,
-    chunkSize = 1000,
-    verbose = getOption("ligerVerbose")
+        object,
+        featureIdx = NULL,
+        cellIdx = NULL,
+        useSlot = NULL,
+        returnObject = TRUE,
+        chunkSize = 1000,
+        verbose = getOption("ligerVerbose")
 ) {
     if (!inherits(object, "ligerDataset")) {
         warning("`object` is not a ligerDataset obejct. Nothing to be done.")
@@ -402,7 +402,7 @@ subsetH5LigerDatasetToMem <- function(
                          " features used in scaleData were selected. ",
                          level = 3)
                 scaleData <- scaleData(object)[scaledFeatureIdx2, cellIdx,
-                                                drop = FALSE]
+                                               drop = FALSE]
                 rownames(scaleData) <- rownames(object)[scaledFeatureIdx][scaledFeatureIdx2]
                 colnames(scaleData) <- colnames(object)[cellIdx]
             } else {
@@ -677,11 +677,11 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
     subsetData <- list()
     if ("rawData" %in% slotInvolved) {
         subsetData$rawData <- rawData(object)[featureIdx, cellIdx,
-                                                drop = FALSE]
+                                              drop = FALSE]
     }
     if ("normData" %in% slotInvolved) {
         subsetData$normData <- normData(object)[featureIdx, cellIdx,
-                                                  drop = FALSE]
+                                                drop = FALSE]
     }
 
     if (!is.null(object@scaleUnsharedData)) {
@@ -703,7 +703,7 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
         if (!is.null(object@scaleUnsharedData)) {
             subsetData$scaleUnsharedData <-
                 object@scaleUnsharedData[scaleUnsFeatureIdx, cellIdx,
-                                           drop = FALSE]
+                                         drop = FALSE]
         }
     }
     if (is.null(useSlot)) {
@@ -715,7 +715,7 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
                              B = object@B[sfi, , drop = FALSE],
                              U = object@U,
                              featureMeta = object@featureMeta[featureIdx, ,
-                                                                drop = FALSE]
+                                                              drop = FALSE]
                         ))
         # Additional subsetting for sub-classes, if applicable
         if (modal == "atac") {

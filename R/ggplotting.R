@@ -96,7 +96,8 @@ plotCellScatter <- function(
     colorByParam <- list()
     if (!is.null(colorBy)) {
         colorDF <- retrieveCellFeature(object, feature =  colorBy,
-                                       slot = slot, cellIdx = cellIdx)
+                                       slot = slot, cellIdx = cellIdx,
+                                       verbose = FALSE)
         # When retrieving H/H.norm, exact colname might not be what `colorBy` is
         colorBy <- colnames(colorDF)
         if (!is.null(colorByFunc))
@@ -144,6 +145,8 @@ plotCellScatter <- function(
     plotList <- list()
     titles <- .checkArgLen(titles, n = length(plotDFList), .stop = FALSE)
     for (i in seq_along(plotDFList)) {
+        .log("Plotting feature: ", names(plotDFList)[i], ", on ",
+             nrow(plotDFList[[i]]), " cells...")
         plotList[[i]] <- .ggScatter(plotDF = plotDFList[[i]], x = x, y = y,
                                     colorBy = colorByParam[[i]],
                                     shapeBy = shapeBy, title = titles[i], ...)
@@ -415,7 +418,8 @@ plotCellViolin <- function(
 
     # Create copies of `plotDF` in `plotDFList`, where each `plotDF` has only
     # one `y` variable
-    yDF <- retrieveCellFeature(object, y, slot, cellIdx = cellIdx)
+    yDF <- retrieveCellFeature(object, y, slot, cellIdx = cellIdx,
+                               verbose = FALSE)
 
     # When retrieving H/H.norm, exact colname might not be what `colorBy` is
     y <- colnames(yDF)
