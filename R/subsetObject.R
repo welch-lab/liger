@@ -175,9 +175,10 @@ retrieveCellFeature <- function(
         #if (all(sapply(value, function(x) dim(x)[1] == 0)))
         #    stop("No feature could be retrieved. ",
         #         "Please check feature names or slot")
-        subsetData <- lapply(subsetData, t)
-        subsetData <- Reduce(rbind, subsetData)
-        subsetData <- as.data.frame(as.matrix(subsetData))
+        # subsetData <- lapply(subsetData, t)
+        # subsetData <- Reduce(rbind, subsetData)
+        subsetData <- mergeSparseAll(subsetData, mode = "union")
+        subsetData <- as.data.frame(as.matrix(t(subsetData)))
         value <- subsetData[colnames(object)[cellIdx], , drop = FALSE]
     } else if (slot == "H") {
         value <- Reduce(cbind, getMatrix(object, "H"))
