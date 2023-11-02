@@ -25,7 +25,7 @@ Export the predicted gene-pair interactions calculated by upstream function 'lin
 }
 \examples{
 \dontrun{
-# some gene-peak correlation matrix: regent 
+# some gene-peak correlation matrix: regent
 makeInteractTrack(regnet, path_to_coords = 'some_path_to_gene_coordinates/hg19_genes.bed')
 }
 }

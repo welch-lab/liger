@@ -87,7 +87,7 @@ mismatches in order (default NULL).}
 
 \item{keep.scale}{Maintain min/max color scale across all plots when using plot.by (default FALSE)}
 
-\item{raster}{Rasterization of points (default NULL). Automatically convert to raster format if 
+\item{raster}{Rasterization of points (default NULL). Automatically convert to raster format if
 there are over 100,000 cells to plot.}
 }
 \value{

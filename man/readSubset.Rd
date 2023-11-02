@@ -47,7 +47,7 @@ This function assumes that the cell barcodes are unique across all datasets.
 \examples{
 \dontrun{
 # Only for online liger object (based on HDF5 files)
-# Example: sample a total amount of 5000 cells from norm.data for downstream analysis 
+# Example: sample a total amount of 5000 cells from norm.data for downstream analysis
 ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
 }
 }

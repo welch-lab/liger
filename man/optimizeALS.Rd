@@ -19,7 +19,6 @@ optimizeALS(object, ...)
   W.init = NULL,
   V.init = NULL,
   use.unshared = FALSE,
-  lamda.u = NULL,
   rand.seed = 1,
   print.obj = FALSE,
   verbose = TRUE,
@@ -72,6 +71,8 @@ factorizations of the same dataset can be run with one rep if necessary. (defaul
 
 \item{V.init}{Initial values to use for V matrices (default NULL)}
 
+\item{use.unshared}{Whether to run UANLS method to integrate datasets with previously identified unshared variable genes. Have to run selectGenes with unshared = TRUE and scaleNotCenter it. (default FALSE).}
+
 \item{rand.seed}{Random seed to allow reproducible results (default 1).}
 
 \item{print.obj}{Print objective function values after convergence (default FALSE).}
@@ -95,7 +96,7 @@ across datasets. The V matrices represent the dataset-specific components of the
 \examples{
 \dontrun{
 # Requires preprocessed liger object (only for objected not based on HDF5 files)
-# Get factorization using 20 factors and mini-batch of 5000 cells 
+# Get factorization using 20 factors and mini-batch of 5000 cells
 # (default setting, can be adjusted for ideal results)
 ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 1)
 }

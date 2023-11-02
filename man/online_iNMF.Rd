@@ -81,7 +81,7 @@ across datasets. The V matrices represent the dataset-specific components of the
 \examples{
 \dontrun{
 # Requires preprocessed liger object
-# Get factorization using 20 factors and mini-batch of 5000 cells 
+# Get factorization using 20 factors and mini-batch of 5000 cells
 # (default setting, can be adjusted for ideal results)
 ligerex <- online_iNMF(ligerex, k = 20, lambda = 5, miniBatch_size = 5000)
 }

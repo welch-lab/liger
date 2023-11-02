@@ -57,7 +57,7 @@ between the nodes (default 0.1).}
 By default will try to automatically order them appropriately.}
 }
 \value{
-A riverplot object
+NULL for now. Could be back if CRAN dependency riverplot is back.
 }
 \description{
 Creates a riverplot to show how separate cluster assignments from two datasets map onto a

@@ -75,7 +75,7 @@ NULL to revert to default gradient scaling. (default 0.1)}
 
 \item{verbose}{Print progress bar/messages (TRUE by default)}
 
-\item{raster}{Rasterization of points (default NULL). Automatically convert to raster format if 
+\item{raster}{Rasterization of points (default NULL). Automatically convert to raster format if
 there are over 100,000 cells to plot.}
 }
 \value{

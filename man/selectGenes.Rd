@@ -54,12 +54,12 @@ Selected genes are plotted in green. (default FALSE)}
 
 \item{chunk}{size of chunks in hdf5 file. (default 1000)}
 
+\item{unshared}{Whether to consider unshared features (Default FALSE)}
+
 \item{unshared.datasets}{A list of the datasets to consider unshared features for, i.e. list(2), to use the second dataset}
 
 \item{unshared.thresh}{A list of threshold values to apply to each unshared dataset. If only one value is provided, it will apply to all unshared
 datasets. If a list is provided, it must match the length of the unshared datasets submitted.}
-
-\item{unshared.features}{Whether to consider unshared features}
 }
 \value{
 \code{liger} object with var.genes slot set.
