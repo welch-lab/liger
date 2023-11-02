@@ -26,7 +26,7 @@ Author: Joshua Welch [aut, ctb],
         Paul Hoffman [ctb],
         Ilya Korsunsky [ctb],
         Robert Lee [ctb]
-Maintainer: Chao Gao <gchao@umich.edu>
+Maintainer: Yichen Wang <wayichen@umich.edu>
 BugReports: https://github.com/welch-lab/liger/issues
 URL: https://github.com/welch-lab/liger
 License: GPL-3 | file LICENSE
