@@ -1,5 +1,7 @@
-#' @importFrom Matrix colSums rowSums t
+#' @import Matrix
 #' @importFrom grDevices dev.off pdf
+#' @import hdf5r
+#' @importFrom Rcpp evalCpp
 NULL
 
 #' The LIGER Class
@@ -45,9 +47,7 @@ NULL
 #' @rdname liger-class
 #' @aliases liger-class
 #' @exportClass liger
-#' @importFrom Rcpp evalCpp
 #' @useDynLib rliger
-
 liger <- methods::setClass(
   "liger",
   slots = c(
@@ -130,9 +130,8 @@ setMethod(
 #' @param verbose Print messages (TRUE by default)
 #'
 #' @return List of merged matrices across data types (returns sparse matrix if only one data type
-#'   detected), or nested list of matrices organized by sample if merge=F.
+#'   detected), or nested list of matrices organized by sample if merge = FALSE.
 #'
-#' @import Matrix
 #' @importFrom utils read.delim read.table
 #'
 #' @export
@@ -145,7 +144,6 @@ setMethod(
 #' dges1 <- read10X(list(sample.dir1, sample.dir2), c("sample1", "sample2"), min.umis = 50)
 #' ligerex <- createLiger(expr = dges1[["Gene Expression"]], custom = dges1[["CUSTOM"]])
 #' }
-
 read10X <- function(sample.dirs, sample.names, merge = TRUE, num.cells = NULL, min.umis = 0,
                     use.filtered = FALSE, reference = NULL, data.type = "rna", verbose = TRUE) {
   datalist <- list()
@@ -318,11 +316,7 @@ read10X <- function(sample.dirs, sample.names, merge = TRUE, num.cells = NULL, m
 #' @param indptr.name Path to the pointers stored in HDF5 file.
 #' @param genes.name Path to the gene names stored in HDF5 file.
 #' @param barcodes.name Path to the barcodes stored in HDF5 file.
-#'
 #' @return Directly generates newly merged hdf5 file.
-#'
-#' @import hdf5r
-#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -332,7 +326,6 @@ read10X <- function(sample.dirs, sample.names, merge = TRUE, num.cells = NULL, m
 #' # name for output HDF5 file: "merged.h5"
 #' mergeH5(list("library1.h5","library2.h5"), c("lib1","lib2"), "merged.h5")
 #' }
-
 mergeH5 <- function(file.list,
                     library.names,
                     new.filename,
@@ -406,11 +399,7 @@ mergeH5 <- function(file.list,
 #'
 #' @param object \code{liger} object.
 #' @param file.path List of paths to hdf5 files.
-#'
 #' @return \code{liger} object with restored links.
-#'
-#' @import hdf5r
-#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -487,20 +476,10 @@ restoreOnlineLiger <- function(object, file.path = NULL) {
 #' @param genes.name Path to the gene names stored in HDF5 file.
 #' @param barcodes.name Path to the barcodes stored in HDF5 file.
 #' @param verbose Print messages (TRUE by default)
-#'
 #' @return \code{liger} object with raw.data slot set.
-#'
-#' @import Matrix
-#' @import hdf5r
-#'
 #' @export
 #' @examples
-#' # Demonstration using matrices with randomly generated numbers
-#' Y <- matrix(runif(5000,0,2), 10,500)
-#' Z <- matrix(runif(5000,0,2), 10,500)
-#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
-
-
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 createLiger <- function(raw.data,
                         take.gene.union = FALSE,
                         remove.missing = TRUE,
@@ -682,19 +661,11 @@ safe_h5_create = function(object, idx, dataset_name, dims, mode="double", chunk_
 #'   expressed in any cells (if take.gene.union = TRUE, removes only genes not expressed in any
 #'   dataset) (default TRUE).
 #' @param verbose Print progress bar/messages (TRUE by default)
-#'
 #' @return \code{liger} object with norm.data slot set.
-#'
-#' @import hdf5r
-#'
 #' @export
 #' @examples
-#' # Demonstration using matrices with randomly generated numbers
-#' Y <- matrix(runif(5000,0,2), 10,500)
-#' Z <- matrix(runif(5000,0,2), 10,500)
-#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 #' ligerex <- normalize(ligerex)
-
 normalize <- function(object,
                       chunk = 1000,
                       format.type = "10X",
@@ -811,11 +782,7 @@ normalize <- function(object,
 #'    Should call normalize and selectGenes before calling.
 #' @param chunk size of chunks in hdf5 file. (default 1000)
 #' @param verbose Print progress bar/messages (TRUE by default)
-#'
 #' @return \code{liger} object with scale.data slot set.
-#'
-#' @import hdf5r
-
 calcGeneVars = function (object, chunk = 1000, verbose = TRUE)
 {
   hdf5_files = names(object@raw.data)
@@ -905,27 +872,18 @@ calcGeneVars = function (object, chunk = 1000, verbose = TRUE)
 #' @param unshared.thresh A list of threshold values to apply to each unshared dataset. If only one value is provided, it will apply to all unshared
 #'  datasets. If a list is provided, it must match the length of the unshared datasets submitted.
 #' @return \code{liger} object with var.genes slot set.
-#'
-#' @import hdf5r
 #' @importFrom stats optimize
 #' @importFrom graphics abline plot points title
 #' @importFrom stats qnorm
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # Given datasets Y and Z
-#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 #' ligerex <- normalize(ligerex)
-#' # use default selectGenes settings (var.thresh = 0.1)
 #' ligerex <- selectGenes(ligerex)
-#' # select a smaller subset of genes
-#' ligerex <- selectGenes(ligerex, var.thresh = 0.3)
-#' }
-
 selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes = NULL,
                         tol = 0.0001, datasets.use = 1:length(object@raw.data), combine = "union",
-                        capitalize = FALSE, do.plot = FALSE, cex.use = 0.3, chunk=1000, unshared = F, unshared.datasets = NULL, unshared.thresh = NULL)
+                        capitalize = FALSE, do.plot = FALSE, cex.use = 0.3, chunk=1000, unshared = FALSE, unshared.datasets = NULL, unshared.thresh = NULL)
 {
   if (class(object@raw.data[[1]])[1] == "H5File") {
     if (!object@raw.data[[1]]$exists("gene_vars")) {
@@ -1080,7 +1038,7 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
     object@var.genes <- genes.use
   }
   # Only for unshared Features
-  if (unshared == T) {
+  if (isTRUE(unshared)) {
     ind.thresh = c()
     # If only one threshold is provided, apply to all unshared datasets
     if(length(unshared.thresh == 1)){
@@ -1088,7 +1046,7 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
     }    else{ # If thresholds are provided for every dataset, use the respective threshold for each datatset
       if (length(unshared.thresh) != length(unshared.datasets)) {
         warning("The number of thresholds does not match the number of datasets; Please provide either a single threshold value or a value for each unshared dataset.",
-                immediate. = T)
+                immediate. = TRUE)
       }
       names(unshared.thresh) = unshared.datasets
       for (i in unshared.datasets){
@@ -1154,22 +1112,13 @@ selectGenes <- function(object, var.thresh = 0.1, alpha.thresh = 0.99, num.genes
 #'   (default TRUE).
 #' @param chunk size of chunks in hdf5 file. (default 1000)
 #' @param verbose Print progress bar/messages (TRUE by default)
-#'
 #' @return \code{liger} object with scale.data slot set.
-#'
-#' @import hdf5r
-#'
 #' @export
 #' @examples
-#' \dontrun{
-#' # Given datasets Y and Z
-#' ligerex <- createLiger(list(y_set = Y, z_set = Z))
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 #' ligerex <- normalize(ligerex)
-#' # use default selectGenes settings (var.thresh = 0.1)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
-#' }
-
 scaleNotCenter <- function(object, remove.missing = TRUE, chunk = 1000, verbose = TRUE) {
   if (class(object@raw.data[[1]])[1] == "H5File") {
     hdf5_files = names(object@raw.data)
@@ -1263,7 +1212,7 @@ scaleNotCenter <- function(object, remove.missing = TRUE, chunk = 1000, verbose 
           object@scale.unshared.data[[i]] <- scaleNotCenterFast(t(object@norm.data[[i]][object@var.unshared.features[[i]],]))
           object@scale.unshared.data[[i]] <- as.matrix(object@scale.unshared.data[[i]])
         } else {
-          object@scale.unshared.data[[i]] <- scale(t(object@norm.data[[i]][object@var.unshared.features[[i]], ]), center = F, scale = T)
+          object@scale.unshared.data[[i]] <- scale(t(object@norm.data[[i]][object@var.unshared.features[[i]], ]), center = FALSE, scale = TRUE)
         }
         #names(object@scale.unshared.data) <- names(object@norm.data)
         object@scale.unshared.data[[i]][is.na(object@scale.unshared.data[[i]])] <- 0
@@ -1291,11 +1240,12 @@ scaleNotCenter <- function(object, remove.missing = TRUE, chunk = 1000, verbose 
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # liger object: ligerex
-#' ligerex <- removeMissingObs(ligerex)
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' if (any(rowSums(ctrl) == 0) || any(rowSums(stim) == 0)) {
+#'     # example datasets do not have missing data, thus put in a condition
+#'     # Though the function will return unchanged object if no missing found
+#'     ligerex <- removeMissingObs(ligerex)
 #' }
-
 removeMissingObs <- function(object, slot.use = "raw.data", use.cols = TRUE, verbose = TRUE) {
   filter.data <- slot(object, slot.use)
   removed <- ifelse(((slot.use %in% c("raw.data", "norm.data")) & (use.cols == TRUE)) |
@@ -1352,7 +1302,7 @@ downsample <- function(object,balance=NULL,max_cells=1000,datasets.use=NULL,seed
   set.seed(seed)
   if(is.null(datasets.use))
   {
-    datasets.use = names(object@H)
+    datasets.use = names(object@raw.data)
     if (verbose) {
       message(datasets.use)
     }
@@ -1423,19 +1373,14 @@ downsample <- function(object,balance=NULL,max_cells=1000,datasets.use=NULL,seed
 #' @param genes.use samples from only the specified genes. Default is NULL (all genes)
 #' @param rand.seed for reproducibility (default 1).
 #' @param verbose Print progress bar/messages (TRUE by default)
-#'
 #' @return \code{liger} object with sample.data slot set.
-#'
-#' @import hdf5r
-#'
 #' @export
 #' @examples
-#' \dontrun{
-#' # Only for online liger object (based on HDF5 files)
-#' # Example: sample a total amount of 5000 cells from norm.data for downstream analysis
-#' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' if (length(ligerex@H) > 0) {
+#'     # Downsampling is calculated basing on factorization result
+#'     ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 100)
 #' }
-
 readSubset <- function(object,
                        slot.use = "norm.data",
                        balance = NULL,
@@ -1604,12 +1549,11 @@ readSubset <- function(object,
       if (verbose) {
         setTxtProgressBar(pb, i)
       }
+      object@sample.data[[i]] = data.subset_i
     }
     if (verbose){
       cat("\n")
     }
-    object@sample.data[[i]] = data.subset_i
-    object@h5file.info[[i]][["sample.data.type"]] = slot.use
   }
   names(object@sample.data) = names(object@raw.data)
   return(object)
@@ -1657,18 +1601,17 @@ readSubset <- function(object,
 #' @param verbose Print progress bar/messages (TRUE by default)
 #'
 #' @return \code{liger} object with H, W, V, A and B slots set.
-#'
-#' @import hdf5r
-#'
 #' @export
 #' @examples
-#' \dontrun{
-#' # Requires preprocessed liger object
-#' # Get factorization using 20 factors and mini-batch of 5000 cells
-#' # (default setting, can be adjusted for ideal results)
-#' ligerex <- online_iNMF(ligerex, k = 20, lambda = 5, miniBatch_size = 5000)
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' if (length(ligerex@h5file.info) > 0) {
+#'     # This function only works for HDF5 based liger object
+#'     ligerex <- normalize(ligerex)
+#'     ligerex <- selectGenes(ligerex)
+#'     ligerex <- scaleNotCenter(ligerex)
+#'     # `miniBatch_size` has to be no larger than the number of cells in the smallest dataset
+#'     ligerex <- online_iNMF(ligerex, miniBatch_size = 100)
 #' }
-
 online_iNMF <- function(object,
                         X_new = NULL,
                         projection = FALSE,
@@ -2164,13 +2107,12 @@ nonneg <- function(x, eps = 1e-16) {
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # Requires preprocessed liger object (only for objected not based on HDF5 files)
-#' # Get factorization using 20 factors and mini-batch of 5000 cells
-#' # (default setting, can be adjusted for ideal results)
-#' ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 1)
-#' }
-
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' # Minimum specification for fast example pass
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 2)
 optimizeALS <- function(
   object,
   ...
@@ -2181,10 +2123,8 @@ optimizeALS <- function(
 #' @rdname optimizeALS
 #' @importFrom stats runif
 #' @importFrom utils setTxtProgressBar txtProgressBar
-#'
 #' @export
 #' @method optimizeALS list
-#'
 optimizeALS.list <- function(
   object,
   k,
@@ -2412,7 +2352,7 @@ optimizeALS.liger <- function(
   ...
 ) {
 
-  if (use.unshared == FALSE){
+  if (isFALSE(use.unshared)){
     object <- removeMissingObs(
     object = object,
     slot.use = 'scale.data',
@@ -2445,7 +2385,7 @@ optimizeALS.liger <- function(
     object@parameters$lambda <- lambda
     return(object)
   }
-  if(use.unshared == TRUE){
+  if(isTRUE(use.unshared)){
     object <- optimize_UANLS(object = object,
                              k = k,
                              lambda = lambda,
@@ -2479,11 +2419,16 @@ optimizeALS.liger <- function(
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # decide to run with k = 15 instead (keeping old lambda the same)
-#' ligerex <- optimizeNewK(ligerex, k.new = 15)
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' k <- 5
+#' # Minimum specification for fast example pass
+#' ligerex <- optimizeALS(ligerex, k = k, max.iters = 2)
+#' if (k != 5) {
+#'     ligerex <- optimizeNewK(ligerex, k.new = k, max.iters = 2)
 #' }
-
 optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters = 100,
                          rand.seed = 1, verbose = TRUE) {
   if (is.null(lambda)) {
@@ -2588,19 +2533,30 @@ optimizeNewK <- function(object, k.new, lambda = NULL, thresh = 1e-4, max.iters 
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # Given preprocessed liger object: ligerex (contains two datasets Y and Z)
-#' # get factorization using three restarts and 20 factors
-#' ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
-#' # acquire new data (Y_new, Z_new) from the same cell type, let's add it to existing datasets
-#' new_data <- list(Y_set = Y_new, Z_set = Z_new)
-#' ligerex2 <- optimizeNewData(ligerex, new.data = new_data, which.datasets = list('y_set', 'z_set'))
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' \donttest{
+#' # Assume we are performing the factorization
+#' # Specification for minimal example test time, not converging
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 2)
+#' # Suppose we have new data, namingly Y_new and Z_new from the same cell type.
+#' # Add it to existing datasets.
+#' new_data <- list(Y_set = ctrl, Z_set = stim)
+#' # 2 iters do not lead to converge, it's for minimal test time
+#' ligerex2 <- optimizeNewData(ligerex, new.data = new_data,
+#'                             which.datasets = list('ctrl', 'stim'),
+#'                             max.iters = 2)
 #' # acquire new data from different cell type (X), we'll just add another dataset
-#' # it's probably most similar to y_set
-#' ligerex <- optimizeNewData(ligerex, new.data = list(x_set = X), which.datasets = list('y_set'),
-#'                            add.to.existing = FALSE)
+#' # it's probably most similar to ctrl
+#' X <- ctrl
+#' # 2 iters do not lead to converge, it's for minimal test time
+#' ligerex3 <- optimizeNewData(ligerex, new.data = list(x_set = X),
+#'                             which.datasets = list('ctrl'),
+#'                             add.to.existing = FALSE,
+#'                             max.iters = 2)
 #' }
-
 optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = TRUE, lambda = NULL,
                             thresh = 1e-4, max.iters = 100, verbose = TRUE) {
   if (is.null(lambda)) {
@@ -2700,12 +2656,22 @@ optimizeNewData <- function(object, new.data, which.datasets, add.to.existing = 
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # now want to look at only subset of data
-#' # Requires a vector of cell names from data 1 and a vector of cell names from data 2
-#' ligerex2 <- optimizeSubset(ligerex, cell.subset = list(cell_names_1, cell_names_2))
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' \donttest{
+#' # Assume we are performing the factorization
+#' # Specification for minimal example run time, not converging.
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 2)
+#' # Preparing subset with random sampling.
+#' # Subset can also be obtained with prior knowledge from metadata.
+#' cell_names_1 <- sample(rownames(ligerex@H[[1]]), 20)
+#' cell_names_2 <- sample(rownames(ligerex@H[[2]]), 20)
+#'
+#' ligerex2 <- optimizeSubset(ligerex, cell.subset = list(cell_names_1, cell_names_2),
+#'                            max.iters = 2)
 #' }
-
 optimizeSubset <- function(object, cell.subset = NULL, cluster.subset = NULL, lambda = NULL,
                            thresh = 1e-4, max.iters = 100, datasets.scale = NULL) {
   if (is.null(lambda)) {
@@ -2727,7 +2693,8 @@ optimizeSubset <- function(object, cell.subset = NULL, cluster.subset = NULL, la
   object@raw.data <- lapply(1:length(object@raw.data), function(i) {
     object@raw.data[[i]][, cell.subset[[i]]]
   })
-  object@cell.data <- droplevels(object@cell.data[cell.subset, ])
+  all.cell.subset <- Reduce(c, cell.subset)
+  object@cell.data <- droplevels(object@cell.data[all.cell.subset, ])
   for (i in 1:length(object@norm.data)) {
     object@norm.data[[i]] <- object@norm.data[[i]][, cell.subset[[i]]]
     if (names(object@norm.data)[i] %in% datasets.scale) {
@@ -2735,7 +2702,7 @@ optimizeSubset <- function(object, cell.subset = NULL, cluster.subset = NULL, la
                                       scale = TRUE, center = FALSE)
       object@scale.data[[i]][is.na(object@scale.data[[i]])] <- 0
     } else {
-      object@scale.data[[i]] <- t(object@norm.data[[i]][object@var.genes, ])
+      object@scale.data[[i]] <- as.matrix(t(object@norm.data[[i]][object@var.genes, ]))
     }
   }
 
@@ -2764,11 +2731,17 @@ optimizeSubset <- function(object, cell.subset = NULL, cluster.subset = NULL, la
 #'
 #' @export
 #' @examples
-#' \dontrun{
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' \donttest{
+#' # Assume we are performing the factorization
+#' # Specification for minimal example run time, not converging.
+#' ligerex <- optimizeALS(ligerex, k = 5, lambda = 5, max.iters = 2)
 #' # decide to run with lambda = 15 instead (keeping k the same)
-#' ligerex <- optimizeNewLambda(ligerex, new.lambda = 15)
+#' ligerex <- optimizeNewLambda(ligerex, new.lambda = 15, max.iters = 2)
 #' }
-
 optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100, rand.seed = 1, verbose = TRUE) {
   k <- ncol(object@H[[1]])
   H <- object@H
@@ -2812,23 +2785,23 @@ optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100
 #'   or dataframe used to produce ggplot object. Raw data is matrix of alignment values for each
 #'   lambda value tested (each column represents a different rep for nrep).(default FALSE)
 #' @param verbose Print progress bar/messages (TRUE by default)
-#'
 #' @return Matrix of results if indicated or ggplot object. Plots alignment vs. lambda to console.
-#'
 #' @import doParallel
 #' @import parallel
 #' @importFrom foreach foreach
 #' @importFrom foreach "%dopar%"
 #' @importFrom ggplot2 ggplot aes geom_point geom_line guides guide_legend labs theme theme_classic
-#'
 #' @export
 #' @examples
-#' \dontrun{
-#' # Requires preprocessed liger object
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' \donttest{
 #' # examine plot for most appropriate lambda, use multiple cores for faster results
+#' # This will take a long time
 #' suggestLambda(ligerex, k = 20, num.cores = 4)
 #' }
-
 suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.cores = 1, thresh = 1e-4,
                           max.iters = 100, knn_k = 20, k2 = 500, ref_dataset = NULL, resolution = 1,
                           gen.new = FALSE, nrep = 1, return.data = FALSE, return.raw = FALSE, verbose = TRUE) {
@@ -2961,12 +2934,15 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 #'
 #' @export
 #' @examples
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
 #' \dontrun{
-#' # Requires preprocessed liger object
 #' # examine plot for most appropriate k, use multiple cores for faster results
+#' # This will take a long time
 #' suggestK(ligerex, num.cores = 4)
 #' }
-
 suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, max.iters = 100,
                      num.cores = 1, rand.seed = 1, gen.new = FALSE, nrep = 1, plot.log2 = TRUE,
                      return.data = FALSE, return.raw = FALSE, verbose = TRUE) {
@@ -3096,21 +3072,15 @@ suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, 
 #' @param ... Arguments passed to other methods
 #'
 #' @return \code{liger} object with 'H.norm' and 'clusters' slot set.
-#'
 #' @importFrom stats approxfun
-#'
 #' @export
 #' @examples
-#' \dontrun{
-#' # ligerex (liger object), factorization complete
-#' # do basic quantile alignment
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 2)
 #' ligerex <- quantile_norm(ligerex)
-#' # higher resolution for more clusters (note that SNF is conserved)
-#' ligerex <- quantile_norm(ligerex, resolution = 1.2)
-#' # change knn_k for more fine-grained local clustering
-#' ligerex <- quantile_norm(ligerex, knn_k = 15, resolution = 1.2)
-#' }
-
 quantile_norm <- function(
   object,
   ...
@@ -3213,7 +3183,6 @@ quantile_norm.list <- function(
 #' @rdname quantile_norm
 #' @export
 #' @method quantile_norm liger
-#'
 quantile_norm.liger <- function(
   object,
   quantiles = 50,
@@ -3273,17 +3242,16 @@ quantile_norm.liger <- function(
 #' @param random.seed Seed of the random number generator. (default 1)
 #' @param verbose Print messages (TRUE by default)
 #' @param dims.use Indices of factors to use for Louvain clustering (default 1:ncol(H[[1]])).
-#'
 #' @return \code{liger} object with refined 'clusters' slot set.
-#'
 #' @export
 #' @examples
-#' \dontrun{
-#' # ligerex (liger object), factorization complete
-#' ligerex <- louvainCluster(ligerex, resulotion = 0.3)
-#' }
-#'
-
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
+#' ligerex <- quantile_norm(ligerex)
+#' ligerex <- louvainCluster(ligerex, resolution = 0.3)
 louvainCluster <- function(object, resolution = 1.0, k = 20, prune = 1 / 15, eps = 0.1, nRandomStarts = 10,
                            nIterations = 100, random.seed = 1, verbose = TRUE, dims.use = NULL) {
   output_path <- paste0('edge_', sub('\\s', '_', Sys.time()), '.txt')
@@ -3399,13 +3367,13 @@ GroupSingletons <- function(ids, SNN, group.singletons = TRUE, verbose = FALSE) 
 #' @export
 #' @examples
 #' \dontrun{
+#' # Only runable for ATAC dataset. See tutorial on GitHub.
 #' # ligerex (liger object), factorization complete
 #' # impute every dataset other than the reference dataset
 #' ligerex <- imputeKNN(ligerex, reference = "y_set", weight = FALSE)
 #' # impute only z_set dataset
 #' ligerex <- imputeKNN(ligerex, reference = "y_set", queries = list("z_set"), knn_k = 50)
 #' }
-
 imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, norm = TRUE, scale = FALSE, verbose = TRUE) {
   if (verbose) {
     cat("NOTE: This function will discard the raw data previously stored in the liger object and",
@@ -3453,7 +3421,7 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
     # creating a (reference cell numbers X query cell numbers) weights matrix for knn weights and unit weights
     nn.k <- get.knnx(object@H.norm[reference_cells, ], object@H.norm[query_cells, ], k = knn_k, algorithm = "CR")
     weights <- Matrix(0, nrow = ncol(object@raw.data[[reference]]), ncol = nrow(nn.k$nn.index), sparse = TRUE)
-    if (weight == TRUE){ # for weighted situation
+    if (isTRUE(weight)){ # for weighted situation
       # find nearest neighbors for query cell in normed ref datasets
       for (n in 1:nrow(nn.k$nn.index)) { # record ref-query cell-cell distances
         weights[nn.k$nn.index[n, ], n] <- exp(-nn.k$nn.dist[n, ]) / sum(exp(-nn.k$nn.dist[n, ]))
@@ -3510,25 +3478,24 @@ imputeKNN <- function(object, reference, queries, knn_k = 20, weight = TRUE, nor
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # ligerex (liger object based on in-memory datasets), factorization complete
-#' wilcox.results <- runWilcoxon(ligerex, compare.method = "cluster")
-#' wilcox.results <- runWilcoxon(ligerex, compare.method = "datastes", data.use = c(1, 2))
-#' # HDF5 input
-#' # ligerex (liger object based on datasets in HDF5 format), factorization complete
-#' # Need to sample cells before implementing Wilcoxon test
-#' ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 1000)
-#' de_genes <- runWilcoxon(ligerex, compare.method = "clusters")
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
+#' ligerex <- quantile_norm(ligerex)
+#' ligerex <- louvainCluster(ligerex, resolution = 0.3)
+#' wilcox.results <- runWilcoxon(ligerex, compare.method = "clusters")
+#' wilcox.results <- runWilcoxon(ligerex, compare.method = "datasets", data.use = c(1, 2))
+#' if (length(ligerex@h5file.info) > 0) {
+#'     # For HDF5 based object
+#'     # Need to sample cells and read into memory before running Wilcoxon test
+#'     ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 1000)
+#'     wilcox.results <- runWilcoxon(ligerex, compare.method = "clusters")
 #' }
-
-runWilcoxon <- function(object, data.use = "all", compare.method) {
+runWilcoxon <- function(object, data.use = "all", compare.method = c("clusters", "datasets")) {
   # check parameter inputs
-  if (missing(compare.method)) {
-    stop("Parameter *compare.method* cannot be empty!")
-  }
-  if (compare.method != "datasets" & compare.method != "clusters") {
-    stop("Parameter *compare.method* should be either *clusters* or *datasets*.")
-  }
+  compare.method <- match.arg(compare.method)
   if (compare.method == "datasets") {
     if (length(names(object@norm.data)) < 2) {
       stop("Should have at least TWO inputs to compare between datasets")
@@ -3596,10 +3563,10 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
     if (len > 100000) {
       message("Calculating Large-scale Input...")
       results <- Reduce(rbind, lapply(suppressWarnings(split(seq(len), seq(len / 100000))), function(index) {
-        wilcoxauc(log(feature_matrix[index, ] + 1e-10), clusters)
+        wilcoxauc(log1p(1e6*feature_matrix[index, ]), clusters)
       }))
     } else {
-      results <- wilcoxauc(log(feature_matrix + 1e-10), clusters)
+      results <- wilcoxauc(log1p(1e6*feature_matrix), clusters)
     }
   }
 
@@ -3612,7 +3579,7 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
         message("Note: Skip Cluster ", cluster, " since it has only ONE data source.")
         return()
       }
-      return(wilcoxauc(log(sub_matrix + 1e-10), sub_label))
+      return(wilcoxauc(log1p(1e6*sub_matrix), sub_label))
     }))
   }
   return(results)
@@ -3641,12 +3608,12 @@ runWilcoxon <- function(object, data.use = "all", compare.method) {
 #' @export
 #' @examples
 #' \dontrun{
+#' # Only runable for ATAC datasets, see tutorial on GitHub
 #' # some gene counts matrix: gmat.small
 #' # some peak counts matrix: pmat.small
 #' regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman",
 #' alpha = 0.05, path_to_coords = 'some_path')
 #' }
-
 linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist = "spearman",
                               alpha = 0.05, path_to_coords, verbose = TRUE) {
   ## check dependency
@@ -3783,10 +3750,10 @@ linkGenesAndPeaks <- function(gene_counts, peak_counts, genes.list = NULL, dist 
 #' @export
 #' @examples
 #' \dontrun{
+#' # Only runable for ATAC datasets, see tutorial on GitHub
 #' # some gene-peak correlation matrix: regent
 #' makeInteractTrack(regnet, path_to_coords = 'some_path_to_gene_coordinates/hg19_genes.bed')
 #' }
-
 makeInteractTrack <- function(corr.mat, genes.list, output_path, path_to_coords) {
   # get genomic coordinates
   if (missing(path_to_coords)) {
@@ -3895,12 +3862,13 @@ makeInteractTrack <- function(corr.mat, genes.list, output_path, path_to_coords)
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # ligerex (liger object), factorization complete
-#' wilcox.results <- runGSEA(ligerex)
-#' wilcox.results <- runGSEA(ligerex, mat_v = c(1, 2))
-#' }
-#'
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' # Specification for minimal example run time, not converging
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
+#' result <- runGSEA(ligerex)
 runGSEA <- function(object, gene_sets = c(), mat_w = TRUE, mat_v = 0, custom_gene_sets = c()) {
   if (!requireNamespace("org.Hs.eg.db", quietly = TRUE)) {
     stop("Package \"org.Hs.eg.db\" needed for this function to work. Please install it by command:\n",
@@ -4010,16 +3978,13 @@ runGSEA <- function(object, gene_sets = c(), mat_w = TRUE, mat_v = 0, custom_gen
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # ligerex (liger object), factorization complete
-#' # generate H.norm by quantile normalizig factor loadings
-#' ligerex <- quantile_norm(ligerex)
-#' # get tsne.coords for normalized data
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' # Specification for minimal example run time, not converging
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 #' ligerex <- runTSNE(ligerex)
-#' # get tsne.coords for raw factor loadings
-#' ligerex <- runTSNE(ligerex, use.raw = TRUE)
-#' }
-
 runTSNE <- function(object, use.raw = FALSE, dims.use = 1:ncol(object@H.norm), use.pca = FALSE,
                     perplexity = 30, theta = 0.5, method = "Rtsne", fitsne.path = NULL,
                     rand.seed = 42) {
@@ -4091,15 +4056,13 @@ runTSNE <- function(object, use.raw = FALSE, dims.use = 1:ncol(object@H.norm), u
 #' @export
 #' @examples
 #' \dontrun{
-#' # ligerex (liger object), factorization complete
-#' # generate H.norm by quantile normalizig factor loadings
-#' ligerex <- quantileAlignSNF(ligerex)
-#' # get tsne.coords for normalized data
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' # Specification for minimal example run time, not converging
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 #' ligerex <- runUMAP(ligerex)
-#' # get tsne.coords for raw factor loadings
-#' ligerex <- runUMAP(ligerex, use.raw = TRUE)
-#' }
-
 runUMAP <- function(object, use.raw = FALSE, dims.use = 1:ncol(object@H.norm), k = 2,
                     distance = "euclidean", n_neighbors = 10, min_dist = 0.1, rand.seed = 42) {
   set.seed(rand.seed)
@@ -4148,13 +4111,13 @@ runUMAP <- function(object, use.raw = FALSE, dims.use = 1:ncol(object@H.norm), k
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # ligerex (liger object), factorization complete
-#' # generate H.norm by quantile normalizig factor loadings
-#' ligerex <- quantile_norm(ligerex)
-#' dataset_spec <- calcDatasetSpecificity(ligerex, do.plot = F)
-#' }
-
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' # Specification for minimal example run time, not converging
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
+#' calcDatasetSpecificity(ligerex)
 calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.plot = TRUE) {
   if (is.null(dataset1) | is.null(dataset2)) {
     dataset1 <- names(object@H)[1]
@@ -4215,17 +4178,14 @@ calcDatasetSpecificity <- function(object, dataset1 = NULL, dataset2 = NULL, do.
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # ligerex (liger object based on in-memory datasets), factorization complete
-#' # generate H.norm by quantile normalizig factor loadings
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' # Specification for minimal example run time, not converging
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 #' ligerex <- quantile_norm(ligerex)
-#' agreement <- calcAgreement(ligerex, dr.method = "NMF")
-#' # ligerex (liger object based on datasets in HDF5 format), factorization complete
-#' ligerex <- quantile_norm(ligerex)
-#' ligerex <- readSubset(ligerex, slot.use = "scale.data", max.cells = 5000)
-#' agreement <- calcAgreement(ligerex, dr.method = "NMF")
-#' }
-
+#' agreement <- calcAgreement(ligerex)
 calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.aligned = TRUE,
                           rand.seed = 42, by.dataset = FALSE) {
   # if (!requireNamespace("NNLM", quietly = TRUE) & dr.method == "NMF") {
@@ -4346,12 +4306,14 @@ calcAgreement <- function(object, dr.method = "NMF", ndims = 40, k = 15, use.ali
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # ligerex (liger object ), factorization complete
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' # Specification for minimal example run time, not converging
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 #' ligerex <- quantile_norm(ligerex)
-#' alignment <- calcAlignment(ligerex)
-#' }
-
+#' agreement <- calcAlignment(ligerex)
 calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL, cells.comp = NULL,
                           clusters.use = NULL, by.cell = FALSE, by.dataset = FALSE) {
   if (is.null(cells.use)) {
@@ -4443,7 +4405,7 @@ calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL, cel
 #'
 #' Returns alignment for each cluster in analysiss (see documentation for calcAlignment).
 #'
-#' @param object \code{liger} object. Should call quantileAlignSNF before calling.
+#' @param object \code{liger} object. Should call quantile_norm before calling.
 #' @param rand.seed Random seed for reproducibility (default 1).
 #' @param k Number of nearest neighbors in calculating alignment (see calcAlignment for default).
 #'   Can pass in single value or vector with same length as number of clusters.
@@ -4455,13 +4417,14 @@ calcAlignment <- function(object, k = NULL, rand.seed = 1, cells.use = NULL, cel
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # ligerex (liger object), factorization complete
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' # Specification for minimal example run time, not converging
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 #' ligerex <- quantile_norm(ligerex)
-#' # get alignment for each cluster
-#' alignment_per_cluster <- calcAlignmentPerCluster(ligerex)
-#' }
-
+#' agreement <- calcAlignmentPerCluster(ligerex)
 calcAlignmentPerCluster <- function(object, rand.seed = 1, k = NULL, by.dataset = FALSE) {
   clusters <- levels(object@clusters)
   if (typeof(k) == "double") {
@@ -4503,20 +4466,14 @@ calcAlignmentPerCluster <- function(object, rand.seed = 1, k = NULL, by.dataset 
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # ligerex (liger object), factorization complete
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' # Specification for minimal example run time, not converging
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 #' ligerex <- quantile_norm(ligerex)
-#' # toy clusters
-#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = TRUE)
-#' names(cluster1) <- colnames(ligerex@raw.data[[1]])
-#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = TRUE)
-#' names(cluster2) <- colnames(ligerex@raw.data[[2]])
-#' # get ARI for first clustering
-#' ari1 <- calcARI(ligerex, cluster1)
-#' # get ARI for second clustering
-#' ari2 <- calcARI(ligerex, cluster2)
-#' }
-
+#' agreement <- calcARI(ligerex, ligerex@clusters)
 calcARI <- function(object, clusters.compare, verbose = TRUE) {
   if (length(clusters.compare) < length(object@clusters) && verbose) {
     message("Calculating ARI for subset of all cells")
@@ -4540,20 +4497,14 @@ calcARI <- function(object, clusters.compare, verbose = TRUE) {
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # ligerex (liger object), factorization complete
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' # Specification for minimal example run time, not converging
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 #' ligerex <- quantile_norm(ligerex)
-#' # toy clusters
-#' cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = TRUE)
-#' names(cluster1) <- colnames(ligerex@raw.data[[1]])
-#' cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = TRUE)
-#' names(cluster2) <- colnames(ligerex@raw.data[[2]])
-#' # get ARI for first clustering
-#' ari1 <- calcPurity(ligerex, cluster1)
-#' # get ARI for second clustering
-#' ari2 <- calcPurity(ligerex, cluster2)
-#' }
-
+#' agreement <- calcARI(ligerex, ligerex@clusters)
 calcPurity <- function(object, classes.compare, verbose = TRUE) {
   if (length(classes.compare) < length(object@clusters) && verbose) {
     print("Calculating purity for subset of full cells")
@@ -4570,19 +4521,18 @@ calcPurity <- function(object, classes.compare, verbose = TRUE) {
 #'
 #' @param object \code{liger} object.
 #' @param use.norm Whether to use cell normalized data in calculating contribution (default FALSE).
-#'
+#' @param species Whether the data is from mouse or human? (default "mouse").
 #' @return Named vector containing proportion of mitochondrial contribution for each cell.
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # ligerex (liger object), factorization complete
-#' ligerex@cell.data[["percent_mito"]] <- getProportionMito(ligerex)
-#' }
-
-getProportionMito <- function(object, use.norm = FALSE) {
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex@cell.data$mito <- getProportionMito(ligerex, species = "human")
+getProportionMito <- function(object, use.norm = FALSE, species = c("mouse", "human")) {
+  species <- match.arg(species)
+  ptrn <- switch(species, mouse = "^mt-", human = "^MT-")
   all.genes <- Reduce(union, lapply(object@raw.data, rownames))
-  mito.genes <- grep(pattern = "^mt-", x = all.genes, value = TRUE)
+  mito.genes <- grep(pattern = ptrn, x = all.genes, value = TRUE)
   data.use <- object@raw.data
   if (use.norm) {
     data.use <- object@norm.data
@@ -4664,7 +4614,7 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
   tsne_df[['Dataset']] <- unlist(lapply(1:length(object@H), function(x) {
     rep(names(object@H)[x], nrow(object@H[[x]]))
   }))
-  if (reorder.idents == TRUE){
+  if (isTRUE(reorder.idents)){
     tsne_df$Dataset <- factor(tsne_df$Dataset, levels = new.order)
   }
   c_names <- names(object@clusters)
@@ -4795,7 +4745,7 @@ plotFeature <- function(object, feature, by.dataset = TRUE, discrete = NULL, tit
   }
   dr_df$feature <- object@cell.data[, feature]
   if (is.null(discrete)) {
-    if (class(dr_df$feature) != "factor") {
+    if (!is.factor(dr_df$feature)) {
       discrete <- FALSE
     } else {
       discrete <- TRUE
@@ -6750,7 +6700,7 @@ reorganizeLiger <- function(object, by.feature, keep.meta = TRUE, new.label = "o
   if (!(by.feature %in% colnames(object@cell.data))) {
     stop("Please select existing feature in cell.data to reorganize by, or add it before calling.")
   }
-  if(class(object@cell.data[, by.feature]) != "factor"){
+  if(!is.factor(object@cell.data[, by.feature])){
     stop("Error: cell.data feature must be of class 'factor' to reorganize object.  Please change column to factor and re-run reorganizeLiger")
   }
   if (!is.null(object@clusters)) {

@@ -16,7 +16,7 @@ selectGenes(
   do.plot = FALSE,
   cex.use = 0.3,
   chunk = 1000,
-  unshared = F,
+  unshared = FALSE,
   unshared.datasets = NULL,
   unshared.thresh = NULL
 )
