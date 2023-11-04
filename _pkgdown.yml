@@ -24,23 +24,29 @@ reference:
   - scaleNotCenter
   - reverseMethData
   - downsample
-  - runDoubletFinder
-- title: "Factorization"
+  - selectGenesVST
+- title: "Integration"
 - contents:
+  - runIntegration
+  - quantileNorm
+  - runINMF
+  - runOnlineINMF
+  - runUINMF
   - starts_with("optimize")
   - online_iNMF
-  - quantileNorm,liger-method
   - suggestK
   - suggestLambda
 - title: "Downstream Analysis"
 - contents:
   - runUMAP
   - runTSNE
-  - runLeidenCluster
-  - runLouvainCluster
+  - runCluster
+  - runMarkerDEG
+  - runPairwiseDEG
   - runWilcoxon
   - runPseudoBulkDEG
   - getFactorMarkers
+  - runDoubletFinder
   - runGSEA
   - runGOEnrich
   - imputeKNN
@@ -64,6 +70,7 @@ reference:
   - subsetLiger
   - subsetLigerDataset
   - convertOldLiger
+  - ligerToSeurat
 - title: "Misc"
 - contents:
   - H5Apply
@@ -73,11 +80,13 @@ reference:
   - mergeH5
   - mergeSparseAll
   - modalOf
+  - closeAllH5
 - title: "Deprecated"
 - contents:
   - ends_with("deprecated")
   - readSubset
   - quantileAlignSNF
+  - getProportionMito
 navbar:
   title: "rliger"
   left:
