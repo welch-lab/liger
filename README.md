@@ -6,8 +6,8 @@
 
 LIGER (installed as `rliger` ) is a package for integrating and analyzing multiple single-cell datasets, developed by the Macosko lab and maintained/extended by the Welch lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors.
 
-Check out our [Cell paper](https://www.cell.com/cell/fulltext/S0092-8674%2819%2930504-5) for a more complete description of the methods and analyses. To access data used in our SN and BNST analyses, visit our [study](https://portals.broadinstitute.org/single_cell/study/SCP466) on the
-Single Cell Portal.
+Check out our [Cell paper](https://doi.org/10.1016/j.cell.2019.05.006) for a more complete description of the methods and analyses. To access data used in our SN and BNST analyses, visit our [study](https://portals.broadinstitute.org/single_cell/study/SCP466) on the
+Single Cell Portal. 
 
 LIGER can be used to compare and contrast experimental datasets in a variety of contexts, for instance:
 
@@ -72,8 +72,8 @@ Before setting up the `rliger` package, users should have R version 3.4.0 or hig
 
 LIGER is written in R and is also available on the Comprehensive R Archive Network (CRAN). Note that the package name is `rliger` to avoid a naming conflict with an unrelated package. To install the version on CRAN, follow these instructions:
 
-1. Install [R](https://www.r-project.org/)  (>= 3.4)
-2. Install [Rstudio](https://rstudio.com/products/rstudio/download/) (recommended)
+1. Install [R](https://www.r-project.org/)  (>= 3.6)
+2. Install [Rstudio](https://posit.co/download/rstudio-desktop/) (recommended)
 3. Type the following R command:
 ```
 install.packages('rliger')
