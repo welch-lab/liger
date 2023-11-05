@@ -95,7 +95,7 @@ navbar:
   title: "rliger"
   left:
     - text: "Installation"
-      href: #
+      href: articles/installation.html
     - text: "Tutorials"
       menu:
         - text: "Integrating multiple scRNAseq data"
