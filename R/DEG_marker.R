@@ -351,6 +351,8 @@ wilcoxauc <- function(x, clusterVar) {
     if (is.null(row.names(x))) {
         rownames(x) <- paste0('Feature', seq(nrow(x)))
     }
+    if (!is.factor(clusterVar)) clusterVar <- factor(clusterVar)
+    clusterVar <- droplevels(clusterVar)
     groupSize <- as.numeric(table(clusterVar))
 
     ## Compute primary statistics

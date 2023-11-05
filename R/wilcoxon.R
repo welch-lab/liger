@@ -251,7 +251,7 @@ getFactorMarkers <- function(
                           normDataList[[2]][vargene, labels[[2]] == i])
         cellLabel <- rep(c(dataset1, dataset2),
                          c(sum(labels[[1]] == i), sum(labels[[2]] == i)))
-        wilcoxResult <- wilcoxauc(log(normData + 1e-10), cellLabel)
+        wilcoxResult <- wilcoxauc(log1p(1e10*normData), cellLabel)
 
         log2fc <- wilcoxResult[wilcoxResult$group == dataset1, ]$logFC
         names(log2fc) <- wilcoxResult[wilcoxResult$group == dataset1, ]$feature
