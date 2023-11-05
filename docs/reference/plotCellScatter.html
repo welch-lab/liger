@@ -28,7 +28,9 @@ grouping on cells (e.g. datasets)."><!-- mathjax --><script src="https://cdnjs.c
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav"><li class="dropdown-header">Installation</li>
+      <ul class="nav navbar-nav"><li>
+  <a href="../articles/installation.html">Installation</a>
+</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Tutorials
@@ -220,18 +222,18 @@ on a <code><a href="https://rdrr.io/pkg/S4Vectors/man/DataFrame-class.html" clas
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">plotCellScatter</span><span class="op">(</span><span class="va">pbmcPlot</span>, x <span class="op">=</span> <span class="st">"UMAP.1"</span>, y <span class="op">=</span> <span class="st">"UMAP.2"</span>,</span></span>
 <span class="r-in"><span>                colorBy <span class="op">=</span> <span class="st">"dataset"</span>, slot <span class="op">=</span> <span class="st">"cellMeta"</span>,</span></span>
 <span class="r-in"><span>                labelText <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:48 2023 ... Plotting feature: dataset, on 600 cells...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:21 2023 ... Plotting feature: dataset, on 600 cells...</span>
 <span class="r-plt img"><img src="plotCellScatter-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="fu">plotCellScatter</span><span class="op">(</span><span class="va">pbmcPlot</span>, x <span class="op">=</span> <span class="st">"UMAP.1"</span>, y <span class="op">=</span> <span class="st">"UMAP.2"</span>,</span></span>
 <span class="r-in"><span>                colorBy <span class="op">=</span> <span class="st">"S100A8"</span>, slot <span class="op">=</span> <span class="st">"normData"</span>,</span></span>
 <span class="r-in"><span>                dotOrder <span class="op">=</span> <span class="st">"ascending"</span>, dotSize <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:48 2023 ... Plotting feature: S100A8, on 600 cells...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:21 2023 ... Plotting feature: S100A8, on 600 cells...</span>
 <span class="r-plt img"><img src="plotCellScatter-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="fu">plotCellScatter</span><span class="op">(</span><span class="va">pbmcPlot</span>, x <span class="op">=</span> <span class="st">"UMAP.1"</span>, y <span class="op">=</span> <span class="st">"UMAP.2"</span>,</span></span>
 <span class="r-in"><span>                colorBy <span class="op">=</span> <span class="fl">2</span>, slot <span class="op">=</span> <span class="st">"H.norm"</span>,</span></span>
 <span class="r-in"><span>                dotOrder <span class="op">=</span> <span class="st">"ascending"</span>, dotSize <span class="op">=</span> <span class="fl">2</span>,</span></span>
 <span class="r-in"><span>                colorPalette <span class="op">=</span> <span class="st">"viridis"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:48 2023 ... Plotting feature: Factor_19, on 600 cells...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:21 2023 ... Plotting feature: Factor_19, on 600 cells...</span>
 <span class="r-plt img"><img src="plotCellScatter-3.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>

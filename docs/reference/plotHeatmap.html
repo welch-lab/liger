@@ -22,7 +22,9 @@
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav"><li class="dropdown-header">Installation</li>
+      <ul class="nav navbar-nav"><li>
+  <a href="../articles/installation.html">Installation</a>
+</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Tutorials
@@ -208,19 +210,22 @@ value and lower value limits the minimum value. Default <code>c(0, 0.03)</code>.
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">plotGeneHeatmap</span><span class="op">(</span><span class="va">pbmcPlot</span>, <span class="fu"><a href="liger-class.html">varFeatures</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:54 2023 ... Subsetting dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:54 2023 ... Subsetting dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:26 2023 ... Subsetting dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:26 2023 ... Subsetting dataset: stim</span>
+<span class="r-plt img"><img src="plotHeatmap-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="fu">plotGeneHeatmap</span><span class="op">(</span><span class="va">pbmcPlot</span>, <span class="fu"><a href="liger-class.html">varFeatures</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                useCellMeta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"leiden_cluster"</span>, <span class="st">"dataset"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                cellSplitBy <span class="op">=</span> <span class="st">"leiden_cluster"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:55 2023 ... Subsetting dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:55 2023 ... Subsetting dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:27 2023 ... Subsetting dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:27 2023 ... Subsetting dataset: stim</span>
+<span class="r-plt img"><img src="plotHeatmap-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">plotFactorHeatmap</span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="plotHeatmap-3.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="fu">plotFactorHeatmap</span><span class="op">(</span><span class="va">pbmcPlot</span>, cellIdx <span class="op">=</span> <span class="va">pbmcPlot</span><span class="op">$</span><span class="va">leiden_cluster</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,</span></span>
 <span class="r-in"><span>                  useCellMeta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"leiden_cluster"</span>, <span class="st">"dataset"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                  cellSplitBy <span class="op">=</span> <span class="st">"leiden_cluster"</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plotHeatmap-1.png" alt="" width="700" height="433"></span>
+<span class="r-plt img"><img src="plotHeatmap-4.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>
   </div>

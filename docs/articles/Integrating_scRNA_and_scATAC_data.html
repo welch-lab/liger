@@ -40,37 +40,55 @@
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li class="dropdown-header">Installation</li>
+<li>
+  <a href="../articles/installation.html">Installation</a>
+</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Vignettes
+    Tutorials
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
-<li class="dropdown-header">Introductory Vignettes</li>
-    <li class="dropdown-header">Integrating Multiple scRNAseq Data</li>
-    <li class="dropdown-header">Integrating On-Disk (HDF5 Based) Data</li>
-    <li class="divider">
+<li>
+      <a href="../articles/Integrating_multi_scRNA_data.html">Integrating multiple scRNAseq data</a>
     </li>
-<li class="dropdown-header">Data structure and access</li>
-    <li class="dropdown-header">Outer container - liger object</li>
-    <li class="dropdown-header">Dataset container - ligerDataset object and subclasses</li>
+    <li>
+      <a href="../articles/Integrating_scRNA_and_scATAC_data.html">Integrating scRNA and scATAC data</a>
+    </li>
+    <li>
+      <a href="../articles/online_iNMF_tutorial.html">Online iNMF with HDF5 based data</a>
+    </li>
+    <li>
+      <a href="../articles/UINMF_vignette.html">Integration using unshared features</a>
+    </li>
+    <li>
+      <a href="../articles/cross_species_vig.html">Cross-species Analysis with UINMF</a>
+    </li>
+    <li>
+      <a href="../articles/STARmap_dropviz_vig.html">UINMF with STARmap spatial and transcriptomic</a>
+    </li>
+    <li>
+      <a href="../articles/SNAREseq_walkthrough.html">UINMF with SNAREseq scATAC and scRNA</a>
+    </li>
+    <li>
+      <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
+    </li>
+    <li>
+      <a href="../articles/Parameter_selection.html">Parameter selection</a>
+    </li>
   </ul>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Documentation
+    Usage
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
-<li class="dropdown-submenu">
-      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Data</a>
-      <ul class="dropdown-menu" role="menu">
-<li class="dropdown-header">Import Data</li>
-      </ul>
-</li>
+<li class="dropdown-header">Import data</li>
+    <li class="dropdown-header">Introduction to a liger object</li>
+    <li class="dropdown-header">Interoperate with Seurat</li>
   </ul>
 </li>
 <li>
@@ -108,17 +126,13 @@ Joshua Welch</h4>
             
             <h4 data-toc-skip class="date">3/27/2020</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/welch-lab/liger/blob/HEAD/vignettes/Integrating_scRNA_and_scATAC_data.Rmd" class="external-link"><code>vignettes/Integrating_scRNA_and_scATAC_data.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/welch-lab/liger/blob/HEAD/vignettes/articles/Integrating_scRNA_and_scATAC_data.Rmd" class="external-link"><code>vignettes/articles/Integrating_scRNA_and_scATAC_data.Rmd</code></a></small>
       <div class="hidden name"><code>Integrating_scRNA_and_scATAC_data.Rmd</code></div>
 
     </div>
 
     
     
-<blockquote>
-<p>NOTE: The old version of this tutorial has been archived. The users
-can access it from <a href="https://macoskolab.github.io/liger/walkthrough_rna_atac.html" class="external-link">here</a>.</p>
-</blockquote>
 <p>In this tutorial, we will demonstrate LIGER’s ability to jointly
 define cell types by leveraging multiple single-cell modalities. For
 example, the integration of single-cell RNA-seq and single-cell ATAC-seq
@@ -133,8 +147,11 @@ scATAC-seq data needs to be processed into gene-level values; (2) gene
 selection is performed on the scRNA-seq data only; and (3) downstream
 analyses can use both gene-level and intergenic information.</p>
 <div class="section level2">
-<h2 id="stage-i-preprocessing-and-normalization-40---50-minutes">Stage I: Preprocessing and Normalization (40 - 50 minutes)<a class="anchor" aria-label="anchor" href="#stage-i-preprocessing-and-normalization-40---50-minutes"></a>
+<h2 id="stage-i-preprocessing-and-normalization">Stage I: Preprocessing and Normalization<a class="anchor" aria-label="anchor" href="#stage-i-preprocessing-and-normalization"></a>
 </h2>
+<div class="section level3">
+<h3 id="loading-data">1. Loading data<a class="anchor" aria-label="anchor" href="#loading-data"></a>
+</h3>
 <p>In order to jointly analyze scRNA and scATAC-seq data, we first need
 to transform the scATAC-seq data–a genome-wide epigenomic
 measurement–into gene-level counts which are comparable to gene
@@ -164,14 +181,23 @@ ready to use.</p>
 </ul>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/welch-lab/liger" class="external-link">rliger2</a></span><span class="op">)</span></span>
-<span><span class="va">D5T1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"GSM4138888_scATAC_BMMC_D5T1.RDS"</span><span class="op">)</span></span>
-<span><span class="va">rna1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"GSM4138872_scRNA_BMMC_D1T1.rds"</span><span class="op">)</span></span>
-<span><span class="va">rna2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"GSM4138873_scRNA_BMMC_D1T2.rds"</span><span class="op">)</span></span>
-<span><span class="va">bmmc.rna</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">rna1</span>,<span class="va">rna2</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">rna1</span>, <span class="va">rna2</span><span class="op">)</span></span></code></pre></div>
-<div class="section level3">
-<h3 id="start-from-cellranger-output">Start from CellRanger output<a class="anchor" aria-label="anchor" href="#start-from-cellranger-output"></a>
-</h3>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="st">"liger_BMMC_rna_D1T1.rds"</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file</a></span><span class="op">(</span><span class="st">"https://figshare.com/ndownloader/files/40054858"</span>,</span>
+<span>                  destfile <span class="op">=</span> <span class="st">"liger_BMMC_rna_D1T1.rds"</span><span class="op">)</span></span>
+<span><span class="va">D1T1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"liger_BMMC_rna_D1T1.rds"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="st">"liger_BMMC_rna_D1T2.rds"</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file</a></span><span class="op">(</span><span class="st">"https://figshare.com/ndownloader/files/40054861"</span>,</span>
+<span>                  destfile <span class="op">=</span> <span class="st">"liger_BMMC_rna_D1T2.rds"</span><span class="op">)</span></span>
+<span><span class="va">D1T2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"liger_BMMC_rna_D1T2.rds"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="st">"liger_BMMC_atac_D5T1.rds"</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file</a></span><span class="op">(</span><span class="st">"https://figshare.com/ndownloader/files/40054891"</span>,</span>
+<span>                  destfile <span class="op">=</span> <span class="st">"liger_BMMC_atac_D5T1.rds"</span><span class="op">)</span></span>
+<span><span class="va">D5T1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"liger_BMMC_atac_D5T1.rds"</span><span class="op">)</span></span></code></pre></div>
+<div class="section level4">
+<h4 id="start-from-cellranger-output">Start from CellRanger output<a class="anchor" aria-label="anchor" href="#start-from-cellranger-output"></a>
+</h4>
 <p>You can also follow the following tutorial if you would like to start
 from the very beginning. Note that in this part, we included the details
 of running this preprocessing workflow for only one sample. Users should
@@ -202,15 +228,15 @@ end coordinate order (using parameter <code>-k3,3n</code>). Note that
 this step may take a while, since the input fragment file is usually
 very large (for example, a typical fragment file of 4-5 GB can take
 about 40 minutes).</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>sort <span class="sc">-</span>k1,<span class="dv">1</span> <span class="sc">-</span>k2,2n <span class="sc">-</span>k3,3n GSM4138888_scATAC_BMMC_D5T1.fragments.tsv <span class="sc">&gt;</span> atac_fragments.sort.bed</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">sort</span> <span class="at">-k1,1</span> <span class="at">-k2,2n</span> <span class="at">-k3,3n</span> GSM4138888_scATAC_BMMC_D5T1.fragments.tsv <span class="op">&gt;</span> atac_fragments.sort.bed</span></code></pre></div>
 <p>Gene body and promoter indexes should also be sorted using the same
 strategy for sorting fragments output files:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>sort <span class="sc">-</span>k <span class="dv">1</span>,<span class="dv">1</span> <span class="sc">-</span>k2,2n <span class="sc">-</span>k3,3n hg19_genes.bed <span class="sc">&gt;</span> hg19_genes.sort.bed</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>sort <span class="sc">-</span>k <span class="dv">1</span>,<span class="dv">1</span> <span class="sc">-</span>k2,2n <span class="sc">-</span>k3,3n hg19_promoters.bed <span class="sc">&gt;</span> hg19_promoters.sort.bed</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">sort</span> <span class="at">-k</span> 1,1 <span class="at">-k2,2n</span> <span class="at">-k3,3n</span> hg19_genes.bed <span class="op">&gt;</span> hg19_genes.sort.bed</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">sort</span> <span class="at">-k</span> 1,1 <span class="at">-k2,2n</span> <span class="at">-k3,3n</span> hg19_promoters.bed <span class="op">&gt;</span> hg19_promoters.sort.bed</span></code></pre></div>
 <p><strong>2.</strong> Use <code>bedmap</code> command to calculate
 overlapping elements between indexes and fragment output files:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>bedmap <span class="sc">--</span>ec <span class="sc">--</span>delim <span class="st">"</span><span class="sc">\t</span><span class="st">"</span> <span class="sc">--</span>echo <span class="sc">--</span>echo<span class="sc">-</span>map<span class="sc">-</span>id hg19_promoters.sort.bed atac_fragments.sort.bed <span class="sc">&gt;</span> atac_promoters_bc.bed</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>bedmap <span class="sc">--</span>ec <span class="sc">--</span>delim <span class="st">"</span><span class="sc">\t</span><span class="st">"</span> <span class="sc">--</span>echo <span class="sc">--</span>echo<span class="sc">-</span>map<span class="sc">-</span>id hg19_genes.sort.bed atac_fragments.sort.bed <span class="sc">&gt;</span> atac_genes_bc.bed</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="ex">bedmap</span> <span class="at">--ec</span> <span class="at">--delim</span> <span class="st">"\t"</span> <span class="at">--echo</span> <span class="at">--echo-map-id</span> hg19_promoters.sort.bed atac_fragments.sort.bed <span class="op">&gt;</span> atac_promoters_bc.bed</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="ex">bedmap</span> <span class="at">--ec</span> <span class="at">--delim</span> <span class="st">"\t"</span> <span class="at">--echo</span> <span class="at">--echo-map-id</span> hg19_genes.sort.bed atac_fragments.sort.bed <span class="op">&gt;</span> atac_genes_bc.bed</span></code></pre></div>
 <p>Important flags of <code>bedmap</code> command are as follows:</p>
 <ul>
 <li>
@@ -257,7 +283,7 @@ and promoters in a single step, but choose to calculate them separately
 in case it is necessary to look at gene or promoter accessibility
 individually in downstream analyses.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/JEFworks/liger" class="external-link">liger</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/welch-lab/liger" class="external-link">rliger2</a></span><span class="op">)</span></span>
 <span><span class="va">gene.counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/makeFeatureMatrix.html">makeFeatureMatrix</a></span><span class="op">(</span><span class="va">genes.bc</span>, <span class="va">barcodes</span><span class="op">)</span></span>
 <span><span class="va">promoter.counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/makeFeatureMatrix.html">makeFeatureMatrix</a></span><span class="op">(</span><span class="va">promoters.bc</span>, <span class="va">barcodes</span><span class="op">)</span></span></code></pre></div>
 <p>Next, these two count matrices need to be re-sorted by gene symbol.
@@ -279,232 +305,223 @@ should be passed to parameter <code>sample.names</code> as well. LIGER
 can also use data from any other protocol, as long as it is provided in
 a genes x cells R matrix format.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">bmmc.rna</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read10X.html">read10X</a></span><span class="op">(</span>sample.dirs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"/path_to_sample"</span><span class="op">)</span>, sample.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"rna"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">bmmc.rna</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read10X.html">read10X</a></span><span class="op">(</span>path <span class="op">=</span> <span class="st">"/path_to/filtered_feature_barcode_matrix"</span>, sampleNames <span class="op">=</span> <span class="st">"rna"</span><span class="op">)</span></span></code></pre></div>
 </details><br>
 </div>
+</div>
 <div class="section level3">
-<h3 id="liger-preprocessing">LIGER preprocessing<a class="anchor" aria-label="anchor" href="#liger-preprocessing"></a>
+<h3 id="preprocessing">2. preprocessing<a class="anchor" aria-label="anchor" href="#preprocessing"></a>
 </h3>
-<p><strong>6.</strong> We can now create a LIGER object with the
-<code><a href="../reference/createLiger.html">createLiger()</a></code> function. We also remove unneeded variables
-to conserve memory.</p>
+<p>We can now create a LIGER object with the <code><a href="../reference/createLiger.html">createLiger()</a></code>
+function. We also remove unneeded variables to conserve memory.
+Additionally, we merge the two RNA datasets into one.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">bmmc.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>atac <span class="op">=</span> <span class="va">D5T1</span>, rna <span class="op">=</span> <span class="va">bmmc.rna</span><span class="op">)</span></span>
-<span><span class="va">int.bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createLiger.html">createLiger</a></span><span class="op">(</span><span class="va">bmmc.data</span>, modal <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"atac"</span>, <span class="st">"rna"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">genes.bc</span>, <span class="va">promoters.bc</span>, <span class="va">gene.counts</span>, <span class="va">promoter.counts</span>, <span class="va">D5T1</span>, <span class="va">bmmc.rna</span>, <span class="va">bmmc.data</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/gc.html" class="external-link">gc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">int.bmmc</span></span></code></pre></div>
-<p><strong>7.</strong> Preprocessing steps are needed before running
-iNMF. Each dataset is normalized to account for differences in total
-gene-level counts across cells using the normalize function. Next,
-highly variable genes from each dataset are identified and combined for
-use in downstream analysis. Note that by setting the parameter
-<code>datasets.use = 2</code>, genes will be selected only from the
-scRNA-seq dataset (the second dataset) by the <code><a href="../reference/selectGenes.html">selectGenes()</a></code>
-function. We recommend not using the ATAC-seq data for variable gene
-selection because the statistical properties of the ATAC-seq data are
-very different from scRNA-seq, violating the assumptions made by the
-statistical model we developed for selecting genes from RNA data.
-Finally, the <code><a href="../reference/scaleNotCenter.html">scaleNotCenter()</a></code> function scales normalized
-datasets without centering by the mean, giving the non-negative input
-data required by iNMF.</p>
+<code class="sourceCode R"><span><span class="va">bmmc.rna</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">D1T1</span>, <span class="va">D1T2</span><span class="op">)</span></span>
+<span><span class="va">bmmcLiger</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createLiger.html">createLiger</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>atac <span class="op">=</span> <span class="va">D5T1</span>, rna <span class="op">=</span> <span class="va">bmmc.rna</span><span class="op">)</span>,</span>
+<span>                        modal <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"atac"</span>, <span class="st">"rna"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Preprocessing steps are needed before running iNMF. Each dataset is
+normalized to account for differences in total gene-level counts across
+cells using the normalize function. Next, highly variable genes from
+each dataset are identified and combined for use in downstream analysis.
+Note that by setting the parameter <code>useDataset = "rna"</code>,
+genes will be selected only from the scRNA-seq dataset (the second
+dataset) by the <code><a href="../reference/selectGenes.html">selectGenes()</a></code> function. We recommend not
+using the ATAC-seq data for variable gene selection because the
+statistical properties of the ATAC-seq data are very different from
+scRNA-seq, violating the assumptions made by the statistical model we
+developed for selecting genes from RNA data. Finally, the
+<code><a href="../reference/scaleNotCenter.html">scaleNotCenter()</a></code> function scales normalized datasets
+without centering by the mean, giving the non-negative input data
+required by iNMF.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">int.bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="va">int.bmmc</span><span class="op">)</span></span>
-<span><span class="va">int.bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/selectGenes.html">selectGenes</a></span><span class="op">(</span><span class="va">int.bmmc</span>, datasets.use <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">int.bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="va">int.bmmc</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">bmmcLiger</span> <span class="op">&lt;-</span> <span class="va">bmmcLiger</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="../reference/selectGenes.html">selectGenes</a></span><span class="op">(</span>useDatasets <span class="op">=</span> <span class="st">"rna"</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="../reference/scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
-<h2 id="stage-ii-joint-matrix-factorization-3---10-minutes">Stage II: Joint Matrix Factorization (3 - 10 minutes)<a class="anchor" aria-label="anchor" href="#stage-ii-joint-matrix-factorization-3---10-minutes"></a>
+<h2 id="stage-ii-joint-matrix-factorization">Stage II: Joint Matrix Factorization<a class="anchor" aria-label="anchor" href="#stage-ii-joint-matrix-factorization"></a>
 </h2>
-<p><strong>8.</strong> We next perform joint matrix factorization (iNMF)
-on the normalized and scaled RNA and ATAC data. This step calculates
-metagenes–sets of co-expressed genes that distinguish cell
-populations–containing both shared and dataset-specific signals. The
-cells are then represented in terms of the “expression level” of each
-metagene, providing a low-dimensional representation that can be used
-for joint clustering and visualization. To run iNMF on the scaled
-datasets, we use the <code><a href="../reference/optimizeALS.html">optimizeALS()</a></code> function with proper
-hyperparameter settings.</p>
-<p>To run iNMF on the scaled datasets, use <code><a href="../reference/optimizeALS.html">optimizeALS()</a></code>
-function with proper hyperparameters setting:</p>
+<div class="section level3">
+<h3 id="determine-parameters-and-perform-inmf-integration">3. Determine parameters and perform iNMF integration<a class="anchor" aria-label="anchor" href="#determine-parameters-and-perform-inmf-integration"></a>
+</h3>
+<p>We next perform joint matrix factorization (iNMF) on the normalized
+and scaled RNA and ATAC data. This step calculates metagenes–sets of
+co-expressed genes that distinguish cell populations–containing both
+shared and dataset-specific signals. The cells are then represented in
+terms of the “expression level” of each metagene, providing a
+low-dimensional representation that can be used for joint clustering and
+visualization. To run iNMF on the scaled datasets, we use the
+<code><a href="../reference/runIntegration.html">runIntegration()</a></code> function with proper hyperparameter
+settings.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">int.bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimizeALS.html">optimizeALS</a></span><span class="op">(</span><span class="va">int.bmmc</span>, k <span class="op">=</span> <span class="fl">20</span>, maxIter <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span></code></pre></div>
-<p>Important parameters are as follows:</p>
-<ul>
-<li>
-<em>k</em>. Integer value specifying the inner dimension of
-factorization, or number of factors. Higher <code>k</code> is
-recommended for datasets with more substructure. We find that a value of
-<code>k</code> in the range 20 - 40 works well for most datasets.
-Because this is an unsupervised, exploratory analysis, there is no
-single “right” value for <code>k</code>, and in practice, users choose
-<code>k</code> from a combination of biological prior knowledge and
-other information.</li>
-<li>
-<em>lambda</em>. This is a regularization parameter. Larger values
-penalize dataset-specific effects more strongly, causing the datasets to
-be better aligned, but possibly at the cost of higher reconstruction
-error. The default value is <code>5</code>. We recommend using this
-value for most analyses, but find that it can be lowered to 1 in cases
-where the dataset differences are expected to be relatively small, such
-as scRNA-seq data from the same tissue but different individuals.</li>
-<li>
-<em>thresh</em>. This sets the convergence threshold. Lower values
-cause the algorithm to run longer. The default is
-<code>1e-6</code>.</li>
-<li>
-<em>maxIter</em>. This variable sets the maximum number of
-iterations to perform. The default value is <code>30</code>.</li>
-</ul>
+<code class="sourceCode R"><span><span class="va">bmmcLiger</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runIntegration.html">runIntegration</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, k <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
-<h2 id="stage-iii-quantile-normalization-and-joint-clustering-1-minute">Stage III: Quantile Normalization and Joint Clustering (1
-minute)<a class="anchor" aria-label="anchor" href="#stage-iii-quantile-normalization-and-joint-clustering-1-minute"></a>
+<h2 id="stage-iii-quantile-normalization-and-joint-clustering">Stage III: Quantile Normalization and Joint Clustering<a class="anchor" aria-label="anchor" href="#stage-iii-quantile-normalization-and-joint-clustering"></a>
 </h2>
-<p><strong>9.</strong> Using the metagene factors calculated by iNMF, we
-then assign each cell to the factor on which it has the highest loading,
-giving joint clusters that correspond across datasets. We then perform
-quantile normalization by dataset, factor, and cluster to fully
-integrate the datasets. To perform this analysis, typing in:</p>
+<div class="section level3">
+<h3 id="align-the-factors">4. Align the factors<a class="anchor" aria-label="anchor" href="#align-the-factors"></a>
+</h3>
+<p>Using the metagene factors calculated by iNMF, we then assign each
+cell to the factor on which it has the highest loading, giving joint
+clusters that correspond across datasets. We then perform quantile
+normalization by dataset, factor, and cluster to fully integrate the
+datasets. To perform this analysis, typing in:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">int.bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/quantileNorm.html">quantileNorm</a></span><span class="op">(</span><span class="va">int.bmmc</span><span class="op">)</span></span></code></pre></div>
-<p>Important parameters of <code><a href="../reference/quantileNorm.html">quantileNorm()</a></code> are as
-follows:</p>
-<ul>
-<li>
-<code>nNeighbors</code>. This sets the number of nearest neighbors
-for within-dataset KNN graph. The default is <code>20</code>.</li>
-<li>
-<code>quantiles</code>. This sets the number of quantiles to use for
-quantile normalization. The default is <code>50</code>.</li>
-<li>
-<code>minCells</code>. This indicates the minimum number of cells to
-consider a cluster as shared across datasets. The default is
-<code>20</code>.</li>
-<li>
-<code>useDims</code>. This sets the indices of factors to use for
-quantile normalization. The user can pass in a vector of indices
-indicating specific factors. This is helpful for excluding factors
-capturing biological signals such as the cell cycle or technical signals
-such as mitochondrial genes. The default is all <code>k</code> of the
-factors.</li>
-<li>
-<code>center</code>. This indicates whether to center the data when
-scaling factors. The default is <code>FALSE</code>. This option should
-be set to <code>TRUE</code> when metagene loadings have a mean above
-zero, as with dense data such as DNA methylation.</li>
-<li>
-<code>maxSample</code>. This sets the maximum number of cells used
-for quantile normalization of each cluster and factor. The default is
-<code>1000</code>.</li>
-<li>
-<code>refineKNN</code>. This indicates whether to increase
-robustness of cluster assignments using KNN graph. The default is
-<code>TRUE</code>.</li>
-<li>
-<code>eps</code>. This sets the error bound of the nearest neighbor
-search. The default is <code>0.9</code>. Lower values give more accurate
-nearest neighbor graphs but take much longer to computer.</li>
-<li>
-<code>reference</code>. This indicates the name of the dataset to be
-used as a reference for quantile normalization. By default, the dataset
-with the largest number of cells is used.</li>
-</ul>
-<p><strong>10.</strong> The <code><a href="../reference/quantileNorm.html">quantileNorm()</a></code> function gives
-joint clusters that correspond across datasets, which are often
-completely satisfactory and sufficient for downstream analyses. However,
-if desired, after quantile normalization, users can additionally run the
-Leiden algorithm for community detection, which is widely used in
-single-cell analysis and excels at merging small clusters into broad
-cell classes. This can be achieved by running the
-<code><a href="../reference/clustering.html">runLeidenCluster()</a></code> function. Several tuning parameters,
-including <code>resolution</code>, <code>nNeighbors</code>, and
-<code>prune</code> control the number of clusters produced by this
-function. For this dataset, we use a resolution of <code>0.2</code>,
-which yields 26 clusters (see below).</p>
+<code class="sourceCode R"><span><span class="va">bmmcLiger</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/quantileNorm.html">quantileNorm</a></span><span class="op">(</span><span class="va">bmmcLiger</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="clustering">5. Clustering<a class="anchor" aria-label="anchor" href="#clustering"></a>
+</h3>
+<p>The <code><a href="../reference/quantileNorm.html">quantileNorm()</a></code> function gives joint clusters that
+correspond across datasets, which are often completely satisfactory and
+sufficient for downstream analyses. However, if desired, after quantile
+normalization, users can additionally run the Leiden algorithm for
+community detection, which is widely used in single-cell analysis and
+excels at merging small clusters into broad cell classes. This can be
+achieved by running the <code><a href="../reference/runCluster.html">runCluster()</a></code> function. Several
+tuning parameters, including <code>resolution</code>,
+<code>nNeighbors</code>, and <code>prune</code> control the number of
+clusters produced by this function. For this dataset, we use a
+resolution of <code>0.2</code>.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">int.bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/clustering.html">runLeidenCluster</a></span><span class="op">(</span><span class="va">int.bmmc</span>, nNeighbors <span class="op">=</span> <span class="fl">30</span>, resolution <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">bmmcLiger</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runCluster.html">runCluster</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, nNeighbors <span class="op">=</span> <span class="fl">30</span>, resolution <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span></code></pre></div>
+<blockquote>
+<p>Starting from rliger 2.0.0, cluster labeling will be stored in cell
+metadata, which can be accessed with <code>cellMeta(bmmcLiger)</code>.
+Use argument <code>clusterName</code> to specify unique variable names
+for the result can enable storing multiple cluster labeling variables at
+the same time.</p>
+</blockquote>
+</div>
 </div>
 <div class="section level2">
-<h2 id="stage-iv-visualization-2---3-minutes-and-downstream-analysis-30---40-minutes">Stage IV: Visualization (2 - 3 minutes) and Downstream Analysis (30
-- 40 minutes)<a class="anchor" aria-label="anchor" href="#stage-iv-visualization-2---3-minutes-and-downstream-analysis-30---40-minutes"></a>
+<h2 id="stage-iv-visualization-and-downstream-analysis">Stage IV: Visualization and Downstream Analysis<a class="anchor" aria-label="anchor" href="#stage-iv-visualization-and-downstream-analysis"></a>
 </h2>
-<p><strong>11.</strong> In order to visualize the clustering results,
-the user can use two dimensionality reduction methods supported by
-LIGER: t-SNE and UMAP. We find that often for datasets containing
-continuous variation such as cell differentiation, UMAP better preserves
-global relationships, whereas t-SNE works well for displaying discrete
-cell types, such as those in the brain. The UMAP algorithm (called by
-the <code><a href="../reference/runUMAP.html">runUMAP()</a></code> function) scales readily to large datasets.
-The <code><a href="../reference/runTSNE.html">runTSNE()</a></code> function also includes an option to use
-“FFtSNE”, a highly scalable implementation of t-SNE that can efficiently
-process huge datasets. For the BMMC dataset, we expect to see continuous
-lineage transitions among the differentiating cells, so we use UMAP to
-visualize the data in two dimensions:</p>
+<div class="section level3">
+<h3 id="generate-dimensionality-reduced-embedding">6. Generate dimensionality reduced embedding<a class="anchor" aria-label="anchor" href="#generate-dimensionality-reduced-embedding"></a>
+</h3>
+<p>In order to visualize the clustering results, the user can use two
+dimensionality reduction methods supported by LIGER: t-SNE and UMAP. We
+find that often for datasets containing continuous variation such as
+cell differentiation, UMAP better preserves global relationships,
+whereas t-SNE works well for displaying discrete cell types, such as
+those in the brain. The UMAP algorithm (called by the
+<code><a href="../reference/runUMAP.html">runUMAP()</a></code> function) scales readily to large datasets. The
+<code><a href="../reference/runTSNE.html">runTSNE()</a></code> function also includes an option to use “FFtSNE”,
+a highly scalable implementation of t-SNE that can efficiently process
+huge datasets. For the BMMC dataset, we expect to see continuous lineage
+transitions among the differentiating cells, so we use UMAP to visualize
+the data in two dimensions:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">int.bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runUMAP.html">runUMAP</a></span><span class="op">(</span><span class="va">int.bmmc</span>, distance <span class="op">=</span> <span class="st">'cosine'</span>, nNeighbors <span class="op">=</span> <span class="fl">30</span>, minDist <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span></code></pre></div>
-<p><strong>12.</strong> We can then visualize each cell, colored by
-cluster or dataset.</p>
+<code class="sourceCode R"><span><span class="va">bmmcLiger</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runUMAP.html">runUMAP</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, nNeighbors <span class="op">=</span> <span class="fl">30</span>, minDist <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span></code></pre></div>
+<blockquote>
+<p>Starting from rliger 2.0.0, dimensionality reduction matrices will be
+stored in cell metadata, which can be accessed with
+<code>cellMeta(bmmcLiger)</code>. Use argument <code>dimredName</code>
+to specify unique variable names for the result can enable storing
+multiple low-dimensional representation matrices as variables at the
+same time.</p>
+</blockquote>
+</div>
+<div class="section level3">
+<h3 id="create-plots">7. Create plots<a class="anchor" aria-label="anchor" href="#create-plots"></a>
+</h3>
+<p>We provide a variety of utilities for visualization and analysis of
+clustering, gene expression across datasets, and comparisons of cluster
+assignments. Here we demonstrate several commonly used examples.</p>
+<p><code><a href="../reference/plotDimRed.html">plotByDatasetAndCluster()</a></code> returns two graphs, generated
+by t-SNE or UMAP in the previous step. The first colors cells by dataset
+of origin, and the second by cluster as determined by previous
+clustering step. The plots provide visual confirmation that the datasets
+are well aligned and the clusters are consistent with the shape of the
+data as revealed by UMAP.</p>
+<p>The two subplots can individually be generated with
+<code><a href="../reference/plotDimRed.html">plotDatasetDimRed()</a></code> and <code><a href="../reference/plotDimRed.html">plotClusterDimRed()</a></code>,
+respectively.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>ligerDotSize <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plotDimRed.html">plotByDatasetAndCluster</a></span><span class="op">(</span><span class="va">int.bmmc</span>, labelTextSize <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/plotDimRed.html">plotByDatasetAndCluster</a></span><span class="op">(</span><span class="va">bmmcLiger</span><span class="op">)</span></span></code></pre></div>
 <p><img src="Integrating_scRNA_and_scATAC_data_files/figure-html/unnamed-chunk-4-1.png" width="960" style="display: block; margin: auto;"></p>
-<p><strong>13.</strong> LIGER employs the Wilcoxon rank-sum test to
-identify marker genes that are differentially expressed in each cell
-type using the following settings. We provide parameters that allow the
-user to select which datasets to use (<code>useDatasets</code>) and
-whether to compare across clusters or across datasets within each
-cluster (<code>method</code> with options <code>"clusters"</code> or
-<code>"datasets"</code>). To identify marker genes for each cluster
-combining scATAC and scRNA profiles, typing in:</p>
+</div>
+<div class="section level3">
+<h3 id="differential-expression">8. Differential expression<a class="anchor" aria-label="anchor" href="#differential-expression"></a>
+</h3>
+<p>LIGER employs the Wilcoxon rank-sum test to identify marker genes
+that are differentially expressed in each cell type using the following
+settings. We provide parameters that allow the user to select which
+datasets to use (<code>useDatasets</code>) and whether to compare across
+clusters or across datasets within each cluster (<code>method</code>
+with options <code>"clusters"</code> or <code>"datasets"</code>). To
+identify marker genes for each cluster combining scATAC and scRNA
+profiles, typing in:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">int.bmmc.wilcoxon</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runWilcoxon.html">runWilcoxon</a></span><span class="op">(</span><span class="va">int.bmmc</span>, method <span class="op">=</span> <span class="st">'clusters'</span><span class="op">)</span></span></code></pre></div>
-<p>Important parameters of runWilcoxon are as follows:</p>
-<ul>
-<li>
-<code>useDatasets</code>. This selects which dataset(s) to be
-included. By default all datasets are included.</li>
-<li>
-<code>method</code>. This indicates whether to compare across
-clusters or across datasets with each cluster. Setting
-<code>method = "clusters"</code> compares each feature’s (genes, peaks,
-etc.) loading between clusters combining all datasets, which gives us
-the most specific features for each cluster. On the other hand, setting
-<code>method = "datasets"</code> gives us the most differentially loaded
-features for every cluster between datasets.</li>
-</ul>
-<p><strong>14.</strong> The number of marker genes identified by
-<code><a href="../reference/runWilcoxon.html">runWilcoxon()</a></code> varies and depends on the datasets used. The
-function outputs a data.frame that the user can then filter to select
-markers which are statistically and biologically significant. For
-example, one strategy is to filter the output by taking markers which
-have <code>padj</code> (Benjamini-Hochberg adjusted p-value) less than
-0.05 and <code>logFC</code> (log fold change between observations in
-group versus out) larger than 3:</p>
+<code class="sourceCode R"><span><span class="va">marker.cluster</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/liger-DEG.html">runMarkerDEG</a></span><span class="op">(</span><span class="va">bmmcLiger</span><span class="op">)</span></span></code></pre></div>
+<p>The number of significant genes identified by
+<code><a href="../reference/liger-DEG.html">runMarkerDEG()</a></code> varies and depends on the datasets used. And
+the raw output of the function contains the statistics of all tested
+genes in all groups (clusters). In order to pick out the top markers for
+each cluster, we strongly suggest using package “dplyr”, which provides
+a user-friendly interface for data table manipulation. The following
+code chunk first filters the markers which are statistically and
+biologically significant. For example, we filter the output by taking
+markers which have padj (Benjamini-Hochberg adjusted p-value) less than
+0.05 and logFC (log fold change between observations in group versus
+out) larger than 3. Then for each cluster, we sort the markers primarily
+by its padj value in ascending order. Given that mathematically, the
+lowest padj values are rounded to 0 as they are too small, for genes
+tying on this metric, we then sort the markers by logFC in descending
+order. Finally, we select the top 20 markers for each cluster.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">int.bmmc.wilcoxon</span> <span class="op">&lt;-</span> <span class="va">int.bmmc.wilcoxon</span><span class="op">[</span><span class="va">int.bmmc.wilcoxon</span><span class="op">$</span><span class="va">padj</span> <span class="op">&lt;</span> <span class="fl">0.05</span>,<span class="op">]</span></span>
-<span><span class="va">int.bmmc.wilcoxon</span> <span class="op">&lt;-</span> <span class="va">int.bmmc.wilcoxon</span><span class="op">[</span><span class="va">int.bmmc.wilcoxon</span><span class="op">$</span><span class="va">logFC</span> <span class="op">&gt;</span> <span class="fl">3</span>,<span class="op">]</span></span></code></pre></div>
-<p>You can then re-sort the markers by its <code>padj</code> value in
-ascending order and choose the top 100 for each cell type. For example,
-we can subset and re-sort the output for Cluster 1 and take the top 20
-markers by typing these commands:</p>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span><span class="va">marker.cluster</span> <span class="op">&lt;-</span> <span class="va">marker.cluster</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">padj</span> <span class="op">&lt;</span> <span class="fl">0.05</span>, <span class="va">logFC</span> <span class="op">&gt;</span> <span class="fl">3</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">group</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">padj</span>, <span class="op">-</span><span class="va">logFC</span>, .by_group <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/top_n.html" class="external-link">top_n</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span></span></code></pre></div>
+<p>We can then view the selected top 20 markers for cluster 1 by:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">wilcoxon.cluster_1</span> <span class="op">&lt;-</span> <span class="va">int.bmmc.wilcoxon</span><span class="op">[</span><span class="va">int.bmmc.wilcoxon</span><span class="op">$</span><span class="va">group</span> <span class="op">==</span> <span class="fl">1</span>, <span class="op">]</span></span>
-<span><span class="va">wilcoxon.cluster_1</span> <span class="op">&lt;-</span> <span class="va">wilcoxon.cluster_1</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">wilcoxon.cluster_1</span><span class="op">$</span><span class="va">padj</span><span class="op">)</span>, <span class="op">]</span></span>
-<span><span class="va">markers.cluster_1</span> <span class="op">&lt;-</span> <span class="va">wilcoxon.cluster_1</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">20</span>, <span class="op">]</span></span></code></pre></div>
-<p><strong>15.</strong> We also provide functions to check these markers
-by visualizing their expression and gene loadings across datasets. You
-can use the <code><a href="../reference/plotDimRed.html">plotGeneDimRed()</a></code> to visualize the expression or
+<code class="sourceCode R"><span><span class="va">marker.cluster</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">group</span> <span class="op">==</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 20 × 10</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># Groups:   group [1]</span></span></span>
+<span><span class="co">##    feature  group avgExpr logFC statistic   auc      pval      padj pct_in</span></span>
+<span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> HLA-DRB5 3       11.5   6.36 14<span style="text-decoration: underline;">408</span>466. 0.741 2.43<span style="color: #949494;">e</span><span style="color: #BB0000;">-238</span> 8.84<span style="color: #949494;">e</span><span style="color: #BB0000;">-236</span>   71.8</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> POU2F2   3        9.53  5.22 13<span style="text-decoration: underline;">466</span>692  0.692 1.17<span style="color: #949494;">e</span><span style="color: #BB0000;">-167</span> 1.96<span style="color: #949494;">e</span><span style="color: #BB0000;">-165</span>   62.0</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> CD74     3       16.2   4.62 13<span style="text-decoration: underline;">878</span>368  0.713 2.95<span style="color: #949494;">e</span><span style="color: #BB0000;">-143</span> 3.65<span style="color: #949494;">e</span><span style="color: #BB0000;">-141</span>   93.3</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> PRDM2    3        9.24  4.32 13<span style="text-decoration: underline;">119</span>802  0.674 1.43<span style="color: #949494;">e</span><span style="color: #BB0000;">-128</span> 1.56<span style="color: #949494;">e</span><span style="color: #BB0000;">-126</span>   60.6</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> LYN      3        9.55  4.49 13<span style="text-decoration: underline;">071</span>810. 0.672 4.92<span style="color: #949494;">e</span><span style="color: #BB0000;">-124</span> 5.10<span style="color: #949494;">e</span><span style="color: #BB0000;">-122</span>   62.3</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> BACH2    3        8.40  4.37 12<span style="text-decoration: underline;">795</span>575  0.658 1.48<span style="color: #949494;">e</span><span style="color: #BB0000;">-119</span> 1.44<span style="color: #949494;">e</span><span style="color: #BB0000;">-117</span>   55.0</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> ISG20    3       10.9   4.72 13<span style="text-decoration: underline;">137</span>522  0.675 1.67<span style="color: #949494;">e</span><span style="color: #BB0000;">-116</span> 1.53<span style="color: #949494;">e</span><span style="color: #BB0000;">-114</span>   70.8</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> ADK      3        8.10  3.90 12<span style="text-decoration: underline;">594</span>115  0.647 7.23<span style="color: #949494;">e</span><span style="color: #BB0000;">-102</span> 5.46<span style="color: #949494;">e</span><span style="color: #BB0000;">-100</span>   53.3</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> PLEKHA2  3        7.95  3.75 12<span style="text-decoration: underline;">508</span>320. 0.643 7.47<span style="color: #949494;">e</span><span style="color: #BB0000;">- 96</span> 5.27<span style="color: #949494;">e</span><span style="color: #BB0000;">- 94</span>   52.7</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span> PRKCB    3       11.8   3.45 12<span style="text-decoration: underline;">868</span>230. 0.662 4.15<span style="color: #949494;">e</span><span style="color: #BB0000;">- 88</span> 2.49<span style="color: #949494;">e</span><span style="color: #BB0000;">- 86</span>   76.3</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">11</span> SNX2     3        7.90  3.34 12<span style="text-decoration: underline;">324</span>160. 0.634 1.65<span style="color: #949494;">e</span><span style="color: #BB0000;">- 80</span> 8.41<span style="color: #949494;">e</span><span style="color: #BB0000;">- 79</span>   51.3</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">12</span> EZR      3       10.1   3.49 12<span style="text-decoration: underline;">571</span>052. 0.646 1.98<span style="color: #949494;">e</span><span style="color: #BB0000;">- 79</span> 9.84<span style="color: #949494;">e</span><span style="color: #BB0000;">- 78</span>   65.7</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">13</span> ANKRD44  3        9.65  3.43 12<span style="text-decoration: underline;">485</span>332  0.642 3.24<span style="color: #949494;">e</span><span style="color: #BB0000;">- 77</span> 1.51<span style="color: #949494;">e</span><span style="color: #BB0000;">- 75</span>   62.6</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">14</span> PDE4B    3        8.85  3.41 12<span style="text-decoration: underline;">287</span>756. 0.632 4.68<span style="color: #949494;">e</span><span style="color: #BB0000;">- 71</span> 1.93<span style="color: #949494;">e</span><span style="color: #BB0000;">- 69</span>   58.1</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">15</span> IQSEC1   3        7.94  3.19 12<span style="text-decoration: underline;">166</span>120  0.625 5.95<span style="color: #949494;">e</span><span style="color: #BB0000;">- 70</span> 2.40<span style="color: #949494;">e</span><span style="color: #BB0000;">- 68</span>   52.0</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">16</span> SMAP2    3        9.94  3.22 12<span style="text-decoration: underline;">352</span>735  0.635 2.08<span style="color: #949494;">e</span><span style="color: #BB0000;">- 67</span> 8.05<span style="color: #949494;">e</span><span style="color: #BB0000;">- 66</span>   65.0</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">17</span> DGKD     3        7.23  3.06 11<span style="text-decoration: underline;">926</span>322. 0.613 2.59<span style="color: #949494;">e</span><span style="color: #BB0000;">- 61</span> 8.85<span style="color: #949494;">e</span><span style="color: #BB0000;">- 60</span>   48.1</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">18</span> ZBTB20   3        7.55  3.04 11<span style="text-decoration: underline;">938</span>390  0.614 1.30<span style="color: #949494;">e</span><span style="color: #BB0000;">- 59</span> 4.28<span style="color: #949494;">e</span><span style="color: #BB0000;">- 58</span>   49.6</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">19</span> STK17A   3        7.90  3.01 11<span style="text-decoration: underline;">987</span>136. 0.616 3.12<span style="color: #949494;">e</span><span style="color: #BB0000;">- 59</span> 1.02<span style="color: #949494;">e</span><span style="color: #BB0000;">- 57</span>   51.7</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">20</span> FAM53B   3        7.09  3.02 11<span style="text-decoration: underline;">781</span>407  0.606 4.61<span style="color: #949494;">e</span><span style="color: #BB0000;">- 55</span> 1.38<span style="color: #949494;">e</span><span style="color: #BB0000;">- 53</span>   47.1</span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 1 more variable: pct_out &lt;dbl&gt;</span></span></span></code></pre>
+<p>We also provide functions to check these markers by visualizing their
+expression and gene loadings across datasets. You can use the
+<code><a href="../reference/plotDimRed.html">plotGeneDimRed()</a></code> to visualize the expression or
 accessibility of a marker gene, which is helpful for visually confirming
 putative marker genes or investigating the distribution of known markers
 across the cell sequenced. Such plots can also confirm that divergent
 datasets are properly aligned.</p>
 <p>For instance, we can plot S100A9, which the Wilcoxon test identified
 as a marker for Cluster 1, and MS4A1, a marker for Cluster 4:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotGeneDimRed</a></span><span class="op">(</span><span class="va">int.bmmc</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"S100A9"</span>, <span class="st">"MS4A1"</span><span class="op">)</span>, splitBy <span class="op">=</span> <span class="st">"dataset"</span>, </span>
-<span>                        titles <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">int.bmmc</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">int.bmmc</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotGeneDimRed</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"S100A9"</span>, <span class="st">"MS4A1"</span><span class="op">)</span>, splitBy <span class="op">=</span> <span class="st">"dataset"</span>,</span>
+<span>                        titles <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">bmmcLiger</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">bmmcLiger</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">cowplot</span><span class="fu">::</span><span class="fu"><a href="https://wilkelab.org/cowplot/reference/plot_grid.html" class="external-link">plot_grid</a></span><span class="op">(</span>plotlist <span class="op">=</span> <span class="va">plots</span>, nrow <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <p><img src="Integrating_scRNA_and_scATAC_data_files/figure-html/unnamed-chunk-8-1.png" width="700" style="display: block; margin: auto;"></p>
 <p>These plots indicate that S100A9 and MS4A1 are indeed specific
@@ -513,10 +530,14 @@ these cell groups and low values elsewhere. Furthermore, we can see that
 the distributions are strikingly similar between the RNA and ATAC
 datasets, indicating that LIGER has properly aligned the two data
 types.</p>
-<p><strong>16.</strong> A key advantage of using iNMF instead of other
-dimensionality reduction approaches such as PCA is that the dimensions
-are individually interpretable. For example, a particular cell type is
-often captured by a single dimension of the space. Furthermore, iNMF
+</div>
+<div class="section level3">
+<h3 id="interpret-the-factors">9. Interpret the factors<a class="anchor" aria-label="anchor" href="#interpret-the-factors"></a>
+</h3>
+<p>A key advantage of using iNMF instead of other dimensionality
+reduction approaches such as PCA is that the dimensions (factors) are
+individually interpretable. For example, a particular cell type is often
+captured by a single dimension of the space. Furthermore, iNMF
 identifies both shared and dataset-specific features along each
 dimension, giving insight into exactly how corresponding cells across
 datasets are both similar and different. Too visualize this information,
@@ -525,13 +546,13 @@ the statistics prepared for ranking the factor loading. The function
 <code><a href="../reference/plotGeneLoadings.html">plotGeneLoadings()</a></code> then creates visualization for the
 exploration. For example, we can visualize the factor loading of Factor
 7 typing in:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">factorMarker</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getFactorMarkers.html">getFactorMarkers</a></span><span class="op">(</span><span class="va">int.bmmc</span>, dataset1 <span class="op">=</span> <span class="st">"atac"</span>, dataset2 <span class="op">=</span> <span class="st">"rna"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plotGeneLoadings.html">plotGeneLoadings</a></span><span class="op">(</span><span class="va">int.bmmc</span>, markerTable <span class="op">=</span> <span class="va">factorMarker</span>, useFactor <span class="op">=</span> <span class="fl">7</span>, nLabel <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></span></code></pre></div>
-<p><img src="Integrating_scRNA_and_scATAC_data_files/figure-html/unnamed-chunk-9-1.png" width="700" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotGeneDimRed</a></span><span class="op">(</span><span class="va">int.bmmc</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CCR6"</span>, <span class="st">"NCF1"</span><span class="op">)</span>, splitBy <span class="op">=</span> <span class="st">"dataset"</span>,</span>
-<span>                        titles <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">int.bmmc</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">int.bmmc</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">factorMarker</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getFactorMarkers.html">getFactorMarkers</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, dataset1 <span class="op">=</span> <span class="st">"atac"</span>, dataset2 <span class="op">=</span> <span class="st">"rna"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/plotGeneLoadings.html">plotGeneLoadings</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, markerTable <span class="op">=</span> <span class="va">factorMarker</span>, useFactor <span class="op">=</span> <span class="fl">12</span>, nLabel <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></span></code></pre></div>
+<p><img src="Integrating_scRNA_and_scATAC_data_files/figure-html/unnamed-chunk-9-1.png" width="700" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotGeneDimRed</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CCR6"</span>, <span class="st">"NCF1"</span><span class="op">)</span>, splitBy <span class="op">=</span> <span class="st">"dataset"</span>,</span>
+<span>                        titles <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">bmmcLiger</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">bmmcLiger</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">cowplot</span><span class="fu">::</span><span class="fu"><a href="https://wilkelab.org/cowplot/reference/plot_grid.html" class="external-link">plot_grid</a></span><span class="op">(</span>plotlist <span class="op">=</span> <span class="va">plots</span>, nrow <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <p><img src="Integrating_scRNA_and_scATAC_data_files/figure-html/unnamed-chunk-10-1.png" width="700" style="display: block; margin: auto;"></p>
 <p>These plots confirm that the expression and accessibility of these
@@ -548,25 +569,22 @@ difference is due to technical effects–the gene body of NCF1 is short
 (~15KB), and short genes are more difficult to capture in scATAC-seq
 than in scRNA-seq because there are few sites for the ATAC-seq
 transposon to insert.</p>
-<p><strong>17.</strong> Single-cell measurements of chromatin
-accessibility and gene expression provide an unprecedented opportunity
-to investigate epigenetic regulation of gene expression. Ideally, such
-investigation would leverage paired ATAC-seq and RNA-seq from the same
-cells, but such simultaneous measurements are not generally available.
-However, using LIGER, it is possible to computationally infer
-“pseudo-multi-omic” profiles by linking scRNA-seq profiles–using the
-jointly inferred iNMF factors–to the most similar scATAC-seq profiles.
-After this imputation step, we can perform downstream analyses as if we
-had true single-cell multi-omic profiles. For example, we can identify
-putative enhancers by correlating the expression of a gene with the
-accessibility of neighboring intergenic peaks across the whole set of
-single cells.</p>
-<blockquote>
-<p>For convenience, we have prepared the pre-processed peak-level count
-data which is ready to use. The data can be downloaded <a href="https://www.dropbox.com/sh/5e9cy4qabs89kc8/AADy3jDxHx94j6A57t7A42u3a?dl=0" class="external-link">here</a>.</p>
-</blockquote>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pmat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"GSM4138888_scATAC_BMMC_D5T1_peak_counts.RDS"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="inferring-linkage-between-atac-and-rna-data">10. Inferring linkage between ATAC and RNA data<a class="anchor" aria-label="anchor" href="#inferring-linkage-between-atac-and-rna-data"></a>
+</h3>
+<p>Single-cell measurements of chromatin accessibility and gene
+expression provide an unprecedented opportunity to investigate
+epigenetic regulation of gene expression. Ideally, such investigation
+would leverage paired ATAC-seq and RNA-seq from the same cells, but such
+simultaneous measurements are not generally available. However, using
+LIGER, it is possible to computationally infer “pseudo-multi-omic”
+profiles by linking scRNA-seq profiles–using the jointly inferred iNMF
+factors–to the most similar scATAC-seq profiles. After this imputation
+step, we can perform downstream analyses as if we had true single-cell
+multi-omic profiles. For example, we can identify putative enhancers by
+correlating the expression of a gene with the accessibility of
+neighboring intergenic peaks across the whole set of single cells.</p>
 <p>You can also expand the following tutorial to start from the
 beginning.</p>
 <details><summary><b>Detailed CellRanger peak count preprocessing</b></summary><p>To achieve this, we first need a matrix of accessibility counts
@@ -578,79 +596,55 @@ by CellRanger are stored in a folder named
 load these and convert them into a peak-level count matrix by typing
 these commands:</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">barcodes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table</a></span><span class="op">(</span><span class="st">'/outs/filtered_peak_bc_matrix/barcodes.tsv'</span>, sep <span class="op">=</span> <span class="st">'\t'</span>, header <span class="op">=</span> <span class="cn">FALSE</span>, as.is <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">V1</span></span>
-<span><span class="va">peak.names</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table</a></span><span class="op">(</span><span class="st">'/outs/filtered_peak_bc_matrix/peaks.bed'</span>, sep <span class="op">=</span> <span class="st">'\t'</span>, header <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">peak.names</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">peak.names</span><span class="op">$</span><span class="va">V1</span>, <span class="st">':'</span>, <span class="va">peak.names</span><span class="op">$</span><span class="va">V2</span>, <span class="st">'-'</span>, <span class="va">peak.names</span><span class="op">$</span><span class="va">V3</span><span class="op">)</span></span>
-<span><span class="va">pmat</span> <span class="op">&lt;-</span> <span class="fu">readMM</span><span class="op">(</span><span class="st">'/outs/filtered_peak_bc_matrix/matrix.mtx'</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/dimnames.html" class="external-link">dimnames</a></span><span class="op">(</span><span class="va">pmat</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">peak.names</span>, <span class="va">barcodes</span><span class="op">)</span></span></code></pre></div>
-</details><br><p><strong>18.</strong> The peak-level count matrix is usually large,
-containing hundreds of thousands of peaks. We next filter this set of
-peaks to identify those showing cell-type-specific accessibility. To do
-this, we perform the Wilcoxon rank-sum test and pick those peaks which
-are differentially accessible within a specific cluster. Before running
-the test, however, we need to make sure:</p>
+<code class="sourceCode R"><span><span class="va">peak</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read10X.html">read10XATAC</a></span><span class="op">(</span><span class="st">"/path/to/filtered_peak_barcode_matrix"</span>, sampleNames <span class="op">=</span> <span class="st">"atac"</span><span class="op">)</span></span></code></pre></div>
+</details><br><p>The peak-level count matrix is usually large, containing hundreds of
+thousands of peaks. We next filter this set of peaks to identify those
+showing cell-type-specific accessibility. To do this, we perform the
+Wilcoxon rank-sum test and pick those peaks which are differentially
+accessible within a specific cluster. Before running the test, however,
+we need to make sure:</p>
 <ol style="list-style-type: decimal">
 <li>The peak-level count matrix includes the same cells as the
 gene-level counts matrix</li>
 <li>Peak count matrix is normalized to sum to 1 within each cell.</li>
 </ol>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/peak.html">rawPeak</a></span><span class="op">(</span><span class="va">int.bmmc</span>, <span class="st">"atac"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">pmat</span></span>
-<span><span class="va">int.bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/normalize.html">normalizePeak</a></span><span class="op">(</span><span class="va">int.bmmc</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="st">"liger_BMMC_atac_D5T1_peak.rds"</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file</a></span><span class="op">(</span><span class="st">"https://figshare.com/ndownloader/files/40054864"</span>,</span>
+<span>                  destfile <span class="op">=</span> <span class="st">"liger_BMMC_atac_D5T1_peak.rds"</span><span class="op">)</span></span>
+<span><span class="va">D5T1.peak</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"liger_BMMC_atac_D5T1_peak.rds"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/peak.html">rawPeak</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, <span class="st">"atac"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">D5T1.peak</span></span>
+<span><span class="va">bmmcLiger</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/normalize.html">normalizePeak</a></span><span class="op">(</span><span class="va">bmmcLiger</span><span class="op">)</span></span></code></pre></div>
 <blockquote>
 <p>Recall that we set <code>modal</code> argument when intiating the
 object with <code><a href="../reference/createLiger.html">createLiger()</a></code>. This creates “ligerATACDataset”
-class object as the dataset-specific container for the ATAC-seq data.
-Only in this way can we insert the peak count matrix to its designated
-slot with <code>rawPeak&lt;-()</code> method.</p>
+class object as the dataset-specific container for the scATAC data. Only
+in this way can we insert the peak count matrix to its designated slot
+with <code>rawPeak&lt;-()</code> method.</p>
 </blockquote>
 <p>Now we can perform the Wilcoxon test on the peak counts with setting
 <code>usePeak = TRUE</code>:</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">peak.wilcoxon</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runWilcoxon.html">runWilcoxon</a></span><span class="op">(</span><span class="va">int.bmmc</span>, useDatasets <span class="op">=</span> <span class="st">"atac"</span>, usePeak <span class="op">=</span> <span class="cn">TRUE</span>, method <span class="op">=</span> <span class="st">'clusters'</span><span class="op">)</span></span></code></pre></div>
-<p><strong>19.</strong> We can now use the results of the Wilcoxon test
-to retain only peaks showing differential accessibility across our set
-of joint clusters. Here we kept peaks with Benjamini-Hochberg adjusted
-p-value &lt; 0.05 and log fold change &gt; 2.</p>
+<code class="sourceCode R"><span><span class="va">peak.wilcoxon</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runWilcoxon.html">runWilcoxon</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, useDatasets <span class="op">=</span> <span class="st">"atac"</span>, usePeak <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>We can now use the results of the Wilcoxon test to retain only peaks
+showing differential accessibility across our set of joint clusters.
+Here we kept peaks with Benjamini-Hochberg adjusted p-value &lt; 0.05
+and log fold change &gt; 2.</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">peak.wilcoxon</span> <span class="op">&lt;-</span> <span class="va">peak.wilcoxon</span><span class="op">[</span><span class="va">peak.wilcoxon</span><span class="op">$</span><span class="va">padj</span> <span class="op">&lt;</span> <span class="fl">0.05</span>,<span class="op">]</span></span>
-<span><span class="va">peak.wilcoxon</span> <span class="op">&lt;-</span> <span class="va">peak.wilcoxon</span><span class="op">[</span><span class="va">peak.wilcoxon</span><span class="op">$</span><span class="va">logFC</span> <span class="op">&gt;</span> <span class="fl">2</span>,<span class="op">]</span></span>
+<code class="sourceCode R"><span><span class="va">peak.wilcoxon</span> <span class="op">&lt;-</span> <span class="va">peak.wilcoxon</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">padj</span> <span class="op">&lt;</span> <span class="fl">0.05</span>, <span class="va">logFC</span> <span class="op">&gt;</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">peaks.sel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">peak.wilcoxon</span><span class="op">$</span><span class="va">feature</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/peak.html">rawPeak</a></span><span class="op">(</span><span class="va">int.bmmc</span>, <span class="st">"atac"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/peak.html">rawPeak</a></span><span class="op">(</span><span class="va">int.bmmc</span>, <span class="st">"atac"</span><span class="op">)</span><span class="op">[</span><span class="va">peaks.sel</span>,<span class="op">]</span></span>
-<span><span class="va">int.bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/normalize.html">normalizePeak</a></span><span class="op">(</span><span class="va">int.bmmc</span><span class="op">)</span></span></code></pre></div>
-<p><strong>20.</strong> Using this set of differentially accessible
-peaks, we now impute a set of “pseudo-multi-omic” profiles by inferring
-the intergenic peak accessibility for scRNA-seq profiles based on their
-nearest neighbors in the joint LIGER space. LIGER provides a function
-named <code><a href="../reference/imputeKNN.html">imputeKNN()</a></code> that performs this task, yielding a set
-of profiles containing both gene expression and chromatin accessibility
+<span><span class="fu"><a href="../reference/peak.html">rawPeak</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, <span class="st">"atac"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/peak.html">rawPeak</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, <span class="st">"atac"</span><span class="op">)</span><span class="op">[</span><span class="va">peaks.sel</span>,<span class="op">]</span></span>
+<span><span class="va">bmmcLiger</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/normalize.html">normalizePeak</a></span><span class="op">(</span><span class="va">bmmcLiger</span><span class="op">)</span></span></code></pre></div>
+<p>Using this set of differentially accessible peaks, we now impute a
+set of “pseudo-multi-omic” profiles by inferring the intergenic peak
+accessibility for scRNA-seq profiles based on their nearest neighbors in
+the joint LIGER space. LIGER provides a function named
+<code><a href="../reference/imputeKNN.html">imputeKNN()</a></code> that performs this task, yielding a set of
+profiles containing both gene expression and chromatin accessibility
 measurements for the same single cells:</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">int.bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/imputeKNN.html">imputeKNN</a></span><span class="op">(</span><span class="va">int.bmmc</span>, reference <span class="op">=</span> <span class="st">'atac'</span>, queries <span class="op">=</span> <span class="st">"rna"</span><span class="op">)</span></span></code></pre></div>
-<p>Important parameters of <code><a href="../reference/imputeKNN.html">imputeKNN()</a></code> are as follows:</p>
-<ul>
-<li>
-<code>reference</code>. Dataset containing values to impute into
-query dataset(s). For example, setting <code>reference = "atac"</code>
-uses the values in dataset “atac” to predict chromatin accessibility
-values for scRNA-seq profiles.</li>
-<li>
-<code>queries</code>. Dataset to be augmented by imputation. For
-example, setting <code>query = "rna"</code> predicts chromatin
-accessibility values for scRNA-seq profiles.</li>
-<li>
-<code>nNeighbors</code>. The maximum number of nearest neighbors to
-use for imputation. The imputation algorithm simply builds a k-nearest
-neighbor graph using the aligned LIGER latent space, then averages
-values from the reference dataset across neighboring cells. The default
-value is <code>20</code>.</li>
-<li>
-<code>norm</code>. This indicates whether to normalize data after
-imputation. The default is <code>TRUE</code>.</li>
-<li>
-<code>scale</code>. This indicates whether to scale data after
-imputation. The default is <code>FALSE</code>.</li>
-</ul>
+<code class="sourceCode R"><span><span class="va">bmmcLiger</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/imputeKNN.html">imputeKNN</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, reference <span class="op">=</span> <span class="st">'atac'</span>, queries <span class="op">=</span> <span class="st">"rna"</span><span class="op">)</span></span></code></pre></div>
 <blockquote>
 <p>Under the hook, <code><a href="../reference/imputeKNN.html">imputeKNN()</a></code> converts the
 dataset-specific container object for scRNA-seq data to
@@ -664,73 +658,37 @@ expression is stored. This usually led to the creation of a new object
 when running the imputation. Now both types of features are allowed to
 exist together, so users do not need to create a new object anymore.</p>
 </blockquote>
-<p><strong>21.</strong> Now that we have both the (imputed) peak-level
-counts matrix and the (observed) gene expression counts matrix for the
-same cells, we can evaluate the relationships between pairs of genes and
-peaks, linking genes to putative regulatory elements. We use a simple
-strategy to identify such gene-peak links: Calculate correlation between
-gene expression and peak accessibility of all peaks within 500 KB of a
-gene, then retain all peaks showing statistically significant
-correlation with the gene. The <code><a href="../reference/linkGenesAndPeaks.html">linkGenesAndPeaks()</a></code> function
-performs this analysis:</p>
+<p>Now that we have both the (imputed) peak-level counts matrix and the
+(observed) gene expression counts matrix for the same cells, we can
+evaluate the relationships between pairs of genes and peaks, linking
+genes to putative regulatory elements. We use a simple strategy to
+identify such gene-peak links: Calculate correlation between gene
+expression and peak accessibility of all peaks within 500 KB of a gene,
+then retain all peaks showing statistically significant correlation with
+the gene. The <code><a href="../reference/linkGenesAndPeaks.html">linkGenesAndPeaks()</a></code> function performs this
+analysis:</p>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">regnet</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/linkGenesAndPeaks.html">linkGenesAndPeaks</a></span><span class="op">(</span><span class="va">int.bmmc</span>, useDataset <span class="op">=</span> <span class="st">"rna"</span>, pathToCoords <span class="op">=</span> <span class="st">"hg19_genes.bed"</span>, method <span class="op">=</span> <span class="st">"spearman"</span>, alpha <span class="op">=</span> <span class="fl">0.05</span>, useGenes <span class="op">=</span> , verbose <span class="op">=</span> , path_to_coords <span class="op">=</span> , genes.list <span class="op">=</span> , dist <span class="op">=</span> <span class="op">)</span></span></code></pre></div>
-<p>Important parameters of linkGenesAndPeaks are as follows:</p>
-<ul>
-<li>
-<code>useGenes</code>. A vector of the genes to be tested. If not
-specified, this function will use all available genes in the dataset
-specified by <code>useDataset</code> by default.</li>
-<li>
-<code>method</code>. This specifies the type of correlation to
-calculate – one of <code>"spearman"</code> (default),
-<code>"pearson"</code>, or <code>"kendall"</code>.</li>
-<li>
-<code>alpha</code>. Significance threshold for correlation p-value.
-Peak-gene correlations with p-values below this threshold are considered
-significant. The default is <code>0.05</code>.</li>
-<li>
-<code>pathToCoords</code>. The path to the gene coordinates file (in
-BED format). We recommend passing in the same BED file used for making
-barcode list in <strong>Step 1</strong> (need to expand the CellRanger
-preprocessing block).</li>
-</ul>
-<p><strong>22.</strong> The output of this function is a sparse matrix
-with peak names as rows and gene symbols as columns, with each element
-indicating the correlation between peak <em>i</em> and gene <em>j</em>.
-The value would be 0 if the corresponding gene and peak are not
-significantly linked. For example, we can subset the results for marker
-gene S100A9, which is highly expressed in cluster 6, 8, 9, 10 and
-12:</p>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="st">"hg19_genes.bed"</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file</a></span><span class="op">(</span><span class="st">"https://figshare.com/ndownloader/files/40054870"</span>,</span>
+<span>                  destfile <span class="op">=</span> <span class="st">"hg19_genes.bed"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">regnet</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/linkGenesAndPeaks.html">linkGenesAndPeaks</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, useDataset <span class="op">=</span> <span class="st">"rna"</span>, pathToCoords <span class="op">=</span> <span class="st">"hg19_genes.bed"</span>, method <span class="op">=</span> <span class="st">"spearman"</span>, alpha <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span></code></pre></div>
+<p>The output of this function is a sparse matrix with peak names as
+rows and gene symbols as columns, with each element indicating the
+correlation between peak <em>i</em> and gene <em>j</em>. The value would
+be 0 if the corresponding gene and peak are not significantly linked.
+For example, we can subset the results for marker gene S100A9, which is
+highly expressed in cluster 6, 8, 9, 10 and 12:</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">S100A9</span> <span class="op">&lt;-</span> <span class="va">regnet</span><span class="op">[</span>, <span class="st">'S100A9'</span><span class="op">]</span></span>
 <span><span class="va">S100A9</span> <span class="op">&lt;-</span> <span class="va">S100A9</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">S100A9</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">]</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/View.html" class="external-link">View</a></span><span class="op">(</span><span class="va">S100A9</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">S100A9</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">S100A9</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">S100A9</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <p>We also provide a function to transform the peaks-gene correlation
 matrix into an Interact Track supported by UCSC Genome Browser for
 visualizing the calculated linkage between genes and correlated peaks.
 To do this, tying in:</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/exportInteractTrack.html">exportInteractTrack</a></span><span class="op">(</span><span class="va">regnet</span>, useGenes <span class="op">=</span> <span class="st">"S100A9"</span>, pathToCoords <span class="op">=</span> <span class="st">"hg19_genes.bed"</span><span class="op">)</span></span></code></pre></div>
-<p>Important parameters of makeInteractTrack are as follows:</p>
-<ul>
-<li>
-<code>corrMat</code>. A peaks x genes sparse matrix containing
-inferred gene-peak links, the output of
-<code><a href="../reference/linkGenesAndPeaks.html">linkGenesAndPeaks()</a></code>.</li>
-<li>
-<code>useGenes</code>. A vector of the gene symbols to be included
-in the output Interact Track file. If not specified, this function will
-use all the gene symbols from <code>corrMat</code> by default.</li>
-<li>
-<code>pathToCoords</code>. The path to the gene coordinates file (in
-BED format). We recommend passing in the same BED file path as used for
-<code><a href="../reference/linkGenesAndPeaks.html">linkGenesAndPeaks()</a></code>.</li>
-<li>
-<code>outputPath</code>. The path to the directory in which the
-Interact Track file will be stored. The default is the working
-directory.</li>
-</ul>
 <p>The output of this function will be a UCSC Interact Track file named
 ‘Interact_Track.bed’ containing linkage information of the specified
 genes and correlated peaks stored in given directory. The user can then
@@ -749,10 +707,11 @@ S100A9, we can see that the two are indeed very correlated and show
 strong enrichment in clusters 1 and 3. Thus, the intergenic peak likely
 serves as a cell-type-specific regulator of S100A9.</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">S100A9</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotGeneDimRed</a></span><span class="op">(</span><span class="va">int.bmmc</span>, <span class="st">"S100A9"</span>, splitBy <span class="op">=</span> <span class="st">"dataset"</span><span class="op">)</span></span>
-<span><span class="va">peak1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotPeakDimRed</a></span><span class="op">(</span><span class="va">int.bmmc</span>, <span class="st">"chr1:153358896-153359396"</span><span class="op">)</span></span>
-<span><span class="fu">cowplot</span><span class="fu">::</span><span class="fu"><a href="https://wilkelab.org/cowplot/reference/plot_grid.html" class="external-link">plot_grid</a></span><span class="op">(</span><span class="va">peak1</span>, <span class="va">S100A9</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span>, nrow <span class="op">=</span> <span class="fl">2</span>, align <span class="op">=</span> <span class="st">"v"</span>, axis <span class="op">=</span> <span class="st">"lr"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="Integrating_scRNA_and_scATAC_data_files/figure-html/unnamed-chunk-20-1.png" width="576" style="display: block; margin: auto;"></p>
+<code class="sourceCode R"><span><span class="va">S100A9</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotGeneDimRed</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, <span class="st">"S100A9"</span>, splitBy <span class="op">=</span> <span class="st">"dataset"</span><span class="op">)</span></span>
+<span><span class="va">peak1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotPeakDimRed</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, <span class="st">"chr1:153358896-153359396"</span><span class="op">)</span></span>
+<span><span class="fu">cowplot</span><span class="fu">::</span><span class="fu"><a href="https://wilkelab.org/cowplot/reference/plot_grid.html" class="external-link">plot_grid</a></span><span class="op">(</span><span class="va">peak1</span>, <span class="va">S100A9</span><span class="op">$</span><span class="va">S100A9.rna</span>, nrow <span class="op">=</span> <span class="fl">2</span>, align <span class="op">=</span> <span class="st">"v"</span>, axis <span class="op">=</span> <span class="st">"lr"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="Integrating_scRNA_and_scATAC_data_files/figure-html/unnamed-chunk-19-1.png" width="576" style="display: block; margin: auto;"></p>
+</div>
 </div>
   </div>
 
@@ -768,7 +727,7 @@ serves as a cell-type-specific regulator of S100A9.</p>
 
       <footer><div class="copyright">
   <p></p>
-<p>Developed by Joshua Welch, Chao Gao, Jialin Liu, Joshua Sodicoff, Velina Kozareva, Evan Macosko, Yichen Wang.</p>
+<p>Developed by Joshua Welch, Yichen Wang, Chao Gao, Jialin Liu, Joshua Sodicoff, Velina Kozareva, Evan Macosko.</p>
 </div>
 
 <div class="pkgdown">

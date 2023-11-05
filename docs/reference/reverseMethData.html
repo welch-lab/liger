@@ -27,7 +27,9 @@ prior."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/math
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav"><li class="dropdown-header">Installation</li>
+      <ul class="nav navbar-nav"><li>
+  <a href="../articles/installation.html">Installation</a>
+</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Tutorials
@@ -141,15 +143,15 @@ Description.</p>
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Assuming the second dataset in example data "pbmc" is methylation data</span></span></span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="normalize.html">normalize</a></span><span class="op">(</span><span class="va">pbmc</span>, useDatasets <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:38:04 2023 ... Normalizing dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:34 2023 ... Normalizing dataset: ctrl</span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="selectGenes.html">selectGenes</a></span><span class="op">(</span><span class="va">pbmc</span>, datasets.use <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:38:04 2023 ... Selecting variable features for dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:38:04 2023 ...... 168 features selected out of 249 shared features</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:38:04 2023 ... Finally 168 shared variable features selected.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:34 2023 ... Selecting variable features for dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:34 2023 ...... 168 features selected out of 249 shared features</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:34 2023 ... Finally 168 shared variable features selected.</span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="va">pbmc</span>, useDatasets <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:38:04 2023 ... Scaling dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:34 2023 ... Scaling dataset: ctrl</span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu">reverseMethData</span><span class="op">(</span><span class="va">pbmc</span>, useDatasets <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:38:04 2023 ... Substracting methylation data: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:34 2023 ... Substracting methylation data: stim</span>
 </code></pre></div>
     </div>
   </div>

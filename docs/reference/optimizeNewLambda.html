@@ -25,7 +25,9 @@ significantly different; otherwise may not return optimal results."><!-- mathjax
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav"><li class="dropdown-header">Installation</li>
+      <ul class="nav navbar-nav"><li>
+  <a href="../articles/installation.html">Installation</a>
+</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Tutorials
@@ -158,17 +160,17 @@ including the <code>W</code> matrix in <a href="liger-class.html">liger</a> obje
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="normalize.html">normalize</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:47 2023 ... Normalizing dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:47 2023 ... Normalizing dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:19 2023 ... Normalizing dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:19 2023 ... Normalizing dataset: stim</span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="selectGenes.html">selectGenes</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:47 2023 ... Selecting variable features for dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:47 2023 ...... 168 features selected out of 249 shared features</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:47 2023 ... Selecting variable features for dataset: stim</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:47 2023 ...... 166 features selected out of 249 shared features</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:47 2023 ... Finally 173 shared variable features selected.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:19 2023 ... Selecting variable features for dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:19 2023 ...... 168 features selected out of 249 shared features</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:19 2023 ... Selecting variable features for dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:19 2023 ...... 166 features selected out of 249 shared features</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:19 2023 ... Finally 173 shared variable features selected.</span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:47 2023 ... Scaling dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:47 2023 ... Scaling dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:19 2023 ... Scaling dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:19 2023 ... Scaling dataset: stim</span>
 <span class="r-in"><span><span class="co"># Only running a few iterations for fast examples</span></span></span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="rliger2-deprecated.html">optimizeALS</a></span><span class="op">(</span><span class="va">pbmc</span>, k <span class="op">=</span> <span class="fl">20</span>, maxIter <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu">optimizeNewLambda</span><span class="op">(</span><span class="va">pbmc</span>, new <span class="op">=</span> <span class="fl">5.5</span>, max.iters <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>

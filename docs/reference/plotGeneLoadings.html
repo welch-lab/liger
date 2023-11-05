@@ -22,7 +22,9 @@
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav"><li class="dropdown-header">Installation</li>
+      <ul class="nav navbar-nav"><li>
+  <a href="../articles/installation.html">Installation</a>
+</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Tutorials
@@ -156,11 +158,11 @@ plot. Default <code>30</code>.</p></dd>
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="getFactorMarkers.html">getFactorMarkers</a></span><span class="op">(</span><span class="va">pbmcPlot</span>, <span class="st">"ctrl"</span>, <span class="st">"stim"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:54 2023 ... Performing wilcoxon test between datasets "ctrl" and "stim", </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:26 2023 ... Performing wilcoxon test between datasets "ctrl" and "stim", </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>                              basing on factor loading.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span>
 <span class="r-in"><span><span class="fu">plotGeneLoadings</span><span class="op">(</span><span class="va">pbmcPlot</span>, <span class="va">result</span>, useFactor <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:54 2023 ... Plotting feature: Factor_19, on 600 cells...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:26 2023 ... Plotting feature: Factor_19, on 600 cells...</span>
 <span class="r-plt img"><img src="plotGeneLoadings-1.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>

@@ -30,7 +30,9 @@ scCustomize."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/lib
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav"><li class="dropdown-header">Installation</li>
+      <ul class="nav navbar-nav"><li>
+  <a href="../articles/installation.html">Installation</a>
+</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Tutorials
@@ -217,12 +219,13 @@ top_annotation</code>.</p>
 <span class="r-in"><span><span class="co"># Use character vector of genes</span></span></span>
 <span class="r-in"><span><span class="va">features</span> <span class="op">&lt;-</span> <span class="fu"><a href="liger-class.html">varFeatures</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span></span></span>
 <span class="r-in"><span><span class="fu">plotClusterGeneDot</span><span class="op">(</span><span class="va">pbmcPlot</span>, features <span class="op">=</span> <span class="va">features</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="plotClusterGeneDot-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Use data.frame with grouping information, with more tweak on plot</span></span></span>
 <span class="r-in"><span><span class="va">features</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">features</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">letters</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">plotClusterGeneDot</span><span class="op">(</span><span class="va">pbmcPlot</span>, features <span class="op">=</span> <span class="va">features</span>,</span></span>
 <span class="r-in"><span>                   clusterFeature <span class="op">=</span> <span class="cn">TRUE</span>, clusterCell <span class="op">=</span> <span class="cn">TRUE</span>, maxDotSize <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plotClusterGeneDot-1.png" alt="" width="700" height="433"></span>
+<span class="r-plt img"><img src="plotClusterGeneDot-2.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>
   </div>

@@ -22,7 +22,9 @@
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav"><li class="dropdown-header">Installation</li>
+      <ul class="nav navbar-nav"><li>
+  <a href="../articles/installation.html">Installation</a>
+</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Tutorials
@@ -180,24 +182,24 @@ normalized imputed peak counts if <code>norm = TRUE</code>.</p>
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="normalize.html">normalize</a></span><span class="op">(</span><span class="va">bmmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:39 2023 ... Normalizing dataset: rna</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:39 2023 ... Normalizing dataset: atac</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:11 2023 ... Normalizing dataset: rna</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:11 2023 ... Normalizing dataset: atac</span>
 <span class="r-in"><span><span class="va">bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="selectGenes.html">selectGenes</a></span><span class="op">(</span><span class="va">bmmc</span>, datasets.use <span class="op">=</span> <span class="st">"rna"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:39 2023 ... Selecting variable features for dataset: rna</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:39 2023 ...... 83 features selected out of 172 shared features</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:39 2023 ... Finally 83 shared variable features selected.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:11 2023 ... Selecting variable features for dataset: rna</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:11 2023 ...... 83 features selected out of 172 shared features</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:11 2023 ... Finally 83 shared variable features selected.</span>
 <span class="r-in"><span><span class="va">bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="va">bmmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:39 2023 ... Scaling dataset: rna</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:39 2023 ... Scaling dataset: atac</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:11 2023 ... Scaling dataset: rna</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:11 2023 ... Scaling dataset: atac</span>
 <span class="r-in"><span><span class="va">bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="runINMF.html">runINMF</a></span><span class="op">(</span><span class="va">bmmc</span>, k <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="quantileNorm.html">quantileNorm</a></span><span class="op">(</span><span class="va">bmmc</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="normalize.html">normalizePeak</a></span><span class="op">(</span><span class="va">bmmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:40 2023 ... Normalizing rawPeak counts in dataset: atac</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:11 2023 ... Normalizing rawPeak counts in dataset: atac</span>
 <span class="r-in"><span><span class="va">bmmc</span> <span class="op">&lt;-</span> <span class="fu">imputeKNN</span><span class="op">(</span><span class="va">bmmc</span>, reference <span class="op">=</span> <span class="st">"atac"</span>, queries <span class="op">=</span> <span class="st">"rna"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:40 2023 ... Imputing all the datasets exept the reference dataset</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:11 2023 ... Imputing all the datasets exept the reference dataset</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>                              Reference dataset: atac</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>                              Query datasets: rna</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:40 2023 ... Normalizing rawPeak counts in dataset: rna</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:11 2023 ... Normalizing rawPeak counts in dataset: rna</span>
 </code></pre></div>
     </div>
   </div>
