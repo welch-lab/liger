@@ -32,8 +32,10 @@ reference:
   - runINMF
   - runOnlineINMF
   - runUINMF
-  - starts_with("optimize")
-  - online_iNMF
+  - optimizeNewData
+  - optimizeNewK
+  - optimizeNewLambda
+  - optimizeSubset
   - suggestK
   - suggestLambda
 - title: "Downstream Analysis"
@@ -49,6 +51,8 @@ reference:
   - runDoubletFinder
   - runGSEA
   - runGOEnrich
+- title: "ATAC Specific Analysis"
+- contents:
   - imputeKNN
   - linkGenesAndPeaks
   - exportInteractTrack
