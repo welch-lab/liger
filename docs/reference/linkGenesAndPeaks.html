@@ -29,28 +29,47 @@ result)."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/ma
       <ul class="nav navbar-nav"><li class="dropdown-header">Installation</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Vignettes
+    Tutorials
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Introductory Vignettes</li>
-    <li class="dropdown-header">Integrating Multiple scRNAseq Data</li>
-    <li class="dropdown-header">Integrating On-Disk (HDF5 Based) Data</li>
-    <li class="divider">
-    <li class="dropdown-header">Data structure and access</li>
-    <li class="dropdown-header">Outer container - liger object</li>
-    <li class="dropdown-header">Dataset container - ligerDataset object and subclasses</li>
+  <ul class="dropdown-menu" role="menu"><li>
+      <a href="../articles/Integrating_multi_scRNA_data.html">Integrating multiple scRNAseq data</a>
+    </li>
+    <li>
+      <a href="../articles/Integrating_scRNA_and_scATAC_data.html">Integrating scRNA and scATAC data</a>
+    </li>
+    <li>
+      <a href="../articles/online_iNMF_tutorial.html">Online iNMF with HDF5 based data</a>
+    </li>
+    <li>
+      <a href="../articles/UINMF_vignette.html">Integration using unshared features</a>
+    </li>
+    <li>
+      <a href="../articles/cross_species_vig.html">Cross-species Analysis with UINMF</a>
+    </li>
+    <li>
+      <a href="../articles/STARmap_dropviz_vig.html">UINMF with STARmap spatial and transcriptomic</a>
+    </li>
+    <li>
+      <a href="../articles/SNAREseq_walkthrough.html">UINMF with SNAREseq scATAC and scRNA</a>
+    </li>
+    <li>
+      <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
+    </li>
+    <li>
+      <a href="../articles/Parameter_selection.html">Parameter selection</a>
+    </li>
   </ul></li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Documentation
+    Usage
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-submenu">
-      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Data</a>
-      <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import Data</li>
-      </ul></li>
+  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import data</li>
+    <li class="dropdown-header">Introduction to a liger object</li>
+    <li class="dropdown-header">Interoperate with Seurat</li>
   </ul></li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -160,32 +179,32 @@ the gene and peak are not significantly linked.</p>
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="normalize.html">normalize</a></span><span class="op">(</span><span class="va">bmmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:34 2023 ... Normalizing dataset: rna</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:34 2023 ... Normalizing dataset: atac</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:42 2023 ... Normalizing dataset: rna</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:42 2023 ... Normalizing dataset: atac</span>
 <span class="r-in"><span><span class="va">bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="selectGenes.html">selectGenes</a></span><span class="op">(</span><span class="va">bmmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:34 2023 ... Selecting variable features for dataset: rna</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:34 2023 ...... 83 features selected out of 172 shared features</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:34 2023 ... Selecting variable features for dataset: atac</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:34 2023 ...... 126 features selected out of 172 shared features</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:34 2023 ... Finally 135 shared variable features selected.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:42 2023 ... Selecting variable features for dataset: rna</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:42 2023 ...... 83 features selected out of 172 shared features</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:42 2023 ... Selecting variable features for dataset: atac</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:42 2023 ...... 126 features selected out of 172 shared features</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:42 2023 ... Finally 135 shared variable features selected.</span>
 <span class="r-in"><span><span class="va">bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="va">bmmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:34 2023 ... Scaling dataset: rna</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:34 2023 ... Scaling dataset: atac</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:42 2023 ... Scaling dataset: rna</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:42 2023 ... Scaling dataset: atac</span>
 <span class="r-in"><span><span class="va">bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="rliger2-deprecated.html">online_iNMF</a></span><span class="op">(</span><span class="va">bmmc</span>, miniBatch_size <span class="op">=</span> <span class="fl">80</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="quantileNorm.html">quantileNorm</a></span><span class="op">(</span><span class="va">bmmc</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="normalize.html">normalizePeak</a></span><span class="op">(</span><span class="va">bmmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:34 2023 ... Normalizing rawPeak counts in dataset: atac</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:42 2023 ... Normalizing rawPeak counts in dataset: atac</span>
 <span class="r-in"><span><span class="va">bmmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="imputeKNN.html">imputeKNN</a></span><span class="op">(</span><span class="va">bmmc</span>, reference <span class="op">=</span> <span class="st">"atac"</span>, queries <span class="op">=</span> <span class="st">"rna"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:34 2023 ... Imputing all the datasets exept the reference dataset</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:42 2023 ... Imputing all the datasets exept the reference dataset</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>                              Reference dataset: atac</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>                              Query datasets: rna</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:34 2023 ... Normalizing rawPeak counts in dataset: rna</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:42 2023 ... Normalizing rawPeak counts in dataset: rna</span>
 <span class="r-in"><span><span class="va">corr</span> <span class="op">&lt;-</span> <span class="fu">linkGenesAndPeaks</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    <span class="va">bmmc</span>, useDataset <span class="op">=</span> <span class="st">"rna"</span>,</span></span>
 <span class="r-in"><span>    pathToCoords <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata/hg19_genes.bed"</span>, package <span class="op">=</span> <span class="st">"rliger2"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:35 2023 ... 172 genes to be tested against 995 peaks</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:35 2023 ... Calculating correlation for gene-peak pairs...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:42 2023 ... 172 genes to be tested against 995 peaks</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:42 2023 ... Calculating correlation for gene-peak pairs...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%  |                                                                              |=                                                                     |   2%  |                                                                              |==                                                                    |   2%  |                                                                              |==                                                                    |   3%  |                                                                              |====                                                                  |   5%  |                                                                              |====                                                                  |   6%  |                                                                              |=====                                                                 |   8%  |                                                                              |======                                                                |   8%  |                                                                              |=======                                                               |   9%  |                                                                              |========                                                              |  11%  |                                                                              |==========                                                            |  14%  |                                                                              |===========                                                           |  15%  |                                                                              |===========                                                           |  16%  |                                                                              |============                                                          |  17%  |                                                                              |=============                                                         |  18%  |                                                                              |=============                                                         |  19%  |                                                                              |===============                                                       |  22%  |                                                                              |================                                                      |  23%  |                                                                              |=================                                                     |  24%  |                                                                              |==================                                                    |  26%  |                                                                              |=====================                                                 |  30%  |                                                                              |======================                                                |  31%  |                                                                              |======================                                                |  32%  |                                                                              |========================                                              |  34%  |                                                                              |=========================                                             |  36%  |                                                                              |===========================                                           |  38%  |                                                                              |===========================                                           |  39%  |                                                                              |============================                                          |  40%  |                                                                              |============================                                          |  41%  |                                                                              |===============================                                       |  44%  |                                                                              |================================                                      |  46%  |                                                                              |=================================                                     |  47%  |                                                                              |=================================                                     |  48%  |                                                                              |==================================                                    |  48%  |                                                                              |==================================                                    |  49%  |                                                                              |=====================================                                 |  52%  |                                                                              |=====================================                                 |  53%  |                                                                              |======================================                                |  55%  |                                                                              |=======================================                               |  56%  |                                                                              |========================================                              |  57%  |                                                                              |========================================                              |  58%  |                                                                              |=========================================                             |  59%  |                                                                              |===========================================                           |  62%  |                                                                              |============================================                          |  62%  |                                                                              |==============================================                        |  65%  |                                                                              |==============================================                        |  66%  |                                                                              |===============================================                       |  67%  |                                                                              |================================================                      |  68%  |                                                                              |==================================================                    |  72%  |                                                                              |====================================================                  |  74%  |                                                                              |====================================================                  |  75%  |                                                                              |======================================================                |  77%  |                                                                              |=======================================================               |  78%  |                                                                              |=======================================================               |  79%  |                                                                              |========================================================              |  80%  |                                                                              |=========================================================             |  81%  |                                                                              |=========================================================             |  82%  |                                                                              |==========================================================            |  83%  |                                                                              |===========================================================           |  84%  |                                                                              |============================================================          |  85%  |                                                                              |=============================================================         |  87%  |                                                                              |==============================================================        |  89%  |                                                                              |=================================================================     |  93%  |                                                                              |==================================================================    |  94%  |                                                                              |====================================================================  |  98%  |                                                                              |===================================================================== |  98%  |                                                                              |======================================================================| 100%</span>
 </code></pre></div>
     </div>

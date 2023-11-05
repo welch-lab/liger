@@ -25,28 +25,47 @@
       <ul class="nav navbar-nav"><li class="dropdown-header">Installation</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Vignettes
+    Tutorials
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Introductory Vignettes</li>
-    <li class="dropdown-header">Integrating Multiple scRNAseq Data</li>
-    <li class="dropdown-header">Integrating On-Disk (HDF5 Based) Data</li>
-    <li class="divider">
-    <li class="dropdown-header">Data structure and access</li>
-    <li class="dropdown-header">Outer container - liger object</li>
-    <li class="dropdown-header">Dataset container - ligerDataset object and subclasses</li>
+  <ul class="dropdown-menu" role="menu"><li>
+      <a href="../articles/Integrating_multi_scRNA_data.html">Integrating multiple scRNAseq data</a>
+    </li>
+    <li>
+      <a href="../articles/Integrating_scRNA_and_scATAC_data.html">Integrating scRNA and scATAC data</a>
+    </li>
+    <li>
+      <a href="../articles/online_iNMF_tutorial.html">Online iNMF with HDF5 based data</a>
+    </li>
+    <li>
+      <a href="../articles/UINMF_vignette.html">Integration using unshared features</a>
+    </li>
+    <li>
+      <a href="../articles/cross_species_vig.html">Cross-species Analysis with UINMF</a>
+    </li>
+    <li>
+      <a href="../articles/STARmap_dropviz_vig.html">UINMF with STARmap spatial and transcriptomic</a>
+    </li>
+    <li>
+      <a href="../articles/SNAREseq_walkthrough.html">UINMF with SNAREseq scATAC and scRNA</a>
+    </li>
+    <li>
+      <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
+    </li>
+    <li>
+      <a href="../articles/Parameter_selection.html">Parameter selection</a>
+    </li>
   </ul></li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Documentation
+    Usage
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-submenu">
-      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Data</a>
-      <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import Data</li>
-      </ul></li>
+  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import data</li>
+    <li class="dropdown-header">Introduction to a liger object</li>
+    <li class="dropdown-header">Interoperate with Seurat</li>
   </ul></li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -137,13 +156,12 @@ plot. Default <code>30</code>.</p></dd>
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="getFactorMarkers.html">getFactorMarkers</a></span><span class="op">(</span><span class="va">pbmcPlot</span>, <span class="st">"ctrl"</span>, <span class="st">"stim"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:47 2023 ... Performing wilcoxon test between datasets "ctrl" and "stim", </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:54 2023 ... Performing wilcoxon test between datasets "ctrl" and "stim", </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>                              basing on factor loading.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in cpp_rank_matrix_dgc(xRanked@x, xRanked@p, nrow(xRanked), ncol(xRanked)):</span> no slot of name "p" for this object of class "dgeMatrix"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span>
 <span class="r-in"><span><span class="fu">plotGeneLoadings</span><span class="op">(</span><span class="va">pbmcPlot</span>, <span class="va">result</span>, useFactor <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:47 2023 ... Plotting feature: Factor_19, on 600 cells...</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'result' not found</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:54 2023 ... Plotting feature: Factor_19, on 600 cells...</span>
+<span class="r-plt img"><img src="plotGeneLoadings-1.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>
   </div>

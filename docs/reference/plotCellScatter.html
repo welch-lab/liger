@@ -31,28 +31,47 @@ grouping on cells (e.g. datasets)."><!-- mathjax --><script src="https://cdnjs.c
       <ul class="nav navbar-nav"><li class="dropdown-header">Installation</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Vignettes
+    Tutorials
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Introductory Vignettes</li>
-    <li class="dropdown-header">Integrating Multiple scRNAseq Data</li>
-    <li class="dropdown-header">Integrating On-Disk (HDF5 Based) Data</li>
-    <li class="divider">
-    <li class="dropdown-header">Data structure and access</li>
-    <li class="dropdown-header">Outer container - liger object</li>
-    <li class="dropdown-header">Dataset container - ligerDataset object and subclasses</li>
+  <ul class="dropdown-menu" role="menu"><li>
+      <a href="../articles/Integrating_multi_scRNA_data.html">Integrating multiple scRNAseq data</a>
+    </li>
+    <li>
+      <a href="../articles/Integrating_scRNA_and_scATAC_data.html">Integrating scRNA and scATAC data</a>
+    </li>
+    <li>
+      <a href="../articles/online_iNMF_tutorial.html">Online iNMF with HDF5 based data</a>
+    </li>
+    <li>
+      <a href="../articles/UINMF_vignette.html">Integration using unshared features</a>
+    </li>
+    <li>
+      <a href="../articles/cross_species_vig.html">Cross-species Analysis with UINMF</a>
+    </li>
+    <li>
+      <a href="../articles/STARmap_dropviz_vig.html">UINMF with STARmap spatial and transcriptomic</a>
+    </li>
+    <li>
+      <a href="../articles/SNAREseq_walkthrough.html">UINMF with SNAREseq scATAC and scRNA</a>
+    </li>
+    <li>
+      <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
+    </li>
+    <li>
+      <a href="../articles/Parameter_selection.html">Parameter selection</a>
+    </li>
   </ul></li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Documentation
+    Usage
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-submenu">
-      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Data</a>
-      <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import Data</li>
-      </ul></li>
+  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import data</li>
+    <li class="dropdown-header">Introduction to a liger object</li>
+    <li class="dropdown-header">Interoperate with Seurat</li>
   </ul></li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -201,18 +220,18 @@ on a <code><a href="https://rdrr.io/pkg/S4Vectors/man/DataFrame-class.html" clas
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">plotCellScatter</span><span class="op">(</span><span class="va">pbmcPlot</span>, x <span class="op">=</span> <span class="st">"UMAP.1"</span>, y <span class="op">=</span> <span class="st">"UMAP.2"</span>,</span></span>
 <span class="r-in"><span>                colorBy <span class="op">=</span> <span class="st">"dataset"</span>, slot <span class="op">=</span> <span class="st">"cellMeta"</span>,</span></span>
 <span class="r-in"><span>                labelText <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:41 2023 ... Plotting feature: dataset, on 600 cells...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:48 2023 ... Plotting feature: dataset, on 600 cells...</span>
 <span class="r-plt img"><img src="plotCellScatter-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="fu">plotCellScatter</span><span class="op">(</span><span class="va">pbmcPlot</span>, x <span class="op">=</span> <span class="st">"UMAP.1"</span>, y <span class="op">=</span> <span class="st">"UMAP.2"</span>,</span></span>
 <span class="r-in"><span>                colorBy <span class="op">=</span> <span class="st">"S100A8"</span>, slot <span class="op">=</span> <span class="st">"normData"</span>,</span></span>
 <span class="r-in"><span>                dotOrder <span class="op">=</span> <span class="st">"ascending"</span>, dotSize <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:42 2023 ... Plotting feature: S100A8, on 600 cells...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:48 2023 ... Plotting feature: S100A8, on 600 cells...</span>
 <span class="r-plt img"><img src="plotCellScatter-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="fu">plotCellScatter</span><span class="op">(</span><span class="va">pbmcPlot</span>, x <span class="op">=</span> <span class="st">"UMAP.1"</span>, y <span class="op">=</span> <span class="st">"UMAP.2"</span>,</span></span>
 <span class="r-in"><span>                colorBy <span class="op">=</span> <span class="fl">2</span>, slot <span class="op">=</span> <span class="st">"H.norm"</span>,</span></span>
 <span class="r-in"><span>                dotOrder <span class="op">=</span> <span class="st">"ascending"</span>, dotSize <span class="op">=</span> <span class="fl">2</span>,</span></span>
 <span class="r-in"><span>                colorPalette <span class="op">=</span> <span class="st">"viridis"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:42 2023 ... Plotting feature: Factor_19, on 600 cells...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:48 2023 ... Plotting feature: Factor_19, on 600 cells...</span>
 <span class="r-plt img"><img src="plotCellScatter-3.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>

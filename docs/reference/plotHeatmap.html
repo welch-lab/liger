@@ -25,28 +25,47 @@
       <ul class="nav navbar-nav"><li class="dropdown-header">Installation</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Vignettes
+    Tutorials
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Introductory Vignettes</li>
-    <li class="dropdown-header">Integrating Multiple scRNAseq Data</li>
-    <li class="dropdown-header">Integrating On-Disk (HDF5 Based) Data</li>
-    <li class="divider">
-    <li class="dropdown-header">Data structure and access</li>
-    <li class="dropdown-header">Outer container - liger object</li>
-    <li class="dropdown-header">Dataset container - ligerDataset object and subclasses</li>
+  <ul class="dropdown-menu" role="menu"><li>
+      <a href="../articles/Integrating_multi_scRNA_data.html">Integrating multiple scRNAseq data</a>
+    </li>
+    <li>
+      <a href="../articles/Integrating_scRNA_and_scATAC_data.html">Integrating scRNA and scATAC data</a>
+    </li>
+    <li>
+      <a href="../articles/online_iNMF_tutorial.html">Online iNMF with HDF5 based data</a>
+    </li>
+    <li>
+      <a href="../articles/UINMF_vignette.html">Integration using unshared features</a>
+    </li>
+    <li>
+      <a href="../articles/cross_species_vig.html">Cross-species Analysis with UINMF</a>
+    </li>
+    <li>
+      <a href="../articles/STARmap_dropviz_vig.html">UINMF with STARmap spatial and transcriptomic</a>
+    </li>
+    <li>
+      <a href="../articles/SNAREseq_walkthrough.html">UINMF with SNAREseq scATAC and scRNA</a>
+    </li>
+    <li>
+      <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
+    </li>
+    <li>
+      <a href="../articles/Parameter_selection.html">Parameter selection</a>
+    </li>
   </ul></li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Documentation
+    Usage
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-submenu">
-      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Data</a>
-      <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import Data</li>
-      </ul></li>
+  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import data</li>
+    <li class="dropdown-header">Introduction to a liger object</li>
+    <li class="dropdown-header">Interoperate with Seurat</li>
   </ul></li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -189,22 +208,19 @@ value and lower value limits the minimum value. Default <code>c(0, 0.03)</code>.
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">plotGeneHeatmap</span><span class="op">(</span><span class="va">pbmcPlot</span>, <span class="fu"><a href="liger-class.html">varFeatures</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:47 2023 ... Subsetting dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:47 2023 ... Subsetting dataset: stim</span>
-<span class="r-plt img"><img src="plotHeatmap-1.png" alt="" width="700" height="433"></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:54 2023 ... Subsetting dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:54 2023 ... Subsetting dataset: stim</span>
 <span class="r-in"><span><span class="fu">plotGeneHeatmap</span><span class="op">(</span><span class="va">pbmcPlot</span>, <span class="fu"><a href="liger-class.html">varFeatures</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                useCellMeta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"leiden_cluster"</span>, <span class="st">"dataset"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                cellSplitBy <span class="op">=</span> <span class="st">"leiden_cluster"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:48 2023 ... Subsetting dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:48 2023 ... Subsetting dataset: stim</span>
-<span class="r-plt img"><img src="plotHeatmap-2.png" alt="" width="700" height="433"></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:55 2023 ... Subsetting dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:55 2023 ... Subsetting dataset: stim</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">plotFactorHeatmap</span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plotHeatmap-3.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="fu">plotFactorHeatmap</span><span class="op">(</span><span class="va">pbmcPlot</span>, cellIdx <span class="op">=</span> <span class="va">pbmcPlot</span><span class="op">$</span><span class="va">leiden_cluster</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,</span></span>
 <span class="r-in"><span>                  useCellMeta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"leiden_cluster"</span>, <span class="st">"dataset"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                  cellSplitBy <span class="op">=</span> <span class="st">"leiden_cluster"</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plotHeatmap-4.png" alt="" width="700" height="433"></span>
+<span class="r-plt img"><img src="plotHeatmap-1.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>
   </div>

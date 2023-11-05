@@ -34,28 +34,47 @@ two mentioned argument as default NULL."><!-- mathjax --><script src="https://cd
       <ul class="nav navbar-nav"><li class="dropdown-header">Installation</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Vignettes
+    Tutorials
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Introductory Vignettes</li>
-    <li class="dropdown-header">Integrating Multiple scRNAseq Data</li>
-    <li class="dropdown-header">Integrating On-Disk (HDF5 Based) Data</li>
-    <li class="divider">
-    <li class="dropdown-header">Data structure and access</li>
-    <li class="dropdown-header">Outer container - liger object</li>
-    <li class="dropdown-header">Dataset container - ligerDataset object and subclasses</li>
+  <ul class="dropdown-menu" role="menu"><li>
+      <a href="../articles/Integrating_multi_scRNA_data.html">Integrating multiple scRNAseq data</a>
+    </li>
+    <li>
+      <a href="../articles/Integrating_scRNA_and_scATAC_data.html">Integrating scRNA and scATAC data</a>
+    </li>
+    <li>
+      <a href="../articles/online_iNMF_tutorial.html">Online iNMF with HDF5 based data</a>
+    </li>
+    <li>
+      <a href="../articles/UINMF_vignette.html">Integration using unshared features</a>
+    </li>
+    <li>
+      <a href="../articles/cross_species_vig.html">Cross-species Analysis with UINMF</a>
+    </li>
+    <li>
+      <a href="../articles/STARmap_dropviz_vig.html">UINMF with STARmap spatial and transcriptomic</a>
+    </li>
+    <li>
+      <a href="../articles/SNAREseq_walkthrough.html">UINMF with SNAREseq scATAC and scRNA</a>
+    </li>
+    <li>
+      <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
+    </li>
+    <li>
+      <a href="../articles/Parameter_selection.html">Parameter selection</a>
+    </li>
   </ul></li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Documentation
+    Usage
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-submenu">
-      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Data</a>
-      <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import Data</li>
-      </ul></li>
+  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import data</li>
+    <li class="dropdown-header">Introduction to a liger object</li>
+    <li class="dropdown-header">Interoperate with Seurat</li>
   </ul></li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -194,14 +213,14 @@ length of the un-named factor/vector equals to <code>length(groups[[1]])
 <span class="r-in"><span>        c2 <span class="op">=</span> <span class="va">pbmcPlot</span><span class="op">$</span><span class="va">leiden_cluster</span> <span class="op">==</span> <span class="fl">2</span></span></span>
 <span class="r-in"><span>    <span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:15:07 2023 ... No replicate annotation specified. Creating pseudo-replicates...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:15:07 2023 ... Subsetting dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:15:07 2023 ... Subsetting dataset: stim</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:15:07 2023 ... Generating pseudo-bulks for condition "c1":</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:38:14 2023 ... No replicate annotation specified. Creating pseudo-replicates...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:38:14 2023 ... Subsetting dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:38:14 2023 ... Subsetting dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:38:14 2023 ... Generating pseudo-bulks for condition "c1":</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>                              c2.6, c2.7, c2.8, c2.9, c2.10</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:15:07 2023 ... Generating pseudo-bulks for condition "c2":</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:38:14 2023 ... Generating pseudo-bulks for condition "c2":</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>                              c1.1, c1.2, c1.3, c1.4, c1.5</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:15:08 2023 ... Calling DESeq2 Wald test</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:38:14 2023 ... Calling DESeq2 Wald test</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> converting counts to integer mode</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> estimating size factors</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> estimating dispersions</span>

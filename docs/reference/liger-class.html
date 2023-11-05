@@ -36,28 +36,47 @@ convertOldLiger."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax
       <ul class="nav navbar-nav"><li class="dropdown-header">Installation</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Vignettes
+    Tutorials
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Introductory Vignettes</li>
-    <li class="dropdown-header">Integrating Multiple scRNAseq Data</li>
-    <li class="dropdown-header">Integrating On-Disk (HDF5 Based) Data</li>
-    <li class="divider">
-    <li class="dropdown-header">Data structure and access</li>
-    <li class="dropdown-header">Outer container - liger object</li>
-    <li class="dropdown-header">Dataset container - ligerDataset object and subclasses</li>
+  <ul class="dropdown-menu" role="menu"><li>
+      <a href="../articles/Integrating_multi_scRNA_data.html">Integrating multiple scRNAseq data</a>
+    </li>
+    <li>
+      <a href="../articles/Integrating_scRNA_and_scATAC_data.html">Integrating scRNA and scATAC data</a>
+    </li>
+    <li>
+      <a href="../articles/online_iNMF_tutorial.html">Online iNMF with HDF5 based data</a>
+    </li>
+    <li>
+      <a href="../articles/UINMF_vignette.html">Integration using unshared features</a>
+    </li>
+    <li>
+      <a href="../articles/cross_species_vig.html">Cross-species Analysis with UINMF</a>
+    </li>
+    <li>
+      <a href="../articles/STARmap_dropviz_vig.html">UINMF with STARmap spatial and transcriptomic</a>
+    </li>
+    <li>
+      <a href="../articles/SNAREseq_walkthrough.html">UINMF with SNAREseq scATAC and scRNA</a>
+    </li>
+    <li>
+      <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
+    </li>
+    <li>
+      <a href="../articles/Parameter_selection.html">Parameter selection</a>
+    </li>
   </ul></li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Documentation
+    Usage
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-submenu">
-      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Data</a>
-      <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import Data</li>
-      </ul></li>
+  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import data</li>
+    <li class="dropdown-header">Introduction to a liger object</li>
+    <li class="dropdown-header">Interoperate with Seurat</li>
   </ul></li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -588,7 +607,7 @@ all louvain cluster attempts: <code>commands(ligerObj, "louvainCluster",
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "ctrl_AAACATACCTCGCT.1" "ctrl_AAACGGCTCTTCGC.1" "ctrl_AACACTCTAAGTAG.1"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [4] "ctrl_AACCGCCTCAGGAG.1" "ctrl_AACGTTCTTCCGTC.1"</span>
 <span class="r-in"><span><span class="va">pbmcPlot</span><span class="op">[</span><span class="fu">varFeatures</span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:32 2023 ... Subsetting dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:40 2023 ... Subsetting dataset: ctrl</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> An object of class liger with 10 cells</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> datasets(1): ctrl (10 cells) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> cellMeta(4): dataset, nUMI, leiden_cluster, UMAP </span>
@@ -657,12 +676,12 @@ all louvain cluster attempts: <code>commands(ligerObj, "louvainCluster",
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## Command record/history</span></span></span>
 <span class="r-in"><span><span class="va">pbmcPlot</span> <span class="op">&lt;-</span> <span class="fu"><a href="scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:32 2023 ... Scaling dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sat Nov  4 14:14:32 2023 ... Scaling dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:40 2023 ... Scaling dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 11:37:40 2023 ... Scaling dataset: stim</span>
 <span class="r-in"><span><span class="fu">commands</span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "scaleNotCenter.liger_eab47af92a"</span>
 <span class="r-in"><span><span class="fu">commands</span><span class="op">(</span><span class="va">pbmcPlot</span>, funcName <span class="op">=</span> <span class="st">"scaleNotCenter"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> A liger command record, performed at 11-04-2023 14:14:32 EDT </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> A liger command record, performed at 11-05-2023 11:37:40 EST </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Call: scaleNotCenter.liger(pbmcPlot) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Parameters:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     useDatasets : "ctrl", "stim" </span>
@@ -677,7 +696,6 @@ all louvain cluster attempts: <code>commands(ligerObj, "louvainCluster",
 <span class="r-out co"><span class="r-pr">#&gt;</span> varFeatures(50): ISG15, ID3, RPL11, ..., HIST1H2AC </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>package ‘ggplot2’ was built under R version 4.3.1</span>
 <span class="r-in"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">pbmcPlot</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">UMAP.1</span>, y <span class="op">=</span> <span class="va">UMAP.2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="liger-class-1.png" alt="" width="700" height="433"></span>
 </code></pre></div>
