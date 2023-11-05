@@ -92,25 +92,34 @@ navbar:
   left:
     - text: "Installation"
       href: #
-    - text: "Vignettes"
+    - text: "Tutorials"
       menu:
-        - text: Introductory Vignettes
-        - text: "Integrating Multiple scRNAseq Data"
-          href: #
-        - text: "Integrating On-Disk (HDF5 Based) Data"
-          href: #
-        - text: -------
-        - text: Data structure and access
-        - text: "Outer container - liger object"
-          href: #
-        - text: "Dataset container - ligerDataset object and subclasses"
-          href: #
-    - text: "Documentation"
+        - text: "Integrating multiple scRNAseq data"
+          href: articles/Integrating_multi_scRNA_data.html
+        - text: "Integrating scRNA and scATAC data"
+          href: articles/Integrating_scRNA_and_scATAC_data.html
+        - text: "Online iNMF with HDF5 based data"
+          href: articles/online_iNMF_tutorial.html
+        - text: "Integration using unshared features"
+          href: articles/UINMF_vignette.html
+        - text: "Cross-species Analysis with UINMF"
+          href: articles/cross_species_vig.html
+        - text: "UINMF with STARmap spatial and transcriptomic"
+          href: articles/STARmap_dropviz_vig.html
+        - text: "UINMF with SNAREseq scATAC and scRNA"
+          href: articles/SNAREseq_walkthrough.html
+        - text: "Integrating scRNAseq and DNA methylation"
+          href: articles/rna_methylation.html
+        - text: "Parameter selection"
+          href: articles/Parameter_selection.html
+    - text: "Usage"
       menu:
-        - text: "Data"
-          menu:
-            - text: "Import Data"
-              href: #
+        - text: "Import data"
+          href: #
+        - text: "Introduction to a liger object"
+          href: #
+        - text: "Interoperate with Seurat"
+          href: #
     - text: "Reference"
       href: reference/index.html
     - text: "NEWS"

@@ -19,3 +19,4 @@ src/cmake_install.cmake
 src/CMakeCache.txt
 src/Makefile
 build/*
+vignettes/articles/*_cache/

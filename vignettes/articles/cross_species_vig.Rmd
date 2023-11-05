@@ -1,0 +1,114 @@
+---
+title: "Cross-Species Analysis with UINMF"
+author: "April Kriebel and Joshua Welch"
+date: "12/6/2021"
+output: html_document
+---
+
+```{r eval = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, results = "hide")
+```
+
+```{r setup, include=FALSE}
+library(rliger2)
+mouse <- readRDS("../../cross_species_vignette/Drop_mouse.RDS")
+lizard <- readRDS("../../cross_species_vignette/RNA_lizard.RDS")
+lizard_annies <- readRDS("../../cross_species_vignette/lizard_labels.RDS")
+mouse_annies <- readRDS("../../cross_species_vignette/Dropviz_general_annotations.RDS")
+
+```
+
+In this vignette, we demonstrate how to integrate dataset from different species. 
+
+## Step 1: Download the data
+
+For this tutorial, we will use two matrices, which can all be downloaded at https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0 .
+
+- The scRNA mouse dataset (Drop_mouse.RDS) is 28,366 genes by 71,639 cells.
+- The scRNA lizard dataset (RNA_lizard.RDS) is 15,345 genes by 4,202 cells. 
+
+```{r eval = FALSE}
+library(rliger2)
+mouse <- readRDS("Drop_mouse.RDS")
+lizard <- readRDS("RNA_lizard.RDS")
+```
+
+## Step 2: Preprocessing and normalization
+
+First, we create a `liger` object as the container of the analysis. A named list is required for submitting the datasets to the object creator. In a liger object, the raw matrices will not be merged but stored in separated dataset-specific containers.
+
+```{r createliger}
+lig <- createLiger(list(mouse = mouse, lizard = lizard))
+```
+Normalize the datasets. Liger simply normalizes the matrices by library size, without multiplying a scale factor or applying log1p transformation. 
+
+```{r normalize}
+lig <- normalize(lig)
+```
+
+Select shared, homologous genes between the two species, as well as unshared, non-homologous genes from the lizard dataset. The default setting of `selectGenes()` function selects for homologous genes shared between all datasets. To enable selection of unshared genes, users need to turn `unshared = TRUE` and specify the `unshared.datasets`.
+
+```{r selectvargenes}
+lig <- selectGenes(lig, var.thres = 0.3, unshared = TRUE, unshared.datasets = "lizard", unshared.thresh = 0.3)
+```
+
+Then we scale the dataset. Three new matrices will be created under the hook, two containing the shared variable features for both datasets, and one for the unshared variable features of lizard data. Note the Liger does not center the scaled data because iNMF/UINMF methods require non-negative input. 
+
+```{r scale}
+lig <- scaleNotCenter(lig)
+```
+
+
+## Step 3: Joint Matrix Factorization
+
+`optimizeALS()` function allows users to factorize the datasets. Setting `useUnshared = TRUE` enables running UINMF method with the scaled unshared feature matrix.
+
+```{r factorization}
+lig <- optimizeALS(lig, k = 30, useUnshared = TRUE, thresh = 1e-10)
+```
+
+## Step 4: Quantile Normalization and Joint Clustering
+
+After factorization, the resulting liger object can used in all downstream LIGER functions without adjustment. The default reference dataset for quantile normalization is the larger dataset, but the user should select the higher quality dataset as the reference dataset, even if it is the smaller dataset. In this case, the mouse dataset is considered higher quality than the lizard dataset, so we set the mouse dataset to be the reference dataset.
+
+```{r quantilenorm}
+lig <- quantileNorm(lig, reference = "mouse")
+lig <- runLeidenCluster(lig, nNeighbors = 30, resolution = 0.6)
+```
+
+## Step 5: Visualization
+
+```{r runumap}
+lig <- runUMAP(lig, nNeighbors = 30, distance = "cosine", minDist = 0.3)
+```
+
+Next, we can visualize our returned factorized object by dataset to check the alignment between datasets. 
+
+```{r visualizations}
+options(ligerDotSize = 0.3)
+plotByDatasetAndCluster(lig, combinePlots = FALSE)
+```
+
+We can also use the datasets' original annotations to check the correspondence between the cell types of the two species. The annotations can be downloaded at https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0
+ 
+```{r annies, eval = FALSE}
+mouse_annies = readRDS("Dropviz_general_annotations.RDS")
+lizard_annies = readRDS("lizard_labels.RDS")
+```
+
+Insert the original annotation into the liger object by simply using the `$` syntax, and then it can be used in any downstream operation where a cluster variable is required. 
+
+```{r addAnn}
+mouse_annies <- mouse_annies[colnames(mouse)]
+lizard_annies <- lizard_annies[colnames(lizard)]
+lig$mouse_ann <- NA
+lig$mouse_ann[lig$dataset == "mouse"] <- mouse_annies
+lig$mouse_ann <- factor(lig$mouse_ann)
+lig$lizard_ann <- NA
+lig$lizard_ann[lig$dataset == "lizard"] <- lizard_annies
+lig$lizard_ann <- factor(lig$lizard_ann)
+
+plotClusterDimRed(lig, useCluster = "mouse_ann")
+plotClusterDimRed(lig, useCluster = "lizard_ann")
+``` 
+
