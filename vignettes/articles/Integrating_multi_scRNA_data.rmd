@@ -17,7 +17,7 @@ This guide will demonstrate the usage of the Liger package in the style of the R
 
 ## Stage I: Preprocessing and Normalization
 
-### 1. Read data into memory
+### 1. Loading data
 
 For the first portion of this protocol, we will be integrating data from control and interferon-stimulated PBMCs from [Kang et al, 2017](https://www.nature.com/articles/nbt.4042). The data can be found in the Gene Expression Omnibus, [Series GSE96583](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE96583). This dataset was originally in the form of output from the 10X Cellranger pipeline, though we will directly load downsampled versions of the control and stimulated DGEs here.
 
@@ -30,7 +30,7 @@ pbmcLiger <- importVignetteData("pbmc")
 
 For creating a liger object from raw counts data or any other types of source, please refer to the [detailed tutorial for importing data](#).
 
-### 3. Preprocess
+### 2. Preprocess
 
 Before we can run iNMF on our datasets, we must run several preprocessing steps to normalize expression data to account for differences in sequencing depth and efficiency between cells, identify variably expressed genes, and scale the data so that each gene has the same variance. Note that because nonnegative matrix factorization requires positive values, we do not center the data by subtracting the mean. We also do not log transform the data.
 
@@ -41,9 +41,9 @@ pbmcLiger <- pbmcLiger %>%
     scaleNotCenter()
 ```
 
-## Stage II: Integration with Joint Matrix Factorization (3 - 10 minutes)
+## Stage II: Integration with Joint Matrix Factorization
 
-### 4. Determine the parameters 
+### 3. Determine parameters and perform iNMF integration
 
 We are now able to run integrative non-negative matrix factorization (iNMF) on the normalized and scaled datasets. The key parameter for this analysis is `k`, the number of matrix factors (analogous to the number of principal components in PCA). In general, we find that a value of `k` between 20 and 40 is suitable for most analyses and that results are robust for choice of `k`. Because LIGER is an unsupervised, exploratory approach, there is no single "right" value for `k`. In practice, users choose `k` from a combination of biological prior knowledge and other information. For this tutorial, we set `k = 20`.
 
@@ -59,7 +59,7 @@ The time consumption of this step is dependent of the size of the datasets, in t
 
 ## Stage III: Quantile Normalization and Joint Clustering
 
-### 5. Align the factors
+### 4. Align the factors
 
 We can now use the resulting factors to jointly cluster cells and perform quantile normalization by dataset, factor, and cluster to fully integrate the datasets. All of this functionality is encapsulated within the `quantileNorm()` function, which uses max factor assignment followed by refinement using a k-nearest neighbors graph.
 
@@ -67,7 +67,7 @@ We can now use the resulting factors to jointly cluster cells and perform quanti
 pbmcLiger <- quantileNorm(pbmcLiger)
 ```
 
-### 6. Clustering
+### 5. Clustering
 
 The `quantileNorm()` procedure produces joint clustering assignments and a low-dimensional representation that integrates the datasets together. These joint clusters directly from iNMF can be used for downstream analyses (see below). Alternatively, you can also run Louvain community detection, an algorithm commonly used for single-cell data, on the normalized cell factors. The Louvain algorithm excels at merging small clusters into broad cell classes and thus may be more desirable in some cases than the maximum factor assignments produced directly by iNMF.
 
@@ -79,7 +79,7 @@ pbmcLiger <- runCluster(pbmcLiger, resolution = 0.25, nNeighbors = 30)
 
 ## Stage IV: Visualization and Downstream Analysis
 
-### 7. Generate dimensionality reduced embedding
+### 6. Generate dimensionality reduced embedding
 
 To visualize the clustering of cells graphically, we can project the normalized cell factors to two or three dimensions. LIGER supports both UMAP and t-SNE for this purpose. 
 
@@ -89,7 +89,7 @@ pbmcLiger <- runUMAP(pbmcLiger, n_neighbors = 30, min_dist = 0.3)
 
 >Starting from rliger 2.0.0, dimensionality reduction matrices will be stored in cell metadata, which can be accessed with `cellMeta(pbmcLiger)`. Use argument `dimredName` to specify unique variable names for the result can enable storing multiple low-dimensional representation matrices as variables at the same time.
 
-### 8. Create plots 
+### 7. Create plots 
 
 We provide a variety of utilities for visualization and analysis of clustering, gene expression across datasets, and comparisons of cluster assignments. Here we demonstrate several commonly used examples.
 
@@ -107,6 +107,8 @@ To directly study the impact of factors on the clustering and determine what gen
 factorMarkers <- getFactorMarkers(pbmcLiger, dataset1 = "ctrl", dataset2 = "stim")
 plotGeneLoadings(pbmcLiger, markerTable = factorMarkers, useFactor = 11)
 ```
+
+### 8. Differential expression
 
 Using the `runMarkerDEG()` function, we can next identify gene markers for all clusters. We can also compare expression within each cluster across datasets, which in this case reveals markers of interferon-beta stimulation. The function returns a table of data that allows us to determine the significance of each gene’s differential expression, including log fold change, area under the curve (auc) and p-value.
 
