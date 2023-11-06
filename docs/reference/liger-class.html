@@ -76,9 +76,15 @@ convertOldLiger."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import data</li>
-    <li class="dropdown-header">Introduction to a liger object</li>
-    <li class="dropdown-header">Interoperate with Seurat</li>
+  <ul class="dropdown-menu" role="menu"><li>
+      <a href="../articles/import_data.html">Import data</a>
+    </li>
+    <li>
+      <a href="../articles/liger_object.html">Introduction to a liger object</a>
+    </li>
+    <li>
+      <a href="../articles/liger_with_seurat.html">Interoperate with Seurat</a>
+    </li>
   </ul></li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -158,7 +164,7 @@ datasets(x, check = TRUE) &lt;- value
 
 dataset(x, dataset = NULL)
 
-dataset(x, dataset, type = NULL, qc = FALSE) &lt;- value
+dataset(x, dataset, type = NULL, qc = TRUE) &lt;- value
 
 # S4 method for liger,character_OR_NULL
 dataset(x, dataset = NULL)
@@ -170,7 +176,7 @@ dataset(x, dataset = NULL)
 dataset(x, dataset = NULL)
 
 # S4 method for liger,character,missing,ANY,ligerDataset
-dataset(x, dataset, type = NULL, qc = FALSE) &lt;- value
+dataset(x, dataset, type = NULL, qc = TRUE) &lt;- value
 
 # S4 method for liger,character,ANY,ANY,matrixLike
 dataset(x, dataset, type = c("rawData", "normData", "scaleData"), qc = FALSE) &lt;- value
@@ -187,24 +193,52 @@ names(x) &lt;- value
 # S4 method for liger
 length(x)
 
-cellMeta(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
+cellMeta(
+  x,
+  columns = NULL,
+  useDataset = NULL,
+  cellIdx = NULL,
+  as.data.frame = FALSE,
+  ...
+)
 
-cellMeta(x, columns = NULL, check = FALSE) &lt;- value
+cellMeta(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE) &lt;- value
 
 # S4 method for liger,`NULL`
-cellMeta(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
+cellMeta(
+  x,
+  columns = NULL,
+  useDataset = NULL,
+  cellIdx = NULL,
+  as.data.frame = FALSE,
+  ...
+)
 
 # S4 method for liger,character
-cellMeta(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
+cellMeta(
+  x,
+  columns = NULL,
+  useDataset = NULL,
+  cellIdx = NULL,
+  as.data.frame = FALSE,
+  ...
+)
 
 # S4 method for liger,missing
-cellMeta(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
+cellMeta(
+  x,
+  columns = NULL,
+  useDataset = NULL,
+  cellIdx = NULL,
+  as.data.frame = FALSE,
+  ...
+)
 
 # S4 method for liger,missing
-cellMeta(x, columns = NULL, check = FALSE) &lt;- value
+cellMeta(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE) &lt;- value
 
 # S4 method for liger,character
-cellMeta(x, columns = NULL, check = FALSE) &lt;- value
+cellMeta(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE) &lt;- value
 
 # S4 method for liger,ANY,missing
 [[(x, i, j, ...)
@@ -281,11 +315,35 @@ commands(x, funcName = NULL, arg = NULL)
 # S4 method for liger
 commands(x, funcName = NULL, arg = NULL)
 
-# S4 method for liger,character
+# S4 method for liger
+rawData(x, dataset = NULL)
+
+# S4 method for liger,ANY,ANY,matrixLike_OR_NULL
+rawData(x, dataset = NULL, check = TRUE) &lt;- value
+
+# S4 method for liger,ANY,ANY,H5D
+rawData(x, dataset = NULL, check = TRUE) &lt;- value
+
+# S4 method for liger
+normData(x, dataset = NULL)
+
+# S4 method for liger,ANY,ANY,matrixLike_OR_NULL
+normData(x, dataset = NULL, check = TRUE) &lt;- value
+
+# S4 method for liger,ANY,ANY,H5D
+normData(x, dataset = NULL, check = TRUE) &lt;- value
+
+# S4 method for liger,ANY
 scaleData(x, dataset = NULL)
 
-# S4 method for liger,numeric
-scaleData(x, dataset = NULL)
+# S4 method for liger,ANY,ANY,matrixLike_OR_NULL
+scaleData(x, dataset = NULL, check = TRUE) &lt;- value
+
+# S4 method for liger,ANY,ANY,H5D
+scaleData(x, dataset = NULL, check = TRUE) &lt;- value
+
+# S4 method for liger,ANY,ANY,H5Group
+scaleData(x, dataset = NULL, check = TRUE) &lt;- value
 
 # S4 method for liger,character
 scaleUnsharedData(x, dataset = NULL)
@@ -609,7 +667,7 @@ all louvain cluster attempts: <code>commands(ligerObj, "louvainCluster",
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "ctrl_AAACATACCTCGCT.1" "ctrl_AAACGGCTCTTCGC.1" "ctrl_AACACTCTAAGTAG.1"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [4] "ctrl_AACCGCCTCAGGAG.1" "ctrl_AACGTTCTTCCGTC.1"</span>
 <span class="r-in"><span><span class="va">pbmcPlot</span><span class="op">[</span><span class="fu">varFeatures</span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:12 2023 ... Subsetting dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:41 2023 ... Subsetting dataset: ctrl</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> An object of class liger with 10 cells</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> datasets(1): ctrl (10 cells) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> cellMeta(4): dataset, nUMI, leiden_cluster, UMAP </span>
@@ -678,12 +736,12 @@ all louvain cluster attempts: <code>commands(ligerObj, "louvainCluster",
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## Command record/history</span></span></span>
 <span class="r-in"><span><span class="va">pbmcPlot</span> <span class="op">&lt;-</span> <span class="fu"><a href="scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:12 2023 ... Scaling dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:12 2023 ... Scaling dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:41 2023 ... Scaling dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:41 2023 ... Scaling dataset: stim</span>
 <span class="r-in"><span><span class="fu">commands</span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "scaleNotCenter.liger_eab47af92a"</span>
 <span class="r-in"><span><span class="fu">commands</span><span class="op">(</span><span class="va">pbmcPlot</span>, funcName <span class="op">=</span> <span class="st">"scaleNotCenter"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> A liger command record, performed at 11-05-2023 17:13:12 EST </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> A liger command record, performed at 11-06-2023 16:33:41 EST </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Call: scaleNotCenter.liger(pbmcPlot) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Parameters:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     useDatasets : "ctrl", "stim" </span>
@@ -698,6 +756,9 @@ all louvain cluster attempts: <code>commands(ligerObj, "louvainCluster",
 <span class="r-out co"><span class="r-pr">#&gt;</span> varFeatures(50): ISG15, ID3, RPL11, ..., HIST1H2AC </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>package ‘ggplot2’ was built under R version 4.3.1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Need help getting started? Try the R Graphics Cookbook:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> https://r-graphics.org</span>
 <span class="r-in"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">pbmcPlot</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">UMAP.1</span>, y <span class="op">=</span> <span class="va">UMAP.2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="liger-class-1.png" alt="" width="700" height="433"></span>
 </code></pre></div>

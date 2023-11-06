@@ -65,9 +65,15 @@
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import data</li>
-    <li class="dropdown-header">Introduction to a liger object</li>
-    <li class="dropdown-header">Interoperate with Seurat</li>
+  <ul class="dropdown-menu" role="menu"><li>
+      <a href="../articles/import_data.html">Import data</a>
+    </li>
+    <li>
+      <a href="../articles/liger_object.html">Introduction to a liger object</a>
+    </li>
+    <li>
+      <a href="../articles/liger_with_seurat.html">Interoperate with Seurat</a>
+    </li>
   </ul></li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -150,9 +156,13 @@ assay.</p></dd>
 <span class="r-in"><span><span class="va">ctrl</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> An object of class ligerDataset with 300 cells</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> rawData: 266 features</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> normData: 266 features</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> scaleData: 171 features</span>
 <span class="r-in"><span><span class="fu">as.ligerDataset</span><span class="op">(</span><span class="va">ctrl</span>, modal <span class="op">=</span> <span class="st">"atac"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> An object of class ligerATACDataset with 300 cells</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> rawData: 266 features</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> normData: 266 features</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> scaleData: 171 features</span>
 <span class="r-in"><span><span class="va">rawCounts</span> <span class="op">&lt;-</span> <span class="fu"><a href="ligerDataset-class.html">rawData</a></span><span class="op">(</span><span class="va">ctrl</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">rawCounts</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "dgCMatrix"</span>

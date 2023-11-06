@@ -65,9 +65,15 @@
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import data</li>
-    <li class="dropdown-header">Introduction to a liger object</li>
-    <li class="dropdown-header">Interoperate with Seurat</li>
+  <ul class="dropdown-menu" role="menu"><li>
+      <a href="../articles/import_data.html">Import data</a>
+    </li>
+    <li>
+      <a href="../articles/liger_object.html">Introduction to a liger object</a>
+    </li>
+    <li>
+      <a href="../articles/liger_with_seurat.html">Interoperate with Seurat</a>
+    </li>
   </ul></li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -158,11 +164,11 @@ plot. Default <code>30</code>.</p></dd>
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="getFactorMarkers.html">getFactorMarkers</a></span><span class="op">(</span><span class="va">pbmcPlot</span>, <span class="st">"ctrl"</span>, <span class="st">"stim"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:26 2023 ... Performing wilcoxon test between datasets "ctrl" and "stim", </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:57 2023 ... Performing wilcoxon test between datasets "ctrl" and "stim", </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>                              basing on factor loading.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span>
 <span class="r-in"><span><span class="fu">plotGeneLoadings</span><span class="op">(</span><span class="va">pbmcPlot</span>, <span class="va">result</span>, useFactor <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:26 2023 ... Plotting feature: Factor_19, on 600 cells...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:57 2023 ... Plotting feature: Factor_19, on 600 cells...</span>
 <span class="r-plt img"><img src="plotGeneLoadings-1.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>

@@ -66,9 +66,15 @@ the information in the existing factorization."><!-- mathjax --><script src="htt
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import data</li>
-    <li class="dropdown-header">Introduction to a liger object</li>
-    <li class="dropdown-header">Interoperate with Seurat</li>
+  <ul class="dropdown-menu" role="menu"><li>
+      <a href="../articles/import_data.html">Import data</a>
+    </li>
+    <li>
+      <a href="../articles/liger_object.html">Introduction to a liger object</a>
+    </li>
+    <li>
+      <a href="../articles/liger_with_seurat.html">Interoperate with Seurat</a>
+    </li>
   </ul></li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -180,23 +186,23 @@ the subset.</p>
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="normalize.html">normalize</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:20 2023 ... Normalizing dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:20 2023 ... Normalizing dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:50 2023 ... Normalizing dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:50 2023 ... Normalizing dataset: stim</span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="selectGenes.html">selectGenes</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:20 2023 ... Selecting variable features for dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:20 2023 ...... 168 features selected out of 249 shared features</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:20 2023 ... Selecting variable features for dataset: stim</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:20 2023 ...... 166 features selected out of 249 shared features</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:20 2023 ... Finally 173 shared variable features selected.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:50 2023 ... Selecting variable features for dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:50 2023 ...... 171 features selected out of 249 shared features</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:50 2023 ... Selecting variable features for dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:50 2023 ...... 249 features selected out of 249 shared features</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:50 2023 ... Finally 171 shared variable features selected.</span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:20 2023 ... Scaling dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:20 2023 ... Scaling dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:50 2023 ... Scaling dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:50 2023 ... Scaling dataset: stim</span>
 <span class="r-in"><span><span class="co"># Only running a few iterations for fast examples</span></span></span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="rliger2-deprecated.html">optimizeALS</a></span><span class="op">(</span><span class="va">pbmc</span>, k <span class="op">=</span> <span class="fl">20</span>, maxIter <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu">optimizeSubset</span><span class="op">(</span><span class="va">pbmc</span>, cellIdx <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>, <span class="fl">200</span><span class="op">)</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                       max.iters <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:20 2023 ... Subsetting dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:20 2023 ... Subsetting dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:50 2023 ... Subsetting dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:50 2023 ... Subsetting dataset: stim</span>
 <span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> Each given H must be of size Ei[i].n_cols x 20</span>
 </code></pre></div>
     </div>

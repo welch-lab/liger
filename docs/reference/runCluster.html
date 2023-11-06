@@ -72,9 +72,15 @@ online_iNMF) when the former is not available."><!-- mathjax --><script src="htt
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import data</li>
-    <li class="dropdown-header">Introduction to a liger object</li>
-    <li class="dropdown-header">Interoperate with Seurat</li>
+  <ul class="dropdown-menu" role="menu"><li>
+      <a href="../articles/import_data.html">Import data</a>
+    </li>
+    <li>
+      <a href="../articles/liger_object.html">Introduction to a liger object</a>
+    </li>
+    <li>
+      <a href="../articles/liger_with_seurat.html">Interoperate with Seurat</a>
+    </li>
   </ul></li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -212,7 +218,7 @@ with <code>object[[clusterName]]</code></p>
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">pbmcPlot</span> <span class="op">&lt;-</span> <span class="fu">runCluster</span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:35 2023 ... leiden clustering on quantile normalized cell factor loadings...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:34:06 2023 ... leiden clustering on quantile normalized cell factor loadings...</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">$</span><span class="va">leiden_cluster</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACATACCTCGCT.1 ctrl_AAACGGCTCTTCGC.1 ctrl_AACACTCTAAGTAG.1 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                     4                     3                     7 </span>
@@ -220,7 +226,7 @@ with <code>object[[clusterName]]</code></p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                     5                     2                     3 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Levels: 0 1 2 3 4 5 6 7 8 9 10</span>
 <span class="r-in"><span><span class="va">pbmcPlot</span> <span class="op">&lt;-</span> <span class="fu">runCluster</span><span class="op">(</span><span class="va">pbmcPlot</span>, method <span class="op">=</span> <span class="st">"louvain"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:35 2023 ... louvain clustering on quantile normalized cell factor loadings...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:34:06 2023 ... louvain clustering on quantile normalized cell factor loadings...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Modularity Optimizer version 1.3.0 by Ludo Waltman and Nees Jan van Eck</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Reading input file...</span>

@@ -66,9 +66,15 @@ higher level liger object"><!-- mathjax --><script src="https://cdnjs.cloudflare
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import data</li>
-    <li class="dropdown-header">Introduction to a liger object</li>
-    <li class="dropdown-header">Interoperate with Seurat</li>
+  <ul class="dropdown-menu" role="menu"><li>
+      <a href="../articles/import_data.html">Import data</a>
+    </li>
+    <li>
+      <a href="../articles/liger_object.html">Introduction to a liger object</a>
+    </li>
+    <li>
+      <a href="../articles/liger_with_seurat.html">Interoperate with Seurat</a>
+    </li>
   </ul></li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -123,47 +129,47 @@ dimnames(x) &lt;- value
 # S4 method for ligerDataset,index,index,ANY
 [(x, i, j, ..., drop = TRUE)
 
-rawData(x)
+rawData(x, dataset = NULL)
 
-rawData(x, check = TRUE) &lt;- value
-
-# S4 method for ligerDataset
-rawData(x)
-
-# S4 method for ligerDataset,ANY,matrixLike_OR_NULL
-rawData(x, check = TRUE) &lt;- value
-
-# S4 method for ligerDataset,ANY,H5D
-rawData(x, check = TRUE) &lt;- value
-
-normData(x)
-
-normData(x, check = TRUE) &lt;- value
+rawData(x, dataset = NULL, check = TRUE) &lt;- value
 
 # S4 method for ligerDataset
-normData(x)
+rawData(x, dataset = NULL)
 
-# S4 method for ligerDataset,ANY,matrixLike_OR_NULL
-normData(x, check = TRUE) &lt;- value
+# S4 method for ligerDataset,ANY,ANY,matrixLike_OR_NULL
+rawData(x, dataset = NULL, check = TRUE) &lt;- value
 
-# S4 method for ligerDataset,ANY,H5D
-normData(x, check = TRUE) &lt;- value
+# S4 method for ligerDataset,ANY,ANY,H5D
+rawData(x, dataset = NULL, check = TRUE) &lt;- value
+
+normData(x, dataset = NULL)
+
+normData(x, dataset = NULL, check = TRUE) &lt;- value
+
+# S4 method for ligerDataset
+normData(x, dataset = NULL)
+
+# S4 method for ligerDataset,ANY,ANY,matrixLike_OR_NULL
+normData(x, dataset = NULL, check = TRUE) &lt;- value
+
+# S4 method for ligerDataset,ANY,ANY,H5D
+normData(x, dataset = NULL, check = TRUE) &lt;- value
 
 scaleData(x, dataset = NULL)
 
-scaleData(x, check = TRUE) &lt;- value
+scaleData(x, dataset = NULL, check = TRUE) &lt;- value
 
 # S4 method for ligerDataset,missing
 scaleData(x, dataset = NULL)
 
-# S4 method for ligerDataset,ANY,matrixLike_OR_NULL
-scaleData(x, check = TRUE) &lt;- value
+# S4 method for ligerDataset,ANY,ANY,matrixLike_OR_NULL
+scaleData(x, dataset = NULL, check = TRUE) &lt;- value
 
-# S4 method for ligerDataset,ANY,H5D
-scaleData(x, check = TRUE) &lt;- value
+# S4 method for ligerDataset,ANY,ANY,H5D
+scaleData(x, dataset = NULL, check = TRUE) &lt;- value
 
-# S4 method for ligerDataset,ANY,H5Group
-scaleData(x, check = TRUE) &lt;- value
+# S4 method for ligerDataset,ANY,ANY,H5Group
+scaleData(x, dataset = NULL, check = TRUE) &lt;- value
 
 scaleUnsharedData(x, dataset = NULL)
 
@@ -244,12 +250,12 @@ applicable.</p></dd>
 <dd><p>Not applicable.</p></dd>
 
 
-<dt>check</dt>
-<dd><p>Whether to perform object validity check on setting new value.</p></dd>
-
-
 <dt>dataset</dt>
 <dd><p>Not applicable for <code>ligerDataset</code> methods.</p></dd>
+
+
+<dt>check</dt>
+<dd><p>Whether to perform object validity check on setting new value.</p></dd>
 
 
 <dt>slot</dt>
@@ -423,9 +429,13 @@ with taking a union of all features for the rows.</p>
 <span class="r-in"><span><span class="va">ctrl</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> An object of class ligerDataset with 300 cells</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> rawData: 266 features</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> normData: 266 features</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> scaleData: 171 features</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">ctrl</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> An object of class ligerDataset with 300 cells</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> rawData: 266 features</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> normData: 266 features</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> scaleData: 171 features</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">ctrl</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 266 300</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">ctrl</span><span class="op">)</span></span></span>
@@ -440,6 +450,8 @@ with taking a union of all features for the rows.</p>
 <span class="r-in"><span><span class="va">ctrl</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> An object of class ligerDataset with 5 cells</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> rawData: 5 features</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> normData: 5 features</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> scaleData: 5 features</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># rliger generics</span></span></span>
 <span class="r-in"><span><span class="co">## raw data</span></span></span>
@@ -452,8 +464,8 @@ with taking a union of all features for the rows.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 266 300</span>
 <span class="r-in"><span><span class="co">## normalized data</span></span></span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="normalize.html">normalize</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:13 2023 ... Normalizing dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:13 2023 ... Normalizing dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:43 2023 ... Normalizing dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:43 2023 ... Normalizing dataset: stim</span>
 <span class="r-in"><span><span class="va">ctrl</span> <span class="op">&lt;-</span> <span class="fu"><a href="liger-class.html">dataset</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"ctrl"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu">normData</span><span class="op">(</span><span class="va">ctrl</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span></span>
@@ -464,14 +476,14 @@ with taking a union of all features for the rows.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 266 300</span>
 <span class="r-in"><span><span class="co">## scaled data</span></span></span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="selectGenes.html">selectGenes</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:13 2023 ... Selecting variable features for dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:13 2023 ...... 168 features selected out of 249 shared features</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:13 2023 ... Selecting variable features for dataset: stim</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:13 2023 ...... 166 features selected out of 249 shared features</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:13 2023 ... Finally 173 shared variable features selected.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:43 2023 ... Selecting variable features for dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:43 2023 ...... 171 features selected out of 249 shared features</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:43 2023 ... Selecting variable features for dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:43 2023 ...... 249 features selected out of 249 shared features</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:43 2023 ... Finally 171 shared variable features selected.</span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:13 2023 ... Scaling dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:13 2023 ... Scaling dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:43 2023 ... Scaling dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:43 2023 ... Scaling dataset: stim</span>
 <span class="r-in"><span><span class="va">ctrl</span> <span class="op">&lt;-</span> <span class="fu"><a href="liger-class.html">dataset</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"ctrl"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu">scaleData</span><span class="op">(</span><span class="va">ctrl</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span></span>
@@ -479,21 +491,23 @@ with taking a union of all features for the rows.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"package")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Matrix"</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 173 300</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 171 300</span>
 <span class="r-in"><span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fu">scaleData</span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"ctrl"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">n</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
 <span class="r-in"><span><span class="co">## Any other matrices</span></span></span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="rliger2-deprecated.html">online_iNMF</a></span><span class="op">(</span><span class="va">pbmc</span>, k <span class="op">=</span> <span class="fl">20</span>, miniBatch_size <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`online_iNMF()` was deprecated in rliger2 1.99.0.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Please use the `method` argument of `runIntegration()` instead.</span>
 <span class="r-in"><span><span class="va">ctrl</span> <span class="op">&lt;-</span> <span class="fu"><a href="liger-class.html">dataset</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"ctrl"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">V</span> <span class="op">&lt;-</span> <span class="fu">getMatrix</span><span class="op">(</span><span class="va">ctrl</span>, <span class="st">"V"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">V</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>              Factor_1     Factor_2     Factor_3     Factor_4 Factor_5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ISG15    1.000000e-16 1.000000e-16 1.000000e-16 7.374195e-04    1e-16</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ID3      1.000000e-16 3.322680e-03 5.289525e-03 1.000000e-16    1e-16</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> RPL11    1.000000e-16 8.240158e-03 1.000000e-16 4.101785e-03    1e-16</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> MARCKSL1 1.000000e-16 1.000000e-16 1.000000e-16 1.000000e-16    1e-16</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> RPS8     5.607769e-03 1.000000e-16 1.000000e-16 7.515360e-05    1e-16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>              Factor_1     Factor_2     Factor_3     Factor_4     Factor_5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ISG15    1.000000e-16 1.000000e-16 1.000000e-16 3.119953e-01 1.000000e-16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ID3      6.954624e-02 1.000000e-16 2.300035e-02 1.000000e-16 1.000000e-16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> RPL11    1.000000e-16 1.843966e-02 1.000000e-16 4.293317e-03 1.000000e-16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> MARCKSL1 1.000000e-16 1.000000e-16 1.000000e-16 1.000000e-16 3.058003e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> RPS8     1.000000e-16 1.000000e-16 1.000000e-16 1.377630e-02 3.592040e-03</span>
 <span class="r-in"><span><span class="va">Vs</span> <span class="op">&lt;-</span> <span class="fu">getMatrix</span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"V"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">Vs</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2</span>

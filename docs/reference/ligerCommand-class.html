@@ -65,9 +65,15 @@
      
     <span class="caret"></span>
   </a>
-  <ul class="dropdown-menu" role="menu"><li class="dropdown-header">Import data</li>
-    <li class="dropdown-header">Introduction to a liger object</li>
-    <li class="dropdown-header">Interoperate with Seurat</li>
+  <ul class="dropdown-menu" role="menu"><li>
+      <a href="../articles/import_data.html">Import data</a>
+    </li>
+    <li>
+      <a href="../articles/liger_object.html">Introduction to a liger object</a>
+    </li>
+    <li>
+      <a href="../articles/liger_with_seurat.html">Interoperate with Seurat</a>
+    </li>
   </ul></li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -154,15 +160,24 @@ would still be included for this call.</p></dd>
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="normalize.html">normalize</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:13 2023 ... Normalizing dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sun Nov  5 17:13:13 2023 ... Normalizing dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:43 2023 ... Normalizing dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:43 2023 ... Normalizing dataset: stim</span>
 <span class="r-in"><span><span class="va">cmd</span> <span class="op">&lt;-</span> <span class="fu"><a href="liger-class.html">commands</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"normalize"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">cmd</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> A liger command record, performed at 11-05-2023 17:13:13 EST </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $normalize.liger_ff44c1ea9a</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> A liger command record, performed at 11-06-2023 16:15:20 EST </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Call: normalize.liger(.) </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Parameters:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     useDatasets : "ctrl", "stim" </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     verbose : TRUE </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $normalize.liger_7626c6b059</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> A liger command record, performed at 11-06-2023 16:33:43 EST </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Call: normalize.liger(pbmc) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Parameters:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     useDatasets : "ctrl", "stim" </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     verbose : TRUE </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>
     </div>
   </div>
