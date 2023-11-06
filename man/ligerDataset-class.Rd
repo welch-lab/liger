@@ -14,19 +14,19 @@
 \alias{rawData}
 \alias{rawData<-}
 \alias{rawData,ligerDataset-method}
-\alias{rawData<-,ligerDataset,ANY,matrixLike_OR_NULL-method}
-\alias{rawData<-,ligerDataset,ANY,H5D-method}
+\alias{rawData<-,ligerDataset,ANY,ANY,matrixLike_OR_NULL-method}
+\alias{rawData<-,ligerDataset,ANY,ANY,H5D-method}
 \alias{normData}
 \alias{normData<-}
 \alias{normData,ligerDataset-method}
-\alias{normData<-,ligerDataset,ANY,matrixLike_OR_NULL-method}
-\alias{normData<-,ligerDataset,ANY,H5D-method}
+\alias{normData<-,ligerDataset,ANY,ANY,matrixLike_OR_NULL-method}
+\alias{normData<-,ligerDataset,ANY,ANY,H5D-method}
 \alias{scaleData}
 \alias{scaleData<-}
 \alias{scaleData,ligerDataset,missing-method}
-\alias{scaleData<-,ligerDataset,ANY,matrixLike_OR_NULL-method}
-\alias{scaleData<-,ligerDataset,ANY,H5D-method}
-\alias{scaleData<-,ligerDataset,ANY,H5Group-method}
+\alias{scaleData<-,ligerDataset,ANY,ANY,matrixLike_OR_NULL-method}
+\alias{scaleData<-,ligerDataset,ANY,ANY,H5D-method}
+\alias{scaleData<-,ligerDataset,ANY,ANY,H5Group-method}
 \alias{scaleUnsharedData}
 \alias{scaleUnsharedData<-}
 \alias{scaleUnsharedData,ligerDataset,missing-method}
@@ -62,37 +62,37 @@
 
 \S4method{[}{ligerDataset,index,index,ANY}(x, i, j, ..., drop = TRUE)
 
-rawData(x)
+rawData(x, dataset = NULL)
 
-rawData(x, check = TRUE) <- value
+rawData(x, dataset = NULL, check = TRUE) <- value
 
-\S4method{rawData}{ligerDataset}(x)
+\S4method{rawData}{ligerDataset}(x, dataset = NULL)
 
-\S4method{rawData}{ligerDataset,ANY,matrixLike_OR_NULL}(x, check = TRUE) <- value
+\S4method{rawData}{ligerDataset,ANY,ANY,matrixLike_OR_NULL}(x, dataset = NULL, check = TRUE) <- value
 
-\S4method{rawData}{ligerDataset,ANY,H5D}(x, check = TRUE) <- value
+\S4method{rawData}{ligerDataset,ANY,ANY,H5D}(x, dataset = NULL, check = TRUE) <- value
 
-normData(x)
+normData(x, dataset = NULL)
 
-normData(x, check = TRUE) <- value
+normData(x, dataset = NULL, check = TRUE) <- value
 
-\S4method{normData}{ligerDataset}(x)
+\S4method{normData}{ligerDataset}(x, dataset = NULL)
 
-\S4method{normData}{ligerDataset,ANY,matrixLike_OR_NULL}(x, check = TRUE) <- value
+\S4method{normData}{ligerDataset,ANY,ANY,matrixLike_OR_NULL}(x, dataset = NULL, check = TRUE) <- value
 
-\S4method{normData}{ligerDataset,ANY,H5D}(x, check = TRUE) <- value
+\S4method{normData}{ligerDataset,ANY,ANY,H5D}(x, dataset = NULL, check = TRUE) <- value
 
 scaleData(x, dataset = NULL)
 
-scaleData(x, check = TRUE) <- value
+scaleData(x, dataset = NULL, check = TRUE) <- value
 
 \S4method{scaleData}{ligerDataset,missing}(x, dataset = NULL)
 
-\S4method{scaleData}{ligerDataset,ANY,matrixLike_OR_NULL}(x, check = TRUE) <- value
+\S4method{scaleData}{ligerDataset,ANY,ANY,matrixLike_OR_NULL}(x, dataset = NULL, check = TRUE) <- value
 
-\S4method{scaleData}{ligerDataset,ANY,H5D}(x, check = TRUE) <- value
+\S4method{scaleData}{ligerDataset,ANY,ANY,H5D}(x, dataset = NULL, check = TRUE) <- value
 
-\S4method{scaleData}{ligerDataset,ANY,H5Group}(x, check = TRUE) <- value
+\S4method{scaleData}{ligerDataset,ANY,ANY,H5Group}(x, dataset = NULL, check = TRUE) <- value
 
 scaleUnsharedData(x, dataset = NULL)
 
@@ -150,9 +150,9 @@ applicable.}
 
 \item{drop}{Not applicable.}
 
-\item{check}{Whether to perform object validity check on setting new value.}
-
 \item{dataset}{Not applicable for \code{ligerDataset} methods.}
+
+\item{check}{Whether to perform object validity check on setting new value.}
 
 \item{slot}{The slot name when using \code{getMatrix}.}
 
