@@ -119,11 +119,11 @@ navbar:
     - text: "Usage"
       menu:
         - text: "Import data"
-          href: #
+          href: articles/import_data.html
         - text: "Introduction to a liger object"
-          href: #
+          href: articles/liger_object.html
         - text: "Interoperate with Seurat"
-          href: #
+          href: articles/liger_with_seurat.html
     - text: "Reference"
       href: reference/index.html
     - text: "NEWS"
