@@ -63,8 +63,16 @@
 \alias{c.liger}
 \alias{commands}
 \alias{commands,liger-method}
-\alias{scaleData,liger,character-method}
-\alias{scaleData,liger,numeric-method}
+\alias{rawData,liger-method}
+\alias{rawData<-,liger,ANY,ANY,matrixLike_OR_NULL-method}
+\alias{rawData<-,liger,ANY,ANY,H5D-method}
+\alias{normData,liger-method}
+\alias{normData<-,liger,ANY,ANY,matrixLike_OR_NULL-method}
+\alias{normData<-,liger,ANY,ANY,H5D-method}
+\alias{scaleData,liger,ANY-method}
+\alias{scaleData<-,liger,ANY,ANY,matrixLike_OR_NULL-method}
+\alias{scaleData<-,liger,ANY,ANY,H5D-method}
+\alias{scaleData<-,liger,ANY,ANY,H5Group-method}
 \alias{scaleUnsharedData,liger,character-method}
 \alias{scaleUnsharedData,liger,numeric-method}
 \alias{getMatrix,liger,ANY,ANY,ANY-method}
@@ -97,7 +105,7 @@ datasets(x, check = TRUE) <- value
 
 dataset(x, dataset = NULL)
 
-dataset(x, dataset, type = NULL, qc = FALSE) <- value
+dataset(x, dataset, type = NULL, qc = TRUE) <- value
 
 \S4method{dataset}{liger,character_OR_NULL}(x, dataset = NULL)
 
@@ -105,7 +113,7 @@ dataset(x, dataset, type = NULL, qc = FALSE) <- value
 
 \S4method{dataset}{liger,numeric}(x, dataset = NULL)
 
-\S4method{dataset}{liger,character,missing,ANY,ligerDataset}(x, dataset, type = NULL, qc = FALSE) <- value
+\S4method{dataset}{liger,character,missing,ANY,ligerDataset}(x, dataset, type = NULL, qc = TRUE) <- value
 
 \S4method{dataset}{liger,character,ANY,ANY,matrixLike}(x, dataset, type = c("rawData", "normData", "scaleData"), qc = FALSE) <- value
 
@@ -117,19 +125,47 @@ dataset(x, dataset, type = NULL, qc = FALSE) <- value
 
 \S4method{length}{liger}(x)
 
-cellMeta(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
+cellMeta(
+  x,
+  columns = NULL,
+  useDataset = NULL,
+  cellIdx = NULL,
+  as.data.frame = FALSE,
+  ...
+)
 
-cellMeta(x, columns = NULL, check = FALSE) <- value
+cellMeta(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE) <- value
 
-\S4method{cellMeta}{liger,`NULL`}(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
+\S4method{cellMeta}{liger,`NULL`}(
+  x,
+  columns = NULL,
+  useDataset = NULL,
+  cellIdx = NULL,
+  as.data.frame = FALSE,
+  ...
+)
 
-\S4method{cellMeta}{liger,character}(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
+\S4method{cellMeta}{liger,character}(
+  x,
+  columns = NULL,
+  useDataset = NULL,
+  cellIdx = NULL,
+  as.data.frame = FALSE,
+  ...
+)
 
-\S4method{cellMeta}{liger,missing}(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
+\S4method{cellMeta}{liger,missing}(
+  x,
+  columns = NULL,
+  useDataset = NULL,
+  cellIdx = NULL,
+  as.data.frame = FALSE,
+  ...
+)
 
-\S4method{cellMeta}{liger,missing}(x, columns = NULL, check = FALSE) <- value
+\S4method{cellMeta}{liger,missing}(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE) <- value
 
-\S4method{cellMeta}{liger,character}(x, columns = NULL, check = FALSE) <- value
+\S4method{cellMeta}{liger,character}(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE) <- value
 
 \S4method{[[}{liger,ANY,missing}(x, i, j, ...)
 
@@ -187,9 +223,25 @@ commands(x, funcName = NULL, arg = NULL)
 
 \S4method{commands}{liger}(x, funcName = NULL, arg = NULL)
 
-\S4method{scaleData}{liger,character}(x, dataset = NULL)
+\S4method{rawData}{liger}(x, dataset = NULL)
 
-\S4method{scaleData}{liger,numeric}(x, dataset = NULL)
+\S4method{rawData}{liger,ANY,ANY,matrixLike_OR_NULL}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{rawData}{liger,ANY,ANY,H5D}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{normData}{liger}(x, dataset = NULL)
+
+\S4method{normData}{liger,ANY,ANY,matrixLike_OR_NULL}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{normData}{liger,ANY,ANY,H5D}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{scaleData}{liger,ANY}(x, dataset = NULL)
+
+\S4method{scaleData}{liger,ANY,ANY,matrixLike_OR_NULL}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{scaleData}{liger,ANY,ANY,H5D}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{scaleData}{liger,ANY,ANY,H5Group}(x, dataset = NULL, check = TRUE) <- value
 
 \S4method{scaleUnsharedData}{liger,character}(x, dataset = NULL)
 

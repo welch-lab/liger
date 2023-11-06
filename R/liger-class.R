@@ -72,6 +72,13 @@ liger <- setClass(
 # Validity ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+.checkAllDatasets <- function(x) {
+    for (ld in datasets(x)) {
+        validObject(ld)
+    }
+    return(NULL)
+}
+
 .checkLigerBarcodes <- function(x) {
     bcFromDatasets <- unlist(lapply(datasets(x), colnames), use.names = FALSE)
     if (!identical(colnames(x), bcFromDatasets)) {
@@ -136,6 +143,8 @@ liger <- setClass(
 
 .valid.liger <- function(object) {
     # message("Checking liger object validity")
+    res <- .checkAllDatasets(object)
+    if (!is.null(res)) return(res)
     res <- .checkLigerBarcodes(object)
     if (!is.null(res)) return(res)
     res <- .checkLigerVarFeature(object)
@@ -395,7 +404,7 @@ setGeneric("dataset", function(x, dataset = NULL) standardGeneric("dataset"))
 
 #' @export
 #' @rdname liger-class
-setGeneric("dataset<-", function(x, dataset, type = NULL, qc = FALSE, value) {
+setGeneric("dataset<-", function(x, dataset, type = NULL, qc = TRUE, value) {
     standardGeneric("dataset<-")
 })
 
@@ -501,7 +510,7 @@ setMethod("dataset", signature(x = "liger", dataset = "numeric"),
 setReplaceMethod("dataset", signature(x = "liger", dataset = "character",
                                       type = "missing", qc = "ANY",
                                       value = "ligerDataset"),
-                 function(x, dataset, type = NULL, qc = FALSE, value) {
+                 function(x, dataset, type = NULL, qc = TRUE, value) {
                      if (dataset %in% names(x)) {
                          dataset(x, dataset) <- NULL
                      }
@@ -525,7 +534,8 @@ setReplaceMethod("dataset", signature(x = "liger", dataset = "character",
                          x@H.norm <- rbind(x@H.norm, H.normNew)
                      }
                      methods::validObject(x)
-                     if (qc) x <- runGeneralQC(x, useDatasets = dataset)
+                     if (qc) x <- runGeneralQC(x, useDatasets = dataset,
+                                               verbose = FALSE)
                      x
                  })
 
@@ -636,7 +646,7 @@ setMethod("length", signature(x = "liger"), function(x) {
 #' utilizes both clustering information and the dataset source information.
 setGeneric(
     "cellMeta",
-    function(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
+    function(x, columns = NULL, useDataset = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
         standardGeneric("cellMeta")
     }
 )
@@ -645,7 +655,7 @@ setGeneric(
 #' @rdname liger-class
 setGeneric(
     "cellMeta<-",
-    function(x, columns = NULL, check = FALSE, value) {
+    function(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE, value) {
         standardGeneric("cellMeta<-")
     }
 )
@@ -682,7 +692,7 @@ setGeneric(
 setMethod(
     "cellMeta",
     signature(x = "liger", columns = "NULL"),
-    function(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
+    function(x, columns = NULL, useDataset = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
         NULL
     }
 )
@@ -692,7 +702,11 @@ setMethod(
 setMethod(
     "cellMeta",
     signature(x = "liger", columns = "character"),
-    function(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
+    function(x, columns = NULL, useDataset = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
+        if (is.null(cellIdx) && !is.null(useDataset)) {
+            if (!is.character(useDataset)) useDataset <- names(x)[useDataset]
+            cellIdx <- x@cellMeta$dataset %in% useDataset
+        }
         .subsetCellMeta(x, columns = columns, cellIdx = cellIdx,
                         as.data.frame = as.data.frame, ...)
     }
@@ -703,7 +717,11 @@ setMethod(
 setMethod(
     "cellMeta",
     signature(x = "liger", columns = "missing"),
-    function(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
+    function(x, columns = NULL, useDataset = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
+        if (is.null(cellIdx) && !is.null(useDataset)) {
+            if (!is.character(useDataset)) useDataset <- names(x)[useDataset]
+            cellIdx <- x@cellMeta$dataset %in% useDataset
+        }
         .subsetCellMeta(x, columns = NULL, cellIdx = cellIdx,
                         as.data.frame = as.data.frame, ...)
     }
@@ -714,7 +732,7 @@ setMethod(
 setReplaceMethod(
     "cellMeta",
     signature(x = "liger", columns = "missing"),
-    function(x, columns = NULL, check = FALSE, value) {
+    function(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE, value) {
         if (!inherits(value, "DFrame"))
             value <- S4Vectors::DataFrame(value)
         x@cellMeta <- value
@@ -728,8 +746,57 @@ setReplaceMethod(
 setReplaceMethod(
     "cellMeta",
     signature(x = "liger", columns = "character"),
-    function(x, columns = NULL, check = FALSE, value) {
-        x@cellMeta[[columns]] <- value
+    function(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE, value) {
+        if (is.null(cellIdx) && !is.null(useDataset)) {
+            if (!is.character(useDataset)) useDataset <- names(x)[useDataset]
+            cellIdx <- which(x@cellMeta$dataset %in% useDataset)
+        } else {
+            cellIdx <- .idxCheck(x, cellIdx, "cell")
+        }
+        if (is.null(dim(value)) && length(value) != length(cellIdx)) {
+            stop("Length of value does not match with cell index.")
+        }
+        if (!is.null(dim(value)) && nrow(value) != length(cellIdx)) {
+            stop("nrow of value does not match with cell index.")
+        }
+        if (length(cellIdx) == ncol(x)) {
+            x@cellMeta[[columns]] <- value
+        } else if (length(cellIdx) < ncol(x)) {
+            # Partial replacement/addition
+            if (!columns %in% names(x@cellMeta)) {
+                # Add new variable
+                if (is.null(dim(value))) {
+                    # vector/factor
+                    x@cellMeta[[columns]] <- NA
+                    x@cellMeta[[columns]][cellIdx] <- value
+                } else {
+                    # matrix like
+                    x@cellMeta[[columns]] <- matrix(NA, ncol(x), ncol(value))
+                    x@cellMeta[[columns]][cellIdx,] <- value
+                }
+            } else {
+                if (is.null(dim(value)) && is.null(x@cellMeta[[columns]])) {
+                    # both existing and new are vector/factor
+                    x@cellMeta[[columns]][cellIdx] <- value
+                } else if (!is.null(dim(value)) && !is.null(dim(x@cellMeta[[columns]]))) {
+                    # both existing and new are matrix like
+                    x@cellMeta[[columns]][cellIdx,] <- value
+                } else {
+                    # Replace with NA first and then fill
+                    if (is.null(dim(value))) {
+                        # vector/factor
+                        x@cellMeta[[columns]] <- NA
+                        x@cellMeta[[columns]][cellIdx] <- value
+                    } else {
+                        # matrix like
+                        x@cellMeta[[columns]] <- matrix(NA, ncol(x), ncol(value))
+                        x@cellMeta[[columns]][cellIdx,] <- value
+                    }
+                }
+            }
+        } else {
+            stop("`cellIdx` pointing to more cells than available")
+        }
         if (isTRUE(check)) methods::validObject(x)
         x
     }

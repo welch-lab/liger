@@ -1,0 +1,183 @@
+---
+title: "Interact with A Liger Object"
+author: "Yichen Wang"
+date: "2023-11-06"
+output:
+  html_document: 
+    toc: 3
+    toc_float:
+      collapsed: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, results = "hold")
+```
+
+## Structure
+
+Starting from rliger 2.0.0, we introduced a newly designed structure for the main data container object class. The figure below brings a overall idea about the design.
+
+![liger_object_structure](img/liger_class_structure.png)\
+
+On the left hand side of the figure, we briefly illustrate how the old structure was like. It has slots for data at each processing stage, and each slot is a named list object containing matrices. 
+
+In the new version, on the right side, we first introduce another new class, [ligerDataset](../reference/ligerDataset-class.html), to serve as a container for all matrices belonging to the same specific dataset. In this way, we have easy and safe control on data matching thanks to a number of object oriented accessor methods and validity checks. As for the [liger](../reference/liger-class.html) class, there are some main differences:
+
+- Feature (gene expression) matrices are now wrapped in ligerDataset objects, and all put in the `datasets(obj)` slot. Click here for how to [access the raw counts, normalized counts, scaled data](#access-feature-matrices).
+- Cell metadata including dataset belonging, study design conditions, quality control (QC) metrics are now stored in slot `cellMeta(obj)`. Meanwhile, we moved cluster labeling result also to this slot, in order to have multiple cluster variables existing at the same time. Additionally, by introducing `S4Vectors::DataFrame` class for the metadata, we are now storing low-dimensional representation (e.g. UMAP, t-SNE) in the cell metadata. Click here for how to [access cell metadata](#access-cell-metadata).
+- Variable features identified are now stored in `varFeatures(obj)`, with no structural change.
+- A new slot `@uns` is added for storing miscellaneous unstructured information.
+- We also added the feature to record the commands applied to the liger object and allow retrieving the records with `commands(obj)`. See more about liger command recording and retrieving.
+
+We demonstrate examples below with example dataset "[pbmc](../reference/pbmc.html)", which is a minimal subset from the study conducted in Hyun Min Kang and et. al., Nature Biotechnology, 2018. The data is a ready to use (new) liger object with only raw counts data. We quickly process it here so that we can show how to retrieve all kinds of data in sections below.
+
+```{R, message=FALSE, warning=FALSE, results="hide"}
+library(rliger2)
+data("pbmc")
+pbmc <- pbmc %>%
+    normalize() %>%
+    selectGenes() %>%
+    scaleNotCenter() %>%
+    runIntegration() %>%
+    quantileNorm() %>%
+    runCluster() %>%
+    runUMAP()
+```
+
+## Access feature matrices
+
+We have three main generics for accessing feature matrices, namingly `rawData()`, `normData()` and `scaleData()`. For scaled unshared features, used for UINMF, we also have `scaleUnsharedData()`. The logistics of the accessor to all these feature matrices are the same, so we only present the case for raw counts.
+
+- To get a list of the raw counts from all datasets:
+
+```{R}
+rawList <- rawData(pbmc)
+class(rawList)
+length(rawList)
+# Alternatively
+rawList <- getMatrix(pbmc, "rawData", returnList = TRUE)
+```
+
+- To get the raw counts from a specific dataset:
+
+```{R}
+stimRaw <- rawData(pbmc, "stim")
+class(stimRaw)
+dim(stimRaw)
+# Alternatively, get the `ligerDataset` object of the dataset first
+# and then fetch from there
+stim <- dataset(pbmc, "stim")
+stimRaw <- rawData(stim)
+# Alternatively
+stimRaw <- getMatrix(pbmc, "rawData", dataset = "stim")
+```
+
+- To replace the raw counts with a new matrix object:
+
+```{R}
+ctrlRaw <- rawData(pbmc, "ctrl")
+# Assume we do some operation on it here
+rawData(pbmc, "ctrl") <- ctrlRaw
+```
+
+In the new version, strict validity checks have been put upon modification in object content. Replacement with unmatching feature names or barcodes will be rejected. In the case where there is a need to replace the dataset with a different set of barcodes or features, we suggest recreate a new [ligerDataset](../reference/ligerDataset-class.html) object with the new raw counts (or other feature matrix), and then replace the whole dataset with it.
+
+```{R}
+ctrlRaw <- rawData(pbmc, "ctrl")
+ctrlRawSubset <- ctrlRaw[1:200, 1:200]
+## Not Run, will raise error
+# rawData(pbmc, "ctrl") <- ctrlRawSubset
+```
+
+```{R, eval=FALSE}
+ctrlNew <- createLigerDataset(rawData = ctrlRawSubset)
+dataset(pbmc, "ctrl") <- ctrlNew
+dim(pbmc)
+## [1] NA 500
+```
+
+## Access cell metadata
+
+As previously descibed at the top of this page, cell metadata including dataset origin, QC metrics, cluster labeling and dimension reduction are all stored in `cellMeta(obj)`.
+
+- To have a look at the full metadata table:
+
+```{R}
+cellMeta(pbmc)
+```
+
+- To retrieve one of the variables:
+
+```{R}
+nUMI <- cellMeta(pbmc, "nUMI")
+class(nUMI)
+length(nUMI)
+# Alternatively
+nUMI <- pbmc$nUMI
+nUMI <- pbmc[["nUMI"]]
+```
+
+- To retrieve multiple variables:
+
+```{R}
+cellMeta(pbmc, c("nUMI", "nGene"))
+```
+
+- To retrieve the matrix of a dimension reduction result
+
+```{R}
+umap <- pbmc$UMAP
+class(umap)
+dim(umap)
+# Alternatively
+umap <- cellMeta(pbmc, "UMAP")
+```
+
+- To get a variable for only a subset of cells (e.g. from a specific dataset), use the argument `cellIdx` with any valid indexing value (numerics, barcodes, logicals) that applies to all cells:
+
+```{R}
+umapCtrl <- cellMeta(pbmc, "UMAP", useDataset = "ctrl")
+class(umapCtrl)
+dim(umapCtrl)
+```
+
+- Add or replace a variable. If the new variable being added has a matching size (`length()` or `nrow()`) with the number of all cells (`ncol(pbmc)`):
+
+```{R}
+foo <- seq_len(ncol(pbmc))
+pbmc$foo <- foo
+# Alternatively
+cellMeta(pbmc, "foo") <- foo
+```
+
+If the new variable is only for a subset of cells (e.g. the original clustering derived from an individual dataset).
+
+```{R}
+ctrlBar <- seq_len(ncol(dataset(pbmc, "ctrl")))
+cellMeta(pbmc, "ctrl_bar", useDataset = "ctrl") <- ctrlBar
+```
+
+## Access factorization result
+
+We suggest using `getMatrix()` for all matrices involved in the factorization, including:
+
+- $H$, $V$ matrices produced for each dataset, involved in all iNMF variant algorithms
+- $W$ matrix shared for all datasets, involved in all iNMF variant algorithms and NMF dimension reduction
+- $H.norm$, the aligned factor loading matrix, produced downstream of iNMF integration by `quantileNorm()`
+- $A$ and $B$ matrices produced as intermediate information for each dataset during online iNMF interations 
+- $U$ matrices produced for each dataset, involved in UINMF
+
+```{R}
+HList <- getMatrix(pbmc, "H")
+lapply(HList, dim)
+```
+
+## Subsetting the data
+
+TODO
+
+## Check the records of run commands
+
+TODO
+
+
