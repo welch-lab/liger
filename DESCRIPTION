@@ -43,7 +43,7 @@ Depends:
     methods,
     stats,
     utils,
-    R (>= 2.10)
+    R (>= 3.4)
 Imports:
     circlize,
     cowplot,
@@ -97,3 +97,4 @@ Suggests:
     testthat
 Remotes:
     chris-mcginnis-ucsf/DoubletFinder
+
