@@ -302,7 +302,6 @@ plotCellScatter <- function(
             # generated label coordinate table just doesn't have.
         }
     }
-
     p <- .ggplotLigerTheme(p, ...)
 
     return(p)
@@ -589,7 +588,7 @@ plotCellViolin <- function(
 #' number of categories for the categorical coloring aesthetics. Labels will be
 #' the shown text and values will be the color code. These are passed to
 #' \code{\link[ggplot2]{scale_color_manual}}. Default \code{NULL} uses default
-#' ggplot hues and plot original labels.
+#' ggplot hues and plot original labels (levels of the factor).
 #' @param legendNRow,legendNCol Integer, when too many categories in one
 #' variable, arranges number of rows or columns. Default \code{NULL},
 #' automatically split to \code{ceiling(levels(variable)/10)} columns.
@@ -747,7 +746,8 @@ plotCellViolin <- function(
             }
             if (a %in% c("colour", "fill")) {
                 plot <- plot +
-                    .setColorLegendPalette(aesType = a,
+                    .setColorLegendPalette(plot$data[[varName]],
+                                           aesType = a,
                                            labels = colorLabels,
                                            values = colorValues)
             }
@@ -807,12 +807,16 @@ plotCellViolin <- function(
 }
 
 .setColorLegendPalette <- function(
+        fct,
         aesType = c("colour", "fill"),
         labels = NULL,
         values = NULL
 ) {
     aesType <- match.arg(aesType)
     layer <- NULL
+    lvlUse <- table(fct) > 0
+    labels <- labels[lvlUse]
+    values <- values[lvlUse]
     if (!is.null(labels) && !is.null(values)) {
         if (aesType == "colour") {
             layer <- ggplot2::scale_color_manual(values = values,
