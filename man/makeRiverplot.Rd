@@ -66,6 +66,7 @@ can also be passed in. Uses the riverplot package to construct riverplot object 
 }
 \examples{
 \dontrun{
+# Riverplot currently archived, cannot run this example
 # ligerex (liger object), factorization complete input
 # toy clusters
 cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = TRUE)

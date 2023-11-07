@@ -73,13 +73,7 @@ It also provides a log plot of gene variance vs gene expression (with a line ind
 expression across genes and cells). Selected genes are plotted in green.
 }
 \examples{
-\dontrun{
-# Given datasets Y and Z
-ligerex <- createLiger(list(y_set = Y, z_set = Z))
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 ligerex <- normalize(ligerex)
-# use default selectGenes settings (var.thresh = 0.1)
 ligerex <- selectGenes(ligerex)
-# select a smaller subset of genes
-ligerex <- selectGenes(ligerex, var.thresh = 0.3)
-}
 }

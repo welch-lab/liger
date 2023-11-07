@@ -51,8 +51,5 @@ By default, it converts all passed data into sparse matrices (dgCMatrix) to redu
 It initializes cell.data with nUMI and nGene calculated for every cell.
 }
 \examples{
-# Demonstration using matrices with randomly generated numbers
-Y <- matrix(runif(5000,0,2), 10,500)
-Z <- matrix(runif(5000,0,2), 10,500)
-ligerex <- createLiger(list(y_set = Y, z_set = Z))
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 }

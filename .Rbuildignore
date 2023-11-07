@@ -1,3 +1,4 @@
+^LICENSE$
 ^\.lintr$
 ^\.vscode
 ^.*\.Rproj$
@@ -7,6 +8,7 @@
 ^_config\.yml$
 ^appveyor\.yml$
 ^vignettes/.*html$
+^vignettes/articles
 ^vignettes/Integrating_multi_scRNA_data\.rmd$
 ^vignettes/Integrating_scRNA_and_scATAC_data\.Rmd$
 ^vignettes/Parameter_selection\.Rmd$

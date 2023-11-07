@@ -37,8 +37,14 @@ Stores original dataset identity by default in new object metadata if dataset na
 in nms. iNMF factorization is stored in dim.reduction object with key "iNMF".
 }
 \examples{
-\dontrun{
-# ligerex (liger object based on in-memory datasets ONLY), factorization complete input
-s.object <- ligerToSeurat(ligerex)
+if (requireNamespace("Seurat")) {
+  ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+  ligerex <- normalize(ligerex)
+  ligerex <- selectGenes(ligerex)
+  ligerex <- scaleNotCenter(ligerex)
+  ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
+  ligerex <- quantile_norm(ligerex)
+  ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
+  srt <- ligerToSeurat(ligerex)
 }
 }

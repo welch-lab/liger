@@ -14,3 +14,7 @@
 \description{
 show method for liger
 }
+\examples{
+ligerex <- createLiger(list(ctrl = ctrl))
+show(ligerex)
+}

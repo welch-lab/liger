@@ -7,7 +7,7 @@
 calcAlignmentPerCluster(object, rand.seed = 1, k = NULL, by.dataset = FALSE)
 }
 \arguments{
-\item{object}{\code{liger} object. Should call quantileAlignSNF before calling.}
+\item{object}{\code{liger} object. Should call quantile_norm before calling.}
 
 \item{rand.seed}{Random seed for reproducibility (default 1).}
 
@@ -23,10 +23,12 @@ Vector of alignment statistics (with names of clusters).
 Returns alignment for each cluster in analysiss (see documentation for calcAlignment).
 }
 \examples{
-\dontrun{
-# ligerex (liger object), factorization complete
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+# Specification for minimal example run time, not converging
+ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 ligerex <- quantile_norm(ligerex)
-# get alignment for each cluster
-alignment_per_cluster <- calcAlignmentPerCluster(ligerex)
-}
+agreement <- calcAlignmentPerCluster(ligerex)
 }

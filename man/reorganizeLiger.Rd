@@ -32,10 +32,8 @@ Using the same data, rearrange functional datasets using another discrete featur
 This removes most computed data slots, though cell.data and current clustering can be retained.
 }
 \examples{
-\dontrun{
-# ligerex (liger object based on in-memory objects) organized by species
-# with column designating sex in cell.data
-# rearrange by sex
-ligerex_new <- reorganizeLiger(ligerex, by.feature = "sex", new.label = "species")
-}
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+# Create a random variable of two categories
+ligerex@cell.data$foo <- factor(sample(c(1,2), 600, replace = TRUE))
+ligerexFoo <- reorganizeLiger(ligerex, "foo")
 }

@@ -22,12 +22,12 @@ Uses plotGene to plot each gene (and dataset) on a separate page. It is recommen
 function into a PDF due to the large number of plots produced.
 }
 \examples{
-\dontrun{
-# ligerex (liger object), factorization complete input
-ligerex <- runTSNE(ligerex)
-# plot expression for CD4 and FCGR3A
-# pdf("gene_plots.pdf")
-plotGenes(ligerex, c("CD4", "FCGR3A"))
-# dev.off()
-}
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+ligerex <- optimizeALS(ligerex, k = 5, max.iter = 2)
+ligerex <- quantile_norm(ligerex)
+ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
+plotGenes(ligerex, c("CD74", "NKG7"), pt.size = 1)
 }

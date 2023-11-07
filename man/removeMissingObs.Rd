@@ -27,8 +27,10 @@ removeMissingObs(
 Removes cells/genes from chosen slot with no expression in any genes or cells respectively.
 }
 \examples{
-\dontrun{
-# liger object: ligerex
-ligerex <- removeMissingObs(ligerex)
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+if (any(rowSums(ctrl) == 0) || any(rowSums(stim) == 0)) {
+    # example datasets do not have missing data, thus put in a condition
+    # Though the function will return unchanged object if no missing found
+    ligerex <- removeMissingObs(ligerex)
 }
 }

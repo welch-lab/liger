@@ -24,8 +24,7 @@ class NULL.
 }
 \examples{
 \dontrun{
-# analogy (old Analogizer object)
-# convert to latest class definition
+# Not able to generate old object from current version, thus not run
 ligerex <- convertOldLiger(analogy)
 }
 }

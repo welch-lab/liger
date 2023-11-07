@@ -23,17 +23,12 @@ subgroups or clusters than the true clusters (or classes). Purity also ranges fr
 with a score of 1 representing a pure, or accurate, clustering.
 }
 \examples{
-\dontrun{
-# ligerex (liger object), factorization complete
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+# Specification for minimal example run time, not converging
+ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 ligerex <- quantile_norm(ligerex)
-# toy clusters
-cluster1 <- sample(c('type1', 'type2', 'type3'), ncol(ligerex@raw.data[[1]]), replace = TRUE)
-names(cluster1) <- colnames(ligerex@raw.data[[1]])
-cluster2 <- sample(c('type4', 'type5', 'type6'), ncol(ligerex@raw.data[[2]]), replace = TRUE)
-names(cluster2) <- colnames(ligerex@raw.data[[2]])
-# get ARI for first clustering
-ari1 <- calcPurity(ligerex, cluster1)
-# get ARI for second clustering
-ari2 <- calcPurity(ligerex, cluster2)
-}
+agreement <- calcARI(ligerex, ligerex@clusters)
 }

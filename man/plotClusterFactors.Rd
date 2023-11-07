@@ -42,9 +42,12 @@ loadings for a factor, black low. Optionally can also include dendrograms and so
 factors and clusters.
 }
 \examples{
-\dontrun{
-# ligerex (liger object), factorization complete input
-# plot expression for CD4 and return plots
-loading.matrix <- plotClusterFactors(ligerex, return.data = TRUE)
-}
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+ligerex <- optimizeALS(ligerex, k = 5, max.iter = 2)
+ligerex <- quantile_norm(ligerex)
+ligerex <- louvainCluster(ligerex)
+plotClusterFactors(ligerex)
 }

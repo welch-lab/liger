@@ -2,6 +2,8 @@
 #' @importFrom grDevices heat.colors
 #' @importFrom methods as is
 #' @importFrom rlang .data
+#' @importFrom FNN get.knnx
+#' @importFrom stats p.adjust
 NULL
 
 # Utility functions for iiger methods. Some published, some not.
@@ -11,7 +13,7 @@ fplot = function(tsne,NMFfactor,title,cols.use=heat.colors(10),pt.size=0.7,pch.u
   data.cut=as.numeric(as.factor(cut(as.numeric(NMFfactor),breaks=length(cols.use))))
   data.col=rev(cols.use)[data.cut]
   plot(tsne[,1],tsne[,2],col=data.col,cex=pt.size,pch=pch.use,main=title)
-  
+
 }
 
 # Binds list of matrices row-wise (vertical stack)
@@ -22,7 +24,6 @@ rbindlist = function(mat_list)
 
 # helper function for calculating KL divergence from uniform distribution
 # (related to Shannon entropy) for factorization
-#' @importFrom methods is
 kl_divergence_uniform = function(object, Hs=NULL)
 {
   if (is.null(Hs)) {Hs = object@H}
@@ -31,7 +32,7 @@ kl_divergence_uniform = function(object, Hs=NULL)
   dataset_list = list()
   for (i in 1:length(Hs)) {
     scaled = scale(Hs[[i]], center=FALSE, scale=TRUE)
-    
+
     inflated = t(apply(scaled, 1, function(x) {
       replace(x, x == 0, 1e-20)
     }))
@@ -42,11 +43,11 @@ kl_divergence_uniform = function(object, Hs=NULL)
   return(dataset_list)
 }
 
-# Function takes in a list of DGEs, with gene rownames and cell colnames, 
+# Function takes in a list of DGEs, with gene rownames and cell colnames,
 # and merges them into a single DGE.
 # Also adds library.names to cell.names if expected to be overlap (common with 10X barcodes)
 MergeSparseDataAll <- function(datalist, library.names = NULL) {
-  
+
   # Use summary to convert the sparse matrices into three-column indexes where i are the
   # row numbers, j are the column numbers, and x are the nonzero entries
   col_offset <- 0
@@ -55,11 +56,11 @@ MergeSparseDataAll <- function(datalist, library.names = NULL) {
   for (i in 1:length(datalist)) {
     curr <- datalist[[i]]
     curr_s <- summary(curr)
-    
+
     # Now, alter the indexes so that the two 3-column matrices can be properly merged.
     # First, make the current and full column numbers non-overlapping.
     curr_s[, 2] <- curr_s[, 2] + col_offset
-    
+
     # Update full cell names
     if (!is.null(library.names)) {
       cellnames <- paste0(library.names[i], "_", colnames(curr))
@@ -67,13 +68,13 @@ MergeSparseDataAll <- function(datalist, library.names = NULL) {
       cellnames <- colnames(curr)
     }
     allCells <- c(allCells, cellnames)
-    
+
     # Next, change the row (gene) indexes so that they index on the union of the gene sets,
     # so that proper merging can occur.
     idx <- match(rownames(curr), allGenes)
     newgenescurr <- idx[curr_s[, 1]]
     curr_s[, 1] <- newgenescurr
-    
+
     # Now bind the altered 3-column matrices together, and convert into a single sparse matrix.
     if (!exists("full_mat")) {
       full_mat <- curr_s
@@ -120,7 +121,7 @@ sparse.var = function(x){
 sparse.transpose = function(x){
   h = summary(x)
   sparseMatrix(i = h[,2],j=h[,1],x=h[,3])
-  
+
 }
 
 # After running modularity clustering, assign singleton communities to the mode of the cluster
@@ -137,8 +138,6 @@ assign.singletons <- function(object, idents, k.use = 15, center = FALSE) {
   ))
 }
 
-#' @importFrom FNN get.knnx
-#
 assign.singletons.list <- function(object, idents, k.use = 15, center = FALSE) {
   if (!is.list(x = object) || !all(sapply(X = object, FUN = is.matrix))) {
     stop("'assign.singletons.list' expects a list of matrices")
@@ -187,20 +186,20 @@ assign.singletons.list <- function(object, idents, k.use = 15, center = FALSE) {
   return(idents)
 }
 
-# Run modularity based clustering on edge file 
-SLMCluster<-function(edge,prune.thresh=0.2,nstart=100,iter.max=10,algorithm=1,R=1, 
-                     modularity=1, ModularityJarFile="",random.seed=1, 
+# Run modularity based clustering on edge file
+SLMCluster<-function(edge,prune.thresh=0.2,nstart=100,iter.max=10,algorithm=1,R=1,
+                     modularity=1, ModularityJarFile="",random.seed=1,
                      id.number=NULL, print.mod=F) {
-  
+
   # Prepare data for modularity based clustering
   edge = edge[which(edge[,3]>prune.thresh),]
-  
+
   message("making edge file.")
   edge_file <- paste0("edge", id.number, fileext=".txt")
   # Make sure no scientific notation written to edge file
 
   # restore default settings when the current function exits
-  init_option <- options() 
+  init_option <- options()
   on.exit(options(init_option))
 
   saveScipen=options(scipen=10000)[[1]]
@@ -213,7 +212,7 @@ SLMCluster<-function(edge,prune.thresh=0.2,nstart=100,iter.max=10,algorithm=1,R=
   }
   liger.dir <- system.file(package = "rliger")
   ModularityJarFile <- paste0(liger.dir, "/java/ModularityOptimizer.jar")
-  command <- paste("java -jar", ModularityJarFile, edge_file, output_file, modularity, R, 
+  command <- paste("java -jar", ModularityJarFile, edge_file, output_file, modularity, R,
                    algorithm, nstart,
                    iter.max, random.seed, as.numeric(print.mod), sep = " ")
   message ("Starting SLM")
@@ -223,7 +222,7 @@ SLMCluster<-function(edge,prune.thresh=0.2,nstart=100,iter.max=10,algorithm=1,R=
   }
   unlink(edge_file)
   ident.use <- factor(read.table(file = output_file, header = FALSE, sep = "\t")[, 1])
-  
+
   return(ident.use)
 }
 
@@ -232,7 +231,7 @@ scaleL2norm <- function(x) {
   return(x / sqrt(sum(x^2)))
 }
 
-# get mode of identities 
+# get mode of identities
 getMode <- function(x, na.rm = FALSE) {
   if(na.rm){
     x = x[!is.na(x)]
@@ -242,8 +241,8 @@ getMode <- function(x, na.rm = FALSE) {
 }
 
 # utility function for seuratToLiger function
-# Compares colnames in reference matrix1 and adds back any missing 
-# column names to matrix.subset as rows 
+# Compares colnames in reference matrix1 and adds back any missing
+# column names to matrix.subset as rows
 # Set transpose = TRUE if rownames of matrix1 should be referenced
 addMissingCells <- function(matrix1, matrix.subset, transpose = F) {
   if (transpose) {
@@ -264,15 +263,15 @@ addMissingCells <- function(matrix1, matrix.subset, transpose = F) {
 #' Get gene expression values from list of expression matrices.
 #'
 #' @description
-#' Returns single vector of gene values across all datasets in list provided. Data can be in raw, 
-#' normalized or scaled form. If matrices are in cell x gene format, set use.cols = TRUE. 
+#' Returns single vector of gene values across all datasets in list provided. Data can be in raw,
+#' normalized or scaled form. If matrices are in cell x gene format, set use.cols = TRUE.
 #'
 #' @param list List of gene x cell (or cell x gene) matrices
 #' @param gene Gene for which to return values (if gene is not found in appropriate dimnames will
 #'   return vector of NA).
-#' @param use.cols Whether to query columns for desired gene (set to TRUE if matrices are cell x 
+#' @param use.cols Whether to query columns for desired gene (set to TRUE if matrices are cell x
 #'   gene) (default FALSE).
-#' @param methylation.indices Indices of datasets with methylation data (never log2scaled) 
+#' @param methylation.indices Indices of datasets with methylation data (never log2scaled)
 #'   (default NULL).
 #' @param log2scale Whether to log2+1 scale (with multiplicative factor) values (default FALSE).
 #' @param scale.factor Scale factor to use with log2 scaling (default 10000).
@@ -280,19 +279,14 @@ addMissingCells <- function(matrix1, matrix.subset, transpose = F) {
 #' @return Plots to console (1-2 pages per factor)
 #' @export
 #' @examples
-#' \dontrun{
-#' # liger object with factorization complete
-#' # ligerex
-#' gene_values <- getGeneValues(ligerex@raw.data, 'MALAT1')
-#' }
-
+#' NKG7 <- getGeneValues(list(ctrl = ctrl, stim = stim), "NKG7")
 getGeneValues <- function(list, gene, use.cols = FALSE, methylation.indices = NULL, log2scale = FALSE,
                           scale.factor = 10000) {
   gene_vals <- unlist(lapply(seq_along(list), function(i) {
     mtx <- unname(list)[[i]]
     if (use.cols) {
       mtx <- t(mtx)
-    } 
+    }
     if (gene %in% rownames(mtx)) {
       gene_vals_int <- mtx[gene, ]
     } else {
@@ -301,7 +295,7 @@ getGeneValues <- function(list, gene, use.cols = FALSE, methylation.indices = NU
     }
     if (log2scale & !(i %in% methylation.indices)) {
       gene_vals_int <- log2(scale.factor * gene_vals_int + 1)
-    } 
+    }
     return(gene_vals_int)
   }),
   use.names = TRUE)
@@ -331,7 +325,6 @@ refine_clusts_knn = function(H,clusts,k,eps=0.1)
 ################################## For fast Wilcoxon test ################################
 # helper function for wilcoxon tests on general variables like matrix and dgCMatrix
 # related to function runWilcoxon
-#' @importFrom stats p.adjust
 wilcoxauc <- function(X, y, groups_use=NULL, verbose=TRUE) {
   ## Check and possibly correct input values
   if (is(X, 'dgeMatrix')) X <- as.matrix(X)
@@ -347,22 +340,22 @@ wilcoxauc <- function(X, y, groups_use=NULL, verbose=TRUE) {
     y <- y[idx_use]
     X <- X[, idx_use]
   }
-  
-  
+
+
   y <- factor(y)
   idx_use <- which(!is.na(y))
   if (length(idx_use) < length(y)) {
     y <- y[idx_use]
     X <- X[, idx_use]
-    if (verbose) 
-      message('Removing NA values from labels')        
+    if (verbose)
+      message('Removing NA values from labels')
   }
-  
+
   group.size <- as.numeric(table(y))
   if (length(group.size[group.size > 0]) < 2) {
     stop('Must have at least 2 groups defined.')
   }
-  
+
   #     features_use <- which(apply(!is.na(X), 1, all))
   #     if (verbose & length(features_use) < nrow(X)) {
   #         message('Removing features with NA values')
@@ -371,27 +364,27 @@ wilcoxauc <- function(X, y, groups_use=NULL, verbose=TRUE) {
   if (is.null(row.names(X))) {
     row.names(X) <- paste0('Feature', seq_len(nrow(X)))
   }
-  
+
   ## Compute primary statistics
   group.size <- as.numeric(table(y))
   n1n2 <- group.size * (ncol(X) - group.size)
   if (is(X, 'dgCMatrix')) {
-    rank_res <- rank_matrix(Matrix::t(X))        
+    rank_res <- rank_matrix(Matrix::t(X))
   } else {
     rank_res <- rank_matrix(X)
   }
-  
-  ustat <- compute_ustat(rank_res$X_ranked, y, n1n2, group.size) 
+
+  ustat <- compute_ustat(rank_res$X_ranked, y, n1n2, group.size)
   auc <- t(ustat / n1n2)
-  pvals <- compute_pval(ustat, rank_res$ties, ncol(X), n1n2) 
+  pvals <- compute_pval(ustat, rank_res$ties, ncol(X), n1n2)
   fdr <- apply(pvals, 2, function(x) p.adjust(x, 'BH'))
-  
+
   ### Auxiliary Statistics (AvgExpr, PctIn, LFC, etc)
   group_sums <- sumGroups(X, y, 1)
   group_nnz <- nnzeroGroups(X, y, 1)
   group_pct <- sweep(group_nnz, 1, as.numeric(table(y)), "/") %>% t()
-  group_pct_out <- -group_nnz %>% 
-    sweep(2, colSums(group_nnz) , "+") %>% 
+  group_pct_out <- -group_nnz %>%
+    sweep(2, colSums(group_nnz) , "+") %>%
     sweep(1, as.numeric(length(y) - table(y)), "/") %>% t()
   group_means <- sweep(group_sums, 1, as.numeric(table(y)), "/") %>% t()
   cs <- colSums(group_sums)
@@ -399,13 +392,13 @@ wilcoxauc <- function(X, y, groups_use=NULL, verbose=TRUE) {
   lfc <- Reduce(cbind, lapply(seq_len(length(levels(y))), function(g) {
     group_means[, g] - ((cs - group_sums[g, ]) / (length(y) - gs[g]))
   }))
-  
-  res_list <- list(auc = auc, 
+
+  res_list <- list(auc = auc,
                    pval = pvals,
-                   padj = fdr, 
-                   pct_in = 100 * group_pct, 
+                   padj = fdr,
+                   pct_in = 100 * group_pct,
                    pct_out = 100 * group_pct_out,
-                   avgExpr = group_means, 
+                   avgExpr = group_means,
                    statistic = t(ustat),
                    logFC = lfc)
   return(tidy_results(res_list, row.names(X), levels(y)))
@@ -413,20 +406,20 @@ wilcoxauc <- function(X, y, groups_use=NULL, verbose=TRUE) {
 
 
 tidy_results <- function(wide_res, features, groups) {
-  res <- Reduce(cbind, lapply(wide_res, as.numeric)) %>% data.frame() 
+  res <- Reduce(cbind, lapply(wide_res, as.numeric)) %>% data.frame()
   colnames(res) <- names(wide_res)
   res$feature <- rep(features, times = length(groups))
   res$group <- rep(groups, each = length(features))
   res %>% dplyr::select(
-    .data$feature, 
-    .data$group, 
-    .data$avgExpr, 
-    .data$logFC, 
-    .data$statistic, 
-    .data$auc, 
-    .data$pval, 
-    .data$padj, 
-    .data$pct_in, 
+    .data$feature,
+    .data$group,
+    .data$avgExpr,
+    .data$logFC,
+    .data$statistic,
+    .data$auc,
+    .data$pval,
+    .data$padj,
+    .data$pct_in,
     .data$pct_out
   )
 }
@@ -434,12 +427,12 @@ tidy_results <- function(wide_res, features, groups) {
 
 compute_ustat <- function(Xr, cols, n1n2, group.size) {
   grs <- sumGroups(Xr, cols)
-  
+
   if (is(Xr, 'dgCMatrix')) {
     gnz <- (group.size - nnzeroGroups(Xr, cols))
     zero.ranks <- (nrow(Xr) - diff(Xr@p) + 1) / 2
     ustat <- t((t(gnz) * zero.ranks)) + grs - group.size *
-      (group.size + 1 ) / 2        
+      (group.size + 1 ) / 2
   } else {
     ustat <- grs - group.size * (group.size + 1 ) / 2
   }
@@ -457,71 +450,66 @@ compute_pval <- function(ustat, ties, N, n1n2) {
   }) %>% unlist
   usigma <- sqrt(matrix(n1n2, ncol = 1) %*% matrix(rhs, nrow = 1))
   z <- t(z / usigma)
-  
+
   pvals <- matrix(2 * pnorm(-abs(as.numeric(z))), ncol = ncol(z))
   return(pvals)
 }
 
 
 #' rank_matrix
-#' 
+#'
 #' Utility function to rank columns of matrix
-#' 
-#' @param X feature by observation matrix. 
-#' 
+#'
+#' @param X feature by observation matrix.
+#'
 #' @return List with 2 items
-
-
+#' @noRd
 rank_matrix <- function(X) {
   UseMethod('rank_matrix')
 }
 
-##' @rdname rank_matrix
 rank_matrix.dgCMatrix <- function(X) {
   Xr <- Matrix(X, sparse = TRUE)
   ties <- cpp_rank_matrix_dgc(Xr@x, Xr@p, nrow(Xr), ncol(Xr))
   return(list(X_ranked = Xr, ties = ties))
 }
 
-##' @rdname rank_matrix
 rank_matrix.matrix <- function(X) {
   cpp_rank_matrix_dense(X)
 }
 
 #' sumGroups
-#' 
+#'
 #' Utility function to sum over group labels
-#' 
+#'
 #' @param X matrix
 #' @param y group labels
 #' @param MARGIN whether observations are rows (=2) or columns (=1)
-#' 
+#'
 #' @return Matrix of groups by features
-
+#' @noRd
 sumGroups <- function(X, y, MARGIN=2) {
   if (MARGIN == 2 & nrow(X) != length(y)) {
     stop('wrong dims')
   } else if (MARGIN == 1 & ncol(X) != length(y)) {
-    stop('wrong dims') 
+    stop('wrong dims')
   }
   UseMethod('sumGroups')
 }
 
-##' @rdname sumGroups
 sumGroups.dgCMatrix <- function(X, y, MARGIN=2) {
   if (MARGIN == 1) {
     cpp_sumGroups_dgc_T(X@x, X@p, X@i, ncol(X), nrow(X), as.integer(y) - 1,
-                        length(unique(y)))        
+                        length(unique(y)))
   } else {
     cpp_sumGroups_dgc(X@x, X@p, X@i, ncol(X), as.integer(y) - 1,
                       length(unique(y)))
   }
 }
 
-##' @rdname sumGroups
 sumGroups.matrix <- function(X, y, MARGIN=2) {
   if (MARGIN == 1) {
-    cpp_sumGroups_dense_T(X, as.integer(y) - 1, length(unique(y)))        
+    cpp_sumGroups_dense_T(X, as.integer(y) - 1, length(unique(y)))
   } else {
     cpp_sumGroups_dense(X, as.integer(y) - 1, length(unique(y)))
   }
@@ -530,39 +518,37 @@ sumGroups.matrix <- function(X, y, MARGIN=2) {
 
 
 #' nnzeroGroups
-#' 
+#'
 #' Utility function to compute number of zeros-per-feature within group
-#' 
+#'
 #' @param X matrix
 #' @param y group labels
 #' @param MARGIN whether observations are rows (=2) or columns (=1)
-#' 
+#'
 #' @return Matrix of groups by features
-
+#' @noRd
 nnzeroGroups <- function(X, y, MARGIN=2) {
   if (MARGIN == 2 & nrow(X) != length(y)) {
     stop('wrong dims')
   } else if (MARGIN == 1 & ncol(X) != length(y)) {
-    stop('wrong dims')        
+    stop('wrong dims')
   }
   UseMethod('nnzeroGroups')
 }
 
-##' @rdname nnzeroGroups
 nnzeroGroups.dgCMatrix <- function(X, y, MARGIN=2) {
   if (MARGIN == 1) {
     cpp_nnzeroGroups_dgc_T(X@p, X@i, ncol(X), nrow(X), as.integer(y) - 1,
-                           length(unique(y)))        
+                           length(unique(y)))
   } else {
     cpp_nnzeroGroups_dgc(X@p, X@i, ncol(X), as.integer(y) - 1,
                          length(unique(y)))
   }
 }
 
-##' @rdname nnzeroGroups
 nnzeroGroups.matrix <- function(X, y, MARGIN=2) {
-  if (MARGIN == 1) {        
-    cpp_nnzeroGroups_dense_T(X, as.integer(y) - 1, length(unique(y)))        
+  if (MARGIN == 1) {
+    cpp_nnzeroGroups_dense_T(X, as.integer(y) - 1, length(unique(y)))
   } else {
     cpp_nnzeroGroups_dense(X, as.integer(y) - 1, length(unique(y)))
   }
@@ -651,7 +637,6 @@ nmf_hals <- function(A, k, max_iters = 500, thresh = 1e-4, reps = 20, W0 = NULL,
 # commit d2cf403 on Feb 8, 2019
 #
 #' @importFrom utils file_test
-#
 fftRtsne <- function(X,
                      dims = 2,
                      perplexity = 30,

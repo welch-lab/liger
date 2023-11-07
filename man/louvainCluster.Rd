@@ -52,9 +52,11 @@ for community detection, which is widely used in single-cell analysis and excels
 small clusters into broad cell classes.
 }
 \examples{
-\dontrun{
-# ligerex (liger object), factorization complete
-ligerex <- louvainCluster(ligerex, resulotion = 0.3)
-}
-
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
+ligerex <- quantile_norm(ligerex)
+ligerex <- louvainCluster(ligerex, resolution = 0.3)
 }

@@ -29,7 +29,7 @@ Author: Joshua Welch [aut, ctb],
 Maintainer: Yichen Wang <wayichen@umich.edu>
 BugReports: https://github.com/welch-lab/liger/issues
 URL: https://github.com/welch-lab/liger
-License: GPL-3 | file LICENSE
+License: GPL-3
 Imports: Rcpp (>= 0.12.10),
      plyr,
      FNN,
@@ -44,22 +44,23 @@ Imports: Rcpp (>= 0.12.10),
      parallel,
      doParallel,
      mclust,
-     stats,
      psych,
      RANN,
      uwot,
      rlang,
-     utils,
      hdf5r,
-     scattermore (>= 0.7)
+     scattermore (>= 0.7),
+     patchwork,
+     cowplot
 biocViews:
 LazyData: true
 LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress
 Depends:
-    cowplot,
+    R (>= 3.4),
     Matrix,
     methods,
-    patchwork
+    stats,
+    utils
 RoxygenNote: 7.2.3
 Encoding: UTF-8
 Suggests:

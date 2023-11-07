@@ -32,10 +32,11 @@ calculate the norm of the sum of each factor's shared loadings (W) and dataset-s
 description.
 }
 \examples{
-\dontrun{
-# ligerex (liger object), factorization complete
-# generate H.norm by quantile normalizig factor loadings
-ligerex <- quantile_norm(ligerex)
-dataset_spec <- calcDatasetSpecificity(ligerex, do.plot = F)
-}
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+# Specification for minimal example run time, not converging
+ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
+calcDatasetSpecificity(ligerex)
 }

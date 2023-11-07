@@ -49,14 +49,12 @@ expected to be most similar to iNMF. Although agreement can theoretically approa
 it is usually no higher than 0.2-0.3 (particularly for non-deterministic approaches like NMF).
 }
 \examples{
-\dontrun{
-# ligerex (liger object based on in-memory datasets), factorization complete
-# generate H.norm by quantile normalizig factor loadings
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+# Specification for minimal example run time, not converging
+ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 ligerex <- quantile_norm(ligerex)
-agreement <- calcAgreement(ligerex, dr.method = "NMF")
-# ligerex (liger object based on datasets in HDF5 format), factorization complete
-ligerex <- quantile_norm(ligerex)
-ligerex <- readSubset(ligerex, slot.use = "scale.data", max.cells = 5000)
-agreement <- calcAgreement(ligerex, dr.method = "NMF")
-}
+agreement <- calcAgreement(ligerex)
 }

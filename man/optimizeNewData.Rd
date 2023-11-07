@@ -45,16 +45,28 @@ Uses an efficient strategy for updating that takes advantage of the information 
 factorization. Assumes that selected genes (var.genes) are represented in the new datasets.
 }
 \examples{
-\dontrun{
-# Given preprocessed liger object: ligerex (contains two datasets Y and Z)
-# get factorization using three restarts and 20 factors
-ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 3)
-# acquire new data (Y_new, Z_new) from the same cell type, let's add it to existing datasets
-new_data <- list(Y_set = Y_new, Z_set = Z_new)
-ligerex2 <- optimizeNewData(ligerex, new.data = new_data, which.datasets = list('y_set', 'z_set'))
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+\donttest{
+# Assume we are performing the factorization
+# Specification for minimal example test time, not converging
+ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
+# Suppose we have new data, namingly Y_new and Z_new from the same cell type.
+# Add it to existing datasets.
+new_data <- list(Y_set = ctrl, Z_set = stim)
+# 2 iters do not lead to converge, it's for minimal test time
+ligerex2 <- optimizeNewData(ligerex, new.data = new_data,
+                            which.datasets = list('ctrl', 'stim'),
+                            max.iters = 1)
 # acquire new data from different cell type (X), we'll just add another dataset
-# it's probably most similar to y_set
-ligerex <- optimizeNewData(ligerex, new.data = list(x_set = X), which.datasets = list('y_set'),
-                           add.to.existing = FALSE)
+# it's probably most similar to ctrl
+X <- ctrl
+# 2 iters do not lead to converge, it's for minimal test time
+ligerex3 <- optimizeNewData(ligerex, new.data = list(x_set = X),
+                            which.datasets = list('ctrl'),
+                            add.to.existing = FALSE,
+                            max.iters = 1)
 }
 }

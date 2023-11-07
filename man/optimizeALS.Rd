@@ -94,10 +94,10 @@ W is held consistent among all datasets, as it represents the shared components 
 across datasets. The V matrices represent the dataset-specific components of the metagenes.
 }
 \examples{
-\dontrun{
-# Requires preprocessed liger object (only for objected not based on HDF5 files)
-# Get factorization using 20 factors and mini-batch of 5000 cells
-# (default setting, can be adjusted for ideal results)
-ligerex <- optimizeALS(ligerex, k = 20, lambda = 5, nrep = 1)
-}
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+# Minimum specification for fast example pass
+ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 }

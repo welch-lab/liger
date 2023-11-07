@@ -36,14 +36,13 @@ It is recommended to call this function into a PDF due to the large number of
 plots produced.
 }
 \examples{
-\dontrun{
-# ligerex (liger object), factorization complete
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+ligerex <- optimizeALS(ligerex, k = 5, max.iter = 2)
 ligerex <- quantile_norm(ligerex)
-# get tsne.coords for normalized data
-ligerex <- runTSNE(ligerex)
-# factor plots into pdf file
-# pdf("plot_factors.pdf")
 plotFactors(ligerex)
-# dev.off()
-}
+ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
+plotFactors(ligerex, plot.tsne = TRUE)
 }

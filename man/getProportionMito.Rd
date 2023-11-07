@@ -4,12 +4,15 @@
 \alias{getProportionMito}
 \title{Calculate proportion mitochondrial contribution}
 \usage{
-getProportionMito(object, use.norm = FALSE)
+getProportionMito(object, use.norm = FALSE, mito.pattern = "^mt-")
 }
 \arguments{
 \item{object}{\code{liger} object.}
 
 \item{use.norm}{Whether to use cell normalized data in calculating contribution (default FALSE).}
+
+\item{mito.pattern}{Regex pattern for identifying mitochondrial genes. Default "^mt-" typically goes for mouse.
+May use "^MT-" for human.}
 }
 \value{
 Named vector containing proportion of mitochondrial contribution for each cell.
@@ -18,8 +21,7 @@ Named vector containing proportion of mitochondrial contribution for each cell.
 Calculates proportion of mitochondrial contribution based on raw or normalized data.
 }
 \examples{
-\dontrun{
-# ligerex (liger object), factorization complete
-ligerex@cell.data[["percent_mito"]] <- getProportionMito(ligerex)
-}
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+# Expect a warning because the test data does not contain mito genes
+ligerex@cell.data$mito <- getProportionMito(ligerex, mito.pattern = "^MT-")
 }

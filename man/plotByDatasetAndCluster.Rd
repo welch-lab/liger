@@ -68,13 +68,13 @@ single color for second plot. It is also possible to pass in another clustering 
 names match those of cells).
 }
 \examples{
-\dontrun{
-# ligerex (liger object), factorization complete
-# get tsne.coords for normalized data
-ligerex <- runTSNE(ligerex)
-# plot to console
-plotByDatasetAndCluster(ligerex)
-# return list of plots
-plots <- plotByDatasetAndCluster(ligerex, return.plots = TRUE)
-}
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+ligerex <- optimizeALS(ligerex, k = 5, max.iter = 2)
+ligerex <- quantile_norm(ligerex)
+ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
+ligerex <- louvainCluster(ligerex)
+plotByDatasetAndCluster(ligerex, pt.size = 1)
 }
