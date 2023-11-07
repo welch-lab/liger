@@ -2795,11 +2795,13 @@ optimizeNewLambda <- function(object, new.lambda, thresh = 1e-4, max.iters = 100
 #' @importFrom ggplot2 ggplot aes geom_point geom_line guides guide_legend labs theme theme_classic
 #' @export
 #' @examples
+#' \donttest{
 #' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
 #' suggestLambda(ligerex, k = 20, lambda.test = c(5, 10), max.iters = 1)
+#' }
 suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.cores = 1, thresh = 1e-4,
                           max.iters = 100, knn_k = 20, k2 = 500, ref_dataset = NULL, resolution = 1,
                           gen.new = FALSE, nrep = 1, return.data = FALSE, return.raw = FALSE, verbose = TRUE) {
@@ -2932,11 +2934,13 @@ suggestLambda <- function(object, k, lambda.test = NULL, rand.seed = 1, num.core
 #'
 #' @export
 #' @examples
+#' \donttest{
 #' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
 #' suggestK(ligerex, k.test = c(5,6), max.iters = 1)
+#' }
 suggestK <- function(object, k.test = seq(5, 50, 5), lambda = 5, thresh = 1e-4, max.iters = 100,
                      num.cores = 1, rand.seed = 1, gen.new = FALSE, nrep = 1, plot.log2 = TRUE,
                      return.data = FALSE, return.raw = FALSE, verbose = TRUE) {
@@ -3858,6 +3862,7 @@ makeInteractTrack <- function(corr.mat, genes.list, output_path, path_to_coords)
 #'
 #' @export
 #' @examples
+#' \donttest{
 #' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
@@ -3865,6 +3870,7 @@ makeInteractTrack <- function(corr.mat, genes.list, output_path, path_to_coords)
 #' # Specification for minimal example run time, not converging
 #' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 #' result <- runGSEA(ligerex)
+#' }
 runGSEA <- function(object, gene_sets = c(), mat_w = TRUE, mat_v = 0, custom_gene_sets = c()) {
   if (!requireNamespace("org.Hs.eg.db", quietly = TRUE)) {
     stop("Package \"org.Hs.eg.db\" needed for this function to work. Please install it by command:\n",
@@ -4052,6 +4058,7 @@ runTSNE <- function(object, use.raw = FALSE, dims.use = 1:ncol(object@H.norm), u
 #'
 #' @export
 #' @examples
+#' \donttest{
 #' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
@@ -4060,6 +4067,7 @@ runTSNE <- function(object, use.raw = FALSE, dims.use = 1:ncol(object@H.norm), u
 #' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 #' ligerex <- quantile_norm(ligerex)
 #' ligerex <- runUMAP(ligerex)
+#' }
 runUMAP <- function(object, use.raw = FALSE, dims.use = 1:ncol(object@H.norm), k = 2,
                     distance = "euclidean", n_neighbors = 10, min_dist = 0.1, rand.seed = 42) {
   set.seed(rand.seed)
@@ -4848,6 +4856,7 @@ plotFeature <- function(object, feature, by.dataset = TRUE, discrete = NULL, tit
 #'
 #' @export
 #' @examples
+#' \donttest{
 #' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
@@ -4857,6 +4866,7 @@ plotFeature <- function(object, feature, by.dataset = TRUE, discrete = NULL, tit
 #' plotFactors(ligerex)
 #' ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
 #' plotFactors(ligerex, plot.tsne = TRUE)
+#' }
 plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsne = FALSE, verbose = TRUE) {
   k <- ncol(object@H.norm)
   if (verbose) {
@@ -4942,6 +4952,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #'
 #' @export
 #' @examples
+#' \donttest{
 #' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
@@ -4950,6 +4961,7 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' ligerex <- quantile_norm(ligerex)
 #' ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
 #' plotWordClouds(ligerex, do.spec.plot = FALSE)
+#' }
 plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1,
                            max.size = 4, factor.share.thresh = 10, log.fc.thresh = 1, pval.thresh = 0.05,
                            do.spec.plot = TRUE, return.plots = FALSE, verbose = TRUE) {
@@ -5096,6 +5108,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #'
 #' @export
 #' @examples
+#' \donttest{
 #' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
@@ -5104,6 +5117,7 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' ligerex <- quantile_norm(ligerex)
 #' ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
 #' plotGeneLoadings(ligerex, "stim", "ctrl", do.spec.plot = FALSE)
+#' }
 plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes.show = 12,
                              num.genes = 30, mark.top.genes = TRUE, factor.share.thresh = 10,
                              log.fc.thresh = 1, umi.thresh = 30, frac.thresh = 0,
@@ -5711,6 +5725,7 @@ plotGene <- function(object, gene, use.raw = FALSE, use.scaled = FALSE, scale.by
 #'
 #' @export
 #' @examples
+#' \donttest{
 #' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
@@ -5719,6 +5734,7 @@ plotGene <- function(object, gene, use.raw = FALSE, use.scaled = FALSE, scale.by
 #' ligerex <- quantile_norm(ligerex)
 #' ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
 #' plotGenes(ligerex, c("CD74", "NKG7"), pt.size = 1)
+#' }
 plotGenes <- function(object, genes, ...) {
   for (i in 1:length(genes)) {
     print(genes[i])
@@ -6241,17 +6257,20 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #'
 #' @export
 #' @examples
-#' if (requireNamespace("Seurat")) {
-#'   ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
-#'   ligerex <- normalize(ligerex)
-#'   ligerex <- selectGenes(ligerex)
-#'   ligerex <- scaleNotCenter(ligerex)
-#'   ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
-#'   ligerex <- quantile_norm(ligerex)
-#'   ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
-#'   srt <- ligerToSeurat(ligerex)
+#' \donttest{
+#' library(Seurat)
+#' print(packageVersion("Seurat"))
+#' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+#' ligerex <- normalize(ligerex)
+#' ligerex <- selectGenes(ligerex)
+#' ligerex <- scaleNotCenter(ligerex)
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
+#' ligerex <- quantile_norm(ligerex)
+#' ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
+#' print(packageVersion("Seurat"))
+#' srt <- ligerToSeurat(ligerex, renormalize = FALSE)
 #' }
-ligerToSeurat <- function(object, nms = names(object@H), renormalize = TRUE, use.liger.genes = TRUE,
+ligerToSeurat <- function(object, nms = names(object@raw.data), renormalize = TRUE, use.liger.genes = TRUE,
                           by.dataset = FALSE) {
   if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" needed for this function to work. Please install it.",

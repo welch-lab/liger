@@ -6,8 +6,8 @@
 
 LIGER (installed as `rliger` ) is a package for integrating and analyzing multiple single-cell datasets, developed by the Macosko lab and maintained/extended by the Welch lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors. 
 
-Check out our [Cell paper](https://doi.org/10.1016/j.cell.2019.05.006) for a more complete description of the methods and analyses. To access data used in our SN and BNST analyses, visit our [study](https://portals.broadinstitute.org/single_cell/study/SCP466) on the
-Single Cell Portal. 
+Check out our [Cell paper](https://doi.org/10.1016/j.cell.2019.05.006) for a more complete description of the methods and analyses. To access data used in our SN and BNST analyses, visit our study "SCP466" on the
+[Single Cell Portal](https://singlecell.broadinstitute.org/single_cell). 
 
 LIGER can be used to compare and contrast experimental datasets in a variety of contexts, for instance:
 

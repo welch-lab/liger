@@ -53,6 +53,7 @@ Note that this method requires that the package uwot is installed. It does not d
 on reticulate or python umap-learn.
 }
 \examples{
+\donttest{
 ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 ligerex <- normalize(ligerex)
 ligerex <- selectGenes(ligerex)
@@ -61,4 +62,5 @@ ligerex <- scaleNotCenter(ligerex)
 ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 ligerex <- quantile_norm(ligerex)
 ligerex <- runUMAP(ligerex)
+}
 }

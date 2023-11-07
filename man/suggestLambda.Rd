@@ -73,9 +73,11 @@ likely also correspond to slower decrease in agreement. Depending on number of c
 this process can take 10-20 minutes.
 }
 \examples{
+\donttest{
 ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 ligerex <- normalize(ligerex)
 ligerex <- selectGenes(ligerex)
 ligerex <- scaleNotCenter(ligerex)
 suggestLambda(ligerex, k = 20, lambda.test = c(5, 10), max.iters = 1)
+}
 }

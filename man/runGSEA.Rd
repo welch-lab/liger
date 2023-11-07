@@ -33,6 +33,7 @@ A list of matrices with GSEA analysis for each factor
 Identify the biological pathways (gene sets from Reactome) that each metagene (factor) might belongs to.
 }
 \examples{
+\donttest{
 ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 ligerex <- normalize(ligerex)
 ligerex <- selectGenes(ligerex)
@@ -40,4 +41,5 @@ ligerex <- scaleNotCenter(ligerex)
 # Specification for minimal example run time, not converging
 ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 result <- runGSEA(ligerex)
+}
 }

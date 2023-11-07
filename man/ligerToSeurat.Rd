@@ -6,7 +6,7 @@
 \usage{
 ligerToSeurat(
   object,
-  nms = names(object@H),
+  nms = names(object@raw.data),
   renormalize = TRUE,
   use.liger.genes = TRUE,
   by.dataset = FALSE
@@ -37,14 +37,17 @@ Stores original dataset identity by default in new object metadata if dataset na
 in nms. iNMF factorization is stored in dim.reduction object with key "iNMF".
 }
 \examples{
-if (requireNamespace("Seurat")) {
-  ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
-  ligerex <- normalize(ligerex)
-  ligerex <- selectGenes(ligerex)
-  ligerex <- scaleNotCenter(ligerex)
-  ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
-  ligerex <- quantile_norm(ligerex)
-  ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
-  srt <- ligerToSeurat(ligerex)
+\donttest{
+library(Seurat)
+print(packageVersion("Seurat"))
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
+ligerex <- quantile_norm(ligerex)
+ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
+print(packageVersion("Seurat"))
+srt <- ligerToSeurat(ligerex, renormalize = FALSE)
 }
 }
