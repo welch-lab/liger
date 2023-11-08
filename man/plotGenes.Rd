@@ -27,9 +27,9 @@ ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 ligerex <- normalize(ligerex)
 ligerex <- selectGenes(ligerex)
 ligerex <- scaleNotCenter(ligerex)
-ligerex <- optimizeALS(ligerex, k = 5, max.iter = 2)
+ligerex <- optimizeALS(ligerex, k = 5, max.iter = 1)
 ligerex <- quantile_norm(ligerex)
-ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
+ligerex <- runTSNE(ligerex)
 plotGenes(ligerex, c("CD74", "NKG7"), pt.size = 1)
 }
 }

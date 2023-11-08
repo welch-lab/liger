@@ -61,6 +61,8 @@ ligerex <- scaleNotCenter(ligerex)
 # Specification for minimal example run time, not converging
 ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 ligerex <- quantile_norm(ligerex)
-ligerex <- runUMAP(ligerex)
+if (packageVersion("Matrix") <= package_version("1.6.1.1")) {
+  ligerex <- runUMAP(ligerex)
+}
 }
 }

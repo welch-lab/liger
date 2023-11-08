@@ -76,10 +76,10 @@ identities from the original Seurat objects. Seurat V2 and V3 supported (though 
 should share the same major version).
 }
 \examples{
-if (requireNamespace("Seurat")) {
+if (packageVersion("Matrix") <= package_version("1.6.1.1")) {
   ctrl.srt <- Seurat::CreateSeuratObject(ctrl, project = "ctrl")
   stim.srt <- Seurat::CreateSeuratObject(stim, project = "stim")
   ligerex <- seuratToLiger(list(ctrl = ctrl.srt, stim = stim.srt),
-                           use.seurat.genes = FALSE) # because no var.gene now
+                           use.seurat.genes = FALSE)
 }
 }

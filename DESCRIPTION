@@ -1,6 +1,6 @@
 Package: rliger
 Version: 1.0.1
-Date: 2023-11-02
+Date: 2023-11-08
 Type: Package
 Title: Linked Inference of Genomic Experimental Relationships
 Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors. See Welch J, Kozareva V, et al (2019) <doi:10.1016/j.cell.2019.05.006>, and Liu J, Gao C, Sodicoff J, et al (2020) <doi:10.1038/s41596-020-0391-8> for more details.
@@ -65,6 +65,7 @@ RoxygenNote: 7.2.3
 Encoding: UTF-8
 Suggests:
     Seurat,
+    SeuratObject,
     knitr,
     reticulate,
     rmarkdown,

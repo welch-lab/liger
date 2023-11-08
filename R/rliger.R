@@ -1,6 +1,8 @@
 #' @import Matrix
 #' @importFrom grDevices dev.off pdf
 #' @import hdf5r
+#' @importFrom methods new
+#' @importFrom utils packageVersion
 #' @importFrom Rcpp evalCpp
 NULL
 
@@ -4066,7 +4068,9 @@ runTSNE <- function(object, use.raw = FALSE, dims.use = 1:ncol(object@H.norm), u
 #' # Specification for minimal example run time, not converging
 #' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 #' ligerex <- quantile_norm(ligerex)
-#' ligerex <- runUMAP(ligerex)
+#' if (packageVersion("Matrix") <= package_version("1.6.1.1")) {
+#'   ligerex <- runUMAP(ligerex)
+#' }
 #' }
 runUMAP <- function(object, use.raw = FALSE, dims.use = 1:ncol(object@H.norm), k = 2,
                     distance = "euclidean", n_neighbors = 10, min_dist = 0.1, rand.seed = 42) {
@@ -4595,9 +4599,9 @@ getProportionMito <- function(object, use.norm = FALSE, mito.pattern = "^mt-") {
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
-#' ligerex <- optimizeALS(ligerex, k = 5, max.iter = 2)
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iter = 1)
 #' ligerex <- quantile_norm(ligerex)
-#' ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
+#' ligerex <- runTSNE(ligerex)
 #' ligerex <- louvainCluster(ligerex)
 #' plotByDatasetAndCluster(ligerex, pt.size = 1)
 plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.size = 0.3,
@@ -4737,9 +4741,9 @@ plotByDatasetAndCluster <- function(object, clusters = NULL, title = NULL, pt.si
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
-#' ligerex <- optimizeALS(ligerex, k = 5, max.iter = 2)
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iter = 1)
 #' ligerex <- quantile_norm(ligerex)
-#' ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
+#' ligerex <- runTSNE(ligerex)
 #' plotFeature(ligerex, "nUMI", pt.size = 1)
 plotFeature <- function(object, feature, by.dataset = TRUE, discrete = NULL, title = NULL,
                         pt.size = 0.3, text.size = 3, do.shuffle = TRUE, rand.seed = 1, do.labels = FALSE,
@@ -4861,10 +4865,10 @@ plotFeature <- function(object, feature, by.dataset = TRUE, discrete = NULL, tit
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
-#' ligerex <- optimizeALS(ligerex, k = 5, max.iter = 2)
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iter = 1)
 #' ligerex <- quantile_norm(ligerex)
 #' plotFactors(ligerex)
-#' ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
+#' ligerex <- runTSNE(ligerex)
 #' plotFactors(ligerex, plot.tsne = TRUE)
 #' }
 plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsne = FALSE, verbose = TRUE) {
@@ -4957,9 +4961,9 @@ plotFactors <- function(object, num.genes = 10, cells.highlight = NULL, plot.tsn
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
-#' ligerex <- optimizeALS(ligerex, k = 5, max.iter = 2)
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iter = 1)
 #' ligerex <- quantile_norm(ligerex)
-#' ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
+#' ligerex <- runTSNE(ligerex)
 #' plotWordClouds(ligerex, do.spec.plot = FALSE)
 #' }
 plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes = 30, min.size = 1,
@@ -5113,9 +5117,9 @@ plotWordClouds <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes =
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
-#' ligerex <- optimizeALS(ligerex, k = 5, max.iter = 2)
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iter = 1)
 #' ligerex <- quantile_norm(ligerex)
-#' ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
+#' ligerex <- runTSNE(ligerex)
 #' plotGeneLoadings(ligerex, "stim", "ctrl", do.spec.plot = FALSE)
 #' }
 plotGeneLoadings <- function(object, dataset1 = NULL, dataset2 = NULL, num.genes.show = 12,
@@ -5473,9 +5477,9 @@ plotGeneViolin <- function(object, gene, methylation.indices = NULL,
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
-#' ligerex <- optimizeALS(ligerex, k = 5, max.iter = 2)
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iter = 1)
 #' ligerex <- quantile_norm(ligerex)
-#' ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
+#' ligerex <- runTSNE(ligerex)
 #' plotGene(ligerex, "CD74", pt.size = 1)
 plotGene <- function(object, gene, use.raw = FALSE, use.scaled = FALSE, scale.by = 'dataset',
                      log2scale = NULL, methylation.indices = NULL, plot.by = 'dataset',
@@ -5730,9 +5734,9 @@ plotGene <- function(object, gene, use.raw = FALSE, use.scaled = FALSE, scale.by
 #' ligerex <- normalize(ligerex)
 #' ligerex <- selectGenes(ligerex)
 #' ligerex <- scaleNotCenter(ligerex)
-#' ligerex <- optimizeALS(ligerex, k = 5, max.iter = 2)
+#' ligerex <- optimizeALS(ligerex, k = 5, max.iter = 1)
 #' ligerex <- quantile_norm(ligerex)
-#' ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
+#' ligerex <- runTSNE(ligerex)
 #' plotGenes(ligerex, c("CD74", "NKG7"), pt.size = 1)
 #' }
 plotGenes <- function(object, genes, ...) {
@@ -6245,116 +6249,77 @@ getFactorMarkers <- function(object, dataset1 = NULL, dataset2 = NULL, factor.sh
 #' @param nms By default, labels cell names with dataset of origin (this is to account for cells in
 #'   different datasets which may have same name). Other names can be passed here as vector, must
 #'   have same length as the number of datasets. (default names(H))
-#' @param renormalize Whether to log-normalize raw data using Seurat defaults (default TRUE).
+#' @param renormalize Whether to log-normalize raw data using Seurat defaults (default FALSE).
 #' @param use.liger.genes Whether to carry over variable genes (default TRUE).
 #' @param by.dataset Include dataset of origin in cluster identity in Seurat object (default FALSE).
-#'
+#' @param assay Assay name to set in the Seurat object (default "RNA").
 #' @return Seurat object with raw.data, scale.data, dr$tsne, dr$inmf, and ident slots set.
-#'
-#' @import Matrix
-#' @importFrom methods new
-#' @importFrom utils packageVersion
-#'
 #' @export
 #' @examples
-#' \donttest{
-#' library(Seurat)
-#' print(packageVersion("Seurat"))
 #' ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
-#' ligerex <- normalize(ligerex)
-#' ligerex <- selectGenes(ligerex)
-#' ligerex <- scaleNotCenter(ligerex)
-#' ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
-#' ligerex <- quantile_norm(ligerex)
-#' ligerex <- runUMAP(ligerex, distance = "cosine", min_dist = .3)
-#' print(packageVersion("Seurat"))
-#' srt <- ligerToSeurat(ligerex, renormalize = FALSE)
+#' if (packageVersion("Matrix") <= package_version("1.6.1.1")) {
+#'   # 1.6.2 is not compatible thus don't test
+#'   # but can use `setOldClass("mMatrix")` as a hack
+#'   srt <- ligerToSeurat(ligerex)
 #' }
-ligerToSeurat <- function(object, nms = names(object@raw.data), renormalize = TRUE, use.liger.genes = TRUE,
-                          by.dataset = FALSE) {
+ligerToSeurat <- function(object, nms = NULL, renormalize = FALSE, use.liger.genes = TRUE,
+                          by.dataset = FALSE, assay = "RNA") {
   if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" needed for this function to work. Please install it.",
-         call. = FALSE
-    )
+         call. = FALSE)
   }
-  # get Seurat version
-  maj_version <- packageVersion('Seurat')$major
-  if (class(object@raw.data[[1]])[1] != 'dgCMatrix') {
-    # mat <- as(x, 'CsparseMatrix')
-    object@raw.data <- lapply(object@raw.data, function(x) {
-      as(x, 'CsparseMatrix')
-    })
+  if (!inherits(object@raw.data[[1]], 'dgCMatrix')) {
+    object@raw.data <- lapply(object@raw.data, as, Class = "CsparseMatrix")
   }
   raw.data <- MergeSparseDataAll(object@raw.data, nms)
-  scale.data <- do.call(rbind, object@scale.data)
-  rownames(scale.data) <- colnames(raw.data)
-  if (maj_version < 3) {
-    var.genes <- object@var.genes
-    inmf.obj <- new(
-      Class = "dim.reduction", gene.loadings = t(object@W),
-      cell.embeddings = object@H.norm, key = "iNMF_"
-    )
-    rownames(inmf.obj@gene.loadings) <- var.genes
-    tsne.obj <- new(
-      Class = "dim.reduction", cell.embeddings = object@tsne.coords,
-      key = "tSNE_"
-    )
+  new.seurat <- Seurat::CreateSeuratObject(raw.data, assay = assay)
+  if (isTRUE(renormalize)) {
+    new.seurat <- Seurat::NormalizeData(new.seurat)
   } else {
-    var.genes <- object@var.genes
-    if (any(grepl('_', var.genes))) {
-      message("Warning: Seurat v3 genes cannot have underscores, replacing with dashes ('-')")
-      var.genes <- gsub("_", replacement = "-", var.genes)
+    if (length(object@norm.data) > 0) {
+      norm.data <- MergeSparseDataAll(object@norm.data, nms)
+      new.seurat <- SeuratObject::SetAssayData(new.seurat, layer = "data", slot = "data", new.data = norm.data)  
     }
+  }
+  if (length(object@var.genes) > 0 && use.liger.genes) {
+    Seurat::VariableFeatures(new.seurat) <- object@var.genes
+  }
+  if (length(object@scale.data) > 0) {
+    scale.data <- t(Reduce(rbind, object@scale.data))
+    colnames(scale.data) <- colnames(raw.data)
+    new.seurat <- SeuratObject::SetAssayData(object = new.seurat, layer = "scale.data", slot = "scale.data", new.data = scale.data)
+  }
+  if (all(dim(object@W) > 0) && all(dim(object@H.norm) > 0)) {
     inmf.loadings <- t(x = object@W)
+    dimnames(inmf.loadings) <- list(object@var.genes, 
+                                    paste0("iNMF_", seq_len(ncol(inmf.loadings))))
     inmf.embeddings <- object@H.norm
-    tsne.embeddings <- object@tsne.coords
-    rownames(x = inmf.loadings) <- var.genes
-    rownames(x = inmf.embeddings) <-
-      rownames(x = tsne.embeddings) <-
-      rownames(x = scale.data)
+    dimnames(inmf.embeddings) <- list(unlist(lapply(object@scale.data, rownames), use.names = FALSE),
+                                      paste0("iNMF_", seq_len(ncol(inmf.loadings))))
     inmf.obj <- Seurat::CreateDimReducObject(
       embeddings = inmf.embeddings,
-      loadings = inmf.loadings,
-      key = "iNMF_",
-      global = TRUE
+      loadings = inmf.embeddings,
+      assay = assay, 
+      key = "iNMF_"
     )
+    new.seurat[["iNMF"]] <- inmf.obj
+  }
+  if (all(dim(object@tsne.coords) > 0)) {
+    tsne.embeddings <- object@tsne.coords
+    dimnames(tsne.embeddings) <- list(rownames(object@H.norm),
+                                      c("TSNE_1", "TSNE_2"))
     tsne.obj <- Seurat::CreateDimReducObject(
       embeddings = tsne.embeddings,
-      key = "tSNE_",
-      global = TRUE
+      assay = assay,
+      key = "TSNE_"
     )
+    new.seurat[["TSNE"]] <- tsne.obj
   }
-  new.seurat <- Seurat::CreateSeuratObject(raw.data)
-  if (renormalize) {
-    new.seurat <- Seurat::NormalizeData(new.seurat)
-  }
-  if (by.dataset) {
-    ident.use <- as.character(unlist(lapply(1:length(object@raw.data), function(i) {
-      dataset.name <- names(object@raw.data)[i]
-      paste0(dataset.name, as.character(object@clusters[colnames(object@raw.data[[i]])]))
-    })))
-  } else {
-    ident.use <- as.character(object@clusters)
-  }
-
-  if (maj_version < 3) {
-    if (use.liger.genes) {
-      new.seurat@var.genes <- var.genes
-    }
-    new.seurat@scale.data <- t(scale.data)
-    new.seurat@dr$tsne <- tsne.obj
-    new.seurat@dr$inmf <- inmf.obj
-    new.seurat <- Seurat::SetIdent(new.seurat, ident.use = ident.use)
-
-  } else {
-    if (use.liger.genes) {
-      Seurat::VariableFeatures(new.seurat) <- var.genes
-    }
-    Seurat::SetAssayData(new.seurat, slot = "scale.data",  new.data = t(scale.data), assay = "RNA")
-    new.seurat[['tsne']] <- tsne.obj
-    new.seurat[['inmf']] <- inmf.obj
-    Seurat::Idents(new.seurat) <- ident.use
-  }
+  new.seurat$orig.ident <- object@cell.data$dataset
+  
+  idents <- object@clusters
+  if (length(idents) == 0 || isTRUE(by.dataset)) idents <- object@cell.data$dataset
+  Seurat::Idents(new.seurat) <- idents
 
   return(new.seurat)
 }
@@ -6398,18 +6363,14 @@ ligerToSeurat <- function(object, nms = names(object@raw.data), renormalize = TR
 #' @param cca.to.H Carry over CCA (and aligned) loadings and insert them into H (and H.norm) slot in
 #'   liger object (only meaningful for combined analysis Seurat object). Useful for plotting directly
 #'   afterwards. (default FALSE)
-#'
 #' @return \code{liger} object.
-#'
-#' @import Matrix
-#'
 #' @export
 #' @examples
-#' if (requireNamespace("Seurat")) {
+#' if (packageVersion("Matrix") <= package_version("1.6.1.1")) {
 #'   ctrl.srt <- Seurat::CreateSeuratObject(ctrl, project = "ctrl")
 #'   stim.srt <- Seurat::CreateSeuratObject(stim, project = "stim")
 #'   ligerex <- seuratToLiger(list(ctrl = ctrl.srt, stim = stim.srt),
-#'                            use.seurat.genes = FALSE) # because no var.gene now
+#'                            use.seurat.genes = FALSE)
 #' }
 seuratToLiger <- function(objects, combined.seurat = FALSE, names = "use-projects", meta.var = NULL,
                           assays.use = NULL, raw.assay = "RNA", remove.missing = TRUE, renormalize = TRUE,
