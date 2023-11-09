@@ -4,7 +4,11 @@
 \alias{runWilcoxon}
 \title{Perform Wilcoxon rank-sum test}
 \usage{
-runWilcoxon(object, data.use = "all", compare.method)
+runWilcoxon(
+  object,
+  data.use = "all",
+  compare.method = c("clusters", "datasets")
+)
 }
 \arguments{
 \item{object}{\code{liger} object.}
@@ -20,14 +24,19 @@ A 10-columns data.frame with test results.
 Perform Wilcoxon rank-sum tests on specified dataset using given method.
 }
 \examples{
-\dontrun{
-# ligerex (liger object based on in-memory datasets), factorization complete
-wilcox.results <- runWilcoxon(ligerex, compare.method = "cluster")
-wilcox.results <- runWilcoxon(ligerex, compare.method = "datastes", data.use = c(1, 2))
-# HDF5 input
-# ligerex (liger object based on datasets in HDF5 format), factorization complete
-# Need to sample cells before implementing Wilcoxon test
-ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 1000)
-de_genes <- runWilcoxon(ligerex, compare.method = "clusters")
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
+ligerex <- quantile_norm(ligerex)
+ligerex <- louvainCluster(ligerex, resolution = 0.3)
+wilcox.results <- runWilcoxon(ligerex, compare.method = "clusters")
+wilcox.results <- runWilcoxon(ligerex, compare.method = "datasets", data.use = c(1, 2))
+if (length(ligerex@h5file.info) > 0) {
+    # For HDF5 based object
+    # Need to sample cells and read into memory before running Wilcoxon test
+    ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 1000)
+    wilcox.results <- runWilcoxon(ligerex, compare.method = "clusters")
 }
 }

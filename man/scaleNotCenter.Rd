@@ -26,12 +26,8 @@ positive (NMF only accepts positive values). It also removes cells which do not 
 expression across the genes selected, by default.
 }
 \examples{
-\dontrun{
-# Given datasets Y and Z
-ligerex <- createLiger(list(y_set = Y, z_set = Z))
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 ligerex <- normalize(ligerex)
-# use default selectGenes settings (var.thresh = 0.1)
 ligerex <- selectGenes(ligerex)
 ligerex <- scaleNotCenter(ligerex)
-}
 }

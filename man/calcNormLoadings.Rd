@@ -15,3 +15,13 @@ A dataframe, such that each column represents the contribution of a specific mat
 \description{
 Calculates the contribution of each factor of W,V, and U to the reconstruction.
 }
+\examples{
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+# Minimum specification for fast example pass
+ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
+ligerex <- quantile_norm(ligerex)
+calcNormLoadings(ligerex)
+}

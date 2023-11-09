@@ -40,6 +40,7 @@ Impute query features from a reference dataset using KNN.
 }
 \examples{
 \dontrun{
+# Only runable for ATAC dataset. See tutorial on GitHub.
 # ligerex (liger object), factorization complete
 # impute every dataset other than the reference dataset
 ligerex <- imputeKNN(ligerex, reference = "y_set", weight = FALSE)

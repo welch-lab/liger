@@ -19,10 +19,10 @@ getGeneValues(
 \item{gene}{Gene for which to return values (if gene is not found in appropriate dimnames will
 return vector of NA).}
 
-\item{use.cols}{Whether to query columns for desired gene (set to TRUE if matrices are cell x 
+\item{use.cols}{Whether to query columns for desired gene (set to TRUE if matrices are cell x
 gene) (default FALSE).}
 
-\item{methylation.indices}{Indices of datasets with methylation data (never log2scaled) 
+\item{methylation.indices}{Indices of datasets with methylation data (never log2scaled)
 (default NULL).}
 
 \item{log2scale}{Whether to log2+1 scale (with multiplicative factor) values (default FALSE).}
@@ -33,13 +33,9 @@ gene) (default FALSE).}
 Plots to console (1-2 pages per factor)
 }
 \description{
-Returns single vector of gene values across all datasets in list provided. Data can be in raw, 
+Returns single vector of gene values across all datasets in list provided. Data can be in raw,
 normalized or scaled form. If matrices are in cell x gene format, set use.cols = TRUE.
 }
 \examples{
-\dontrun{
-# liger object with factorization complete
-# ligerex
-gene_values <- getGeneValues(ligerex@raw.data, 'MALAT1')
-}
+NKG7 <- getGeneValues(list(ctrl = ctrl, stim = stim), "NKG7")
 }

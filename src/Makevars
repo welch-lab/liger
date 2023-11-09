@@ -1,5 +1,5 @@
 
-## With R 3.1.0 or later, you can uncomment the following line to tell R to 
+## With R 3.1.0 or later, you can uncomment the following line to tell R to
 ## enable compilation with C++11 (where available)
 ##
 ## Also, OpenMP support in Armadillo prefers C++11 support. However, for wider
@@ -9,11 +9,9 @@
 ## And with R 3.4.0, and RcppArmadillo 0.7.960.*, we turn C++11 on as OpenMP
 ## support within Armadillo prefers / requires it
 ##
-## Ensure support for 64bit int sparse matrices with -DARMA_64BIT_WORD=1 
+## Ensure support for 64bit int sparse matrices with -DARMA_64BIT_WORD=1
 
-CXX_STD = CXX11
-
-PKG_CXXFLAGS = -DARMA_DONT_USE_OPENMP  
-PKG_CPPFLAGS = -DARMA_64BIT_WORD=1 
+PKG_CXXFLAGS = -DARMA_DONT_USE_OPENMP
+PKG_CPPFLAGS = -DARMA_64BIT_WORD=1
 PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
 

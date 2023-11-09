@@ -87,7 +87,7 @@ mismatches in order (default NULL).}
 
 \item{keep.scale}{Maintain min/max color scale across all plots when using plot.by (default FALSE)}
 
-\item{raster}{Rasterization of points (default NULL). Automatically convert to raster format if 
+\item{raster}{Rasterization of points (default NULL). Automatically convert to raster format if
 there are over 100,000 cells to plot.}
 }
 \value{
@@ -100,14 +100,12 @@ specified gene. Data can be scaled by dataset or selected feature column from ce
 all cells). Data plots can be split by feature.
 }
 \examples{
-\dontrun{
-# ligerex (liger object based on in-memory datasets), factorization complete
-ligerex
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+ligerex <- optimizeALS(ligerex, k = 5, max.iter = 1)
+ligerex <- quantile_norm(ligerex)
 ligerex <- runTSNE(ligerex)
-# plot expression for CD4 and return plots
-gene_plots <- plotGene(ligerex, "CD4", return.plots = TRUE)
-# ligerex (liger object based on datasets in HDF5 format), factorization complete input
-ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
-gene_plots <- plotGene(ligerex, "CD4", return.plots = TRUE)
-}
+plotGene(ligerex, "CD74", pt.size = 1)
 }

@@ -16,7 +16,7 @@ selectGenes(
   do.plot = FALSE,
   cex.use = 0.3,
   chunk = 1000,
-  unshared = F,
+  unshared = FALSE,
   unshared.datasets = NULL,
   unshared.thresh = NULL
 )
@@ -54,12 +54,12 @@ Selected genes are plotted in green. (default FALSE)}
 
 \item{chunk}{size of chunks in hdf5 file. (default 1000)}
 
+\item{unshared}{Whether to consider unshared features (Default FALSE)}
+
 \item{unshared.datasets}{A list of the datasets to consider unshared features for, i.e. list(2), to use the second dataset}
 
 \item{unshared.thresh}{A list of threshold values to apply to each unshared dataset. If only one value is provided, it will apply to all unshared
 datasets. If a list is provided, it must match the length of the unshared datasets submitted.}
-
-\item{unshared.features}{Whether to consider unshared features}
 }
 \value{
 \code{liger} object with var.genes slot set.
@@ -73,13 +73,7 @@ It also provides a log plot of gene variance vs gene expression (with a line ind
 expression across genes and cells). Selected genes are plotted in green.
 }
 \examples{
-\dontrun{
-# Given datasets Y and Z
-ligerex <- createLiger(list(y_set = Y, z_set = Z))
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 ligerex <- normalize(ligerex)
-# use default selectGenes settings (var.thresh = 0.1)
 ligerex <- selectGenes(ligerex)
-# select a smaller subset of genes
-ligerex <- selectGenes(ligerex, var.thresh = 0.3)
-}
 }

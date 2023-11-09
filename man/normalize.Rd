@@ -32,9 +32,6 @@ dataset) (default TRUE).}
 This function normalizes data to account for total gene expression across a cell.
 }
 \examples{
-# Demonstration using matrices with randomly generated numbers
-Y <- matrix(runif(5000,0,2), 10,500)
-Z <- matrix(runif(5000,0,2), 10,500)
-ligerex <- createLiger(list(y_set = Y, z_set = Z))
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
 ligerex <- normalize(ligerex)
 }

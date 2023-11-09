@@ -36,8 +36,15 @@ factorization; uses previous k. Recommended mainly when re-optimizing for higher
 new lambda value is significantly different; otherwise may not return optimal results.
 }
 \examples{
-\dontrun{
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+\donttest{
+# Assume we are performing the factorization
+# Specification for minimal example run time, not converging.
+ligerex <- optimizeALS(ligerex, k = 5, lambda = 5, max.iters = 1)
 # decide to run with lambda = 15 instead (keeping k the same)
-ligerex <- optimizeNewLambda(ligerex, new.lambda = 15)
+ligerex <- optimizeNewLambda(ligerex, new.lambda = 15, max.iters = 1)
 }
 }

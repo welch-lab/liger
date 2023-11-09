@@ -19,10 +19,12 @@ print plot to console (return.plot = FALSE); ggplot object (return.plot = TRUE)
 Generates plot of clusters sized by the proportion of total cells
 }
 \examples{
-\dontrun{
-# ligerex (liger object), factorization complete input
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+ligerex <- optimizeALS(ligerex, k = 5, max.iter = 2)
 ligerex <- quantile_norm(ligerex)
-# plot cluster proportions
+ligerex <- louvainCluster(ligerex)
 plotClusterProportions(ligerex)
-}
 }

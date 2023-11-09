@@ -66,9 +66,11 @@ are not uniformly distributed when an appropriate number of factors is reached.
 Depending on number of cores used, this process can take 10-20 minutes.
 }
 \examples{
-\dontrun{
-# Requires preprocessed liger object
-# examine plot for most appropriate k, use multiple cores for faster results
-suggestK(ligerex, num.cores = 4)
+\donttest{
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+suggestK(ligerex, k.test = c(5,6), max.iters = 1)
 }
 }

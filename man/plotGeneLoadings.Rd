@@ -75,7 +75,7 @@ NULL to revert to default gradient scaling. (default 0.1)}
 
 \item{verbose}{Print progress bar/messages (TRUE by default)}
 
-\item{raster}{Rasterization of points (default NULL). Automatically convert to raster format if 
+\item{raster}{Rasterization of points (default NULL). Automatically convert to raster format if
 there are over 100,000 cells to plot.}
 }
 \value{
@@ -91,16 +91,14 @@ It is recommended to call this function into a PDF due to the large number of
 plots produced.
 }
 \examples{
-\dontrun{
-# ligerex (liger object based on in-memory datasets), factorization complete
+\donttest{
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+ligerex <- optimizeALS(ligerex, k = 5, max.iter = 1)
 ligerex <- quantile_norm(ligerex)
-ligerex <- runUMAP(ligerex)
-# pdf("gene_loadings.pdf")
-plotGeneLoadings(ligerex, num.genes = 20)
-# dev.off()
-# ligerex (liger object based on datasets in HDF5 format), factorization complete input
-ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
-plotGeneLoadings(ligerex, num.genes = 20)
+ligerex <- runTSNE(ligerex)
+plotGeneLoadings(ligerex, "stim", "ctrl", do.spec.plot = FALSE)
 }
-
 }

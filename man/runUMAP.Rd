@@ -53,13 +53,16 @@ Note that this method requires that the package uwot is installed. It does not d
 on reticulate or python umap-learn.
 }
 \examples{
-\dontrun{
-# ligerex (liger object), factorization complete
-# generate H.norm by quantile normalizig factor loadings
-ligerex <- quantileAlignSNF(ligerex)
-# get tsne.coords for normalized data
-ligerex <- runUMAP(ligerex)
-# get tsne.coords for raw factor loadings
-ligerex <- runUMAP(ligerex, use.raw = TRUE)
+\donttest{
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+# Specification for minimal example run time, not converging
+ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
+ligerex <- quantile_norm(ligerex)
+if (packageVersion("Matrix") <= package_version("1.6.1.1")) {
+  ligerex <- runUMAP(ligerex)
+}
 }
 }

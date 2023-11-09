@@ -40,8 +40,14 @@ existing factorization. It is most recommended for values of k smaller than curr
 where it is more likely to speed up the factorization.
 }
 \examples{
-\dontrun{
-# decide to run with k = 15 instead (keeping old lambda the same)
-ligerex <- optimizeNewK(ligerex, k.new = 15)
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+k <- 5
+# Minimum specification for fast example pass
+ligerex <- optimizeALS(ligerex, k = k, max.iters = 1)
+if (k != 5) {
+    ligerex <- optimizeNewK(ligerex, k.new = k, max.iters = 1)
 }
 }

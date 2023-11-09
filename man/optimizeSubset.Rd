@@ -42,9 +42,20 @@ factorization. Can use either cell names or cluster names to subset. For more ba
 functionality (without automatic optimization), see subsetLiger.
 }
 \examples{
-\dontrun{
-# now want to look at only subset of data
-# Requires a vector of cell names from data 1 and a vector of cell names from data 2
-ligerex2 <- optimizeSubset(ligerex, cell.subset = list(cell_names_1, cell_names_2))
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+\donttest{
+# Assume we are performing the factorization
+# Specification for minimal example run time, not converging.
+ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
+# Preparing subset with random sampling.
+# Subset can also be obtained with prior knowledge from metadata.
+cell_names_1 <- sample(rownames(ligerex@H[[1]]), 20)
+cell_names_2 <- sample(rownames(ligerex@H[[2]]), 20)
+
+ligerex2 <- optimizeSubset(ligerex, cell.subset = list(cell_names_1, cell_names_2),
+                           max.iters = 1)
 }
 }

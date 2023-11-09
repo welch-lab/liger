@@ -86,13 +86,10 @@ stretching/compressing datasets' quantiles to better match those of the referenc
 aligned factor loadings are combined into a single matrix and returned as H.norm.
 }
 \examples{
-\dontrun{
-# ligerex (liger object), factorization complete
-# do basic quantile alignment
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 ligerex <- quantile_norm(ligerex)
-# higher resolution for more clusters (note that SNF is conserved)
-ligerex <- quantile_norm(ligerex, resolution = 1.2)
-# change knn_k for more fine-grained local clustering
-ligerex <- quantile_norm(ligerex, knn_k = 15, resolution = 1.2)
-}
 }

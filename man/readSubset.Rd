@@ -45,9 +45,9 @@ This function samples raw/normalized/scaled data from on-disk HDF5 files for plo
 This function assumes that the cell barcodes are unique across all datasets.
 }
 \examples{
-\dontrun{
-# Only for online liger object (based on HDF5 files)
-# Example: sample a total amount of 5000 cells from norm.data for downstream analysis 
-ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+if (length(ligerex@H) > 0) {
+    # Downsampling is calculated basing on factorization result
+    ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 100)
 }
 }

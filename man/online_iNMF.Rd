@@ -79,10 +79,13 @@ W is identical among all datasets, as it represents the shared components of the
 across datasets. The V matrices represent the dataset-specific components of the metagenes.
 }
 \examples{
-\dontrun{
-# Requires preprocessed liger object
-# Get factorization using 20 factors and mini-batch of 5000 cells 
-# (default setting, can be adjusted for ideal results)
-ligerex <- online_iNMF(ligerex, k = 20, lambda = 5, miniBatch_size = 5000)
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+if (length(ligerex@h5file.info) > 0) {
+    # This function only works for HDF5 based liger object
+    ligerex <- normalize(ligerex)
+    ligerex <- selectGenes(ligerex)
+    ligerex <- scaleNotCenter(ligerex)
+    # `miniBatch_size` has to be no larger than the number of cells in the smallest dataset
+    ligerex <- online_iNMF(ligerex, miniBatch_size = 100)
 }
 }

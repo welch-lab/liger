@@ -60,15 +60,14 @@ It is recommended to call this function into a PDF due to the large number of
 plots produced.
 }
 \examples{
-\dontrun{
-# ligerex (liger object based on in-memory datasets), factorization complete
+\donttest{
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+ligerex <- optimizeALS(ligerex, k = 5, max.iter = 1)
 ligerex <- quantile_norm(ligerex)
 ligerex <- runTSNE(ligerex)
-# pdf('word_clouds.pdf')
-plotWordClouds(ligerex, num.genes = 20)
-# dev.off()
-# ligerex (liger object based on datasets in HDF5 format), factorization complete input
-ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
-plotWordClouds(ligerex, num.genes = 20)
+plotWordClouds(ligerex, do.spec.plot = FALSE)
 }
 }

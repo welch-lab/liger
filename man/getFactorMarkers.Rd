@@ -53,10 +53,11 @@ factorization, before selecting those which load most significantly on each fact
 or dataset-specific way).
 }
 \examples{
-\dontrun{
-# ligerex (liger object), factorization complete input
-markers <- getFactorMarkers(ligerex, num.genes = 10)
-# look at shared markers
-head(markers[[2]])
-}
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+ligerex <- optimizeALS(ligerex, k = 5, max.iter = 2)
+ligerex <- quantile_norm(ligerex)
+fm <- getFactorMarkers(ligerex, dataset1 = "stim", dataset2 = "ctrl")
 }

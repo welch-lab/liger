@@ -72,11 +72,12 @@ Feature can be categorical (factor) or continuous.
 Can also plot all datasets combined with by.dataset = FALSE.
 }
 \examples{
-\dontrun{
-# ligerex (liger object), factorization complete
-# get tsne.coords for normalized data
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+ligerex <- optimizeALS(ligerex, k = 5, max.iter = 1)
+ligerex <- quantile_norm(ligerex)
 ligerex <- runTSNE(ligerex)
-# plot nUMI to console
-plotFeature(ligerex, feature = 'nUMI')
-}
+plotFeature(ligerex, "nUMI", pt.size = 1)
 }

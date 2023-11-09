@@ -76,17 +76,10 @@ identities from the original Seurat objects. Seurat V2 and V3 supported (though 
 should share the same major version).
 }
 \examples{
-\dontrun{
-# Seurat objects for two pbmc datasets
-tenx <- readRDS('tenx.RDS')
-seqwell <- readRDS('seqwell.RDS')
-# create liger object, using project names
-ligerex <- seuratToLiger(list(tenx, seqwell))
-# create liger object, passing in names explicitly, using hvg.info genes
-ligerex2 <- seuratToLiger(list(tenx, seqwell), names = c('tenx', 'seqwell'), num.hvg.info = 2000)
-# Seurat object for joint analysis
-pbmc <- readRDS('pbmc.RDS')
-# create liger object, using 'protocol' for dataset names
-ligerex3 <- seuratToLiger(pbmc, combined.seurat = TRUE, meta.var = 'protocol', num.hvg.info = 2000)
+if (packageVersion("Matrix") <= package_version("1.6.1.1")) {
+  ctrl.srt <- Seurat::CreateSeuratObject(ctrl, project = "ctrl")
+  stim.srt <- Seurat::CreateSeuratObject(stim, project = "stim")
+  ligerex <- seuratToLiger(list(ctrl = ctrl.srt, stim = stim.srt),
+                           use.seurat.genes = FALSE)
 }
 }

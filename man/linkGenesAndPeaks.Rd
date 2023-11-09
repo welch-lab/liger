@@ -42,8 +42,9 @@ Evaluate the relationships between pairs of genes and peaks based on specified d
 }
 \examples{
 \dontrun{
+# Only runable for ATAC datasets, see tutorial on GitHub
 # some gene counts matrix: gmat.small
-# some peak counts matrix: pmat.small 
+# some peak counts matrix: pmat.small
 regnet <- linkGenesAndPeaks(gmat.small, pmat.small, dist = "spearman",
 alpha = 0.05, path_to_coords = 'some_path')
 }

@@ -48,9 +48,12 @@ value for perfectly mixed datasets, and scale the value from 0 to 1. Note that i
 alignment can be greater than 1 occasionally.
 }
 \examples{
-\dontrun{
-# ligerex (liger object ), factorization complete
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+# Specification for minimal example run time, not converging
+ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 ligerex <- quantile_norm(ligerex)
-alignment <- calcAlignment(ligerex)
-}
+agreement <- calcAlignment(ligerex)
 }

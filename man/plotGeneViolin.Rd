@@ -33,12 +33,13 @@ List of ggplot plot objects (only if return.plots TRUE, otherwise prints plots t
 Generates violin plots of expression of specified gene for each dataset.
 }
 \examples{
-\dontrun{
-# ligerex (liger object based on in-memory datasets), factorization complete
-# plot expression for CD4 and return plots
-violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = TRUE)
-# ligerex (liger object based on datasets in HDF5 format), factorization complete input
-ligerex <- readSubset(ligerex, slot.use = "norm.data", max.cells = 5000)
-violin_plots <- plotGeneViolin(ligerex, "CD4", return.plots = TRUE)
-}
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+ligerex <- optimizeALS(ligerex, k = 5, max.iter = 2)
+ligerex <- quantile_norm(ligerex)
+ligerex <- louvainCluster(ligerex)
+plotGeneViolin(ligerex, "CD74", by.dataset = FALSE)
+plotGeneViolin(ligerex, "CD74")
 }

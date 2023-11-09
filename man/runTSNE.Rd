@@ -54,13 +54,12 @@ FIt-SNE directory as the fitsne.path parameter, though this is only necessary fo
 to runTSNE. For more detailed FIt-SNE installation instructions, see the liger repo README.
 }
 \examples{
-\dontrun{
-# ligerex (liger object), factorization complete
-# generate H.norm by quantile normalizig factor loadings
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+ligerex <- normalize(ligerex)
+ligerex <- selectGenes(ligerex)
+ligerex <- scaleNotCenter(ligerex)
+# Specification for minimal example run time, not converging
+ligerex <- optimizeALS(ligerex, k = 5, max.iters = 1)
 ligerex <- quantile_norm(ligerex)
-# get tsne.coords for normalized data
 ligerex <- runTSNE(ligerex)
-# get tsne.coords for raw factor loadings
-ligerex <- runTSNE(ligerex, use.raw = TRUE)
-}
 }

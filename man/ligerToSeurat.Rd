@@ -6,10 +6,11 @@
 \usage{
 ligerToSeurat(
   object,
-  nms = names(object@H),
-  renormalize = TRUE,
+  nms = NULL,
+  renormalize = FALSE,
   use.liger.genes = TRUE,
-  by.dataset = FALSE
+  by.dataset = FALSE,
+  assay = "RNA"
 )
 }
 \arguments{
@@ -19,11 +20,13 @@ ligerToSeurat(
 different datasets which may have same name). Other names can be passed here as vector, must
 have same length as the number of datasets. (default names(H))}
 
-\item{renormalize}{Whether to log-normalize raw data using Seurat defaults (default TRUE).}
+\item{renormalize}{Whether to log-normalize raw data using Seurat defaults (default FALSE).}
 
 \item{use.liger.genes}{Whether to carry over variable genes (default TRUE).}
 
 \item{by.dataset}{Include dataset of origin in cluster identity in Seurat object (default FALSE).}
+
+\item{assay}{Assay name to set in the Seurat object (default "RNA").}
 }
 \value{
 Seurat object with raw.data, scale.data, dr$tsne, dr$inmf, and ident slots set.
@@ -37,8 +40,10 @@ Stores original dataset identity by default in new object metadata if dataset na
 in nms. iNMF factorization is stored in dim.reduction object with key "iNMF".
 }
 \examples{
-\dontrun{
-# ligerex (liger object based on in-memory datasets ONLY), factorization complete input
-s.object <- ligerToSeurat(ligerex)
+ligerex <- createLiger(list(ctrl = ctrl, stim = stim))
+if (packageVersion("Matrix") <= package_version("1.6.1.1")) {
+  # 1.6.2 is not compatible thus don't test
+  # but can use `setOldClass("mMatrix")` as a hack
+  srt <- ligerToSeurat(ligerex)
 }
 }
