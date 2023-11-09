@@ -9,7 +9,7 @@ createLiger(
   modal = NULL,
   cellMeta = NULL,
   removeMissing = TRUE,
-  addPrefix = TRUE,
+  addPrefix = "auto",
   formatType = "10X",
   dataName = NULL,
   indicesName = NULL,
@@ -46,7 +46,8 @@ memory.}
 
 \item{addPrefix}{Logical. Whether to add "<dataset name>_" as a prefix of
 cell identifiers (e.g. barcodes) to avoid duplicates in multiple libraries (
-common with 10X data). Default \code{TRUE}}
+common with 10X data). Default \code{"auto"} detects if matrix columns
+already has the exact prefix or not. Logical value forces the action.}
 
 \item{formatType}{Select preset of H5 file structure. Current available
 options are \code{"10X"} and \code{"AnnData"}. Can be either a single

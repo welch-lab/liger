@@ -10,6 +10,7 @@ downsample(
   maxCells = 1000,
   useDatasets = NULL,
   seed = 1,
+  returnIndex = FALSE,
   ...
 )
 }
@@ -24,30 +25,42 @@ combination of all specified variables. Default \code{NULL} samples
 \item{maxCells}{Max number of cells to sample from the grouping based on
 \code{balance}.}
 
-\item{useDatasets}{Index selection of datasets to consider. Default
+\item{useDatasets}{Index selection of datasets to include Default
 \code{NULL} for using all datasets.}
 
 \item{seed}{Random seed for reproducibility. Default \code{1}.}
+
+\item{returnIndex}{Logical, whether to only return the numeric index that can
+subset the original object instead of a subset object. Default \code{FALSE}.}
 
 \item{...}{Arguments passed to \code{\link{subsetLiger}}, where
 \code{cellIdx} is occupied by internal implementation.}
 }
 \value{
-Subset of \linkS4class{liger} \code{object}.
+By default, a subset of \linkS4class{liger} \code{object}.
+Alternatively when \code{returnIndex = TRUE}, a numeric vector to be used
+with the original object.
 }
 \description{
 This function mainly aims at downsampling datasets to a size
-suitable for plotting.
-}
-\details{
+suitable for plotting or expensive in-memmory calculation.
+
 Users can balance the sample size of categories of interests with
 \code{balance}. Multi-variable specification to \code{balance} is supported,
 so that at most \code{maxCells} cells will be sampled from each combination
-of categories from the variables. Note that \code{"dataset"} will
-automatically be added as one variable when balancing the downsampling.
-However, if users want to balance the downsampling solely basing on dataset
-origin, users have to explicitly set \code{balance = "dataset"}.
+of categories from the variables. For example, when two datasets are
+presented and three clusters labeled across them, there would then be at most
+\eqn{2 \times 3 \times maxCells} cells being selected. Note that
+\code{"dataset"} will automatically be added as one variable when balancing
+the downsampling. However, if users want to balance the downsampling solely
+basing on dataset origin, users have to explicitly set \code{balance =
+"dataset"}.
 }
 \examples{
+# Subsetting an object
 pbmc <- downsample(pbmc)
+# Creating a subsetting index
+sampleIdx <- downsample(pbmcPlot, balance = "leiden_cluster",
+                        maxCells = 10, returnIndex = TRUE)
+plotClusterDimRed(pbmcPlot, cellIdx = sampleIdx)
 }

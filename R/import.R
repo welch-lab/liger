@@ -15,7 +15,8 @@
 #' memory.
 #' @param addPrefix Logical. Whether to add "<dataset name>_" as a prefix of
 #' cell identifiers (e.g. barcodes) to avoid duplicates in multiple libraries (
-#' common with 10X data). Default \code{TRUE}
+#' common with 10X data). Default \code{"auto"} detects if matrix columns
+#' already has the exact prefix or not. Logical value forces the action.
 #' @param formatType Select preset of H5 file structure. Current available
 #' options are \code{"10X"} and \code{"AnnData"}. Can be either a single
 #' specification for all datasets or a character vector that match with each
@@ -38,7 +39,7 @@ createLiger <- function(
         modal = NULL,
         cellMeta = NULL,
         removeMissing = TRUE,
-        addPrefix = TRUE,
+        addPrefix = "auto",
         formatType = "10X",
         dataName = NULL,
         indicesName = NULL,
@@ -93,14 +94,19 @@ createLiger <- function(
         } else {
             datasets[[dname]] <- as.ligerDataset(data, modal = modal[i])
         }
-        barcodesOrig <- c(barcodesOrig, colnames(datasets[[dname]]))
-        if (isTRUE(addPrefix)) {
-            cellID <- paste0(dname, "_", colnames(datasets[[dname]]))
-            colnames(datasets[[dname]]) <- cellID
+        colnameOrig <- colnames(datasets[[dname]])
+        prefix <- paste0(dname, "_")
+        .addPrefix <- FALSE
+        if (addPrefix == "auto") {
+            # If all colnames starts with the prefix wanted, don't add it again
+            .addPrefix <- !all(startsWith(colnameOrig, prefix))
+        }
+        barcodesOrig <- c(barcodesOrig, colnameOrig)
+        if (.addPrefix) {
+            colnames(datasets[[dname]]) <- paste0(prefix, colnameOrig)
         }
     }
 
-    #barcodesOrig <- unlist(lapply(datasets, colnames), use.names = FALSE)
     datasets <- lapply(datasets, function(ld) {
         colnames(ld) <- make.unique(colnames(ld))
         return(ld)

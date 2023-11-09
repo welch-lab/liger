@@ -44,6 +44,49 @@ pbmc <- pbmc %>%
     runUMAP()
 ```
 
+## Access a dataset
+
+As introduced above, the dataset-specific information is contained in a [ligerDataset](../reference/ligerDataset-class.html) object. 
+
+- To get the names of all datasets
+
+```{R}
+names(pbmc)
+```
+
+- To get the number of all datasets
+
+```{R}
+length(pbmc)
+```
+
+- To access the [ligerDataset](../reference/ligerDataset-class.html) object for a specific dataset
+
+```{R}
+ctrlLD <- dataset(pbmc, dataset = "ctrl")
+# Alternatively, using numeric index
+ctrlLD <- dataset(pbmc, 1)
+```
+
+In other LIGER functions where the argument `useDatasets` is allowed, users can always use the exact character name(s) or the numeric index to specify the datasets to be involved in the analysis. Moreoever, a logical vector of index is also allowed and could ease the usage in some cases.
+
+```{R, eval = FALSE}
+# Not run, just for example, assuming we've got the clustering for such an object
+names(ligerObj)
+## [1] female-1  female-2  male-3  male-4  female-5 ......
+femaleIdx <- startsWith(names(ligerObj), "fe")
+runMarkerDEG(ligerObj, conditionBy = "dataset", splitBy = "leiden_cluster", 
+             useDatasets = femaleIdx)
+```
+
+In the example above, the `runMarkerDEG()` funcion is parametered for detecting dataset specific markers within each cluster, and only within the female samples. For example, cells from condition "female-1 and cluster 1" will be tested against cells belonging to condition "cluster 1 and all other female datasets". Can be use
+
+- To access multiple datasets, returned in a list
+
+```{R}
+ldList <- datasets(pbmc)
+```
+
 ## Access feature matrices
 
 We have three main generics for accessing feature matrices, namingly `rawData()`, `normData()` and `scaleData()`. For scaled unshared features, used for UINMF, we also have `scaleUnsharedData()`. The logistics of the accessor to all these feature matrices are the same, so we only present the case for raw counts.
@@ -80,7 +123,7 @@ ctrlRaw <- rawData(pbmc, "ctrl")
 rawData(pbmc, "ctrl") <- ctrlRaw
 ```
 
-In the new version, strict validity checks have been put upon modification in object content. Replacement with unmatching feature names or barcodes will be rejected. In the case where there is a need to replace the dataset with a different set of barcodes or features, we suggest recreate a new [ligerDataset](../reference/ligerDataset-class.html) object with the new raw counts (or other feature matrix), and then replace the whole dataset with it.
+In the new version, strict validity checks have been put upon modification in object content. Replacement with unmatching feature names or barcodes will be rejected. In the case where there is a need to replace the dataset with a different set of barcodes or features, we suggest recreating a new [ligerDataset](../reference/ligerDataset-class.html) object with the new raw counts (or other feature matrix), and then replace the whole dataset with it.
 
 ```{R}
 ctrlRaw <- rawData(pbmc, "ctrl")
@@ -174,10 +217,62 @@ lapply(HList, dim)
 
 ## Subsetting the data
 
-TODO
+- A [liger](../reference/liger-class.html) object can be subset by both cells and genes. 
+
+For cell level subsetting, any indexing method among barcode names, numeric or logical index can do the job. Cells are indexed by `rownames(cellMeta(object))`, which is a concatenation of the barcodes from each dataset, and datasets are ordered as `names(object)` shows.
+
+```{R}
+pbmcSmall <- pbmc[, 1:100]
+pbmcCluster1 <- pbmc[, pbmc$leiden_cluster == 1]
+```
+
+For gene level subsetting, we only allow using gene names, because it is assumed that different datasets can have different set of genes. And only genes shared by all datasets can be used.
+
+```{R}
+pbmcVarOnly <- pbmc[varFeatures(pbmc),]
+ctrlUnsharedGenes <- c("P2RY1", "GFI1B", "HDGFRP2", "TUBGCP6", "CELA1")
+# Not run, will raise error
+# pbmc[ctrl.unshared.genes,]
+```
+
+- A [ligerDataset object](../reference/liger-class.html) can be subset by both cells and genes. 
+
+Cell level subsetting works in the exactly same way as a [liger object](../reference/liger-class).
+
+```{R}
+ctrlLD <- dataset(pbmc, "ctrl")
+ctrlLDSmall <- ctrlLD[, 1:100]
+```
+
+Gene level subsetting on a [ligerDataset object](../reference/liger-class.html) can achieved with any type of index.
+
+```{R}
+ctrlLDsmall <- ctrlLD[1:100, ]
+ctrlLDsmall <- ctrlLD[1:100, 1:100]
+```
+
+Note that, `scaleData(ctrlLD)` and `scaleUnsharedData(ctrlLD)` comes with only variable genes identified upstream. Subsetting genes on a [ligerDataset object](../reference/liger-class.html) is based on its raw input data. Therefore, we only take the user specification available in scaled data into the subset of scaled data. 
 
 ## Check the records of run commands
 
-TODO
+We implemented a analysis tracking feature in order to keep a record of what functions are called and what parameters are used.
 
+- To show a list of function names applied to the [liger object](../reference/liger-class.html) in time order
 
+```{R}
+commands(pbmc)
+```
+
+A unique suffix is added to each function name to keep track of calls of the same function with different parameters. 
+
+- Detailed a function call information can be retrieved with partial matching.
+
+```{R}
+commands(pbmc, "runINMF")
+```
+
+A function can be applied to an object several times with parameter tweaks. For example, different `lambda` for iNMF integration. If `runINMF()` is called several times, calling `commands(pbmc, "runINMF")` returns a list of records of all such calls, as all record names starting with `"runINMF"` are matched. So listing names first and using the unique record name will be required for getting the information of one specific call among all of such. For another example, given that `runCluster()` and `runUMAP()` are also in the record, the following result would be returned if we do matching with only `"run"`
+
+```{R}
+commands(pbmc, "run")
+```

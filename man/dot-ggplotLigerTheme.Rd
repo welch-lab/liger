@@ -89,7 +89,7 @@ automatically split to \code{ceiling(levels(variable)/10)} columns.}
 number of categories for the categorical coloring aesthetics. Labels will be
 the shown text and values will be the color code. These are passed to
 \code{\link[ggplot2]{scale_color_manual}}. Default \code{NULL} uses default
-ggplot hues and plot original labels.}
+ggplot hues and plot original labels (levels of the factor).}
 
 \item{colorPalette}{For continuous coloring, an index or a palette name to
 select from available options from ggplot

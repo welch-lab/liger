@@ -1,3 +1,4 @@
+LICENSE
 ^\.lintr$
 ^\.vscode
 ^.*\.Rproj$
@@ -17,3 +18,4 @@
 ^vignettes/articles/
 ^docs
 ^devdata
+
