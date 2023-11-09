@@ -76,12 +76,7 @@ runGeneralQC <- function(
 
     # Start calculation on each dataset
     newResultNames <- c("nUMI", "nGene", names(featureSubsets))
-    # Not using S4 cellMeta() method below because no need to do so
-    for (nrn in newResultNames) {
-        if (!nrn %in% colnames(cellMeta(object))) {
-            object[[nrn]] <- NA
-        }
-    }
+
     for (d in useDatasets) {
         ld <- dataset(object, d)
         if (isTRUE(verbose)) .log('calculating QC for dataset "', d, '"')
