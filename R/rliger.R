@@ -4550,7 +4550,7 @@ getProportionMito <- function(object, use.norm = FALSE, mito.pattern = "^mt-") {
     data.use <- object@norm.data
   }
   percent_mito <- unlist(lapply(unname(data.use), function(x) {
-    colSums(x[mito.genes, ]) / colSums(x)
+    colSums(x[rownames(x) %in% mito.genes, ]) / colSums(x)
   }), use.names = TRUE)
 
   return(percent_mito)
