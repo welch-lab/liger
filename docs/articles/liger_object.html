@@ -195,6 +195,55 @@ kinds of data in sections below.</p>
 <span>    <span class="fu"><a href="../reference/runUMAP.html">runUMAP</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="access-a-dataset">Access a dataset<a class="anchor" aria-label="anchor" href="#access-a-dataset"></a>
+</h2>
+<p>As introduced above, the dataset-specific information is contained in
+a <a href="../reference/ligerDataset-class.html">ligerDataset</a>
+object.</p>
+<ul>
+<li>To get the names of all datasets</li>
+</ul>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## [1] "ctrl" "stim"</span></span></code></pre>
+<ul>
+<li>To get the number of all datasets</li>
+</ul>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## [1] 2</span></span></code></pre>
+<ul>
+<li>To access the <a href="../reference/ligerDataset-class.html">ligerDataset</a> object for
+a specific dataset</li>
+</ul>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ctrlLD</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/liger-class.html">dataset</a></span><span class="op">(</span><span class="va">pbmc</span>, dataset <span class="op">=</span> <span class="st">"ctrl"</span><span class="op">)</span></span>
+<span><span class="co"># Alternatively, using numeric index</span></span>
+<span><span class="va">ctrlLD</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/liger-class.html">dataset</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<p>In other LIGER functions where the argument <code>useDatasets</code>
+is allowed, users can always use the exact character name(s) or the
+numeric index to specify the datasets to be involved in the analysis.
+Moreoever, a logical vector of index is also allowed and could ease the
+usage in some cases.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Not run, just for example, assuming we've got the clustering for such an object</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">ligerObj</span><span class="op">)</span></span>
+<span><span class="co">## [1] female-1  female-2  male-3  male-4  female-5 ......</span></span>
+<span><span class="va">femaleIdx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/startsWith.html" class="external-link">startsWith</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">ligerObj</span><span class="op">)</span>, <span class="st">"fe"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/liger-DEG.html">runMarkerDEG</a></span><span class="op">(</span><span class="va">ligerObj</span>, conditionBy <span class="op">=</span> <span class="st">"dataset"</span>, splitBy <span class="op">=</span> <span class="st">"leiden_cluster"</span>, </span>
+<span>             useDatasets <span class="op">=</span> <span class="va">femaleIdx</span><span class="op">)</span></span></code></pre></div>
+<p>In the example above, the <code><a href="../reference/liger-DEG.html">runMarkerDEG()</a></code> funcion is
+parametered for detecting dataset specific markers within each cluster,
+and only within the female samples. For example, cells from condition
+“female-1 and cluster 1” will be tested against cells belonging to
+condition “cluster 1 and all other female datasets”. Can be use</p>
+<ul>
+<li>To access multiple datasets, returned in a list</li>
+</ul>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ldList</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/liger-class.html">datasets</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="access-feature-matrices">Access feature matrices<a class="anchor" aria-label="anchor" href="#access-feature-matrices"></a>
 </h2>
 <p>We have three main generics for accessing feature matrices, namingly
@@ -206,7 +255,7 @@ the case for raw counts.</p>
 <ul>
 <li>To get a list of the raw counts from all datasets:</li>
 </ul>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rawList</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ligerDataset-class.html">rawData</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">rawList</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">rawList</span><span class="op">)</span></span>
@@ -217,7 +266,7 @@ the case for raw counts.</p>
 <ul>
 <li>To get the raw counts from a specific dataset:</li>
 </ul>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">stimRaw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ligerDataset-class.html">rawData</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"stim"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">stimRaw</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">stimRaw</span><span class="op">)</span></span>
@@ -234,7 +283,7 @@ the case for raw counts.</p>
 <ul>
 <li>To replace the raw counts with a new matrix object:</li>
 </ul>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ctrlRaw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ligerDataset-class.html">rawData</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"ctrl"</span><span class="op">)</span></span>
 <span><span class="co"># Assume we do some operation on it here</span></span>
 <span><span class="fu"><a href="../reference/ligerDataset-class.html">rawData</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"ctrl"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">ctrlRaw</span></span></code></pre></div>
@@ -242,15 +291,15 @@ the case for raw counts.</p>
 modification in object content. Replacement with unmatching feature
 names or barcodes will be rejected. In the case where there is a need to
 replace the dataset with a different set of barcodes or features, we
-suggest recreate a new <a href="../reference/ligerDataset-class.html">ligerDataset</a> object with
+suggest recreating a new <a href="../reference/ligerDataset-class.html">ligerDataset</a> object with
 the new raw counts (or other feature matrix), and then replace the whole
 dataset with it.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ctrlRaw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ligerDataset-class.html">rawData</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"ctrl"</span><span class="op">)</span></span>
 <span><span class="va">ctrlRawSubset</span> <span class="op">&lt;-</span> <span class="va">ctrlRaw</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">200</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">200</span><span class="op">]</span></span>
 <span><span class="co">## Not Run, will raise error</span></span>
 <span><span class="co"># rawData(pbmc, "ctrl") &lt;- ctrlRawSubset</span></span></code></pre></div>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ctrlNew</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createLigerDataset.html">createLigerDataset</a></span><span class="op">(</span>rawData <span class="op">=</span> <span class="va">ctrlRawSubset</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/liger-class.html">dataset</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"ctrl"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">ctrlNew</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span>
@@ -265,7 +314,7 @@ reduction are all stored in <code>cellMeta(obj)</code>.</p>
 <ul>
 <li>To have a look at the full metadata table:</li>
 </ul>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/liger-class.html">cellMeta</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## DataFrame with 600 rows and 10 columns</span></span>
 <span><span class="co">##                        dataset               barcode      nUMI     nGene</span></span>
@@ -310,7 +359,7 @@ reduction are all stored in <code>cellMeta(obj)</code>.</p>
 <ul>
 <li>To retrieve one of the variables:</li>
 </ul>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">nUMI</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/liger-class.html">cellMeta</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"nUMI"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">nUMI</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">nUMI</span><span class="op">)</span></span>
@@ -322,7 +371,7 @@ reduction are all stored in <code>cellMeta(obj)</code>.</p>
 <ul>
 <li>To retrieve multiple variables:</li>
 </ul>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/liger-class.html">cellMeta</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"nUMI"</span>, <span class="st">"nGene"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## DataFrame with 600 rows and 2 columns</span></span>
 <span><span class="co">##                            nUMI     nGene</span></span>
@@ -341,7 +390,7 @@ reduction are all stored in <code>cellMeta(obj)</code>.</p>
 <ul>
 <li>To retrieve the matrix of a dimension reduction result</li>
 </ul>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">umap</span> <span class="op">&lt;-</span> <span class="va">pbmc</span><span class="op">$</span><span class="va">UMAP</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">umap</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">umap</span><span class="op">)</span></span>
@@ -354,7 +403,7 @@ reduction are all stored in <code>cellMeta(obj)</code>.</p>
 dataset), use the argument <code>cellIdx</code> with any valid indexing
 value (numerics, barcodes, logicals) that applies to all cells:</li>
 </ul>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">umapCtrl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/liger-class.html">cellMeta</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"UMAP"</span>, useDataset <span class="op">=</span> <span class="st">"ctrl"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">umapCtrl</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">umapCtrl</span><span class="op">)</span></span></code></pre></div>
@@ -365,14 +414,14 @@ value (numerics, barcodes, logicals) that applies to all cells:</li>
 matching size (<code><a href="https://rdrr.io/r/base/length.html" class="external-link">length()</a></code> or <code><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow()</a></code>) with the
 number of all cells (<code>ncol(pbmc)</code>):</li>
 </ul>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">foo</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">pbmc</span><span class="op">$</span><span class="va">foo</span> <span class="op">&lt;-</span> <span class="va">foo</span></span>
 <span><span class="co"># Alternatively</span></span>
 <span><span class="fu"><a href="../reference/liger-class.html">cellMeta</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"foo"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">foo</span></span></code></pre></div>
 <p>If the new variable is only for a subset of cells (e.g. the original
 clustering derived from an individual dataset).</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ctrlBar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="fu"><a href="../reference/liger-class.html">dataset</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"ctrl"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/liger-class.html">cellMeta</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"ctrl_bar"</span>, useDataset <span class="op">=</span> <span class="st">"ctrl"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">ctrlBar</span></span></code></pre></div>
 </div>
@@ -401,7 +450,7 @@ information for each dataset during online iNMF interations</li>
 <span class="math inline">\(U\)</span> matrices produced for each
 dataset, involved in UINMF</li>
 </ul>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">HList</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ligerDataset-class.html">getMatrix</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"H"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">HList</span>, <span class="va">dim</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $ctrl</span></span>
@@ -413,12 +462,142 @@ dataset, involved in UINMF</li>
 <div class="section level2">
 <h2 id="subsetting-the-data">Subsetting the data<a class="anchor" aria-label="anchor" href="#subsetting-the-data"></a>
 </h2>
-<p>TODO</p>
+<ul>
+<li>A <a href="../reference/liger-class.html">liger</a> object can be
+subset by both cells and genes.</li>
+</ul>
+<p>For cell level subsetting, any indexing method among barcode names,
+numeric or logical index can do the job. Cells are indexed by
+<code>rownames(cellMeta(object))</code>, which is a concatenation of the
+barcodes from each dataset, and datasets are ordered as
+<code>names(object)</code> shows.</p>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmcSmall</span> <span class="op">&lt;-</span> <span class="va">pbmc</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">100</span><span class="op">]</span></span></code></pre></div>
+<pre><code><span><span class="co">## Thu Nov  9 14:35:02 2023 ... Subsetting dataset: ctrl</span></span></code></pre>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmcCluster1</span> <span class="op">&lt;-</span> <span class="va">pbmc</span><span class="op">[</span>, <span class="va">pbmc</span><span class="op">$</span><span class="va">leiden_cluster</span> <span class="op">==</span> <span class="fl">1</span><span class="op">]</span></span></code></pre></div>
+<pre><code><span><span class="co">## Thu Nov  9 14:35:02 2023 ... Subsetting dataset: ctrl</span></span></code></pre>
+<pre><code><span><span class="co">## Thu Nov  9 14:35:02 2023 ... Subsetting dataset: stim</span></span></code></pre>
+<p>For gene level subsetting, we only allow using gene names, because it
+is assumed that different datasets can have different set of genes. And
+only genes shared by all datasets can be used.</p>
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmcVarOnly</span> <span class="op">&lt;-</span> <span class="va">pbmc</span><span class="op">[</span><span class="fu"><a href="../reference/liger-class.html">varFeatures</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>,<span class="op">]</span></span></code></pre></div>
+<pre><code><span><span class="co">## Thu Nov  9 14:35:02 2023 ... Subsetting dataset: ctrl</span></span></code></pre>
+<pre><code><span><span class="co">## Thu Nov  9 14:35:02 2023 ... Subsetting dataset: stim</span></span></code></pre>
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ctrlUnsharedGenes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"P2RY1"</span>, <span class="st">"GFI1B"</span>, <span class="st">"HDGFRP2"</span>, <span class="st">"TUBGCP6"</span>, <span class="st">"CELA1"</span><span class="op">)</span></span>
+<span><span class="co"># Not run, will raise error</span></span>
+<span><span class="co"># pbmc[ctrl.unshared.genes,]</span></span></code></pre></div>
+<ul>
+<li>A <a href="../reference/liger-class.html">ligerDataset object</a>
+can be subset by both cells and genes.</li>
+</ul>
+<p>Cell level subsetting works in the exactly same way as a <a href="../reference/liger-class">liger object</a>.</p>
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ctrlLD</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/liger-class.html">dataset</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"ctrl"</span><span class="op">)</span></span>
+<span><span class="va">ctrlLDSmall</span> <span class="op">&lt;-</span> <span class="va">ctrlLD</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">100</span><span class="op">]</span></span></code></pre></div>
+<p>Gene level subsetting on a <a href="../reference/liger-class.html">ligerDataset object</a> can
+achieved with any type of index.</p>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ctrlLDsmall</span> <span class="op">&lt;-</span> <span class="va">ctrlLD</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">100</span>, <span class="op">]</span></span>
+<span><span class="va">ctrlLDsmall</span> <span class="op">&lt;-</span> <span class="va">ctrlLD</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">100</span><span class="op">]</span></span></code></pre></div>
+<p>Note that, <code>scaleData(ctrlLD)</code> and
+<code>scaleUnsharedData(ctrlLD)</code> comes with only variable genes
+identified upstream. Subsetting genes on a <a href="../reference/liger-class.html">ligerDataset object</a> is based on
+its raw input data. Therefore, we only take the user specification
+available in scaled data into the subset of scaled data.</p>
 </div>
 <div class="section level2">
 <h2 id="check-the-records-of-run-commands">Check the records of run commands<a class="anchor" aria-label="anchor" href="#check-the-records-of-run-commands"></a>
 </h2>
-<p>TODO</p>
+<p>We implemented a analysis tracking feature in order to keep a record
+of what functions are called and what parameters are used.</p>
+<ul>
+<li>To show a list of function names applied to the <a href="../reference/liger-class.html">liger object</a> in time order</li>
+</ul>
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/liger-class.html">commands</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## [1] "normalize.liger_ff44c1ea9a"      "selectGenes.liger_3cf322c0e5"   </span></span>
+<span><span class="co">## [3] "scaleNotCenter.liger_f8b53451b7" "runINMF.liger_037ae48f4d"       </span></span>
+<span><span class="co">## [5] "quantileNorm.liger_cf17aa2b3d"   "runCluster_a660abdec8"          </span></span>
+<span><span class="co">## [7] "runUMAP_ef2cd82b20"</span></span></code></pre>
+<p>A unique suffix is added to each function name to keep track of calls
+of the same function with different parameters.</p>
+<ul>
+<li>Detailed a function call information can be retrieved with partial
+matching.</li>
+</ul>
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/liger-class.html">commands</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"runINMF"</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## A liger command record, performed at 11-09-2023 14:34:59 EST </span></span>
+<span><span class="co">## Call: runINMF.liger(object, k = k, lambda = lambda, seed = seed, verbose = verbose,      ...) </span></span>
+<span><span class="co">## Parameters:</span></span>
+<span><span class="co">##     k : 20 </span></span>
+<span><span class="co">##     lambda : 5 </span></span>
+<span><span class="co">##     nIteration : 30 </span></span>
+<span><span class="co">##     nRandomStarts : 1 </span></span>
+<span><span class="co">##     HInit : NULL </span></span>
+<span><span class="co">##     WInit : NULL </span></span>
+<span><span class="co">##     VInit : NULL </span></span>
+<span><span class="co">##     seed : 1 </span></span>
+<span><span class="co">##     verbose : TRUE</span></span></code></pre>
+<p>A function can be applied to an object several times with parameter
+tweaks. For example, different <code>lambda</code> for iNMF integration.
+If <code><a href="../reference/runINMF.html">runINMF()</a></code> is called several times, calling
+<code>commands(pbmc, "runINMF")</code> returns a list of records of all
+such calls, as all record names starting with <code>"runINMF"</code> are
+matched. So listing names first and using the unique record name will be
+required for getting the information of one specific call among all of
+such. For another example, given that <code><a href="../reference/runCluster.html">runCluster()</a></code> and
+<code><a href="../reference/runUMAP.html">runUMAP()</a></code> are also in the record, the following result
+would be returned if we do matching with only <code>"run"</code></p>
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/liger-class.html">commands</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"run"</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## $runINMF.liger_037ae48f4d</span></span>
+<span><span class="co">## A liger command record, performed at 11-09-2023 14:34:59 EST </span></span>
+<span><span class="co">## Call: runINMF.liger(object, k = k, lambda = lambda, seed = seed, verbose = verbose,      ...) </span></span>
+<span><span class="co">## Parameters:</span></span>
+<span><span class="co">##     k : 20 </span></span>
+<span><span class="co">##     lambda : 5 </span></span>
+<span><span class="co">##     nIteration : 30 </span></span>
+<span><span class="co">##     nRandomStarts : 1 </span></span>
+<span><span class="co">##     HInit : NULL </span></span>
+<span><span class="co">##     WInit : NULL </span></span>
+<span><span class="co">##     VInit : NULL </span></span>
+<span><span class="co">##     seed : 1 </span></span>
+<span><span class="co">##     verbose : TRUE </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $runCluster_a660abdec8</span></span>
+<span><span class="co">## A liger command record, performed at 11-09-2023 14:34:59 EST </span></span>
+<span><span class="co">## Call: runCluster(.) </span></span>
+<span><span class="co">## Parameters:</span></span>
+<span><span class="co">##     resolution : 1 </span></span>
+<span><span class="co">##     nNeighbors : 20 </span></span>
+<span><span class="co">##     prune : 0.0666666666666667 </span></span>
+<span><span class="co">##     eps : 0.1 </span></span>
+<span><span class="co">##     nRandomStarts : 10 </span></span>
+<span><span class="co">##     nIterations : 5 </span></span>
+<span><span class="co">##     method : "leiden" </span></span>
+<span><span class="co">##     useDims : NULL </span></span>
+<span><span class="co">##     groupSingletons : TRUE </span></span>
+<span><span class="co">##     clusterName : "leiden_cluster" </span></span>
+<span><span class="co">##     seed : 1 </span></span>
+<span><span class="co">##     verbose : TRUE </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $runUMAP_ef2cd82b20</span></span>
+<span><span class="co">## A liger command record, performed at 11-09-2023 14:34:59 EST </span></span>
+<span><span class="co">## Call: runUMAP(.) </span></span>
+<span><span class="co">## Parameters:</span></span>
+<span><span class="co">##     useRaw : FALSE </span></span>
+<span><span class="co">##     useDims : NULL </span></span>
+<span><span class="co">##     nDims : 2 </span></span>
+<span><span class="co">##     distance : "cosine" </span></span>
+<span><span class="co">##     nNeighbors : 20 </span></span>
+<span><span class="co">##     minDist : 0.1 </span></span>
+<span><span class="co">##     dimredName : "UMAP" </span></span>
+<span><span class="co">##     seed : 42 </span></span>
+<span><span class="co">##     verbose : TRUE</span></span></code></pre>
 </div>
   </div>
 
