@@ -271,10 +271,15 @@ runINMF.liger <- function(
     )
 
     object@W <- out$W
+    rownames(object@W) <- varFeatures(object)
     for (d in names(object)) {
         ld <- dataset(object, d)
         ld@H <- out$H[[d]]
         ld@V <- out$V[[d]]
+        if (isH5Liger(ld)) {
+            colnames(ld@H) <- colnames(ld)
+            rownames(ld@V) <- varFeatures(object)
+        }
         datasets(object, check = FALSE)[[d]] <- ld
     }
     object@uns$factorization <- list(k = k, lambda = lambda)
@@ -696,31 +701,47 @@ runOnlineINMF.liger <- function(
                  "datasets. Please run `runOnlineINMF()` without `newDataset` ",
                  "first.")
         }
-        # Put new datasets into input liger object
+
+        newNames <- names(newDatasets)
+        if (any(newNames %in% names(object))) {
+            stop("Names of `newDatasets` overlap with existing datasets.")
+        }
         if (is.list(newDatasets)) {
-            allType <- sapply(newDatasets, function(x) class(x)[1])
-            if (!all(allType == "dgCMatrix")) {
-                stop("`newDatasets` must contain only `dgCMatrix`.")
-            }
+            # A list of raw data
             if (is.null(names(newDatasets))) {
-                stop("`newDatasets` must be a NAMED list.")
+                stop("The list of new datasets must be named.")
             }
-            allNewNames <- character()
             for (i in seq_along(newDatasets)) {
-                if (names(newDatasets)[i] %in% names(object)) {
-                    newName <- paste0(names(newDatasets)[i], ".1")
-                } else newName <- names(newDatasets)[i]
-                dataset(object, newName) <- newDatasets[[i]]
-                allNewNames <- c(allNewNames, newName)
+                if (inherits(newDatasets[[i]], "dgCMatrix")) {
+                    dataset(object, names(newDatasets)[i]) <- newDatasets[[i]]
+                } else if (is.character(newDatasets[[i]])) {
+                    # Assume is H5 filename
+                    ld <- createH5LigerDataset(newDatasets[[i]])
+                    dataset(object, names(newDatasets[i])) <- ld
+                } else {
+                    stop("Cannot interpret `newDatasets` element ", i)
+                }
             }
-            object <- normalize(object, useDatasets = allNewNames,
-                                verbose = verbose)
-            object <- scaleNotCenter(object, useDatasets = allNewNames,
-                                     verbose = verbose)
-            newDatasets <- getMatrix(object, slot = "scaleData",
-                                     dataset = allNewNames, returnList = TRUE)
+        } else if (inherits(newDatasets, "liger")) {
+            # A liger object with all new datasets
+            object <- c(object, newDatasets)
         } else {
-            stop("`newDatasets` must be a named list of dgCMatrix.")
+            stop("`newDatasets` must be either a named list or a liger object")
+        }
+
+        object <- normalize(object, useDatasets = newNames)
+        object <- scaleNotCenter(object, useDatasets = newNames)
+        newDatasets <- list()
+        for (d in newNames) {
+            ld <- dataset(object, d)
+            sd <- scaleData(ld)
+            if (inherits(sd, "H5D")) {
+                newDatasets[[d]] <- .H5DToH5Mat(sd)
+            } else if (inherits(sd, "H5Group")) {
+                newDatasets[[d]] <- .H5GroupToH5SpMat(sd, c(length(varFeatures(object)), ncol(ld)))
+            } else {
+                newDatasets[[d]] <- sd
+            }
         }
     }
     object <- closeAllH5(object)
@@ -731,16 +752,35 @@ runOnlineINMF.liger <- function(
                                HALSiter = HALSiter, verbose = verbose,
                                WInit = WInit, VInit = VInit, AInit = AInit,
                                BInit = BInit, seed = seed)
-
-    for (i in seq_along(object)) {
-        ld <- dataset(object, i)
-        ld@H <- res$H[[i]]
-        ld@V <- res$V[[i]]
-        ld@A <- res$A[[i]]
-        ld@B <- res$B[[i]]
-        datasets(object, check = FALSE)[[i]] <- ld
+    if (!isTRUE(projection)) {
+        # Scenario 1&2, everything updated
+        for (i in seq_along(object)) {
+            ld <- dataset(object, i)
+            ld@H <- res$H[[i]]
+            ld@V <- res$V[[i]]
+            ld@A <- res$A[[i]]
+            ld@B <- res$B[[i]]
+            if (isH5Liger(ld)) {
+                colnames(ld@H) <- colnames(ld)
+                rownames(ld@V) <- varFeatures(object)
+                rownames(ld@B) <- varFeatures(object)
+            }
+            datasets(object, check = FALSE)[[i]] <- ld
+        }
+        object@W <- res$W
+        rownames(object@W) <- varFeatures(object)
+    } else {
+        # Scenario 3, only H of newDatasets returned
+        for (i in seq_along(newDatasets)) {
+            dname <- names(newDatasets)[i]
+            ld <- dataset(object, dname)
+            ld@H <- res$H[[i]]
+            if (isH5Liger(ld)) {
+                colnames(ld@H) <- colnames(ld)
+            }
+            datasets(object, check = FALSE)[[dname]] <- ld
+        }
     }
-    object@W <- res$W
     object@uns$factorization <- list(k = k, lambda = lambda)
     suppressMessages({object <- restoreH5Liger(object)})
     return(object)
@@ -769,6 +809,7 @@ runOnlineINMF.liger <- function(
              "devtools::install_github(\"welch-lab/RcppPlanc\")")
     nDatasets <- length(object) + length(newDatasets)
     barcodeList <- c(lapply(object, colnames), lapply(newDatasets, colnames))
+    names(barcodeList) <- c(names(object), names(newDatasets))
     features <- rownames(object[[1]])
     if (!is.null(seed)) set.seed(seed)
 
@@ -793,16 +834,27 @@ runOnlineINMF.liger <- function(
                                  Winit = WInit, Ainit = AInit, Binit = BInit,
                                  verbose = verbose)
     factorNames <- paste0("Factor_", seq(k))
-    for (i in seq(nDatasets)) {
-        res$H[[i]] <- t(res$H[[i]])
-        dimnames(res$H[[i]]) <- list(factorNames, barcodeList[[i]])
-        dimnames(res$V[[i]]) <- list(features, factorNames)
-        dimnames(res$A[[i]]) <- list(factorNames, factorNames)
-        dimnames(res$B[[i]]) <- list(features, factorNames)
+    if (isTRUE(projection)) {
+        # Scenario 3 only got H for new datasets
+        for (i in seq_along(newDatasets)) {
+            dname <- names(newDatasets)[i]
+            res$H[[i]] <- t(res$H[[i]])
+            dimnames(res$H[[i]]) <- list(factorNames, barcodeList[[dname]])
+            names(res$H) <- names(newDatasets)
+        }
+    } else {
+        # Scenario 1&2 got everything
+        for (i in seq(nDatasets)) {
+            res$H[[i]] <- t(res$H[[i]])
+            dimnames(res$H[[i]]) <- list(factorNames, barcodeList[[i]])
+            dimnames(res$V[[i]]) <- list(features, factorNames)
+            dimnames(res$A[[i]]) <- list(factorNames, factorNames)
+            dimnames(res$B[[i]]) <- list(features, factorNames)
+        }
+        names(res$B) <- names(res$A) <- names(res$V) <- names(res$H) <-
+            names(barcodeList)
+        dimnames(res$W) <- list(features, factorNames)
     }
-    names(res$A) <- names(res$B) <- names(res$V) <-
-        names(res$H) <- c(names(object), names(newDatasets))
-    dimnames(res$W) <- list(features, factorNames)
     return(res)
 }
 
@@ -1108,10 +1160,16 @@ runUINMF.liger <- function(
         ld <- dataset(object, i)
         ld@H <- res$H[[i]]
         ld@V <- res$V[[i]]
-        if (!is.null(ld@scaleUnsharedData)) ld@U <- res$U[[i]]
+        if (!is.null(ld@scaleUnsharedData)) {
+            ld@U <- res$U[[i]]
+            rownames(ld@U) <- ld@varUnsharedFeatures
+        }
+        colnames(ld@H) <- colnames(ld)
+        rownames(ld@V) <- varFeatures(object)
         datasets(object, check = FALSE)[[i]] <- ld
     }
     object@W <- res$W
+    rownames(ld@W) <- varFeatures(object)
     object@uns$factorization <- list(k = k, lambda = lambda)
     return(object)
 }
@@ -1271,7 +1329,7 @@ quantileNorm.liger <- function(
         ...
 ) {
     .checkObjVersion(object)
-    .checkValidFactorResult(object, useDatasets = names(object))
+    .checkValidFactorResult(object, checkV = FALSE)
     if (is.null(reference)) {
         # If ref_dataset not given, set the one with the largest number of
         # cells as reference.

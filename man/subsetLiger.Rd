@@ -11,7 +11,7 @@ subsetLiger(
   useSlot = NULL,
   chunkSize = 1000,
   verbose = getOption("ligerVerbose"),
-  newH5 = "auto",
+  newH5 = TRUE,
   returnObject = TRUE,
   ...
 )
@@ -37,8 +37,7 @@ Default \code{1000}.}
 
 \item{newH5}{Whether to create new H5 files on disk for the subset datasets
 if involved datasets in the \code{object} is HDF5 based. \code{TRUE} writes a
-new ones, \code{FALSE} returns in memory data. Default \code{"auto"} writes a
-new dataset when more than 8000 cells from that dataset is subscribed.}
+new ones, \code{FALSE} returns in memory data.}
 
 \item{returnObject}{Logical, whether to return a \linkS4class{liger} object
 for result. Default \code{TRUE}. \code{FALSE} returns a list containing

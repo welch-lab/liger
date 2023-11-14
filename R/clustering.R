@@ -245,3 +245,52 @@ groupSingletons <- function(
     newClusts <- factor(newClusts)
     return(newClusts)
 }
+
+
+
+#' Create new variable from categories in cellMeta
+#' @description
+#' Designed for fast variable creation when a new variable is going to be
+#' created from existing variable. For example, multiple samples can be mapped
+#' to the same study design condition, clusters can be mapped to cell types.
+#' @param object A \linkS4class{liger} object.
+#' @param from The name of the original variable to be mapped from.
+#' @param newTo The name of the new variable to store the mapped result. Default
+#' \code{NULL} returns the new variable (factor class).
+#' @param ... Mapping criteria, argument names are original existing categories
+#' in the \code{from} and values are new categories in the new variable.
+#' @return When \code{newTo = NULL}, a factor object of the new variable.
+#' Otherwise, the input object with variable \code{newTo} updated in
+#' \code{cellMeta(object)}.
+#' @export
+#' @examples
+#' pbmc <- mapCellMeta(pbmc, from = "dataset", newTo = "modal",
+#'                     ctrl = "rna", stim = "rna")
+mapCellMeta <- function(
+        object,
+        from,
+        newTo = NULL,
+        ...
+) {
+    object <- recordCommand(object)
+    from <- cellMeta(object, from)
+    if (!is.factor(from)) stop("`from` must be a factor class variable.")
+    mapping <- list(...)
+    fromCats <- names(mapping)
+    notFound <- fromCats[!fromCats %in% levels(from)]
+    if (length(notFound) > 0) {
+        stop("The following categories requested not found: ",
+             paste0(notFound, collapse = ", "))
+    }
+
+    toCats <- unlist(mapping)
+    unchangedCats <- levels(from)
+    unchangedCats <- unchangedCats[!unchangedCats %in% fromCats]
+    names(unchangedCats) <- unchangedCats
+    if (length(unchangedCats) > 0) toCats <- c(toCats, unchangedCats)
+    to <- toCats[as.character(from)]
+    to <- factor(unname(to), levels = unique(toCats))
+    if (is.null(newTo)) return(to)
+    cellMeta(object, newTo) <- to
+    return(object)
+}

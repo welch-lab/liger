@@ -133,6 +133,11 @@ liger <- setClass(
                                          "dimension of scaleData in dataset ",
                                          "(H5)", d))
                         }
+                        scaleDataIdx <- scaleData(ld)[["featureIdx"]][]
+                        if (!identical(rownames(ld)[scaleDataIdx], varFeatures(x))) {
+                            return("HDF5 scaled data feature index does not ",
+                                   "match variable features")
+                        }
                     }
                 }
             }

@@ -254,6 +254,7 @@ removeMissing <- function(
         minFeatures = NULL,
         useDatasets = NULL,
         filenameSuffix = "removeMissing",
+        newH5 = TRUE,
         verbose = getOption("ligerVerbose"),
         ...
 ) {
@@ -296,7 +297,9 @@ removeMissing <- function(
                 featureIdx = featureIdx,
                 cellIdx = cellIdx,
                 filenameSuffix = filenameSuffix,
-                verbose = verbose, ...
+                verbose = verbose,
+                newH5 = newH5,
+                ...
             )
         } else {
             datasets.new[[d]] <- ld

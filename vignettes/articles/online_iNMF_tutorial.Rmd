@@ -8,165 +8,170 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, results = "hide")
+```
+
+## Load data and preprocess
+
+LIGER supports integrating datasets based on HDF5 files, for examples, the 10X CellRanger output file located at `sample/outs/filtered_feature_bc_matrix.h5` can be used with LIGER. Here's the link to learn more about [CellRanger output HDF5 files](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/h5_matrices). With the feature that we read one chunk of data into memory at a time, large-scale datasets stored on disk can be analyzed with a rather small memory specification. 
+
+>Large datasets are often generated over multiple 10X runs (for example, multiple biological replicates). In such cases it may be necessary to merge the HDF5 files from each run into a single HDF5 file. We provide the `mergeH5()` function for this purpose.
+
+To integrate datasets stored in HDF5 files, we first create a [liger object](../reference/liger-class.html) using the file names of the HDF5 files. We prepared the following example datasets for demonstration:
+
+- [pbmcs_ctrl.h5](https://figshare.com/ndownloader/files/43108963)
+- [pbmcs_stim.h5](https://figshare.com/ndownloader/files/43108966)
+
+```{R}
+library(rliger2)
+
+dataSource <- data.frame(
+    filenames = c("pbmcs_ctrl_vignette.h5", 
+                  "pbmcs_stim_vignette.h5"),
+    urls = c("https://figshare.com/ndownloader/files/43108963",
+             "https://figshare.com/ndownloader/files/43108966")
+)
+for (i in seq_len(nrow(dataSource))) {
+    if (!file.exists(dataSource$filenames[i])) {
+        download.file(dataSource$urls[i], destfile = dataSource$filenames[i])
+    }
+}
+
+pbmcs <- createLiger(list(ctrl = dataSource$filenames[1],
+                          stim = dataSource$filenames[2]))
+```
+
+Similar to other iNMF integration tutorial, we also need to preprocee the data by 1. normalizing each cell by its library size, 2. select variable genes for each dataset, and 3. scale the gene expression within each dataset in a non-negative way.
+
+```{R}
+pbmcs <- pbmcs %>%
+    normalize() %>%
+    selectGenes(var.thresh = 0.2) %>%
+    scaleNotCenter()
 ```
 
 ## Scenario 1: sampling minibatches from fully observed datasets
 
-We first create a Liger object by passing the filenames of HDF5 files containing the raw count data. The data can be downloaded [here](https://www.dropbox.com/sh/ay5r0k6to6ck1dz/AADNzhqtztBr5kTQdE-CsU5Ja?dl=0). Liger assumes by default that the HDF5 files are formatted by the 10X CellRanger pipeline. Large datasets are often generated over multiple 10X runs (for example, multiple biological replicates). In such cases it may be necessary to merge the HDF5 files from each run into a single HDF5 file. We provide the `mergeH5` function for this purpose (see below for details).
+### Online Integrative Nonnegative Matrix Factorization
 
-```{r create.object, message=FALSE, results='hide'}
-library(rliger2)
-pbmcs <- createLiger(list(stim = "pbmcs_stim.h5", ctrl = "pbmcs_ctrl.h5"), removeMissing = TRUE)
-```
-
-We then perform the normalization, gene selection, and gene scaling in an online fashion, reading the data from disk in small batches.
-```{r preprocess, message=FALSE, results='hide'}
-pbmcs = normalize(pbmcs)
-pbmcs = selectGenes(pbmcs, var.thresh = 0.2)
-pbmcs = scaleNotCenter(pbmcs)
-```
-## Online Integrative Nonnegative Matrix Factorization
 Now we can use online iNMF to factorize the data, again using only minibatches that we read from the HDF5 files on demand (default mini-batch size = 5000). Sufficient number of iterations is crucial for obtaining ideal factorization result. If the size of the mini-batch is set to be close to the size of the whole dataset (i.e. an epoch only contains one iteration), `max.epochs` needs to be increased accordingly for more iterations. 
-```{r factorize, message=FALSE, results='hide'}
-pbmcs = online_iNMF(pbmcs, k = 20, miniBatch_size = 5000, max.epochs = 5)
+
+```{R}
+pbmcs <- runIntegration(pbmcs, k = 20, method = "online")
 ```
-## Quantile Normalization and Downstream Analysis
-After performing the factorization, we can perform quantile normalization to align the datasets.
-```{r norm, message=FALSE, results='hide'}
-pbmcs = quantile_norm(pbmcs)
+
+### Joint clustering and visualization
+
+After performing the factorization, we can perform quantile normalization to align the datasets, and then use graph based community detection algorithm to find clusters.
+
+```{R}
+pbmcs <- quantileNorm(pbmcs)
+pbmcs <- runCluster(pbmcs, nNeighbors = 30, resolution = .6, nRandomStarts = 2)
 ```
 
 We can also visualize the cell factor loadings in two dimensions using t-SNE or UMAP.
-```{r visualize}
-pbmcs = runUMAP(pbmcs)
-plotByDatasetAndCluster(pbmcs, axis.labels = c("UMAP1","UMAP2"))
+
+```{r, fig.width=10}
+pbmcs <- runUMAP(pbmcs, nNeighbors = 30, minDist = .3)
+plotByDatasetAndCluster(pbmcs)
 ```
 
-Let's first evaluate the quality of data alignment. The alignment score ranges from 0 (no alignment) to 1 (perfect alignment).
-```{r alignmentScore}
-calcAlignment(pbmcs)
+### Downstream analysis
+
+For downstream analysis that requires expression data, such as differential expression test, we currently do not support direct computation using on-disk HDF5 data. In order to conduct such analyses, users need to create downsampled subset from the large-scale on-disk data and read it into memory. By default, `downsample()` function randomly samples `maxCells` cells. Alternatively, we can set balanced sampling basing on given categorical variables. Note that `newH5 = FALSE` has to be set in order to take the subsample into memory, other wise another downsampled HDF5 file would be created and still cannot be used for those downstream analysis method. 
+
+```{R}
+pbmcs.sample <- downsample(pbmcs, maxCells = 5000, useSlot = "normData", newH5 = FALSE)
 ```
 
-With HDF5 files as input, we need to sample the raw, normalized, or scaled data from the full dataset on disk and load them in memory. Some plotting functions and downstream analyses are designed to operate on a subset of cells sampled from the full dataset. This enables rapid analysis using limited memory. The readSubset function allows either uniform random sampling or sampling balanced by cluster. Here we extract the normalized count data of 5000 sampled cells.
-```{r subset, message=FALSE, results='hide'}
-pbmcs = readSubset(pbmcs, slot.use = "norm.data", max.cells = 5000)
+Using the sampled data stored in memory, we can now compare clusters or datasets to identify differentially expressed genes. The `runMarkerDEG()` function performs differential expression analysis, by default with Wilcoxon rank-sum test. The default mode of mark detection goes for finding the marker of each cluster by performing the test between a cluster against all the rest. Here, we demonstrate finding the dataset-specific markers, within each cluster.
+
+```{R}
+markerTableList <- runMarkerDEG(pbmcs.sample, conditionBy = "dataset", splitBy = "leiden_cluster")
 ```
 
-Using the sampled data stored in memory, we can now compare clusters or datasets (within each cluster) to identify differentially expressed genes. The runWilcoxon function
-performs differential expression analysis by performing an in-memory Wilcoxon rank-sum test on this subset. Thus, users can still analyze large datasets with a fixed amount of memory.
-```{r wilcox 1, message=FALSE, results='hide'}
-de_genes = runWilcoxon(pbmcs, compare.method = "datasets")
+The returned object is a list where each element is a dataset-specific marker table derived within each cluster and contains all stats for all the genes without filtering or sorting. We strongly suggest using package "dplyr" for data frame operation due to the simplicity. Here, we show an example of getting the top 10 markers for "stim" within cluster 2.
+
+```{R}
+library(dplyr)
+markerTable2 <- markerTableList$`2`
+markerTable2 %>%
+    filter(logFC > 1, padj < 0.05, group == "stim") %>%
+    arrange(padj, -logFC) %>%
+    top_n(10) %>%
+    select(feature, logFC, padj)
+    
 ```
 
-Here we show the top 10 genes in cluster 1 whose expression level significantly differ between two dataset.
-```{r wilcox 2}
-de_genes = de_genes[order(de_genes$padj), ]
-head(de_genes[de_genes$group == "1-stim",], n = 10)
+We can show UMAP coordinates of sampled cells by their loadings on each factor (Factor 4 as an example). The lower part of the figure shows the gene loading ranking of the factor, with the middle showing the ranking of the shared gene loading, and the dataset-specific gene loading ranking on two sides. 
+
+```{r, fig.height=6}
+factorMarker <- getFactorMarkers(pbmcs.sample, dataset1 = "ctrl", dataset2 = "stim")
+plotGeneLoadings(pbmcs.sample, markerTable = factorMarker, useFactor = 4)
 ```
 
-We can show UMAP coordinates of sampled cells by their loadings on each factor (Factor 1 as an example). Underneath it displays the
-most highly loading shared and dataset-specific genes, with the size of the marker indicating the magnitude of the loading.
-```{r wordClouds, warning=FALSE, results='hide', fig.keep = 'last'}
-p_wordClouds = plotWordClouds(pbmcs, num.genes = 5, return.plots = T)
-p_wordClouds[[1]]
+### Visualization with expression
+
+With the subsampled data loaded into memory, we can then also generate plots of dimensional reduction coordinates colored by expression of specified gene. For example, the gene ISG15 has expression visualized below.
+
+```{r, fig.width=6}
+plotGeneDimRed(pbmcs.sample, "ISG15")
 ```
 
-We can generate plots of dimensional reduction coordinates colored by expression of specified gene. The first two UMAP dimensions and gene ISG15 (identified by Wilcoxon test in the previous step) is used as an example here.
-```{r gene}
-plotGene(pbmcs, "ISG15", return.plots = F)
-```
+Furthermore, we can make violin plots of expression of specified gene. Taking ISG15 as an example again, we can make a violin plot for each dataset and group each by cluster. 
 
-Furthermore, we can make violin plots of expression of specified gene for each dataset (ISG15 as an example).
-```{r violin, warning=FALSE}
-plotGeneViolin(pbmcs, "ISG15", return.plots = F)
-```
-
-The online algorithm can be implemented on datasets loaded in memory as well. The same analysis is performed on the PBMCs, shown below.  
-```{r , message=FALSE, results='hide'}
-stim = readRDS("pbmcs_stim.RDS")
-ctrl = readRDS("pbmcs_ctrl.RDS")
-pbmcs_mem = createLiger(list(stim = stim, ctrl = ctrl), remove.missing = F)
-pbmcs_mem = normalize(pbmcs_mem)
-pbmcs_mem = selectGenes(pbmcs_mem, var.thresh = 0.2, do.plot = F)
-pbmcs_mem = scaleNotCenter(pbmcs_mem)
-pbmcs_mem = online_iNMF(pbmcs_mem, k = 20, miniBatch_size = 5000, max.epochs = 5)
-```
-
-```{r ,message=FALSE}
-pbmcs_mem = quantile_norm(pbmcs_mem)
-pbmcs_mem = runUMAP(pbmcs_mem)
-plotByDatasetAndCluster(pbmcs_mem, axis.labels = c("UMAP1","UMAP2"))
-```
-
-As mentioned above, it is sometimes necessary to merge multiple HDF5 files (such as multiple 10X runs from the same tissue or condition) into a single file. We provide the `mergeH5` function for this purpose. The function takes as input a list of filenames to merge (file.list), a vector of sample names that are prepended to the cell barcodes (library.names), and the name of the merged HDF5 file. The function requires that all files to be merged include exactly the same set of genes. For example, we can merge the cells and nuclei datasets used in the examples below (note that merging these particular two datasets is not something you would like to do, and is purely to demonstrate the `mergeH5` function).
-```{r merge,message=FALSE}
-mergeH5(file.list = list("allen_smarter_cells.h5", "allen_smarter_nuclei.h5"), 
-        library.names = c("cells","nuclei"),
-        new.filename = "cells_nuclei")
+```{r}
+plotGeneViolin(pbmcs.sample, "ISG15", byDataset = TRUE, title = names(pbmcs.sample))
 ```
 
 ## Scenario 2: iterative refinement by incorporating new datasets
-We can also perform online iNMF with continually arriving datasets.
-```{r prep1, message=FALSE, results='hide'}
-MOp = createLiger(list(cells = "allen_smarter_cells.h5"))
-MOp = normalize(MOp)
-MOp = selectGenes(MOp, var.thresh = 2)
-MOp.vargenes = MOp@var.genes
-MOp = scaleNotCenter(MOp)
+
+The second scenario of online learning algorithm is where we have performed factorization on existing dataset(s), and we add on continually arriving datasets to the pool and update the factorization with existing result.
+
+For example, still with the same PBMC example, we first perform online iNMF on the control dataset.
+
+```{r}
+pbmcs <- createLiger(list(ctrl = "pbmcs_ctrl_vignette.h5")) %>%
+  normalize() %>%
+  selectGenes() %>%
+  scaleNotCenter() %>%
+  runIntegration(method = "online")
 ```
 
-```{r fact1, message=FALSE, results='hide'}
-MOp = online_iNMF(MOp, k = 40, max.epochs = 1)
+Then, we obtain the new dataset, and then run online iNMF with adding it as a new arriving dataset. There are a couple of points to note.
+
+1. There are different ways of specifying new datasets. We allow using either a named list of raw data. If users work with HDF5 based data all the way, then it's best to have a named list of HDF5 filenames. If users work with in-memory matrices, then a named list of matrix objects (dgCMatrix class).
+2. New datasets are always regarded as raw count input, and will be preprocessed internally. The variable genes identified using the original existing datasets will always be used for taking the scaled data. Therefore, users need to make sure that the newly arriving datasets have them available. 
+3. Alternatively, a [liger object](../references/liger-class.html) can also be used as an input for the argument `newDatasets`. Users need to be aware of the second point above, because we remove missing features by default and can cause error when variable features obtained from existing dataserts is identified as missing when creating the object for new datasets.
+4. For HDF5 filename inputs, it is assumed that the program can find raw counts data with 10X CellRanger format. If the HDF5 file stores raw counts data in a different way (e.g. H5AD data), users will need to create a separate [liger object](../references/liger-class.html) with specification, and then use the constructed object as input while being aware of the 2nd and 3rd point above.
+5. After seccessfully integrating the new datasets with the existing factorization, the returned [liger obejct](../references/liger-class.html) will have them inserted.
+
+```{R, results="hide"}
+pbmcs.new <- runOnlineINMF(pbmcs, newDatasets = list(stim = "pbmcs_stim_vignette.h5"))
 ```
 
-```{r vis1}
-MOp = quantile_norm(MOp)
-MOp = runUMAP(MOp)
-plotByDatasetAndCluster(MOp, axis.labels = c("UMAP1","UMAP2"))
+After the factorization, we can go through the same procedure to align the factor loading and jointly cluster the cells, as well as visualize the integration result.
+
+```{r, fig.width=10}
+pbmcs.new <- quantileNorm(pbmcs.new) %>%
+  runCluster(nNeighbors = 30, resolution = .6, nRandomStarts = 2) %>%
+  runUMAP(nNeighbors = 30, minDist = .3) 
+plotByDatasetAndCluster(pbmcs.new)
 ```
 
-```{r prep2, message=FALSE, results='hide'}
-MOp2 = createLiger(list(nuclei = "allen_smarter_nuclei.h5"))
-MOp2 = normalize(MOp2)
-MOp2@var.genes = MOp@var.genes
-MOp2 = scaleNotCenter(MOp2)
+## Scenario 3: Projecting new datasets
+
+The third scenario serves as a fast inspection for new datasets. We do not update the factorization with newly arriving data, but instead, compute the factor loading in cells (i.e. $H$ matrices for new datasets) using the existing gene loading in the factors ($W$ matrix from previous factorization). Therefore, no dataset-specific gene loading in factors ($V$ matrices) can be produced for the new datasets in this approach. Scenario 3 can be triggered with specifying the new datasets, following the same guidance as in scenario 2 above, and set `projection = TRUE`. 
+
+```{r, fig.width=10}
+pbmcs <- createLiger(list(ctrl = "pbmcs_ctrl_vignette.h5")) %>%
+  normalize() %>%
+  selectGenes() %>%
+  scaleNotCenter() %>%
+  runIntegration(method = "online")
+pbmcs.new <- runOnlineINMF(pbmcs, newDatasets = list(stim = "pbmcs_stim_vignette.h5"), projection = TRUE)
+pbmcs.new <- quantileNorm(pbmcs.new) %>%
+  runCluster(nNeighbors = 30, resolution = .6, nRandomStarts = 2) %>%
+  runUMAP(nNeighbors = 30, minDist = .3) 
+plotByDatasetAndCluster(pbmcs.new)
 ```
-
-```{r fact2, message=FALSE, results='hide'}
-MOp = online_iNMF(MOp, X_new = list(nuclei = MOp2), k = 40, max.epochs = 1)
-```
-
-```{r vis2}
-MOp = quantile_norm(MOp)
-MOp = runUMAP(MOp)
-plotByDatasetAndCluster(MOp, axis.labels = c("UMAP1","UMAP2"))
-```
-
-## Scenario 3: projecting new datasets
-```{r prep3, message=FALSE, results='hide'}
-MOp = createLiger(list(cells = "allen_smarter_cells.h5"))
-MOp@var.genes = MOp.vargenes
-MOp = online_iNMF(MOp, k = 40, max.epochs = 1)
-MOp = quantile_norm(MOp)
-MOp = runUMAP(MOp)
-plotByDatasetAndCluster(MOp, axis.labels = c("UMAP1","UMAP2"))
-```
-
-```{r project, message=FALSE, results='hide'}
-MOp = online_iNMF(MOp, X_new = list(nuclei = MOp2), k = 40, project = TRUE)
-```
-
-```{r vis3}
-MOp = quantile_norm(MOp)
-MOp = runUMAP(MOp)
-plotByDatasetAndCluster(MOp, axis.labels = c("UMAP1","UMAP2"))
-```
-
-
-
-
-
-
-
-

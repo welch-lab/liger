@@ -12,6 +12,7 @@ removeMissing(
   minFeatures = NULL,
   useDatasets = NULL,
   filenameSuffix = "removeMissing",
+  newH5 = TRUE,
   verbose = getOption("ligerVerbose"),
   ...
 )

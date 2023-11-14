@@ -245,19 +245,17 @@
     return(TRUE)
 }
 
-.checkValidFactorResult <- function(object, useDatasets = NULL) {
+.checkValidFactorResult <- function(object, useDatasets = NULL,
+                                    checkV = TRUE) {
     result <- TRUE
     useDatasets <- .checkUseDatasets(object, useDatasets)
-    if (is.null(object@W)) {
-        warning("W matrix does not exist.")
-        result <- FALSE
-    } else {
-        # nGenes <- nrow(object@W)
-        k <- ncol(object@W)
+    if (is.null(object@W)) stop("W matrix does not exist.")
+    k <- ncol(object@W)
 
-        for (d in useDatasets) {
-            ld <- dataset(object, d)
-            nCells <- ncol(ld)
+    for (d in useDatasets) {
+        ld <- dataset(object, d)
+        nCells <- ncol(ld)
+        if (isTRUE(checkV)) {
             if (is.null(ld@V)) {
                 warning("V matrix does not exist for dataset '", d, "'.")
                 result <- FALSE
@@ -268,23 +266,23 @@
                     result <- FALSE
                 }
             }
-            if (is.null(ld@H)) {
-                warning("H matrix does not exist for dataset '", d, "'.")
+        }
+        if (is.null(ld@H)) {
+            warning("H matrix does not exist for dataset '", d, "'.")
+            result <- FALSE
+        } else {
+            if (!identical(dim(ld@H), c(k, nCells))) {
+                warning("Dimensionality of H matrix for dataset '", d,
+                        "' is not valid")
                 result <- FALSE
-            } else {
-                if (!identical(dim(ld@H), c(k, nCells))) {
-                    warning("Dimensionality of H matrix for dataset '", d,
-                            "' is not valid")
-                    result <- FALSE
-                }
             }
         }
-        if (k != object@uns$factorization$k)
-            warning("Number of factors does not match with object `k` slot. ")
     }
+    if (k != object@uns$factorization$k)
+        warning("Number of factors does not match with object `k` slot. ")
     if (isFALSE(result))
         stop("Cannot detect valid existing factorization result. ",
-             "Please run factorization first.")
+             "Please run factorization first. Check warnings.")
 }
 
 # !!!MaintainerDeveloperNOTE:
