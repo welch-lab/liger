@@ -16,6 +16,7 @@ createLiger(
   indptrName = NULL,
   genesName = NULL,
   barcodesName = NULL,
+  newH5 = TRUE,
   verbose = getOption("ligerVerbose"),
   ...,
   remove.missing = removeMissing,
@@ -41,8 +42,7 @@ an HDF5 file. See detail for HDF5 reading.}
 
 \item{removeMissing}{Logical. Whether to remove cells that do not have any
 counts and features not expressed in any cells from each dataset. Default
-\code{TRUE}. H5 based dataset with less than 8000 cells will be subset into
-memory.}
+\code{TRUE}.}
 
 \item{addPrefix}{Logical. Whether to add "<dataset name>_" as a prefix of
 cell identifiers (e.g. barcodes) to avoid duplicates in multiple libraries (
@@ -61,6 +61,11 @@ object. Default \code{NULL} uses \code{formatType} preset.}
 
 \item{genesName, barcodesName}{The path in a H5 file for the gene names and
 cell barcodes. Default \code{NULL} uses \code{formatType} preset.}
+
+\item{newH5}{When using HDF5 based data and subsets created after removing
+missing cells/features, whether to create new HDF5 files for the subset.
+Default \code{TRUE}. If \code{FALSE}, data will be subset into memory and
+can be dangerous for large scale analysis.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
