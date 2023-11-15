@@ -200,18 +200,27 @@ groupSingletons <- function(
         verbose = FALSE
 ) {
     # identify singletons
+    ids <- droplevels(ids)
     singletons <- names(which(table(ids) == 1))
-    singletons <- intersect(unique(ids), singletons)
-    if (!isTRUE(groupSingletons)) {
-        ids[ids %in% singletons] <- "singleton"
+    singletons <- intersect(levels(ids), singletons)
+    if (length(singletons) == 0) {
         return(ids)
+    }
+    if (!isTRUE(groupSingletons)) {
+        if (isTRUE(verbose)) {
+            .log(length(singletons), " singletons identified. ")
+        }
+        ids <- as.character(ids)
+        ids[ids %in% singletons] <- "singleton"
+        return(factor(ids))
     }
     # calculate connectivity of singletons to other clusters, add singleton
     # to cluster it is most connected to
-    clusterNames <- unique(ids)
+    clusterNames <- levels(ids)
     clusterNames <- setdiff(clusterNames, singletons)
     connectivity <- vector(mode = "numeric", length = length(clusterNames))
     names(connectivity) <- clusterNames
+    ids <- as.character(ids)
     for (i in singletons) {
         i.cells <- names(which(ids == i))
         for (j in clusterNames) {
@@ -229,9 +238,10 @@ groupSingletons <- function(
         closest_cluster <- sample(names(connectivity[mi]), 1)
         ids[i.cells] <- closest_cluster
     }
-    if (length(singletons) > 0 && isTRUE(verbose))
+    ids <- factor(ids)
+    if (isTRUE(verbose))
         .log(length(singletons), " singletons identified. ",
-             length(unique(ids)), " final clusters.")
+             length(levels(ids)), " final clusters.")
     return(ids)
 }
 
