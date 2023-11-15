@@ -675,7 +675,7 @@ selectGenes.liger <- function(
             ld, sharedFeature = sharedFeature, thresh = thresh_i,
             nGenes = nGenes_i, unshared = d %in% datasetUnshared,
             unsharedThresh = unsharedThresh_i,
-            nUMI = cellMeta(object, "nUMI", object$dataset == d),
+            nUMI = cellMeta(object, "nUMI", useDataset = d),
             alpha = alpha, chunk = chunk, verbose = verbose
         )
         selectList[[d]] <- rownames(ld)[featureMeta(ld)$isVariable]
@@ -725,6 +725,7 @@ selectGenes.liger <- function(
         chunk = 1000,
         verbose = getOption("ligerVerbose")
 ) {
+    if (is.null(normData(object))) stop("Normalized data not available.")
     if (is.null(sharedFeature)) sharedFeature <- rownames(object)
     sharedFeature <- rownames(object) %in% sharedFeature
     unsharedFeature <- !sharedFeature
