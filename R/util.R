@@ -88,7 +88,7 @@
         droplevels = TRUE,
         returnList = FALSE
 ) {
-    df <- cellMeta(object, variables, cellIdx, as.data.frame = TRUE,
+    df <- cellMeta(object, columns = variables, cellIdx = cellIdx, as.data.frame = TRUE,
                     drop = FALSE)
     if (isTRUE(checkCategorical)) {
         passing <- sapply(variables, function(v) {
