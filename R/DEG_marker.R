@@ -99,7 +99,6 @@ runPairwiseDEG <- function(
                       usePeak = usePeak, useReplicate = useReplicate,
                       nPsdRep = nPsdRep, seed = seed, verbose = verbose)
     result <- result[result$group == group1Name,]
-    result$group <- NULL
     attributes(result)$meta <- list(
         group1 = group1,
         variable1 = variable1,
@@ -206,7 +205,7 @@ runMarkerDEG <- function(
     datasetInvolve <- levels(object$dataset[allCellIdx, drop = TRUE])
     var <- factor(unlist(lapply(names(groups), function(n) {
         rep(n, length(groups[[n]]))
-    })))
+    })), levels = names(groups))
     if (isTRUE(usePeak)) {
         useDatasets <- .checkUseDatasets(object, useDatasets = datasetInvolve,
                                          modal = "atac")
@@ -241,7 +240,7 @@ runMarkerDEG <- function(
             nlevels(interaction(replicateAnn[replicateAnn$groups == x,],
                                 drop = TRUE))
         })
-        var <- factor(rep(names(var), var))
+        var <- factor(rep(names(var), var), levels = names(var))
         result <- .callDESeq22(pbs, var, verbose)
     }
     return(result)
@@ -321,21 +320,19 @@ makePseudoBulk2 <- function(mat, replicateAnn, verbose = TRUE) {
                          verbose = getOption("ligerVerbose")) {
     # DESeq2 workflow
     if (isTRUE(verbose)) .log("Calling DESeq2 Wald test")
-
     des <- DESeq2::DESeqDataSetFromMatrix(
-        pseudoBulks,
+        countData = pseudoBulks,
         colData = data.frame(groups = groups),
-        design = ~groups
+        design = formula("~groups")
     )
     des <- DESeq2::DESeq(des, test = "Wald", quiet = !verbose)
     res <- DESeq2::results(des)
-    # res <- as.data.frame(res)
-    # res$feature <- rownames(res)
-    # rownames(res) <- NULL
-    # res <- res[, c(7, 2, 5, 6)]
-    # colnames(res) <- c("feature", "logFC", "pval", "padj")
-    # res <- res[!is.na(res$padj),]
-    # res <- res[order(res$padj),]
+    res <- as.data.frame(res)
+    res$feature <- rownames(res)
+    rownames(res) <- NULL
+    res$group <- levels(groups)[1]
+    res <- res[, c(7, 8, 2, 5, 6)]
+    colnames(res) <- c("feature", "group", "logFC", "pval", "padj")
     return(res)
 }
 
