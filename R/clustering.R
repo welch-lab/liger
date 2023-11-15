@@ -222,10 +222,10 @@ groupSingletons <- function(
     names(connectivity) <- clusterNames
     ids <- as.character(ids)
     for (i in singletons) {
-        i.cells <- names(which(ids == i))
+        i.cells <- which(ids == i)
         for (j in clusterNames) {
-            j.cells <- names(which(ids == j))
-            subSNN <- SNN[i.cells, j.cells]
+            j.cells <- which(ids == j)
+            subSNN <- SNN[i.cells, j.cells, drop = FALSE]
             # to match previous behavior, random seed being set in WhichCells
             set.seed(1)
             if (is.object(subSNN))
