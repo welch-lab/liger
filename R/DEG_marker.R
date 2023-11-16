@@ -326,7 +326,8 @@ makePseudoBulk2 <- function(mat, replicateAnn, verbose = TRUE) {
         design = formula("~groups")
     )
     des <- DESeq2::DESeq(des, test = "Wald", quiet = !verbose)
-    res <- DESeq2::results(des)
+    res <- DESeq2::results(des, contrast = c("groups", levels(groups)[1],
+                                             levels(groups)[2]))
     res <- as.data.frame(res)
     res$feature <- rownames(res)
     rownames(res) <- NULL
