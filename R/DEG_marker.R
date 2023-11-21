@@ -434,3 +434,88 @@ computePval <- function(ustat, ties, N, n1n2) {
     pvals <- matrix(2 * stats::pnorm(-abs(as.numeric(z))), ncol = ncol(z))
     return(pvals)
 }
+
+
+
+
+
+######################## Visualization #########################################
+
+#' Create heatmap for showing top marker expression in conditions
+#' @export
+#' @param object A \linkS4class{liger} object, with normalized data and metadata
+#' to annotate available.
+#' @param result The data.frame returned by \code{\link{runMarkerDEG}}.
+#' @param topN Number of top features to be plot for each group. Default
+#' \code{5}.
+#' @param lfcThresh Hard threshold on logFC value. Default \code{1}.
+#' @param padjThresh Hard threshold on adjusted P-value. Default \code{0.05}.
+#' @param pctInThresh,pctOutThresh Threshold on expression percentage. These
+#' mean that a feature will only pass the filter if it is expressed in more than
+#' \code{pctInThresh} percent of cells in the corresponding cluster. Similarly
+#' for \code{pctOutThresh}. Default \code{50} and \code{50}, respectively.
+#' @param dedupBy When ranking by padj and logFC and a feature is ranked as top
+#' for multiple clusters, assign this feature as the marker of a cluster when
+#' it has the largest \code{"logFC"} in the cluster or has the lowest
+#' \code{"padj"}. Default \code{"logFC"}.
+#' @param groupBy Cell metadata variable names for cell grouping. Downsample
+#' balancing will also be aware of this. Default \code{c("dataset",
+#' "leiden_cluster")}.
+#' @param groupSize Maximum number of cells in each group to be downsampled for
+#' plotting. Default \code{50}.
+#' @param column_title Title on the column. Default \code{NULL}.
+#' @param ... Parameter passed to wrapped functions in the inheritance order:
+#' \code{\link{plotGeneHeatmap}}, \code{\link{.plotHeatmap}},
+#' \code{ComplexHeatmap::\link[ComplexHeatmap]{Heatmap}}
+#' @examples
+#' markerTable <- runMarkerDEG(pbmcPlot)
+#' plotMarkerHeatmap(pbmcPlot, markerTable)
+plotMarkerHeatmap <- function(
+        object,
+        result,
+        topN = 5,
+        lfcThresh = 1,
+        padjThresh = 0.05,
+        pctInThresh = 50,
+        pctOutThresh = 50,
+        dedupBy = c("logFC", "padj"),
+        groupBy = c("dataset", "leiden_cluster"),
+        groupSize = 50,
+        column_title = NULL,
+        ...
+) {
+    dedupBy <- match.arg(dedupBy)
+    if (dedupBy == "logFC") {
+        result <- result[order(result[[dedupBy]], decreasing = TRUE), ]
+    } else if (dedupBy == "padj") {
+        result <- result[order(result[[dedupBy]], decreasing = FALSE), ]
+    }
+    result <- result[!duplicated(result$feature), ]
+    result <- result %>% dplyr::filter(.data$logFC > lfcThresh,
+                                       .data$padj < padjThresh,
+                                       .data$pct_in > pctInThresh,
+                                       .data$pct_out < pctOutThresh) %>%
+        dplyr::group_by(.data[["group"]]) %>%
+        dplyr::arrange(.data[["padj"]], -.data[["logFC"]], .by_group = TRUE) %>%
+        dplyr::filter(dplyr::row_number() %in% seq(topN)) %>%
+        as.data.frame()
+    cellIdx <- downsample(object, maxCells = groupSize, balance = groupBy,
+                          returnIndex = TRUE)
+    featureAnn <- result[, "group", drop = FALSE]
+
+    rownames(featureAnn) <- result$feature
+    colnames(featureAnn) <- "marker"
+    plotGeneHeatmap(object, features = result$feature,
+                    cellIdx = cellIdx,
+                    useCellMeta = groupBy,
+                    featureAnnotation = featureAnn,
+                    cellSplitBy = rev(groupBy),
+                    featureSplitBy = "marker",
+                    showFeatureLegend = FALSE,
+                    cluster_columns = FALSE,
+                    cluster_column_slices = FALSE,
+                    cluster_rows = FALSE,
+                    cluster_row_slices = FALSE,
+                    column_title = column_title,
+                    ...)
+}
