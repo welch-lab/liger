@@ -432,6 +432,24 @@ the hook, users can create simple ggplots by directly starting with
 \code{ggplot(ligerObj, aes(...))} where cell metadata variables can be
 directly thrown into \code{aes()}.
 
+Special partial metadata insertion is implemented specifically for mapping
+categorical annotation from sub-population (subset object) back to original
+experiment (full-size object). For example, when sub-clustering and
+annotation is done for a specific cell-type of cells (stored in
+\code{subobj}) subset from an experiment (stored as \code{obj}), users can do
+\code{cellMeta(obj, "sub_ann", cellIdx = colnames(subobj)) <- subobj$sub_ann}
+to map the value back, leaving other cells non-annotated with NAs. Plotting
+with this variable will then also show NA cells with default grey color.
+Furthermore, sub-clustering labels for other cell types can also be mapped
+to the same variable. For example, \code{cellMeta(obj, "sub_ann",
+cellIdx = colnames(subobj2)) <- subobj2$sub_ann}. As long as the labeling
+variables are stored as factor class (categorical), the levels (category
+names) will be properly handled and merged. Other situations follow the R
+default behavior (e.g. categories might be converted to integer numbers if
+mapped to numerical variable in the original object). Note that this feature
+is only available with using the generic function \code{cellMeta} but not
+with the \code{`[[`} or \code{`$`} accessing methods due to syntax reasons.
+
 The generic \code{defaultCluster} works as both getter and setter. As a
 setter, users can do \code{defaultCluster(obj) <- "existingVariableName"} to
 set a categorical variable as default cluster used for visualization or
