@@ -43,6 +43,7 @@ reference:
   - runUMAP
   - runTSNE
   - runCluster
+  - mapCellMeta
   - runMarkerDEG
   - runPairwiseDEG
   - runWilcoxon
