@@ -2,20 +2,22 @@
 % Please edit documentation in R/GSEA.R
 \name{runGOEnrich}
 \alias{runGOEnrich}
-\title{Run Gene Ontology enrichment analysis on metagenes}
+\title{Run Gene Ontology enrichment analysis on differentially expressed genes.}
 \usage{
 runGOEnrich(
   result,
   group = NULL,
   useBg = TRUE,
-  orderBy = "logFC",
+  orderBy = "padj",
   logFCThresh = 1,
-  padjThresh = 0.01,
+  padjThresh = 0.05,
+  splitReg = FALSE,
   ...
 )
 }
 \arguments{
-\item{result}{Data frame of unfiltered output from \code{\link{runWilcoxon}}.}
+\item{result}{Data frame of unfiltered output from \code{\link{runMarkerDEG}}
+or \code{\link{runPairwiseDEG}}.}
 
 \item{group}{Selection of one group available from \code{result$group}.
 Default \code{NULL} uses all groups involved in DE \code{result} table.}
@@ -32,12 +34,23 @@ Or set \code{NULL} to turn off ranked mode.}
 Default \code{1}.}
 
 \item{padjThresh}{The adjusted p-value threshold less than which the genes
-will be used. Default \code{0.01}.}
+will be used. Default \code{0.05}.}
 
-\item{...}{Additional arguments passed to \code{\link[gprofiler2]{gost}}.}
+\item{splitReg}{Whether to have queries of both up-regulated and
+down-regulated genes for each group. Default \code{FALSE} only queries
+up-regulated genes and should be preferred when \code{result} comes from
+marker detection test. When \code{result} comes from group-to-group DE test,
+it is recommended to set \code{splitReg = TRUE}.}
+
+\item{...}{Additional arguments passed to
+\code{gprofiler2::\link[gprofiler2]{gost}}. Arguments \code{query},
+\code{custom_bg}, \code{domain_scope}, and \code{ordered_query} are
+pre-specified by this wrapper function. Users must set
+\code{organism = "mmusculus"} when working on mouse data.}
 }
 \value{
-A list object with the following entries
+A list object where each element is a result list for a group. Each
+result list contains two elements:
 \item{result}{data.frame of main GO analysis result.}
 \item{meta}{Meta information for the query.}
 
@@ -48,7 +61,7 @@ This function forms genesets basing on the differential expression result,
 and calls gene ontology (GO) analysis method provided by gprofiler2.
 }
 \examples{
-res <- runWilcoxon(pbmcPlot)
+res <- runMarkerDEG(pbmcPlot)
 # Setting `significant = FALSE` because it's hard for a gene list obtained
 # from small test dataset to represent real-life biology.
 go <- runGOEnrich(res, group = 0, significant = FALSE)
