@@ -147,6 +147,8 @@ by this function, so users should include them in a function call as well:
 <span>  showCellLegend <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  showFeatureLabel <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  showFeatureLegend <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  cellAnnColList <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  featureAnnColList <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  scale <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  trim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>,</span>
 <span>  baseSize <span class="op">=</span> <span class="fl">8</span>,</span>
@@ -208,6 +210,14 @@ gene symbols or factor names. Default <code>TRUE</code> for gene/factors but
 <dd><p>Logical, whether to show cell or
 feature legends. Default <code>TRUE</code>. Can be a scalar for overall control
 or a vector matching with each given annotation variable.</p></dd>
+
+
+<dt>cellAnnColList, featureAnnColList</dt>
+<dd><p>List object, with each element a
+named vector of R-interpretable color code. The names of the list elements
+are used for matching the annotation variable names. The names of the colors
+in the vectors are used for matching the levels of a variable (factor object,
+categorical). Default <code>NULL</code> generates ggplot-flavor categorical colors.</p></dd>
 
 
 <dt>scale</dt>

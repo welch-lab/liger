@@ -186,17 +186,17 @@ the new dataset specific \(H\) and \(V\) matrix, respectively.</p>
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="normalize.html">normalize</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:48 2023 ... Normalizing dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:48 2023 ... Normalizing dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:01 2023 ... Normalizing dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:01 2023 ... Normalizing dataset: stim</span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="selectGenes.html">selectGenes</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:48 2023 ... Selecting variable features for dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:48 2023 ...... 171 features selected out of 249 shared features</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:48 2023 ... Selecting variable features for dataset: stim</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:48 2023 ...... 249 features selected out of 249 shared features</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:48 2023 ... Finally 171 shared variable features selected.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:01 2023 ... Selecting variable features for dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:01 2023 ...... 168 features selected out of 249 shared features</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:01 2023 ... Selecting variable features for dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:01 2023 ...... 166 features selected out of 249 shared features</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:01 2023 ... Finally 173 shared variable features selected.</span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:48 2023 ... Scaling dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:48 2023 ... Scaling dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:01 2023 ... Scaling dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:01 2023 ... Scaling dataset: stim</span>
 <span class="r-in"><span><span class="co"># Only running a few iterations for fast examples</span></span></span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="rliger2-deprecated.html">optimizeALS</a></span><span class="op">(</span><span class="va">pbmc</span>, k <span class="op">=</span> <span class="fl">20</span>, maxIter <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`optimizeALS()` was deprecated in rliger2 1.99.0.</span>
@@ -208,10 +208,9 @@ the new dataset specific \(H\) and \(V\) matrix, respectively.</p>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">ctrl2</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">ctrl2</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pbmcNew</span> <span class="op">&lt;-</span> <span class="fu">optimizeNewData</span><span class="op">(</span><span class="va">pbmc</span>, new.data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>ctrl2 <span class="op">=</span> <span class="va">ctrl2</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                           which.datasets <span class="op">=</span> <span class="st">"ctrl"</span>, max.iters <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:48 2023 ... Initializing with new data...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Filling in NAs to H.norm matrix</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:48 2023 ... Normalizing dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:33:48 2023 ... Scaling dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:01 2023 ... Initializing with new data...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:01 2023 ... Normalizing dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:01 2023 ... Scaling dataset: ctrl</span>
 <span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in solveNNLS(rbind(W + V[[which.datasets[i]]], sqrtLambda * V[[which.datasets[i]]]),     rbind(E[[which.datasets[i]]][, colnames(new.data[[i]])],         matrix(0, nGenes, ncol(new.data[[i]])))):</span> could not find function "solveNNLS"</span>
 <span class="r-in"><span><span class="va">pbmcNew</span></span></span>
 <span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'pbmcNew' not found</span>

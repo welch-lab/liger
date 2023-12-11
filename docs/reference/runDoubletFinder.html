@@ -180,7 +180,7 @@ used datasets or vector for each. Default <code>NULL</code> sets a 0.15 proporti
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu">runDoubletFinder</span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
 <span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in `cellMeta&lt;-`(`*tmp*`, "DoubletFinder_pANN", value = NA):</span> Length of value does not match with cell index.</span>
 <span class="r-in"><span><span class="fu"><a href="liger-class.html">cellMeta</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> DataFrame with 600 rows and 10 columns</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> DataFrame with 600 rows and 7 columns</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                        dataset               barcode      nUMI     nGene</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                       &lt;factor&gt;           &lt;character&gt; &lt;numeric&gt; &lt;integer&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACATACCTCGCT.1     ctrl ctrl_AAACATACCTCGCT.1      2151       102</span>
@@ -194,32 +194,19 @@ used datasets or vector for each. Default <code>NULL</code> sets a 0.15 proporti
 <span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCGGAGATTTCAC.1     stim stim_TTCGGAGATTTCAC.1      1344       102</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTGACACTTCCTGC.1     stim stim_TTGACACTTCCTGC.1      1423       105</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTTGCATGAACGAA.1     stim stim_TTTGCATGAACGAA.1      2818       120</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                            mito      ribo      hemo quantileNormCluster</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                       &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt;            &lt;factor&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACATACCTCGCT.1         0  10.83217         0                  4 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACGGCTCTTCGC.1         0  20.25052         0                  4 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACACTCTAAGTAG.1         0   5.08293         0                  16</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACCGCCTCAGGAG.1         0  42.70123         0                  10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACGTTCTTCCGTC.1         0  38.04538         0                  8 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ...                         ...       ...       ...                 ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCATGACTTATCC.1         0   8.61595         0                  12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCATGACTTCAGG.1         0  41.29930         0                  6 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCGGAGATTTCAC.1         0   8.85417         0                  19</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTGACACTTCCTGC.1         0  11.94659         0                  19</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTTGCATGAACGAA.1         0   9.43932         0                  14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                       leiden_cluster                UMAP</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                             &lt;factor&gt;            &lt;matrix&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACATACCTCGCT.1              0 -11.93684:-1.237680</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACGGCTCTTCGC.1              0 -13.15987:-0.580667</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACACTCTAAGTAG.1              0 -11.80632:-2.525390</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACCGCCTCAGGAG.1              3   6.60326: 3.490401</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACGTTCTTCCGTC.1              1  12.50564: 0.698077</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ...                              ...                 ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCATGACTTATCC.1              4   -10.8245:-3.17633</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCATGACTTCAGG.1              1    12.6259: 0.73607</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCGGAGATTTCAC.1              7   -12.3021: 2.75106</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTGACACTTCCTGC.1              7   -12.3360: 2.55222</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTTGCATGAACGAA.1              6   -10.9757:-6.03836</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                            mito      ribo      hemo</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                       &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACATACCTCGCT.1         0  10.83217         0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACGGCTCTTCGC.1         0  20.25052         0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACACTCTAAGTAG.1         0   5.08293         0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACCGCCTCAGGAG.1         0  42.70123         0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACGTTCTTCCGTC.1         0  38.04538         0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ...                         ...       ...       ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCATGACTTATCC.1         0   8.61595         0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCATGACTTCAGG.1         0  41.29930         0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCGGAGATTTCAC.1         0   8.85417         0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTGACACTTCCTGC.1         0  11.94659         0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTTGCATGAACGAA.1         0   9.43932         0</span>
 </code></pre></div>
     </div>
   </div>

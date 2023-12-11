@@ -127,7 +127,7 @@ setting <code>filename</code> is supported.</p>
 <span>  useSlot <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  chunkSize <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"ligerVerbose"</span><span class="op">)</span>,</span>
-<span>  newH5 <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>  newH5 <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  returnObject <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -168,8 +168,7 @@ Default <code>1000</code>.</p></dd>
 <dt>newH5</dt>
 <dd><p>Whether to create new H5 files on disk for the subset datasets
 if involved datasets in the <code>object</code> is HDF5 based. <code>TRUE</code> writes a
-new ones, <code>FALSE</code> returns in memory data. Default <code>"auto"</code> writes a
-new dataset when more than 8000 cells from that dataset is subscribed.</p></dd>
+new ones, <code>FALSE</code> returns in memory data.</p></dd>
 
 
 <dt>returnObject</dt>
@@ -198,11 +197,11 @@ requested values.</p></dd>
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">pbmc.small</span> <span class="op">&lt;-</span> <span class="fu">subsetLiger</span><span class="op">(</span><span class="va">pbmc</span>, cellIdx <span class="op">=</span> <span class="va">pbmc</span><span class="op">$</span><span class="va">nUMI</span> <span class="op">&gt;</span> <span class="fl">200</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:34:25 2023 ... Subsetting dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:34:25 2023 ... Subsetting dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:39 2023 ... Subsetting dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:39 2023 ... Subsetting dataset: stim</span>
 <span class="r-in"><span><span class="va">pbmc.small</span> <span class="op">&lt;-</span> <span class="va">pbmc</span><span class="op">[</span>, <span class="va">pbmc</span><span class="op">$</span><span class="va">nGene</span> <span class="op">&gt;</span> <span class="fl">50</span><span class="op">]</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:34:25 2023 ... Subsetting dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Nov  6 16:34:25 2023 ... Subsetting dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:39 2023 ... Subsetting dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:39 2023 ... Subsetting dataset: stim</span>
 </code></pre></div>
     </div>
   </div>

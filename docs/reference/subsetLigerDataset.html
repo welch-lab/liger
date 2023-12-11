@@ -123,7 +123,7 @@ set available from scaled data.</p>
 <span>  featureIdx <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cellIdx <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  useSlot <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  newH5 <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>  newH5 <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  filename <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  filenameSuffix <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  chunkSize <span class="op">=</span> <span class="fl">1000</span>,</span>
@@ -137,7 +137,7 @@ set available from scaled data.</p>
 <span>  featureIdx <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cellIdx <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  useSlot <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  newH5 <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>  newH5 <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  filename <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  filenameSuffix <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  chunkSize <span class="op">=</span> <span class="fl">1000</span>,</span>
@@ -180,8 +180,7 @@ Missing or <code>NULL</code> for all cells.</p></dd>
 <dt>newH5</dt>
 <dd><p>Whether to create a new H5 file on disk for the subset dataset
 if <code>object</code> is HDF5 based. <code>TRUE</code> writes a new one, <code>FALSE</code>
-returns in memory data. Default <code>"auto"</code> writes a new one when more than
-8000 cells.</p></dd>
+returns in memory data.</p></dd>
 
 
 <dt>filename</dt>
