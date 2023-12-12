@@ -36,7 +36,7 @@
 \alias{cellMeta<-,liger,missing-method}
 \alias{cellMeta<-,liger,character-method}
 \alias{[[,liger,ANY,missing-method}
-\alias{[[<-,liger,ANY,missing-method}
+\alias{[[<-,liger,ANY,missing,ANY-method}
 \alias{$,liger-method}
 \alias{$<-,liger-method}
 \alias{defaultCluster}
@@ -59,6 +59,12 @@
 \alias{varFeatures<-}
 \alias{varFeatures,liger-method}
 \alias{varFeatures<-,liger,ANY,character-method}
+\alias{varUnsharedFeatures}
+\alias{varUnsharedFeatures<-}
+\alias{varUnsharedFeatures,liger,ANY-method}
+\alias{varUnsharedFeatures,ligerDataset,missing-method}
+\alias{varUnsharedFeatures<-,liger,ANY,ANY,character-method}
+\alias{varUnsharedFeatures<-,ligerDataset,missing,ANY,character-method}
 \alias{fortify.liger}
 \alias{c.liger}
 \alias{commands}
@@ -169,7 +175,7 @@ cellMeta(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE) <-
 
 \S4method{[[}{liger,ANY,missing}(x, i, j, ...)
 
-\S4method{[[}{liger,ANY,missing}(x, i, j, ...) <- value
+\S4method{[[}{liger,ANY,missing,ANY}(x, i, j, ...) <- value
 
 \S4method{$}{liger}(x, name)
 
@@ -214,6 +220,18 @@ varFeatures(x, check = TRUE) <- value
 \S4method{varFeatures}{liger}(x)
 
 \S4method{varFeatures}{liger,ANY,character}(x, check = TRUE) <- value
+
+varUnsharedFeatures(x, dataset = NULL)
+
+varUnsharedFeatures(x, dataset, check = TRUE) <- value
+
+\S4method{varUnsharedFeatures}{liger,ANY}(x, dataset = NULL)
+
+\S4method{varUnsharedFeatures}{ligerDataset,missing}(x, dataset = NULL)
+
+\S4method{varUnsharedFeatures}{liger,ANY,ANY,character}(x, dataset, check = TRUE) <- value
+
+\S4method{varUnsharedFeatures}{ligerDataset,missing,ANY,character}(x, dataset = NULL, check = TRUE) <- value
 
 \method{fortify}{liger}(model, data, ...)
 

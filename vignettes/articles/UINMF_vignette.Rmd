@@ -6,82 +6,118 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-osmFISH = readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Vignette/OSMFISH.vin.RDS")
-rna = readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Vignette/DROPVIZ.vin.RDS")
-library(rliger)
-
-```
-```{r eval = FALSE}
-install.packages('devtools')
-library(devtools)
-install_github('welch-lab/liger')
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 
-# Step 1: Preprocessing and Normalization
+Unshared integrative non-negative matrix factorization (UINMF) [[Kriebel and Welch, 2022](https://doi.org/10.1038/s41467-022-28431-4)] is an extensive algorithm of our original iNMF algorithm [[Welch J D, 2019](https://doi.org/10.1016/j.cell.2019.05.006)]. It allows integrating datasets using shared and unshared features at the same time. We demonstrated in the publication that: 
 
-First, read in your datasets. For this tutorial, we will use the osmFISH dataset (33 genes by 5,219 cells), and a downsampled single-cell RNA-seq dataset (29,463 genes by 15,000 cells). The datasets can be downloaded at https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0
+1. UINMF can be used to incorporate intergenic information when integrating transcriptomic and epigenomic datasets. 
+2. UINMF can incorporate genes not measured in targeted spatial transcriptomic datasets, allowing better resolution of fine cellular subtypes within a spatial coordinate frame. 
+3. UINMF can utilize all of the information present in single-cell multimodal datasets when integrating with single-modality datasets. 
+4. UINMF can accommodate non-orthologous genes in cross-species integration analyses.
 
-```{r eval = FALSE}
-osmFISH = readRDS("OSMFISH.vin.RDS")
-rna = readRDS("DROPVIZ.vin.RDS")
-```
+For this tutorial, we prepared example osmFISH dataset (33 genes by 5,219 cells) from the mouse somatosensory cortex, and a downsampled single-cell RNA-seq dataset (29,463 genes by 15,000 cells) from the frontal cortex. The datasets can be downloaded at https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0
+
+
+## Step 1: Preprocessing and Normalization
+
+### 1. Loading the data
+
+The prepared RDS files can be directly loaded into the R environment. They are presented in dense matrix (R default) form. We recommend converting them to sparse matrix form ("dgCMatrix" class supported by "Matrix" package) in order to reduce memory usage and speed up downstream analysis.
 
 Next, create your Liger object, submitting the datasets in list format. The unshared features should not be subsetted out, or submitted separately. Rather, they should be included in the matrix submitted for that dataset. For example,the scRNA-seq data is submitted in its entirety, the unshared features are not submitted separately. This helps ensure proper normalization.
-```{r createliger, warning = FALSE}
-osm.liger <- createLiger(list(osmFISH = osmFISH, rna = rna))
+
+```{r createliger}
+library(rliger2)
+library(Matrix)
+
+options(ligerDotSize = 0.5)
+
+osmFISH <- readRDS("uinmf_vignette_data/OSMFISH.vin.RDS")
+osmFISH <- as(osmFISH, "CsparseMatrix")
+rna <- readRDS("uinmf_vignette_data/DROPVIZ.vin.RDS")
+rna <- as(rna, "CsparseMatrix")
+lig <- createLiger(list(osmFISH = osmFISH, rna = rna))
 ```
-Normalize the datasets.The normalization is applied to the datasets in their entirety.
+
+### 2. Preprocess the datasets
+
+The normalization is applied to the datasets in their entirety.
 
 ```{r normalize}
-osm.liger <- normalize(osm.liger)
+lig <- normalize(lig)
 ```
-To include unshared features in your analysis, set the unshared parameter to TRUE when selecting genes.When selecting the unshared features, it is necessary to include a list of what datasets unshared features should be included for. For instance, in this case, we wish to include the unshared features from the RNA dataset, the second dataset in our analysis. We provide an individual tuning threshold for unshared features. If a single value is submitted, that threshold is applied to all datasets' unshared features. If multiple datasets include unshared features, the user can specify an individual thresholds for each dataset by submitting a list of thresholds the same length as the number of datasets with unshared datasets.
-The variable unshared features willl be stored in `liger@var.unshared.features`.
 
-```{r selectGenes, warning= FALSE}
-osm.liger <- selectGenes(osm.liger, unshared = TRUE, unshared.datasets = list(2), unshared.thresh= 0.4)
+The normalized data for each dataset can be accessed with `normData()`.
+
+Next, we select variable genes to be used for integration. To include unshared features in your analysis, set the `useUnsharedDatasets` with a vector of names of the datasets where unshared features should be included. For instance, in this case, we wish to include the unshared features from the RNA dataset, the second dataset, in our analysis. We provide an individual tuning threshold for unshared features. If a single value is submitted, that threshold is applied to all datasets' unshared features. If multiple datasets include unshared features, the user can specify an individual thresholds for each dataset by submitting a list of thresholds the same length as the number of datasets with unshared datasets.
+
+```{r selectGenes, message = TRUE}
+lig <- selectGenes(lig, useUnsharedDatasets = "rna", unsharedThresh = 0.4)
 ```
-The scaleNotCenter functions will scale both the shared and unshared features. The scaled unshared features will be stored 
-in `liger@scale.unshared.data`
+The selected shared features, all 33 osmFISH genes in this case, can be accessed with `varFeatures(lig)`. The unshared variable features of a specific dataset, namingly `"rna"` in this case, can be accessed with `varUnsharedFeatures(lig, "rna")`. 
+
+We scale the selected gene expression matrix before the integration. The datasets are not centered before scaling so the non-negative constraint for the factorization is addressed.
 
 ```{r scalenotcenter}
-osm.liger <- scaleNotCenter(osm.liger)
+lig <- scaleNotCenter(lig)
 ```
-# Step 2: Joint Matrix Factorization
 
-To factorize the datasets including unshared datasets, set the use.unshared parameter to TRUE. 
+The scaled matrix for shared features can be accessed with `scaleData()`. The scaled matrix of the unshared features of the RNA dataset is a separate matrix and can be accessed with `scaleUnsharedData(lig, "rna")`.
 
+## Step 2: Joint Matrix Factorization
+
+### 3. Run UINMF
+
+We provide function `runIntegration()` for a general wrapper of all integration method we developed. Users can do `runIntegration(..., method = "UINMF")` to perform the analysis. Alternatively, stand-alone function `runUINMF()` is also provided with more specific parameter setitng guide. 
 
 ```{r factorization}
-osm.liger <- optimizeALS(osm.liger, k=30, use.unshared = TRUE)
+lig <- runIntegration(lig, k = 30, method = "UINMF")
 ```
-# Step 3: Quantile Normalization and Joint Clustering
+## Step 3: Quantile Normalization and Joint Clustering
 
-After factorization, the resulting Liger object can used in all downstream LIGER functions without adjustment. The default reference dataset for quantile normalization is the larger dataset, but the user should select the higher quality dataset as the reference dataset, even if it is the smaller dataset.
+### 4. Quantile normalize the factor loading
 
+After factorization, the resulting liger object can be used in all downstream LIGER functions without adjustment. The default reference dataset for quantile normalization is the larger dataset, but the user should select the higher quality dataset as the reference dataset, even if it is the smaller dataset.
 
-```{r quantilenorm, results = FALSE}
-osm.liger <- quantile_norm(osm.liger, ref_dataset= "rna")
-osm.liger <- louvainCluster(osm.liger)
+```{r quantilenorm}
+lig <- quantileNorm(lig, reference = "rna")
 ```
-# Step 4: Visualizations and Downstream processing
 
-```{r runumap, results = FALSE, warnings = FALSE, message = FALSE}
-osm.liger <- runUMAP(osm.liger)
+### 5. Leiden clustering
+
+With the quantile normalized cell factor loading, we can then apply Leiden graph-based community detection method on it. 
+
+```{r leiden}
+lig <- runCluster(lig)
 ```
+
+## Step 4: Visualizations and Downstream processing
+
+### 6. Create dimension reduction embedding
+
+```{r runumap}
+lig <- runUMAP(lig)
+```
+
+### 7. Visualize
+
 Next, we can visualize our returned factorized object by dataset to check the alignment between datasets, as well as by cluster determined in the factorization.
-```{r visualizations, message = FALSE, warning = FALSE}
-umap_plots <-plotByDatasetAndCluster(osm.liger, axis.labels = c("UMAP1","UMAP2"), return.plots = TRUE)
-umap_plots[[1]]
-umap_plots[[2]]
+
+```{r visualizations, fig.width=6, fig.height=5}
+plotDatasetDimRed(lig)
+plotClusterDimRed(lig, legendNCol = 2)
 ```
-\
+
 We can also examine features such as gene expression. 
-```{r gene visualizations}
-Pdgfra <- plotGene(osm.liger, "Pdgfra", axis.labels = c('UMAP 1', 'UMAP 2'), return.plots = TRUE)
-Bmp4 <- plotGene(osm.liger, "Bmp4", axis.labels = c('UMAP 1', 'UMAP 2'), return.plots = TRUE)
-plot_grid(Pdgfra[[2]],Pdgfra[[1]],Bmp4[[2]],Bmp4[[1]], ncol=2)
+
+```{r gene visualizations, fig.width=8, fig.height=7}
+pdgfra <- plotGeneDimRed(lig, "Pdgfra", splitBy = "dataset", title = names(lig))
+bmp4 <- plotGeneDimRed(lig, "Bmp4", splitBy = "dataset", title = names(lig))
+cowplot::plot_grid(
+    pdgfra$Pdgfra.rna, pdgfra$Pdgfra.osmFISH,
+    bmp4$Bmp4.rna, bmp4$Bmp4.osmFISH
+)
 ```
 
 
