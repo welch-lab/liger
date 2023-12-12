@@ -1156,20 +1156,16 @@ runUINMF.liger <- function(
                           nIteration = nIteration,
                           nRandomStarts = nRandomStarts,
                           seed = seed, verbose = verbose, ...)
-    for (i in seq_along(object)) {
-        ld <- dataset(object, i)
-        ld@H <- res$H[[i]]
-        ld@V <- res$V[[i]]
+    for (d in names(object)) {
+        ld <- dataset(object, d)
+        ld@H <- res$H[[d]]
+        ld@V <- res$V[[d]]
         if (!is.null(ld@scaleUnsharedData)) {
-            ld@U <- res$U[[i]]
-            rownames(ld@U) <- ld@varUnsharedFeatures
+            ld@U <- res$U[[d]]
         }
-        colnames(ld@H) <- colnames(ld)
-        rownames(ld@V) <- varFeatures(object)
-        datasets(object, check = FALSE)[[i]] <- ld
+        datasets(object, check = FALSE)[[d]] <- ld
     }
     object@W <- res$W
-    rownames(ld@W) <- varFeatures(object)
     object@uns$factorization <- list(k = k, lambda = lambda)
     return(object)
 }
@@ -1208,13 +1204,13 @@ runUINMF.liger <- function(
     unsharedFeatures <- lapply(unsharedList, rownames)
     factorNames <- paste0("Factor_", seq(k))
     barcodes <- lapply(object, colnames)
-    for (i in seq_along(object)) {
-        bestRes$H[[i]] <- t(bestRes$H[[i]])
-        dimnames(bestRes$H[[i]]) <- list(factorNames, barcodes[[i]])
-        dimnames(bestRes$V[[i]]) <- list(features, factorNames)
-        dimnames(bestRes$U[[i]]) <- list(unsharedFeatures[[i]], factorNames)
-        rownames(bestRes$U[[i]]) <- unsharedFeatures[[i]]
-        colnames(bestRes$U[[i]]) <- factorNames
+    for (d in names(object)) {
+        bestRes$H[[d]] <- t(bestRes$H[[d]])
+        dimnames(bestRes$H[[d]]) <- list(factorNames, barcodes[[d]])
+        dimnames(bestRes$V[[d]]) <- list(features, factorNames)
+        if (d %in% names(bestRes$U)) {
+            dimnames(bestRes$U[[d]]) <- list(unsharedFeatures[[d]], factorNames)
+        }
     }
     dimnames(bestRes$W) <- list(features, factorNames)
     return(bestRes)

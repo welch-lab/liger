@@ -263,11 +263,11 @@ removeMissing <- function(
     }
     orient <- match.arg(orient)
     useDatasets <- .checkUseDatasets(object, useDatasets)
-    minCells <- .checkArgLen(minCells, length(useDatasets))
     minCells <- minCells %||% rep(0, length(useDatasets))
+    minCells <- .checkArgLen(minCells, length(useDatasets))
     names(minCells) <- useDatasets
-    minFeatures <- .checkArgLen(minFeatures, length(useDatasets))
     minFeatures <- minFeatures %||% rep(0, length(useDatasets))
+    minFeatures <- .checkArgLen(minFeatures, length(useDatasets))
     names(minFeatures) <- useDatasets
     rmFeature <- ifelse(orient %in% c("both", "feature"), TRUE, FALSE)
     rmCell <- ifelse(orient %in% c("both", "cell"), TRUE, FALSE)
@@ -280,7 +280,7 @@ removeMissing <- function(
         } else {
             featureIdx <- seq_len(nrow(ld))
         }
-        if (length(featureIdx) == nrow(ld)) rmFeature <- FALSE
+        rmFeatureDataset <- length(featureIdx) != nrow(ld)
         if (rmCell) {
             cellIdx <- object$dataset == d & object$nGene > minFeatures[d]
             cellIdx <- colnames(object)[cellIdx]
@@ -288,9 +288,9 @@ removeMissing <- function(
         } else {
             cellIdx <- seq_len(ncol(ld))
         }
-        if (length(cellIdx) == ncol(ld)) rmCell <- FALSE
-        subsetted <- c(subsetted, any(c(rmFeature, rmCell)))
-        if (any(c(rmFeature, rmCell))) {
+        rmCellDataset <- length(cellIdx) != ncol(ld)
+        subsetted <- c(subsetted, any(c(rmFeatureDataset, rmCellDataset)))
+        if (any(c(rmFeatureDataset, rmCellDataset))) {
             if (isTRUE(verbose)) .log("Removing missing in dataset: ", d)
             datasets.new[[d]] <- subsetLigerDataset(
                 ld,

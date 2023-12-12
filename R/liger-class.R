@@ -1180,6 +1180,7 @@ setReplaceMethod(
         return(x)
     }
 )
+
 #' @export
 #' @rdname liger-class
 #' @section Variable feature access:
@@ -1230,6 +1231,80 @@ setReplaceMethod(
         x
     }
 )
+
+
+
+#' @export
+#' @rdname liger-class
+setGeneric("varUnsharedFeatures", function(x, dataset = NULL) {
+    standardGeneric("varUnsharedFeatures")
+})
+
+#' @export
+#' @rdname liger-class
+setGeneric(
+    "varUnsharedFeatures<-",
+    function(x, dataset, check = TRUE, value) {
+        standardGeneric("varUnsharedFeatures<-")
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setMethod("varUnsharedFeatures", signature(x = "liger"),
+          function(x, dataset = NULL) {
+              dataset <- .checkUseDatasets(x, dataset)
+              vufList <- lapply(dataset, function(d) x@datasets[[d]]@varUnsharedFeatures)
+
+              if (length(vufList) == 1) return(vufList[[1]])
+              else {
+                  names(vufList) <- dataset
+                  return(vufList)
+              }
+          }
+)
+
+#' @export
+#' @rdname liger-class
+setMethod("varUnsharedFeatures",
+          signature(x = "ligerDataset", dataset = "missing"),
+          function(x, dataset = NULL) x@varUnsharedFeatures)
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "varUnsharedFeatures",
+    signature(x = "liger", dataset = "ANY", check = "ANY", value = "character"),
+    function(x, dataset, check = TRUE, value) {
+        dataset <- .checkUseDatasets(x, dataset)
+        x@datasets[[dataset]]@varUnsharedFeatures <- value
+        if (isTRUE(check)) {
+            if (!all(value %in% rownames(x@datasets[[dataset]]))) {
+                warning("Not all features passed are found in dataset \"",
+                        dataset, "\".")
+            }
+        }
+        return(x)
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "varUnsharedFeatures",
+    signature(x = "ligerDataset", dataset = "missing", check = "ANY", value = "character"),
+    function(x, dataset = NULL, check = TRUE, value) {
+        x@varUnsharedFeatures <- value
+        if (isTRUE(check)) {
+            if (!all(value %in% rownames(x))) {
+                warning("Not all features passed are found.")
+            }
+        }
+        return(x)
+    }
+)
+
+
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # S3 methods ####
