@@ -217,11 +217,13 @@ plotCellScatter <- function(
     dotOrder <- match.arg(dotOrder)
     set.seed(seed)
     raster <- .checkRaster(nrow(plotDF), raster)
-
     if (!is.null(colorBy)) {
         if (dotOrder == "shuffle") {
-            idx <- sample(nrow(plotDF))
-            plotDF <- plotDF[idx, ]
+            # Always put NA at bottom layer, i.e. plot them first
+            isNA <- which(is.na(plotDF[[colorBy]]))
+            nonNA <- which(!is.na(plotDF[[colorBy]]))
+            idx <- sample(nonNA)
+            plotDF <- plotDF[c(isNA, idx), ]
         } else if (dotOrder == "ascending") {
             plotDF <- plotDF[order(plotDF[[colorBy]], decreasing = FALSE,
                                    na.last = FALSE),]
@@ -749,7 +751,8 @@ plotCellViolin <- function(
                     .setColorLegendPalette(plot$data[[varName]],
                                            aesType = a,
                                            labels = colorLabels,
-                                           values = colorValues)
+                                           values = colorValues,
+                                           naColor = naColor)
             }
         } else {
             # continuous setting
@@ -810,7 +813,8 @@ plotCellViolin <- function(
         fct,
         aesType = c("colour", "fill"),
         labels = NULL,
-        values = NULL
+        values = NULL,
+        naColor = "#F5F5F5"
 ) {
     aesType <- match.arg(aesType)
     layer <- NULL
@@ -820,10 +824,12 @@ plotCellViolin <- function(
     if (!is.null(labels) && !is.null(values)) {
         if (aesType == "colour") {
             layer <- ggplot2::scale_color_manual(values = values,
-                                                 labels = labels)
+                                                 labels = labels,
+                                                 na.value = naColor)
         } else {
             layer <- ggplot2::scale_fill_manual(values = values,
-                                                labels = labels)
+                                                labels = labels,
+                                                na.value = naColor)
         }
     }
     return(layer)
