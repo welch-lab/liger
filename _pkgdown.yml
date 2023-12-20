@@ -71,6 +71,7 @@ reference:
 - contents:
   - ends_with("class")
   - rawPeak
+  - coordinate
   - retrieveCellFeature
   - subsetLiger
   - subsetLigerDataset
