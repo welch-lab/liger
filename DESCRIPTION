@@ -87,6 +87,8 @@ Suggests:
     RcppPlanc,
     RcppML,
     reactome.db,
+    rgl,
+    rglwidget,
     riverplot,
     rmarkdown,
     scattermore (>= 0.7),

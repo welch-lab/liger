@@ -5,20 +5,12 @@ date: "12/03/2021"
 output: html_document
 ---
 
-```{r eval = FALSE}
-options(rgl.useNULL=TRUE)
-library(rgl)
-library(rglwidget)
-library(viridis)
-knit_hooks$set(webgl = hook_webgl)
-```
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
-options(rgl.useNULL=TRUE)
 library(rgl)
 library(rglwidget)
-library(viridis)
+options(rgl.useNULL = TRUE)
+knitr::knit_hooks$set(webgl = hook_webgl)
 ```
 
 Here we demonstrate integrating a scRNA (Dropviz) dataset of the mouse frontal cortex and a spatial transcriptomics (STARmap) dataset of the same region. For this tutorial, we prepared the two datasets at  https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0
@@ -26,12 +18,13 @@ Here we demonstrate integrating a scRNA (Dropviz) dataset of the mouse frontal c
 - The scRNA mouse dataset (Dropviz_starmap_vig.RDS) is 28,366 genes by 71,639 cells.
 - The spatial transcriptomic STARmap dataset (STARmap_vig.RDS) is 28 genes by 31,294 cells. 
 - The annotation data of the Dropviz mouse data (Dropviz_general_annotations.RDS).
+- The 3D coordinate data of the STARmap dataset (STARmap_3D_Annotations.RDS)
 
 ## Step 1: Load the data
 
-### 1. Create liger object
+### 1. Load data and create liger object
 
-The datasets provided are presented in "dgCMatrix" class, which is a common form of sparse matrix in R. We can then create a liger object with a named list of the matrices. The unshared features should not be subsetted out, or submitted separately. Rather, they should be included in the matrix submitted for that dataset. This helps ensure proper normalization.
+The datasets provided are presented in "dgCMatrix" class, which is a common form of sparse matrix in R. We can then create a liger object with a named list of the matrices. The unshared features should not be subsetted out, or submitted separately. Rather, they should be included in the matrix submitted for that dataset. This helps ensure proper normalization. Different from other UINMF tutorials, we set the modality of each dataset with argument `modal`, in this way, a slot for spatial coordinates is preserved for the STARmap dataset.
 
 ```{r load}
 library(rliger2)
@@ -39,14 +32,15 @@ library(rliger2)
 dropviz <- readRDS("starmap_data/Dropviz_starmap_vig.RDS")
 starmap <- readRDS("starmap_data/STARmap_vig.RDS")
 
-lig <- createLiger(list(starmap = starmap, dropviz = dropviz))
+lig <- createLiger(list(starmap = starmap, dropviz = dropviz),
+                   modal = c("spatial", "rna"))
 ```
 
-## Step 2: Preprocessing and normalization
+## Step 2: Preprocessing
 
 ### 2. Normalization
 
-Normalize the datasets. The normalization is applied to the datasets in their entirety.
+Liger simply normalizes the matrices by library size, without multiplying a scale factor or applying "log1p" transformation. 
 
 ```{r normalize}
 lig <- normalize(lig)
@@ -63,13 +57,13 @@ varFeatures(lig) <- rownames(dataset(lig, "starmap"))
 
 ### 4. Scale not center
 
-Then we scale the dataset. Three new matrices will be created under the hook, two containing the 28 shared variable features for both datasets, and one for the unshared variable features of Dropviz data. Note the LIGER does not center the scaled data because iNMF/UINMF methods require non-negative input. 
+Then we scale the dataset. Three new matrices will be created under the hook, two containing the 28 shared variable genes for both datasets, and one for the unshared variable genes of the Dropviz data. Note that LIGER does not center the data before scaling because iNMF/UINMF methods require non-negative input. 
 
 ```{r scale}
 lig <- scaleNotCenter(lig)
 ```
 
-# Step 3: Joint Matrix Factorization
+## Step 3: Joint Matrix Factorization
 
 ### 5. Mosaic integrative NMF
 
@@ -82,100 +76,119 @@ Another noteworthy advantage of UINMF is that we are able to use a larger number
 ```{r factorization}
 lig <- runUINMF(lig, k = 40, lambda = c(10, 1))
 ```
-# Step 4: Quantile Normalization and Joint Clustering
+## Step 4: Quantile Normalization and Joint Clustering
 
-After factorization, the resulting Liger object can used in all downstream LIGER functions without adjustment. The default reference dataset for quantile normalization is the larger dataset, but the user should select the higher quality dataset as the reference dataset, even if it is the smaller dataset. In this case, the Dropviz dataset is considered higher quality than the STARmap dataset, so we set the Dropviz dataset to be the reference dataset.
+### 6. Quantile normalization
 
+The default reference dataset for quantile normalization is the larger dataset, but users should select the higher quality dataset as the reference dataset, even if it is the smaller dataset. In this case, the Dropviz dataset is considered higher quality than the STARmap dataset, so we set the Dropviz dataset to be the reference dataset.
 
-```{r quantilenorm, results = FALSE}
-liger <- quantile_norm(liger, ref_dataset = "dropviz")
-liger <- louvainCluster(liger)
-```
-# Step 5: Visualizations and Downstream processing
+After this step, the low-rank cell factor loading matrices, $H$, are aligned and ready for cluster definition. 
 
-```{r runumap, results = FALSE, warnings = FALSE, message = FALSE}
-liger <- runUMAP(liger, n_neighbors = 35)
-```
-Next, we can visualize our returned factorized object by dataset to check the alignment between datasets.
-```{r visualizations, message = FALSE, warning = FALSE}
-umap_plots <-plotByDatasetAndCluster(liger, axis.labels = c("UMAP1","UMAP2"), return.plots = TRUE)
-umap_plots[[1]]
-umap_plots[[2]] 
-```
-\
-We can also use the Dropviz labels to help us annotate the clusters.
-
-```{r loadmouse, eval = FALSE}
-mouse_annies = readRDS("Dropviz_general_annotations.RDS")
-
+```{r quantilenorm}
+lig <- quantileNorm(lig, reference = "dropviz")
 ```
 
-```{r visualizationspt2, message = FALSE, warning = FALSE}
-umap_plots <-plotByDatasetAndCluster(liger, axis.labels = c("UMAP1","UMAP2"), return.plots = TRUE, clusters = mouse_annies)
-umap_plots[[2]] 
+### 7. Leiden clustering
+
+With the aligned cell factor loading information, we next apply Leiden community detection algorithm to identify cell clusters.
+
+```{r leiden}
+lig <- runCluster(lig)
 ```
-\
-# Step 6: Annotations and visualization within a 3D space
+
+## Step 5: Visualizations and Downstream processing
+
+### 8. Dimensionality reduction
+
+We create a UMAP with the quantile normalized cell factor loading.
+
+```{r runumap}
+lig <- runUMAP(lig)
+```
+
+### 9. Plot UMAP
+
+Next, we can visualize our factorized object by dataset to check the integration between datasets, and also the cluster labeling on the global population.
+
+```{r visualizations, fig.width=7, fig.height=6}
+plotDatasetDimRed(lig)
+plotClusterDimRed(lig, legendNCol = 2)
+```
+
+We can also use the Dropviz labels to help us annotate the clusters. Link to the downloading page of the labeling data is provided at top of this page. 
+
+```{r loadmouse, fig.width=7, fig.height=6}
+mouse_annies <- readRDS("starmap_data/Dropviz_general_annotations.RDS")
+dropviz_id <- paste0("dropviz_", names(mouse_annies))
+cellMeta(lig, "dropviz_ann", cellIdx = dropviz_id) <- factor(mouse_annies)
+plotClusterDimRed(lig, "dropviz_ann", legendNCol = 1)
+```
+
+`cellMeta()<-` method has the feature for partial insertion implemented and is great for adding dataset specific metadata to a new variable. If you are unsure about the order between given variable and the cells in the object, argument `cellIdx` can be used for precise locating. Users might use different strategies when creating the index depending on different situation.
+
+## Step 6: Visualization with spatial information
+
 Here we demonstrate how to use the annotation labels derived from the above analysis within the context of 3D space.
-We provide the annotation labels for the sake of simplicity. These labels were generated using the high quality Dropviz annotationsto re-annotate the STARmap cells after completing the above analysis. We have provided the exact annotations and colors used in the publication such that the interested user may captilize on the 3D dimensional sample space. 
-```{r loadlabels, include = FALSE}
-coords_annotations_3d <- readRDS("C:/Users/april/OneDrive/Documents/UINMF_Final_backups/Vignette/Dropviz_Starmap/STARmap_3D_Annotations.RDS")
+We provide the annotation labels for the sake of simplicity. The link to the download page is provided at the top of this page. These labels were generated using the high quality Dropviz annotations to re-annotate the STARmap cells after completing the above analysis. We have provided the exact annotations and colors used in the publication such that the interested user may captilize on the 3D dimensional sample space. 
 
+```{r readStarmapAnn, results='markup'}
+starmap_annies <- readRDS("starmap_data/STARmap_3D_Annotations.RDS")
+dplyr::glimpse(starmap_annies)
 ```
 
-```{r eval = FALSE}
-coords_annotations_3d <- readRDS("STARmap_3D_Annotations.RDS")
+### 10. Manage ligerSpatialDataset class
+
+Recall that we set the "modal" of the STARmap dataset to "spatial" when we created the liger object, here we can insert the coordinate information into the object.
+
+```{r setCoord}
+coords <- as.matrix(starmap_annies[, c("Coord1", "Coord2", "Coord3")])
+rownames(coords) <- starmap_annies$Cell_Barcode
+coordinate(lig, "starmap") <- coords
 ```
-Here we graph all of the cells:
-```{r testgl, webgl = TRUE, warning = FALSE}
+
+LIGER does not yet have any analysis method that incorporate the spatial coordinate information. Given that most of the spatial transcriptomics technologies only support 2D spatial information, LIGER only has 2D plotting (See `plotSpatial2D()`) method implemented for the spatial coordinate at this point. 
+
+### 11. 3D visualization
+
+The STARmap technology we work with in this tutorial is special for 3D information. LIGER does not provide any function for the visualization of 3D coordinates, but here we provide a simple guide on it using package [*rgl*](https://CRAN.R-project.org/package=rgl). 
+
+The code chunk below shows how to create the 3D view of all cells.
+
+```{r testgl, webgl = TRUE}
+library(rgl)
+
+# Set the perspective parameters
 rgl.viewpoint(theta = 25, phi = 5, zoom = 0.7)
-plot3d(x=coords_annotations_3d$Coord1, y=coords_annotations_3d$Coord2, z=coords_annotations_3d$Coord3, xlab="", ylab = "", zlab ="",col = coords_annotations_3d$Cell_Type_Color, size = 2, axes= FALSE, labels = FALSE)
-aspect3d(1.7,1.4,0.1)
+# Generate scatter plot in 3D space
+plot3d(x = starmap_annies$Coord1, 
+       y = starmap_annies$Coord2, 
+       z = starmap_annies$Coord3, 
+       xlab = "", ylab = "", zlab = "",
+       col = starmap_annies$Cell_Type_Color, 
+       size = 2, axes= FALSE, labels = FALSE)
+aspect3d(1.7, 1.4, 0.1)
 first = c(0)
 second = c(0)
+# Set background color to black
 bg3d("black", labels = FALSE)
-axes3d(edges = "bbox",col='white', labels=FALSE, tick=FALSE)
+axes3d(edges = "bbox",col = 'white', labels = FALSE, tick = FALSE)
 ```
 
-Graph just the neuronal cells
+As we can see above, cells of different types can be located at different depth (z-axis) and can interfere the observation of each other. We next show how to visualize with only neuronal cells.
 
-```{r neuronal, webgl = TRUE, warning=FALSE}
-neuronal_cells <- filter(coords_annotations_3d , coords_annotations_3d$General_Class == "Neuron")
-plot3d(x=neuronal_cells$Coord1, y=neuronal_cells$Coord2, z=neuronal_cells$Coord3, xlab="", ylab = "", zlab ="", col = neuronal_cells$Sub_Color, size = 3, axes= FALSE, labels = FALSE)
-aspect3d(1.7,1.4,0.1)
+```{r neuronal, webgl = TRUE}
+# Subset annotation data to only Neurons
+neuronal_cells <- starmap_annies[starmap_annies$General_Class == "Neuron",]
+# Create 3D scatter plot with the subset
+plot3d(x = neuronal_cells$Coord1, 
+       y = neuronal_cells$Coord2, 
+       z = neuronal_cells$Coord3, 
+       xlab = "", ylab = "", zlab = "", 
+       col = neuronal_cells$Sub_Color, 
+       size = 3, axes = FALSE, labels = FALSE)
+aspect3d(1.7, 1.4, 0.1)
 first = c(0)
 second = c(0)
 bg3d("black", labels = FALSE)
-axes3d(edges = "bbox",col='white', labels=FALSE, tick=FALSE)
+axes3d(edges = "bbox", col = 'white', labels = FALSE, tick = FALSE)
 ```
-Graph just the interneurons
-```{r interneurons, webgl = TRUE, warning=FALSE}
-interneuron_cells <- filter(coords_annotations_3d , coords_annotations_3d$General_Class == "Interneuron")
-plot3d(x=interneuron_cells$Coord1, y=interneuron_cells$Coord2, z=interneuron_cells$Coord3, xlab="", ylab = "", zlab ="", col = interneuron_cells$Sub_Color, size = 3, axes= FALSE, labels = FALSE)
-aspect3d(1.7,1.4,0.1)
-first = c(0)
-second = c(0)
-bg3d("black", labels = FALSE)
-axes3d(edges = "bbox",col='white', labels=FALSE, tick=FALSE)
-```
-Graph just the oligodendrocytes and polydendrocytes
-```{r polyol, webgl = TRUE, warning=FALSE}
-oligo_poly_cells <- filter(coords_annotations_3d , coords_annotations_3d$General_Class == "Oligo_Poly")
-plot3d(x=oligo_poly_cells$Coord1, y=oligo_poly_cells$Coord2, z=oligo_poly_cells$Coord3, xlab="", ylab = "", zlab ="", col = oligo_poly_cells$Sub_Color, size = 3, axes= FALSE, labels = FALSE)
-aspect3d(1.7,1.4,0.1)
-first = c(0)
-second = c(0)
-bg3d("black", labels = FALSE)
-axes3d(edges = "bbox",col='white', labels=FALSE, tick=FALSE)
-```
-Graph only the endothelial cells
-```{r endo, webgl = TRUE, warning = FALSE}
-endo_cells <- filter(coords_annotations_3d , coords_annotations_3d$General_Class == "Endothelial")
-plot3d(x=endo_cells$Coord1, y=endo_cells$Coord2, z=endo_cells$Coord3, xlab="", ylab = "", zlab ="", col = endo_cells$Sub_Color, size = 3, axes= FALSE, labels = FALSE)
-aspect3d(1.7,1.4,0.1)
-first = c(0)
-second = c(0)
-bg3d("black", labels = FALSE)
-axes3d(edges = "bbox",col='white', labels=FALSE, tick=FALSE)
-```
-

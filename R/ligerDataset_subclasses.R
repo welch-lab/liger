@@ -11,7 +11,7 @@
 #   b. contains = "ligerDataset"
 #   c. add new slots for modality specific information with `representation`
 #   d. if the default new information could be empty, add `prototype`
-# 2. In files `liger-class.R`, `ligerDataset-class.R` and `IO.R`, search for
+# 2. In files `zzz.R` and `import.R`, search for
 #    text "modal". When seeing a multi-option vector argument, add a unique
 #    abbreviation of this new data type to the vector.
 # 3. In file `ligerDataset-class.R`, find the list object `.modalClassDict`,
@@ -173,4 +173,142 @@ setReplaceMethod(
         if (isTRUE(check)) methods::validObject(x)
         x
     })
+
+.valid.ligerATACDataset <- function(object) {
+    passSuperClassCheck <- .valid.ligerDataset(object)
+    if (!isTRUE(passSuperClassCheck)) return(passSuperClassCheck)
+    for (slot in c("rawPeak", "normPeak")) {
+        data <- methods::slot(object, slot)
+        if (!is.null(data)) {
+            barcodes.slot <- colnames(data)
+            if (!identical(object@colnames, barcodes.slot)) {
+                return(paste0("Inconsistant cell identifiers in `", slot,
+                              "` slot."))
+            }
+        }
+    }
+}
+
+setValidity("ligerATACDataset", .valid.ligerATACDataset)
+
+#-------------------------------------------------------------------------------
+# Sub-class for Spatial data ####
+#-------------------------------------------------------------------------------
+
+#' Subclass of ligerDataset for Spatial modality
+#'
+#' @description Inherits from \linkS4class{ligerDataset} class. Contained slots
+#' can be referred with the link.
+#' @slot coordinate dense matrix
+#' @exportClass ligerSpatialDataset
+#' @export
+ligerSpatialDataset <- setClass(
+    "ligerSpatialDataset",
+    contains = "ligerDataset",
+    representation = representation(coordinate = "matrix_OR_NULL"),
+    prototype = prototype(coordinate = NULL)
+)
+
+#' Access ligerSpatialDataset coordinate data
+#' @description Similar as how default \linkS4class{ligerDataset} data is
+#' accessed.
+#' @param x \linkS4class{ligerSpatialDataset} object or a \linkS4class{liger}
+#' object.
+#' @param dataset Name or numeric index of an spatial dataset.
+#' @param check Logical, whether to perform object validity check on setting new
+#' value.
+#' @param value \code{\link{matrix}}.
+#' @return The retrieved coordinate matrix or the updated \code{x} object.
+#' @rdname coordinate
+#' @export
+setGeneric("coordinate", function(x, dataset) standardGeneric("coordinate"))
+
+#' @rdname coordinate
+#' @export
+setGeneric("coordinate<-", function(x, dataset, check = TRUE, value) standardGeneric("coordinate<-"))
+
+
+#' @rdname coordinate
+#' @export
+setMethod("coordinate", signature(x = "liger", dataset = "character"),
+          function(x, dataset) {
+              spatial <- dataset(x, dataset)
+              if (!inherits(spatial, "ligerSpatialDataset")) {
+                  stop("Specified dataset is not of `ligerSpatialDataset` class.")
+              }
+              spatial@coordinate
+          })
+
+#' @rdname coordinate
+#' @export
+setReplaceMethod(
+    "coordinate",
+    signature(x = "liger", dataset = "character"),
+    function(x, dataset, check = TRUE, value) {
+        if (!inherits(dataset(x, dataset), "ligerSpatialDataset"))
+            stop("Specified dataset is not of `ligerSpatialDataset` class.")
+        value <- .checkCoords(ld = dataset(x, dataset), value = value)
+        x@datasets[[dataset]]@coordinate <- value
+        if (isTRUE(check)) methods::validObject(dataset(x, dataset))
+        x
+    })
+
+#' @rdname coordinate
+#' @export
+setMethod("coordinate", signature(x = "ligerSpatialDataset", dataset = "missing"),
+          function(x, dataset = NULL) {
+              x@coordinate
+          })
+
+#' @rdname coordinate
+#' @export
+setReplaceMethod(
+    "coordinate",
+    signature(x = "ligerSpatialDataset", dataset = "missing"),
+    function(x, dataset = NULL, check = TRUE, value) {
+        value <- .checkCoords(ld = x, value = value)
+        x@coordinate <- value
+        if (isTRUE(check)) methods::validObject(x)
+        x
+    })
+
+.checkCoords <- function(ld, value) {
+    if (is.null(rownames(value))) {
+        warning("No rownames with given spatial coordinate, ",
+                "assuming they match with the cells.")
+        rownames(value) <- colnames(ld)
+    }
+    if (is.null(colnames(value))) {
+        if (ncol(value) <= 3) {
+            colnames(value) <- c("x", "y", "z")[seq(ncol(value))]
+        } else {
+            stop("More than 3 dimensions for the coordinates but no ",
+                 "colnames are given.")
+        }
+        warning("No colnames with given spatial coordinate, ",
+                "setting to ", paste0(colnames(value), collapse = ", "))
+    }
+    if (nrow(value) != ncol(ld)) {
+        full <- matrix(NA, nrow = ncol(ld), ncol = ncol(value),
+                       dimnames = list(colnames(ld), colnames(value)))
+        full[rownames(value), colnames(value)] <- value
+        value <- full
+        warning("NA generated for missing cells.")
+    }
+    return(value)
+}
+
+.valid.ligerSpatialDataset <- function(object) {
+    passSuperClassCheck <- .valid.ligerDataset(object)
+    if (!isTRUE(passSuperClassCheck)) return(passSuperClassCheck)
+    coord <- object@coordinate
+    if (!is.null(coord)) {
+        barcodes.slot <- rownames(coord)
+        if (!identical(object@colnames, barcodes.slot)) {
+            return(paste0("Inconsistant cell identifiers in `coordinate` slot."))
+        }
+    }
+}
+
+setValidity("ligerSpatialDataset", .valid.ligerSpatialDataset)
 

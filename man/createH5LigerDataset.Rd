@@ -14,7 +14,7 @@ createH5LigerDataset(
   genesName = NULL,
   indicesName = NULL,
   indptrName = NULL,
-  modal = c("default", "rna", "atac"),
+  modal = c("default", "rna", "atac", "spatial"),
   featureMeta = NULL,
   ...
 )
