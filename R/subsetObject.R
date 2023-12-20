@@ -462,6 +462,9 @@ subsetH5LigerDatasetToMem <- function(
             value$rawPeak <- rawPeak(object)[, cellIdx, drop = FALSE]
             value$normPeak <- normPeak(object)[, cellIdx, drop = FALSE]
         }
+        if (modal == "spatial") {
+            value$coordinate <- coordinate(object)[cellIdx, , drop = FALSE]
+        }
     # }
     if (isTRUE(returnObject)) {
         value$modal <- modal
@@ -833,6 +836,9 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
         if (modal == "atac") {
             subsetData$rawPeak <- rawPeak(object)[, cellIdx, drop = FALSE]
             subsetData$normPeak <- normPeak(object)[, cellIdx, drop = FALSE]
+        }
+        if (modal == "spatial") {
+            value$coordinate <- coordinate(object)[cellIdx, , drop = FALSE]
         }
     # }
     if (isTRUE(returnObject)) {

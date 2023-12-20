@@ -6,7 +6,8 @@
 #' \code{AnnData} object, a \linkS4class{ligerDataset} object or a filename to
 #' an HDF5 file. See detail for HDF5 reading.
 #' @param modal Character vector for modality setting. Currently options of
-#' \code{"default"}, \code{"rna"}, and \code{"atac"} are supported.
+#' \code{"default"}, \code{"rna"}, \code{"atac"} and \code{"spatial"} are
+#' supported.
 #' @param cellMeta data.frame of metadata at single-cell level. Default
 #' \code{NULL}.
 #' @param removeMissing Logical. Whether to remove cells that do not have any
@@ -151,8 +152,8 @@ createLiger <- function(
 #' variable gene expression, respectively. Default \code{NULL} for all three but
 #' at lease one has to be specified.
 #' @param modal Name of modality for this dataset. Currently options of
-#' \code{"default"}, \code{"rna"}, and \code{"atac"} are supported. Default
-#' \code{"default"}.
+#' \code{"default"}, \code{"rna"}, \code{"atac"} and \code{"spatial"} are
+#' supported. Default \code{"default"}.
 #' @param featureMeta Data frame of feature metadata. Default \code{NULL}.
 #' @param ... Additional slot data. See \linkS4class{ligerDataset} for detail.
 #' Given values will be directly placed at corresponding slots.
@@ -161,7 +162,7 @@ createLiger <- function(
 #' @export
 createLigerDataset <- function(
         rawData = NULL,
-        modal = c("default", "rna", "atac"),
+        modal = c("default", "rna", "atac", "spatial"),
         normData = NULL,
         scaleData = NULL,
         featureMeta = NULL,
@@ -241,7 +242,7 @@ createH5LigerDataset <- function(
         genesName = NULL,
         indicesName = NULL,
         indptrName = NULL,
-        modal = c("default", "rna", "atac"),
+        modal = c("default", "rna", "atac", "spatial"),
         featureMeta = NULL,
         ...
 ) {

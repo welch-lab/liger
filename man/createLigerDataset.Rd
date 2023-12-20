@@ -6,7 +6,7 @@
 \usage{
 createLigerDataset(
   rawData = NULL,
-  modal = c("default", "rna", "atac"),
+  modal = c("default", "rna", "atac", "spatial"),
   normData = NULL,
   scaleData = NULL,
   featureMeta = NULL,
@@ -20,8 +20,8 @@ variable gene expression, respectively. Default \code{NULL} for all three but
 at lease one has to be specified.}
 
 \item{modal}{Name of modality for this dataset. Currently options of
-\code{"default"}, \code{"rna"}, and \code{"atac"} are supported. Default
-\code{"default"}.}
+\code{"default"}, \code{"rna"}, \code{"atac"} and \code{"spatial"} are
+supported. Default \code{"default"}.}
 
 \item{featureMeta}{Data frame of feature metadata. Default \code{NULL}.}
 

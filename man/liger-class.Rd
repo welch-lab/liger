@@ -36,7 +36,7 @@
 \alias{cellMeta<-,liger,missing-method}
 \alias{cellMeta<-,liger,character-method}
 \alias{[[,liger,ANY,missing-method}
-\alias{[[<-,liger,ANY,missing-method}
+\alias{[[<-,liger,ANY,missing,ANY-method}
 \alias{$,liger-method}
 \alias{$<-,liger-method}
 \alias{defaultCluster}
@@ -175,7 +175,7 @@ cellMeta(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE) <-
 
 \S4method{[[}{liger,ANY,missing}(x, i, j, ...)
 
-\S4method{[[}{liger,ANY,missing}(x, i, j, ...) <- value
+\S4method{[[}{liger,ANY,missing,ANY}(x, i, j, ...) <- value
 
 \S4method{$}{liger}(x, name)
 

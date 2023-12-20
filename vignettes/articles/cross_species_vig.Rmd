@@ -73,7 +73,8 @@ lig <- runIntegration(lig, k = 30, method = "UINMF")
 
 ### 6. Quantile normalization
 
- The default reference dataset for quantile normalization is the largest dataset, but the user should select the higher quality dataset as the reference dataset, even if it is a smaller dataset. In this case, the mouse dataset is considered higher quality than the lizard dataset, so we set the mouse dataset to be the reference dataset.
+The default reference dataset for quantile normalization is the largest dataset, but the user should select the higher quality dataset as the reference dataset, even if it is a smaller dataset. In this case, the mouse dataset is considered higher quality than the lizard dataset, so we set the mouse dataset to be the reference dataset.
+
 After this step, the low-rank cell factor loading matrices, $H$, are aligned and ready for cluster definition. 
 
 ```{r quantilenorm}

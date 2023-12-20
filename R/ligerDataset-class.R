@@ -121,24 +121,24 @@ modalOf <- function(object) {
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 .checkLigerDatasetBarcodes <- function(x) {
-    # TODO: Functions should have cyclomatic complexity of less than 15,
-    # this has 17
     # cell barcodes all consistant
     if (is.null(colnames(x))) {
         return(paste0("No valid cell barcode detected for ligerDataset.\n",
                       "Please create object with matrices with colnames."))
     }
     for (slot in c("rawData", "normData", "scaleData", "scaleUnsharedData",
-                   "H", "rawPeak", "normPeak")) {
+                   "H")) {
         if (!slot %in% methods::slotNames(x)) next
         data <- methods::slot(x, slot)
         if (!is.null(data)) {
             barcodes.slot <- colnames(data)
             if (!identical(colnames(x), barcodes.slot)) {
-                return(paste0("Inconsistant cell identifiers in ", slot, "."))
+                return(paste0("Inconsistant cell identifiers in `", slot,
+                              "` slot."))
             }
         }
     }
+
     for (slot in c("scaleData", "V")) {
         featuresToCheck <- rownames(methods::slot(x, slot))
         check <- !featuresToCheck %in% rownames(x)
@@ -368,6 +368,9 @@ setReplaceMethod("dimnames", c("ligerDataset", "list"), function(x, value) {
     }
     if ("normPeak" %in% methods::slotNames(x)) {
         if (!is.null(normPeak(x))) colnames(normPeak(x)) <- value[[2L]]
+    }
+    if ("coordinate" %in% methods::slotNames(x)) {
+        if (!is.null(coordinate(x))) rownames(coordinate(x)) <- value[[2L]]
     }
     x@rownames <- value[[1L]]
     x@colnames <- value[[2L]]
