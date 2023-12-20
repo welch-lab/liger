@@ -191,12 +191,12 @@ dataset(s) where unshared genes should be chosen from to
 <code>useUnsharedDatasets</code>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/selectGenes.html">selectGenes</a></span><span class="op">(</span><span class="va">lig</span>, var.thres <span class="op">=</span> <span class="fl">0.3</span>, useUnsharedDatasets <span class="op">=</span> <span class="st">"lizard"</span>, unsharedThresh <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## Thu Dec 14 18:30:20 2023 ... Selecting variable features for dataset: mouse</span></span></code></pre>
-<pre><code><span><span class="co">## Thu Dec 14 18:30:23 2023 ...... 1683 features selected out of 12334 shared features</span></span></code></pre>
-<pre><code><span><span class="co">## Thu Dec 14 18:30:23 2023 ... Selecting variable features for dataset: lizard</span></span></code></pre>
-<pre><code><span><span class="co">## Thu Dec 14 18:30:24 2023 ...... 612 features selected out of 12334 shared features</span></span></code></pre>
-<pre><code><span><span class="co">## Thu Dec 14 18:30:24 2023 ...... 166 features selected out of 3008 unshared features</span></span></code></pre>
-<pre><code><span><span class="co">## Thu Dec 14 18:30:24 2023 ... Finally 1976 shared variable features selected.</span></span></code></pre>
+<pre><code><span><span class="co">## Wed Dec 20 16:04:31 2023 ... Selecting variable features for dataset: mouse</span></span></code></pre>
+<pre><code><span><span class="co">## Wed Dec 20 16:04:34 2023 ...... 1683 features selected out of 12334 shared features</span></span></code></pre>
+<pre><code><span><span class="co">## Wed Dec 20 16:04:34 2023 ... Selecting variable features for dataset: lizard</span></span></code></pre>
+<pre><code><span><span class="co">## Wed Dec 20 16:04:34 2023 ...... 612 features selected out of 12334 shared features</span></span></code></pre>
+<pre><code><span><span class="co">## Wed Dec 20 16:04:34 2023 ...... 166 features selected out of 3008 unshared features</span></span></code></pre>
+<pre><code><span><span class="co">## Wed Dec 20 16:04:34 2023 ... Finally 1976 shared variable features selected.</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="scale-not-center">4. Scale not center<a class="anchor" aria-label="anchor" href="#scale-not-center"></a>
@@ -241,8 +241,8 @@ interpreted as load rank representation of the cells.</p>
 largest dataset, but the user should select the higher quality dataset
 as the reference dataset, even if it is a smaller dataset. In this case,
 the mouse dataset is considered higher quality than the lizard dataset,
-so we set the mouse dataset to be the reference dataset. After this
-step, the low-rank cell factor loading matrices, <span class="math inline">\(H\)</span>, are aligned and ready for cluster
+so we set the mouse dataset to be the reference dataset.</p>
+<p>After this step, the low-rank cell factor loading matrices, <span class="math inline">\(H\)</span>, are aligned and ready for cluster
 definition.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/quantileNorm.html">quantileNorm</a></span><span class="op">(</span><span class="va">lig</span>, reference <span class="op">=</span> <span class="st">"mouse"</span><span class="op">)</span></span></code></pre></div>

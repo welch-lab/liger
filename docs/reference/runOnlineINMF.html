@@ -230,7 +230,7 @@ Default <code>5000</code>.</p></dd>
 
 
 <dt>newDatasets</dt>
-<dd><p>Named list of dgCMatrix. New datasets for
+<dd><p>Named list of <a href="https://rdrr.io/pkg/Matrix/man/dgCMatrix-class.html" class="external-link">dgCMatrix</a>. New datasets for
 scenario 2 or scenario 3. Default <code>NULL</code> triggers scenario 1.</p></dd>
 
 
@@ -337,17 +337,17 @@ using online learning, Nat Biotechnol., 2021</p>
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="normalize.html">normalize</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:31 2023 ... Normalizing dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:31 2023 ... Normalizing dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:51:09 2023 ... Normalizing dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:51:09 2023 ... Normalizing dataset: stim</span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="selectGenes.html">selectGenes</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:31 2023 ... Selecting variable features for dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:31 2023 ...... 168 features selected out of 249 shared features</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:31 2023 ... Selecting variable features for dataset: stim</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:31 2023 ...... 166 features selected out of 249 shared features</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:31 2023 ... Finally 173 shared variable features selected.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:51:09 2023 ... Selecting variable features for dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:51:09 2023 ...... 168 features selected out of 249 shared features</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:51:09 2023 ... Selecting variable features for dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:51:09 2023 ...... 166 features selected out of 249 shared features</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:51:09 2023 ... Finally 173 shared variable features selected.</span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:31 2023 ... Scaling dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:31 2023 ... Scaling dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:51:09 2023 ... Scaling dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:51:09 2023 ... Scaling dataset: stim</span>
 <span class="r-in"><span><span class="co"># Scenario 1</span></span></span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="rliger2-deprecated.html">online_iNMF</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Minibatch size larger than the smallest dataset involved.</span>
@@ -358,16 +358,16 @@ using online learning, Nat Biotechnol., 2021</p>
 <span class="r-in"><span><span class="va">ctrl2</span><span class="op">@</span><span class="va">x</span> <span class="op">&lt;-</span> <span class="va">ctrl2</span><span class="op">@</span><span class="va">x</span> <span class="op">+</span> <span class="fl">1</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">ctrl2</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">ctrl2</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="rliger2-deprecated.html">online_iNMF</a></span><span class="op">(</span><span class="va">pbmc</span>, k <span class="op">=</span> <span class="fl">20</span>, X_new <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>ctrl2 <span class="op">=</span> <span class="va">ctrl2</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:31 2023 ... Normalizing dataset: ctrl2</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:31 2023 ... Scaling dataset: ctrl2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:51:10 2023 ... Normalizing dataset: ctrl2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:51:10 2023 ... Scaling dataset: ctrl2</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Minibatch size larger than the smallest dataset involved.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   Setting to the smallest dataset size: 300</span>
 <span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in names(res[[i]]) &lt;- names(objectList):</span> 'names' attribute [2] must be the same length as the vector [1]</span>
 <span class="r-in"><span><span class="co"># Scenario 3</span></span></span>
 <span class="r-in"><span><span class="va">pbmc3</span> <span class="op">&lt;-</span> <span class="fu"><a href="rliger2-deprecated.html">online_iNMF</a></span><span class="op">(</span><span class="va">pbmc</span>, k <span class="op">=</span> <span class="fl">20</span>, X_new <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>ctrl2 <span class="op">=</span> <span class="va">ctrl2</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                     projection <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:31 2023 ... Normalizing dataset: ctrl2</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:11:31 2023 ... Scaling dataset: ctrl2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:51:10 2023 ... Normalizing dataset: ctrl2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:51:10 2023 ... Scaling dataset: ctrl2</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Minibatch size larger than the smallest dataset involved.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   Setting to the smallest dataset size: 300</span>
 </code></pre></div>

@@ -191,13 +191,13 @@ with the original object.</p>
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Subsetting an object</span></span></span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu">downsample</span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:10:51 2023 ... Subsetting dataset: ctrl</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:10:51 2023 ... Subsetting dataset: stim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:50:36 2023 ... Subsetting dataset: ctrl</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:50:36 2023 ... Subsetting dataset: stim</span>
 <span class="r-in"><span><span class="co"># Creating a subsetting index</span></span></span>
 <span class="r-in"><span><span class="va">sampleIdx</span> <span class="op">&lt;-</span> <span class="fu">downsample</span><span class="op">(</span><span class="va">pbmcPlot</span>, balance <span class="op">=</span> <span class="st">"leiden_cluster"</span>,</span></span>
 <span class="r-in"><span>                        maxCells <span class="op">=</span> <span class="fl">10</span>, returnIndex <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="plotDimRed.html">plotClusterDimRed</a></span><span class="op">(</span><span class="va">pbmcPlot</span>, cellIdx <span class="op">=</span> <span class="va">sampleIdx</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Mon Dec 11 16:10:51 2023 ... Plotting feature: leiden_cluster, on 140 cells...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wed Dec 20 15:50:36 2023 ... Plotting feature: leiden_cluster, on 140 cells...</span>
 <span class="r-plt img"><img src="downsample-1.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>
