@@ -81,6 +81,9 @@
 \alias{scaleData<-,liger,ANY,ANY,H5Group-method}
 \alias{scaleUnsharedData,liger,character-method}
 \alias{scaleUnsharedData,liger,numeric-method}
+\alias{scaleUnsharedData<-,liger,ANY,ANY,matrixLike_OR_NULL-method}
+\alias{scaleUnsharedData<-,liger,ANY,ANY,H5D-method}
+\alias{scaleUnsharedData<-,liger,ANY,ANY,H5Group-method}
 \alias{getMatrix,liger,ANY,ANY,ANY-method}
 \alias{getH5File,liger,ANY-method}
 \title{liger class}
@@ -264,6 +267,12 @@ commands(x, funcName = NULL, arg = NULL)
 \S4method{scaleUnsharedData}{liger,character}(x, dataset = NULL)
 
 \S4method{scaleUnsharedData}{liger,numeric}(x, dataset = NULL)
+
+\S4method{scaleUnsharedData}{liger,ANY,ANY,matrixLike_OR_NULL}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{scaleUnsharedData}{liger,ANY,ANY,H5D}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{scaleUnsharedData}{liger,ANY,ANY,H5Group}(x, dataset = NULL, check = TRUE) <- value
 
 \S4method{getMatrix}{liger,ANY,ANY,ANY}(
   x,
