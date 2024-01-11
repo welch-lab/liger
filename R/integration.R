@@ -813,18 +813,18 @@ runOnlineINMF.liger <- function(
     features <- rownames(object[[1]])
     if (!is.null(seed)) set.seed(seed)
 
-    # If miniBatchSize > smallest invovled dataset, auto reset with warning
-    miniBatchSize_min <- min(sapply(object, ncol))
-    if (!is.null(newDatasets)) {
-        miniBatchSize_min2 <- min(sapply(newDatasets, ncol))
-        miniBatchSize_min <- min(miniBatchSize_min, miniBatchSize_min2)
-    }
-    if (miniBatchSize > miniBatchSize_min) {
-        warning("Minibatch size larger than the smallest dataset involved.\n",
-                "  Setting to the smallest dataset size: ", miniBatchSize_min,
-                immediate. = TRUE)
-        miniBatchSize <- miniBatchSize_min
-    }
+    # # If miniBatchSize > smallest invovled dataset, auto reset with warning
+    # miniBatchSize_min <- min(sapply(object, ncol))
+    # if (!is.null(newDatasets)) {
+    #     miniBatchSize_min2 <- min(sapply(newDatasets, ncol))
+    #     miniBatchSize_min <- min(miniBatchSize_min, miniBatchSize_min2)
+    # }
+    # if (miniBatchSize > miniBatchSize_min) {
+    #     warning("Minibatch size larger than the smallest dataset involved.\n",
+    #             "  Setting to the smallest dataset size: ", miniBatchSize_min,
+    #             immediate. = TRUE)
+    #     miniBatchSize <- miniBatchSize_min
+    # }
 
     res <- RcppPlanc::onlineINMF(objectList = object, newDatasets = newDatasets,
                                  project = projection, k = k, lambda = lambda,

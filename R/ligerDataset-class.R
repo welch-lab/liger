@@ -753,7 +753,7 @@ setGeneric(
 #' @rdname ligerDataset-class
 setGeneric(
     "scaleUnsharedData<-",
-    function(x, check = TRUE, value) standardGeneric("scaleUnsharedData<-")
+    function(x, dataset = NULL, check = TRUE, value) standardGeneric("scaleUnsharedData<-")
 )
 
 #' @export
@@ -785,7 +785,7 @@ setMethod(
 #' @rdname ligerDataset-class
 setReplaceMethod(
     "scaleUnsharedData",
-    signature(x = "ligerDataset", check = "ANY", value = "matrixLike_OR_NULL"),
+    signature(x = "ligerDataset", dataset = "missing", check = "ANY", value = "matrixLike_OR_NULL"),
     function(x, check = TRUE, value) {
         if (isH5Liger(x))
             stop("Cannot replace slot with in-memory data for H5 based object.")
@@ -799,7 +799,7 @@ setReplaceMethod(
 #' @rdname ligerDataset-class
 setReplaceMethod(
     "scaleUnsharedData",
-    signature(x = "ligerDataset", check = "ANY", value = "H5D"),
+    signature(x = "ligerDataset", dataset = "missing", check = "ANY", value = "H5D"),
     function(x, check = TRUE, value) {
         if (!isH5Liger(x))
             stop("Cannot replace slot with on-disk data for in-memory object.")
@@ -813,7 +813,7 @@ setReplaceMethod(
 #' @rdname ligerDataset-class
 setReplaceMethod(
     "scaleUnsharedData",
-    signature(x = "ligerDataset", check = "ANY", value = "H5Group"),
+    signature(x = "ligerDataset", dataset = "missing", check = "ANY", value = "H5Group"),
     function(x, check = TRUE, value) {
         if (!isH5Liger(x))
             stop("Cannot replace slot with on-disk data for in-memory object.")
@@ -822,6 +822,56 @@ setReplaceMethod(
         x
     }
 )
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "scaleUnsharedData",
+    signature(x = "liger", dataset = "ANY", check = "ANY", value = "matrixLike_OR_NULL"),
+    function(x, dataset = NULL, check = TRUE, value) {
+        dataset <- .checkUseDatasets(x, dataset)
+        if (length(dataset) != 1) stop("Need to specify one dataset to insert.")
+        if (isH5Liger(x, dataset))
+            stop("Cannot replace slot with in-memory data for H5 based object.")
+        x@datasets[[dataset]]@scaleUnsharedData <- value
+        if (isTRUE(check)) methods::validObject(x)
+        x
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "scaleUnsharedData",
+    signature(x = "liger", dataset = "ANY", check = "ANY", value = "H5D"),
+    function(x, dataset = NULL, check = TRUE, value) {
+        dataset <- .checkUseDatasets(x, dataset)
+        if (length(dataset) != 1) stop("Need to specify one dataset to insert.")
+        if (!isH5Liger(x, dataset))
+            stop("Cannot replace slot with on-disk data for in-memory object.")
+        x@datasets[[dataset]]@scaleUnsharedData <- value
+        if (isTRUE(check)) methods::validObject(x)
+        x
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "scaleUnsharedData",
+    signature(x = "liger", dataset = "ANY", check = "ANY", value = "H5Group"),
+    function(x, dataset = NULL, check = TRUE, value) {
+        dataset <- .checkUseDatasets(x, dataset)
+        if (length(dataset) != 1) stop("Need to specify one dataset to insert.")
+        if (!isH5Liger(x, dataset))
+            stop("Cannot replace slot with on-disk data for in-memory object.")
+        x@datasets[[dataset]]@scaleUnsharedData <- value
+        if (isTRUE(check)) methods::validObject(x)
+        x
+    }
+)
+
+
 
 #' @export
 #' @rdname ligerDataset-class

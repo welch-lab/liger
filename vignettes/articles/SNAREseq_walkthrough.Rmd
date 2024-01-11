@@ -10,26 +10,42 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
-Here we integrate the scATAC and scRNA reads from the dual-omics dataset SNARE-seq as an illustration of how UINMF can be used to integrate cross-modality data.
+Here we integrate the scATAC and scRNA reads from the dual-omics dataset SNARE-seq as an illustration of how UINMF can be used to integrate cross-modality data. For this tutorial, we will use three matrices, which can all be downloaded at https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0
 
-## 1. Download the data
+- The transcriptomic measures `SNAREseq_RNA.RDS` is the SNARE-seq scRNA dataset (31,367 genes by 10,309 cells).
+- For the shared epigenomic features `SNARE_seq_shared_chromatin_features.RDS`, we create a gene-centric matrix, such that we sum of the number of accessibiltiy peaks that occur over the gene body and promoter regions for each gene. For a detailed walkthough of how to generate such a matrix, please see our [Integrating scRNA and scATAC data vignette](Integrating_scRNA_and_scATAC_data.html). The resulting matrix of gene-centric chromatin accessibility is 22,379 genes by 10,309 cells
+- For the unshared epigenomic features, we binned the genome into bins of 100,000 bp, and summed the number of peaks occuring in each bin. We then filtered this matrix for all bins that overlapped with ENCODE Blacklist regions, genes, and promoters. Our filtered matrix `SNARE_seq_unshared_chromatin_features.RDS` is 10,309 cells by 7,437 bins.
 
-First, read in your datasets. For this tutorial, we will use three matrices, which can all be downloaded at https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0 .
-
-The transcriptomic measures `SNAREseq_RNA.RDS` is the SNARE-seq scRNA dataset (31,367 genes by 10,309 cells).
-
-For the shared epigenomic features `SNARE_seq_shared_chromatin_features.RDS`, we create a gene-centric matrix, such that we sum of the number of accessibiltiy peaks that occur over the gene body and promoter regions for each gene. For a detailed walkthough of how to generate such a matrix, please see our [Integrating scRNA and scATAC data vignette](Integrating_scRNA_and_scATAC_data.html). The resulting matrix of gene-centric chromatin accessibility is 22,379 genes by 10,309 cells
-
-For the unshared epigenomic features, we binned the genome into bins of 100,000 bp, and summed the number of peaks occuring in each bin. We then filtered this matrix for all bins that overlapped with ENCODE Blacklist regions, ,genes, and promoters. Our filtered matrix `SNARE_seq_unshared_chromatin_features.RDS` is 10,309 cells by 7,437 bins.
+## Step 1: Load data
 
 ```{r}
 library(rliger2)
-rna <- readRDS("SNAREseq_RNA.RDS")
-atac_shared <- readRDS("SNAREseq_chromatin_accessibility_shared.RDS")
-atac_unshared <- readRDS("SNARE_seq_unshared_chromatin_features.RDS")
+
+rna <- readRDS("SNAREseq_data/SNAREseq_RNA.RDS")
+atac_shared <- readRDS("SNAREseq_data/SNAREseq_chromatin_accessibility_shared.RDS")
+atac_unshared <- readRDS("SNAREseq_data/SNARE_seq_unshared_chromatin_features.RDS")
+atac_unshared <- as(atac_unshared, "CsparseMatrix")
 ```
 
-## 2. Selecting the unshared features
+## Step 2: Preprocessing
+
+Integrative non-negative matrix factorization with unshared features (UINMF) performs factorization using shared feature matrix of all datasets and includes unshared features from dataset(s) with such information. In this tutorial, we plan to use the variable feature selected from the scRNA dataset. Since we prepared the gene-centric matrix from the scATAC dataset, these genes can be accounted as the shared features. For the unshared features, normally we select variable genes that are out of the intersection of gene sets from all datasets. In this tutorial, we directly use the peaks that are identified variable. Therefore, special processing will be needed compared to the other UINMF tutorials. 
+
+### 1. Create liger object for shared genes
+
+```{r create}
+lig <- createLiger(list(rna = rna, atac = atac_shared))
+```
+
+### 2. Normalize and select shared variable features
+
+```{r norm}
+lig <- normalize(lig) %>%
+    selectGenes(useDatasets = "rna", thresh = 0.1) %>%
+    scaleNotCenter()
+```
+
+## 3. Selecting the unshared features
 
 When selecting unshared features for the UINMF integration, it is critical to consider the type of data you are working with. For unshared features that gene-centric, the user should follow the feature selection process outlined in the ['Integrating unshared features with UINMF' tutorial](UINMF_vignette.html).
 
@@ -45,6 +61,7 @@ Then we select the top 2,000 variable features with Seurat VST method:
 
 ```{r selectfeat}
 library(Seurat)
+
 se <- CreateSeuratObject(unshareNormed)
 se <- FindVariableFeatures(se, selection.method = "vst", nfeatures = 2000)
 top2000 <- VariableFeatures(se)
@@ -56,67 +73,43 @@ Then we scale, but do not center the unshared features
 unshareScaled <- scaleNotCenter(unshareNormed[top2000,])
 ```
 
-## 3. Preprocessing and normalization
-
-Create a LIGER object and normalize the shared data.
-
-```{r normalize}
-lig <- createLiger(list(rna = rna, atac = atac_shared))
-lig <- normalize(lig)
-```
-
-Note that when we select the variable genes between the shared features, we use the RNA dataset to select variable shared features.
-
-```{r selectvargenes, message = FALSE}
-lig <- selectGenes(lig, var.thresh = 0.1, datasets.use = "rna", 
-                   unshared = TRUE, unshared.datasets = "atac",
-                   unshared.thresh = 0.2)
-```
-
-Scale the data, still, not centered.
-
-```{r scaleshared}
-lig <- scaleNotCenter(lig)
-```
-
 Add the unshared features that have been properly selected, such that they are added as a genes by cells matrix. 
 
 ```{r addunshared}
-# Fetch the dataset specific object
-ld.atac <- dataset(lig, "atac")
-# Insert prepared information
-ld.atac@varUnsharedFeatures <- top2000
-scaleUnsharedData(ld.atac, check = FALSE) <- unshareScaled
-# Put the updated dataset back
-datasets(lig)[["atac"]] <- ld.atac
+varUnsharedFeatures(lig, "atac") <- top2000
+scaleUnsharedData(lig, "atac", check = FALSE) <- unshareScaled
 ```
 
 >The latest version of rliger package is equipped with strict checkpoints on object validity, including the matching of features and cells between matrices belonging to the same dataset. Given that the special processing method we are introducing in this vignette, that we use the intergenic bins as unshared features, we have to turn the checks off with `check = FALSE` when inserting the scaled unshared features into the object.
 
-## 4. Joint Matrix Factorization (20-30 min)
+## 4. Joint Matrix Factorization
 
 To factorize the datasets and include the unshared datasets, set `useUnshared = TRUE`. 
 
-```{r factorization, results=FALSE}
-lig <- optimizeALS(lig, k = 30, maxIter = 30, useUnshared = TRUE, thresh = 1e-10)
+```{r factorization}
+lig <- runUINMF(lig, k = 30, nIteration = 30)
 ```
 
-## 5. Quantile Normalization and Joint Clustering (~ 5 min)
+## 5. Quantile Normalization and Joint Clustering
 
 After factorization, the resulting Liger object can be used in all downstream LIGER functions without adjustment. The default reference dataset for quantile normalization is the larger dataset, but the user should select the higher quality dataset as the reference dataset, even if it is the smaller dataset.
 
 
-```{r quantilenorm, results = FALSE}
+```{r quantilenorm}
 lig <- quantileNorm(lig)
-lig <- runLeidenCluster(lig, resolution = 0.8, nNeighbors = 30)
+lig <- runCluster(lig, resolution = 0.8, nNeighbors = 30)
 ```
-## 6. Visualizations and Downstream processing (< 1 min)
 
-```{r runumap, results = FALSE, warnings = FALSE, message = FALSE}
+## 6. Visualizations and Downstream processing
+
+```{r runumap}
 lig <- runUMAP(lig, nNeighbors = 30)
 ```
-Next, we can visualize our returned factorized object by dataset to check the alignment between datasets, as well as by cluster determined in the factorization.
-```{r visualizations, message = FALSE, warning = FALSE, fig.width = 10}
-plotByDatasetAndCluster(lig, dotSize = 0.5)
-```
 
+Next, we can visualize our returned factorized object by dataset to check the alignment between datasets, as well as by cluster determined in the factorization.
+
+```{r visualizations, fig.width=7, fig.height=6}
+options(ligerDotSize = 0.5)
+plotDatasetDimRed(lig)
+plotClusterDimRed(lig, legendNCol = 2)
+```
