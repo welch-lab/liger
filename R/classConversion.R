@@ -163,7 +163,7 @@ as.ligerDataset <- function(object, ...) UseMethod("as.ligerDataset", object)
 #' @method as.ligerDataset ligerDataset
 as.ligerDataset.ligerDataset <- function(
         object,
-        modal = c("default", "rna", "atac", "spatial"),
+        modal = c("default", "rna", "atac", "spatial", "meth"),
         ...
 ) {
     modal <- match.arg(modal)
@@ -189,7 +189,7 @@ as.ligerDataset.ligerDataset <- function(
 #' @method as.ligerDataset default
 as.ligerDataset.default <- function(
         object,
-        modal = c("default", "rna", "atac", "spatial"),
+        modal = c("default", "rna", "atac", "spatial", "meth"),
         ...
 ) {
     modal <- match.arg(modal)
@@ -201,7 +201,7 @@ as.ligerDataset.default <- function(
 #' @method as.ligerDataset matrix
 as.ligerDataset.matrix <- function(
         object,
-        modal = c("default", "rna", "atac", "spatial"),
+        modal = c("default", "rna", "atac", "spatial", "meth"),
         ...
 ) {
     modal <- match.arg(modal)
@@ -216,7 +216,7 @@ as.ligerDataset.matrix <- function(
 #' assay.
 as.ligerDataset.Seurat <- function(
         object,
-        modal = c("default", "rna", "atac", "spatial"),
+        modal = c("default", "rna", "atac", "spatial", "meth"),
         assay = NULL,
         ...
 ) {
@@ -231,7 +231,7 @@ as.ligerDataset.Seurat <- function(
 #' @method as.ligerDataset SingleCellExperiment
 as.ligerDataset.SingleCellExperiment <- function(
         object,
-        modal = c("default", "rna", "atac", "spatial"),
+        modal = c("default", "rna", "atac", "spatial", "meth"),
         ...
 ) {
     if (!requireNamespace("SingleCellExperiment", quietly = "TRUE"))
@@ -249,7 +249,7 @@ as.ligerDataset.SingleCellExperiment <- function(
 # #' @method as.ligerDataset anndata._core.anndata.AnnData
 # as.ligerDataset.anndata._core.anndata.AnnData <- function(
 #         object,
-#         modal = c("default", "rna", "atac", "spatial"),
+#         modal = c("default", "rna", "atac", "spatial", "meth"),
 #         ...
 # ) {
 #     modal <- match.arg(modal)

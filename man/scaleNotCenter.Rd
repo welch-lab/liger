@@ -4,6 +4,7 @@
 \alias{scaleNotCenter}
 \alias{scaleNotCenter.dgCMatrix}
 \alias{scaleNotCenter.ligerDataset}
+\alias{scaleNotCenter.ligerMethDataset}
 \alias{scaleNotCenter.liger}
 \alias{scaleNotCenter.Seurat}
 \title{Scale genes by root-mean-square across cells}
@@ -16,6 +17,13 @@ scaleNotCenter(object, ...)
   object,
   features = NULL,
   chunk = 1000,
+  verbose = getOption("ligerVerbose"),
+  ...
+)
+
+\method{scaleNotCenter}{ligerMethDataset}(
+  object,
+  features = NULL,
   verbose = getOption("ligerVerbose"),
   ...
 )
@@ -108,6 +116,8 @@ Where \eqn{N} denotes the normalized matrix for an individual dataset,
 \eqn{S} is the output scaled matrix for this dataset, and \eqn{n} is the
 number of cells in this dataset. \eqn{i, j} denotes the specific gene and
 cell index, and \eqn{p} is the cell iterator.
+
+Please see detailed section below for explanation on methylation dataset.
 }
 \note{
 Since the scaling on genes is applied on a per dataset base, other scaling
@@ -117,6 +127,21 @@ not be considered as equivalent alternatives, even if options like
 solution that works under such circumstance, provided with the Seurat S3
 method.
 }
+\section{Methylation dataset}{
+
+Because gene body mCH proportions are negatively correlated with gene
+expression level in neurons, we need to reverse the direction of the
+methylation data before performing the integration. We do this by simply
+subtracting all values from the maximum methylation value. The resulting
+values are positively correlated with gene expression. This will only be
+applied to variable genes detected in prior. Please make sure that argument
+\code{modal} is set accordingly when running \code{\link{createLiger}}. In
+this way, this function can automatically detect it and take proper action.
+If it is not set, users can still manually have the equivalent processing
+done by doing \code{scaleNotCenter(lig, useDataset = c("other", "datasets"))},
+and then \code{\link{reverseMethData}(lig, useDataset = c("meth", "datasets"))}.
+}
+
 \examples{
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)

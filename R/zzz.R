@@ -14,14 +14,16 @@ magrittr::`%>%`
     default = "ligerDataset",
     rna = "ligerRNADataset",
     atac = "ligerATACDataset",
-    spatial = "ligerSpatialDataset"
+    spatial = "ligerSpatialDataset",
+    meth = "ligerMethDataset"
 )
 
 .classModalDict <- list(
     ligerDataset = "default",
     ligerRNADataset = "rna",
     ligerATACDataset = "atac",
-    ligerSpatialDataset = "spatial"
+    ligerSpatialDataset = "spatial",
+    ligerMethDataset = "meth"
 )
 
 .ligerOptions <- list(

@@ -11,20 +11,36 @@
 \usage{
 as.ligerDataset(object, ...)
 
-\method{as.ligerDataset}{ligerDataset}(object, modal = c("default", "rna", "atac", "spatial"), ...)
+\method{as.ligerDataset}{ligerDataset}(
+  object,
+  modal = c("default", "rna", "atac", "spatial", "meth"),
+  ...
+)
 
-\method{as.ligerDataset}{default}(object, modal = c("default", "rna", "atac", "spatial"), ...)
+\method{as.ligerDataset}{default}(
+  object,
+  modal = c("default", "rna", "atac", "spatial", "meth"),
+  ...
+)
 
-\method{as.ligerDataset}{matrix}(object, modal = c("default", "rna", "atac", "spatial"), ...)
+\method{as.ligerDataset}{matrix}(
+  object,
+  modal = c("default", "rna", "atac", "spatial", "meth"),
+  ...
+)
 
 \method{as.ligerDataset}{Seurat}(
   object,
-  modal = c("default", "rna", "atac", "spatial"),
+  modal = c("default", "rna", "atac", "spatial", "meth"),
   assay = NULL,
   ...
 )
 
-\method{as.ligerDataset}{SingleCellExperiment}(object, modal = c("default", "rna", "atac", "spatial"), ...)
+\method{as.ligerDataset}{SingleCellExperiment}(
+  object,
+  modal = c("default", "rna", "atac", "spatial", "meth"),
+  ...
+)
 }
 \arguments{
 \item{object}{Object.}
