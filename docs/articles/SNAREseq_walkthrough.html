@@ -40,37 +40,61 @@
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li class="dropdown-header">Installation</li>
+<li>
+  <a href="../articles/installation.html">Installation</a>
+</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Vignettes
+    Tutorials
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
-<li class="dropdown-header">Introductory Vignettes</li>
-    <li class="dropdown-header">Integrating Multiple scRNAseq Data</li>
-    <li class="dropdown-header">Integrating On-Disk (HDF5 Based) Data</li>
-    <li class="divider">
+<li>
+      <a href="../articles/Integrating_multi_scRNA_data.html">Integrating multiple scRNAseq data</a>
     </li>
-<li class="dropdown-header">Data structure and access</li>
-    <li class="dropdown-header">Outer container - liger object</li>
-    <li class="dropdown-header">Dataset container - ligerDataset object and subclasses</li>
+    <li>
+      <a href="../articles/Integrating_scRNA_and_scATAC_data.html">Integrating scRNA and scATAC data</a>
+    </li>
+    <li>
+      <a href="../articles/online_iNMF_tutorial.html">Online iNMF with HDF5 based data</a>
+    </li>
+    <li>
+      <a href="../articles/UINMF_vignette.html">Integration using unshared features</a>
+    </li>
+    <li>
+      <a href="../articles/cross_species_vig.html">Cross-species Analysis with UINMF</a>
+    </li>
+    <li>
+      <a href="../articles/STARmap_dropviz_vig.html">UINMF with STARmap spatial and transcriptomic</a>
+    </li>
+    <li>
+      <a href="../articles/SNAREseq_walkthrough.html">UINMF with SNAREseq scATAC and scRNA</a>
+    </li>
+    <li>
+      <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
+    </li>
+    <li>
+      <a href="../articles/Parameter_selection.html">Parameter selection</a>
+    </li>
   </ul>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Documentation
+    Usage
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
-<li class="dropdown-submenu">
-      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Data</a>
-      <ul class="dropdown-menu" role="menu">
-<li class="dropdown-header">Import Data</li>
-      </ul>
-</li>
+<li>
+      <a href="../articles/import_data.html">Import data</a>
+    </li>
+    <li>
+      <a href="../articles/liger_object.html">Introduction to a liger object</a>
+    </li>
+    <li>
+      <a href="../articles/liger_with_seurat.html">Interoperate with Seurat</a>
+    </li>
   </ul>
 </li>
 <li>
@@ -106,7 +130,7 @@ and Joshua Welch</h4>
             
             <h4 data-toc-skip class="date">04/25/2023</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/welch-lab/liger/blob/HEAD/vignettes/SNAREseq_walkthrough.Rmd" class="external-link"><code>vignettes/SNAREseq_walkthrough.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/welch-lab/liger/blob/HEAD/vignettes/articles/SNAREseq_walkthrough.Rmd" class="external-link"><code>vignettes/articles/SNAREseq_walkthrough.Rmd</code></a></small>
       <div class="hidden name"><code>SNAREseq_walkthrough.Rmd</code></div>
 
     </div>
@@ -115,37 +139,68 @@ and Joshua Welch</h4>
     
 <p>Here we integrate the scATAC and scRNA reads from the dual-omics
 dataset SNARE-seq as an illustration of how UINMF can be used to
-integrate cross-modality data.</p>
-<div class="section level2">
-<h2 id="download-the-data">1. Download the data<a class="anchor" aria-label="anchor" href="#download-the-data"></a>
-</h2>
-<p>First, read in your datasets. For this tutorial, we will use three
-matrices, which can all be downloaded at <a href="https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0" class="external-link uri">https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0</a>
-.</p>
-<p>The transcriptomic measures <code>SNAREseq_RNA.RDS</code> is the
-SNARE-seq scRNA dataset (31,367 genes by 10,309 cells).</p>
-<p>For the shared epigenomic features
+integrate cross-modality data. For this tutorial, we will use three
+matrices, which can all be downloaded at <a href="https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0" class="external-link uri">https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0</a></p>
+<ul>
+<li>The transcriptomic measures <code>SNAREseq_RNA.RDS</code> is the
+SNARE-seq scRNA dataset (31,367 genes by 10,309 cells).</li>
+<li>For the shared epigenomic features
 <code>SNARE_seq_shared_chromatin_features.RDS</code>, we create a
 gene-centric matrix, such that we sum of the number of accessibiltiy
 peaks that occur over the gene body and promoter regions for each gene.
 For a detailed walkthough of how to generate such a matrix, please see
 our <a href="Integrating_scRNA_and_scATAC_data.html">Integrating scRNA
 and scATAC data vignette</a>. The resulting matrix of gene-centric
-chromatin accessibility is 22,379 genes by 10,309 cells</p>
-<p>For the unshared epigenomic features, we binned the genome into bins
+chromatin accessibility is 22,379 genes by 10,309 cells</li>
+<li>For the unshared epigenomic features, we binned the genome into bins
 of 100,000 bp, and summed the number of peaks occuring in each bin. We
 then filtered this matrix for all bins that overlapped with ENCODE
-Blacklist regions, ,genes, and promoters. Our filtered matrix
+Blacklist regions, genes, and promoters. Our filtered matrix
 <code>SNARE_seq_unshared_chromatin_features.RDS</code> is 10,309 cells
-by 7,437 bins.</p>
+by 7,437 bins.</li>
+</ul>
+<div class="section level2">
+<h2 id="step-1-load-data">Step 1: Load data<a class="anchor" aria-label="anchor" href="#step-1-load-data"></a>
+</h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/welch-lab/liger" class="external-link">rliger2</a></span><span class="op">)</span></span>
-<span><span class="va">rna</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"SNAREseq_RNA.RDS"</span><span class="op">)</span></span>
-<span><span class="va">atac_shared</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"SNAREseq_chromatin_accessibility_shared.RDS"</span><span class="op">)</span></span>
-<span><span class="va">atac_unshared</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"SNARE_seq_unshared_chromatin_features.RDS"</span><span class="op">)</span></span></code></pre></div>
+<span></span>
+<span><span class="va">rna</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"SNAREseq_data/SNAREseq_RNA.RDS"</span><span class="op">)</span></span>
+<span><span class="va">atac_shared</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"SNAREseq_data/SNAREseq_chromatin_accessibility_shared.RDS"</span><span class="op">)</span></span>
+<span><span class="va">atac_unshared</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"SNAREseq_data/SNARE_seq_unshared_chromatin_features.RDS"</span><span class="op">)</span></span>
+<span><span class="va">atac_unshared</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/methods/as.html" class="external-link">as</a></span><span class="op">(</span><span class="va">atac_unshared</span>, <span class="st">"CsparseMatrix"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="selecting-the-unshared-features">2. Selecting the unshared features<a class="anchor" aria-label="anchor" href="#selecting-the-unshared-features"></a>
+<h2 id="step-2-preprocessing">Step 2: Preprocessing<a class="anchor" aria-label="anchor" href="#step-2-preprocessing"></a>
+</h2>
+<p>Integrative non-negative matrix factorization with unshared features
+(UINMF) performs factorization using shared feature matrix of all
+datasets and includes unshared features from dataset(s) with such
+information. In this tutorial, we plan to use the variable feature
+selected from the scRNA dataset. Since we prepared the gene-centric
+matrix from the scATAC dataset, these genes can be accounted as the
+shared features. For the unshared features, normally we select variable
+genes that are out of the intersection of gene sets from all datasets.
+In this tutorial, we directly use the peaks that are identified
+variable. Therefore, special processing will be needed compared to the
+other UINMF tutorials.</p>
+<div class="section level3">
+<h3 id="create-liger-object-for-shared-genes">1. Create liger object for shared genes<a class="anchor" aria-label="anchor" href="#create-liger-object-for-shared-genes"></a>
+</h3>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createLiger.html">createLiger</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rna <span class="op">=</span> <span class="va">rna</span>, atac <span class="op">=</span> <span class="va">atac_shared</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="normalize-and-select-shared-variable-features">2. Normalize and select shared variable features<a class="anchor" aria-label="anchor" href="#normalize-and-select-shared-variable-features"></a>
+</h3>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="va">lig</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="../reference/selectGenes.html">selectGenes</a></span><span class="op">(</span>useDatasets <span class="op">=</span> <span class="st">"rna"</span>, thresh <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="../reference/scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="selecting-the-unshared-features">3. Selecting the unshared features<a class="anchor" aria-label="anchor" href="#selecting-the-unshared-features"></a>
 </h2>
 <p>When selecting unshared features for the UINMF integration, it is
 critical to consider the type of data you are working with. For unshared
@@ -158,45 +213,24 @@ counts), we must select the most variable features using an appropriate
 method. Here, we opt to use Seurat’s <code><a href="https://satijalab.org/seurat/reference/FindVariableFeatures.html" class="external-link">FindVariableFeatures()</a></code>
 function.</p>
 <p>First, we normalize the unshared features:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">unshareNormed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="va">atac_unshared</span><span class="op">)</span></span></code></pre></div>
 <p>Then we select the top 2,000 variable features with Seurat VST
 method:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
-<span><span class="va">se</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mojaveazure.github.io/seurat-object/reference/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span><span class="va">unshareNormed</span><span class="op">)</span></span>
-<span><span class="va">se</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindVariableFeatures.html" class="external-link">FindVariableFeatures</a></span><span class="op">(</span><span class="va">se</span>, selection.method <span class="op">=</span> <span class="st">"vst"</span>, nfeatures <span class="op">=</span> <span class="fl">2000</span><span class="op">)</span></span>
-<span><span class="va">top2000</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mojaveazure.github.io/seurat-object/reference/VariableFeatures.html" class="external-link">VariableFeatures</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span></span></code></pre></div>
-<p>Then we scale, but do not center the unshared features</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">unshareScaled</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="va">unshareNormed</span><span class="op">[</span><span class="va">top2000</span>,<span class="op">]</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="preprocessing-and-normalization">3. Preprocessing and normalization<a class="anchor" aria-label="anchor" href="#preprocessing-and-normalization"></a>
-</h2>
-<p>Create a LIGER object and normalize the shared data.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createLiger.html">createLiger</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rna <span class="op">=</span> <span class="va">rna</span>, atac <span class="op">=</span> <span class="va">atac_shared</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="va">lig</span><span class="op">)</span></span></code></pre></div>
-<p>Note that when we select the variable genes between the shared
-features, we use the RNA dataset to select variable shared features.</p>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">se</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SeuratObject/man/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span><span class="va">unshareNormed</span><span class="op">)</span></span>
+<span><span class="va">se</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindVariableFeatures.html" class="external-link">FindVariableFeatures</a></span><span class="op">(</span><span class="va">se</span>, selection.method <span class="op">=</span> <span class="st">"vst"</span>, nfeatures <span class="op">=</span> <span class="fl">2000</span><span class="op">)</span></span>
+<span><span class="va">top2000</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SeuratObject/man/VariableFeatures.html" class="external-link">VariableFeatures</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span></span></code></pre></div>
+<p>Then we scale, but do not center the unshared features</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/selectGenes.html">selectGenes</a></span><span class="op">(</span><span class="va">lig</span>, var.thresh <span class="op">=</span> <span class="fl">0.1</span>, datasets.use <span class="op">=</span> <span class="st">"rna"</span>, </span>
-<span>                   unshared <span class="op">=</span> <span class="cn">TRUE</span>, unshared.datasets <span class="op">=</span> <span class="st">"atac"</span>,</span>
-<span>                   unshared.thresh <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span></code></pre></div>
-<p>Scale the data, still, not centered.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="va">lig</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">unshareScaled</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="va">unshareNormed</span><span class="op">[</span><span class="va">top2000</span>,<span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <p>Add the unshared features that have been properly selected, such that
 they are added as a genes by cells matrix.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Fetch the dataset specific object</span></span>
-<span><span class="va">ld.atac</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/liger-class.html">dataset</a></span><span class="op">(</span><span class="va">lig</span>, <span class="st">"atac"</span><span class="op">)</span></span>
-<span><span class="co"># Insert prepared information</span></span>
-<span><span class="va">ld.atac</span><span class="op">@</span><span class="va">varUnsharedFeatures</span> <span class="op">&lt;-</span> <span class="va">top2000</span></span>
-<span><span class="fu"><a href="../reference/ligerDataset-class.html">scaleUnsharedData</a></span><span class="op">(</span><span class="va">ld.atac</span>, check <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">unshareScaled</span></span>
-<span><span class="co"># Put the updated dataset back</span></span>
-<span><span class="fu"><a href="../reference/liger-class.html">datasets</a></span><span class="op">(</span><span class="va">lig</span><span class="op">)</span><span class="op">[[</span><span class="st">"atac"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">ld.atac</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/liger-class.html">varUnsharedFeatures</a></span><span class="op">(</span><span class="va">lig</span>, <span class="st">"atac"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">top2000</span></span>
+<span><span class="fu"><a href="../reference/ligerDataset-class.html">scaleUnsharedData</a></span><span class="op">(</span><span class="va">lig</span>, <span class="st">"atac"</span>, check <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">unshareScaled</span></span></code></pre></div>
 <blockquote>
 <p>The latest version of rliger package is equipped with strict
 checkpoints on object validity, including the matching of features and
@@ -208,36 +242,40 @@ features into the object.</p>
 </blockquote>
 </div>
 <div class="section level2">
-<h2 id="joint-matrix-factorization-20-30-min">4. Joint Matrix Factorization (20-30 min)<a class="anchor" aria-label="anchor" href="#joint-matrix-factorization-20-30-min"></a>
+<h2 id="joint-matrix-factorization">4. Joint Matrix Factorization<a class="anchor" aria-label="anchor" href="#joint-matrix-factorization"></a>
 </h2>
 <p>To factorize the datasets and include the unshared datasets, set
 <code>useUnshared = TRUE</code>.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimizeALS.html">optimizeALS</a></span><span class="op">(</span><span class="va">lig</span>, k <span class="op">=</span> <span class="fl">30</span>, maxIter <span class="op">=</span> <span class="fl">30</span>, useUnshared <span class="op">=</span> <span class="cn">TRUE</span>, thresh <span class="op">=</span> <span class="fl">1e-10</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runUINMF.html">runUINMF</a></span><span class="op">(</span><span class="va">lig</span>, k <span class="op">=</span> <span class="fl">30</span>, nIteration <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="quantile-normalization-and-joint-clustering-5-min">5. Quantile Normalization and Joint Clustering (~ 5 min)<a class="anchor" aria-label="anchor" href="#quantile-normalization-and-joint-clustering-5-min"></a>
+<h2 id="quantile-normalization-and-joint-clustering">5. Quantile Normalization and Joint Clustering<a class="anchor" aria-label="anchor" href="#quantile-normalization-and-joint-clustering"></a>
 </h2>
 <p>After factorization, the resulting Liger object can be used in all
 downstream LIGER functions without adjustment. The default reference
 dataset for quantile normalization is the larger dataset, but the user
 should select the higher quality dataset as the reference dataset, even
 if it is the smaller dataset.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/quantileNorm.html">quantileNorm</a></span><span class="op">(</span><span class="va">lig</span><span class="op">)</span></span>
-<span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/clustering.html">runLeidenCluster</a></span><span class="op">(</span><span class="va">lig</span>, resolution <span class="op">=</span> <span class="fl">0.8</span>, nNeighbors <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runCluster.html">runCluster</a></span><span class="op">(</span><span class="va">lig</span>, resolution <span class="op">=</span> <span class="fl">0.8</span>, nNeighbors <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="visualizations-and-downstream-processing-1-min">6. Visualizations and Downstream processing (&lt; 1 min)<a class="anchor" aria-label="anchor" href="#visualizations-and-downstream-processing-1-min"></a>
+<h2 id="visualizations-and-downstream-processing">6. Visualizations and Downstream processing<a class="anchor" aria-label="anchor" href="#visualizations-and-downstream-processing"></a>
 </h2>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runUMAP.html">runUMAP</a></span><span class="op">(</span><span class="va">lig</span>, nNeighbors <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span></code></pre></div>
 <p>Next, we can visualize our returned factorized object by dataset to
 check the alignment between datasets, as well as by cluster determined
 in the factorization.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>ligerDotSize <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/plotDimRed.html">plotDatasetDimRed</a></span><span class="op">(</span><span class="va">lig</span><span class="op">)</span></span></code></pre></div>
+<p><img src="SNAREseq_walkthrough_files/figure-html/visualizations-1.png" width="672"></p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotDimRed.html">plotByDatasetAndCluster</a></span><span class="op">(</span><span class="va">lig</span>, dotSize <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SNAREseq_walkthrough_files/figure-html/visualizations-1.png" width="960"></p>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotDimRed.html">plotClusterDimRed</a></span><span class="op">(</span><span class="va">lig</span>, legendNCol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="SNAREseq_walkthrough_files/figure-html/visualizations-2.png" width="672"></p>
 </div>
   </div>
 
@@ -253,7 +291,7 @@ in the factorization.</p>
 
       <footer><div class="copyright">
   <p></p>
-<p>Developed by Joshua Welch, Chao Gao, Jialin Liu, Joshua Sodicoff, Velina Kozareva, Evan Macosko, Yichen Wang.</p>
+<p>Developed by Joshua Welch, Yichen Wang, Chao Gao, Jialin Liu, Joshua Sodicoff, Velina Kozareva, Evan Macosko.</p>
 </div>
 
 <div class="pkgdown">

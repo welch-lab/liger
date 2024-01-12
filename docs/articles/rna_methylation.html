@@ -40,37 +40,61 @@
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li class="dropdown-header">Installation</li>
+<li>
+  <a href="../articles/installation.html">Installation</a>
+</li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Vignettes
+    Tutorials
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
-<li class="dropdown-header">Introductory Vignettes</li>
-    <li class="dropdown-header">Integrating Multiple scRNAseq Data</li>
-    <li class="dropdown-header">Integrating On-Disk (HDF5 Based) Data</li>
-    <li class="divider">
+<li>
+      <a href="../articles/Integrating_multi_scRNA_data.html">Integrating multiple scRNAseq data</a>
     </li>
-<li class="dropdown-header">Data structure and access</li>
-    <li class="dropdown-header">Outer container - liger object</li>
-    <li class="dropdown-header">Dataset container - ligerDataset object and subclasses</li>
+    <li>
+      <a href="../articles/Integrating_scRNA_and_scATAC_data.html">Integrating scRNA and scATAC data</a>
+    </li>
+    <li>
+      <a href="../articles/online_iNMF_tutorial.html">Online iNMF with HDF5 based data</a>
+    </li>
+    <li>
+      <a href="../articles/UINMF_vignette.html">Integration using unshared features</a>
+    </li>
+    <li>
+      <a href="../articles/cross_species_vig.html">Cross-species Analysis with UINMF</a>
+    </li>
+    <li>
+      <a href="../articles/STARmap_dropviz_vig.html">UINMF with STARmap spatial and transcriptomic</a>
+    </li>
+    <li>
+      <a href="../articles/SNAREseq_walkthrough.html">UINMF with SNAREseq scATAC and scRNA</a>
+    </li>
+    <li>
+      <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
+    </li>
+    <li>
+      <a href="../articles/Parameter_selection.html">Parameter selection</a>
+    </li>
   </ul>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Documentation
+    Usage
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
-<li class="dropdown-submenu">
-      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Data</a>
-      <ul class="dropdown-menu" role="menu">
-<li class="dropdown-header">Import Data</li>
-      </ul>
-</li>
+<li>
+      <a href="../articles/import_data.html">Import data</a>
+    </li>
+    <li>
+      <a href="../articles/liger_object.html">Introduction to a liger object</a>
+    </li>
+    <li>
+      <a href="../articles/liger_with_seurat.html">Interoperate with Seurat</a>
+    </li>
   </ul>
 </li>
 <li>
@@ -107,7 +131,7 @@ Welch</h4>
             
             <h4 data-toc-skip class="date">4/19/2023</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/welch-lab/liger/blob/HEAD/vignettes/rna_methylation.Rmd" class="external-link"><code>vignettes/rna_methylation.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/welch-lab/liger/blob/HEAD/vignettes/articles/rna_methylation.Rmd" class="external-link"><code>vignettes/articles/rna_methylation.Rmd</code></a></small>
       <div class="hidden name"><code>rna_methylation.Rmd</code></div>
 
     </div>
@@ -137,23 +161,23 @@ across the gene body within each cell. They and we found these gene body
 mCH proportions to be negatively correlated with gene expression level
 in neurons. The gene expression data is from Saunders et al. 2018. The
 full dataset is available for download through <a href="http://dropviz.org/" class="external-link">Dropviz</a>. For convenience, we provide the
-cells x genes count matrices for only CGE interneurons as well as the
+gene x cell count matrices for only CGE interneurons as well as the
 original cluster assignment obtained from the study:</p>
 <ul>
-<li><a href="https://figshare.com/ndownloader/files/40222699" class="external-link">RNA
-data</a></li>
-<li><a href="https://figshare.com/ndownloader/files/40223842" class="external-link">RNA data
-cluster assignment</a></li>
-<li><a href="https://figshare.com/ndownloader/files/40222702" class="external-link">Methylation
-data</a></li>
-<li><a href="https://figshare.com/ndownloader/files/40223854" class="external-link">Methylation data
-cluster assignment</a></li>
+<li>RNA data with 18,455 genes by 2,927 cells <a href="https://figshare.com/ndownloader/files/40222699" class="external-link">mouse_frontal_cortex_cge_rna.RDS</a>
+</li>
+<li>RNA data cluster assignment <a href="https://figshare.com/ndownloader/files/40223842" class="external-link">rna_clusters.RDS</a>
+</li>
+<li>Methylation data with 31,928 genes by 184 cells <a href="https://figshare.com/ndownloader/files/40222702" class="external-link">mouse_frontal_cortex_cge_met.RDS</a>
+</li>
+<li>Methylation data cluster assignment <a href="https://figshare.com/ndownloader/files/40223854" class="external-link">met_clusters.RDS</a>
+</li>
 </ul>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rna</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"mouse_frontal_cortex_cge_rna.RDS"</span><span class="op">)</span></span>
-<span><span class="va">met</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">'mouse_frontal_cortex_cge_met.RDS'</span><span class="op">)</span></span>
-<span><span class="va">rna_clusts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"rna_clusters.RDS"</span><span class="op">)</span></span>
-<span><span class="va">met_clusts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"met_clusters.RDS"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">rna</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"meth_data/mouse_frontal_cortex_cge_rna.RDS"</span><span class="op">)</span></span>
+<span><span class="va">met</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"meth_data/mouse_frontal_cortex_cge_met.RDS"</span><span class="op">)</span></span>
+<span><span class="va">rna_clusts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"meth_data/rna_clusters.RDS"</span><span class="op">)</span></span>
+<span><span class="va">met_clusts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"meth_data/met_clusters.RDS"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="create-liger-object-and-preprocess-data">Create liger object and preprocess data<a class="anchor" aria-label="anchor" href="#create-liger-object-and-preprocess-data"></a>
@@ -162,11 +186,13 @@ cluster assignment</a></li>
 data.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/welch-lab/liger" class="external-link">rliger2</a></span><span class="op">)</span></span>
-<span><span class="va">rna.met</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createLiger.html">createLiger</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rna <span class="op">=</span> <span class="va">rna</span>, met <span class="op">=</span> <span class="va">met</span><span class="op">)</span>, addPrefix <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span></span>
+<span><span class="va">rna.met</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createLiger.html">createLiger</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rna <span class="op">=</span> <span class="va">rna</span>, met <span class="op">=</span> <span class="va">met</span><span class="op">)</span>, modal <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"rna"</span>, <span class="st">"meth"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Alternatively, we build the importing function to directly pull
 datasets from online storage and build the liger object.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rna.met</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/importVignetteData.html">importVignetteData</a></span><span class="op">(</span><span class="st">"cge"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># NOT RUN</span></span>
+<span><span class="va">rna.met</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/importVignetteData.html">importVignetteData</a></span><span class="op">(</span><span class="st">"cge"</span><span class="op">)</span></span></code></pre></div>
 <p>The <code><a href="../reference/selectGenes.html">selectGenes()</a></code> function performs variable gene
 selection on each of the datasets separately, then takes the union of
 the result. The variable genes are selected by comparing the variance of
@@ -174,21 +200,27 @@ each gene’s expression to its mean expression. The
 <code><a href="../reference/selectGenes.html">selectGenes()</a></code> function was written primarily scRNA-seq in
 mind, and the methylation data distribution is quite different. So
 instead of taking the union of variable genes from RNA and methylation,
-we set <code>datasets.use = "rna"</code> in the function to perform gene
-selection using only the RNA dataset. Because gene body mCH proportions
-are negatively correlated with gene expression level in neurons, we need
-to reverse the direction of the methylation data, with function
-<code><a href="../reference/reverseMethData.html">reverseMethData()</a></code> with <code>useDatasets = "met"</code>.
-This function simply subtracts all values from the maximum methylation
-value per selected dataset. The resulting values are positively
-correlated with gene expression. In addition, the proportional nature of
-the gene body methylation makes it unnecessary to normalize and scale
-the methylation data.</p>
+we set <code>useDatasets = "rna"</code> in the function to perform gene
+selection using only the RNA dataset.</p>
+<p>Because gene body mCH proportions are negatively correlated with gene
+expression level in neurons, we need to reverse the direction of the
+methylation data, by simply subtracting all values from the maximum
+methylation value per selected dataset. The resulting values are
+positively correlated with gene expression. In addition, the
+proportional nature of the gene body methylation makes it unnecessary to
+normalize and scale the methylation data. By setting argument
+<code>modal</code> in <code><a href="../reference/createLiger.html">createLiger()</a></code>, we’ve already marked
+that we need to take such actions on the methylation dataset, and the
+function <code><a href="../reference/scaleNotCenter.html">scaleNotCenter()</a></code> will automatically have this done
+properly.</p>
+<p>Optionally, <code><a href="../reference/reverseMethData.html">reverseMethData()</a></code> explicitly does the
+reversing operation on specified datasets if the datasets are not
+initially marked as methylation data.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rna.met</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">)</span></span>
-<span><span class="va">rna.met</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/selectGenes.html">selectGenes</a></span><span class="op">(</span><span class="va">rna.met</span>, datasets.use <span class="op">=</span> <span class="st">"rna"</span><span class="op">)</span></span>
-<span><span class="va">rna.met</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="va">rna.met</span>, useDatasets <span class="op">=</span> <span class="st">"rna"</span><span class="op">)</span></span>
-<span><span class="va">rna.met</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/reverseMethData.html">reverseMethData</a></span><span class="op">(</span><span class="va">rna.met</span>, useDatasets <span class="op">=</span> <span class="st">"met"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">rna.met</span> <span class="op">&lt;-</span> <span class="va">rna.met</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
+<span>    <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="../reference/selectGenes.html">selectGenes</a></span><span class="op">(</span>useDatasets <span class="op">=</span> <span class="st">"rna"</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="../reference/scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="factorize-and-perform-quantile-normalization">Factorize and perform quantile normalization<a class="anchor" aria-label="anchor" href="#factorize-and-perform-quantile-normalization"></a>
@@ -203,7 +235,7 @@ the dataset-specific component of the factorization). The default value
 analyses. For this analysis, we simply use <code>k = 20</code> and the
 default value of lambda.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rna.met</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimizeALS.html">optimizeALS</a></span><span class="op">(</span><span class="va">rna.met</span>, k <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">rna.met</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runIntegration.html">runIntegration</a></span><span class="op">(</span><span class="va">rna.met</span>, k <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></code></pre></div>
 <p>Using the metagene factors calculated by iNMF, we then assign each
 cell to the factor on which it has the highest loading, giving joint
 clusters that correspond across datasets. We then perform quantile
@@ -211,62 +243,17 @@ normalization by dataset, factor, and cluster to fully integrate the
 datasets. To perform this analysis, typing in:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rna.met</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/quantileNorm.html">quantileNorm</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">)</span></span></code></pre></div>
-<p>Important parameters of <code><a href="../reference/quantileNorm.html">quantileNorm()</a></code> are as
-follows:</p>
-<ul>
-<li>
-<code>nNeighbors</code>. This sets the number of nearest neighbors
-for within-dataset KNN graph. The default is <code>20</code>.</li>
-<li>
-<code>quantiles</code>. This sets the number of quantiles to use for
-quantile normalization. The default is <code>50</code>.</li>
-<li>
-<code>minCells</code>. This indicates the minimum number of cells to
-consider a cluster as shared across datasets. The default is
-<code>20</code>.</li>
-<li>
-<code>useDims</code>. This sets the indices of factors to use for
-quantile normalization. The user can pass in a vector of indices
-indicating specific factors. This is helpful for excluding factors
-capturing biological signals such as the cell cycle or technical signals
-such as mitochondrial genes. The default is all <code>k</code> of the
-factors.</li>
-<li>
-<code>center</code>. This indicates whether to center the data when
-scaling factors. The default is <code>FALSE</code>. This option should
-be set to <code>TRUE</code> when metagene loadings have a mean above
-zero, as with dense data such as DNA methylation.</li>
-<li>
-<code>maxSample</code>. This sets the maximum number of cells used
-for quantile normalization of each cluster and factor. The default is
-<code>1000</code>.</li>
-<li>
-<code>refineKNN</code>. This indicates whether to increase
-robustness of cluster assignments using KNN graph. The default is
-<code>TRUE</code>.</li>
-<li>
-<code>eps</code>. This sets the error bound of the nearest neighbor
-search. The default is <code>0.9</code>. Lower values give more accurate
-nearest neighbor graphs but take much longer to computer.</li>
-<li>
-<code>reference</code>. This indicates the name of the dataset to be
-used as a reference for quantile normalization. By default, the dataset
-with the largest number of cells is used.</li>
-</ul>
 <p>The <code><a href="../reference/quantileNorm.html">quantileNorm()</a></code> function gives joint clusters that
-correspond across datasets, which are often completely satisfactory and
-sufficient for downstream analyses. However, if desired, after quantile
+correspond across datasets. However, if desired, after quantile
 normalization, users can additionally run the Leiden algorithm for
 community detection, which is widely used in single-cell analysis and
 excels at merging small clusters into broad cell classes. This can be
-achieved by running the <code><a href="../reference/clustering.html">runLeidenCluster()</a></code> function.
-Several tuning parameters, including <code>resolution</code>,
+achieved by running the <code><a href="../reference/runCluster.html">runCluster()</a></code> function. Several
+tuning parameters, including <code>resolution</code>,
 <code>nNeighbors</code>, and <code>prune</code> control the number of
-clusters produced by this function. For this dataset, we use a
-resolution of <code>0.2</code>, which yields 26 clusters (see
-below).</p>
+clusters produced by this function.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rna.met</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/clustering.html">runLeidenCluster</a></span><span class="op">(</span><span class="va">rna.met</span>, nNeighbors <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">rna.met</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runCluster.html">runCluster</a></span><span class="op">(</span><span class="va">rna.met</span>, nNeighbors <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="visualize-results">Visualize results<a class="anchor" aria-label="anchor" href="#visualize-results"></a>
@@ -275,41 +262,49 @@ below).</p>
 coordinates by dataset and cluster.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rna.met</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runTSNE.html">runTSNE</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plotDimRed.html">plotByDatasetAndCluster</a></span><span class="op">(</span><span class="va">rna.met</span>, useDimRed <span class="op">=</span> <span class="st">"TSNE"</span>, legendNCol <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
-<p><img src="rna_methylation_files/figure-html/unnamed-chunk-8-1.png" width="960" style="display: block; margin: auto;"></p>
+<span><span class="fu"><a href="../reference/plotDimRed.html">plotDatasetDimRed</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">)</span></span></code></pre></div>
+<p><img src="rna_methylation_files/figure-html/unnamed-chunk-9-1.png" width="576" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotDimRed.html">plotClusterDimRed</a></span><span class="op">(</span><span class="va">rna.met</span>, legendNCol <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<p><img src="rna_methylation_files/figure-html/unnamed-chunk-9-2.png" width="576" style="display: block; margin: auto;"></p>
 <p>The t-SNE plot shows that the datasets align well and indicates the
 jointly inferred clusters. Using the original RNA and methylation
 cluster assignments, we can visually confirm that the joint analysis is
 highly consistent with the single-modality analyses.</p>
 <p>First, we insert the original cluster assignment into “cellMeta”
-variables.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rna.met</span><span class="op">$</span><span class="va">rna_cluster</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">$</span><span class="va">rna_cluster</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">)</span></span>
-<span><span class="va">rna_clusts</span> <span class="op">&lt;-</span> <span class="va">rna_clusts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">rna_clusts</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="va">rna.met</span><span class="op">$</span><span class="va">rna_cluster</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">rna_clusts</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">rna_clusts</span><span class="op">)</span></span>
-<span><span class="va">rna.met</span><span class="op">$</span><span class="va">rna_cluster</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">$</span><span class="va">rna_cluster</span><span class="op">)</span></span>
+variables. The cell metadata table contains variables that apply to all
+datasets together. Partial insertion of values for part of all datasets
+requires cell index specification to ensure the correctness.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># `rna_clusts` is a named factor object, and the names match with `colnames(rna)`</span></span>
+<span><span class="co"># However, a prefix of `"datasetName_"` is appended when creating the liger object</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">rna_clusts</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"rna_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">rna_clusts</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># `rna_clusts` contains all cells from the original study while we only deal</span></span>
+<span><span class="co"># with the CGE interneurons in this vignette.</span></span>
+<span><span class="co"># Use `drop = TRUE` to omit unexisting categories in the resulting subset.</span></span>
+<span><span class="va">rna_clusts</span> <span class="op">&lt;-</span> <span class="va">rna_clusts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">rna_clusts</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">)</span>, drop <span class="op">=</span> <span class="cn">TRUE</span><span class="op">]</span></span>
+<span><span class="co"># Use `columns` to name the new variable in metadata</span></span>
+<span><span class="fu"><a href="../reference/liger-class.html">cellMeta</a></span><span class="op">(</span><span class="va">rna.met</span>, columns <span class="op">=</span> <span class="st">"rna_cluster"</span>, cellIdx <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">rna_clusts</span><span class="op">)</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">rna_clusts</span></span>
 <span></span>
-<span><span class="va">rna.met</span><span class="op">$</span><span class="va">met_cluster</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">$</span><span class="va">met_cluster</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">)</span></span>
-<span><span class="va">met_clusts</span> <span class="op">&lt;-</span> <span class="va">met_clusts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">met_clusts</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="va">rna.met</span><span class="op">$</span><span class="va">met_cluster</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">met_clusts</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">met_clusts</span><span class="op">)</span></span>
-<span><span class="va">rna.met</span><span class="op">$</span><span class="va">met_cluster</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">$</span><span class="va">met_cluster</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Similarly</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">met_clusts</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"met_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">met_clusts</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">met_clusts</span> <span class="op">&lt;-</span> <span class="va">met_clusts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">met_clusts</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">)</span>, drop <span class="op">=</span> <span class="cn">TRUE</span><span class="op">]</span></span>
+<span><span class="fu"><a href="../reference/liger-class.html">cellMeta</a></span><span class="op">(</span><span class="va">rna.met</span>, columns <span class="op">=</span> <span class="st">"met_cluster"</span>, cellIdx <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">met_clusts</span><span class="op">)</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">met_clusts</span></span></code></pre></div>
 <p>Then, we can visualize with these variables. Note that “NA” values on
 the plot indicate the cells belong to the other dataset.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rnaPlot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotClusterDimRed</a></span><span class="op">(</span><span class="va">rna.met</span>, useCluster <span class="op">=</span> <span class="st">"rna_cluster"</span>, useDimRed <span class="op">=</span> <span class="st">"TSNE"</span>, legendNCol <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">metPlot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotClusterDimRed</a></span><span class="op">(</span><span class="va">rna.met</span>, useCluster <span class="op">=</span> <span class="st">"met_cluster"</span>, useDimRed <span class="op">=</span> <span class="st">"TSNE"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">rnaPlot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotClusterDimRed</a></span><span class="op">(</span><span class="va">rna.met</span>, useCluster <span class="op">=</span> <span class="st">"rna_cluster"</span>, legendNCol <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">metPlot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotClusterDimRed</a></span><span class="op">(</span><span class="va">rna.met</span>, useCluster <span class="op">=</span> <span class="st">"met_cluster"</span><span class="op">)</span></span>
 <span><span class="fu">cowplot</span><span class="fu">::</span><span class="fu"><a href="https://wilkelab.org/cowplot/reference/plot_grid.html" class="external-link">plot_grid</a></span><span class="op">(</span><span class="va">rnaPlot</span>, <span class="va">metPlot</span><span class="op">)</span></span></code></pre></div>
-<p><img src="rna_methylation_files/figure-html/unnamed-chunk-10-1.png" width="960" style="display: block; margin: auto;"></p>
+<p><img src="rna_methylation_files/figure-html/unnamed-chunk-11-1.png" width="1056" style="display: block; margin: auto;"></p>
 <p>Plotting marker genes for subtypes of CGE interneurons confirms that
 the data types are properly aligned, with the expected inverse
 relationship between gene body mCH and gene expression.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotGeneDimRed</a></span><span class="op">(</span><span class="va">rna.met</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Vip"</span>, <span class="st">"Lamp5"</span><span class="op">)</span>, useDimRed <span class="op">=</span> <span class="st">"TSNE"</span>, splitBy <span class="op">=</span> <span class="st">"dataset"</span>,</span>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotGeneDimRed</a></span><span class="op">(</span><span class="va">rna.met</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Vip"</span>, <span class="st">"Lamp5"</span><span class="op">)</span>, splitBy <span class="op">=</span> <span class="st">"dataset"</span>,</span>
 <span>                        titles <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">rna.met</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">cowplot</span><span class="fu">::</span><span class="fu"><a href="https://wilkelab.org/cowplot/reference/plot_grid.html" class="external-link">plot_grid</a></span><span class="op">(</span>plotlist <span class="op">=</span> <span class="va">plots</span>, nrow <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<p><img src="rna_methylation_files/figure-html/unnamed-chunk-11-1.png" width="960" style="display: block; margin: auto;"></p>
+<p><img src="rna_methylation_files/figure-html/unnamed-chunk-12-1.png" width="1056" style="display: block; margin: auto;"></p>
 </div>
   </div>
 
@@ -325,7 +320,7 @@ relationship between gene body mCH and gene expression.</p>
 
       <footer><div class="copyright">
   <p></p>
-<p>Developed by Joshua Welch, Chao Gao, Jialin Liu, Joshua Sodicoff, Velina Kozareva, Evan Macosko, Yichen Wang.</p>
+<p>Developed by Joshua Welch, Yichen Wang, Chao Gao, Jialin Liu, Joshua Sodicoff, Velina Kozareva, Evan Macosko.</p>
 </div>
 
 <div class="pkgdown">
