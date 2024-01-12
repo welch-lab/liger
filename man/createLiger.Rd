@@ -35,8 +35,8 @@ matrix, a \code{Seurat} object, a \code{SingleCellExperiment} object, an
 an HDF5 file. See detail for HDF5 reading.}
 
 \item{modal}{Character vector for modality setting. Currently options of
-\code{"default"}, \code{"rna"}, \code{"atac"} and \code{"spatial"} are
-supported.}
+\code{"default"}, \code{"rna"}, \code{"atac"}, \code{"spatial"} and
+\code{"meth"} are supported.}
 
 \item{cellMeta}{data.frame of metadata at single-cell level. Default
 \code{NULL}.}

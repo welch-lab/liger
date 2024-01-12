@@ -1100,6 +1100,8 @@ selectGenesVST <- function(
 #' \eqn{S} is the output scaled matrix for this dataset, and \eqn{n} is the
 #' number of cells in this dataset. \eqn{i, j} denotes the specific gene and
 #' cell index, and \eqn{p} is the cell iterator.
+#'
+#' Please see detailed section below for explanation on methylation dataset.
 #' @note
 #' Since the scaling on genes is applied on a per dataset base, other scaling
 #' methods that apply to a whole concatenated matrix of multiple datasets might
@@ -1107,6 +1109,18 @@ selectGenesVST <- function(
 #' \code{center} are set to \code{FALSE}. Hence we implemented an efficient
 #' solution that works under such circumstance, provided with the Seurat S3
 #' method.
+#' @section Methylation dataset:
+#' Because gene body mCH proportions are negatively correlated with gene
+#' expression level in neurons, we need to reverse the direction of the
+#' methylation data before performing the integration. We do this by simply
+#' subtracting all values from the maximum methylation value. The resulting
+#' values are positively correlated with gene expression. This will only be
+#' applied to variable genes detected in prior. Please make sure that argument
+#' \code{modal} is set accordingly when running \code{\link{createLiger}}. In
+#' this way, this function can automatically detect it and take proper action.
+#' If it is not set, users can still manually have the equivalent processing
+#' done by doing \code{scaleNotCenter(lig, useDataset = c("other", "datasets"))},
+#' and then \code{\link{reverseMethData}(lig, useDataset = c("meth", "datasets"))}.
 #' @param object \linkS4class{liger} object, \linkS4class{ligerDataset} object,
 #' \linkS4class{dgCMatrix}, or a Seurat object.
 #' @param ... Arguments passed to other methods. The order goes by: "liger"
@@ -1186,6 +1200,23 @@ scaleNotCenter.ligerDataset <- function(
                                        resultH5Path = "scaleUnsharedDataSparse",
                                        chunk = chunk, verbose = verbose)
     }
+    return(object)
+}
+
+#' @export
+#' @rdname scaleNotCenter
+#' @method scaleNotCenter ligerMethDataset
+scaleNotCenter.ligerMethDataset <- function(
+        object,
+        features = NULL,
+        verbose = getOption("ligerVerbose"),
+        ...
+) {
+    raw <- rawData(object)
+    scaled <- max(raw) - as.matrix(raw[features, , drop = FALSE])
+    # Need more experiment to see if it's worth doing so
+    scaled <- methods::as(scaled, "CsparseMatrix")
+    scaleData(object, check = FALSE) <- scaled
     return(object)
 }
 

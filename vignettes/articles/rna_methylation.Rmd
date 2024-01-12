@@ -13,18 +13,38 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, results = "
 
 This vignette shows how to use LIGER to jointly define cell types from single-cell gene expression and DNA methylation. We will be using scRNA-seq and single-nucleus DNA methylation data from mouse cortex. These are the same datasets used in our previous [paper](https://www.cell.com/cell/fulltext/S0092-8674(19)30504-5). The steps involved are quite similar to those for integrating multiple RNA datasets. The only differences are (1) we process the methylation data into gene-level values comparable to gene expression, (2) we perform gene selection using the RNA data only, and (3) we both scale and center the factor loadings before performing quantile normalization.
 
-The full dataset used in the paper is quite large, so in this example, we restrict our attention to inhibitory interneurons derived from the caudal ganglionic eminence (CGE). We downloaded the gene-level methylation [data](https://brainome.ucsd.edu/annoj/brain_single_nuclei/) provided by the Ecker lab. They generated these values by dividing the numbers of methylated (non-CG methylation, mCH) and detected positions across the gene body within each cell. They and we found these gene body mCH proportions to be negatively correlated with gene expression level in neurons. The gene expression data is from Saunders et al. 2018. The full dataset is available for download through [Dropviz](http://dropviz.org/). For convenience, we provide the cells x genes count matrices for only CGE interneurons as well as the original cluster assignment obtained from the study:
+The full dataset used in the paper is quite large, so in this example, we restrict our attention to inhibitory interneurons derived from the caudal ganglionic eminence (CGE). We downloaded the gene-level methylation [data](https://brainome.ucsd.edu/annoj/brain_single_nuclei/) provided by the Ecker lab. They generated these values by dividing the numbers of methylated (non-CG methylation, mCH) and detected positions across the gene body within each cell. They and we found these gene body mCH proportions to be negatively correlated with gene expression level in neurons. The gene expression data is from Saunders et al. 2018. The full dataset is available for download through [Dropviz](http://dropviz.org/). For convenience, we provide the gene x cell count matrices for only CGE interneurons as well as the original cluster assignment obtained from the study:
 
-- [RNA data](https://figshare.com/ndownloader/files/40222699)
-- [RNA data cluster assignment](https://figshare.com/ndownloader/files/40223842)
-- [Methylation data](https://figshare.com/ndownloader/files/40222702)
-- [Methylation data cluster assignment](https://figshare.com/ndownloader/files/40223854)
+- RNA data with 18,455 genes by 2,927 cells [mouse_frontal_cortex_cge_rna.RDS](https://figshare.com/ndownloader/files/40222699)
+- RNA data cluster assignment [rna_clusters.RDS](https://figshare.com/ndownloader/files/40223842)
+- Methylation data with 31,928 genes by 184 cells [mouse_frontal_cortex_cge_met.RDS](https://figshare.com/ndownloader/files/40222702)
+- Methylation data cluster assignment [met_clusters.RDS](https://figshare.com/ndownloader/files/40223854)
+
+```{R, include=FALSE}
+if (!dir.exists("meth_data")) dir.create("meth_data")
+if (!file.exists("meth_data/mouse_frontal_cortex_cge_rna.RDS")) {
+    download.file(url = "https://figshare.com/ndownloader/files/40222699", 
+                  destfile = "meth_data/mouse_frontal_cortex_cge_rna.RDS")
+}
+if (!file.exists("meth_data/mouse_frontal_cortex_cge_met.RDS")) {
+    download.file(url = "https://figshare.com/ndownloader/files/40222702", 
+                  destfile = "meth_data/mouse_frontal_cortex_cge_met.RDS")
+}
+if (!file.exists("meth_data/rna_clusters.RDS")) {
+    download.file(url = "https://figshare.com/ndownloader/files/40223842", 
+                  destfile = "meth_data/rna_clusters.RDS")
+}
+if (!file.exists("meth_data/met_clusters.RDS")) {
+    download.file(url = "https://figshare.com/ndownloader/files/40223854", 
+                  destfile = "meth_data/met_clusters.RDS")
+}
+```
 
 ```{R}
-rna <- readRDS("mouse_frontal_cortex_cge_rna.RDS")
-met <- readRDS('mouse_frontal_cortex_cge_met.RDS')
-rna_clusts <- readRDS("rna_clusters.RDS")
-met_clusts <- readRDS("met_clusters.RDS")
+rna <- readRDS("meth_data/mouse_frontal_cortex_cge_rna.RDS")
+met <- readRDS("meth_data/mouse_frontal_cortex_cge_met.RDS")
+rna_clusts <- readRDS("meth_data/rna_clusters.RDS")
+met_clusts <- readRDS("meth_data/met_clusters.RDS")
 ```
 
 ## Create liger object and preprocess data
@@ -33,22 +53,28 @@ We then create a liger object using the methylation and expression data.
 
 ```{R}
 library(rliger2)
-rna.met <- createLiger(list(rna = rna, met = met), addPrefix = FALSE)
+
+rna.met <- createLiger(list(rna = rna, met = met), modal = c("rna", "meth"))
 ```
 
 Alternatively, we build the importing function to directly pull datasets from online storage and build the liger object.
 
 ```{R, eval = FALSE}
+# NOT RUN
 rna.met <- importVignetteData("cge")
 ```
 
-The `selectGenes()` function performs variable gene selection on each of the datasets separately, then takes the union of the result. The variable genes are selected by comparing the variance of each gene’s expression to its mean expression. The `selectGenes()` function was written primarily scRNA-seq in mind, and the methylation data distribution is quite different. So instead of taking the union of variable genes from RNA and methylation, we set `datasets.use = "rna"` in the function to perform gene selection using only the RNA dataset. Because gene body mCH proportions are negatively correlated with gene expression level in neurons, we need to reverse the direction of the methylation data, with function `reverseMethData()` with `useDatasets = "met"`. This function simply subtracts all values from the maximum methylation value per selected dataset. The resulting values are positively correlated with gene expression. In addition, the proportional nature of the gene body methylation makes it unnecessary to normalize and scale the methylation data. 
+The `selectGenes()` function performs variable gene selection on each of the datasets separately, then takes the union of the result. The variable genes are selected by comparing the variance of each gene’s expression to its mean expression. The `selectGenes()` function was written primarily scRNA-seq in mind, and the methylation data distribution is quite different. So instead of taking the union of variable genes from RNA and methylation, we set `useDatasets = "rna"` in the function to perform gene selection using only the RNA dataset. 
+
+Because gene body mCH proportions are negatively correlated with gene expression level in neurons, we need to reverse the direction of the methylation data, by simply subtracting all values from the maximum methylation value per selected dataset. The resulting values are positively correlated with gene expression. In addition, the proportional nature of the gene body methylation makes it unnecessary to normalize and scale the methylation data. By setting argument `modal` in `createLiger()`, we've already marked that we need to take such actions on the methylation dataset, and the function `scaleNotCenter()` will automatically have this done properly. 
+
+Optionally, `reverseMethData()` explicitly does the reversing operation on specified datasets if the datasets are not initially marked as methylation data.
 
 ```{R}
-rna.met <- normalize(rna.met)
-rna.met <- selectGenes(rna.met, datasets.use = "rna")
-rna.met <- scaleNotCenter(rna.met, useDatasets = "rna")
-rna.met <- reverseMethData(rna.met, useDatasets = "met")
+rna.met <- rna.met %>% 
+    normalize() %>%
+    selectGenes(useDatasets = "rna") %>%
+    scaleNotCenter()
 ```
 
 ## Factorize and perform quantile normalization
@@ -56,7 +82,7 @@ rna.met <- reverseMethData(rna.met, useDatasets = "met")
 Next we perform integrative non-negative matrix factorization (iNMF) in order to identify shared and distinct metagenes across the datasets and the corresponding metagene loadings for each cell. The most important parameters in the factorization are `k` (the number of factors) and `lambda` (the penalty parameter which limits the dataset-specific component of the factorization). The default value `lambda = 5` usually provides reasonable results for most analyses. For this analysis, we simply use `k = 20` and the default value of lambda.
 
 ```{R}
-rna.met <- optimizeALS(rna.met, k = 20)
+rna.met <- runIntegration(rna.met, k = 20)
 ```
 
 Using the metagene factors calculated by iNMF, we then assign each cell to the factor on which it has the highest loading, giving joint clusters that correspond across datasets. We then perform quantile normalization by dataset, factor, and cluster to fully integrate the datasets. To perform this analysis, typing in:
@@ -65,63 +91,55 @@ Using the metagene factors calculated by iNMF, we then assign each cell to the f
 rna.met <- quantileNorm(rna.met)
 ```
 
-Important parameters of `quantileNorm()` are as follows:
-
-- `nNeighbors`. This sets the number of nearest neighbors for within-dataset KNN graph. The default is `20`.
-- `quantiles`. This sets the number of quantiles to use for quantile normalization. The default is `50`.
-- `minCells`. This indicates the minimum number of cells to consider a cluster as shared across datasets. The default is `20`.
-- `useDims`. This sets the indices of factors to use for quantile normalization. The user can pass in a vector of indices indicating specific factors. This is helpful for excluding factors capturing biological signals such as the cell cycle or technical signals such as mitochondrial genes. The default is all `k` of the factors. 
-- `center`. This indicates whether to center the data when scaling factors. The default is `FALSE`. This option should be set to `TRUE` when metagene loadings have a mean above zero, as with dense data such as DNA methylation.
-- `maxSample`. This sets the maximum number of cells used for quantile normalization of each cluster and factor. The default is `1000`.
-- `refineKNN`. This indicates whether to increase robustness of cluster assignments using KNN graph. The default is `TRUE`.
-- `eps`. This sets the error bound of the nearest neighbor search. The default is `0.9`. Lower values give more accurate nearest neighbor graphs but take much longer to computer.
-- `reference`. This indicates the name of the dataset to be used as a reference for quantile normalization. By default, the dataset with the largest number of cells is used.
-
-The `quantileNorm()` function gives joint clusters that correspond across datasets, which are often completely satisfactory and sufficient for downstream analyses. However, if desired, after quantile normalization, users can additionally run the Leiden algorithm for community detection, which is widely used in single-cell analysis and excels at merging small clusters into broad cell classes. This can be achieved by running the `runLeidenCluster()` function. Several tuning parameters, including `resolution`, `nNeighbors`, and `prune` control the number of clusters produced by this function. For this dataset, we use a resolution of `0.2`, which yields 26 clusters (see below).
+The `quantileNorm()` function gives joint clusters that correspond across datasets. However, if desired, after quantile normalization, users can additionally run the Leiden algorithm for community detection, which is widely used in single-cell analysis and excels at merging small clusters into broad cell classes. This can be achieved by running the `runCluster()` function. Several tuning parameters, including `resolution`, `nNeighbors`, and `prune` control the number of clusters produced by this function. 
 
 ```{R}
-rna.met <- runLeidenCluster(rna.met, nNeighbors = 30)
+rna.met <- runCluster(rna.met, nNeighbors = 30)
 ```
 
 ## Visualize results
 
 We run t-SNE on the normalized factors, then color the t-SNE coordinates by dataset and cluster.
 
-```{R, fig.align='center', fig.width=10}
+```{R, fig.align='center', fig.height=5, fig.width=6}
 rna.met <- runTSNE(rna.met)
-plotByDatasetAndCluster(rna.met, useDimRed = "TSNE", legendNCol = 1)
+plotDatasetDimRed(rna.met)
+plotClusterDimRed(rna.met, legendNCol = 1)
 ```
 
 The t-SNE plot shows that the datasets align well and indicates the jointly inferred clusters. Using the original RNA and methylation cluster assignments, we can visually confirm that the joint analysis is highly consistent with the single-modality analyses.
 
-First, we insert the original cluster assignment into "cellMeta" variables.
+First, we insert the original cluster assignment into "cellMeta" variables. The cell metadata table contains variables that apply to all datasets together. Partial insertion of values for part of all datasets requires cell index specification to ensure the correctness. 
 
 ```{R}
-rna.met$rna_cluster <- NA
-names(rna.met$rna_cluster) <- colnames(rna.met)
-rna_clusts <- rna_clusts[names(rna_clusts) %in% colnames(rna.met)]
-rna.met$rna_cluster[names(rna_clusts)] <- as.character(rna_clusts)
-rna.met$rna_cluster <- factor(rna.met$rna_cluster)
+# `rna_clusts` is a named factor object, and the names match with `colnames(rna)`
+# However, a prefix of `"datasetName_"` is appended when creating the liger object
+names(rna_clusts) <- paste0("rna_", names(rna_clusts))
+# `rna_clusts` contains all cells from the original study while we only deal
+# with the CGE interneurons in this vignette.
+# Use `drop = TRUE` to omit unexisting categories in the resulting subset.
+rna_clusts <- rna_clusts[names(rna_clusts) %in% colnames(rna.met), drop = TRUE]
+# Use `columns` to name the new variable in metadata
+cellMeta(rna.met, columns = "rna_cluster", cellIdx = names(rna_clusts)) <- rna_clusts
 
-rna.met$met_cluster <- NA
-names(rna.met$met_cluster) <- colnames(rna.met)
-met_clusts <- met_clusts[names(met_clusts) %in% colnames(rna.met)]
-rna.met$met_cluster[names(met_clusts)] <- as.character(met_clusts)
-rna.met$met_cluster <- factor(rna.met$met_cluster)
+# Similarly
+names(met_clusts) <- paste0("met_", names(met_clusts))
+met_clusts <- met_clusts[names(met_clusts) %in% colnames(rna.met), drop = TRUE]
+cellMeta(rna.met, columns = "met_cluster", cellIdx = names(met_clusts)) <- met_clusts
 ```
 
 Then, we can visualize with these variables. Note that "NA" values on the plot indicate the cells belong to the other dataset.
 
-```{R, fig.align='center', fig.width=10}
-rnaPlot <- plotClusterDimRed(rna.met, useCluster = "rna_cluster", useDimRed = "TSNE", legendNCol = 1)
-metPlot <- plotClusterDimRed(rna.met, useCluster = "met_cluster", useDimRed = "TSNE")
+```{R, fig.align='center', fig.width=11, fig.height=5}
+rnaPlot <- plotClusterDimRed(rna.met, useCluster = "rna_cluster", legendNCol = 1)
+metPlot <- plotClusterDimRed(rna.met, useCluster = "met_cluster")
 cowplot::plot_grid(rnaPlot, metPlot)
 ```
 
 Plotting marker genes for subtypes of CGE interneurons confirms that the data types are properly aligned, with the expected inverse relationship between gene body mCH and gene expression.
 
-```{R, fig.align='center', fig.width=10, fig.height=8}
-plots <- plotGeneDimRed(rna.met, c("Vip", "Lamp5"), useDimRed = "TSNE", splitBy = "dataset",
+```{R, fig.align='center', fig.width=11, fig.height=10}
+plots <- plotGeneDimRed(rna.met, c("Vip", "Lamp5"), splitBy = "dataset",
                         titles = c(names(rna.met), names(rna.met)))
 cowplot::plot_grid(plotlist = plots, nrow = 2)
 ```

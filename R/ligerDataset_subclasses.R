@@ -11,17 +11,13 @@
 #   b. contains = "ligerDataset"
 #   c. add new slots for modality specific information with `representation`
 #   d. if the default new information could be empty, add `prototype`
-# 2. In files `zzz.R` and `import.R`, search for
+# 2. In files `zzz.R`, `import.R`, `classConversion.R`, search for
 #    text "modal". When seeing a multi-option vector argument, add a unique
-#    abbreviation of this new data type to the vector.
-# 3. In file `ligerDataset-class.R`, find the list object `.modalClassDict`,
-#    add the new entry for your sub-class. The name is the abbr you add in step
-#    2., and the value should be the name you set for the new sub-class in step
-#    1. Then the next list object `.classModalDict` should also be taken care
-#    of in a similar way.
-# 4. If the new slot(s) added is thought to be retrieved by future developers
+#    abbreviation of this new data type to the vector. Don't forget updating
+#    valid options in the manual documentaion as well.
+# 3. If the new slot(s) added is thought to be retrieved by future developers
 #    or users, getter and setter methods MUST be implemented.
-# 5. Please go through the implementation of the following functions in file
+# 4. Please go through the implementation of the following functions in file
 #    `ligerDataset-class.R`, and make sure data in the new slot(s) is properly
 #    handled.
 #   a. .checkLigerDatasetBarcodes()
@@ -311,4 +307,27 @@ setReplaceMethod(
 }
 
 setValidity("ligerSpatialDataset", .valid.ligerSpatialDataset)
+
+
+
+#-------------------------------------------------------------------------------
+# Sub-class for Methylation data ####
+#-------------------------------------------------------------------------------
+
+#' Subclass of ligerDataset for Methylation modality
+#'
+#' @description Inherits from \linkS4class{ligerDataset} class. Contained slots
+#' can be referred with the link. \code{\link{scaleNotCenter}} applied on
+#' datasets of this class will automatically be taken by reversing the
+#' normalized data instead of scaling the variable features.
+#' @exportClass ligerMethDataset
+#' @export
+ligerMethDataset <- setClass(
+    "ligerMethDataset",
+    contains = "ligerDataset"
+)
+
+.valid.ligerMethDataset <- function(object) .valid.ligerDataset(object)
+
+setValidity("ligerMethDataset", .valid.ligerMethDataset)
 
