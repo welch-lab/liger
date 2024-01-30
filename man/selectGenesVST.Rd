@@ -2,7 +2,7 @@
 % Please edit documentation in R/preprocess.R
 \name{selectGenesVST}
 \alias{selectGenesVST}
-\title{Select variable gene from one dataset with VST method}
+\title{Select variable genes from one dataset with Seurat VST method}
 \usage{
 selectGenesVST(
   object,
@@ -10,13 +10,14 @@ selectGenesVST(
   n = 2000,
   loessSpan = 0.3,
   clipMax = "auto",
+  useShared = TRUE,
   verbose = getOption("ligerVerbose")
 )
 }
 \arguments{
-\item{object}{A \linkS4class{liger} object}
+\item{object}{A \linkS4class{liger} object.}
 
-\item{useDataset}{The names, a numeric or logical index of the ONE dataset to
+\item{useDataset}{The names, a numeric or logical index of the dataset to
 be considered for selection.}
 
 \item{n}{Number of variable features needed. Default \code{2000}.}
@@ -28,12 +29,16 @@ relationship. Default \code{0.3}.}
 be set to \code{clipMax}. Default \code{"auto"} sets this value to the square
 root of the number of cells.}
 
+\item{useShared}{Logical. Whether to only select from genes shared by all
+dataset. Default \code{TRUE}.}
+
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 }
 \description{
-A re-implimentation of Seurat FindVariableFeatures VST method. This allows
-the selection of a fixed number of variable features from one dataset.
+Seurat FindVariableFeatures VST method. This allows the selection of a fixed
+number of variable features, but only applies to one dataset. No
+normalization is needed in advance.
 }
 \examples{
 pbmc <- selectGenesVST(pbmc, "ctrl", n = 50)

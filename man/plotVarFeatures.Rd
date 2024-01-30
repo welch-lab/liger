@@ -7,8 +7,8 @@
 plotVarFeatures(object, combinePlot = TRUE, dotSize = 1, ...)
 }
 \arguments{
-\item{object}{\linkS4class{liger} object. \code{\link{selectGenes}} need to
-run in advance.}
+\item{object}{\linkS4class{liger} object. \code{\link{selectGenes}} needs to
+be run in advance.}
 
 \item{combinePlot}{Logical. If \code{TRUE}, sub-figures for all datasets will
 be combined into one plot. if \code{FALSE}, a list of plots will be returned.
@@ -28,4 +28,9 @@ Default \code{TRUE}.}
 For each dataset where the feature variablitity is calculated,
 a plot of log10 feature expression variance and log10 mean will be produced.
 Features that are considered as variable would be highlighted in red.
+}
+\examples{
+pbmc <- normalize(pbmc)
+pbmc <- selectGenes(pbmc)
+plotVarFeatures(pbmc)
 }

@@ -70,7 +70,7 @@ imputeKNN <- function(
                 "datasets. Removed from query list.")
         queries <- queries[!queries %in% reference]
     }
-    object <- recordCommand(object, dependencies = c("RANN", "Matrix"))
+    object <- recordCommand(object, ..., dependencies = c("RANN", "Matrix"))
     if (isTRUE(verbose)) {
         .log("Imputing all the datasets exept the reference dataset\n",
              "Reference dataset: ", reference, "\n",
@@ -167,7 +167,7 @@ imputeKNN <- function(
 #' bmmc <- normalize(bmmc)
 #' bmmc <- selectGenes(bmmc)
 #' bmmc <- scaleNotCenter(bmmc)
-#' bmmc <- online_iNMF(bmmc, miniBatch_size = 80)
+#' bmmc <- runINMF(bmmc, miniBatchSize = 100)
 #' bmmc <- quantileNorm(bmmc)
 #' bmmc <- normalizePeak(bmmc)
 #' bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
@@ -344,6 +344,25 @@ linkGenesAndPeaks <- function(
 #' current working directory.
 #' @return No return value. A file located at \code{outputPath} will be created.
 #' @export
+#' @examples
+#' bmmc <- normalize(bmmc)
+#' bmmc <- selectGenes(bmmc)
+#' bmmc <- scaleNotCenter(bmmc)
+#' bmmc <- runINMF(bmmc, miniBatchSize = 100)
+#' bmmc <- quantileNorm(bmmc)
+#' bmmc <- normalizePeak(bmmc)
+#' bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
+#' corr <- linkGenesAndPeaks(
+#'     bmmc, useDataset = "rna",
+#'     pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2")
+#' )
+#' resultPath <- tempfile()
+#' exportInteractTrack(
+#'     corrMat = corr,
+#'     pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2"),
+#'     outputPath = resultPath
+#' )
+#' head(read.table(resultPath, skip = 1))
 exportInteractTrack <- function(
         corrMat,
         pathToCoords,

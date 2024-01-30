@@ -166,7 +166,7 @@ safeH5Create <- function(object,
 
 #' Restore links (to HDF5 files) for reloaded liger/ligerDataset object
 #' @description When loading the saved liger object with HDF5 data in a new R
-#' session, the links to HDF5 files would be corrupted. This functions enables
+#' session, the links to HDF5 files would be closed. This function enables
 #' the restoration of those links so that new analyses can be carried out.
 #' @param object \linkS4class{liger} or \linkS4class{ligerDataset} object.
 #' @param filePath Paths to HDF5 files. A single character path for
@@ -176,6 +176,13 @@ safeH5Create <- function(object,
 #' @return \code{object} with restored links.
 #' @rdname restoreH5Liger
 #' @export
+#' @examples
+#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger2")
+#' lig <- createLiger(list(ctrl = h5Path))
+#' # Now it is actually an invalid object! which is equivalent to what users
+#' # will get with `saveRDS(lig, "object.rds"); lig <- readRDS("object.rds")``
+#' lig <- closeAllH5(lig)
+#' lig <- restoreH5Liger(lig)
 restoreH5Liger <- function(object, filePath = NULL) {
     if (!inherits(object, "liger") && !inherits(object, "ligerDataset")) {
         stop("Please specify a liger or ligerDataset object to restore.")
@@ -289,11 +296,6 @@ closeAllH5 <- function(object) {
     if (!isH5Liger(object)) return(object)
     for (dn in names(object)) {
         if (!isH5Liger(object, dn)) next
-        ld <- dataset(object, dn)
-        # if (!is.null(rawData(ld))) rawData(ld)$close()
-        # if (!is.null(normData(ld))) normData(ld)$close()
-        # if (!is.null(scaleData(ld))) scaleData(ld)$close()
-        # if (!is.null(scaleUnsharedData(ld))) scaleUnsharedData(ld)$close()
         h5f <- getH5File(object, dn)
         h5f$close_all()
     }

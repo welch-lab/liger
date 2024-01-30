@@ -19,13 +19,12 @@
 #' column_split, column_title_gp, column_title, column_labels, column_names_gp,
 #' top_annotation}.
 #' @param object A \linkS4class{liger} object
-#' @param features Character vector of gene names \code{object}. Alternatively,
-#' a data.frame where the first column is gene names and second column is
-#' grouping variable (e.g. \code{runWilcoxon} output, recommended to be row
-#' subset).
+#' @param features Use a character vector of gene names to make plain dot plot
+#' like a heatmap. Use a data.frame where the first column is gene names and
+#' second column is a grouping variable (e.g. subset \code{runMarkerDEG} output)
 #' @param groupBy The names of the columns in \code{cellMeta} slot storing
 #' categorical variables. Expression data would be aggregated basing on these,
-#' together with \code{splitBy}. Default \code{"leiden_cluster"}.
+#' together with \code{splitBy}. Default uses default clusters.
 #' @param splitBy The names of the columns in \code{cellMeta} slot storing
 #' categorical variables. Dotplot panel splitting would be based on these.
 #' Default \code{NULL}.
@@ -48,7 +47,6 @@
 #' @return \code{\link[ComplexHeatmap]{HeatmapList}} object.
 #' @export
 #' @examples
-#' data("pbmcPlot", package = "rliger2")
 #' # Use character vector of genes
 #' features <- varFeatures(pbmcPlot)[1:10]
 #' plotClusterGeneDot(pbmcPlot, features = features)
@@ -60,7 +58,7 @@
 plotClusterGeneDot <- function(
         object,
         features,
-        groupBy = "leiden_cluster",
+        groupBy = NULL,
         splitBy = NULL,
         featureScaleFunc = function(x) log2(10000*x + 1),
         cellIdx = NULL,
@@ -70,9 +68,7 @@ plotClusterGeneDot <- function(
         verbose = FALSE,
         ...
 ) {
-    if (!inherits(object, "liger")) {
-        stop("Please use a liger object")
-    }
+    groupBy <- groupBy %||% object@uns$defaultCluster
     allVars <- c(groupBy, splitBy)
     grouping <- .fetchCellMetaVar(object, variables = c(groupBy, splitBy),
                                   checkCategorical = TRUE, cellIdx = cellIdx,
@@ -149,7 +145,7 @@ plotClusterGeneDot <- function(
 #' @param object A \linkS4class{liger} object
 #' @param groupBy The names of the columns in \code{cellMeta} slot storing
 #' categorical variables. Loading data would be aggregated basing on these,
-#' together with \code{splitBy}. Default \code{"leiden_cluster"}.
+#' together with \code{splitBy}. Default uses default clusters.
 #' @param useDims A Numeric vector to specify exact factors of interests.
 #' Default \code{NULL} uses all available factors.
 #' @param useRaw Whether to use un-aligned cell factor loadings (\eqn{H}
@@ -178,7 +174,7 @@ plotClusterGeneDot <- function(
 #' plotClusterFactorDot(pbmcPlot)
 plotClusterFactorDot <- function(
         object,
-        groupBy = "leiden_cluster",
+        groupBy = NULL,
         useDims = NULL,
         useRaw = FALSE,
         splitBy = NULL,
@@ -190,9 +186,7 @@ plotClusterFactorDot <- function(
         verbose = FALSE,
         ...
 ) {
-    if (!inherits(object, "liger")) {
-        stop("Please use a liger object")
-    }
+    groupBy <- groupBy %||% object@uns$defaultCluster
     allVars <- c(groupBy, splitBy)
     grouping <- .fetchCellMetaVar(object, variables = c(groupBy, splitBy),
                                   checkCategorical = TRUE, cellIdx = cellIdx,

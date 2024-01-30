@@ -11,8 +11,6 @@ runIntegration(
   k = 20,
   lambda = 5,
   method = c("iNMF", "onlineINMF", "UINMF"),
-  seed = 1,
-  verbose = getOption("ligerVerbose"),
   ...
 )
 
@@ -52,12 +50,15 @@ higher \code{k} will be needed for datasets with more sub-structure. Default
 dataset-specific effects more strongly (i.e. alignment should increase as
 \code{lambda} increases). Default \code{5}.}
 
+\item{method}{iNMF variant algorithm to use for integration. Choose from
+\code{"iNMF"}, \code{"onlineINMF"}, \code{"UINMF"}. Default \code{"iNMF"}.}
+
+\item{...}{Arguments passed to other methods and wrapped functions.}
+
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
-
-\item{...}{Arguments passed to other methods and wrapped functions.}
 
 \item{datasetVar}{Metadata variable name that stores the dataset source
 annotation. Default \code{"orig.ident"}.}

@@ -15,6 +15,28 @@ setClassUnion("matrixLike", c("matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix"))
 #' @param ... Additional arguments passed to \code{\link{createLiger}}
 #' @return a \linkS4class{liger} object.
 #' @rdname as.liger
+#' @examples
+#' # dgCMatrix (common sparse matrix class), usually obtained from other
+#' # container object, and contains multiple samples merged in one.
+#' matList <- rawData(pbmc)
+#' multiSampleMatrix <- mergeSparseAll(matList)
+#' # The `datasetVar` argument expects the variable assigning the sample source
+#' pbmc2 <- as.liger(multiSampleMatrix, datasetVar = pbmc$dataset)
+#' pbmc2
+#'
+#' sce <- SingleCellExperiment::SingleCellExperiment(
+#'     assays = list(counts = multiSampleMatrix)
+#' )
+#' sce$sample <- pbmc$dataset
+#' pbmc3 <- as.liger(sce, datasetVar = "sample")
+#' pbmc3
+#'
+#' seu <- SeuratObject::CreateSeuratObject(multiSampleMatrix)
+#' # Seurat creates variable "orig.ident" by identifying the cell barcode
+#' # prefixes, which is indeed what we need in this case. Users might need
+#' # to be careful and have it confirmed first.
+#' pbmc4 <- as.liger(seu, datasetVar = "orig.ident")
+#' pbmc4
 as.liger <- function(object, ...) UseMethod("as.liger", object)
 
 #' @rdname as.liger
@@ -55,10 +77,15 @@ as.liger.SingleCellExperiment <- function(
         modal = NULL,
         ...
 ) {
-    if (!requireNamespace("SingleCellExperiment", quietly = "TRUE"))
+    if (!requireNamespace("SingleCellExperiment", quietly = TRUE))
         stop("Package \"SingleCellExperiment\" needed for this function ",
              "to work. Please install it by command:\n",
              "BiocManager::install('SingleCellExperiment')",
+             call. = FALSE)
+    if (!requireNamespace("SummarizedExperiment", quietly = TRUE))
+        stop("Package \"SummarizedExperiment\" needed for this function ",
+             "to work. Please install it by command:\n",
+             "BiocManager::install('SummarizedExperiment')",
              call. = FALSE)
     rawDataList <- list(SingleCellExperiment::counts(object))
     sampleCol <- NULL
@@ -143,15 +170,26 @@ as.liger.Seurat <- function(
 # From other things to ligerDataset class ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #' Converting other classes of data to a as.ligerDataset object
+#' @description
+#' Works for converting a matrix or container object to a single ligerDataset,
+#' and can also convert the modality preset of a ligerDataset. When used with
+#' a dense matrix object, it automatically converts the matrix to sparse form
+#' (\code{\link[Matrix]{dgCMatrix-class}}). When used with container objects
+#' such as Seurat or SingleCellExperiment, it is highly recommended that the
+#' object contains only one dataset/sample which is going to be integrated with
+#' LIGER. For multi-sample objects, please use \code{\link{as.liger}} with
+#' dataset source variable specified.
 #' @export
 #' @param object Object.
-#' @param modal Modality setting for each dataset.
+#' @param modal Modality setting for each dataset. Choose from \code{"default"},
+#' \code{"rna"}, \code{"atac"}, \code{"spatial"}, \code{"meth"}.
 #' @param ... Additional arguments passed to \code{\link{createLigerDataset}}
 #' @return a \linkS4class{liger} object.
 #' @rdname as.ligerDataset
 #' @examples
 #' ctrl <- dataset(pbmc, "ctrl")
 #' ctrl
+#' # Convert the modality preset
 #' as.ligerDataset(ctrl, modal = "atac")
 #' rawCounts <- rawData(ctrl)
 #' class(rawCounts)
@@ -244,33 +282,9 @@ as.ligerDataset.SingleCellExperiment <- function(
     createLigerDataset(rawData = mat, modal = modal, ...)
 }
 
-# #' @rdname as.ligerDataset
-# #' @export
-# #' @method as.ligerDataset anndata._core.anndata.AnnData
-# as.ligerDataset.anndata._core.anndata.AnnData <- function(
-#         object,
-#         modal = c("default", "rna", "atac", "spatial", "meth"),
-#         ...
-# ) {
-#     modal <- match.arg(modal)
-#     message("Python object AnnData input. ")
-# }
-
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# From ligerDataset class to other things ####
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-#setAs("ligerDataset", "SingleCellExperiment", function(from) {
-#    requireNamespace("SingleCellExperiment")
-#    assays <- list()
-#    if (!is.null(raw.data(from)))
-#        assays <- c(assays, list(counts = raw.data(from)))
-#    if (!is.null(normData(from)))
-#        assays <- c(assays, list(normcounts = normData(from)))
-#    SingleCellExperiment::SingleCellExperiment(
-#        assays = assays
-#    )
-#})
+###### AnnData object presented as H5AD file on disk is already supported with
+###### H5-based ligerDataset object without having to create a AnnData object
+###### in a running Python session first.
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # From liger class to other things ####
@@ -287,7 +301,8 @@ as.ligerDataset.SingleCellExperiment <- function(
 #' @param object A \linkS4class{liger} object to be converted
 #' @param assay Name of assay to store the data. Default \code{NULL} detects by
 #' dataset modality. If the object contains various modality, default to
-#' \code{"liger"}.
+#' \code{"LIGER"}. Default dataset modality setting is understood as
+#' \code{"RNA"}.
 #' @param identByDataset Logical, whether to combine dataset variable and default
 #' cluster labeling to set the Idents. Default \code{FALSE}.
 #' @param by.dataset [Deprecated]. Use \code{identByDataset} instead.
@@ -299,6 +314,8 @@ as.ligerDataset.SingleCellExperiment <- function(
 #' @param use.liger.genes [Defunct] Will be ignored and will always set LIGER
 #' variable features to the place.
 #' @export
+#' @examples
+#' seu <- ligerToSeurat(pbmc)
 ligerToSeurat <- function(
         object,
         assay = NULL,
@@ -318,9 +335,9 @@ ligerToSeurat <- function(
         if (all(allModal == allModal[1])) {
             assay <- allModal[1]
         } else {
-            assay <- "liger"
+            assay <- "LIGER"
         }
-        if (assay == "default") assay <- "RNA"
+        if (assay == "DEFAULT") assay <- "RNA"
     }
 
     rawDataList <- getMatrix(object, "rawData", returnList = TRUE)
@@ -370,7 +387,7 @@ ligerToSeurat <- function(
     }
     # Attempt to get H.norm primarily. If it is NULL, then turn to H
     h <- getMatrix(object, "H.norm") %||%
-        getMatrix(pbmc, "H", returnList = TRUE)
+        getMatrix(object, "H", returnList = TRUE)
     if (is.list(h)) {
         # Not from H.norm but H list. Only get merged when all datasets have H.
         if (any(sapply(h, is.null))) h <- NULL
@@ -402,8 +419,10 @@ ligerToSeurat <- function(
     return(srt)
 }
 
-
+#' @rdname as.liger
+#' @export
 seuratToLiger <- as.liger.Seurat
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # From old version to new version ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

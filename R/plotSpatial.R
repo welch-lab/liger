@@ -8,6 +8,13 @@
 #' everything to \code{\link{.ggScatter}} and then
 #' \code{\link{.ggplotLigerTheme}}.
 #' @return A ggplot object
+#' @examples
+#' ctrl.fake.spatial <- as.ligerDataset(dataset(pbmc, "ctrl"), modal = "spatial")
+#' fake.coords <- matrix(rnorm(2 * ncol(ctrl.fake.spatial)), ncol = 2)
+#' dimnames(fake.coords) <- list(colnames(ctrl.fake.spatial), c("x", "y"))
+#' coordinate(ctrl.fake.spatial) <- fake.coords
+#' dataset(pbmc, "ctrl") <- ctrl.fake.spatial
+#' plotSpatial2D(pbmc, dataset = "ctrl")
 plotSpatial2D <- function(object, ...) {
     UseMethod("plotSpatial2D", object)
 }
@@ -18,7 +25,7 @@ plotSpatial2D <- function(object, ...) {
 #' @param dataset Name of one spatial dataset.
 #' @param useCluster Either the name of one variable in \code{cellMeta(object)}
 #' or a factor object with annotation that matches with all cells in the
-#' specified dataset. Default \code{NULL} does not add any annotation.
+#' specified dataset. Default \code{NULL} uses default clusters.
 #' @param legendColorTitle Alternative title text in the legend. Default
 #' \code{NULL} uses the variable name set by \code{useCluster}, or
 #' \code{"Annotation"} is \code{useCluster} is a customized factor object.
@@ -36,7 +43,7 @@ plotSpatial2D.liger <- function(
         defaultCluster(object)[object$dataset == dataset]
     if (length(useCluster) == 1) {
         legendColorTitle <- legendColorTitle %||% useCluster
-        useCluster <- cellMeta(object, useCluster, useDataset = dataset)
+        useCluster <- cellMeta(object, useCluster, useDatasets = dataset)
     } else {
         legendColorTitle <- legendColorTitle %||% "Annotation"
     }
@@ -75,13 +82,23 @@ plotSpatial2D.ligerSpatialDataset <- function(
     xRange <- c(min(plotDF$x), max(plotDF$x))
     yRange <- c(min(plotDF$y), max(plotDF$y))
 
-    plotDF[[legendColorTitle]] <- factor(useCluster)
-    .ggScatter(plotDF = plotDF, x = "x", y = "y", colorBy = legendColorTitle,
-               xlab = xlab, ylab = ylab, labelText = labelText,
-               legendColorTitle = legendColorTitle, ...) +
-        ggplot2::theme_bw() +
-        ggplot2::theme(panel.grid = ggplot2::element_blank(),
-                       axis.ticks = ggplot2::element_blank(),
-                       axis.text = ggplot2::element_blank()) +
-        ggplot2::coord_fixed(xlim = xRange, ylim = yRange)
+    if (is.null(useCluster)) {
+        .ggScatter(plotDF = plotDF, x = "x", y = "y",
+                   xlab = xlab, ylab = ylab, ...) +
+            ggplot2::theme_bw() +
+            ggplot2::theme(panel.grid = ggplot2::element_blank(),
+                           axis.ticks = ggplot2::element_blank(),
+                           axis.text = ggplot2::element_blank()) +
+            ggplot2::coord_fixed(xlim = xRange, ylim = yRange)
+    } else {
+        plotDF[[legendColorTitle]] <- factor(useCluster)
+        .ggScatter(plotDF = plotDF, x = "x", y = "y", colorBy = legendColorTitle,
+                   xlab = xlab, ylab = ylab, labelText = labelText,
+                   legendColorTitle = legendColorTitle, ...) +
+            ggplot2::theme_bw() +
+            ggplot2::theme(panel.grid = ggplot2::element_blank(),
+                           axis.ticks = ggplot2::element_blank(),
+                           axis.text = ggplot2::element_blank()) +
+            ggplot2::coord_fixed(xlim = xRange, ylim = yRange)
+    }
 }

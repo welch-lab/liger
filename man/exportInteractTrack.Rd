@@ -33,3 +33,23 @@ upstream function \code{\link{linkGenesAndPeaks}} into an Interact Track file
 which is compatible with \href{https://genome.ucsc.edu/cgi-bin/hgCustom}{UCSC
 Genome Browser}.
 }
+\examples{
+bmmc <- normalize(bmmc)
+bmmc <- selectGenes(bmmc)
+bmmc <- scaleNotCenter(bmmc)
+bmmc <- runINMF(bmmc, miniBatchSize = 100)
+bmmc <- quantileNorm(bmmc)
+bmmc <- normalizePeak(bmmc)
+bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
+corr <- linkGenesAndPeaks(
+    bmmc, useDataset = "rna",
+    pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2")
+)
+resultPath <- tempfile()
+exportInteractTrack(
+    corrMat = corr,
+    pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2"),
+    outputPath = resultPath
+)
+head(read.table(resultPath, skip = 1))
+}

@@ -6,22 +6,7 @@
 \alias{quantileNorm.Seurat}
 \title{Quantile Align (Normalize) Factor Loadings}
 \usage{
-quantileNorm(
-  object,
-  quantiles = 50,
-  reference = NULL,
-  minCells = 20,
-  nNeighbors = 20,
-  useDims = NULL,
-  center = FALSE,
-  maxSample = 1000,
-  eps = 0.9,
-  refineKNN = TRUE,
-  clusterName = "H.norm_cluster",
-  seed = 1,
-  verbose = getOption("ligerVerbose"),
-  ...
-)
+quantileNorm(object, ...)
 
 \method{quantileNorm}{liger}(
   object,
@@ -34,7 +19,7 @@ quantileNorm(
   maxSample = 1000,
   eps = 0.9,
   refineKNN = TRUE,
-  clusterName = "quantileNormCluster",
+  clusterName = "quantileNorm_cluster",
   seed = 1,
   verbose = getOption("ligerVerbose"),
   ...
@@ -52,7 +37,7 @@ quantileNorm(
   maxSample = 1000,
   eps = 0.9,
   refineKNN = TRUE,
-  clusterName = "quantileNormCluster",
+  clusterName = "quantileNorm_cluster",
   seed = 1,
   verbose = getOption("ligerVerbose"),
   ...
@@ -61,6 +46,8 @@ quantileNorm(
 \arguments{
 \item{object}{A \linkS4class{liger} or Seurat object with valid factorization
 result available (i.e. \code{\link{runIntegration}} performed in advance).}
+
+\item{...}{Arguments passed to other S3 methods of this function.}
 
 \item{quantiles}{Number of quantiles to use for quantile normalization.
 Default \code{50}.}
@@ -94,7 +81,8 @@ Default \code{0.9}.}
 KNN graph. Default \code{TRUE}.}
 
 \item{clusterName}{Variable name that will store the clustering result
-in metadata of a \linkS4class{liger} object or a \code{Seurat} object.}
+in metadata of a \linkS4class{liger} object or a \code{Seurat} object.
+Default \code{"quantileNorm_cluster"}}
 
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
 

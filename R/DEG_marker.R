@@ -122,19 +122,20 @@ runPairwiseDEG <- function(
 #' grouping of such condition is specified by \code{conditionBy}, which should
 #' be a column name in \code{cellMeta}. When \code{splitBy} is specified as
 #' another variable name in \code{cellMeta}, the marker detection will be
-#' iteratively done for each level of \code{splitBy} variable.
+#' iteratively done for within each level of \code{splitBy} variable.
 #'
 #' For example, when \code{conditionBy = "celltype"} and \code{splitBy = NULL},
 #' marker detection will be performed by comparing all cells of "celltype_i"
 #' against all other cells, and etc.
 #'
 #' When \code{conditionBy = "celltype"} and \code{splitBy = "gender"}, marker
-#' detection will be performed by comparing "celltype_i" cells from "gender_i"
-#' against other cells from "gender_i", and etc.
+#' detection will be performed by comparing "celltype_i" cells from "gender_j"
+#' against other cells from "gender_j", and etc.
 #' @examples
-#' # Identify markers for each cluster
+#' # Identify markers for each cluster. Equivalent to old version `runWilcoxon(method = "cluster")`
 #' markerStats <- runMarkerDEG(pbmcPlot, conditionBy = "leiden_cluster")
-#' # Identify dataset markers within each cluster
+#' # Identify dataset markers within each cluster. Equivalent to old version
+#' # `runWilcoxon(method = "dataset")`.
 #' markerStatsList <- runMarkerDEG(pbmcPlot, conditionBy = "dataset",
 #'                                 splitBy = "leiden_cluster")
 runMarkerDEG <- function(
@@ -323,7 +324,7 @@ makePseudoBulk2 <- function(mat, replicateAnn, verbose = TRUE) {
     des <- DESeq2::DESeqDataSetFromMatrix(
         countData = pseudoBulks,
         colData = data.frame(groups = groups),
-        design = formula("~groups")
+        design = stats::formula("~groups")
     )
     des <- DESeq2::DESeq(des, test = "Wald", quiet = !verbose)
     res <- DESeq2::results(des, contrast = c("groups", levels(groups)[1],
@@ -453,7 +454,7 @@ computePval <- function(ustat, ties, N, n1n2) {
 #' @param pctInThresh,pctOutThresh Threshold on expression percentage. These
 #' mean that a feature will only pass the filter if it is expressed in more than
 #' \code{pctInThresh} percent of cells in the corresponding cluster. Similarly
-#' for \code{pctOutThresh}. Default \code{50} and \code{50}, respectively.
+#' for \code{pctOutThresh}. Default \code{50} percent for both.
 #' @param dedupBy When ranking by padj and logFC and a feature is ranked as top
 #' for multiple clusters, assign this feature as the marker of a cluster when
 #' it has the largest \code{"logFC"} in the cluster or has the lowest
@@ -479,7 +480,7 @@ plotMarkerHeatmap <- function(
         pctInThresh = 50,
         pctOutThresh = 50,
         dedupBy = c("logFC", "padj"),
-        groupBy = c("dataset", "leiden_cluster"),
+        groupBy = NULL,
         groupSize = 50,
         column_title = NULL,
         ...
@@ -490,6 +491,9 @@ plotMarkerHeatmap <- function(
     } else if (dedupBy == "padj") {
         result <- result[order(result[[dedupBy]], decreasing = FALSE), ]
     }
+    pctInThresh <- pctInThresh %||% 0
+    pctOutThresh <- pctOutThresh %||% 100
+    groupBy <- groupBy %||% c("dataset", object@uns$defaultCluster)
     result <- result[!duplicated(result$feature), ]
     result <- result %>% dplyr::filter(.data$logFC > lfcThresh,
                                        .data$padj < padjThresh,

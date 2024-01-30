@@ -14,6 +14,8 @@
 #' @param lambda Regularization parameter. Larger values penalize
 #' dataset-specific effects more strongly (i.e. alignment should increase as
 #' \code{lambda} increases). Default \code{5}.
+#' @param method iNMF variant algorithm to use for integration. Choose from
+#' \code{"iNMF"}, \code{"onlineINMF"}, \code{"UINMF"}. Default \code{"iNMF"}.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
@@ -42,8 +44,6 @@ runIntegration <- function(
         k = 20,
         lambda = 5.0,
         method = c("iNMF", "onlineINMF", "UINMF"),
-        seed = 1,
-        verbose = getOption("ligerVerbose"),
         ...
 ) {
     UseMethod("runIntegration", object)
@@ -213,13 +213,6 @@ runINMF <- function(
         object,
         k = 20,
         lambda = 5.0,
-        nIteration = 30,
-        nRandomStarts = 1,
-        HInit = NULL,
-        WInit = NULL,
-        VInit = NULL,
-        seed = 1,
-        verbose = getOption("ligerVerbose"),
         ...
 ) {
     UseMethod("runINMF", object)
@@ -242,7 +235,7 @@ runINMF.liger <- function(
         ...
 ) {
     .checkObjVersion(object)
-    object <- recordCommand(object, dependencies = "RcppPlanc")
+    object <- recordCommand(object, ..., dependencies = "RcppPlanc")
     object <- removeMissing(object, orient = "cell", verbose = verbose)
     data <- lapply(datasets(object), function(ld) {
         if (is.null(scaleData(ld)))
@@ -328,7 +321,7 @@ runINMF.Seurat <- function(
     datasetVar <- droplevels(datasetVar)
 
     Es <- lapply(levels(datasetVar), function(d) {
-        as(mat[, datasetVar == d], "CsparseMatrix")
+        methods::as(mat[, datasetVar == d], "CsparseMatrix")
     })
     rm(mat)
     names(Es) <- levels(datasetVar)
@@ -590,14 +583,15 @@ optimizeALS <- function(
 #' as 1.0 may improve reconstruction quality. Default \code{5.0}.
 #' @param maxEpochs The number of epochs to iterate through. See detail.
 #' Default \code{5}.
-#' @param HALSiters Maximum number of block coordinate descent (HALS
+#' @param HALSiter Maximum number of block coordinate descent (HALS
 #' algorithm) iterations to perform for each update of \eqn{W} and \eqn{V}.
 #' Default \code{1}. Changing this parameter is not recommended.
 #' @param miniBatchSize Total number of cells in each minibatch. See detail.
 #' Default \code{5000}.
-#' @param seed Random seed to allow reproducible results. Default \code{123}.
+#' @param seed Random seed to allow reproducible results. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' @param ... Arguments passed to other S3 methods of this function.
 #' @return
 #' \itemize{
 #'  \item{liger method - Returns updated input \linkS4class{liger} object.
@@ -633,25 +627,21 @@ optimizeALS <- function(
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
 #' # Scenario 1
-#' pbmc <- online_iNMF(pbmc)
+#' pbmc <- runOnlineINMF(pbmc, miniBatchSize = 200)
 #' # Scenario 2
 #' # Fake new dataset by increasing all non-zero value in "ctrl" by 1
 #' ctrl2 <- rawData(dataset(pbmc, "ctrl"))
 #' ctrl2@x <- ctrl2@x + 1
 #' colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
-#' pbmc2 <- online_iNMF(pbmc, k = 20, X_new = list(ctrl2 = ctrl2))
+#' pbmc2 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
+#'                        miniBatchSize = 100)
 #' # Scenario 3
-#' pbmc3 <- online_iNMF(pbmc, k = 20, X_new = list(ctrl2 = ctrl2),
-#'                      projection = TRUE)
+#' pbmc3 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
+#'                        projection = TRUE)
 runOnlineINMF <- function(
         object,
         k = 20,
         lambda = 5,
-        maxEpochs = 5,
-        HALSiter = 1,
-        miniBatchSize = 5000,
-        seed = 123,
-        verbose = getOption("ligerVerbose"),
         ...
 ) {
     UseMethod("runOnlineINMF", object)
@@ -678,7 +668,7 @@ runOnlineINMF.liger <- function(
         ...
 ) {
     .checkObjVersion(object)
-    object <- recordCommand(object, dependencies = c("RcppPlanc"))
+    object <- recordCommand(object, ..., dependencies = c("RcppPlanc"))
     Es <- getMatrix(object, "scaleData", returnList = TRUE)
     Es <- lapply(datasets(object), function(ld) {
         sd <- scaleData(ld)
@@ -825,7 +815,6 @@ runOnlineINMF.liger <- function(
     #             immediate. = TRUE)
     #     miniBatchSize <- miniBatchSize_min
     # }
-
     res <- RcppPlanc::onlineINMF(objectList = object, newDatasets = newDatasets,
                                  project = projection, k = k, lambda = lambda,
                                  maxEpoch = maxEpochs,
@@ -898,7 +887,7 @@ runOnlineINMF.Seurat <- function(
     datasetVar <- droplevels(datasetVar)
 
     Es <- lapply(levels(datasetVar), function(d) {
-        as(mat[, datasetVar == d], "CsparseMatrix")
+        methods::as(mat[, datasetVar == d], "CsparseMatrix")
     })
     rm(mat)
     names(Es) <- levels(datasetVar)
@@ -1136,7 +1125,7 @@ runUINMF.liger <- function(
         ...
 ) {
     .checkObjVersion(object)
-    object <- recordCommand(object, dependencies = "RcppPlanc")
+    object <- recordCommand(object, ..., dependencies = "RcppPlanc")
     object <- removeMissing(object, orient = "cell", verbose = verbose)
     # Elist <- getMatrix(object, "scaleData", returnList = TRUE)
 
@@ -1261,9 +1250,11 @@ runUINMF.liger <- function(
 #' KNN graph. Default \code{TRUE}.
 #' @param clusterName Variable name that will store the clustering result
 #' in metadata of a \linkS4class{liger} object or a \code{Seurat} object.
+#' Default \code{"quantileNorm_cluster"}
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' @param ... Arguments passed to other S3 methods of this function.
 #' @return Updated input object
 #' \itemize{
 #'  \item{liger method
@@ -1288,18 +1279,6 @@ runUINMF.liger <- function(
 #' @rdname quantileNorm
 quantileNorm <- function(
         object,
-        quantiles = 50,
-        reference = NULL,
-        minCells = 20,
-        nNeighbors = 20,
-        useDims = NULL,
-        center = FALSE,
-        maxSample = 1000,
-        eps = 0.9,
-        refineKNN = TRUE,
-        clusterName = "H.norm_cluster",
-        seed = 1,
-        verbose = getOption("ligerVerbose"),
         ...
 ) {
     UseMethod("quantileNorm", object)
@@ -1319,7 +1298,7 @@ quantileNorm.liger <- function(
         maxSample = 1000,
         eps = 0.9,
         refineKNN = TRUE,
-        clusterName = "quantileNormCluster",
+        clusterName = "quantileNorm_cluster",
         seed = 1,
         verbose = getOption("ligerVerbose"),
         ...
@@ -1337,7 +1316,7 @@ quantileNorm.liger <- function(
         if (length(reference) != 1)
             stop("Should specify only one reference dataset.")
     }
-    object <- recordCommand(object, dependencies = "RANN")
+    object <- recordCommand(object, ..., dependencies = "RANN")
     out <- .quantileNorm.HList(
         object = getMatrix(object, "H"),
         quantiles = quantiles,
@@ -1373,7 +1352,7 @@ quantileNorm.Seurat <- function(
         maxSample = 1000,
         eps = 0.9,
         refineKNN = TRUE,
-        clusterName = "quantileNormCluster",
+        clusterName = "quantileNorm_cluster",
         seed = 1,
         verbose = getOption("ligerVerbose"),
         ...

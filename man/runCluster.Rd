@@ -46,6 +46,9 @@ membership with highest quality to return. Default \code{10}.}
 \item{nIterations}{Integer, maximal number of iterations per random start.
 Default \code{5}.}
 
+\item{method}{Community detection algorithm to use. Choose from
+\code{"leiden"} or \code{"louvain"}. Default \code{"leiden"}.}
+
 \item{useDims}{Indices of factors to use for clustering. Default \code{NULL}
 uses all available factors.}
 

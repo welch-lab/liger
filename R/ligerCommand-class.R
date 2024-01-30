@@ -49,8 +49,11 @@ ligerCommand <- setClass(
 # object <- recordCommand(object, dependencies = ...)
 # Conditionally, should be placed after input checks
 # like `match.arg()` or `.checkUseDatasets()`
+# `...` is for the ... arguments in real function call, so S3 arguments passed
+# to downstream can be also captured
 recordCommand <- function(
         object,
+        ...,
         dependencies = NULL
 ) {
     #if (!inherits(object, "liger"))
@@ -80,6 +83,9 @@ recordCommand <- function(
     # beginning of working exported function but after `match.arg()` and etc.
     # is done.
     args <- as.list(parent.frame())
+    # Capture more arguments
+    moreArgs <- list(...)
+    args <- c(args, moreArgs)
     args$object <- NULL
     objSummary <- list(
         datasets = names(object),

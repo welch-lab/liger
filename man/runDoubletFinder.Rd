@@ -7,7 +7,7 @@
 runDoubletFinder(
   object,
   useDatasets = NULL,
-  nPCs = 10,
+  PCs = 1:10,
   nNeighbors = 20,
   nExp = NULL,
   verbose = getOption("ligerVerbose"),
@@ -19,10 +19,10 @@ runDoubletFinder(
 
 \item{useDatasets}{A character vector of the names, a numeric or logical
 vector of the index of the datasets to run
-\code{\link[DoubletFinder]{doubletFinder_v3}} with. Default \code{NULL}
+\code{DoubletFinder::doubletFinder} with. Default \code{NULL}
 applies to all datasets.}
 
-\item{nPCs}{Number of top PC to use. Default \code{10}.}
+\item{PCs}{Specific principal components to use. Default \code{1:10}.}
 
 \item{nNeighbors}{Number of the PC neighborhood size used to compute pANN.
 See "See Also". Scalar for all used datasets or vector for each. Default
@@ -35,7 +35,7 @@ used datasets or vector for each. Default \code{NULL} sets a 0.15 proportion.}
 \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
 \item{...}{Additional arguments passed to
-\code{\link[DoubletFinder]{doubletFinder_v3}}.}
+\code{DoubletFinder::doubletFinder}.}
 }
 \value{
 Updated \code{object} with variables \code{DoubletFinder_pANN} and
@@ -43,16 +43,16 @@ Updated \code{object} with variables \code{DoubletFinder_pANN} and
 }
 \description{
 Detect doublet with DoubletFinder. Package "Seurat" and
-"DoubletFinder" would be required to run this function. "DoubletFinder" can
-only be installed via
-\href{https://github.com/chris-mcginnis-ucsf/DoubletFinder}{GitHub}.
+"DoubletFinder" would be required to run this function.
 
-Seurat default PCA workflow is performed prior to calling DoubletFinder.
+This wrapper runs Seurat PCA workflow (NormalizeData,
+FindVariableFeatures, ScaleData, RunPCA) with all default settings on each
+dataset, and then calls \code{DoubletFinder::doubletFinder}. Users that
+prefer having more control on the preprocessing part might consider creating
+single-sample Seurat object with
+\code{CreateSeuratObject(rawData(object, "datasetName"))}.
 }
 \examples{
 pbmc <- runDoubletFinder(pbmc)
 cellMeta(pbmc)
-}
-\seealso{
-\code{\link[DoubletFinder]{doubletFinder_v3}}
 }

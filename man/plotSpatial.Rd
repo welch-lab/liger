@@ -34,7 +34,7 @@ everything to \code{\link{.ggScatter}} and then
 
 \item{useCluster}{Either the name of one variable in \code{cellMeta(object)}
 or a factor object with annotation that matches with all cells in the
-specified dataset. Default \code{NULL} does not add any annotation.}
+specified dataset. Default \code{NULL} uses default clusters.}
 
 \item{legendColorTitle}{Alternative title text in the legend. Default
 \code{NULL} uses the variable name set by \code{useCluster}, or
@@ -54,4 +54,12 @@ A ggplot object
 }
 \description{
 Visualize a spatial dataset
+}
+\examples{
+ctrl.fake.spatial <- as.ligerDataset(dataset(pbmc, "ctrl"), modal = "spatial")
+fake.coords <- matrix(rnorm(2 * ncol(ctrl.fake.spatial)), ncol = 2)
+dimnames(fake.coords) <- list(colnames(ctrl.fake.spatial), c("x", "y"))
+coordinate(ctrl.fake.spatial) <- fake.coords
+dataset(pbmc, "ctrl") <- ctrl.fake.spatial
+plotSpatial2D(pbmc, dataset = "ctrl")
 }

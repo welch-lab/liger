@@ -74,7 +74,7 @@ liger <- setClass(
 
 .checkAllDatasets <- function(x) {
     for (ld in datasets(x)) {
-        validObject(ld)
+        methods::validObject(ld)
     }
     return(NULL)
 }
@@ -669,7 +669,7 @@ setMethod("length", signature(x = "liger"), function(x) {
 #' utilizes both clustering information and the dataset source information.
 setGeneric(
     "cellMeta",
-    function(x, columns = NULL, useDataset = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
+    function(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
         standardGeneric("cellMeta")
     }
 )
@@ -678,7 +678,7 @@ setGeneric(
 #' @rdname liger-class
 setGeneric(
     "cellMeta<-",
-    function(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE, value) {
+    function(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, check = FALSE, value) {
         standardGeneric("cellMeta<-")
     }
 )
@@ -724,7 +724,7 @@ setGeneric(
 setMethod(
     "cellMeta",
     signature(x = "liger", columns = "NULL"),
-    function(x, columns = NULL, useDataset = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
+    function(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
         NULL
     }
 )
@@ -734,10 +734,10 @@ setMethod(
 setMethod(
     "cellMeta",
     signature(x = "liger", columns = "character"),
-    function(x, columns = NULL, useDataset = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
-        if (is.null(cellIdx) && !is.null(useDataset)) {
-            if (!is.character(useDataset)) useDataset <- names(x)[useDataset]
-            cellIdx <- x@cellMeta$dataset %in% useDataset
+    function(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
+        if (is.null(cellIdx) && !is.null(useDatasets)) {
+            if (!is.character(useDatasets)) useDatasets <- names(x)[useDatasets]
+            cellIdx <- x@cellMeta$dataset %in% useDatasets
         }
         .subsetCellMeta(x, columns = columns, cellIdx = cellIdx,
                         as.data.frame = as.data.frame, ...)
@@ -749,10 +749,10 @@ setMethod(
 setMethod(
     "cellMeta",
     signature(x = "liger", columns = "missing"),
-    function(x, columns = NULL, useDataset = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
-        if (is.null(cellIdx) && !is.null(useDataset)) {
-            if (!is.character(useDataset)) useDataset <- names(x)[useDataset]
-            cellIdx <- x@cellMeta$dataset %in% useDataset
+    function(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
+        if (is.null(cellIdx) && !is.null(useDatasets)) {
+            if (!is.character(useDatasets)) useDatasets <- names(x)[useDatasets]
+            cellIdx <- x@cellMeta$dataset %in% useDatasets
         }
         .subsetCellMeta(x, columns = NULL, cellIdx = cellIdx,
                         as.data.frame = as.data.frame, ...)
@@ -764,7 +764,7 @@ setMethod(
 setReplaceMethod(
     "cellMeta",
     signature(x = "liger", columns = "missing"),
-    function(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE, value) {
+    function(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, check = FALSE, value) {
         if (!inherits(value, "DFrame"))
             value <- S4Vectors::DataFrame(value)
         x@cellMeta <- value
@@ -778,16 +778,20 @@ setReplaceMethod(
 setReplaceMethod(
     "cellMeta",
     signature(x = "liger", columns = "character"),
-    function(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE, value) {
-        if (is.null(cellIdx) && !is.null(useDataset)) {
-            if (!is.character(useDataset)) useDataset <- names(x)[useDataset]
-            cellIdx <- which(x@cellMeta$dataset %in% useDataset)
+    function(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, check = FALSE, value) {
+        if (is.null(cellIdx) && !is.null(useDatasets)) {
+            if (!is.character(useDatasets)) useDatasets <- names(x)[useDatasets]
+            cellIdx <- which(x@cellMeta$dataset %in% useDatasets)
         } else {
             cellIdx <- .idxCheck(x, cellIdx, "cell")
         }
-        if (is.null(dim(value)) && length(value) != length(cellIdx)) {
-            stop("Length of value does not match with cell index.")
+        if (is.null(dim(value))) {
+            # Vector/factor like
+            value <- .checkArgLen(value, n = length(cellIdx))
         }
+        # if (is.null(dim(value)) && length(value) != length(cellIdx)) {
+        #     stop("Length of value does not match with cell index.")
+        # }
         if (!is.null(dim(value)) && nrow(value) != length(cellIdx)) {
             stop("nrow of value does not match with cell index.")
         }
@@ -867,26 +871,52 @@ setReplaceMethod(
     }
 )
 
-#' @rdname liger-class
+#' Get cell metadata variable
+#' @name sub-sub-liger
+#' @param x A \linkS4class{liger} object
+#' @param i Name or numeric index of cell meta data to fetch
+#' @param ... Anything that \code{S4Vectors::\link[S4Vectors]{DataFrame}}
+#' method allows.
 #' @export
-setMethod(
-    "[[",
-    c("liger", "ANY", "missing"),
-    function(x, i, j, ...) {
-        if (is.null(i)) NULL
-        else if (!i %in% names(cellMeta(x))) NULL
-        else cellMeta(x, columns = i, ...)
-    }
-)
+#' @method [[ liger
+#' @return If \code{i} is given, the selected metadata will be returned; if it
+#' is missing, the whole cell metadata table in
+#' \code{S4Vectors::\link[S4Vectors]{DataFrame}} class will be returned.
+#' @examples
+#' # Retrieve whole cellMeta
+#' pbmc[[]]
+#' # Retrieve a variable
+#' pbmc[["dataset"]]
+`[[.liger` <- function(x, i, ...) {
+    if (missing(i)) return(cellMeta(x))
+    else return(x@cellMeta[[i, ...]])
+}
 
-#' @rdname liger-class
-#' @export
-setReplaceMethod(
-    "[[",
-    c("liger", "ANY", "missing"),
-    function(x, i, j, ..., value) {
-        cellMeta(x, columns = i, ...) <- value
-        x
+#' Set cell metadata variable
+#' @rdname sub-subset-.liger
+#' @param x A \linkS4class{liger} object
+#' @param i Name or numeric index of cell meta to be replaced
+#' @param j Ignored
+#' @param ... Other argument that might be applied to [[<-,S4Vectors::DataFrame
+#' @param value Metadata value to be inserted
+#' @aliases [[<-,liger,ANY,missing-method
+#' @aliases [[<-,liger-method
+#' @return Input liger object updated with replaced/new variable in
+#' \code{cellMeta(x)}.
+#' @examples
+#' cellMeta(pbmc)
+#' # Add new variable
+#' pbmc[["newVar"]] <- 1
+#' cellMeta(pbmc)
+#' # Change existing variable
+#' pbmc[["newVar"]][1:3] <- 1:3
+#' cellMeta(pbmc)
+setMethod(
+    f = '[[<-',
+    signature = c(x = 'liger', i = 'ANY', j = 'missing', value = 'ANY'),
+    definition = function(x, i, ..., value) {
+        x@cellMeta[[i, ...]] <- value
+        return(x)
     }
 )
 
@@ -935,6 +965,8 @@ setGeneric(
 
 #' @export
 #' @rdname liger-class
+#' @param droplevels Whether to remove unused cluster levels from the factor
+#' object fetched by \code{defaultCluster()}. Default \code{FALSE}.
 setMethod(
     "defaultCluster",
     signature = c(x = "liger", useDatasets = "ANY"),
@@ -1097,6 +1129,9 @@ setMethod(
 
 #' @export
 #' @rdname liger-class
+#' @param asDefault Whether to set the inserted dimension reduction matrix as
+#' default for visualization methods. Default \code{NULL} sets it when no
+#' default has been set yet, otherwise does not change current default.
 setReplaceMethod(
     "dimRed",
     signature(x = "liger", name = "character", value = "matrixLike"),

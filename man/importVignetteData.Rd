@@ -39,7 +39,5 @@ options might not work depending on platform.}
 Import prepared dataset publically available
 }
 \examples{
-if (FALSE) {
-    pbmc <- importVignetteData("pbmc")
-}
+pbmc <- importVignetteData("pbmc")
 }

@@ -381,7 +381,7 @@ subsetH5LigerDatasetToMem <- function(
     if (!is.null(scaleData(object))) {
         # See comments in h5ToH5 for what the following two mean
         scaledFeatureIdx <- scaleData(object)[["featureIdx"]][]
-        secondIdx <- as.numeric(na.omit(match(featureIdx, scaledFeatureIdx)))
+        secondIdx <- as.numeric(stats::na.omit(match(featureIdx, scaledFeatureIdx)))
     }
     if ("scaleData" %in% slotInvolved & !is.null(scaleData(object))) {
         if (isTRUE(verbose)) .log("Subsetting `scaleData`", level = 2)
@@ -648,7 +648,7 @@ subsetH5LigerDatasetToH5 <- function(
         # This asserts that
         # rownames(scaleData)[secondIdx] returns a subset that follows the order
         # specified by featureIdx
-        secondIdx <- as.numeric(na.omit(match(featureIdx, scaledFeatureIdx)))
+        secondIdx <- as.numeric(stats::na.omit(match(featureIdx, scaledFeatureIdx)))
     }
     if ("scaleData" %in% useSlot & !is.null(scaleData(object))) {
         scaledFeatureIdxNew <- which(featureIdx %in% scaledFeatureIdx)

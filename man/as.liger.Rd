@@ -5,6 +5,7 @@
 \alias{as.liger.dgCMatrix}
 \alias{as.liger.SingleCellExperiment}
 \alias{as.liger.Seurat}
+\alias{seuratToLiger}
 \title{Converting other classes of data to a liger object}
 \usage{
 as.liger(object, ...)
@@ -14,6 +15,14 @@ as.liger(object, ...)
 \method{as.liger}{SingleCellExperiment}(object, datasetVar = NULL, modal = NULL, ...)
 
 \method{as.liger}{Seurat}(object, datasetVar = "orig.ident", modal = NULL, assay = NULL, ...)
+
+seuratToLiger(
+  object,
+  datasetVar = "orig.ident",
+  modal = NULL,
+  assay = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{Object.}
@@ -35,4 +44,27 @@ a \linkS4class{liger} object.
 }
 \description{
 Converting other classes of data to a liger object
+}
+\examples{
+# dgCMatrix (common sparse matrix class), usually obtained from other
+# container object, and contains multiple samples merged in one.
+matList <- rawData(pbmc)
+multiSampleMatrix <- mergeSparseAll(matList)
+# The `datasetVar` argument expects the variable assigning the sample source
+pbmc2 <- as.liger(multiSampleMatrix, datasetVar = pbmc$dataset)
+pbmc2
+
+sce <- SingleCellExperiment::SingleCellExperiment(
+    assays = list(counts = multiSampleMatrix)
+)
+sce$sample <- pbmc$dataset
+pbmc3 <- as.liger(sce, datasetVar = "sample")
+pbmc3
+
+seu <- SeuratObject::CreateSeuratObject(multiSampleMatrix)
+# Seurat creates variable "orig.ident" by identifying the cell barcode
+# prefixes, which is indeed what we need in this case. Users might need
+# to be careful and have it confirmed first.
+pbmc4 <- as.liger(seu, datasetVar = "orig.ident")
+pbmc4
 }

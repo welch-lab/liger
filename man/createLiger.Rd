@@ -79,6 +79,22 @@ can be dangerous for large scale analysis.}
 This function allows creating \linkS4class{liger} object from
 multiple datasets of various forms (See \code{rawData}).
 }
+\examples{
+# Create from raw count matrices
+ctrl.raw <- rawData(pbmc, "ctrl")
+stim.raw <- rawData(pbmc, "stim")
+pbmc1 <- createLiger(list(ctrl = ctrl.raw, stim = stim.raw))
+
+# Create from H5 files
+h5Path <- system.file("extdata/ctrl.h5", package = "rliger2")
+print(h5Path)
+lig <- createLiger(list(ctrl = h5Path))
+
+# Create from other container object
+ctrl.seu <- SeuratObject::CreateSeuratObject(ctrl.raw)
+stim.seu <- SeuratObject::CreateSeuratObject(stim.raw)
+pbmc2 <- createLiger(list(ctrl = ctrl.seu, stim = stim.seu))
+}
 \seealso{
 \code{\link{createLigerDataset}}, \code{\link{createH5LigerDataset}}
 }

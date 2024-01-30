@@ -6,19 +6,7 @@
 \alias{runINMF.Seurat}
 \title{Perform iNMF on scaled datasets}
 \usage{
-runINMF(
-  object,
-  k = 20,
-  lambda = 5,
-  nIteration = 30,
-  nRandomStarts = 1,
-  HInit = NULL,
-  WInit = NULL,
-  VInit = NULL,
-  seed = 1,
-  verbose = getOption("ligerVerbose"),
-  ...
-)
+runINMF(object, k = 20, lambda = 5, ...)
 
 \method{runINMF}{liger}(
   object,
@@ -65,6 +53,8 @@ higher \code{k} will be needed for datasets with more sub-structure. Default
 dataset-specific effects more strongly (i.e. alignment should increase as
 \code{lambda} increases). Default \code{5}.}
 
+\item{...}{Arguments passed to methods.}
+
 \item{nIteration}{Total number of block coordinate descent iterations to
 perform. Default \code{30}.}
 
@@ -89,8 +79,6 @@ each element is the initial \eqn{V} matrix of each dataset. Default
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
-
-\item{...}{Arguments passed to methods.}
 
 \item{datasetVar}{Metadata variable name that stores the dataset source
 annotation. Default \code{"orig.ident"}.}

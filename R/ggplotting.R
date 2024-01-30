@@ -589,8 +589,8 @@ plotCellViolin <- function(
 #' @param colorLabels,colorValues Each a vector with as many values as the
 #' number of categories for the categorical coloring aesthetics. Labels will be
 #' the shown text and values will be the color code. These are passed to
-#' \code{\link[ggplot2]{scale_color_manual}}. Default \code{NULL} uses default
-#' ggplot hues and plot original labels (levels of the factor).
+#' \code{\link[ggplot2]{scale_color_manual}}. Default uses \code{scPalette} and
+#' plot original labels (levels of the factor).
 #' @param legendNRow,legendNCol Integer, when too many categories in one
 #' variable, arranges number of rows or columns. Default \code{NULL},
 #' automatically split to \code{ceiling(levels(variable)/10)} columns.
@@ -603,7 +603,7 @@ plotCellViolin <- function(
 #' color for higher value, while \code{1} reverses this direction.
 #' @param colorLow,colorMid,colorHigh,colorMidPoint All four of these must be
 #' specified to customize palette with
-#' @param naColor The color code for \code{NA} values. Default \code{"#F5F5F5"}.
+#' @param naColor The color code for \code{NA} values. Default \code{"#DEDEDE"}.
 #' \code{\link[ggplot2]{scale_colour_gradient2}}. Default \code{NULL}.
 #' @param plotly Whether to use plotly to enable web based interactive browsing
 #' for the plot. Requires installation of package "plotly". Default
@@ -642,10 +642,10 @@ plotCellViolin <- function(
         legendNCol = NULL,
         # Coloring
         colorLabels = NULL,
-        colorValues = NULL,
+        colorValues = scPalette,
         colorPalette = "magma",
         colorDirection = -1,
-        naColor = "#F5F5F5",
+        naColor = "#DEDEDE",
         colorLow = NULL,
         colorMid = NULL,
         colorHigh = NULL,
@@ -814,7 +814,7 @@ plotCellViolin <- function(
         aesType = c("colour", "fill"),
         labels = NULL,
         values = NULL,
-        naColor = "#F5F5F5"
+        naColor = "#DEDEDE"
 ) {
     aesType <- match.arg(aesType)
     layer <- NULL
@@ -839,7 +839,7 @@ plotCellViolin <- function(
         aesType = c("colour", "fill"),
         palette = "magma",
         direction = 1,
-        naColor = "#F5F5F5",
+        naColor = "#DEDEDE",
         low = NULL,
         mid = NULL,
         high = NULL,

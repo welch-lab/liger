@@ -6,42 +6,54 @@
 \usage{
 optimizeNewData(
   object,
-  new.data,
-  which.datasets,
-  add.to.existing = TRUE,
+  dataNew,
+  useDatasets,
+  merge = TRUE,
   lambda = NULL,
-  thresh = 1e-04,
-  max.iters = 100,
-  verbose = getOption("ligerVerbose")
+  nIteration = 30,
+  seed = 1,
+  verbose = getOption("ligerVerbose"),
+  new.data = dataNew,
+  which.datasets = useDatasets,
+  add.to.existing = merge,
+  max.iters = nIteration,
+  thresh = NULL
 )
 }
 \arguments{
-\item{object}{\linkS4class{liger} object. Should call
-\code{\link{optimizeALS}} in advance.}
+\item{object}{A \linkS4class{liger} object. Should have integrative
+factorization performed e.g. (\code{\link{runINMF}}) in advance.}
 
-\item{new.data}{Named list of raw count matrices (one or more).}
+\item{dataNew}{Named list of \bold{raw count} matrices, genes by cells.}
 
-\item{which.datasets}{Names of datasets to append new data to if
-\code{add.to.existing = TRUE}, or the names of datasets to inherit \eqn{V}
-matrices from and initialize the optimization when \code{add.to.existing =
-FALSE}. Should match the length and order of \code{new.data}.}
+\item{useDatasets}{Selection of datasets to append new data to if
+\code{merge = TRUE}, or the datasets to inherit \eqn{V} matrices from and
+initialize the optimization when \code{merge = FALSE}. Should match the
+length and order of \code{dataNew}.}
 
-\item{add.to.existing}{Logical, whether to add the new data to existing
+\item{merge}{Logical, whether to add the new data to existing
 datasets or treat as totally new datasets (i.e. calculate new \eqn{V}
 matrices). Default \code{TRUE}.}
 
-\item{lambda}{Regularization parameter. Default \code{NULL} uses the lambda
-last used for factorization, stored at
-\code{object@uns$factorization$lambda}.}
+\item{lambda}{Numeric regularization parameter. By default \code{NULL}, this
+will use the lambda value used in the latest factorization.}
 
-\item{thresh}{Convergence threshold. Convergence occurs when
-\eqn{|obj_0-obj|/(mean(obj0,obj)) < thresh}. Default \code{1e-4}.}
+\item{nIteration}{Number of block coordinate descent iterations to perform.
+Default \code{30}.}
 
-\item{max.iters}{Maximum number of block coordinate descent iterations to
-perform. Default \code{100}.}
+\item{seed}{Random seed to allow reproducible results. Default \code{1}. Used
+by \code{\link{runINMF}} factorization.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+
+\item{new.data, which.datasets, add.to.existing, max.iters}{These arguments are
+now replaced by others and will be removed in the future. Please see usage
+for replacement.}
+
+\item{thresh}{\bold{Deprecated}. New implementation of iNMF does not require
+a threshold for convergence detection. Setting a large enough
+\code{nIteration} will bring it to convergence.}
 }
 \value{
 \code{object} with \code{W} slot updated with the new \eqn{W}
@@ -51,24 +63,34 @@ the new dataset specific \eqn{H} and \eqn{V} matrix, respectively.
 }
 \description{
 Uses an efficient strategy for updating that takes advantage of
-the information in the existing factorization. Assumes that variable featuers
-are represented in the new datasets.
+the information in the existing factorization. Assumes that variable features
+are presented in the new datasets. Two modes are supported (controlled by
+\code{merge}):
+\itemize{
+\item{Append new data to existing datasets specified by \code{useDatasets}.
+Here the existing \eqn{V} matrices for the target datasets will directly be
+used as initialization, and new \eqn{H} matrices for the merged matrices will
+be initialized accordingly.}
+\item{Set new data as new datasets. Initial \eqn{V} matrices for them will
+be copied from datasets specified by \code{useDatasets}, and new \eqn{H}
+matrices will be initialized accordingly.}
+}
 }
 \examples{
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
 # Only running a few iterations for fast examples
-pbmc <- optimizeALS(pbmc, k = 20, maxIter = 2)
+pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
 # Create fake new data by increasing all non-zero count in "ctrl" by 1,
-# and make unique cell identiciers
+# and make unique cell identifiers
 ctrl2 <- rawData(dataset(pbmc, "ctrl"))
 ctrl2@x <- ctrl2@x + 1
 colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
-pbmcNew <- optimizeNewData(pbmc, new.data = list(ctrl2 = ctrl2),
-                           which.datasets = "ctrl", max.iters = 2)
-pbmcNew
+pbmcNew <- optimizeNewData(pbmc, dataNew = list(ctrl2 = ctrl2),
+                           useDatasets = "ctrl", nIteration = 2)
 }
 \seealso{
-\code{\link{optimizeALS}}
+\code{\link{runINMF}}, \code{\link{optimizeNewK}},
+\code{\link{optimizeNewLambda}}
 }

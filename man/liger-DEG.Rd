@@ -105,15 +105,15 @@ Marker detection is generally performed in a one vs. rest manner. The
 grouping of such condition is specified by \code{conditionBy}, which should
 be a column name in \code{cellMeta}. When \code{splitBy} is specified as
 another variable name in \code{cellMeta}, the marker detection will be
-iteratively done for each level of \code{splitBy} variable.
+iteratively done for within each level of \code{splitBy} variable.
 
 For example, when \code{conditionBy = "celltype"} and \code{splitBy = NULL},
 marker detection will be performed by comparing all cells of "celltype_i"
 against all other cells, and etc.
 
 When \code{conditionBy = "celltype"} and \code{splitBy = "gender"}, marker
-detection will be performed by comparing "celltype_i" cells from "gender_i"
-against other cells from "gender_i", and etc.
+detection will be performed by comparing "celltype_i" cells from "gender_j"
+against other cells from "gender_j", and etc.
 }
 
 \examples{
@@ -125,9 +125,10 @@ degStats <- runPairwiseDEG(pbmcPlot, group1 = 0, group2 = 1,
 degStats <- runPairwiseDEG(pbmcPlot, group1 = "5", group2 = "stim",
                            variable1 = "leiden_cluster",
                            variable2 = "dataset")
-# Identify markers for each cluster
+# Identify markers for each cluster. Equivalent to old version `runWilcoxon(method = "cluster")`
 markerStats <- runMarkerDEG(pbmcPlot, conditionBy = "leiden_cluster")
-# Identify dataset markers within each cluster
+# Identify dataset markers within each cluster. Equivalent to old version
+# `runWilcoxon(method = "dataset")`.
 markerStatsList <- runMarkerDEG(pbmcPlot, conditionBy = "dataset",
                                 splitBy = "leiden_cluster")
 }

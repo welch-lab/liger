@@ -35,8 +35,6 @@
 \alias{cellMeta,liger,missing-method}
 \alias{cellMeta<-,liger,missing-method}
 \alias{cellMeta<-,liger,character-method}
-\alias{[[,liger,ANY,missing-method}
-\alias{[[<-,liger,ANY,missing,ANY-method}
 \alias{$,liger-method}
 \alias{$<-,liger-method}
 \alias{defaultCluster}
@@ -137,18 +135,18 @@ dataset(x, dataset, type = NULL, qc = TRUE) <- value
 cellMeta(
   x,
   columns = NULL,
-  useDataset = NULL,
+  useDatasets = NULL,
   cellIdx = NULL,
   as.data.frame = FALSE,
   ...
 )
 
-cellMeta(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE) <- value
+cellMeta(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, check = FALSE) <- value
 
 \S4method{cellMeta}{liger,`NULL`}(
   x,
   columns = NULL,
-  useDataset = NULL,
+  useDatasets = NULL,
   cellIdx = NULL,
   as.data.frame = FALSE,
   ...
@@ -157,7 +155,7 @@ cellMeta(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE) <-
 \S4method{cellMeta}{liger,character}(
   x,
   columns = NULL,
-  useDataset = NULL,
+  useDatasets = NULL,
   cellIdx = NULL,
   as.data.frame = FALSE,
   ...
@@ -166,19 +164,15 @@ cellMeta(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE) <-
 \S4method{cellMeta}{liger,missing}(
   x,
   columns = NULL,
-  useDataset = NULL,
+  useDatasets = NULL,
   cellIdx = NULL,
   as.data.frame = FALSE,
   ...
 )
 
-\S4method{cellMeta}{liger,missing}(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE) <- value
+\S4method{cellMeta}{liger,missing}(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, check = FALSE) <- value
 
-\S4method{cellMeta}{liger,character}(x, columns = NULL, useDataset = NULL, cellIdx = NULL, check = FALSE) <- value
-
-\S4method{[[}{liger,ANY,missing}(x, i, j, ...)
-
-\S4method{[[}{liger,ANY,missing,ANY}(x, i, j, ...) <- value
+\S4method{cellMeta}{liger,character}(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, check = FALSE) <- value
 
 \S4method{$}{liger}(x, name)
 
@@ -311,6 +305,10 @@ specify what type the matrix is. Choose from \code{"rawData"},
 \item{columns}{The names of available variables in \code{cellMeta} slot. When
 \code{as.data.frame = TRUE}, please use variable names after coercion.}
 
+\item{useDatasets}{Setter or getter method should only apply on cells in
+specified datasets. Any valid character, numeric or logical subscriber is
+acceptable. Default \code{NULL} works with all datasets.}
+
 \item{cellIdx}{Valid cell subscription to subset retrieved variables. Default
 \code{NULL} uses all cells.}
 
@@ -320,9 +318,12 @@ specify what type the matrix is. Choose from \code{"rawData"},
 \item{name}{The name of available variables in \code{cellMeta} slot or the
 name of a new variable to store.}
 
-\item{useDatasets}{Setter or getter method should only apply on cells in
-specified datasets. Any valid character, numeric or logical subscriber is
-acceptable. Default \code{NULL} works with all datasets.}
+\item{droplevels}{Whether to remove unused cluster levels from the factor
+object fetched by \code{defaultCluster()}. Default \code{FALSE}.}
+
+\item{asDefault}{Whether to set the inserted dimension reduction matrix as
+default for visualization methods. Default \code{NULL} sets it when no
+default has been set yet, otherwise does not change current default.}
 
 \item{data}{fortify method required argument. Not used.}
 

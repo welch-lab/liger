@@ -19,7 +19,8 @@ ligerToSeurat(
 
 \item{assay}{Name of assay to store the data. Default \code{NULL} detects by
 dataset modality. If the object contains various modality, default to
-\code{"liger"}.}
+\code{"LIGER"}. Default dataset modality setting is understood as
+\code{"RNA"}.}
 
 \item{identByDataset}{Logical, whether to combine dataset variable and default
 cluster labeling to set the Idents. Default \code{FALSE}.}
@@ -43,4 +44,7 @@ the \code{cellMeta}, \code{H.norm} and \code{varFeatures} slot will be
 included. Compatible with V4 and V5. It is not recommended to use this
 conversion if your \linkS4class{liger} object contains datasets from
 various modalities.
+}
+\examples{
+seu <- ligerToSeurat(pbmc)
 }

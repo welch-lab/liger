@@ -38,6 +38,21 @@
 #' \bold{Deprecated.} See Usage section for replacement.
 #' @export
 #' @seealso \code{\link{createLigerDataset}}, \code{\link{createH5LigerDataset}}
+#' @examples
+#' # Create from raw count matrices
+#' ctrl.raw <- rawData(pbmc, "ctrl")
+#' stim.raw <- rawData(pbmc, "stim")
+#' pbmc1 <- createLiger(list(ctrl = ctrl.raw, stim = stim.raw))
+#'
+#' # Create from H5 files
+#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger2")
+#' print(h5Path)
+#' lig <- createLiger(list(ctrl = h5Path))
+#'
+#' # Create from other container object
+#' ctrl.seu <- SeuratObject::CreateSeuratObject(ctrl.raw)
+#' stim.seu <- SeuratObject::CreateSeuratObject(stim.raw)
+#' pbmc2 <- createLiger(list(ctrl = ctrl.seu, stim = stim.seu))
 createLiger <- function(
         rawData,
         modal = NULL,
@@ -155,8 +170,11 @@ createLiger <- function(
 #' @param ... Additional slot data. See \linkS4class{ligerDataset} for detail.
 #' Given values will be directly placed at corresponding slots.
 #' @seealso \linkS4class{ligerDataset}, \linkS4class{ligerATACDataset},
-#' \code{\link{createH5LigerDataset}}
+#' \linkS4class{ligerSpatialDataset}, \linkS4class{ligerMethDataset}
 #' @export
+#' @examples
+#' ctrl.raw <- rawData(pbmc, "ctrl")
+#' ctrl.ld <- createLigerDataset(ctrl.raw)
 createLigerDataset <- function(
         rawData = NULL,
         modal = c("default", "rna", "atac", "spatial", "meth"),
@@ -312,6 +330,13 @@ createH5LigerDataset <- function(
 
 
 #' Read liger object from RDS file
+#' @description
+#' This file reads a liger object stored in RDS files under all kinds of types.
+#' 1. A \linkS4class{liger} object with in-memory data created from package
+#' version since 1.99. 2. A liger object with on-disk H5 data associated, where
+#' the link to H5 files will be automatically restored. 3. A liger object
+#' created with older package version, and can be updated to the latest data
+#' structure by default.
 #' @param filename Path to an RDS file of a \code{liger} object of old versions.
 #' @param dimredName The name of variable in \code{cellMeta} slot to store the
 #' dimensionality reduction matrix, which originally located in
@@ -326,6 +351,18 @@ createH5LigerDataset <- function(
 #' to the currect version of structure. Default \code{TRUE}.
 #' @return New version of \linkS4class{liger} object
 #' @export
+#' @examples
+#' # Save and read regular current-version liger object
+#' tempPath <- tempfile(fileext = ".rds")
+#' saveRDS(pbmc, tempPath)
+#' pbmc <- readLiger(tempPath)
+#'
+#' # Save and read H5-based liger object
+#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger2")
+#' lig <- createLiger(list(ctrl = h5Path))
+#' tempPath <- tempfile(fileext = ".rds")
+#' saveRDS(lig, tempPath)
+#' lig <- readLiger(tempPath)
 readLiger <- function(
         filename,
         dimredName = "tsne_coords",
@@ -369,9 +406,7 @@ readLiger <- function(
 #' @return \code{\linkS4class{liger}} object of specified dataset.
 #' @export
 #' @examples
-#' if (FALSE) {
-#'     pbmc <- importVignetteData("pbmc")
-#' }
+#' pbmc <- importVignetteData("pbmc")
 importVignetteData <- function(
         dataset,
         overwrite = FALSE,
@@ -481,6 +516,11 @@ importVignetteData <- function(
 #' \code{FALSE}.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' @param sample.dirs,sample.names,use.filtered These arguments are renamed and
+#' will be deprecated in the future. Please see usage for corresponding
+#' arguments.
+#' @param data.type,merge,num.cells,min.umis These arguments are defuncted
+#' because the functionality can/should be fulfilled with other functions.
 #' @return
 #' \itemize{
 #'  \item{When only one sample is given or detected, and only one feature type
@@ -824,8 +864,8 @@ read10XFiles <- function(
     data <- methods::as(Matrix::readMM(matrixPath), "CsparseMatrix")
 
     # Processing barcodes
-    cell.barcodes <- read.table(barcodesPath, header = FALSE,
-                                sep = '\t', row.names = NULL)
+    cell.barcodes <- utils::read.table(barcodesPath, header = FALSE,
+                                       sep = '\t', row.names = NULL)
     if (ncol(cell.barcodes) > 1) {
         cell.names <- cell.barcodes[, cellCol]
     } else {

@@ -59,7 +59,7 @@ result).
 bmmc <- normalize(bmmc)
 bmmc <- selectGenes(bmmc)
 bmmc <- scaleNotCenter(bmmc)
-bmmc <- online_iNMF(bmmc, miniBatch_size = 80)
+bmmc <- runINMF(bmmc, miniBatchSize = 100)
 bmmc <- quantileNorm(bmmc)
 bmmc <- normalizePeak(bmmc)
 bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")

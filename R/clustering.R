@@ -26,6 +26,8 @@
 #' membership with highest quality to return. Default \code{10}.
 #' @param nIterations Integer, maximal number of iterations per random start.
 #' Default \code{5}.
+#' @param method Community detection algorithm to use. Choose from
+#' \code{"leiden"} or \code{"louvain"}. Default \code{"leiden"}.
 #' @param useDims Indices of factors to use for clustering. Default \code{NULL}
 #' uses all available factors.
 #' @param groupSingletons Whether to group single cells that make up their own
@@ -282,7 +284,7 @@ mapCellMeta <- function(
         newTo = NULL,
         ...
 ) {
-    object <- recordCommand(object)
+    object <- recordCommand(object, ...)
     from <- cellMeta(object, from)
     if (!is.factor(from)) stop("`from` must be a factor class variable.")
     mapping <- list(...)

@@ -15,7 +15,7 @@ LICENSE
 ^\.github/*
 ^pkgdown/*
 ^/cmake*
-^vignettes/articles/
+^vignettes/articles/*
 ^docs
 ^devdata
-
+^tests/testthat/*\.h5$

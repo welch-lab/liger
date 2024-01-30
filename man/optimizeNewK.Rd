@@ -6,34 +6,42 @@
 \usage{
 optimizeNewK(
   object,
-  k.new,
+  kNew,
   lambda = NULL,
-  thresh = 1e-04,
-  max.iters = 100,
-  rand.seed = 1,
-  verbose = getOption("ligerVerbose")
+  nIteration = 30,
+  seed = 1,
+  verbose = getOption("ligerVerbose"),
+  k.new = kNew,
+  max.iters = nIteration,
+  rand.seed = seed,
+  thresh = NULL
 )
 }
 \arguments{
-\item{object}{\linkS4class{liger} object. Should call
-\code{\link{optimizeALS}} in advance.}
+\item{object}{A \linkS4class{liger} object. Should have integrative
+factorization performed e.g. (\code{\link{runINMF}}) in advance.}
 
-\item{k.new}{Number of factors of factorization.}
+\item{kNew}{Number of factors of factorization.}
 
-\item{lambda}{Regularization parameter. By default, this will use the lambda
-last used with \code{\link{optimizeALS}}.}
+\item{lambda}{Numeric regularization parameter. By default \code{NULL}, this
+will use the lambda value used in the latest factorization.}
 
-\item{thresh}{Convergence threshold. Convergence occurs when
-\eqn{|obj_0-obj|/(mean(obj0,obj)) < thresh}. Default \code{1e-4}.}
+\item{nIteration}{Number of block coordinate descent iterations to
+perform. Default \code{30}.}
 
-\item{max.iters}{Maximum number of block coordinate descent iterations to
-perform. Default \code{100}.}
-
-\item{rand.seed}{Random seed to set. Only relevant if \code{k.new} is greater
-than \code{k}. Default \code{1}.}
+\item{seed}{Random seed to allow reproducible results. Default \code{1}. Used
+by \code{\link{runINMF}} factorization and initialization only when if
+\code{kNew} is greater than \code{k}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+
+\item{k.new, max.iters, rand.seed}{These arguments are now replaced by others
+and will be removed in the future. Please see usage for replacement.}
+
+\item{thresh}{\bold{Deprecated}. New implementation of iNMF does not require
+a threshold for convergence detection. Setting a large enough
+\code{nIteration} will bring it to convergence.}
 }
 \value{
 \code{object} with \code{W} slot updated with the new \eqn{W}
@@ -44,18 +52,19 @@ the new dataset specific \eqn{H} and \eqn{V} matrix, respectively.
 \description{
 This uses an efficient strategy for updating that takes
 advantage of the information in the existing factorization. It is most
-recommended for values of \code{k.new} smaller than current value (\code{k},
-which is set when running \code{\link{optimizeALS}}), where it
-is more likely to speed up the factorization.
+recommended for values of \code{kNew} smaller than current value (\code{k},
+which is set when running \code{\link{runINMF}}), where it is more likely to
+speed up the factorization.
 }
 \examples{
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
 # Only running a few iterations for fast examples
-pbmc <- optimizeALS(pbmc, k = 20, maxIter = 2)
-pbmc <- optimizeNewK(pbmc, k.new = 15, max.iters = 2)
+pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
+pbmc <- optimizeNewK(pbmc, kNew = 25, nIteration = 2)
 }
 \seealso{
-\code{\link{optimizeALS}}
+\code{\link{runINMF}}, \code{\link{optimizeNewLambda}},
+\code{\link{optimizeNewData}}
 }

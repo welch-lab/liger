@@ -6,17 +6,7 @@
 \alias{runOnlineINMF.Seurat}
 \title{Perform online iNMF on scaled datasets}
 \usage{
-runOnlineINMF(
-  object,
-  k = 20,
-  lambda = 5,
-  maxEpochs = 5,
-  HALSiter = 1,
-  miniBatchSize = 5000,
-  seed = 123,
-  verbose = getOption("ligerVerbose"),
-  ...
-)
+runOnlineINMF(object, k = 20, lambda = 5, ...)
 
 \method{runOnlineINMF}{liger}(
   object,
@@ -65,16 +55,7 @@ possibly for analyses with relatively small differences (biological
 replicates, male/female comparisons, etc.) in which case a lower value such
 as 1.0 may improve reconstruction quality. Default \code{5.0}.}
 
-\item{maxEpochs}{The number of epochs to iterate through. See detail.
-Default \code{5}.}
-
-\item{miniBatchSize}{Total number of cells in each minibatch. See detail.
-Default \code{5000}.}
-
-\item{seed}{Random seed to allow reproducible results. Default \code{123}.}
-
-\item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\item{...}{Arguments passed to other S3 methods of this function.}
 
 \item{newDatasets}{Named list of \linkS4class{dgCMatrix}. New datasets for
 scenario 2 or scenario 3. Default \code{NULL} triggers scenario 1.}
@@ -82,9 +63,24 @@ scenario 2 or scenario 3. Default \code{NULL} triggers scenario 1.}
 \item{projection}{Whether to perform data integration with scenario 3 when
 \code{newDatasets} is specified. See description. Default \code{FALSE}.}
 
+\item{maxEpochs}{The number of epochs to iterate through. See detail.
+Default \code{5}.}
+
+\item{HALSiter}{Maximum number of block coordinate descent (HALS
+algorithm) iterations to perform for each update of \eqn{W} and \eqn{V}.
+Default \code{1}. Changing this parameter is not recommended.}
+
+\item{miniBatchSize}{Total number of cells in each minibatch. See detail.
+Default \code{5000}.}
+
 \item{WInit, VInit, AInit, BInit}{Optional initialization for \eqn{W}, \eqn{V},
 \eqn{A}, and \eqn{B} matrices, respectively. Must be presented all together.
 See detail. Default \code{NULL}.}
+
+\item{seed}{Random seed to allow reproducible results. Default \code{1}.}
+
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
 \item{datasetVar}{Metadata variable name that stores the dataset source
 annotation. Default \code{"orig.ident"}.}
@@ -98,10 +94,6 @@ assay.}
 
 \item{reduction}{Name of the reduction to store result. Also used as the
 feature key. Default \code{"onlineINMF"}.}
-
-\item{HALSiters}{Maximum number of block coordinate descent (HALS
-algorithm) iterations to perform for each update of \eqn{W} and \eqn{V}.
-Default \code{1}. Changing this parameter is not recommended.}
 }
 \value{
 \itemize{
@@ -195,16 +187,17 @@ pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
 # Scenario 1
-pbmc <- online_iNMF(pbmc)
+pbmc <- runOnlineINMF(pbmc, miniBatchSize = 200)
 # Scenario 2
 # Fake new dataset by increasing all non-zero value in "ctrl" by 1
 ctrl2 <- rawData(dataset(pbmc, "ctrl"))
 ctrl2@x <- ctrl2@x + 1
 colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
-pbmc2 <- online_iNMF(pbmc, k = 20, X_new = list(ctrl2 = ctrl2))
+pbmc2 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
+                       miniBatchSize = 100)
 # Scenario 3
-pbmc3 <- online_iNMF(pbmc, k = 20, X_new = list(ctrl2 = ctrl2),
-                     projection = TRUE)
+pbmc3 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
+                       projection = TRUE)
 }
 \references{
 Chao Gao and et al., Iterative single-cell multi-omic integration
