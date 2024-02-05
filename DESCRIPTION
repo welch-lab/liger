@@ -94,5 +94,5 @@ Suggests:
     SummarizedExperiment,
     testthat
 Remotes:
-    chris-mcginnis-ucsf/DoubletFinder
+    chris-mcginnis-ucsf/DoubletFinder,
     welch-lab/RcppPlanc
