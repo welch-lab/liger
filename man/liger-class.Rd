@@ -124,7 +124,7 @@ dataset(x, dataset, type = NULL, qc = TRUE) <- value
 
 \S4method{dataset}{liger,character,ANY,ANY,matrixLike}(x, dataset, type = c("rawData", "normData", "scaleData"), qc = FALSE) <- value
 
-\S4method{dataset}{liger,character,missing,ANY,`NULL`}(x, dataset, type = NULL, qc = TRUE) <- value
+\S4method{dataset}{liger,character,missing,ANY,NULL}(x, dataset, type = NULL, qc = TRUE) <- value
 
 \S4method{names}{liger}(x)
 
@@ -143,7 +143,7 @@ cellMeta(
 
 cellMeta(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, check = FALSE) <- value
 
-\S4method{cellMeta}{liger,`NULL`}(
+\S4method{cellMeta}{liger,NULL}(
   x,
   columns = NULL,
   useDatasets = NULL,
@@ -188,7 +188,7 @@ defaultCluster(x, name = NULL, useDatasets = NULL, ...) <- value
 
 \S4method{defaultCluster}{liger,ANY,ANY,factor}(x, name = NULL, useDatasets = NULL, droplevels = TRUE, ...) <- value
 
-\S4method{defaultCluster}{liger,ANY,ANY,`NULL`}(x, name = NULL, useDatasets = NULL, ...) <- value
+\S4method{defaultCluster}{liger,ANY,ANY,NULL}(x, name = NULL, useDatasets = NULL, ...) <- value
 
 dimRed(x, name = NULL, useDatasets = NULL, ...)
 

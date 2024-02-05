@@ -373,10 +373,10 @@ runINMF.Seurat <- function(
         barcodeList = NULL,
         features = NULL
 ) {
-    if (!requireNamespace("RcppPlanc", quietly = TRUE))
+    if (!requireNamespace("RcppPlanc", quietly = TRUE)) # nocov start
         stop("RcppPlanc installation required. Currently, please get the ",
              "GitHub private repository access from the lab and run: \n",
-             "devtools::install_github(\"welch-lab/RcppPlanc\")")
+             "devtools::install_github(\"welch-lab/RcppPlanc\")") # nocov end
 
     bestResult <- list()
     bestObj <- Inf
@@ -470,7 +470,7 @@ NULL
 #' \code{optimizeALS(use.unshared = TRUE)}, use \code{\link{runIntegration}}
 #' with \code{method = "UINMF"} or \code{\link{runUINMF}} instead.
 #' @export
-optimizeALS <- function(
+optimizeALS <- function( # nocov start
         object,
         k,
         lambda = 5.0,
@@ -502,7 +502,7 @@ optimizeALS <- function(
                           seed = rand.seed, verbose = verbose)
     }
     return(object)
-}
+} # nocov end
 
 ############################### online inmf ####################################
 
@@ -549,9 +549,9 @@ optimizeALS <- function(
 #' }
 #'
 #' Minibatch iterations is performed on small subset of cells. The exact
-#' minibatch size applied on each dataset is \code{miniBatchSize} multiplied by
+#' minibatch size applied on each dataset is \code{minibatchSize} multiplied by
 #' the proportion of cells in this dataset out of all cells. In general,
-#' \code{miniBatchSize} should be no larger than the number of cells in the
+#' \code{minibatchSize} should be no larger than the number of cells in the
 #' smallest dataset (considering both \code{object} and \code{newDatasets}).
 #' Therefore, a smaller value may be necessary for analyzing very small
 #' datasets.
@@ -559,7 +559,7 @@ optimizeALS <- function(
 #' An epoch is one completion of calculation on all cells after a number of
 #' iterations of minibatches. Therefore, the total number of iterations is
 #' determined by the setting of \code{maxEpochs}, total number of cells, and
-#' \code{miniBatchSize}.
+#' \code{minibatchSize}.
 #'
 #' Currently, Seurat S3 method does not support working on Scenario 2 and 3,
 #' because there is no simple solution for organizing a number of miscellaneous
@@ -586,7 +586,7 @@ optimizeALS <- function(
 #' @param HALSiter Maximum number of block coordinate descent (HALS
 #' algorithm) iterations to perform for each update of \eqn{W} and \eqn{V}.
 #' Default \code{1}. Changing this parameter is not recommended.
-#' @param miniBatchSize Total number of cells in each minibatch. See detail.
+#' @param minibatchSize Total number of cells in each minibatch. See detail.
 #' Default \code{5000}.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
@@ -627,14 +627,14 @@ optimizeALS <- function(
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
 #' # Scenario 1
-#' pbmc <- runOnlineINMF(pbmc, miniBatchSize = 200)
+#' pbmc <- runOnlineINMF(pbmc, minibatchSize = 200)
 #' # Scenario 2
 #' # Fake new dataset by increasing all non-zero value in "ctrl" by 1
 #' ctrl2 <- rawData(dataset(pbmc, "ctrl"))
 #' ctrl2@x <- ctrl2@x + 1
 #' colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
 #' pbmc2 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
-#'                        miniBatchSize = 100)
+#'                        minibatchSize = 100)
 #' # Scenario 3
 #' pbmc3 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
 #'                        projection = TRUE)
@@ -658,7 +658,7 @@ runOnlineINMF.liger <- function(
         projection = FALSE,
         maxEpochs = 5,
         HALSiter = 1,
-        miniBatchSize = 5000,
+        minibatchSize = 5000,
         WInit = NULL,
         VInit = NULL,
         AInit = NULL,
@@ -674,8 +674,9 @@ runOnlineINMF.liger <- function(
         sd <- scaleData(ld)
         if (is.null(sd))
             stop("Scaled data not available. Run `scaleNotCenter()` first")
-        if (inherits(sd, "H5D")) return(.H5DToH5Mat(sd))
-        else if (inherits(sd, "H5Group"))
+        # if (inherits(sd, "H5D")) return(.H5DToH5Mat(sd))
+        # else
+        if (inherits(sd, "H5Group"))
             return(.H5GroupToH5SpMat(sd, c(length(varFeatures(object)),
                                            ncol(ld))))
         else return(sd)
@@ -725,9 +726,10 @@ runOnlineINMF.liger <- function(
         for (d in newNames) {
             ld <- dataset(object, d)
             sd <- scaleData(ld)
-            if (inherits(sd, "H5D")) {
-                newDatasets[[d]] <- .H5DToH5Mat(sd)
-            } else if (inherits(sd, "H5Group")) {
+            # if (inherits(sd, "H5D")) {
+            #     newDatasets[[d]] <- .H5DToH5Mat(sd)
+            # } else
+            if (inherits(sd, "H5Group")) {
                 newDatasets[[d]] <- .H5GroupToH5SpMat(sd, c(length(varFeatures(object)), ncol(ld)))
             } else {
                 newDatasets[[d]] <- sd
@@ -738,7 +740,7 @@ runOnlineINMF.liger <- function(
     res <- .runOnlineINMF.list(Es, newDatasets = newDatasets,
                                projection = projection, k = k, lambda = lambda,
                                maxEpochs = maxEpochs,
-                               miniBatchSize = miniBatchSize,
+                               minibatchSize = minibatchSize,
                                HALSiter = HALSiter, verbose = verbose,
                                WInit = WInit, VInit = VInit, AInit = AInit,
                                BInit = BInit, seed = seed)
@@ -788,37 +790,37 @@ runOnlineINMF.liger <- function(
         AInit = NULL,
         BInit = NULL,
         HALSiter = 1,
-        miniBatchSize = 5000,
+        minibatchSize = 5000,
         seed = 1,
         verbose = getOption("ligerVerbose"),
         ...
 ) {
-    if (!requireNamespace("RcppPlanc", quietly = TRUE))
+    if (!requireNamespace("RcppPlanc", quietly = TRUE)) # nocov start
         stop("RcppPlanc installation required. Currently, please get the ",
              "GitHub private repository access from the lab and run: \n",
-             "devtools::install_github(\"welch-lab/RcppPlanc\")")
+             "devtools::install_github(\"welch-lab/RcppPlanc\")") # nocov end
     nDatasets <- length(object) + length(newDatasets)
     barcodeList <- c(lapply(object, colnames), lapply(newDatasets, colnames))
     names(barcodeList) <- c(names(object), names(newDatasets))
     features <- rownames(object[[1]])
     if (!is.null(seed)) set.seed(seed)
 
-    # # If miniBatchSize > smallest invovled dataset, auto reset with warning
-    # miniBatchSize_min <- min(sapply(object, ncol))
+    # # If minibatchSize > smallest invovled dataset, auto reset with warning
+    # minibatchSize_min <- min(sapply(object, ncol))
     # if (!is.null(newDatasets)) {
-    #     miniBatchSize_min2 <- min(sapply(newDatasets, ncol))
-    #     miniBatchSize_min <- min(miniBatchSize_min, miniBatchSize_min2)
+    #     minibatchSize_min2 <- min(sapply(newDatasets, ncol))
+    #     minibatchSize_min <- min(minibatchSize_min, minibatchSize_min2)
     # }
-    # if (miniBatchSize > miniBatchSize_min) {
+    # if (minibatchSize > minibatchSize_min) {
     #     warning("Minibatch size larger than the smallest dataset involved.\n",
-    #             "  Setting to the smallest dataset size: ", miniBatchSize_min,
+    #             "  Setting to the smallest dataset size: ", minibatchSize_min,
     #             immediate. = TRUE)
-    #     miniBatchSize <- miniBatchSize_min
+    #     minibatchSize <- minibatchSize_min
     # }
     res <- RcppPlanc::onlineINMF(objectList = object, newDatasets = newDatasets,
                                  project = projection, k = k, lambda = lambda,
                                  maxEpoch = maxEpochs,
-                                 minibatchSize = miniBatchSize,
+                                 minibatchSize = minibatchSize,
                                  maxHALSIter = HALSiter, Vinit = VInit,
                                  Winit = WInit, Ainit = AInit, Binit = BInit,
                                  verbose = verbose)
@@ -869,7 +871,7 @@ runOnlineINMF.Seurat <- function(
         reduction = "onlineINMF",
         maxEpochs = 5,
         HALSiter = 1,
-        miniBatchSize = 5000,
+        minibatchSize = 5000,
         seed = 1,
         verbose = getOption("ligerVerbose"),
         ...
@@ -896,7 +898,7 @@ runOnlineINMF.Seurat <- function(
         object = Es, k = k, lambda = lambda,
         newDatasets = NULL, projection = FALSE,
         maxEpochs = maxEpochs, HALSiter = HALSiter,
-        miniBatchSize = miniBatchSize, seed = seed, verbose = verbose,
+        minibatchSize = minibatchSize, seed = seed, verbose = verbose,
         WInit = NULL, VInit = NULL, AInit = NULL, BInit = NULL,
     )
     Hconcat <- t(Reduce(cbind, res$H))
@@ -974,7 +976,7 @@ NULL
 #' For \code{online_iNMF}, use \code{\link{runIntegration}} with
 #' \code{method = "online"} or \code{\link{runOnlineINMF}}.
 #' @export
-online_iNMF <- function(
+online_iNMF <- function( # nocov start
         object,
         X_new = NULL,
         projection = FALSE,
@@ -996,13 +998,13 @@ online_iNMF <- function(
                               "runIntegration(method = \"online\")")
     object <- runOnlineINMF.liger(
         object = object, k = k, lambda = lambda, maxEpochs = max.epochs,
-        HALSiter = miniBatch_max_iters, miniBatchSize = miniBatch_size,
+        HALSiter = miniBatch_max_iters, minibatchSize = miniBatch_size,
         seed = seed, verbose = verbose, newDatasets = X_new,
         projection = projection, WInit = W.init, VInit = V.init, AInit = A.init,
         BInit = B.init
     )
     return(object)
-}
+} # nocov end
 
 
 
@@ -1316,6 +1318,7 @@ quantileNorm.liger <- function(
         if (length(reference) != 1)
             stop("Should specify only one reference dataset.")
     }
+    print(reference)
     object <- recordCommand(object, ..., dependencies = "RANN")
     out <- .quantileNorm.HList(
         object = getMatrix(object, "H"),
@@ -1534,7 +1537,7 @@ NULL
 #' @section \code{quantile_norm}:
 #' For \code{quantile_norm}, use \code{\link{quantileNorm}}.
 #' @export
-quantile_norm <- function(
+quantile_norm <- function( # nocov start
         object,
         quantiles = 50,
         ref_dataset = NULL,
@@ -1564,4 +1567,4 @@ quantile_norm <- function(
         seed = rand.seed,
         verbose = verbose
     )
-}
+} # nocov end

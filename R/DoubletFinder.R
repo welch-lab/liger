@@ -38,14 +38,14 @@ runDoubletFinder <- function(
         verbose = getOption("ligerVerbose"),
         ...
 ) {
-    if (!requireNamespace("DoubletFinder", quietly = TRUE)) {
+    if (!requireNamespace("DoubletFinder", quietly = TRUE)) { # nocov start
         stop("DoubletFinder need to be installed. Please run:\n",
              "remotes::install_github('chris-mcginnis-ucsf/DoubletFinder')")
     }
     if (!requireNamespace("Seurat", quietly = TRUE)) {
         stop("Seurat need to be installed. Please run:\n",
              "install.packages(\"Seurat\")")
-    }
+    } # nocov end
     useDatasets <- .checkUseDatasets(object, useDatasets = useDatasets)
     nNeighbors <- .checkArgLen(nNeighbors, length(useDatasets), repN = TRUE)
     if (!is.null(nExp)) {

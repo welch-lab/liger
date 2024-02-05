@@ -5,9 +5,10 @@
 #' matrix, a \code{Seurat} object, a \code{SingleCellExperiment} object, an
 #' \code{AnnData} object, a \linkS4class{ligerDataset} object or a filename to
 #' an HDF5 file. See detail for HDF5 reading.
-#' @param modal Character vector for modality setting. Currently options of
-#' \code{"default"}, \code{"rna"}, \code{"atac"}, \code{"spatial"} and
-#' \code{"meth"} are supported.
+#' @param modal Character vector for modality setting. Use one string for all
+#' datasets, or the same number of strings as the number of datasets. Currently
+#' options of \code{"default"}, \code{"rna"}, \code{"atac"}, \code{"spatial"}
+#' and \code{"meth"} are supported.
 #' @param cellMeta data.frame of metadata at single-cell level. Default
 #' \code{NULL}.
 #' @param removeMissing Logical. Whether to remove cells that do not have any
@@ -210,6 +211,8 @@ createLigerDataset <- function(
     }
     if (!is.null(scaleData)) {
         if (is.null(rn)) rn <- rownames(scaleData)
+        if (!inherits(scaleData, "matrix"))
+            scaleData <- methods::as(scaleData, "matrix")
     }
     if (is.null(h5fileInfo)) h5fileInfo <- list()
     if (is.null(featureMeta))
@@ -390,90 +393,179 @@ readLiger <- function(
     }
 }
 
+# nocov start
 #' Import prepared dataset publically available
-#' @param dataset Name of dataset, see available options with
-#' \code{names(.manifest)}.
+#' @description
+#' These are functions to download example datasets that are subset from public
+#' data.
+#' \itemize{
+#' \item{\bold{PBMC} - Downsampled from GSE96583, Kang et al, Nature
+#' Biotechnology, 2018. Contains two scRNAseq datasets.}
+#' \item{\bold{BMMC} - Downsampled from GSE139369, Granja et al, Nature
+#' Biotechnology, 2019. Contains two scRNAseq datasets and one scATAC data.}
+#' \item{\bold{CGE} - Downsampled from GSE97179, Luo et al, Science, 2017.
+#' Contains one scRNAseq dataset and one DNA methylation data.}
+#' }
+#'
+#' @rdname importVignetteData
 #' @param overwrite Logical, if a file exists at corresponding download
 #' location, whether to re-download or directly use this file. Default
 #' \code{FALSE}.
-#' @param dir Path to download datasets. Default \code{getwd()}.
+#' @param dir Path to download datasets. Default current working directory
+#' \code{getwd()}.
 #' @param method \code{method} argument directly passed to
 #' \code{\link[utils]{download.file}}. Using \code{"libcurl"} while other
 #' options might not work depending on platform.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
 #' @param ... Additional arguments passed to \code{\link{download.file}}
-#' @return \code{\linkS4class{liger}} object of specified dataset.
 #' @export
-#' @examples
-#' pbmc <- importVignetteData("pbmc")
-importVignetteData <- function(
-        dataset,
-        overwrite = FALSE,
+#' @return Constructed \linkS4class{liger} object with QC performed and missing
+#' data removed.
+#' @examplesIf interactive()
+#' \donttest{
+#' pbmc <- importPBMC()
+#' bmmc <- importBMMC()
+#' cge <- importCGE()
+#' }
+importPBMC <- function(
         dir = getwd(),
+        overwrite = FALSE,
         method = "libcurl",
         verbose = getOption("ligerVerbose"),
         ...
 ) {
-    if (!dataset %in% names(.manifest)) {
-        stop("Requested dataset \"", dataset, "\" not supported yet. \n",
-             "Available options: ", paste(names(.manifest), collapse = ", "))
-    }
     fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
-
-    info <- .manifest[[dataset]]
-    url <- sapply(info, function(x) x$url)
-    dataNames <- names(info)
-    filenames <- sapply(info, function(x) x$filename)
-    modal <- sapply(info, function(x) x$modal)
-
-    # ATAC assay specific processing
-    # If non of them, peakURL and peakFilename should be empty lists
-    atacIdx <- modal == "atac"
-    peakURL <- sapply(info[atacIdx], function(x) x$peak$url)
-
-    peakFilename <- sapply(info[atacIdx], function(x) x$peak$filename)
-    peakFilename <- file.path(dir, peakFilename, fsep = fsep)
-    names(peakFilename) <- names(info[atacIdx])
-
-    filenames <- file.path(dir, filenames, fsep = fsep)
-
-    allURLs <- c(url, peakURL)
-    allFiles <- c(filenames, peakFilename)
-
-    doDownload <- rep(TRUE, length(allURLs))
-    for (i in seq_along(allURLs)) {
-        f <- allFiles[i]
+    info <- data.frame(
+        name = c("ctrl", "stim"),
+        url = c(
+            "https://figshare.com/ndownloader/files/40054042",
+            "https://figshare.com/ndownloader/files/40054048"
+        ),
+        filename = file.path(dir,
+                             c("liger_PBMCs_ctrl.rds", "liger_PBMCs_stim.rds"),
+                             fsep = fsep),
+        modal = "default"
+    )
+    doDownload <- rep(TRUE, nrow(info))
+    for (i in seq(nrow(info))) {
+        f <- info$filename[i]
         if (file.exists(f) && isFALSE(overwrite)) {
             warning("File already exists, skipped. set `overwrite = TRUE` ",
                     "to force downloading: ", f)
             doDownload[i] <- FALSE
             next
         }
-        if (isTRUE(verbose)) .log("Downloading from ", allURLs[i], " to ", f)
+        if (isTRUE(verbose)) .log("Downloading from ", info$url[i], " to ", f)
     }
     if (sum(doDownload) > 0) {
-        allURLs <- allURLs[doDownload]
-        allURLs <- unlist(allURLs)
-        utils::download.file(allURLs,
-                             destfile = allFiles[doDownload],
+        utils::download.file(info$url[doDownload],
+                             destfile = info$filename[doDownload],
                              mode = "wb", quiet = !verbose, method = method,
                              ...)
     }
-
-    rawList <- lapply(filenames, readRDS)
-    names(rawList) <- dataNames
-    object <- createLiger(rawList, modal = modal, verbose = verbose)
-    for (i in which(atacIdx)) {
-        name <- names(object)[i]
-        rawPeak(object, dataset = name) <- readRDS(peakFilename[name])
-    }
+    rawList <- lapply(info$filename, readRDS)
+    names(rawList) <- info$name
+    object <- createLiger(rawList, modal = info$modal, verbose = verbose)
     return(object)
 }
 
+#' @rdname importVignetteData
+#' @export
+importBMMC <- function(
+        dir = getwd(),
+        overwrite = FALSE,
+        method = "libcurl",
+        verbose = getOption("ligerVerbose"),
+        ...
+) {
+    fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
+    info <- data.frame(
+        name = c("rna_D1T1", "rna_D1T2", "atac_D5T1", NA),
+        url = c(
+            "https://figshare.com/ndownloader/files/40054858",
+            "https://figshare.com/ndownloader/files/40054861",
+            "https://figshare.com/ndownloader/files/40054891",
+            "https://figshare.com/ndownloader/files/40054864"
+        ),
+        filename = file.path(dir,
+                             c("liger_BMMC_rna_D1T1.rds",
+                               "liger_BMMC_rna_D1T2.rds",
+                               "liger_BMMC_atac_D5T1.rds",
+                               "liger_BMMC_atac_D5T1_peak.rds"),
+                             fsep = fsep),
+        modal = c("default", "default", "atac", NA)
+    )
+    doDownload <- rep(TRUE, nrow(info))
+    for (i in seq(nrow(info))) {
+        f <- info$filename[i]
+        if (file.exists(f) && isFALSE(overwrite)) {
+            warning("File already exists, skipped. set `overwrite = TRUE` ",
+                    "to force downloading: ", f)
+            doDownload[i] <- FALSE
+            next
+        }
+        if (isTRUE(verbose)) .log("Downloading from ", info$url[i], " to ", f)
+    }
+    if (sum(doDownload) > 0) {
+        utils::download.file(info$url[doDownload],
+                             destfile = info$filename[doDownload],
+                             mode = "wb", quiet = !verbose, method = method,
+                             ...)
+    }
+    rawList <- lapply(info$filename, readRDS)
+    names(rawList) <- info$name
+    # BMMC raw data has prefix added to barcodes, so don't add it
+    object <- createLiger(rawList[1:3], modal = info$modal[1:3], verbose = verbose,
+                          addPrefix = FALSE)
+    rawPeak(object, info$name[3]) <- rawList[[4]]
 
+    return(object)
+}
 
-
+#' @rdname importVignetteData
+#' @export
+importCGE <- function(
+        dir = getwd(),
+        overwrite = FALSE,
+        method = "libcurl",
+        verbose = getOption("ligerVerbose"),
+        ...
+) {
+    fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
+    info <- data.frame(
+        name = c("rna", "met"),
+        url = c(
+            "https://figshare.com/ndownloader/files/40222699",
+            "https://figshare.com/ndownloader/files/40222702"
+        ),
+        filename = file.path(dir,
+                             c("liger_CGE_rna.rds", "liger_CGE_met.rds"),
+                             fsep = fsep),
+        modal = c("default", "meth")
+    )
+    doDownload <- rep(TRUE, nrow(info))
+    for (i in seq(nrow(info))) {
+        f <- info$filename[i]
+        if (file.exists(f) && isFALSE(overwrite)) {
+            warning("File already exists, skipped. set `overwrite = TRUE` ",
+                    "to force downloading: ", f)
+            doDownload[i] <- FALSE
+            next
+        }
+        if (isTRUE(verbose)) .log("Downloading from ", info$url[i], " to ", f)
+    }
+    if (sum(doDownload) > 0) {
+        utils::download.file(info$url[doDownload],
+                             destfile = info$filename[doDownload],
+                             mode = "wb", quiet = !verbose, method = method,
+                             ...)
+    }
+    rawList <- lapply(info$filename, readRDS)
+    names(rawList) <- info$name
+    object <- createLiger(rawList, modal = info$modal, verbose = verbose)
+    return(object)
+}
 
 
 #' Load in data from 10X
@@ -934,3 +1026,5 @@ read10XFiles <- function(
     }
     return(data)
 }
+# nocov end
+

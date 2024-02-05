@@ -34,9 +34,10 @@ matrix, a \code{Seurat} object, a \code{SingleCellExperiment} object, an
 \code{AnnData} object, a \linkS4class{ligerDataset} object or a filename to
 an HDF5 file. See detail for HDF5 reading.}
 
-\item{modal}{Character vector for modality setting. Currently options of
-\code{"default"}, \code{"rna"}, \code{"atac"}, \code{"spatial"} and
-\code{"meth"} are supported.}
+\item{modal}{Character vector for modality setting. Use one string for all
+datasets, or the same number of strings as the number of datasets. Currently
+options of \code{"default"}, \code{"rna"}, \code{"atac"}, \code{"spatial"}
+and \code{"meth"} are supported.}
 
 \item{cellMeta}{data.frame of metadata at single-cell level. Default
 \code{NULL}.}

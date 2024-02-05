@@ -399,7 +399,8 @@ normalize.dgCMatrix <- function(
         scaleFactor = NULL,
         ...
 ) {
-    if (!is.null(scaleFactor) && (scaleFactor <= 0 | scaleFactor == 1)) {
+    if (!is.null(scaleFactor) && scaleFactor <= 0) {
+        scaleFactor <- .checkArgLen(scaleFactor, ncol(object), repN = TRUE)
         warning("Invalid `scaleDactor` given. Setting to `NULL`.")
         scaleFactor <- NULL
     }
@@ -899,11 +900,7 @@ selectGenes.Seurat <- function(
     }
     hvg.info$liger.variable <- rownames(mat) %in% selected
     assayObj <- Seurat::GetAssay(object, assay = assay)
-    if (utils::packageVersion("SeuratObject") >= package_version("4.9.9")) {
-        assayObj[names(hvg.info)] <- hvg.info
-    } else {
-        assayObj[[names(hvg.info)]] <- hvg.info
-    }
+    assayObj[[names(hvg.info)]] <- hvg.info
     object[[assay]] <- assayObj
     SeuratObject::VariableFeatures(object, assay = assay) <- selected
     return(object)
@@ -981,7 +978,7 @@ plotVarFeatures <- function(
         trx_per_cell <- cellMeta(object, "nUMI", cellIdx = object$dataset == d)
         nolan_constant <- mean((1 / trx_per_cell))
 
-        data <- as.data.frame(featureMeta(ld))
+        data <- .DataFrame.as.data.frame(featureMeta(ld))
         nSelect <- sum(data$isVariable)
         data$geneMeans <- log10(data$geneMeans)
         data$geneVars <- log10(data$geneVars)
@@ -1424,8 +1421,10 @@ reverseMethData <- function(object, useDatasets,
         ld <- dataset(object, d)
         raw <- rawData(ld)
         if (isTRUE(verbose)) .log("Substracting methylation data: ", d)
-        scaleData(ld, check = FALSE) <- max(raw) -
-            as.matrix(raw[varFeatures(object), , drop = FALSE])
+        scaleData(ld, check = FALSE) <- methods::as(
+            max(raw) - raw[varFeatures(object), , drop = FALSE],
+            "CsparseMatrix"
+        )
         datasets(object, check = FALSE)[[d]] <- ld
     }
     return(object)

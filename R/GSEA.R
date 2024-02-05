@@ -29,7 +29,7 @@ runGSEA <- function(
         mat_v = useDatasets,
         custom_gene_sets = customGenesets
 ) {
-    if (!requireNamespace("org.Hs.eg.db", quietly = TRUE))
+    if (!requireNamespace("org.Hs.eg.db", quietly = TRUE)) # nocov start
         stop("Package \"org.Hs.eg.db\" needed for this function to work. ",
              "Please install it by command:\n",
              "BiocManager::install('org.Hs.eg.db')",
@@ -45,7 +45,7 @@ runGSEA <- function(
         stop("Package \"fgsea\" needed for this function to work. ",
              "Please install it by command:\n",
              "BiocManager::install('fgsea')",
-             call. = FALSE)
+             call. = FALSE) # nocov end
 
     .deprecateArgs(list(gene_sets = "genesets",
                         mat_w = "useW",
@@ -148,7 +148,9 @@ runGSEA <- function(
 #' res <- runMarkerDEG(pbmcPlot)
 #' # Setting `significant = FALSE` because it's hard for a gene list obtained
 #' # from small test dataset to represent real-life biology.
+#' \donttest{
 #' go <- runGOEnrich(res, group = 0, significant = FALSE)
+#' }
 runGOEnrich <- function(
         result,
         group = NULL,
@@ -159,14 +161,14 @@ runGOEnrich <- function(
         splitReg = FALSE,
         ...
 ) {
-    if (!requireNamespace("gprofiler2", quietly = TRUE))
+    if (!requireNamespace("gprofiler2", quietly = TRUE)) # nocov start
         stop("Package \"gprofiler2\" needed for this function to work. ",
              "Please install it by command:\n",
              "install.packages('gprofiler2')",
-             call. = FALSE)
-    if (is.null(group)) group <- unique(result$group)
+             call. = FALSE) # nocov end
+    group <- group %||% unique(result$group)
     if (any(!group %in% result$group)) {
-        stop("Selected groups not available `result`: ",
+        stop("Selected groups not available `result$group`: ",
              paste(group[!group %in% result$group], collapse = ", "))
     }
     bg <- NULL
@@ -179,7 +181,7 @@ runGOEnrich <- function(
         abs(result$logFC) > logFCThresh &
         result$padj < padjThresh
     filter[is.na(filter)] <- FALSE
-    result <- result[filter, ]
+    result <- result[filter, , drop = FALSE]
     resultUp <- result[result$logFC > 0,]
     if (isTRUE(splitReg)) resultDown <- result[result$logFC < 0,]
 

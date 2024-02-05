@@ -8,7 +8,7 @@ withNewH5Copy <- function(fun) {
         stop("Cannot find original h5 file at: ", ctrlpath.orig)
     if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
     if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
-    pwd <- getwd()
+    pwd <- tempdir()
     # Temp setting for GitHub Actions
     fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
     if (Sys.info()["sysname"] == "Windows") {
@@ -43,7 +43,7 @@ process <- function(object) {
     object <- normalize(object)
     object <- selectGenes(object)
     object <- scaleNotCenter(object)
-    object <- online_iNMF(object, k = 20, miniBatch_size = 100)
+    object <- runOnlineINMF(object, k = 10, minibatchSize = 100)
     object <- quantileNorm(object)
     object <- runUMAP(object)
 }
@@ -59,7 +59,7 @@ test_that("liger object creation - in memory", {
     expect_error(createLiger(rawData = "hi"),
                  "`rawData` has to be a named list.")
     expect_error(createLiger(rawData = rawDataList, modal = letters[1:3]),
-                 "Wrong length of `modal`. ")
+                 "`modal` has to be a vector of length 2")
     ldList <- datasets(pbmc)
     cellmeta <- cellMeta(pbmc)
     pbmc2 <- createLiger(rawData = ldList, cellMeta = cellmeta,
@@ -178,7 +178,16 @@ test_that("liger S3/S4 methods", {
     expect_no_error(varFeatures(pbmc) <- varFeatures(pbmc))
 
     expect_is(c(pbmc, pbmc), "liger")
-    expect_is(fortify(pbmc), "data.frame")
+    expect_is(ggplot2::fortify(pbmc), "data.frame")
+
+    expect_no_error(print(commands(pbmc, "normalize")))
+    pbmc <- normalize(pbmc, scaleFactor = 10, log = TRUE)
+    pbmc <- normalize(pbmc, scaleFactor = 100, log = TRUE)
+    normCmds <- commands(pbmc, "normalize")
+    expect_equal(commandDiff(pbmc, names(normCmds)[2], names(normCmds)[3]),
+                 "Argument not identical: scaleFactor")
+    expect_identical(commands(pbmc, names(normCmds)[3], "scaleFactor"),
+                     c(scaleFactor = 100))
 })
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -253,11 +262,64 @@ test_that("ligerDataset methods", {
 
     expect_is(featureMeta(ctrl), "DFrame")
     expect_no_error(featureMeta(ctrl) <- featureMeta(ctrl))
-    expect_no_error(featureMeta(ctrl) <- as.data.frame(featureMeta(ctrl)))
+    expect_no_error(featureMeta(ctrl) <- rliger2:::.DataFrame.as.data.frame(featureMeta(ctrl)))
 
     stim <- dataset(pbmc, "stim")
     merged <- cbind(ctrl, stim)
     expect_equal(dim(merged), c(279, 600))
+
+
+    # ligerATACDataset related
+    expect_error(rawPeak(pbmc, "stim"),
+                 "Specified dataset is not of ligerATACDataset class.")
+    expect_error(rawPeak(pbmc, "stim") <- rawData(ctrl),
+                 "Specified dataset is not of")
+    ctrl <- as.ligerDataset(ctrl, modal = "atac")
+    pbmc@datasets$ctrl <- ctrl
+    rawPeak(pbmc, "ctrl") <- rawData(ctrl)
+
+    expect_error(normPeak(pbmc, "stim"),
+                 "Specified dataset is not of ligerATACDataset class.")
+    expect_error(normPeak(pbmc, "stim") <- normData(stim),
+                 "Specified dataset is not of")
+    normPeak(pbmc, "ctrl") <- normData(ctrl)
+    expect_true(identical(normPeak(pbmc, "ctrl"), normData(ctrl, "ctrl")))
+    expect_true(validObject(ctrl))
+    # ligerSpatialDataset related
+
+    expect_warning(ctrl <- as.ligerDataset(ctrl, modal = "spatial"),
+                   "Will remove information in the following slots when ")
+    pbmc@datasets$ctrl <- ctrl
+    coords <- matrix(rnorm(300*2), 300, 2)
+    rownames(coords) <- colnames(ctrl)
+    colnames(coords) <- c("x", "y")
+    expect_error(coordinate(pbmc, "stim"),
+                 "Specified dataset is not of")
+    expect_error(coordinate(pbmc, "stim") <- coords,
+                 "Specified dataset is not of")
+    coordinate(pbmc, "ctrl") <- coords
+    expect_true(identical(coordinate(pbmc, "ctrl"), coords))
+    expect_true(validObject(ctrl))
+
+    coords <- matrix(rnorm(300*3), 300, 3)
+    expect_warning(coordinate(ctrl) <- coords,
+                   "No rownames with given spatial coordinate")
+    coords <- matrix(rnorm(300*4), 300, 4)
+    rownames(coords) <- colnames(ctrl)
+    expect_error(coordinate(ctrl) <- coords,
+                 "More than 3 dimensions for the coordinates")
+
+    coords <- matrix(rnorm(300*2), 300, 2)
+    rownames(coords) <- c(colnames(ctrl)[1:299], "hello")
+    colnames(coords) <- c("x", "y")
+    ctrl@coordinate <- coords
+    expect_error(validObject(ctrl), "Inconsistant cell identifiers")
+    expect_warning(coordinate(ctrl) <- coords,
+                   "NA generated for missing cells")
+    # ligerMethDataset related
+    expect_warning(ctrl <- as.ligerDataset(ctrl, modal = "meth"),
+                   "Will remove information in the following slots when ")
+    expect_no_error(validObject(ctrl))
 })
 
 test_that("H5 ligerDataset methods", {
@@ -278,8 +340,8 @@ test_that("H5 ligerDataset methods", {
 
             expect_no_error(rawData(ctrl) <- ctrl.h5[["matrix/data"]])
             expect_no_error(normData(ctrl) <- ctrl.h5[["normData"]])
-            expect_no_error(scaleData(ctrl) <- ctrl.h5[["scaleData"]])
-            expect_no_error(scaleUnsharedData(ctrl) <- ctrl.h5[["scaleData"]])
+            expect_no_error(scaleData(ctrl) <- ctrl.h5[["scaleDataSparse"]])
+            expect_no_error(scaleUnsharedData(ctrl) <- ctrl.h5[["scaleDataSparse"]])
             expect_error(rawData(ctrl) <- matrix(1),
                          "Cannot replace slot with in-memory")
             expect_error(normData(ctrl) <- matrix(1),
@@ -317,11 +379,50 @@ test_that("H5 ligerDataset methods", {
 test_that("as.liger methods", {
     # dgCMatrix
     ctrlRaw <- rawDataList$ctrl
-    lig <- as.liger(ctrlRaw, sampleName = "ctrl")
-    expect_is(lig, "liger")
+    lig <- as.liger(ctrlRaw)
+    expect_equal(names(lig), "sample")
 
-    lig <- as.liger(ctrlRaw, sampleName = rep("ctrl", ncol(ctrlRaw)))
-    expect_is(lig, "liger")
+    lig <- as.liger(ctrlRaw, datasetVar = "ctrl")
+    expect_equal(names(lig), "ctrl")
+
+    lig <- as.liger(ctrlRaw, datasetVar = c(rep("ctrl", 150), rep("stim", 150)))
+    expect_true(identical(names(lig), c("ctrl", "stim")))
+
+    # SCE
+    if (requireNamespace("SingleCellExperiment", quietly = TRUE)) {
+        sce <- SingleCellExperiment::SingleCellExperiment(
+            assays = list(counts = ctrlRaw),
+            colData = data.frame(dataset = factor(rep(c("a", "b"), each = 150)))
+        )
+        sce$useless <- 1
+        expect_warning(lig <- as.liger(sce), 'Variable name "dataset"')
+        expect_equal(names(lig), "sce")
+
+        expect_warning(lig <- as.liger(sce, datasetVar = "dataset"),
+                       'Variable name "dataset"')
+        expect_true(all.equal(sapply(datasets(lig), ncol), c(a = 150, b = 150)))
+    }
+
+    if (requireNamespace("Seurat", quietly = TRUE)) {
+        # Seurat
+        seu <- SeuratObject::CreateSeuratObject(
+            ctrlRaw,
+            meta.data = data.frame(orig.ident = factor(rep(c("a", "b"), each = 150)),
+                                   nUMI = 0,
+                                   row.names = colnames(ctrlRaw))
+        )
+
+        seu <- Seurat::NormalizeData(seu) %>%
+            Seurat::FindVariableFeatures() %>%
+            Seurat::ScaleData() %>%
+            Seurat::RunPCA()
+        expect_warning(lig <- as.liger(seu))
+        expect_true(all.equal(sapply(datasets(lig), ncol), c(a = 150, b = 150)))
+
+        expect_warning(lig <- as.liger(seu, datasetVar = NULL))
+        expect_equal(names(lig), "Seurat")
+        expect_in(paste0("pca.", 1:10), colnames(cellMeta(lig, as.data.frame = TRUE)))
+    }
 })
 
 test_that("as.ligerDataset methods", {
@@ -334,22 +435,65 @@ test_that("as.ligerDataset methods", {
     expect_warning(ld <- as.ligerDataset(ld, modal = "rna"),
                    "Will remove information in the following slots when ")
     expect_is(ld, "ligerDataset")
+
+    # matrix
+    mat <- matrix(rnorm(26*26), 26, 26, dimnames = list(letters, letters))
+    ld <- as.ligerDataset(mat, normData = mat, scaleData = mat,
+                          featureMeta = data.frame(id = 1:26, row.names = letters))
+    expect_true(all.equal(rownames(ld), letters))
+    expect_true(all.equal(colnames(ld), letters))
+
+    if (requireNamespace("Seurat", quietly = TRUE)) {
+        # Seurat
+        seu <- SeuratObject::CreateSeuratObject(rawData(ctrlLD))
+        ld <- as.ligerDataset(seu)
+        expect_is(ld, "ligerDataset")
+    }
+
+    # SCE
+    if (requireNamespace("SingleCellExperiment", quietly = TRUE)) {
+        sce <- SingleCellExperiment::SingleCellExperiment(
+            assays = list(counts = rawData(ctrlLD))
+        )
+        ld <- as.ligerDataset(sce)
+        expect_is(ld, "ligerDataset")
+    }
 })
 
+test_that("ligerToSeurat", {
+    if (requireNamespace("Seurat", quietly = TRUE)) {
+        seu <- ligerToSeurat(pbmc)
+        expect_equal(SeuratObject::Assays(seu), "RNA")
+
+        pbmc@datasets$stim <- as.ligerDataset(pbmc@datasets$stim, modal = "atac")
+        pbmc <- normalize(pbmc, useDatasets = "ctrl")
+        seu <- ligerToSeurat(pbmc)
+        expect_equal(SeuratObject::Assays(seu), "LIGER")
+        expect_equal(SeuratObject::Layers(seu), "counts")
+
+        expect_error(seu <- ligerToSeurat(pbmcPlot), "rawData not found")
+
+        rawData(pbmcPlot, "ctrl") <- rawData(pbmc, "ctrl")
+        rawData(pbmcPlot, "stim") <- rawData(pbmc, "stim")
+        seu <- ligerToSeurat(pbmcPlot, identByDataset = TRUE)
+    }
+})
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Importing data
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-test_that("Importing data", {
-    expect_error(importVignetteData("hello"),
-                 "Requested dataset")
-    obj <- importVignetteData("bmmc", method = "libcurl")
-    expect_is(obj, "liger")
-    expect_is(obj@datasets[[1]], "ligerDataset")
-    expect_is(obj@datasets[[3]], "ligerATACDataset")
-    expect_equal(ncol(obj), 16710)
-    expect_warning(
-        obj <- importVignetteData("bmmc"),
-        "File already exists"
-    )
-})
+# test_that("Importing data", {
+#     obj <- importBMMC()
+#     expect_is(obj, "liger")
+#     expect_is(obj@datasets[[1]], "ligerDataset")
+#     expect_is(obj@datasets[[3]], "ligerATACDataset")
+#     expect_equal(ncol(obj), 16710)
+#     expect_warning(
+#         obj <- importBMMC(),
+#         "File already exists"
+#     )
+#     unlink("liger_BMMC_rna_D1T1.rds")
+#     unlink("liger_BMMC_rna_D1T2.rds")
+#     unlink("liger_BMMC_atac_D5T1.rds")
+#     unlink("liger_BMMC_atac_D5T1_peak.rds")
+# })

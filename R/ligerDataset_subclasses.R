@@ -284,14 +284,17 @@ setReplaceMethod(
         warning("No colnames with given spatial coordinate, ",
                 "setting to ", paste0(colnames(value), collapse = ", "))
     }
-    if (nrow(value) != ncol(ld)) {
-        full <- matrix(NA, nrow = ncol(ld), ncol = ncol(value),
-                       dimnames = list(colnames(ld), colnames(value)))
-        full[rownames(value), colnames(value)] <- value
-        value <- full
+    full <- matrix(NA, nrow = ncol(ld), ncol = ncol(value),
+                   dimnames = list(colnames(ld), colnames(value)))
+    cellIsec <- intersect(rownames(value), colnames(ld))
+    full[cellIsec, colnames(value)] <- value[cellIsec,]
+    if (any(is.na(full))) {
         warning("NA generated for missing cells.")
     }
-    return(value)
+    if (any(!rownames(value) %in% rownames(full))) {
+        warning("Cells in given coordinate not found in the dataset.")
+    }
+    return(full)
 }
 
 .valid.ligerSpatialDataset <- function(object) {

@@ -55,13 +55,10 @@ downsample <- function(
         selected <- sort(sample(useCells, maxCells))
     } else {
         balance <- unique(c("dataset", balance))
-        vars <- cellMeta(object, columns = balance, drop = FALSE,
-                          as.data.frame = TRUE)
-        vars <- vars[vars$dataset %in% useDatasets,]
-        notFactor <- sapply(vars, function(col) !is.factor(col))
-        if (any(notFactor))
-            stop("Specified variables is not categorical: ",
-                 paste(balance[notFactor], collapse = ", "))
+        vars <- .fetchCellMetaVar(object, balance, checkCategorical = TRUE,
+                                  droplevels = TRUE, drop = FALSE,
+                                  cellIdx = object$dataset %in% useDatasets)
+
         vars <- vars %>%
             dplyr::group_by_at(.vars = balance) %>%
             dplyr::count()
@@ -123,11 +120,12 @@ readSubset <- function(
         rand.seed = 1,
         verbose = getOption("ligerVerbose")
 ) {
-    .Deprecated("downsample")
+    .Deprecated("downsample") # nocov start
     if (!is.null(balance)) balance <- match.arg(balance)
     else balance <- "all"
     downsample(object = object, balance = balance,
                maxCells = max.cells, useDatasets = datasets.use,
                useGenes = genes.use, useSlot = slot.use, seed = rand.seed,
-               chunkSize = chunk, verbose = verbose)
+               chunkSize = chunk, verbose = verbose) # nocov end
 }
+

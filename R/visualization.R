@@ -1034,17 +1034,20 @@ plotGeneLoadingRank <- function(
 }
 
 
-
-
-
-#' Make Riverplot/Sankey plot for showing label mapping
+#' Make Riverplot/Sankey diagram that shows label mapping across datasets
 #' @description
-#' Creates a riverplot/Sankey plot to show how independent cluster assignments
-#' from two datasets map onto a joint clustering. Prior knowledge of cell
-#' annotation for the given datasets is required to make sense from the
+#' Creates a riverplot/Sankey diagram to show how independent cluster
+#' assignments from two datasets map onto a joint clustering. Prior knowledge of
+#' cell annotation for the given datasets is required to make sense from the
 #' visualization. Dataset original annotation can be added with the syntax shown
 #' in example code in this manual. The joint clustering could be generated with
 #' \code{\link{runCluster}} or set by any other metadata annotation.
+#'
+#' Dataset original annotation can be inserted before running this function
+#' using \code{cellMeta<-} method. Please see example below.
+#'
+#' This function depends on CRAN available package "sankey" and it has to be
+#' installed in order to make this function work.
 #' @export
 #' @rdname plotSankey
 #' @param object A \linkS4class{liger} object with all three clustering
@@ -1054,29 +1057,36 @@ plotGeneLoadingRank <- function(
 #' @param clusterConsensus Name of the joint cluster variable to use. Default
 #' uses the default clustering of the object. Can select a variable name in
 #' \code{cellMeta(object)}.
-#' @param minFrac Numeric. Minimum fraction of cluster for a node to be shown.
+#' @param minFrac Numeric. Minimum fraction of cluster for an edge to be shown.
 #' Default \code{0.05}.
-#' @param minCell Numeric. Minimum number of cells for a node to be shown.
+#' @param minCell Numeric. Minimum number of cells for an edge to be shown.
 #' Default \code{10}.
-#' @param titles Character vector of three. Customizes the column text shown.
-#' Default uses the variable names \code{cluster1}, \code{clusterConsensus} and
-#' \code{cluster2}.
-#' @param labelSize Numeric. Size of the text label of the cluster node in
-#' pixel. Default uses user global option \code{getOption("ligerBaseSize")}
-#' which by default is \code{10}.
-#' @param titleSize Numeric. Size of the text label of the column title in
-#' pixel. Default uses user global option \code{getOption("ligerBaseSize") + 2}
-#' which by default is \code{12}.
+#' @param titles Character vector of three. Customizes the column title text
+#' shown. Default uses the variable names \code{cluster1},
+#' \code{clusterConsensus} and \code{cluster2}.
+#' @param prefixes Character vector of three. Cluster names have to be unique
+#' across all three variables, so this is provided to deduplicate the clusters
+#' by adding \code{"prefixes[i]-"} before the actual label. This will not be
+#' applied when no duplicate is found. Default \code{NULL} uses variable names.
+#' An NA value or a string with no character (i.e. \code{""}) does not add the
+#' prefix to the corresponding variable.
+#' @param labelCex Numeric. Amount by which node label text should be magnified
+#' relative to the default. Default \code{1}.
+#' @param titleCex Numeric. Amount by which node label text should be magnified
+#' relative to the default. Default \code{1.1}.
 #' @param colorValues Character vector of color codes to set color for each
 #' level in the consensus clustering. Default \code{scPalette}.
+#' @param mar Numeric vector of the form \code{c(bottom, left, top, right)}
+#' which gives the number of lines of margin to be specified on the four sides
+#' of the plot. Increasing the 2nd and 4th values can be helpful when cluster
+#' labels are long and extend out side of the plotting region. Default
+#' \code{c(2, 2, 4, 2)}.
 #' @note
 #' This function works as a replacement of the function \code{makeRiverplot}
 #' in rliger <1.99. We decide to make a new function because the dependency
 #' adopted by the older version is archived on CRAN and will be no longer
 #' available.
-#' @returns List object of class "sankeyNetwork" and "htmlwidget". Printing
-#' the returned object shows interactive view of the network when running on
-#' device with display capability.
+#' @returns No returned value. The sankey diagram will be displayed instead.
 #' @examples
 #' # Make fake dataset specific labels from joint clustering result
 #' cellMeta(pbmcPlot, "ctrl_cluster", "ctrl") <-
@@ -1084,7 +1094,8 @@ plotGeneLoadingRank <- function(
 #' cellMeta(pbmcPlot, "stim_cluster", "stim") <-
 #'     cellMeta(pbmcPlot, "leiden_cluster", "stim")
 #' plotSankey(pbmcPlot, "ctrl_cluster", "stim_cluster",
-#'            titles = c("control", "LIGER", "stim"))
+#'            titles = c("control", "LIGER", "stim"),
+#'            prefixes = c("c", NA, "s"))
 plotSankey <- function(
         object,
         cluster1,
@@ -1093,19 +1104,16 @@ plotSankey <- function(
         minFrac = 0.01,
         minCell = 10,
         titles = NULL,
-        labelSize = getOption("ligerBaseSize"),
-        titleSize = getOption("ligerBaseSize") + 2,
-        colorValues = scPalette
+        prefixes = NULL,
+        labelCex = 1,
+        titleCex = 1.1,
+        colorValues = scPalette,
+        mar = c(2, 2, 4, 2)
 ) {
-    if (!requireNamespace("networkD3", quietly = TRUE))
-        stop("Package \"networkD3\" needed for this function to work. ",
+    if (!requireNamespace("sankey", quietly = TRUE))
+        stop("Package \"sankey\" needed for this function to work. ",
              "Please install it by command:\n",
-             "install.packages('networkD3')",
-             call. = FALSE)
-    if (!requireNamespace("htmlwidgets", quietly = TRUE))
-        stop("Package \"networkD3\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "install.packages('htmlwidgets')",
+             "install.packages('sankey')",
              call. = FALSE)
 
     clusterConsensus <- clusterConsensus %||% object@uns$defaultCluster
@@ -1113,81 +1121,73 @@ plotSankey <- function(
                                    c(cluster1, clusterConsensus, cluster2),
                                    checkCategorical = TRUE, droplevels = TRUE)
 
-    # Remove clusters by minFrac and minCell
-    cellKeep <- rep(TRUE, nrow(clusterDF))
-    for (i in seq(3)) {
-        counting <- as.data.frame(table(clusterDF[[i]]))
-        counting$Frac <- counting$Freq / sum(counting$Freq)
-        clusterRemove <- as.character(counting$Var1)[counting$Freq < minCell |
-                                                       counting$Frac < minFrac]
-        cellKeep <- cellKeep & (!clusterDF[[i]] %in% clusterRemove)
-    }
-    clusterDF <- clusterDF[cellKeep,]
-
+    titles <- titles %||% c(cluster1, clusterConsensus, cluster2)
+    titles <- .checkArgLen(titles, 3, repN = FALSE)
     # Prepare for networkD3 input: Links, Nodes
     cluster1Fct <- droplevels(clusterDF[[1]])
-    clusterConsensusFct <- droplevels(clusterDF[[2]])
+    clusterCFct <- droplevels(clusterDF[[2]])
     cluster2Fct <- droplevels(clusterDF[[3]])
     # Have it separated so that the node matching don't have to be affected by
     # duplicated cluster names across variables
-    nodes1 <- data.frame(name = levels(cluster1Fct))
-    nodesC <- data.frame(name = levels(clusterConsensusFct))
-    nodes2 <- data.frame(name = levels(cluster2Fct))
-    nodes <- rbind(nodes1, nodesC, nodes2)
+    nodes1 <- levels(cluster1Fct)
+    nodesC <- levels(clusterCFct)
+    nodes2 <- levels(cluster2Fct)
+    .addPrefix <- function(p, n) {
+        if (is.na(p) || nchar(p) == 0) n
+        else paste0(p, '-', n)
+    }
 
-    # Node of the links are required to be presented with 0-based index in Nodes
-    # `$group` will set links of the same group to the same color
-    links1 <- table(cluster1Fct, clusterConsensusFct) %>%
+    if (any(duplicated(c(nodes1, nodesC, nodes2)))) {
+        prefixes <- prefixes %||% c(cluster1, clusterConsensus, cluster2)
+        prefixes <- .checkArgLen(prefixes, 3, repN = FALSE)
+        nodes1 <- .addPrefix(prefixes[1], nodes1)
+        nodesC <- .addPrefix(prefixes[2], nodesC)
+        nodes2 <- .addPrefix(prefixes[3], nodes2)
+        levels(cluster1Fct) <- nodes1
+        levels(clusterCFct) <- nodesC
+        levels(cluster2Fct) <- nodes2
+    }
+
+    # Organize and filter the edges
+    edges1 <- table(cluster1Fct, clusterCFct) %>%
         as.data.frame() %>%
-        `colnames<-`(c("source", "target", "count")) %>%
-        dplyr::mutate(sourceIdx = match(.data[["source"]], nodes1$name) - 1,
-                      targetIdx = match(.data[["target"]], nodesC$name) +
-                          nrow(nodes1) - 1,
-                      group = .data[["target"]])
-    links2 <- table(clusterConsensusFct, cluster2Fct) %>%
+        `colnames<-`(c("source", "target", "weight")) %>%
+        # dplyr::filter(.data[["count"]] > 0)
+        dplyr::group_by(.data[["source"]]) %>%
+        dplyr::filter(.data[["weight"]] > minCell,
+                      (.data[["weight"]] / sum(.data[["weight"]])) > minFrac) %>%
+        dplyr::mutate(col = colorValues[as.integer(.data[["target"]])])
+    edges2 <- table(clusterCFct, cluster2Fct) %>%
         as.data.frame() %>%
-        `colnames<-`(c("source", "target", "count")) %>%
-        dplyr::mutate(sourceIdx = match(.data[["source"]], nodesC$name) +
-                          nrow(nodes1) - 1,
-                      targetIdx = match(.data[["target"]], nodes2$name) +
-                          nrow(nodes1) + nrow(nodesC) - 1,
-                      group = .data[["source"]])
+        `colnames<-`(c("source", "target", "weight")) %>%
+        dplyr::group_by(.data[["target"]]) %>%
+        dplyr::filter(.data[["weight"]] > minCell,
+                      (.data[["weight"]] / sum(.data[["weight"]])) > minFrac) %>%
+        dplyr::mutate(col = colorValues[as.integer(.data[["source"]])])
 
-    links <- rbind(links1, links2) %>%
-        dplyr::filter(.data[["count"]] > 0)
+    # Remove unused nodes according to cleaned edges
+    nodes1 <- nodes1[nodes1 %in% edges1$source]
+    nodesC <- nodesC[nodesC %in% edges1$target | nodesC %in% edges2$source]
+    nodes2 <- nodes2[nodes2 %in% edges2$target]
 
-    # Javascript for setting color
-    colorJS <- paste0('d3.scaleOrdinal(["',
-                      paste(colorValues, collapse = '", "'),
-                      '"])')
-    # Main plotting
-    sankey <- networkD3::sankeyNetwork(
-        Links = links, Nodes = nodes, Source = "sourceIdx", Target = "targetIdx",
-        Value = "count", LinkGroup = "group", nodeWidth = 5,
-        fontSize = labelSize, colourScale = colorJS
-    )
+    edges <- rbind(edges1, edges2) %>%
+        as.data.frame %>%
+        dplyr::mutate(colorstyle = "col")
+    edges[[1]] <- as.character(edges[[1]])
+    edges[[2]] <- as.character(edges[[2]])
+    nodes <- data.frame(id = c(nodes1, nodesC, nodes2),
+                        x = c(rep(1, length(nodes1)),
+                              rep(2, length(nodesC)),
+                              rep(3, length(nodes2))),
+                        col = "grey", cex = labelCex,
+                        boxw = 0.05)
 
-    # Javascript for setting column titles
-    titles <- titles %||% c(cluster1, clusterConsensus, cluster2)
-    titles <- .checkArgLen(titles, 3, repN = FALSE)
-    addColnamesJS <- paste0('
-  function(el) {
-    var cols_x = this.sankey.nodes().map(d => d.x).filter((v, i, a) => a.indexOf(v) === i).sort(function(a, b){return a - b});
-    var labels = ["', titles[1], '", "', titles[2], '", "', titles[3], '"];
-    var anchors = ["start", "middle", "end"];
-    cols_x.forEach((d, i) => {
-      d3.select(el).select("svg")
-        .append("text")
-        .attr("x", d + 20)
-        .attr("y", ', titleSize, ')
-        .attr("font-size", ', titleSize, ')
-        .attr("text-anchor", anchors[i])
-        .attr("font-weight", "bold")
-        .text(labels[i]);
-    })
-  }
-')
-    htmlwidgets::onRender(sankey, addColnamesJS)
+    pkgsnap_sankey <- sankey::make_sankey(nodes = nodes, edges = edges)
+    sankey::sankey(pkgsnap_sankey, mar = mar) # mar order: bltr
+
+    graphics::mtext(titles[1], side = 3, adj = 0.05, cex = titleCex, font = 2)
+    graphics::mtext(titles[2], side = 3, adj = 0.5, cex = titleCex, font = 2)
+    graphics::mtext(titles[3], side = 3, adj = 0.95, cex = titleCex, font = 2)
 }
 
 #' @rdname plotSankey
@@ -1195,4 +1195,114 @@ plotSankey <- function(
 makeRiverplot <- function(object, cluster1, cluster2) {
     lifecycle::deprecate_stop("1.99.0", "makeRiverplot()",
                               "plotSankey()")
+}
+
+
+
+
+
+#' Visualize a spatial dataset
+#' @export
+#' @rdname plotSpatial
+#' @param object Either a \linkS4class{liger} object containing a spatial
+#' dataset or a \linkS4class{ligerSpatialDataset} object.
+#' @param ... Arguments passed to other methods. \code{.liger} method passes
+#' everything to \code{.ligerSpatialDataset} method, and the latter passes
+#' everything to \code{\link{.ggScatter}} and then
+#' \code{\link{.ggplotLigerTheme}}.
+#' @return A ggplot object
+#' @examples
+#' ctrl.fake.spatial <- as.ligerDataset(dataset(pbmc, "ctrl"), modal = "spatial")
+#' fake.coords <- matrix(rnorm(2 * ncol(ctrl.fake.spatial)), ncol = 2)
+#' dimnames(fake.coords) <- list(colnames(ctrl.fake.spatial), c("x", "y"))
+#' coordinate(ctrl.fake.spatial) <- fake.coords
+#' dataset(pbmc, "ctrl") <- ctrl.fake.spatial
+#' plotSpatial2D(pbmc, dataset = "ctrl")
+plotSpatial2D <- function(object, ...) {
+    UseMethod("plotSpatial2D", object)
+}
+
+#' @export
+#' @rdname plotSpatial
+#' @method plotSpatial2D liger
+#' @param dataset Name of one spatial dataset.
+#' @param useCluster Either the name of one variable in \code{cellMeta(object)}
+#' or a factor object with annotation that matches with all cells in the
+#' specified dataset. Default \code{NULL} uses default clusters.
+#' @param legendColorTitle Alternative title text in the legend. Default
+#' \code{NULL} uses the variable name set by \code{useCluster}, or
+#' \code{"Annotation"} is \code{useCluster} is a customized factor object.
+plotSpatial2D.liger <- function(
+        object,
+        dataset,
+        useCluster = NULL,
+        legendColorTitle = NULL,
+        ...) {
+    dataset <- .checkUseDatasets(object, useDatasets = dataset,
+                                 modal = "spatial")
+    .checkArgLen(dataset, 1)
+    ld <- dataset(object, dataset)
+    useCluster <- useCluster %||%
+        defaultCluster(object)[object$dataset == dataset]
+    if (length(useCluster) == 1) {
+        legendColorTitle <- legendColorTitle %||% useCluster
+        useCluster <- cellMeta(object, useCluster, useDatasets = dataset)
+    } else {
+        useCluster <- .checkArgLen(useCluster, ncol(ld), repN = FALSE)
+        legendColorTitle <- legendColorTitle %||% "Annotation"
+    }
+    plotSpatial2D.ligerSpatialDataset(
+        ld, useCluster = useCluster, legendColorTitle = legendColorTitle, ...
+    )
+}
+
+#' @export
+#' @rdname plotSpatial
+#' @method plotSpatial2D ligerSpatialDataset
+#' @param useDims Numeric vector of two, choosing the coordinates to be drawn
+#' on 2D space. (STARmap data could have 3 dimensions.) Default \code{c(1, 2)}.
+#' @param xlab,ylab Text label on x-/y-axis. Default \code{NULL} does not show
+#' it.
+#' @param labelText Logical, whether to label annotation onto the scatter plot.
+#' Default \code{FALSE}.
+plotSpatial2D.ligerSpatialDataset <- function(
+        object,
+        useCluster = NULL,
+        legendColorTitle = NULL,
+        useDims = c(1, 2),
+        xlab = NULL,
+        ylab = NULL,
+        labelText = FALSE,
+        ...)
+{
+    .checkArgLen(useCluster, ncol(object))
+    legendColorTitle <- legendColorTitle %||% "Annotation"
+
+    coord <- coordinate(object)
+    .checkArgLen(useDims, 2)
+    coord <- coord[, useDims]
+    plotDF <- as.data.frame(coord)
+    colnames(plotDF) <- c("x", "y")
+    xRange <- c(min(plotDF$x), max(plotDF$x))
+    yRange <- c(min(plotDF$y), max(plotDF$y))
+
+    if (is.null(useCluster)) {
+        .ggScatter(plotDF = plotDF, x = "x", y = "y",
+                   xlab = xlab, ylab = ylab, ...) +
+            ggplot2::theme_bw() +
+            ggplot2::theme(panel.grid = ggplot2::element_blank(),
+                           axis.ticks = ggplot2::element_blank(),
+                           axis.text = ggplot2::element_blank()) +
+            ggplot2::coord_fixed(xlim = xRange, ylim = yRange)
+    } else {
+        plotDF[[legendColorTitle]] <- factor(useCluster)
+        .ggScatter(plotDF = plotDF, x = "x", y = "y", colorBy = legendColorTitle,
+                   xlab = xlab, ylab = ylab, labelText = labelText,
+                   legendColorTitle = legendColorTitle, ...) +
+            ggplot2::theme_bw() +
+            ggplot2::theme(panel.grid = ggplot2::element_blank(),
+                           axis.ticks = ggplot2::element_blank(),
+                           axis.text = ggplot2::element_blank()) +
+            ggplot2::coord_fixed(xlim = xRange, ylim = yRange)
+    }
 }

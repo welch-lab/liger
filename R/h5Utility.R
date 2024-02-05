@@ -85,8 +85,7 @@ H5Apply <- function(
     init
 }
 
-#' Safely add new H5 Data to the HDF5 file in a ligerDataset object
-#' @noRd
+# Safely add new H5 Data to the HDF5 file in a ligerDataset object
 safeH5Create <- function(object,
                          dataPath,
                          dims,
@@ -101,9 +100,7 @@ safeH5Create <- function(object,
     # Check/Create H5Group ####
     # Inspect given `dataPath` b/c `hdf5r` does not allow creating dataset w/
     # "group" path(s)
-    if (length(dataPath) != 1 || !is.character(dataPath)) {
-        stop("`path` has to be a single character.")
-    }
+    dataPath <- .checkArgLen(dataPath, n = 1, class = "character")
     dataPath <- trimws(dataPath, whitespace = "/")
     dataPath <- strsplit(dataPath, "/")[[1]]
     if (length(dataPath) > 1) {
@@ -311,7 +308,7 @@ closeAllH5 <- function(object) {
                        nrow = dims[1], ncol = dims[2])
 }
 
-.H5DToH5Mat <- function(obj) {
-    RcppPlanc::H5Mat(filename = obj$get_filename(),
-                     dataPath = obj$get_obj_name())
-}
+# .H5DToH5Mat <- function(obj) {
+#     RcppPlanc::H5Mat(filename = obj$get_filename(),
+#                      dataPath = obj$get_obj_name())
+# }

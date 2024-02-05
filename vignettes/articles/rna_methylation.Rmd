@@ -61,7 +61,7 @@ Alternatively, we build the importing function to directly pull datasets from on
 
 ```{R, eval = FALSE}
 # NOT RUN
-rna.met <- importVignetteData("cge")
+rna.met <- importCGE()
 ```
 
 The `selectGenes()` function performs variable gene selection on each of the datasets separately, then takes the union of the result. The variable genes are selected by comparing the variance of each gene’s expression to its mean expression. The `selectGenes()` function was written primarily scRNA-seq in mind, and the methylation data distribution is quite different. So instead of taking the union of variable genes from RNA and methylation, we set `useDatasets = "rna"` in the function to perform gene selection using only the RNA dataset. 

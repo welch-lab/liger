@@ -4,6 +4,7 @@ LICENSE
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.travis\.yml$
+^\.covrignore$
 ^travis_setup\.sh$
 ^_config\.yml$
 ^_pkgdown\.yml$
@@ -19,3 +20,4 @@ LICENSE
 ^docs
 ^devdata
 ^tests/testthat/*\.h5$
+^vignettes/articles$

@@ -690,24 +690,23 @@ setGeneric(
         as.data.frame = FALSE,
         ...
 ) {
-    res <- object@cellMeta
-    if (isTRUE(as.data.frame)) res <- as.data.frame(res)
+    full <- object@cellMeta
+    if (isTRUE(as.data.frame)) res <- .DataFrame.as.data.frame(full)
+    else res <- full
     if (!is.null(columns)) {
         notFound <- !columns %in% colnames(res)
         if (any(notFound)) {
             warning("Specified variables from cellMeta not found: ",
-                    paste(columns[notFound], collapse = ", "))
+                    .nfstr(columns, colnames(res)))
             columns <- columns[!notFound]
         }
         res <- res[, columns, ...]
     }
     if (length(columns) == 1) {
-        if (is.vector(res) || is.factor(res)) {
-            names(res) <- colnames(object)
-        } else if (!is.null(dim(res))) {
-            rownames(res) <- colnames(object)
+        if (!is.null(dim(res))) {
+            rownames(res) <- rownames(full)
         } else {
-            warning("Failed to set cell IDs to returned value")
+            names(res) <- rownames(full)
         }
     }
     if (!is.null(cellIdx)) {

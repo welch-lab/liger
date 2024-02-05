@@ -42,7 +42,7 @@ process <- function(object) {
     object <- normalize(object)
     object <- selectGenes(object)
     object <- scaleNotCenter(object)
-    object <- online_iNMF(object, k = 20, miniBatch_size = 100)
+    object <- runOnlineINMF(object, k = 20, minibatchSize = 100)
     object <- quantileNorm(object)
     object <- runUMAP(object)
 }
@@ -76,15 +76,17 @@ test_that("subsetH5LigerDataset", {
             # Then whatever test with pbmc. For example:
             pbmcH5 <- process(pbmcH5)
             ctrl <- dataset(pbmcH5, "ctrl")
-            ctrlSmall <- subsetLiger(ctrl, featureIdx = 1:10, cellIdx = 1:10)
+            ctrlSmall <- subsetLiger(ctrl, featureIdx = 1:10, cellIdx = 1:10, newH5 = FALSE)
             expect_false(isH5Liger(ctrlSmall))
             expect_warning(
-                subsetLigerDataset(ctrl, newH5 = TRUE,
+                subsetLigerDataset(ctrl, featureIdx = 1:10, cellIdx = 1:10,
+                                   newH5 = TRUE,
                                    filename = "ctrltest.h5.small.h5",
                                    returnObject = FALSE),
                 "Cannot set `returnObject = FALSE`"
             )
             expect_true(file.exists("ctrltest.h5.small.h5"))
+            unlink("ctrltest.h5.small.h5")
             expect_warning(
                 rliger2:::subsetH5LigerDatasetToMem(letters),
                 "`object` is not a ligerDataset obejct."
@@ -107,22 +109,23 @@ test_that("subsetH5LigerDataset", {
                 "`object` is not HDF5 based."
             )
             expect_no_error(
-                rliger2:::subsetH5LigerDatasetToH5(ctrl, 1:20, 1:20)
+                subsetH5LigerDataset(ctrl, 1:20, 1:20)
             )
 
-            ctrlSmallH5 <- rliger2:::subsetH5LigerDatasetToH5(
-                ctrl, 1:20, 1:20, filenameSuffix = "small"
+            ctrlSmallH5 <- rliger2:::subsetH5LigerDataset(
+                ctrl, 1:20, 1:20, filenameSuffix = "small2"
             )
-            expect_true(file.exists("ctrltest.h5.small.h5"))
+            expect_true(file.exists("ctrltest.h5.small2.h5"))
+            unlink("ctrltest.h5.small2.h5")
             expect_no_error(
-                rliger2:::subsetH5LigerDatasetToH5(ctrl, 1:20, 1:20,
-                                                   useSlot = "normData",
-                                                   filenameSuffix = "small")
+                rliger2:::subsetH5LigerDataset(ctrl, 1:20, 1:20, newH5 = TRUE,
+                                               useSlot = "normData",
+                                               filenameSuffix = "small3")
             )
-            unlink("ctrltest.h5.small.h5")
+            expect_true(file.exists("ctrltest.h5.small3.h5"))
+            unlink("ctrltest.h5.small3.h5")
             expect_no_error(
-                rliger2:::subsetH5LigerDatasetToH5(ctrl, 1:20, 1:20,
-                                         useSlot = "scaleData")
+                subsetH5LigerDataset(ctrl, 1:20, 1:20, useSlot = "scaleData")
             )
             #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             # And must close with:
@@ -131,3 +134,5 @@ test_that("subsetH5LigerDataset", {
     )
 })
 
+unlink(grep("ctrltest", list.files(), value = TRUE))
+unlink(grep("stimtest", list.files(), value = TRUE))

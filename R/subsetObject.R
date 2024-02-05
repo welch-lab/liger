@@ -298,19 +298,37 @@ subsetH5LigerDataset <- function(
         verbose = getOption("ligerVerbose"),
         returnObject = TRUE
 ) {
-    # if (newH5 == "auto") {
-    #     cellIdx <- .idxCheck(object, cellIdx, "cell")
-    #     if (length(cellIdx) > 8000) newH5 <- TRUE
-    #     else newH5 <- FALSE
-    # }
     if (isTRUE(newH5)) {
         if (isFALSE(returnObject))
             warning("Cannot set `returnObject = FALSE` when subsetting",
                     "H5 based ligerDataset to new H5 file.")
-        newObj <- subsetH5LigerDatasetToH5(
-            object, filename = filename, cellIdx = cellIdx,
-            featureIdx = featureIdx, filenameSuffix = filenameSuffix,
-            useSlot = useSlot, chunkSize = chunkSize, verbose = verbose)
+        if (is.null(filename) && is.null(filenameSuffix)) {
+            oldFN <- h5fileInfo(object, "filename")
+            bn <- basename(oldFN)
+            path <- dirname(oldFN)
+            filename <- tempfile(pattern = paste0(bn, ".subset_"),
+                                 fileext = ".h5", tmpdir = path)
+            # filename <- paste0(oldFN, ".subset_",
+            #                    format(Sys.time(), "%y%m%d_%H%M%S"),
+            #                    ".h5")
+        } else if (is.null(filename) && !is.null(filenameSuffix)) {
+            oldFN <- h5fileInfo(object, "filename")
+            filename <- paste0(oldFN, ".", filenameSuffix, ".h5")
+        }
+        tryCatch(
+            expr = {
+                newObj <- subsetH5LigerDatasetToH5(
+                    object, filename = filename, cellIdx = cellIdx,
+                    featureIdx = featureIdx,
+                    useSlot = useSlot, chunkSize = chunkSize, verbose = verbose
+                )
+            }, error=function(e) {
+                message('An error occurred during subseting from H5 to H5.')
+                unlink(filename)
+                stop(e)
+            }
+        )
+
     } else if (isFALSE(newH5)) {
         newObj <- subsetH5LigerDatasetToMem(
             object, cellIdx = cellIdx, featureIdx = featureIdx,
@@ -497,15 +515,7 @@ subsetH5LigerDatasetToH5 <- function(
     cellIdx <- .idxCheck(object, cellIdx, "cell")
     featureIdx <- .idxCheck(object, featureIdx, "feature")
     useSlot <- .checkLDSlot(object, useSlot)
-    if (is.null(filename) && is.null(filenameSuffix)) {
-        oldFN <- h5fileInfo(object, "filename")
-        filename <- paste0(oldFN, ".subset_",
-                           format(Sys.time(), "%y%m%d_%H%M%S"),
-                           ".h5")
-    } else if (is.null(filename) && !is.null(filenameSuffix)) {
-        oldFN <- h5fileInfo(object, "filename")
-        filename <- paste0(oldFN, ".", filenameSuffix, ".h5")
-    }
+
     # Create new H5 file ####
     if (file.exists(filename)) {
         newH5File <- hdf5r::H5File$new(filename, mode = "r+")

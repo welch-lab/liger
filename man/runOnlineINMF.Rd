@@ -16,7 +16,7 @@ runOnlineINMF(object, k = 20, lambda = 5, ...)
   projection = FALSE,
   maxEpochs = 5,
   HALSiter = 1,
-  miniBatchSize = 5000,
+  minibatchSize = 5000,
   WInit = NULL,
   VInit = NULL,
   AInit = NULL,
@@ -36,7 +36,7 @@ runOnlineINMF(object, k = 20, lambda = 5, ...)
   reduction = "onlineINMF",
   maxEpochs = 5,
   HALSiter = 1,
-  miniBatchSize = 5000,
+  minibatchSize = 5000,
   seed = 1,
   verbose = getOption("ligerVerbose"),
   ...
@@ -70,7 +70,7 @@ Default \code{5}.}
 algorithm) iterations to perform for each update of \eqn{W} and \eqn{V}.
 Default \code{1}. Changing this parameter is not recommended.}
 
-\item{miniBatchSize}{Total number of cells in each minibatch. See detail.
+\item{minibatchSize}{Total number of cells in each minibatch. See detail.
 Default \code{5000}.}
 
 \item{WInit, VInit, AInit, BInit}{Optional initialization for \eqn{W}, \eqn{V},
@@ -165,9 +165,9 @@ factorization, arguments \code{WInit}, \code{VInit}, \code{AInit} and
 }
 
 Minibatch iterations is performed on small subset of cells. The exact
-minibatch size applied on each dataset is \code{miniBatchSize} multiplied by
+minibatch size applied on each dataset is \code{minibatchSize} multiplied by
 the proportion of cells in this dataset out of all cells. In general,
-\code{miniBatchSize} should be no larger than the number of cells in the
+\code{minibatchSize} should be no larger than the number of cells in the
 smallest dataset (considering both \code{object} and \code{newDatasets}).
 Therefore, a smaller value may be necessary for analyzing very small
 datasets.
@@ -175,7 +175,7 @@ datasets.
 An epoch is one completion of calculation on all cells after a number of
 iterations of minibatches. Therefore, the total number of iterations is
 determined by the setting of \code{maxEpochs}, total number of cells, and
-\code{miniBatchSize}.
+\code{minibatchSize}.
 
 Currently, Seurat S3 method does not support working on Scenario 2 and 3,
 because there is no simple solution for organizing a number of miscellaneous
@@ -187,14 +187,14 @@ pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
 # Scenario 1
-pbmc <- runOnlineINMF(pbmc, miniBatchSize = 200)
+pbmc <- runOnlineINMF(pbmc, minibatchSize = 200)
 # Scenario 2
 # Fake new dataset by increasing all non-zero value in "ctrl" by 1
 ctrl2 <- rawData(dataset(pbmc, "ctrl"))
 ctrl2@x <- ctrl2@x + 1
 colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
 pbmc2 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
-                       miniBatchSize = 100)
+                       minibatchSize = 100)
 # Scenario 3
 pbmc3 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
                        projection = TRUE)

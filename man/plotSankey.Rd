@@ -3,7 +3,7 @@
 \name{plotSankey}
 \alias{plotSankey}
 \alias{makeRiverplot}
-\title{Make Riverplot/Sankey plot for showing label mapping}
+\title{Make Riverplot/Sankey diagram that shows label mapping across datasets}
 \usage{
 plotSankey(
   object,
@@ -13,9 +13,11 @@ plotSankey(
   minFrac = 0.01,
   minCell = 10,
   titles = NULL,
-  labelSize = getOption("ligerBaseSize"),
-  titleSize = getOption("ligerBaseSize") + 2,
-  colorValues = scPalette
+  prefixes = NULL,
+  labelCex = 1,
+  titleCex = 1.1,
+  colorValues = scPalette,
+  mar = c(2, 2, 4, 2)
 )
 
 makeRiverplot(object, cluster1, cluster2)
@@ -31,39 +33,54 @@ the cluster assignments of dataset 1 and 2, respectively.}
 uses the default clustering of the object. Can select a variable name in
 \code{cellMeta(object)}.}
 
-\item{minFrac}{Numeric. Minimum fraction of cluster for a node to be shown.
+\item{minFrac}{Numeric. Minimum fraction of cluster for an edge to be shown.
 Default \code{0.05}.}
 
-\item{minCell}{Numeric. Minimum number of cells for a node to be shown.
+\item{minCell}{Numeric. Minimum number of cells for an edge to be shown.
 Default \code{10}.}
 
-\item{titles}{Character vector of three. Customizes the column text shown.
-Default uses the variable names \code{cluster1}, \code{clusterConsensus} and
-\code{cluster2}.}
+\item{titles}{Character vector of three. Customizes the column title text
+shown. Default uses the variable names \code{cluster1},
+\code{clusterConsensus} and \code{cluster2}.}
 
-\item{labelSize}{Numeric. Size of the text label of the cluster node in
-pixel. Default uses user global option \code{getOption("ligerBaseSize")}
-which by default is \code{10}.}
+\item{prefixes}{Character vector of three. Cluster names have to be unique
+across all three variables, so this is provided to deduplicate the clusters
+by adding \code{"prefixes[i]-"} before the actual label. This will not be
+applied when no duplicate is found. Default \code{NULL} uses variable names.
+An NA value or a string with no character (i.e. \code{""}) does not add the
+prefix to the corresponding variable.}
 
-\item{titleSize}{Numeric. Size of the text label of the column title in
-pixel. Default uses user global option \code{getOption("ligerBaseSize") + 2}
-which by default is \code{12}.}
+\item{labelCex}{Numeric. Amount by which node label text should be magnified
+relative to the default. Default \code{1}.}
+
+\item{titleCex}{Numeric. Amount by which node label text should be magnified
+relative to the default. Default \code{1.1}.}
 
 \item{colorValues}{Character vector of color codes to set color for each
 level in the consensus clustering. Default \code{scPalette}.}
+
+\item{mar}{Numeric vector of the form \code{c(bottom, left, top, right)}
+which gives the number of lines of margin to be specified on the four sides
+of the plot. Increasing the 2nd and 4th values can be helpful when cluster
+labels are long and extend out side of the plotting region. Default
+\code{c(2, 2, 4, 2)}.}
 }
 \value{
-List object of class "sankeyNetwork" and "htmlwidget". Printing
-the returned object shows interactive view of the network when running on
-device with display capability.
+No returned value. The sankey diagram will be displayed instead.
 }
 \description{
-Creates a riverplot/Sankey plot to show how independent cluster assignments
-from two datasets map onto a joint clustering. Prior knowledge of cell
-annotation for the given datasets is required to make sense from the
+Creates a riverplot/Sankey diagram to show how independent cluster
+assignments from two datasets map onto a joint clustering. Prior knowledge of
+cell annotation for the given datasets is required to make sense from the
 visualization. Dataset original annotation can be added with the syntax shown
 in example code in this manual. The joint clustering could be generated with
 \code{\link{runCluster}} or set by any other metadata annotation.
+
+Dataset original annotation can be inserted before running this function
+using \code{cellMeta<-} method. Please see example below.
+
+This function depends on CRAN available package "sankey" and it has to be
+installed in order to make this function work.
 }
 \note{
 This function works as a replacement of the function \code{makeRiverplot}
@@ -78,5 +95,6 @@ cellMeta(pbmcPlot, "ctrl_cluster", "ctrl") <-
 cellMeta(pbmcPlot, "stim_cluster", "stim") <-
     cellMeta(pbmcPlot, "leiden_cluster", "stim")
 plotSankey(pbmcPlot, "ctrl_cluster", "stim_cluster",
-           titles = c("control", "LIGER", "stim"))
+           titles = c("control", "LIGER", "stim"),
+           prefixes = c("c", NA, "s"))
 }

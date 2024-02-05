@@ -37,7 +37,7 @@ Genome Browser}.
 bmmc <- normalize(bmmc)
 bmmc <- selectGenes(bmmc)
 bmmc <- scaleNotCenter(bmmc)
-bmmc <- runINMF(bmmc, miniBatchSize = 100)
+bmmc <- runINMF(bmmc)
 bmmc <- quantileNorm(bmmc)
 bmmc <- normalizePeak(bmmc)
 bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")

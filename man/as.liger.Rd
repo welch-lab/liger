@@ -29,12 +29,16 @@ seuratToLiger(
 
 \item{...}{Additional arguments passed to \code{\link{createLiger}}}
 
-\item{datasetVar}{If one or more datasets exist in the given object, specify
-a name for the single dataset; select a variable from existing metadata (e.g.
-colData column); specify a vector/factor that assign the dataset belonging.
-Default \code{NULL} gathers things into one dataset and names it "sample".}
+\item{datasetVar}{Specify the dataset belonging by: 1. Select a variable from
+existing metadata in the object (e.g. colData column); 2. Specify a
+vector/factor that assign the dataset belonging. 3. Give a single character
+string which means that all data is from one dataset (must not be a metadata
+variable, otherwise it is understood as scenario 1.). Default \code{NULL}
+gathers things into one dataset and names it "sample" for dgCMatrix, "SCE"
+for SingleCellExperiment, or "Seurat" for Seurat.}
 
-\item{modal}{Modality setting for each dataset.}
+\item{modal}{Modality setting for each dataset. See
+\code{\link{createLiger}}.}
 
 \item{assay}{Name of assay to use. Default \code{NULL} uses current active
 assay.}
