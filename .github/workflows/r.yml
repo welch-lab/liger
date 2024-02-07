@@ -56,6 +56,7 @@ jobs:
         run: |
           brew reinstall pcre2
           brew install pandoc
+          ls -l /usr/local/lib/
 
       - name: Install library on Windows
         if: runner.os == 'Windows'
