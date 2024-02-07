@@ -54,9 +54,8 @@ jobs:
       - name: Install library on MacOS
         if: runner.os == 'macOS'
         run: |
-          brew install pcre2
+          brew reinstall pcre2
           brew install pandoc
-          brew list pcre2
 
       - name: Install library on Windows
         if: runner.os == 'Windows'
