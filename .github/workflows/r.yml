@@ -67,6 +67,10 @@ jobs:
           remotes::install_deps(dependencies = TRUE)
         shell: Rscript {0}
 
+      - name: R CMD config all
+        run: |
+          R CMD config --all
+
       - name: Check
         run: rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning")
         shell: Rscript {0}
