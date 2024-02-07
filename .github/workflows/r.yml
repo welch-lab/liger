@@ -54,6 +54,7 @@ jobs:
       - name: Install library on MacOS
         if: runner.os == 'macOS'
         run: |
+          brew install pcre2
           brew install pandoc
 
       - name: Install library on Windows
@@ -70,6 +71,7 @@ jobs:
       - name: R CMD config all
         run: |
           R CMD config --all
+          R CMD config --ldflags
 
       - name: Check
         run: rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning")
