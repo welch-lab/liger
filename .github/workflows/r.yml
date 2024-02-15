@@ -54,9 +54,8 @@ jobs:
       - name: Install library on MacOS
         if: runner.os == 'macOS'
         run: |
-          brew reinstall pcre2
+          brew install hdf5
           brew install pandoc
-          ls -l /usr/local/lib/
 
       - name: Install library on Windows
         if: runner.os == 'Windows'
