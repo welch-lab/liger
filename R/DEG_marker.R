@@ -216,9 +216,10 @@ runMarkerDEG <- function(
     slot <- .DE.checkDataAvail(object, datasetInvolve, method, usePeak)
     dataList <- getMatrix(object, slot, datasetInvolve, returnList = TRUE)
     features <- Reduce(intersect, lapply(dataList, rownames))
-    dataList <- lapply(dataList, function(x) x[features,])
+    dataList <- lapply(dataList, function(x) x[features, , drop = FALSE])
+
     mat <- Reduce(cbind, dataList)
-    mat <- mat[, allCellBC]
+    mat <- mat[, allCellBC, drop = FALSE]
     if (method == "wilcoxon") {
         mat <- log1p(1e10*mat)
         result <- wilcoxauc(mat, var)
@@ -238,7 +239,7 @@ runMarkerDEG <- function(
         }
         pbs <- makePseudoBulk2(mat, replicateAnn, verbose = verbose)
         var <- sapply(levels(replicateAnn$groups), function(x) {
-            nlevels(interaction(replicateAnn[replicateAnn$groups == x,],
+            nlevels(interaction(replicateAnn[replicateAnn$groups == x, , drop = FALSE],
                                 drop = TRUE))
         })
         var <- factor(rep(names(var), var), levels = names(var))
