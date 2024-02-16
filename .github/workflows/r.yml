@@ -54,9 +54,8 @@ jobs:
       - name: Install library on MacOS
         if: runner.os == 'macOS'
         run: |
-          brew reinstall pcre2
+          brew install hdf5
           brew install pandoc
-          ls -l /usr/local/lib/
 
       - name: Install library on Windows
         if: runner.os == 'Windows'
@@ -68,11 +67,6 @@ jobs:
           install.packages(c("remotes", "rcmdcheck", "covr"))
           remotes::install_deps(dependencies = TRUE)
         shell: Rscript {0}
-
-      - name: R CMD config all
-        run: |
-          R CMD config --all
-          R CMD config --ldflags
 
       - name: Check
         run: rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning")
