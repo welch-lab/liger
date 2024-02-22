@@ -8,23 +8,23 @@
 #' @section Pairwise DEG Scenarios:
 #' Users can select classes of cells from a variable in \code{cellMeta}.
 #' \code{variable1} and \code{variable2} are used to specify a column in
-#' \code{cellMeta}, and \code{group1} and \code{group2} are used to specify
+#' \code{cellMeta}, and \code{groupTest} and \code{groupCtrl} are used to specify
 #' existing classes from \code{variable1} and \code{variable2}, respectively.
-#' When \code{variable2} is missing, \code{group2} will be considered from
+#' When \code{variable2} is missing, \code{groupCtrl} will be considered from
 #' \code{variable1}.
 #'
 #' For example, when \code{variable1 = "celltype"} and \code{variable2 = NULL},
-#' \code{group1} and \code{group2} should be valid cell types in
+#' \code{groupTest} and \code{groupCtrl} should be valid cell types in
 #' \code{object$celltype}.
 #'
 #' When \code{variable1} is "celltype" and \code{variable2} is "gender",
-#' \code{group1} should be a valid cell type from \code{object$celltype} and
-#' \code{group2} should be a valid class from \code{object$gender}.
+#' \code{groupTest} should be a valid cell type from \code{object$celltype} and
+#' \code{groupCtrl} should be a valid class from \code{object$gender}.
 #'
-#' When both \code{variable1} and \code{variable2} are missing, \code{group1}
-#' and \code{group2} should be valid index of cells in \code{object}.
+#' When both \code{variable1} and \code{variable2} are missing, \code{groupTest}
+#' and \code{groupCtrl} should be valid index of cells in \code{object}.
 #' @param object A \linkS4class{liger} object, with normalized data available
-#' @param group1,group2,variable1,variable2 Condition specification. See
+#' @param groupTest,groupCtrl,variable1,variable2 Condition specification. See
 #' \code{?runPairwiseDEG} section \bold{Pairwise DEG Scenarios} for detail.
 #' @param method DEG test method to use. Choose from \code{"wilcoxon"} or
 #' \code{"pseudoBulk"}. Default \code{"wilcoxon"}
@@ -44,23 +44,24 @@
 #' @export
 #' @examples
 #' # Compare between cluster "0" and cluster "1"
-#' degStats <- runPairwiseDEG(pbmcPlot, group1 = 0, group2 = 1,
+#' degStats <- runPairwiseDEG(pbmcPlot, groupTest = 0, groupCtrl = 1,
 #'                            variable1 = "leiden_cluster")
 #' # Compare between all cells from cluster "5" and
 #' # all cells from dataset "stim"
-#' degStats <- runPairwiseDEG(pbmcPlot, group1 = "5", group2 = "stim",
+#' degStats <- runPairwiseDEG(pbmcPlot, groupTest = "5", groupCtrl = "stim",
 #'                            variable1 = "leiden_cluster",
 #'                            variable2 = "dataset")
 runPairwiseDEG <- function(
         object,
-        group1,
-        group2,
+        groupTest,
+        groupCtrl,
         variable1 = NULL,
         variable2 = NULL,
         method = c("wilcoxon", "pseudoBulk"),
         usePeak = FALSE,
         useReplicate = NULL,
         nPsdRep = 5,
+        minCellPerRep = 10,
         seed = 1,
         verbose = getOption("ligerVerbose")
 ) {
@@ -68,18 +69,18 @@ runPairwiseDEG <- function(
     if (is.null(variable1) && is.null(variable2)) {
         # Directly using cell index
         groups <- list(
-            .idxCheck(object, group1, "cell"),
-            .idxCheck(object, group2, "cell")
+            .idxCheck(object, groupTest, "cell"),
+            .idxCheck(object, groupCtrl, "cell")
         )
-        group1Name <- "group1"
-        group2Name <- "group2"
-        names(groups) <- c("group1", "group2")
+        group1Name <- "test"
+        group2Name <- "control"
+        names(groups) <- c("test", "control")
     } else if (!is.null(variable1)) {
         var1 <- .fetchCellMetaVar(object, variable1,
                                   checkCategorical = TRUE, drop = TRUE,
                                   droplevels = TRUE)
-        group1Idx <- which(var1 %in% group1)
-        group1Name <- paste(group1, collapse = ".")
+        group1Idx <- which(var1 %in% groupTest)
+        group1Name <- paste(groupTest, collapse = ".")
         if (is.null(variable2)) {
             variable2 <- variable1
             var2 <- var1
@@ -88,8 +89,8 @@ runPairwiseDEG <- function(
                                            checkCategorical = TRUE, drop = TRUE,
                                            droplevels = TRUE)
         }
-        group2Idx <- which(var2 %in% group2)
-        group2Name <- paste(group2, collapse = ".")
+        group2Idx <- which(var2 %in% groupCtrl)
+        group2Name <- paste(groupCtrl, collapse = ".")
         groups <- list(group1Idx, group2Idx)
         names(groups) <- c(group1Name, group2Name)
     } else {
@@ -97,12 +98,14 @@ runPairwiseDEG <- function(
     }
     result <- .runDEG(object, groups = groups, method = method,
                       usePeak = usePeak, useReplicate = useReplicate,
-                      nPsdRep = nPsdRep, seed = seed, verbose = verbose)
+                      nPsdRep = nPsdRep,
+                      minCellPerRep = minCellPerRep, seed = seed,
+                      verbose = verbose)
     result <- result[result$group == group1Name,]
     attributes(result)$meta <- list(
-        group1 = group1,
+        groupTest = groupTest,
         variable1 = variable1,
-        group2 = group2,
+        groupCtrl = groupCtrl,
         variable2 = variable2
     )
     return(result)
@@ -147,6 +150,7 @@ runMarkerDEG <- function(
         usePeak = FALSE,
         useReplicate = NULL,
         nPsdRep = 5,
+        minCellPerRep = 10,
         seed = 1,
         verbose = getOption("ligerVerbose")
 ) {
@@ -170,7 +174,9 @@ runMarkerDEG <- function(
         groups <- split(allCellIdx, conditionBy)
         result <- .runDEG(object, groups = groups, method = method,
                           usePeak = usePeak, useReplicate = useReplicate,
-                          nPsdRep = nPsdRep, seed = seed, verbose = verbose)
+                          nPsdRep = nPsdRep,
+                          minCellPerRep = minCellPerRep,
+                          seed = seed, verbose = verbose)
     } else {
         result <- list()
         for (i in seq_along(levels(splitBy))) {
@@ -179,8 +185,8 @@ runMarkerDEG <- function(
             groups <- split(subCellIdx, conditionBy[subIdx])
             result[[levels(splitBy)[i]]] <- .runDEG(
                 object, groups = groups, method = method, usePeak = usePeak,
-                useReplicate = useReplicate, nPsdRep = nPsdRep, seed = seed,
-                verbose = verbose
+                useReplicate = useReplicate, nPsdRep = nPsdRep,
+                minCellPerRep = minCellPerRep, seed = seed, verbose = verbose
             )
         }
     }
@@ -197,6 +203,7 @@ runMarkerDEG <- function(
         usePeak = FALSE,
         useReplicate = NULL,
         nPsdRep = 5,
+        minCellPerRep = 10,
         seed = 1,
         verbose = getOption("ligerVerbose")
 ) {
@@ -204,9 +211,7 @@ runMarkerDEG <- function(
     allCellIdx <- unlist(groups)
     allCellBC <- colnames(object)[allCellIdx]
     datasetInvolve <- levels(object$dataset[allCellIdx, drop = TRUE])
-    var <- factor(unlist(lapply(names(groups), function(n) {
-        rep(n, length(groups[[n]]))
-    })), levels = names(groups))
+    var <- factor(rep(names(groups), lengths(groups)), levels = names(groups))
     if (isTRUE(usePeak)) {
         useDatasets <- .checkUseDatasets(object, useDatasets = datasetInvolve,
                                          modal = "atac")
@@ -237,13 +242,18 @@ runMarkerDEG <- function(
             )
             replicateAnn$groups <- var
         }
-        pbs <- makePseudoBulk2(mat, replicateAnn, verbose = verbose)
+
+        pbs <- makePseudoBulk2(mat, replicateAnn,
+                               minCellPerRep = minCellPerRep,
+                               verbose = verbose)
+        pb <- pbs[[1]]
+        replicateAnn <- pbs[[2]]
         var <- sapply(levels(replicateAnn$groups), function(x) {
             nlevels(interaction(replicateAnn[replicateAnn$groups == x, , drop = FALSE],
                                 drop = TRUE))
         })
         var <- factor(rep(names(var), var), levels = names(var))
-        result <- .callDESeq22(pbs, var, verbose)
+        result <- .callDESeq22(pb, var, verbose)
     }
     return(result)
 }
@@ -255,16 +265,14 @@ runMarkerDEG <- function(
              "'normData')` to create ANOTHER object with in memory data.")
     }
     if (method == "wilcoxon") {
-        if (!isTRUE(usePeak)) slot <- "normData"
-        else slot <- "normPeak"
+        slot <- ifelse(usePeak, "normPeak", "normData")
     } else if (method == "pseudoBulk") {
         if (!requireNamespace("DESeq2", quietly = TRUE))
             stop("Package \"DESeq2\" needed for this function to work. ",
                  "Please install it by command:\n",
                  "BiocManager::install('DESeq2')",
                  call. = FALSE)
-        if (!isTRUE(usePeak)) slot <- "rawData"
-        else slot <- "rawPeak"
+        slot <- ifelse(usePeak, "rawPeak", "rawData")
     }
     allAvail <- all(sapply(useDatasets, function(d) {
         ld <- dataset(object, d)
@@ -294,9 +302,9 @@ setupPseudoRep2 <- function(groups, nRep = 3, seed = 1) {
     ))
 }
 
-makePseudoBulk2 <- function(mat, replicateAnn, verbose = TRUE) {
+makePseudoBulk2 <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {
     # mat - Extracted and contatenated matrix. intersection of genes by
-    #       c(group1, group2) cells
+    #       c(groupTest, groupCtrl) cells
     # groups - list of groups
     # replicateAnn - data.frame of replicate annotation, with rownames as
     #                barcodes and columns as variables
@@ -305,35 +313,56 @@ makePseudoBulk2 <- function(mat, replicateAnn, verbose = TRUE) {
     for (gr in levels(replicateAnn$groups)) {
         subrep <- replicateAnn[replicateAnn$groups == gr,]
         splitLabel <- interaction(subrep, drop = TRUE)
-        if (length(levels(splitLabel)) < 2) {
-            stop("Too few replicate labels for condition \"", gr, "\". ",
+        if (nlevels(splitLabel) < 2) {
+            stop("Too few replicates label for condition \"", gr, "\". ",
                  "Cannot not create pseudo-bulks. Please use ",
-                 "`method = \"wilcoxon\"` instead.")
+                 "consider creating pseudo-replicates or use wilcoxon instead.")
         }
     }
     splitLabel <- interaction(replicateAnn, drop = TRUE)
+
+    labelCounts <- table(splitLabel)
+    ignored <- names(labelCounts)[labelCounts < minCellPerRep]
+    keep <- names(labelCounts)[labelCounts >= minCellPerRep]
+    idx <- splitLabel %in% keep
+    splitLabel <- splitLabel[idx, drop = TRUE]
+    mat <- mat[, idx, drop = FALSE]
+    replicateAnn <- replicateAnn[idx, , drop = FALSE]
+    if (verbose) {
+        .log("Ignoring replicates with too few cells: ",
+             paste0(ignored, collapse = ", "))
+        .log("Replicate size:")
+        .log(paste0(levels(splitLabel), ": ", table(splitLabel), collapse = ", "), level = 2)
+    }
     pseudoBulks <- colAggregateSums_sparse(mat, as.integer(splitLabel) - 1,
                                            nlevels(splitLabel))
     dimnames(pseudoBulks) <- list(rownames(mat), levels(splitLabel))
-    return(pseudoBulks)
+    pseudoBulks <- pseudoBulks[rowSums(pseudoBulks) > 0,]
+    return(list(pseudoBulks, replicateAnn))
 }
 
 .callDESeq22 <- function(pseudoBulks, groups,
                          verbose = getOption("ligerVerbose")) {
     # DESeq2 workflow
     if (isTRUE(verbose)) .log("Calling DESeq2 Wald test")
+    ## NOTE: DESeq2 wishes that the contrast/control group is the first level
+    ## whereas we required it as the second in upstream input. So we need to
+    ## reverse it here.
+    groups <- relevel(groups, ref = levels(groups)[2])
+    ## Now levels(groups)[1] becomes control and levels(groups)[2] becomes
+    ## the test group
     des <- DESeq2::DESeqDataSetFromMatrix(
         countData = pseudoBulks,
         colData = data.frame(groups = groups),
         design = stats::formula("~groups")
     )
     des <- DESeq2::DESeq(des, test = "Wald", quiet = !verbose)
-    res <- DESeq2::results(des, contrast = c("groups", levels(groups)[1],
-                                             levels(groups)[2]))
+    res <- DESeq2::results(des, contrast = c("groups", levels(groups)[2],
+                                             levels(groups)[1]))
     res <- as.data.frame(res)
     res$feature <- rownames(res)
     rownames(res) <- NULL
-    res$group <- levels(groups)[1]
+    res$group <- levels(groups)[2]
     res <- res[, c(7, 8, 2, 5, 6)]
     colnames(res) <- c("feature", "group", "logFC", "pval", "padj")
     return(res)

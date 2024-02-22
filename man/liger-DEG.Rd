@@ -7,14 +7,15 @@
 \usage{
 runPairwiseDEG(
   object,
-  group1,
-  group2,
+  groupTest,
+  groupCtrl,
   variable1 = NULL,
   variable2 = NULL,
   method = c("wilcoxon", "pseudoBulk"),
   usePeak = FALSE,
   useReplicate = NULL,
   nPsdRep = 5,
+  minCellPerRep = 10,
   seed = 1,
   verbose = getOption("ligerVerbose")
 )
@@ -28,6 +29,7 @@ runMarkerDEG(
   usePeak = FALSE,
   useReplicate = NULL,
   nPsdRep = 5,
+  minCellPerRep = 10,
   seed = 1,
   verbose = getOption("ligerVerbose")
 )
@@ -35,7 +37,7 @@ runMarkerDEG(
 \arguments{
 \item{object}{A \linkS4class{liger} object, with normalized data available}
 
-\item{group1, group2, variable1, variable2}{Condition specification. See
+\item{groupTest, groupCtrl, variable1, variable2}{Condition specification. See
 \code{?runPairwiseDEG} section \bold{Pairwise DEG Scenarios} for detail.}
 
 \item{method}{DEG test method to use. Choose from \code{"wilcoxon"} or
@@ -82,21 +84,21 @@ can be generated. Please see below for detailed scenario usage.
 
 Users can select classes of cells from a variable in \code{cellMeta}.
 \code{variable1} and \code{variable2} are used to specify a column in
-\code{cellMeta}, and \code{group1} and \code{group2} are used to specify
+\code{cellMeta}, and \code{groupTest} and \code{groupCtrl} are used to specify
 existing classes from \code{variable1} and \code{variable2}, respectively.
-When \code{variable2} is missing, \code{group2} will be considered from
+When \code{variable2} is missing, \code{groupCtrl} will be considered from
 \code{variable1}.
 
 For example, when \code{variable1 = "celltype"} and \code{variable2 = NULL},
-\code{group1} and \code{group2} should be valid cell types in
+\code{groupTest} and \code{groupCtrl} should be valid cell types in
 \code{object$celltype}.
 
 When \code{variable1} is "celltype" and \code{variable2} is "gender",
-\code{group1} should be a valid cell type from \code{object$celltype} and
-\code{group2} should be a valid class from \code{object$gender}.
+\code{groupTest} should be a valid cell type from \code{object$celltype} and
+\code{groupCtrl} should be a valid class from \code{object$gender}.
 
-When both \code{variable1} and \code{variable2} are missing, \code{group1}
-and \code{group2} should be valid index of cells in \code{object}.
+When both \code{variable1} and \code{variable2} are missing, \code{groupTest}
+and \code{groupCtrl} should be valid index of cells in \code{object}.
 }
 
 \section{Marker Detection Scenarios}{
@@ -118,11 +120,11 @@ against other cells from "gender_j", and etc.
 
 \examples{
 # Compare between cluster "0" and cluster "1"
-degStats <- runPairwiseDEG(pbmcPlot, group1 = 0, group2 = 1,
+degStats <- runPairwiseDEG(pbmcPlot, groupTest = 0, groupCtrl = 1,
                            variable1 = "leiden_cluster")
 # Compare between all cells from cluster "5" and
 # all cells from dataset "stim"
-degStats <- runPairwiseDEG(pbmcPlot, group1 = "5", group2 = "stim",
+degStats <- runPairwiseDEG(pbmcPlot, groupTest = "5", groupCtrl = "stim",
                            variable1 = "leiden_cluster",
                            variable2 = "dataset")
 # Identify markers for each cluster. Equivalent to old version `runWilcoxon(method = "cluster")`
