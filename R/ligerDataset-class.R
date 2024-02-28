@@ -247,14 +247,16 @@ setValidity("ligerDataset", .valid.ligerDataset)
 #' n <- scaleData(pbmc, "ctrl")
 #' identical(m, n)
 #' ## Any other matrices
-#' pbmc <- online_iNMF(pbmc, k = 20, miniBatch_size = 100)
-#' ctrl <- dataset(pbmc, "ctrl")
-#' V <- getMatrix(ctrl, "V")
-#' V[1:5, 1:5]
-#' Vs <- getMatrix(pbmc, "V")
-#' length(Vs)
-#' names(Vs)
-#' identical(Vs$ctrl, V)
+#' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+#'     pbmc <- runOnlineINMF(pbmc, k = 20, minibatchSize = 100)
+#'     ctrl <- dataset(pbmc, "ctrl")
+#'     V <- getMatrix(ctrl, "V")
+#'     V[1:5, 1:5]
+#'     Vs <- getMatrix(pbmc, "V")
+#'     length(Vs)
+#'     names(Vs)
+#'     identical(Vs$ctrl, V)
+#' }
 setMethod(
     f = "show",
     signature(object = "ligerDataset"),

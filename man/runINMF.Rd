@@ -160,7 +160,9 @@ optimized, running this many iteration should be acceptable.
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
-pbmc <- runINMF(pbmc)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    pbmc <- runINMF(pbmc)
+}
 }
 \references{
 Joshua D. Welch and et al., Single-Cell Multi-omic Integration

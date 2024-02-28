@@ -33,8 +33,10 @@
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
 #' # Only running a few iterations for fast examples
-#' pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
-#' pbmc <- optimizeNewK(pbmc, kNew = 25, nIteration = 2)
+#' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+#'     pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
+#'     pbmc <- optimizeNewK(pbmc, kNew = 25, nIteration = 2)
+#' }
 optimizeNewK <- function(
         object,
         kNew,
@@ -213,14 +215,16 @@ optimizeNewK <- function(
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
 #' # Only running a few iterations for fast examples
-#' pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
-#' # Create fake new data by increasing all non-zero count in "ctrl" by 1,
-#' # and make unique cell identifiers
-#' ctrl2 <- rawData(dataset(pbmc, "ctrl"))
-#' ctrl2@x <- ctrl2@x + 1
-#' colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
-#' pbmcNew <- optimizeNewData(pbmc, dataNew = list(ctrl2 = ctrl2),
-#'                            useDatasets = "ctrl", nIteration = 2)
+#' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+#'     pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
+#'     # Create fake new data by increasing all non-zero count in "ctrl" by 1,
+#'     # and make unique cell identifiers
+#'     ctrl2 <- rawData(dataset(pbmc, "ctrl"))
+#'     ctrl2@x <- ctrl2@x + 1
+#'     colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
+#'     pbmcNew <- optimizeNewData(pbmc, dataNew = list(ctrl2 = ctrl2),
+#'                                useDatasets = "ctrl", nIteration = 2)
+#' }
 optimizeNewData <- function(
         object,
         dataNew,
@@ -377,9 +381,11 @@ optimizeNewData <- function(
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
-#' # Only running a few iterations for fast examples
-#' pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
-#' pbmc <- optimizeNewLambda(pbmc, lambdaNew = 5.5, nIteration = 2)
+#' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+#'     # Only running a few iterations for fast examples
+#'     pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
+#'     pbmc <- optimizeNewLambda(pbmc, lambdaNew = 5.5, nIteration = 2)
+#' }
 optimizeNewLambda <- function(
         object,
         lambdaNew,
@@ -455,10 +461,12 @@ optimizeNewLambda <- function(
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
-#' # Only running a few iterations for fast examples
-#' pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
-#' pbmc <- optimizeSubset(pbmc, cellIdx = sort(sample(ncol(pbmc), 200)),
-#'                        nIteration = 2)
+#' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+#'     # Only running a few iterations for fast examples
+#'     pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
+#'     pbmc <- optimizeSubset(pbmc, cellIdx = sort(sample(ncol(pbmc), 200)),
+#'                            nIteration = 2)
+#' }
 optimizeSubset <- function(
         object,
         clusterVar = NULL,

@@ -37,19 +37,21 @@ Genome Browser}.
 bmmc <- normalize(bmmc)
 bmmc <- selectGenes(bmmc)
 bmmc <- scaleNotCenter(bmmc)
-bmmc <- runINMF(bmmc)
-bmmc <- quantileNorm(bmmc)
-bmmc <- normalizePeak(bmmc)
-bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
-corr <- linkGenesAndPeaks(
-    bmmc, useDataset = "rna",
-    pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2")
-)
-resultPath <- tempfile()
-exportInteractTrack(
-    corrMat = corr,
-    pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2"),
-    outputPath = resultPath
-)
-head(read.table(resultPath, skip = 1))
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    bmmc <- runINMF(bmmc)
+    bmmc <- quantileNorm(bmmc)
+    bmmc <- normalizePeak(bmmc)
+    bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
+    corr <- linkGenesAndPeaks(
+        bmmc, useDataset = "rna",
+        pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2")
+    )
+    resultPath <- tempfile()
+    exportInteractTrack(
+        corrMat = corr,
+        pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2"),
+        outputPath = resultPath
+    )
+    head(read.table(resultPath, skip = 1))
+}
 }

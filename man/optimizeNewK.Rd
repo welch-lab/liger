@@ -61,8 +61,10 @@ pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
 # Only running a few iterations for fast examples
-pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
-pbmc <- optimizeNewK(pbmc, kNew = 25, nIteration = 2)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
+    pbmc <- optimizeNewK(pbmc, kNew = 25, nIteration = 2)
+}
 }
 \seealso{
 \code{\link{runINMF}}, \code{\link{optimizeNewLambda}},

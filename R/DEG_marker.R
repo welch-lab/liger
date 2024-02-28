@@ -137,7 +137,8 @@ runPairwiseDEG <- function(
 #' detection will be performed by comparing "celltype_i" cells from "gender_j"
 #' against other cells from "gender_j", and etc.
 #' @examples
-#' # Identify markers for each cluster. Equivalent to old version `runWilcoxon(method = "cluster")`
+#' # Identify markers for each cluster. Equivalent to old version
+#' # `runWilcoxon(method = "cluster")`
 #' markerStats <- runMarkerDEG(pbmcPlot, conditionBy = "leiden_cluster")
 #' # Identify dataset markers within each cluster. Equivalent to old version
 #' # `runWilcoxon(method = "dataset")`.
@@ -261,19 +262,19 @@ runMarkerDEG <- function(
 }
 
 .DE.checkDataAvail <- function(object, useDatasets, method, usePeak) {
-    if (isH5Liger(object, useDatasets)) {
+    if (isH5Liger(object, useDatasets)) { # nocov start
         stop("HDF5 based datasets detected but is not supported. \n",
              "Try `object.sub <- downsample(object, useSlot = ",
              "'normData')` to create ANOTHER object with in memory data.")
-    }
+    } # nocov end
     if (method == "wilcoxon") {
         slot <- ifelse(usePeak, "normPeak", "normData")
     } else if (method == "pseudoBulk") {
-        if (!requireNamespace("DESeq2", quietly = TRUE))
+        if (!requireNamespace("DESeq2", quietly = TRUE)) # nocov start
             stop("Package \"DESeq2\" needed for this function to work. ",
                  "Please install it by command:\n",
                  "BiocManager::install('DESeq2')",
-                 call. = FALSE)
+                 call. = FALSE) # nocov end
         slot <- ifelse(usePeak, "rawPeak", "rawData")
     }
     allAvail <- all(sapply(useDatasets, function(d) {
@@ -377,11 +378,11 @@ makePseudoBulk <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {
 # y: grouping label of columns of X
 # Rcpp source code located in src/wilcoxon.cpp
 wilcoxauc <- function(x, clusterVar) {
-    if (methods::is(x, 'dgTMatrix')) x <- methods::as(x, 'CsparseMatrix')
+    if (methods::is(x, 'dgTMatrix')) x <- methods::as(x, 'CsparseMatrix') # nocov start
     if (methods::is(x, 'TsparseMatrix')) x <- methods::as(x, 'CsparseMatrix')
     if (is.null(row.names(x))) {
         rownames(x) <- paste0('Feature', seq(nrow(x)))
-    }
+    } # nocov end
     if (!is.factor(clusterVar)) clusterVar <- factor(clusterVar)
     clusterVar <- droplevels(clusterVar)
     groupSize <- as.numeric(table(clusterVar))

@@ -1,3 +1,4 @@
+has_RcppPlanc <- requireNamespace("RcppPlanc", quietly = TRUE)
 data("pbmc", package = "rliger2")
 
 withNewH5Copy <- function(fun) {
@@ -62,6 +63,7 @@ is_online <- function() {
 
 context("Clustering")
 test_that("clustering", {
+    skip_if_not(has_RcppPlanc)
     pbmc <- process(pbmc, f = FALSE, q = FALSE)
     expect_error(runCluster(pbmc), "No factor loading ")
 
@@ -109,6 +111,7 @@ test_that("clustering", {
 
 context("dimensionality reduction")
 test_that("dimensionality reduction", {
+    skip_if_not(has_RcppPlanc)
     pbmc <- process(pbmc)
     expect_message(runUMAP(pbmc, useRaw = TRUE),
                    "Generating UMAP on unnormalized")
@@ -132,6 +135,7 @@ test_that("dimensionality reduction", {
 
 context("Differential Expression")
 test_that("wilcoxon", {
+    skip_if_not(has_RcppPlanc)
     expect_error(runMarkerDEG(pbmc),
                  "No `conditionBy` given or default cluster not set")
     pbmc <- process(pbmc)
@@ -177,137 +181,53 @@ test_that("wilcoxon", {
     }
 })
 
-# test_that("pseudo bulk - group wise", {
-    # expect_error(runPseudoBulkDEG("hey"), "Please use a `liger` object.")
-    #
-    # rawData(datasets(pbmcPlot)[[1]]) <- rawData(dataset(pbmc, 1))
-    # rawData(datasets(pbmcPlot)[[2]]) <- rawData(dataset(pbmc, 2))
-    #
-    # expect_error(runPseudoBulkDEG(pbmcPlot),
-    #              "Either `groups` or `markerBy`")
-    # expect_error(runPseudoBulkDEG(pbmcPlot, groups = 1, markerBy = "dataset"),
-    #              "Only one of `groups` and `markerBy`")
-    #
-    # expect_error(runPseudoBulkDEG(pbmcPlot, groups = 1:10),
-    #              "Please use a named list for `groups`")
-    # expect_error(runPseudoBulkDEG(pbmcPlot,
-    #                               groups = list(1)),
-    #              "Please use at least 2 elements in `groups` list")
-    # # Auto naming when un-named comparison group
-    # expect_message(
-    #     res <- runPseudoBulkDEG(
-    #         pbmcPlot,
-    #         groups = list(
-    #             pbmcPlot$leiden_cluster == 1,
-    #             pbmcPlot$leiden_cluster == 2
-    #         )
-    #     ),
-    #     "Generating pseudo-bulks for condition \"group1\""
-    # )
-    # expect_is(res, "data.frame")
-    #
-    # res <- runPseudoBulkDEG(
-    #     pbmcPlot,
-    #     groups = list(
-    #         pbmcPlot$leiden_cluster == 1,
-    #         pbmcPlot$leiden_cluster == 2
-    #     ),
-    #     useCellMetaVar = "dataset"
-    # )
-    # expect_is(res, "data.frame")
-    #
-    # expect_error(
-    #     res <- runPseudoBulkDEG(
-    #         pbmcPlot,
-    #         groups = list(
-    #             c1 = pbmcPlot$leiden_cluster == 1,
-    #             c2 = pbmcPlot$leiden_cluster == 2
-    #         ),
-    #         replicateAnn = list()
-    #     ),
-    #     "Please use a `data.frame` or a `factor` to specify replicate "
-    # )
-    #
-    # ann <- cellMeta(pbmcPlot, "dataset", as.data.frame = TRUE, drop = FALSE)
-    #
-    # ann1 <- data.frame(v1 = ann$dataset)
-    # expect_error(
-    #     res <- runPseudoBulkDEG(
-    #         pbmcPlot,
-    #         groups = list(
-    #             c1 = pbmcPlot$leiden_cluster == 1,
-    #             c2 = pbmcPlot$leiden_cluster == 2
-    #         ),
-    #         replicateAnn = ann1
-    #     ),
-    #     "Not all cells involved in `groups` are annotated in "
-    # )
-    #
-    # ann2 <- ann$dataset
-    # expect_no_error(
-    #     runPseudoBulkDEG(
-    #         pbmcPlot,
-    #         groups = list(
-    #             c1 = pbmcPlot$leiden_cluster == 1,
-    #             c2 = pbmcPlot$leiden_cluster == 2
-    #         ),
-    #         replicateAnn = ann2
-    #     )
-    # )
-    #
-    # expect_error(
-    #     runPseudoBulkDEG(
-    #         pbmcPlot,
-    #         groups = list(
-    #             c1 = pbmcPlot$leiden_cluster == 1,
-    #             c2 = pbmcPlot$leiden_cluster == 2
-    #         ),
-    #         replicateAnn = ann2[pbmcPlot$leiden_cluster == 1]
-    #     ),
-    #     "Unable to format replicate annotation with given"
-    # )
-#
-#     ann3 <- ann2
-#     names(ann3) <- colnames(pbmcPlot)
-#     expect_no_error(
-#         runPseudoBulkDEG(
-#             pbmcPlot,
-#             groups = list(
-#                 c1 = pbmcPlot$leiden_cluster == 1,
-#                 c2 = pbmcPlot$leiden_cluster == 2
-#             ),
-#             replicateAnn = ann3[pbmcPlot$leiden_cluster %in% 1:3]
-#         )
-#     )
-#     expect_error(
-#         runPseudoBulkDEG(
-#             pbmcPlot,
-#             groups = list(
-#                 c1 = pbmcPlot$leiden_cluster == 1,
-#                 c2 = pbmcPlot$leiden_cluster == 2
-#             ),
-#             replicateAnn = ann3[pbmcPlot$leiden_cluster == 1]
-#         ),
-#         "Missing cells: ctrl_AAGGCTTGGTTCGA.1"
-#     )
-#
-#     expect_warning(
-#         runPseudoBulkDEG(
-#             pbmcPlot,
-#             groups = list(
-#                 c1 = pbmcPlot$leiden_cluster == 1 & pbmcPlot$dataset == "ctrl",
-#                 c2 = pbmcPlot$leiden_cluster == 0 & pbmcPlot$dataset == "stim"
-#             ),
-#             useCellMetaVar = "dataset"
-#         ),
-#         "will not create pseudo-bulks but test at single cell level"
-#     )
-#
-#     res2 <- runPseudoBulkDEG(
-#         pbmcPlot, markerBy = "leiden_cluster"
-#     )
-#     expect_equal(ncol(res2), 5)
-# })
+
+test_that("pseudo bulk", {
+    skip_if_not(has_RcppPlanc)
+    pbmc <- process(pbmc)
+    pbmc <- runCluster(pbmc, nRandomStarts = 1)
+    res1 <- runPairwiseDEG(pbmc, groupTest = pbmc$leiden_cluster == 1,
+                           groupCtrl = pbmc$leiden_cluster == 2,
+                           method = "pseudo")
+    expect_is(res1, "data.frame")
+    expect_true(all.equal(dim(res1), c(238, 5)))
+    res2 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
+                           variable1 = "leiden_cluster",
+                           method = "pseudo", useReplicate = "dataset")
+    expect_is(res2, "data.frame")
+    expect_true(all.equal(dim(res2), c(238, 5)))
+    res3 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
+                           variable1 = "leiden_cluster",
+                           method = "pseudo")
+    expect_true(identical(res1[,-2], res3[,-2])) # Different in "group" column
+    pbmc$leiden2 <- pbmc$leiden_cluster
+    res4 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
+                           variable1 = "leiden_cluster", variable2 = "leiden2",
+                           method = "pseudo", useReplicate = "dataset")
+    expect_true(all.equal(res2[,-2], res4[,-2])) # Different in "group" column
+
+    expect_error(runPairwiseDEG(pbmc, variable2 = "yo"),
+                 "Please see")
+
+    expect_error(
+        runPairwiseDEG(
+            pbmc, groupTest = pbmc$dataset == "ctrl" & pbmc$leiden_cluster == 0,
+            groupCtrl = pbmc$dataset == "stim" & pbmc$leiden_cluster == 0,
+            method = "pseudo", useReplicate = "dataset"
+        ),
+        "Too few replicates label for condition"
+    )
+
+    pbmc@datasets$ctrl@rawData <- NULL
+    expect_error(
+        runPairwiseDEG(
+            pbmc, groupTest = 1, groupCtrl = 2,
+            variable1 = "leiden_cluster",　method = "pseudo",
+            useReplicate = "dataset"
+        ),
+        "rawData not all available for involved datasets"
+    )
+})
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # GSEA
@@ -336,6 +256,7 @@ if (is_online()) {
 context("ATAC")
 data("bmmc")
 test_that("ATAC", {
+    skip_if_not(has_RcppPlanc)
     bmmc <- normalize(bmmc)
     bmmc <- selectGenes(bmmc)
     bmmc <- scaleNotCenter(bmmc)

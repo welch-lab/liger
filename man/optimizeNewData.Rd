@@ -81,14 +81,16 @@ pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
 # Only running a few iterations for fast examples
-pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
-# Create fake new data by increasing all non-zero count in "ctrl" by 1,
-# and make unique cell identifiers
-ctrl2 <- rawData(dataset(pbmc, "ctrl"))
-ctrl2@x <- ctrl2@x + 1
-colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
-pbmcNew <- optimizeNewData(pbmc, dataNew = list(ctrl2 = ctrl2),
-                           useDatasets = "ctrl", nIteration = 2)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
+    # Create fake new data by increasing all non-zero count in "ctrl" by 1,
+    # and make unique cell identifiers
+    ctrl2 <- rawData(dataset(pbmc, "ctrl"))
+    ctrl2@x <- ctrl2@x + 1
+    colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
+    pbmcNew <- optimizeNewData(pbmc, dataNew = list(ctrl2 = ctrl2),
+                               useDatasets = "ctrl", nIteration = 2)
+}
 }
 \seealso{
 \code{\link{runINMF}}, \code{\link{optimizeNewK}},

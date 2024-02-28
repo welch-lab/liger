@@ -55,9 +55,11 @@ value is significantly different; otherwise may not return optimal results.
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
-# Only running a few iterations for fast examples
-pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
-pbmc <- optimizeNewLambda(pbmc, lambdaNew = 5.5, nIteration = 2)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    # Only running a few iterations for fast examples
+    pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
+    pbmc <- optimizeNewLambda(pbmc, lambdaNew = 5.5, nIteration = 2)
+}
 }
 \seealso{
 \code{\link{runINMF}}, \code{\link{optimizeNewK}},

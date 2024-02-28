@@ -130,7 +130,8 @@ degStats <- runPairwiseDEG(pbmcPlot, groupTest = 0, groupCtrl = 1,
 degStats <- runPairwiseDEG(pbmcPlot, groupTest = "5", groupCtrl = "stim",
                            variable1 = "leiden_cluster",
                            variable2 = "dataset")
-# Identify markers for each cluster. Equivalent to old version `runWilcoxon(method = "cluster")`
+# Identify markers for each cluster. Equivalent to old version
+# `runWilcoxon(method = "cluster")`
 markerStats <- runMarkerDEG(pbmcPlot, conditionBy = "leiden_cluster")
 # Identify dataset markers within each cluster. Equivalent to old version
 # `runWilcoxon(method = "dataset")`.

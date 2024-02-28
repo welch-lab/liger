@@ -85,7 +85,9 @@ pages have more detailed description.
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
-pbmc <- runIntegration(pbmc)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    pbmc <- runIntegration(pbmc)
+}
 }
 \references{
 \enumerate{

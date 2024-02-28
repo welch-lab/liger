@@ -38,7 +38,9 @@
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
-#' pbmc <- runIntegration(pbmc)
+#' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+#'     pbmc <- runIntegration(pbmc)
+#' }
 runIntegration <- function(
         object,
         k = 20,
@@ -208,7 +210,9 @@ runIntegration.Seurat <- function(
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
-#' pbmc <- runINMF(pbmc)
+#' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+#'     pbmc <- runINMF(pbmc)
+#' }
 runINMF <- function(
         object,
         k = 20,
@@ -626,18 +630,20 @@ optimizeALS <- function( # nocov start
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
-#' # Scenario 1
-#' pbmc <- runOnlineINMF(pbmc, minibatchSize = 200)
-#' # Scenario 2
-#' # Fake new dataset by increasing all non-zero value in "ctrl" by 1
-#' ctrl2 <- rawData(dataset(pbmc, "ctrl"))
-#' ctrl2@x <- ctrl2@x + 1
-#' colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
-#' pbmc2 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
-#'                        minibatchSize = 100)
-#' # Scenario 3
-#' pbmc3 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
-#'                        projection = TRUE)
+#' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+#'     # Scenario 1
+#'     pbmc <- runOnlineINMF(pbmc, minibatchSize = 200)
+#'     # Scenario 2
+#'     # Fake new dataset by increasing all non-zero value in "ctrl" by 1
+#'     ctrl2 <- rawData(dataset(pbmc, "ctrl"))
+#'     ctrl2@x <- ctrl2@x + 1
+#'     colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
+#'     pbmc2 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
+#'                            minibatchSize = 100)
+#'     # Scenario 3
+#'     pbmc3 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
+#'                            projection = TRUE)
+#' }
 runOnlineINMF <- function(
         object,
         k = 20,
@@ -1307,18 +1313,10 @@ quantileNorm.liger <- function(
 ) {
     .checkObjVersion(object)
     .checkValidFactorResult(object, checkV = FALSE)
-    if (is.null(reference)) {
-        # If ref_dataset not given, set the one with the largest number of
-        # cells as reference.
-        # Should not produce intermediate variable here because it'll be
-        # recorded as a environment parameter in object@commands
-        reference <- names(which.max(sapply(datasets(object), ncol)))
-    } else {
-        reference <- .checkUseDatasets(object, useDatasets = reference)
-        if (length(reference) != 1)
-            stop("Should specify only one reference dataset.")
-    }
-    print(reference)
+    reference <- reference %||% names(which.max(sapply(datasets(object), ncol)))
+    reference <- .checkUseDatasets(object, useDatasets = reference)
+    if (length(reference) != 1)
+        stop("Should specify only one reference dataset.")
     object <- recordCommand(object, ..., dependencies = "RANN")
     out <- .quantileNorm.HList(
         object = getMatrix(object, "H"),

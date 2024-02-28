@@ -1,3 +1,4 @@
+has_RcppPlanc <- requireNamespace("RcppPlanc", quietly = TRUE)
 data("pbmc", package = "rliger2")
 rawDataList <- getMatrix(pbmc, "rawData")
 
@@ -121,6 +122,7 @@ test_that("liger object creation - on disk", {
 context("liger object S3/S4 methods")
 
 test_that("liger S3/S4 methods", {
+    skip_if_not(has_RcppPlanc)
     pbmc <- process(pbmc)
     expect_output(show(pbmc), "An object of class liger with 600 cells")
     expect_equal(dim(pbmc), c(NA, 600))
@@ -220,6 +222,7 @@ test_that("ligerDataset (in memory) object creation", {
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 test_that("ligerDataset methods", {
+    skip_if_not(has_RcppPlanc)
     pbmc <- process(pbmc)
     expect_false(isH5Liger(pbmc))
     ctrl <- dataset(pbmc, "ctrl")
@@ -323,6 +326,7 @@ test_that("ligerDataset methods", {
 })
 
 test_that("H5 ligerDataset methods", {
+    skip_if_not(has_RcppPlanc)
     withNewH5Copy(
         function(rawList) {
             pbmc <- createLiger(rawList)

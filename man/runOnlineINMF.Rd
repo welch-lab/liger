@@ -186,18 +186,20 @@ a \linkS4class{liger} object which has the specific structure.
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
-# Scenario 1
-pbmc <- runOnlineINMF(pbmc, minibatchSize = 200)
-# Scenario 2
-# Fake new dataset by increasing all non-zero value in "ctrl" by 1
-ctrl2 <- rawData(dataset(pbmc, "ctrl"))
-ctrl2@x <- ctrl2@x + 1
-colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
-pbmc2 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
-                       minibatchSize = 100)
-# Scenario 3
-pbmc3 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
-                       projection = TRUE)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    # Scenario 1
+    pbmc <- runOnlineINMF(pbmc, minibatchSize = 200)
+    # Scenario 2
+    # Fake new dataset by increasing all non-zero value in "ctrl" by 1
+    ctrl2 <- rawData(dataset(pbmc, "ctrl"))
+    ctrl2@x <- ctrl2@x + 1
+    colnames(ctrl2) <- paste0(colnames(ctrl2), 2)
+    pbmc2 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
+                           minibatchSize = 100)
+    # Scenario 3
+    pbmc3 <- runOnlineINMF(pbmc, k = 20, newDatasets = list(ctrl2 = ctrl2),
+                           projection = TRUE)
+}
 }
 \references{
 Chao Gao and et al., Iterative single-cell multi-omic integration

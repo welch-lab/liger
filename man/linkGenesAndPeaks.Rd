@@ -59,14 +59,16 @@ result).
 bmmc <- normalize(bmmc)
 bmmc <- selectGenes(bmmc)
 bmmc <- scaleNotCenter(bmmc)
-bmmc <- runINMF(bmmc, miniBatchSize = 100)
-bmmc <- quantileNorm(bmmc)
-bmmc <- normalizePeak(bmmc)
-bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
-corr <- linkGenesAndPeaks(
-    bmmc, useDataset = "rna",
-    pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2")
-)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    bmmc <- runINMF(bmmc, miniBatchSize = 100)
+    bmmc <- quantileNorm(bmmc)
+    bmmc <- normalizePeak(bmmc)
+    bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
+    corr <- linkGenesAndPeaks(
+        bmmc, useDataset = "rna",
+        pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2")
+    )
+}
 }
 \seealso{
 \code{\link{imputeKNN}}

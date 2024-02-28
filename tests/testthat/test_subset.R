@@ -1,3 +1,4 @@
+has_RcppPlanc <- requireNamespace("RcppPlanc", quietly = TRUE)
 data("pbmc", package = "rliger2")
 
 withNewH5Copy <- function(fun) {
@@ -55,6 +56,7 @@ context("subset liger object")
 test_that("subsetLiger", {
     expect_warning(a <- subsetLiger("a"), "`object` is not a liger obejct")
     expect_identical(a, "a")
+    skip_if_not(has_RcppPlanc)
     pbmc <- process(pbmc)
     expect_error(subsetLiger(pbmc, featureIdx = 1:3),
                  "Feature subscription from liger object")
@@ -69,6 +71,7 @@ test_that("subsetLiger", {
 
 context("subset ligerDataset object")
 test_that("subsetH5LigerDataset", {
+    skip_if_not(has_RcppPlanc)
     withNewH5Copy(
         function(rawList, arg1, arg2) {
             pbmcH5 <- createLiger(rawList)

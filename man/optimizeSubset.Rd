@@ -76,8 +76,10 @@ the information in the existing factorization.
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
-# Only running a few iterations for fast examples
-pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
-pbmc <- optimizeSubset(pbmc, cellIdx = sort(sample(ncol(pbmc), 200)),
-                       nIteration = 2)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    # Only running a few iterations for fast examples
+    pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
+    pbmc <- optimizeSubset(pbmc, cellIdx = sort(sample(ncol(pbmc), 200)),
+                           nIteration = 2)
+}
 }

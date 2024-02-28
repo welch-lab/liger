@@ -1,3 +1,4 @@
+has_RcppPlanc <- requireNamespace("RcppPlanc", quietly = TRUE)
 data("pbmc", package = "rliger2")
 rawDataList <- getMatrix(pbmc, "rawData")
 
@@ -51,8 +52,10 @@ process <- function(object) {
 
 context("iNMF")
 test_that("iNMF - in-memory", {
+    skip_if_not(has_RcppPlanc)
     pbmc <- normalize(pbmc)
     pbmc <- selectGenes(pbmc)
+
     expect_error(pbmc <- runINMF(pbmc),
                  "Scaled data not available. ")
     pbmc <- scaleNotCenter(pbmc)
@@ -85,6 +88,7 @@ test_that("iNMF - in-memory", {
 # })
 
 test_that("UINMF", {
+    skip_if_not(has_RcppPlanc)
     # Need to fake the situation because test dataset doesn't have real
     # unshared var feature
     pbmc <- normalize(pbmc)
@@ -105,6 +109,7 @@ test_that("UINMF", {
 })
 
 test_that("Optimize new parameters", {
+    skip_if_not(has_RcppPlanc)
     pbmc <- process(pbmc)
     pbmc <- runOnlineINMF(pbmc, k = 10, minibatchSize = 100)
     pbmc0 <- optimizeNewK(pbmc, kNew = 10, nIteration = 2)
@@ -137,6 +142,7 @@ test_that("Optimize new parameters", {
 })
 
 test_that("Online iNMF - in-memory", {
+    skip_if_not(has_RcppPlanc)
     expect_error(runOnlineINMF(pbmc, k = 20, minibatchSize = 100),
                  "Scaled data not available. ")
     pbmc <- process(pbmc)
@@ -179,6 +185,7 @@ test_that("Online iNMF - in-memory", {
 })
 
 test_that("quantileNorm", {
+    skip_if_not(has_RcppPlanc)
     pbmc <- process(pbmc)
     pbmc <- runOnlineINMF(pbmc, k = 20, minibatchSize = 100)
 
@@ -219,7 +226,8 @@ test_that("quantileNorm", {
 
 context("Seurat iNMF wrapper")
 test_that("Seurat wrapper", {
-    testthat::skip_if_not(requireNamespace("Seurat", quietly = TRUE))
+    skip_if_not(has_RcppPlanc)
+    skip_if_not(requireNamespace("Seurat", quietly = TRUE))
     seu <- ligerToSeurat(pbmc)
     seu <- normalize(seu)
     seu <- selectGenes(seu)
