@@ -1006,7 +1006,9 @@ plotVarFeatures <- function(
         plotList[[d]] <- p
     }
     if (isTRUE(combinePlot)) {
-        legend <- cowplot::get_legend(plotList[[1]])
+        suppressWarnings({
+            legend <- cowplot::get_legend(plotList[[1]])
+        })
         plotList <- lapply(plotList, function(x) {
             x + ggplot2::theme(legend.position = "none")
         })

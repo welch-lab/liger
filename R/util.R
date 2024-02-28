@@ -479,22 +479,6 @@ mapvalues <- function(x, from, to, warn_missing = TRUE) {
     x
 }
 
-.DataFrame.as.data.frame <- function(cm) {
-    cmlist <- as.list(cm)
-    varNames <- names(cmlist)
-    rn <- rownames(cm)
-    cmlist <- lapply(stats::setNames(seq_along(cmlist), varNames), function(i) {
-        x <- cmlist[[i]]
-        if (is.data.frame(x)) return(x)
-        df <- as.data.frame(x, row.names = rn)
-        if (is.null(colnames(x)) && ncol(df) == 1L)
-            colnames(df) <- varNames[[i]]
-        df
-    })
-    do.call(data.frame, cmlist)
-}
-
-
 .DataFrame.as.data.frame <- function(x)
 {
     # Copied from Bioconductor package S4Vectors:::.as.data.frame.DataFrame
