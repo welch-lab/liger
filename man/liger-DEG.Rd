@@ -53,6 +53,9 @@ will create \code{nPsdRep} pseudo replicates per group.}
 \item{nPsdRep}{Number of pseudo replicates to create. Only used when
 \code{method = "pseudoBulk", useReplicate = NULL}. Default \code{5}.}
 
+\item{minCellPerRep}{Numeric, will not make pseudo-bulk for replicate with
+less than this number of cells. Default \code{10}.}
+
 \item{seed}{Random seed to use for pseudo-replicate generation. Default
 \code{1}.}
 

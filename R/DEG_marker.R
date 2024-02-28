@@ -35,6 +35,8 @@
 #' will create \code{nPsdRep} pseudo replicates per group.
 #' @param nPsdRep Number of pseudo replicates to create. Only used when
 #' \code{method = "pseudoBulk", useReplicate = NULL}. Default \code{5}.
+#' @param minCellPerRep Numeric, will not make pseudo-bulk for replicate with
+#' less than this number of cells. Default \code{10}.
 #' @param seed Random seed to use for pseudo-replicate generation. Default
 #' \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
@@ -230,7 +232,7 @@ runMarkerDEG <- function(
         result <- wilcoxauc(mat, var)
     } else if (method == "pseudoBulk") {
         if (is.null(useReplicate)) {
-            replicateAnn <- setupPseudoRep2(var, nRep = nPsdRep,
+            replicateAnn <- setupPseudoRep(var, nRep = nPsdRep,
                                             seed = seed)
         } else {
             replicateAnn <- .fetchCellMetaVar(
@@ -243,7 +245,7 @@ runMarkerDEG <- function(
             replicateAnn$groups <- var
         }
 
-        pbs <- makePseudoBulk2(mat, replicateAnn,
+        pbs <- makePseudoBulk(mat, replicateAnn,
                                minCellPerRep = minCellPerRep,
                                verbose = verbose)
         pb <- pbs[[1]]
@@ -253,7 +255,7 @@ runMarkerDEG <- function(
                                 drop = TRUE))
         })
         var <- factor(rep(names(var), var), levels = names(var))
-        result <- .callDESeq22(pb, var, verbose)
+        result <- .callDESeq2(pb, var, verbose)
     }
     return(result)
 }
@@ -287,7 +289,7 @@ runMarkerDEG <- function(
 
 ###################### Pseudo-bulk Method helper ###############################
 
-setupPseudoRep2 <- function(groups, nRep = 3, seed = 1) {
+setupPseudoRep <- function(groups, nRep = 3, seed = 1) {
     # The output data.frame should be cell per row by variable per col
     set.seed(seed)
     psdRep <- c()
@@ -302,7 +304,7 @@ setupPseudoRep2 <- function(groups, nRep = 3, seed = 1) {
     ))
 }
 
-makePseudoBulk2 <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {
+makePseudoBulk <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {
     # mat - Extracted and contatenated matrix. intersection of genes by
     #       c(groupTest, groupCtrl) cells
     # groups - list of groups
@@ -341,14 +343,14 @@ makePseudoBulk2 <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {
     return(list(pseudoBulks, replicateAnn))
 }
 
-.callDESeq22 <- function(pseudoBulks, groups,
+.callDESeq2 <- function(pseudoBulks, groups,
                          verbose = getOption("ligerVerbose")) {
     # DESeq2 workflow
     if (isTRUE(verbose)) .log("Calling DESeq2 Wald test")
     ## NOTE: DESeq2 wishes that the contrast/control group is the first level
     ## whereas we required it as the second in upstream input. So we need to
     ## reverse it here.
-    groups <- relevel(groups, ref = levels(groups)[2])
+    groups <- stats::relevel(groups, ref = levels(groups)[2])
     ## Now levels(groups)[1] becomes control and levels(groups)[2] becomes
     ## the test group
     des <- DESeq2::DESeqDataSetFromMatrix(
