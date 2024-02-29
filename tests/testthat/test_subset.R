@@ -8,12 +8,8 @@ withNewH5Copy <- function(fun) {
         stop("Cannot find original h5 file at: ", ctrlpath.orig)
     if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
     if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
-    pwd <- getwd()
-    # Temp setting for GitHub Actions
+    pwd <- tempdir()
     fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
-    if (Sys.info()["sysname"] == "Windows") {
-        pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
-    }
 
     ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
     stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
@@ -81,15 +77,17 @@ test_that("subsetH5LigerDataset", {
             ctrl <- dataset(pbmcH5, "ctrl")
             ctrlSmall <- subsetLiger(ctrl, featureIdx = 1:10, cellIdx = 1:10, newH5 = FALSE)
             expect_false(isH5Liger(ctrlSmall))
+            path <- dirname(h5fileInfo(ctrl, "filename"))
+            newName <- file.path(path, "ctrltest.h5.small.h5")
             expect_warning(
                 subsetLigerDataset(ctrl, featureIdx = 1:10, cellIdx = 1:10,
                                    newH5 = TRUE,
-                                   filename = "ctrltest.h5.small.h5",
+                                   filename = newName,
                                    returnObject = FALSE),
                 "Cannot set `returnObject = FALSE`"
             )
-            expect_true(file.exists("ctrltest.h5.small.h5"))
-            unlink("ctrltest.h5.small.h5")
+            expect_true(file.exists(newName))
+            unlink(newName)
             expect_warning(
                 rliger2:::subsetH5LigerDatasetToMem(letters),
                 "`object` is not a ligerDataset obejct."
@@ -118,15 +116,17 @@ test_that("subsetH5LigerDataset", {
             ctrlSmallH5 <- rliger2:::subsetH5LigerDataset(
                 ctrl, 1:20, 1:20, filenameSuffix = "small2"
             )
-            expect_true(file.exists("ctrltest.h5.small2.h5"))
-            unlink("ctrltest.h5.small2.h5")
+            newPath <- file.path(path, "ctrltest.h5.small2.h5")
+            expect_true(file.exists(newPath))
+            unlink(newPath)
             expect_no_error(
                 rliger2:::subsetH5LigerDataset(ctrl, 1:20, 1:20, newH5 = TRUE,
                                                useSlot = "normData",
                                                filenameSuffix = "small3")
             )
-            expect_true(file.exists("ctrltest.h5.small3.h5"))
-            unlink("ctrltest.h5.small3.h5")
+            newPath <- file.path(path, "ctrltest.h5.small3.h5")
+            expect_true(file.exists(newPath))
+            unlink(newPath)
             expect_no_error(
                 subsetH5LigerDataset(ctrl, 1:20, 1:20, useSlot = "scaleData")
             )

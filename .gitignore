@@ -20,3 +20,5 @@ src/CMakeCache.txt
 src/Makefile
 build/*
 vignettes/articles/*_cache/
+/doc/
+/Meta/

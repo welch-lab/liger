@@ -21,3 +21,5 @@ LICENSE
 ^devdata
 ^tests/testthat/*\.h5$
 ^vignettes/articles$
+^doc$
+^Meta$
