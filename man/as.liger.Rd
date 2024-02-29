@@ -4,29 +4,85 @@
 \alias{as.liger}
 \alias{as.liger.dgCMatrix}
 \alias{as.liger.SingleCellExperiment}
+\alias{as.liger.Seurat}
+\alias{seuratToLiger}
 \title{Converting other classes of data to a liger object}
 \usage{
 as.liger(object, ...)
 
-\method{as.liger}{dgCMatrix}(object, sampleName = NULL, modal = NULL, ...)
+\method{as.liger}{dgCMatrix}(object, datasetVar = NULL, modal = NULL, ...)
 
-\method{as.liger}{SingleCellExperiment}(object, sampleName = NULL, modal = NULL, ...)
+\method{as.liger}{SingleCellExperiment}(object, datasetVar = NULL, modal = NULL, ...)
+
+\method{as.liger}{Seurat}(object, datasetVar = NULL, modal = NULL, assay = NULL, ...)
+
+seuratToLiger(object, datasetVar = NULL, modal = NULL, assay = NULL, ...)
 }
 \arguments{
 \item{object}{Object.}
 
 \item{...}{Additional arguments passed to \code{\link{createLiger}}}
 
-\item{sampleName}{If one or more datasets exist in the given object, specify
-a name for the single dataset; select a variable from existing metadata (e.g.
-colData column); specify a vector/factor that assign the dataset belonging.
-Default \code{NULL} gathers things into one dataset and names it "sample".}
+\item{datasetVar}{Specify the dataset belonging by: 1. Select a variable from
+existing metadata in the object (e.g. colData column); 2. Specify a
+vector/factor that assign the dataset belonging. 3. Give a single character
+string which means that all data is from one dataset (must not be a metadata
+variable, otherwise it is understood as 1.). Default \code{NULL} gathers
+things into one dataset and names it "sample" for dgCMatrix, attempts
+to find variable "sample" from SCE or "orig.ident" from Seurat.}
 
-\item{modal}{Modality setting for each dataset.}
+\item{modal}{Modality setting for each dataset. See
+\code{\link{createLiger}}.}
+
+\item{assay}{Name of assay to use. Default \code{NULL} uses current active
+assay.}
 }
 \value{
 a \linkS4class{liger} object.
 }
 \description{
-Converting other classes of data to a liger object
+This function converts data stored in SingleCellExperiment (SCE), Seurat
+object or a merged sparse matrix (dgCMatrix) into a liger object. This is
+designed for a container object or matrix that already contains multiple
+datasets to be integerated with LIGER. For individual datasets, please use
+\code{\link{createLiger}} instead.
+}
+\details{
+For Seurat V5 structure, it is highly recommended that users make use of its
+split layer feature, where things like "counts", "data", and "scale.data"
+can be held for each dataset in the same Seurat object, e.g. with
+"count.ctrl", "count.stim", not merged. If a Seurat object with split layers
+is given, \code{datasetVar} will be ignored and the layers will be directly
+used.
+}
+\examples{
+# dgCMatrix (common sparse matrix class), usually obtained from other
+# container object, and contains multiple samples merged in one.
+matList <- rawData(pbmc)
+multiSampleMatrix <- mergeSparseAll(matList)
+# The `datasetVar` argument expects the variable assigning the sample source
+pbmc2 <- as.liger(multiSampleMatrix, datasetVar = pbmc$dataset)
+pbmc2
+
+sce <- SingleCellExperiment::SingleCellExperiment(
+    assays = list(counts = multiSampleMatrix)
+)
+sce$sample <- pbmc$dataset
+pbmc3 <- as.liger(sce, datasetVar = "sample")
+pbmc3
+
+seu <- SeuratObject::CreateSeuratObject(multiSampleMatrix)
+# Seurat creates variable "orig.ident" by identifying the cell barcode
+# prefixes, which is indeed what we need in this case. Users might need
+# to be careful and have it confirmed first.
+pbmc4 <- as.liger(seu, datasetVar = "orig.ident")
+pbmc4
+
+# As per Seurat V5 updates with layered data, specifically helpful udner the
+# scenario of dataset integration. "counts" and etc for each datasets can be
+# split into layers.
+seu5 <- seu
+seu5[["RNA"]] <- split(seu5[["RNA"]], pbmc$dataset)
+print(SeuratObject::Layers(seu5))
+pbmc5 <- as.liger(seu5)
 }

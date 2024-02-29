@@ -8,29 +8,28 @@
 \alias{dim,ligerDataset-method}
 \alias{dimnames,ligerDataset-method}
 \alias{dimnames<-,ligerDataset,list-method}
-\alias{[,ligerDataset,index,missing,ANY-method}
-\alias{[,ligerDataset,missing,index,ANY-method}
-\alias{[,ligerDataset,index,index,ANY-method}
 \alias{rawData}
 \alias{rawData<-}
 \alias{rawData,ligerDataset-method}
-\alias{rawData<-,ligerDataset,ANY,matrixLike_OR_NULL-method}
-\alias{rawData<-,ligerDataset,ANY,H5D-method}
+\alias{rawData<-,ligerDataset,ANY,ANY,matrixLike_OR_NULL-method}
+\alias{rawData<-,ligerDataset,ANY,ANY,H5D-method}
 \alias{normData}
 \alias{normData<-}
 \alias{normData,ligerDataset-method}
-\alias{normData<-,ligerDataset,ANY,matrixLike_OR_NULL-method}
-\alias{normData<-,ligerDataset,ANY,H5D-method}
+\alias{normData<-,ligerDataset,ANY,ANY,matrixLike_OR_NULL-method}
+\alias{normData<-,ligerDataset,ANY,ANY,H5D-method}
 \alias{scaleData}
 \alias{scaleData<-}
 \alias{scaleData,ligerDataset,missing-method}
-\alias{scaleData<-,ligerDataset,ANY,matrixLike_OR_NULL-method}
-\alias{scaleData<-,ligerDataset,ANY,H5D-method}
+\alias{scaleData<-,ligerDataset,ANY,ANY,matrixLike_OR_NULL-method}
+\alias{scaleData<-,ligerDataset,ANY,ANY,H5D-method}
+\alias{scaleData<-,ligerDataset,ANY,ANY,H5Group-method}
 \alias{scaleUnsharedData}
 \alias{scaleUnsharedData<-}
 \alias{scaleUnsharedData,ligerDataset,missing-method}
-\alias{scaleUnsharedData<-,ligerDataset,ANY,matrixLike_OR_NULL-method}
-\alias{scaleUnsharedData<-,ligerDataset,ANY,H5D-method}
+\alias{scaleUnsharedData<-,ligerDataset,missing,ANY,matrixLike_OR_NULL-method}
+\alias{scaleUnsharedData<-,ligerDataset,missing,ANY,H5D-method}
+\alias{scaleUnsharedData<-,ligerDataset,missing,ANY,H5Group-method}
 \alias{getMatrix}
 \alias{getMatrix,ligerDataset,ANY,missing,missing-method}
 \alias{h5fileInfo}
@@ -54,51 +53,49 @@
 
 \S4method{dimnames}{ligerDataset,list}(x) <- value
 
-\S4method{[}{ligerDataset,index,missing,ANY}(x, i, j, ..., drop = TRUE)
+rawData(x, dataset = NULL)
 
-\S4method{[}{ligerDataset,missing,index,ANY}(x, i, j, ..., drop = TRUE)
+rawData(x, dataset = NULL, check = TRUE) <- value
 
-\S4method{[}{ligerDataset,index,index,ANY}(x, i, j, ..., drop = TRUE)
+\S4method{rawData}{ligerDataset}(x, dataset = NULL)
 
-rawData(x)
+\S4method{rawData}{ligerDataset,ANY,ANY,matrixLike_OR_NULL}(x, dataset = NULL, check = TRUE) <- value
 
-rawData(x, check = TRUE) <- value
+\S4method{rawData}{ligerDataset,ANY,ANY,H5D}(x, dataset = NULL, check = TRUE) <- value
 
-\S4method{rawData}{ligerDataset}(x)
+normData(x, dataset = NULL)
 
-\S4method{rawData}{ligerDataset,ANY,matrixLike_OR_NULL}(x, check = TRUE) <- value
+normData(x, dataset = NULL, check = TRUE) <- value
 
-\S4method{rawData}{ligerDataset,ANY,H5D}(x, check = TRUE) <- value
+\S4method{normData}{ligerDataset}(x, dataset = NULL)
 
-normData(x)
+\S4method{normData}{ligerDataset,ANY,ANY,matrixLike_OR_NULL}(x, dataset = NULL, check = TRUE) <- value
 
-normData(x, check = TRUE) <- value
-
-\S4method{normData}{ligerDataset}(x)
-
-\S4method{normData}{ligerDataset,ANY,matrixLike_OR_NULL}(x, check = TRUE) <- value
-
-\S4method{normData}{ligerDataset,ANY,H5D}(x, check = TRUE) <- value
+\S4method{normData}{ligerDataset,ANY,ANY,H5D}(x, dataset = NULL, check = TRUE) <- value
 
 scaleData(x, dataset = NULL)
 
-scaleData(x, check = TRUE) <- value
+scaleData(x, dataset = NULL, check = TRUE) <- value
 
 \S4method{scaleData}{ligerDataset,missing}(x, dataset = NULL)
 
-\S4method{scaleData}{ligerDataset,ANY,matrixLike_OR_NULL}(x, check = TRUE) <- value
+\S4method{scaleData}{ligerDataset,ANY,ANY,matrixLike_OR_NULL}(x, dataset = NULL, check = TRUE) <- value
 
-\S4method{scaleData}{ligerDataset,ANY,H5D}(x, check = TRUE) <- value
+\S4method{scaleData}{ligerDataset,ANY,ANY,H5D}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{scaleData}{ligerDataset,ANY,ANY,H5Group}(x, dataset = NULL, check = TRUE) <- value
 
 scaleUnsharedData(x, dataset = NULL)
 
-scaleUnsharedData(x, check = TRUE) <- value
+scaleUnsharedData(x, dataset = NULL, check = TRUE) <- value
 
 \S4method{scaleUnsharedData}{ligerDataset,missing}(x, dataset = NULL)
 
-\S4method{scaleUnsharedData}{ligerDataset,ANY,matrixLike_OR_NULL}(x, check = TRUE) <- value
+\S4method{scaleUnsharedData}{ligerDataset,missing,ANY,matrixLike_OR_NULL}(x, check = TRUE) <- value
 
-\S4method{scaleUnsharedData}{ligerDataset,ANY,H5D}(x, check = TRUE) <- value
+\S4method{scaleUnsharedData}{ligerDataset,missing,ANY,H5D}(x, check = TRUE) <- value
+
+\S4method{scaleUnsharedData}{ligerDataset,missing,ANY,H5Group}(x, check = TRUE) <- value
 
 getMatrix(x, slot = "rawData", dataset = NULL, returnList = FALSE)
 
@@ -136,23 +133,17 @@ featureMeta(x, check = TRUE) <- value
 
 \item{value}{See detail sections for requirements}
 
-\item{i, j}{Feature and cell index for \code{`[`} method. For \code{`[[`}
-method, use a single variable name with \code{i} and \code{j} is not
-applicable.}
-
-\item{...}{See detailed sections for explanation.}
-
-\item{drop}{Not applicable.}
+\item{dataset}{Not applicable for \code{ligerDataset} methods.}
 
 \item{check}{Whether to perform object validity check on setting new value.}
-
-\item{dataset}{Not applicable for \code{ligerDataset} methods.}
 
 \item{slot}{The slot name when using \code{getMatrix}.}
 
 \item{returnList}{Not applicable for \code{ligerDataset} methods.}
 
 \item{info}{Name of the entry in \code{h5fileInfo} slot.}
+
+\item{...}{See detailed sections for explanation.}
 
 \item{deparse.level}{Not used here.}
 }
@@ -212,7 +203,7 @@ character vector of feature names.
 
 For more detail of subsetting a \code{liger} object or a
 \linkS4class{ligerDataset} object, please check out \code{\link{subsetLiger}}
-and \code{\link{subsetLigerDataset}}. Here, we set the S4 method
+and \code{\link{subsetLigerDataset}}. Here, we set the S3 method
 "single-bracket" \code{[} as a quick wrapper to subset a \code{ligerDataset}
 object. \code{i} and \code{j} serves as feature and cell subscriptor,
 respectively, which can be any valid index refering the available features
@@ -310,12 +301,14 @@ dim(m)
 n <- scaleData(pbmc, "ctrl")
 identical(m, n)
 ## Any other matrices
-pbmc <- online_iNMF(pbmc, k = 20, miniBatch_size = 100)
-ctrl <- dataset(pbmc, "ctrl")
-V <- getMatrix(ctrl, "V")
-V[1:5, 1:5]
-Vs <- getMatrix(pbmc, "V")
-length(Vs)
-names(Vs)
-identical(Vs$ctrl, V)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    pbmc <- runOnlineINMF(pbmc, k = 20, minibatchSize = 100)
+    ctrl <- dataset(pbmc, "ctrl")
+    V <- getMatrix(ctrl, "V")
+    V[1:5, 1:5]
+    Vs <- getMatrix(pbmc, "V")
+    length(Vs)
+    names(Vs)
+    identical(Vs$ctrl, V)
+}
 }

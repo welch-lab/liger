@@ -21,4 +21,7 @@ for \code{\link{optimizeALS}}. UMAP was generated with \code{minDist = 0.5}.
 Only the 2nd and 3rd factors, the normalized expression of the top 50
 variable genes, and the clustering label were kept for visualization example.
 }
+\references{
+Hyun Min Kang and et. al., Nature Biotechnology, 2018
+}
 \keyword{datasets}

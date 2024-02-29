@@ -159,6 +159,11 @@ plotFactorHeatmap <- function(
 #' @param showCellLegend,showFeatureLegend Logical, whether to show cell or
 #' feature legends. Default \code{TRUE}. Can be a scalar for overall control
 #' or a vector matching with each given annotation variable.
+#' @param cellAnnColList,featureAnnColList List object, with each element a
+#' named vector of R-interpretable color code. The names of the list elements
+#' are used for matching the annotation variable names. The names of the colors
+#' in the vectors are used for matching the levels of a variable (factor object,
+#' categorical). Default \code{NULL} generates ggplot-flavor categorical colors.
 #' @param scale Logical, whether to take z-score to scale and center gene
 #' expression. Applied after \code{dataScaleFunc}. Default \code{FALSE}.
 #' @param trim Numeric vector of two values. Limit the z-score value into this
@@ -192,6 +197,8 @@ plotFactorHeatmap <- function(
         showCellLegend = TRUE,
         showFeatureLabel = TRUE,
         showFeatureLegend = TRUE,
+        cellAnnColList = NULL,
+        featureAnnColList = NULL,
         scale = FALSE,
         trim = c(-2, 2),
         baseSize = 8,
@@ -257,11 +264,13 @@ plotFactorHeatmap <- function(
     cellHA <- .constructHA(cellDF, legendTitleSize = legendTitle,
                            legendTextSize = legendText,
                            which = ifelse(transpose, "row", "column"),
-                           showLegend = showCellLegend)
+                           showLegend = showCellLegend,
+                           colList = cellAnnColList)
     featureHA <- .constructHA(featureDF, legendTitleSize = legendTitle,
                               legendTextSize = legendText,
                               which = ifelse(transpose, "column", "row"),
-                              showLegend = showFeatureLegend)
+                              showLegend = showFeatureLegend,
+                              colList = featureAnnColList)
 
     if (!isTRUE(transpose)) {
         hm <- ComplexHeatmap::Heatmap(
@@ -343,8 +352,8 @@ plotFactorHeatmap <- function(
     if (inherits(annDF, c("data.frame", "DFrame"))) {
         notFound <- !(charIdx %in% rownames(annDF))
         if (any(notFound))
-            warning(sum(notFound), " cells selected could not be found in ",
-                    "given cell annotation.")
+            warning(sum(notFound), " selected could not be found in ",
+                    "given annotation.")
         # Convert to data.frame first so missing value can be filled with NA
         if (!is.data.frame(annDF))
             annDF <- as.data.frame(annDF)
@@ -352,14 +361,14 @@ plotFactorHeatmap <- function(
         if (is.null(AnnDF)) AnnDF <- annDF
         else AnnDF <- cbind(AnnDF, annDF)
     } else if (!is.null(annDF)) {
-        warning("`cellAnnotation` of class ", class(annDF),
+        warning("Annotation of class ", class(annDF),
                 " is not supported yet.")
     }
 
     if (!is.null(splitBy)) {
         notFound <- !splitBy %in% colnames(AnnDF)
         if (any(notFound))
-            warning("Variables in `cellSplitBy` not detected in specified ",
+            warning("Variables in `cell/featureSplitBy` not detected in specified ",
                     "annotation: ",
                     paste(splitBy[notFound], collapse = ", "))
         splitBy <- splitBy[!notFound]
@@ -372,17 +381,28 @@ plotFactorHeatmap <- function(
 
 # HA - HeatmapAnnotation()
 .constructHA <- function(df, legendTitleSize, legendTextSize,
-                         which = c("row", "column"), showLegend = TRUE) {
+                         which = c("row", "column"), showLegend = TRUE,
+                         colList = NULL) {
     which <- match.arg(which)
     if (!is.null(df) && ncol(df) > 0) {
         annCol <- list()
         for (var in colnames(df)) {
             if (is.factor(df[[var]])) {
-                # Still generate all colors for all classes in var
-                # So it matches up with other visualization
-                annCol[[var]] <- scales::hue_pal()(length(levels(df[[var]])))
-                names(annCol[[var]]) <- levels(df[[var]])
-                df[[var]] <- droplevels(df[[var]])
+                if (var %in% names(colList)) {
+                    df[[var]] <- droplevels(df[[var]])
+                    if (any(!levels(df[[var]]) %in% names(colList[[var]]))) {
+                        stop("Given customized annotation color must have ",
+                             "names matching to all available levels in the ",
+                             "annotation.")
+                    }
+                    annCol[[var]] <- colList[[var]][levels(df[[var]])]
+                } else {
+                    # Automatic generate with ggplot2 strategy,
+                    # with level awareness
+                    annCol[[var]] <- scales::hue_pal()(length(levels(df[[var]])))
+                    names(annCol[[var]]) <- levels(df[[var]])
+                    df[[var]] <- droplevels(df[[var]])
+                }
             }
         }
         ha <- ComplexHeatmap::HeatmapAnnotation(
@@ -400,8 +420,8 @@ plotFactorHeatmap <- function(
 
 .zScore <- function(x, trim = NULL) {
     if (inherits(x, "dgCMatrix")) {
-        m <- rowMeansFast(x)
-        v <- rowVarsFast(x, m)
+        m <- Matrix::rowMeans(x)
+        v <- rowVars_sparse_rcpp(x, m)
     } else {
         m <- rowMeans(x)
         v <- rowVarsDense(x, m)

@@ -3,37 +3,73 @@
 \name{as.ligerDataset}
 \alias{as.ligerDataset}
 \alias{as.ligerDataset.ligerDataset}
-\alias{as.ligerDataset.matrixLike}
+\alias{as.ligerDataset.default}
+\alias{as.ligerDataset.matrix}
 \alias{as.ligerDataset.Seurat}
-\alias{as.ligerDataset.anndata._core.anndata.AnnData}
+\alias{as.ligerDataset.SingleCellExperiment}
 \title{Converting other classes of data to a as.ligerDataset object}
 \usage{
 as.ligerDataset(object, ...)
 
-\method{as.ligerDataset}{ligerDataset}(object, modal = c("default", "rna", "atac"), ...)
+\method{as.ligerDataset}{ligerDataset}(
+  object,
+  modal = c("default", "rna", "atac", "spatial", "meth"),
+  ...
+)
 
-\method{as.ligerDataset}{matrixLike}(object, modal = c("default", "rna", "atac"), ...)
+\method{as.ligerDataset}{default}(
+  object,
+  modal = c("default", "rna", "atac", "spatial", "meth"),
+  ...
+)
 
-\method{as.ligerDataset}{Seurat}(object, modal = c("default", "rna", "atac"), ...)
+\method{as.ligerDataset}{matrix}(
+  object,
+  modal = c("default", "rna", "atac", "spatial", "meth"),
+  ...
+)
 
-\method{as.ligerDataset}{anndata._core.anndata.AnnData}(object, modal = c("default", "rna", "atac"), ...)
+\method{as.ligerDataset}{Seurat}(
+  object,
+  modal = c("default", "rna", "atac", "spatial", "meth"),
+  assay = NULL,
+  ...
+)
+
+\method{as.ligerDataset}{SingleCellExperiment}(
+  object,
+  modal = c("default", "rna", "atac", "spatial", "meth"),
+  ...
+)
 }
 \arguments{
 \item{object}{Object.}
 
 \item{...}{Additional arguments passed to \code{\link{createLigerDataset}}}
 
-\item{modal}{Modality setting for each dataset.}
+\item{modal}{Modality setting for each dataset. Choose from \code{"default"},
+\code{"rna"}, \code{"atac"}, \code{"spatial"}, \code{"meth"}.}
+
+\item{assay}{Name of assay to use. Default \code{NULL} uses current active
+assay.}
 }
 \value{
 a \linkS4class{liger} object.
 }
 \description{
-Converting other classes of data to a as.ligerDataset object
+Works for converting a matrix or container object to a single ligerDataset,
+and can also convert the modality preset of a ligerDataset. When used with
+a dense matrix object, it automatically converts the matrix to sparse form
+(\code{\link[Matrix]{dgCMatrix-class}}). When used with container objects
+such as Seurat or SingleCellExperiment, it is highly recommended that the
+object contains only one dataset/sample which is going to be integrated with
+LIGER. For multi-sample objects, please use \code{\link{as.liger}} with
+dataset source variable specified.
 }
 \examples{
 ctrl <- dataset(pbmc, "ctrl")
 ctrl
+# Convert the modality preset
 as.ligerDataset(ctrl, modal = "atac")
 rawCounts <- rawData(ctrl)
 class(rawCounts)

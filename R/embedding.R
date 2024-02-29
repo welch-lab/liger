@@ -23,8 +23,8 @@
 #' \code{NULL} uses all factors.
 #' @param nDims Number of dimensions to reduce to. Default \code{2}.
 #' @param distance Character. Metric used to measure distance in the input
-#' space. Default \code{"euclidean"}, alternative options include:
-#' \code{"cosine"}, \code{"manhattan"} and \code{"hamming"}.
+#' space. Default \code{"cosine"}, alternative options include:
+#' \code{"euclidean"}, \code{"manhattan"} and \code{"hamming"}.
 #' @param nNeighbors Number of neighboring points used in local approximations
 #' of manifold structure. Default \code{10}.
 #' @param minDist Numeric. Controls how tightly the embedding is allowed
@@ -47,7 +47,7 @@ runUMAP <- function(
         useRaw = FALSE,
         useDims = NULL,
         nDims = 2,
-        distance = c("euclidean", "cosine", "manhattan", "hamming"),
+        distance = c("cosine", "euclidean", "manhattan", "hamming"),
         nNeighbors = 20,
         minDist = 0.1,
         dimredName = "UMAP",
@@ -82,9 +82,7 @@ runUMAP <- function(
                        metric = distance,
                        n_neighbors = as.integer(nNeighbors),
                        min_dist = minDist)
-    rownames(umap) <- colnames(object)
-    colnames(umap) <- seq(nDims)
-    cellMeta(object, dimredName, check = FALSE) <- umap
+    dimRed(object, dimredName) <- umap
     return(object)
 }
 
@@ -188,9 +186,7 @@ runTSNE <- function(
                           theta = theta,
                           perplexity = perplexity)
     }
-    rownames(tsne) <- colnames(object)
-    colnames(tsne) <- seq(nDims)
-    cellMeta(object, dimredName, check = FALSE) <- tsne
+    dimRed(object, dimredName) <- tsne
     object@uns$TSNE <- list(method = method)
     return(object)
 }

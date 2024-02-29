@@ -5,7 +5,11 @@
 \alias{mergeDenseAll}
 \title{Merge matrices while keeping the union of rows}
 \usage{
-mergeSparseAll(datalist, libraryNames = NULL)
+mergeSparseAll(
+  datalist,
+  libraryNames = NULL,
+  mode = c("union", "intersection")
+)
 
 mergeDenseAll(datalist, libraryNames = NULL)
 }
@@ -16,6 +20,9 @@ matrix for \code{mergeDenseAll}.}
 \item{libraryNames}{Character vector to be added as the prefix for the
 barcodes in each matrix in \code{datalist}. Length should match with the
 number of matrices. Default \code{NULL} do not modify the barcodes.}
+
+\item{mode}{Whether to take the \code{"union"} or \code{"intersection"} of
+features when merging. Default \code{"union"}.}
 }
 \value{
 dgCMatrix or matrix with all barcodes in \code{datalist} as columns

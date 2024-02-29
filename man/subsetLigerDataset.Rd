@@ -11,7 +11,7 @@ subsetLigerDataset(
   featureIdx = NULL,
   cellIdx = NULL,
   useSlot = NULL,
-  newH5 = "auto",
+  newH5 = TRUE,
   filename = NULL,
   filenameSuffix = NULL,
   chunkSize = 1000,
@@ -25,7 +25,7 @@ subsetH5LigerDataset(
   featureIdx = NULL,
   cellIdx = NULL,
   useSlot = NULL,
-  newH5 = "auto",
+  newH5 = TRUE,
   filename = NULL,
   filenameSuffix = NULL,
   chunkSize = 1000,
@@ -57,8 +57,7 @@ Missing or \code{NULL} for all cells.}
 
 \item{newH5}{Whether to create a new H5 file on disk for the subset dataset
 if \code{object} is HDF5 based. \code{TRUE} writes a new one, \code{FALSE}
-returns in memory data. Default \code{"auto"} writes a new one when more than
-8000 cells.}
+returns in memory data.}
 
 \item{filename}{Filename of the new H5 file if being created. Default
 \code{NULL} adds suffix \code{".subset_{yymmdd_HHMMSS}.h5"} to the original

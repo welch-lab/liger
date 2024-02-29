@@ -7,7 +7,8 @@
 retrieveCellFeature(
   object,
   feature,
-  slot = c("rawData", "normData", "scaleData", "H", "H.norm", "cellMeta"),
+  slot = c("rawData", "normData", "scaleData", "H", "H.norm", "cellMeta", "rawPeak",
+    "normPeak"),
   cellIdx = NULL,
   ...
 )

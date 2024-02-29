@@ -1,12 +1,60 @@
+has_RcppPlanc <- requireNamespace("RcppPlanc", quietly = TRUE)
 data("pbmc", package = "rliger2")
+
+withNewH5Copy <- function(fun) {
+    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger2")
+    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger2")
+    if (!file.exists(ctrlpath.orig))
+        stop("Cannot find original h5 file at: ", ctrlpath.orig)
+    if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
+    if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
+    pwd <- getwd()
+    # Temp setting for GitHub Actions
+    fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
+    if (Sys.info()["sysname"] == "Windows") {
+        pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
+    }
+
+    ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
+    stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
+    cat("Working ctrl H5 file path: ", ctrlpath, "\n")
+    cat("Working stim H5 file path: ", stimpath, "\n")
+    file.copy(ctrlpath.orig, ctrlpath, copy.mode = TRUE)
+    file.copy(stimpath.orig, stimpath, copy.mode = TRUE)
+    if (!file.exists(ctrlpath))
+        stop("Cannot find copied h5 file at: ", ctrlpath)
+
+    fun(list(ctrl = ctrlpath, stim = stimpath))
+
+    if (file.exists(ctrlpath)) unlink(ctrlpath)
+    if (file.exists(stimpath)) unlink(stimpath)
+}
+
+closeH5Liger <- function(object) {
+    for (d in names(object)) {
+        if (isH5Liger(object, d)) {
+            h5file <- getH5File(object, d)
+            h5file$close()
+        }
+    }
+}
 
 process <- function(object, f = TRUE, q = TRUE) {
     object <- normalize(object)
     object <- selectGenes(object)
     object <- scaleNotCenter(object)
-    if (f) object <- online_iNMF(object, k = 20, miniBatch_size = 100)
+    if (f) object <- runOnlineINMF(object, k = 20, minibatchSize = 100)
     if (q) object <- quantileNorm(object)
     return(object)
+}
+
+is_online <- function() {
+    tryCatch({
+        readLines("https://cran.r-project.org/", n = 1)
+        TRUE
+    },
+    warning = function(w) invokeRestart("muffleWarning"),
+    error = function(e) FALSE)
 }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -15,33 +63,47 @@ process <- function(object, f = TRUE, q = TRUE) {
 
 context("Clustering")
 test_that("clustering", {
+    skip_if_not(has_RcppPlanc)
     pbmc <- process(pbmc, f = FALSE, q = FALSE)
-    expect_error(runLeidenCluster(pbmc), "No factor loading ")
-    expect_error(runLouvainCluster(pbmc), "No factor loading ")
+    expect_error(runCluster(pbmc), "No factor loading ")
 
-    pbmc <- online_iNMF(pbmc, k = 20, miniBatch_size = 100)
-    expect_message(runLeidenCluster(pbmc, nRandomStarts = 1),
-                   "Leiden clustering on unnormalized")
-    expect_message(runLouvainCluster(pbmc, nRandomStarts = 1),
-                   "Louvain clustering on unnormalized")
+    pbmc <- runOnlineINMF(pbmc, k = 20, minibatchSize = 100)
+    expect_message(runCluster(pbmc, nRandomStarts = 1),
+                   "leiden clustering on unnormalized")
+    expect_message(runCluster(pbmc, nRandomStarts = 1, method = "louvain"),
+                   "louvain clustering on unnormalized")
 
     pbmc <- quantileNorm(pbmc)
-    expect_message(runLeidenCluster(pbmc, nRandomStarts = 1),
-                   "Leiden clustering on quantile normalized")
-    expect_message(runLouvainCluster(pbmc, nRandomStarts = 1),
-                   "Louvain clustering on quantile normalized")
+    expect_message(runCluster(pbmc, nRandomStarts = 1),
+                   "leiden clustering on quantile normalized")
+    expect_message(runCluster(pbmc, nRandomStarts = 1, method = "louvain"),
+                   "louvain clustering on quantile normalized")
 
-    expect_message(runLeidenCluster(pbmc, nRandomStarts = 1,
-                             partitionType = "CPMVertexPartition"),
-                   "63 singletons identified. 112 final clusters")
-    pbmc <- runLeidenCluster(pbmc, nRandomStarts = 1,
-                             partitionType = "CPMVertexPartition",
-                             groupSingletons = FALSE)
-    expect_equal(nlevels(pbmc$leiden_cluster), 113)
-    expect_true("singleton" %in% pbmc$leiden_cluster)
+    # Tests for singleton grouping. Need to find the case where there are singletons
+    # expect_message(runCluster(pbmc, nRandomStarts = 1,
+    #                          partitionType = "CPMVertexPartition"),
+    #                "63 singletons identified. 112 final clusters")
+    # pbmc <- runCluster(pbmc, nRandomStarts = 1,
+    #                          partitionType = "CPMVertexPartition",
+    #                          groupSingletons = FALSE)
+    # expect_equal(nlevels(pbmc$leiden_cluster), 113)
+    # expect_true("singleton" %in% pbmc$leiden_cluster)
 
-    expect_warning(louvainCluster(pbmc), "was deprecated in")
+    # Test downsampling with the info already here
+    pbmc.small1 <- downsample(pbmc, maxCells = 100)
+    expect_true(all.equal(sapply(pbmc.small1@datasets, ncol), c(ctrl = 44, stim = 56)))
+    idx <- downsample(pbmc, balance = c("dataset"), maxCells = 100,
+                              returnIndex = TRUE)
+    expect_is(idx, "integer")
+    expect_equal(length(idx), 200)
+
+    pbmc <- mapCellMeta(pbmc, from = "dataset", newTo = "pseudo",
+                        `ctrl` = "CTRL")
+    expect_identical(pbmc$pseudo,
+                     setNames(factor(c(rep("CTRL", 300), rep("stim", 300))),
+                              colnames(pbmc)))
 })
+
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Dimensionality reduction
@@ -49,6 +111,7 @@ test_that("clustering", {
 
 context("dimensionality reduction")
 test_that("dimensionality reduction", {
+    skip_if_not(has_RcppPlanc)
     pbmc <- process(pbmc)
     expect_message(runUMAP(pbmc, useRaw = TRUE),
                    "Generating UMAP on unnormalized")
@@ -72,18 +135,18 @@ test_that("dimensionality reduction", {
 
 context("Differential Expression")
 test_that("wilcoxon", {
-    expect_error(runWilcoxon(pbmc),
-                 "All datasets being involved has to be normalized")
+    skip_if_not(has_RcppPlanc)
+    expect_error(runMarkerDEG(pbmc),
+                 "No `conditionBy` given or default cluster not set")
     pbmc <- process(pbmc)
-    pbmc <- runLeidenCluster(pbmc, nRandomStarts = 1)
-    expect_error(runWilcoxon(pbmc, method = "dataset", useDatasets = 1),
-                 "Should have at least 2 datasets as input ")
-    res1 <- runWilcoxon(pbmc)
-    expect_equal(dim(res1), c(1992, 10))
-    expect_equal(res1[1,4], -3.6828172, tolerance = 1e-6)
-    res2 <- runWilcoxon(pbmc, method = "dataset")
-    expect_equal(dim(res2), c(3984, 10))
-    expect_equal(res2[1,7], 2.936397e-24, tolerance = 1e-6)
+    pbmc <- runCluster(pbmc, nRandomStarts = 1)
+    res0 <- runMarkerDEG(pbmc, conditionBy = "dataset", useDatasets = 1)
+    expect_true(all(is.nan(res0$pval)))
+
+    res1 <- runMarkerDEG(pbmc)
+    expect_equal(dim(res1), c(249 * nlevels(pbmc$leiden_cluster), 10))
+    res2 <- runMarkerDEG(pbmc, conditionBy = "dataset", splitBy = "leiden_cluster")
+    expect_is(res2, "list")
     hm1 <- plotMarkerHeatmap(pbmc, res1, dedupBy = "l")
     hm2 <- plotMarkerHeatmap(pbmc, res1, dedupBy = "p")
     expect_is(hm1, "HeatmapList")
@@ -94,21 +157,76 @@ test_that("wilcoxon", {
     expect_error(getFactorMarkers(pbmc, "ctrl", "stim", factorShareThresh = 0),
                  "No factor passed the dataset specificity threshold")
     expect_warning(
-        getFactorMarkers(pbmc, "ctrl", "stim", factorShareThresh = 0.01),
-        "Only 1 factor passed the dataset specificity threshold"
-    )
-    expect_warning(
         expect_message(
-            getFactorMarkers(pbmc, "ctrl", "stim", printGenes = TRUE),
-            "GAPDH, LGALS1, CXCR4, ACTB, FTL, ISG15, GBP1, SELL, RSAD2, TEX264"
-        ),
-        "Factor 16 did not appear as max in any cell in either dataset"
+            res3 <- getFactorMarkers(pbmc, "ctrl", "stim", printGenes = TRUE)
+        )
     )
-    expect_warning(res3 <- getFactorMarkers(pbmc, "ctrl", "stim"),
-                   "Factor 16 did not appear as max in any cell in either")
     expect_is(res3, "list")
     expect_identical(names(res3), c("ctrl", "shared", "stim", "num_factors_V1",
                                    "num_factors_V2"))
+
+    expect_error(runGOEnrich(res1, group = "a"),
+                 "Selected groups not available")
+    expect_error(runGOEnrich(res1, group = 0, orderBy = c("logFC", "pval")),
+                 "Only one `orderBy`")
+    expect_error(runGOEnrich(res1, orderBy = "score"),
+                 "`orderBy` should be one of")
+    if (is_online()) {
+        go1 <- runGOEnrich(res1, group = 0, orderBy = "logFC", significant = FALSE)
+        expect_is(go1, "list")
+        expect_is(go1$`0`$result, "data.frame")
+        go2 <- runGOEnrich(res1, group = 0, orderBy = "pval", significant = FALSE)
+        expect_is(go2, "list")
+        expect_is(go2$`0`$result, "data.frame")
+    }
+})
+
+
+test_that("pseudo bulk", {
+    skip_if_not(has_RcppPlanc)
+    pbmc <- process(pbmc)
+    pbmc <- runCluster(pbmc, nRandomStarts = 1)
+    res1 <- runPairwiseDEG(pbmc, groupTest = pbmc$leiden_cluster == 1,
+                           groupCtrl = pbmc$leiden_cluster == 2,
+                           method = "pseudo")
+    expect_is(res1, "data.frame")
+    expect_true(all.equal(dim(res1), c(238, 5)))
+    res2 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
+                           variable1 = "leiden_cluster",
+                           method = "pseudo", useReplicate = "dataset")
+    expect_is(res2, "data.frame")
+    expect_true(all.equal(dim(res2), c(238, 5)))
+    res3 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
+                           variable1 = "leiden_cluster",
+                           method = "pseudo")
+    expect_true(identical(res1[,-2], res3[,-2])) # Different in "group" column
+    pbmc$leiden2 <- pbmc$leiden_cluster
+    res4 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
+                           variable1 = "leiden_cluster", variable2 = "leiden2",
+                           method = "pseudo", useReplicate = "dataset")
+    expect_true(all.equal(res2[,-2], res4[,-2])) # Different in "group" column
+
+    expect_error(runPairwiseDEG(pbmc, variable2 = "yo"),
+                 "Please see")
+
+    expect_error(
+        runPairwiseDEG(
+            pbmc, groupTest = pbmc$dataset == "ctrl" & pbmc$leiden_cluster == 0,
+            groupCtrl = pbmc$dataset == "stim" & pbmc$leiden_cluster == 0,
+            method = "pseudo", useReplicate = "dataset"
+        ),
+        "Too few replicates label for condition"
+    )
+
+    pbmc@datasets$ctrl@rawData <- NULL
+    expect_error(
+        runPairwiseDEG(
+            pbmc, groupTest = 1, groupCtrl = 2,
+            variable1 = "leiden_cluster",　method = "pseudo",
+            useReplicate = "dataset"
+        ),
+        "rawData not all available for involved datasets"
+    )
 })
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -121,16 +239,37 @@ custom <- list(
                         "6402", "91543", "6233", "10578", "3553", "5473",
                         "3627", "51316", "929", "972")
 )
-test_that("gsea", {
-    expect_warning({
-        expect_is(runGSEA(pbmcPlot, genesets = "Immune System"), "list")
-        expect_is(runGSEA(pbmcPlot, customGenesets = custom), "list")
-    })
 
-    res1 <- runFactorGeneGO(pbmcPlot)
-    expect_identical(unique(res1$result$query), c("Factor_13", "Factor_19"))
-    res2 <- runFactorGeneGO(pbmcPlot, sumLoading = FALSE)
-    expect_identical(unique(res2$result$query),
-                     c("ctrl_Factor_13", "ctrl_Factor_19",
-                       "stim_Factor_13", "stim_Factor_19"))
+if (is_online()) {
+    test_that("gsea", {
+        expect_warning({
+            expect_is(runGSEA(pbmcPlot, genesets = "Immune System"), "list")
+            expect_is(runGSEA(pbmcPlot, customGenesets = custom), "list")
+        })
+    })
+}
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# ATAC
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+context("ATAC")
+data("bmmc")
+test_that("ATAC", {
+    skip_if_not(has_RcppPlanc)
+    bmmc <- normalize(bmmc)
+    bmmc <- selectGenes(bmmc)
+    bmmc <- scaleNotCenter(bmmc)
+    bmmc <- runOnlineINMF(bmmc, minibatchSize = 80)
+    bmmc <- quantileNorm(bmmc)
+    bmmc <- normalizePeak(bmmc)
+    bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
+    expect_is(dataset(bmmc, "rna"), "ligerATACDataset")
+    corr <- linkGenesAndPeaks(
+        bmmc, useDataset = "rna",
+        pathToCoords = system.file("extdata/hg19_genes.bed",
+                                   package = "rliger2")
+    )
+    expect_is(corr, "dgCMatrix")
 })
+

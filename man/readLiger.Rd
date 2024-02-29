@@ -34,5 +34,23 @@ to the currect version of structure. Default \code{TRUE}.}
 New version of \linkS4class{liger} object
 }
 \description{
-Read liger object from RDS file
+This file reads a liger object stored in RDS files under all kinds of types.
+1. A \linkS4class{liger} object with in-memory data created from package
+version since 1.99. 2. A liger object with on-disk H5 data associated, where
+the link to H5 files will be automatically restored. 3. A liger object
+created with older package version, and can be updated to the latest data
+structure by default.
+}
+\examples{
+# Save and read regular current-version liger object
+tempPath <- tempfile(fileext = ".rds")
+saveRDS(pbmc, tempPath)
+pbmc <- readLiger(tempPath)
+
+# Save and read H5-based liger object
+h5Path <- system.file("extdata/ctrl.h5", package = "rliger2")
+lig <- createLiger(list(ctrl = h5Path))
+tempPath <- tempfile(fileext = ".rds")
+saveRDS(lig, tempPath)
+lig <- readLiger(tempPath)
 }

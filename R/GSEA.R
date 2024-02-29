@@ -29,7 +29,7 @@ runGSEA <- function(
         mat_v = useDatasets,
         custom_gene_sets = customGenesets
 ) {
-    if (!requireNamespace("org.Hs.eg.db", quietly = TRUE))
+    if (!requireNamespace("org.Hs.eg.db", quietly = TRUE)) # nocov start
         stop("Package \"org.Hs.eg.db\" needed for this function to work. ",
              "Please install it by command:\n",
              "BiocManager::install('org.Hs.eg.db')",
@@ -45,7 +45,7 @@ runGSEA <- function(
         stop("Package \"fgsea\" needed for this function to work. ",
              "Please install it by command:\n",
              "BiocManager::install('fgsea')",
-             call. = FALSE)
+             call. = FALSE) # nocov end
 
     .deprecateArgs(list(gene_sets = "genesets",
                         mat_w = "useW",
@@ -108,78 +108,110 @@ runGSEA <- function(
     return(gsea)
 }
 
-#' Run Gene Ontology enrichment analysis on metagenes
+#' Run Gene Ontology enrichment analysis on differentially expressed genes.
 #' @description
-#' This function forms genesets basing on the non-zero gene loading in each
-#' factor, and calls gene ontology (GO) analysis method provided by gprofiler2.
-#' @param object A \linkS4class{liger} object with valid factorization result.
-#' @param useW Logical, whether to consider shared gene loading value (i.e.
-#' \eqn{W} matrix) when forming the genesets. Default \code{TRUE}.
-#' @param useDatasets A character vector of the names, a numeric or logical
-#' vector of the index of the datasets where the gene loading need to be
-#' considered. Default \code{NULL} considers all datasets.
-#' @param sumLoading Logical, whether to sum up the gene loading from all
-#' considered datasets for each factor, or to query a geneset per factor and
-#' dataset. Default \code{TRUE}.
-#' @param ... Additional arguments passed to \code{\link[gprofiler2]{gost}}.
+#' This function forms genesets basing on the differential expression result,
+#' and calls gene ontology (GO) analysis method provided by gprofiler2.
+#' @param result Data frame of unfiltered output from \code{\link{runMarkerDEG}}
+#' or \code{\link{runPairwiseDEG}}.
+#' @param group Selection of one group available from \code{result$group}.
+#' Default \code{NULL} uses all groups involved in DE \code{result} table.
+#' @param useBg Logical, whether to set all genes involved in DE analysis
+#' (before threshold filtering) as a domain background of GO analysis. Default
+#' \code{TRUE}.
+#' @param orderBy Name of DE statistics metric to order the gene list for each
+#' group. Choose from \code{"logFC"} (default), \code{"pval"} or \code{"padj"}.
+#' Or set \code{NULL} to turn off ranked mode.
+#' @param logFCThresh The log2FC threshold above which the genes will be used.
+#' Default \code{1}.
+#' @param padjThresh The adjusted p-value threshold less than which the genes
+#' will be used. Default \code{0.05}.
+#' @param splitReg Whether to have queries of both up-regulated and
+#' down-regulated genes for each group. Default \code{FALSE} only queries
+#' up-regulated genes and should be preferred when \code{result} comes from
+#' marker detection test. When \code{result} comes from group-to-group DE test,
+#' it is recommended to set \code{splitReg = TRUE}.
+#' @param ... Additional arguments passed to
+#' \code{gprofiler2::\link[gprofiler2]{gost}}. Arguments \code{query},
+#' \code{custom_bg}, \code{domain_scope}, and \code{ordered_query} are
+#' pre-specified by this wrapper function. Users must set
+#' \code{organism = "mmusculus"} when working on mouse data.
 #' @references Kolberg, L. et al, 2020 and Raudvere, U. et al, 2019
-#' @return A list object with the following entries
+#' @return A list object where each element is a result list for a group. Each
+#' result list contains two elements:
 #' \item{result}{data.frame of main GO analysis result.}
 #' \item{meta}{Meta information for the query.}
+#'
+#' See \code{\link[gprofiler2]{gost}}. for detailed explanation.
 #' @export
 #' @examples
-#' go <- runFactorGeneGO(pbmcPlot)
-#' head(go$result)
-runFactorGeneGO <- function(
-        object,
-        useW = TRUE,
-        useDatasets = NULL,
-        sumLoading = TRUE,
+#' res <- runMarkerDEG(pbmcPlot)
+#' # Setting `significant = FALSE` because it's hard for a gene list obtained
+#' # from small test dataset to represent real-life biology.
+#' \donttest{
+#' go <- runGOEnrich(res, group = 0, significant = FALSE)
+#' }
+runGOEnrich <- function(
+        result,
+        group = NULL,
+        useBg = TRUE,
+        orderBy = "padj",
+        logFCThresh = 1,
+        padjThresh = 0.05,
+        splitReg = FALSE,
         ...
 ) {
-    if (!requireNamespace("gprofiler2", quietly = TRUE))
+    if (!requireNamespace("gprofiler2", quietly = TRUE)) # nocov start
         stop("Package \"gprofiler2\" needed for this function to work. ",
              "Please install it by command:\n",
              "install.packages('gprofiler2')",
-             call. = FALSE)
-    useDatasets <- .checkUseDatasets(object, useDatasets = useDatasets)
-    .checkValidFactorResult(object, useDatasets)
+             call. = FALSE) # nocov end
+    group <- group %||% unique(result$group)
+    if (any(!group %in% result$group)) {
+        stop("Selected groups not available `result$group`: ",
+             paste(group[!group %in% result$group], collapse = ", "))
+    }
+    bg <- NULL
+    domain_scope <- "annotated" # gprofiler2 default
+    if (isTRUE(useBg)) {
+        bg <- unique(result$feature)
+        domain_scope <- "custom"
+    }
+    filter <- result$group %in% group &
+        abs(result$logFC) > logFCThresh &
+        result$padj < padjThresh
+    filter[is.na(filter)] <- FALSE
+    result <- result[filter, , drop = FALSE]
+    resultUp <- result[result$logFC > 0,]
+    if (isTRUE(splitReg)) resultDown <- result[result$logFC < 0,]
 
-    # list of V matrices: gene x k
-    geneLoading <- getMatrix(object, "V", dataset = useDatasets,
-                             returnList = TRUE)
-    k <- ncol(geneLoading[[1]])
-    # Get gene ranks in each factor
-    if (isTRUE(sumLoading)) {
-        geneLoading <- list(Reduce("+", geneLoading))
+    ordered_query <- FALSE
+    if (!is.null(orderBy)) {
+        ordered_query <- TRUE
+        if (length(orderBy) > 1) stop("Only one `orderBy` metric allowed")
+        if (!orderBy %in% c("logFC", "pval", "padj")) {
+            stop("`orderBy` should be one of 'logFC', 'pval' or 'padj'.")
+        }
+        if (orderBy == "logFC") {
+            resultUp <- resultUp[order(resultUp$logFC, decreasing = TRUE),]
+            if (isTRUE(splitReg))
+                resultDown <- resultDown[order(resultDown$logFC),]
+        } else {
+            resultUp <- resultUp[order(resultUp[[orderBy]]),]
+            if (isTRUE(splitReg))
+                resultDown <- resultDown[order(resultDown[[orderBy]]),]
+        }
+    }
+    resultList <- list()
+    for (g in unique(result$group)) {
+        query <- list(Up = resultUp$feature[resultUp$group == g])
+        if (splitReg) query$Down <- resultDown$feature[resultDown$group == g]
+        resultList[[g]] <- gprofiler2::gost(
+            query = query, custom_bg = bg, domain_scope = domain_scope,
+            ordered_query = ordered_query, ...
+        )
     }
 
-    if (isTRUE(useW)) {
-        geneLoading <- lapply(geneLoading, function(v) {
-            v + getMatrix(object, "W")
-        })
-    }
-    genes <- rownames(geneLoading)
-    gsLists <- lapply(geneLoading, function(v) {
-        genes <- rownames(v)
-        gs <- lapply(seq_len(ncol(v)), function(j) {
-            genes <- genes[order(v[, j], decreasing = TRUE)]
-            genes[v[genes, j] > 0]
-        })
-        names(gs) <- colnames(v)
-        return(gs)
-    })
-    if (is.null(names(gsLists))) {
-        # Summing up loadings from all used datasets
-        gsLists <- gsLists[[1]]
-    } else {
-        prefix <- rep(names(gsLists), each = k)
-        gsLists <- Reduce(c, gsLists)
-        names(gsLists) <- paste0(prefix, "_", names(gsLists))
-    }
-    output <- gprofiler2::gost(query = gsLists, ...)
-    output$meta$query_metadata$useW <- useW
-    output$meta$query_metadata$sumLoading <- sumLoading
-    return(output)
+    return(resultList)
 }
 

@@ -563,11 +563,9 @@ bool VOSClusteringTechnique::runLocalMovingAlgorithm(JavaRandom& random){
       nStableNodes = 1;
       update = true;
     }
-
     i = (i < network->nNodes - 1) ? (i + 1) : 0;
   }
   while (nStableNodes < network->nNodes);
-
   IVector newCluster(network->getNNodes());
   clustering->nClusters = 0;
   for (i = 0; i < network->nNodes; i++)
@@ -586,11 +584,10 @@ bool VOSClusteringTechnique::runLouvainAlgorithm(JavaRandom& random) {
 
   if (network->nNodes == 1)
     return false;
-  bool update = runLocalMovingAlgorithm(random);
+  bool update = runLocalMovingAlgorithm(random);\
   if (clustering->nClusters < network->nNodes)
   {
     VOSClusteringTechnique vosClusteringTechnique(std::make_shared<Network>(network->createReducedNetwork(*clustering)), resolution);
-
     bool update2 = vosClusteringTechnique.runLouvainAlgorithm(random);
 
     if (update2)

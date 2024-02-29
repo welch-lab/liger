@@ -19,12 +19,12 @@
         normData <- mergeSparseAll(lapply(args, normData),
                                    libraryNames = libraryNames)
     else normData <- NULL
-    if (all(sapply(args, function(ld) !is.null(scaleData(ld)))))
-        scaleData <- mergeDenseAll(lapply(args, scaleData),
-                                   libraryNames = libraryNames)
-    else scaleData <- NULL
-    createLigerDataset(rawData = rawData, normData = normData,
-                       scaleData = scaleData)
+    # if (all(sapply(args, function(ld) !is.null(scaleData(ld)))))
+    #     scaleData <- mergeSparseAll(lapply(args, scaleData),
+    #                                 libraryNames = libraryNames)
+    # else scaleData <- NULL
+    createLigerDataset(rawData = rawData, normData = normData)#,
+                       # scaleData = scaleData)
 }
 
 .cbind.ligerDataset.h5 <- function(args) stop("Not implemented yet")
@@ -45,18 +45,26 @@
 #' @param libraryNames Character vector to be added as the prefix for the
 #' barcodes in each matrix in \code{datalist}. Length should match with the
 #' number of matrices. Default \code{NULL} do not modify the barcodes.
+#' @param mode Whether to take the \code{"union"} or \code{"intersection"} of
+#' features when merging. Default \code{"union"}.
 #' @return dgCMatrix or matrix with all barcodes in \code{datalist} as columns
 #' and the union of genes in \code{datalist} as rows.
 #' @export
 #' @examples
 #' rawDataList <- getMatrix(pbmc, "rawData")
 #' merged <- mergeSparseAll(rawDataList, libraryNames = names(pbmc))
-mergeSparseAll <- function(datalist, libraryNames = NULL) {
+mergeSparseAll <- function(datalist, libraryNames = NULL,
+                           mode = c("union", "intersection")) {
     # Use summary to convert the sparse matrices into three-column indexes where
     # i are the row numbers, j are the column numbers, and x are the nonzero
     # entries
+    mode <- match.arg(mode)
     col_offset <- 0
-    allGenes <- unique(unlist(lapply(datalist, rownames)))
+    if (mode == "union") {
+        allGenes <- Reduce(union, lapply(datalist, rownames))
+    } else if (mode == "intersection") {
+        allGenes <- Reduce(intersect, lapply(datalist, rownames))
+    }
     allCells <- c()
     for (i in 1:length(datalist)) {
         curr <- datalist[[i]]
@@ -79,7 +87,7 @@ mergeSparseAll <- function(datalist, libraryNames = NULL) {
         idx <- match(rownames(curr), allGenes)
         newgenescurr <- idx[curr_s[, 1]]
         curr_s[, 1] <- newgenescurr
-
+        #curr_s <- curr_s[!is.na(curr_s[,1]),]
         # Now bind the altered 3-column matrices together, and convert into a single sparse matrix.
         if (!exists("full_mat")) {
             full_mat <- curr_s
@@ -88,6 +96,7 @@ mergeSparseAll <- function(datalist, libraryNames = NULL) {
         }
         col_offset <- length(allCells)
     }
+    full_mat <- full_mat[!is.na(full_mat[,1]),]
     M <- Matrix::sparseMatrix(
         i = full_mat[, 1],
         j = full_mat[, 2],
@@ -113,7 +122,9 @@ mergeDenseAll <- function(datalist, libraryNames = NULL) {
         if (nrow(dat) == 0)
             dat <- matrix(NA, nrow = length(allRows), ncol = ncol(dat),
                           dimnames = list(allRows, colnames(dat)))
-        data.frame(rn = rownames(dat), dat)
+        dat <- as.data.frame(dat)
+        rnCol <- data.frame(rn = rownames(dat))
+        cbind(rnCol, dat)
     })
 
     # Could have use reduce. but `Reduce` doesn't allow additional arguments,

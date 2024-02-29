@@ -1,11 +1,12 @@
 Package: rliger2
 Version: 1.99.0
-Date: 2021-03-09
+Date: 2023-11-09
 Type: Package
 Title: Linked Inference of Genomic Experimental Relationships
 Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors. See Welch J, Kozareva V, et al (2019) <doi:10.1016/j.cell.2019.05.006>, and Liu J, Gao C, Sodicoff J, et al (2020) <doi:10.1038/s41596-020-0391-8> for more details.
 Authors@R: c(
   person(given = 'Joshua', family = 'Welch', email = 'welchjd@umich.edu', role = c('aut')),
+  person(given = 'Yichen', family = 'Wang', email = 'wayichen@umich.edu', role = c('aut', 'cre')),
   person(given = 'Chao', family = 'Gao', email = 'gchao@umich.edu', role = c('aut')),
   person(given = 'Jialin', family = 'Liu', email = 'alanliu@umich.edu', role = c('aut')),
   person(given = 'Joshua', family = 'Sodicoff', email = 'sodicoff@umich.edu', role = c('aut', 'ctb')),
@@ -14,9 +15,10 @@ Authors@R: c(
   person(given = 'Paul', family = 'Hoffman', role = 'ctb'),
   person(given = 'Ilya', family = 'Korsunsky', role = 'ctb'),
   person(given = 'Robert', family = 'Lee', role = 'ctb'),
-  person(given = 'Yichen', family = 'Wang', email = 'wayichen@umich.edu', role = c('aut', 'cre'))
+  person(given = 'Andrew', family = 'Robbins', email = 'robbiand@med.umich.edu', role = 'ctb')
   )
 Author: Joshua Welch [aut],
+        Yichen Wang [aut, cre],
         Chao Gao [aut],
         Jialin Liu [aut],
         Joshua Sodicoff [aut, ctb],
@@ -25,14 +27,14 @@ Author: Joshua Welch [aut],
         Paul Hoffman [ctb],
         Ilya Korsunsky [ctb],
         Robert Lee [ctb],
-        Yichen Wang [aut, cre]
-Maintainer: Chao Gao <gchao@umich.edu>
+        Andrew Robbins [ctb]
+Maintainer: Yichen Wang <wayichen@umich.edu>
 BugReports: https://github.com/welch-lab/liger/issues
 URL: https://github.com/welch-lab/liger
-License: GPL-3 | file LICENSE
+License: GPL-3
 biocViews:
 LazyData: true
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 VignetteBuilder: knitr
 Encoding: UTF-8
 LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress
@@ -41,7 +43,7 @@ Depends:
     methods,
     stats,
     utils,
-    R (>= 2.10)
+    R (>= 3.4)
 Imports:
     circlize,
     cowplot,
@@ -50,8 +52,7 @@ Imports:
     ggplot2,
     grid,
     hdf5r,
-    igraph,
-    leidenbase,
+    leidenAlg (>= 1.1.1),
     lifecycle,
     magrittr,
     RANN,
@@ -65,27 +66,25 @@ Imports:
     viridis
 Suggests:
     AnnotationDbi,
-    doParallel,
-    DoubletFinder,
+    DESeq2,
+    DoubletFinder (>= 2.0.4),
     EnhancedVolcano,
     fgsea,
-    foreach,
     GenomicRanges,
     ggrepel,
     gprofiler2,
-    ica,
     IRanges,
     irlba,
     knitr,
-    mclust,
     org.Hs.eg.db,
-    parallel,
     plotly,
     psych,
+    RcppPlanc,
     reactome.db,
-    reticulate,
-    riverplot,
+    rgl,
+    rglwidget,
     rmarkdown,
+    sankey,
     scattermore (>= 0.7),
     Seurat,
     SeuratObject,
@@ -93,4 +92,5 @@ Suggests:
     SummarizedExperiment,
     testthat
 Remotes:
-    chris-mcginnis-ucsf/DoubletFinder
+    chris-mcginnis-ucsf/DoubletFinder,
+    welch-lab/RcppPlanc

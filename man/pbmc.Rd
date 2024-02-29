@@ -17,4 +17,7 @@ pbmc
 \description{
 liger object of PBMC subsample data with Control and Stimulated datasets
 }
+\references{
+Hyun Min Kang and et. al., Nature Biotechnology, 2018
+}
 \keyword{datasets}

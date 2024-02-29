@@ -38,12 +38,17 @@
 #' returns an object of the same size, so that the all color "aes" are replaced
 #' by this output. Useful when, for example, users need to scale the gene
 #' expression shown on plot.
+#' @param cellIdx Character, logical or numeric index that can subscribe cells.
+#' Missing or \code{NULL} for all cells.
 #' @param splitBy Character vector of categorical variable names in
 #' \code{cellMeta} slot. Split all cells by groupings on this/these variable(s)
 #' to produce a scatter plot containing only the cells in each group. Default
 #' \code{NULL}.
 #' @param shapeBy Available variable name in \code{cellMeta} slot to look for
 #' categorical annotation to be reflected by dot shapes. Default \code{NULL}.
+#' @param titles Title text. A character scalar or a character vector with as
+#' many elements as multiple plots are supposed to be generated. Default
+#' \code{NULL}.
 #' @param ... More plot setting arguments. See \code{\link{.ggScatter}} and
 #' \code{\link{.ggplotLigerTheme}}.
 #' @return A ggplot object when a single plot is intended. A list of ggplot
@@ -68,41 +73,50 @@ plotCellScatter <- function(
         y,
         colorBy = NULL,
         slot = c("cellMeta", "rawData", "normData",
-                 "scaleData", "H.norm", "H"),
+                 "scaleData", "H.norm", "H",
+                 "normPeak", "rawPeak"),
         colorByFunc = NULL,
+        cellIdx = NULL,
         splitBy = NULL,
         shapeBy = NULL,
+        titles = NULL,
         ...
 ) {
     slot <- match.arg(slot)
-    plotDF <- cellMeta(object, c(x, y), as.data.frame = TRUE)
+    plotDF <- cellMeta(object, c(x, y), cellIdx = cellIdx,
+                       as.data.frame = TRUE)
     ann <- .fetchCellMetaVar(object, variables = c(shapeBy, splitBy),
-                             checkCategorical = TRUE, drop = FALSE)
+                             checkCategorical = TRUE, cellIdx = cellIdx,
+                             drop = FALSE, droplevels = TRUE)
     if (!is.null(ann)) plotDF <- cbind(plotDF, ann)
+    cellIdx <- .idxCheck(object, cellIdx, orient = "cell")
     # Create copies of `plotDF` in `plotDFList`, where each `plotDF` has only
     # one `colorBy` variable
     plotDFList <- list()
     colorByParam <- list()
     if (!is.null(colorBy)) {
-        colorDF <- retrieveCellFeature(object, colorBy, slot)
+        colorDF <- retrieveCellFeature(object, feature =  colorBy,
+                                       slot = slot, cellIdx = cellIdx,
+                                       verbose = FALSE)
         # When retrieving H/H.norm, exact colname might not be what `colorBy` is
         colorBy <- colnames(colorDF)
         if (!is.null(colorByFunc))
             colorDF[, colorBy] <- colorByFunc(colorDF[, colorBy])
         for (i in seq_along(colorBy)) {
             if (!colorBy[i] %in% colnames(plotDF)) {
+                #subDF <- cbind(plotDF, colorDF[, i, drop = FALSE])
                 plotDFList[[colorBy[i]]] <- cbind(plotDF,
                                                   colorDF[, i, drop = FALSE])
             } else {
                 plotDFList[[colorBy[i]]] <- plotDF
                 plotDFList[[colorBy[i]]][[colorBy[i]]] <- colorDF[, i]
             }
-
+            # plotDFList[[colorBy[i]]] <- subDF[cellIdx, , drop = FALSE]
             colorByParam[[colorBy[i]]] <- colorBy[i]
         }
 
     } else {
-        plotDFList[[1]] <- plotDF
+        plotDFList[[1]] <- plotDF#[cellIdx, , drop = FALSE]
         colorByParam <- list(NULL)
     }
 
@@ -129,9 +143,13 @@ plotCellScatter <- function(
     }
 
     plotList <- list()
+    titles <- .checkArgLen(titles, n = length(plotDFList), .stop = FALSE)
     for (i in seq_along(plotDFList)) {
+        .log("Plotting feature: ", names(plotDFList)[i], ", on ",
+             nrow(plotDFList[[i]]), " cells...")
         plotList[[i]] <- .ggScatter(plotDF = plotDFList[[i]], x = x, y = y,
-                       colorBy = colorByParam[[i]], shapeBy = shapeBy, ...)
+                                    colorBy = colorByParam[[i]],
+                                    shapeBy = shapeBy, title = titles[i], ...)
     }
     names(plotList) <- names(plotDFList)
 
@@ -155,7 +173,7 @@ plotCellScatter <- function(
 #' variable (e.g. gene expression) where high values needs more
 #' highlight. \code{NULL} use default order.
 #' @param dotSize,dotAlpha Numeric, controls the size or transparency of all
-#' dots. Default \code{0.6} and \code{0.9}.
+#' dots. Default \code{getOption("ligerDotSize")} (1) and \code{0.9}.
 #' @param trimHigh,trimLow Numeric, limit the largest or smallest value of
 #' continuous \code{colorBy} variable. Default \code{NULL}.
 #' @param zeroAsNA Logical, whether to set zero values in continuous
@@ -184,7 +202,7 @@ plotCellScatter <- function(
         colorBy = NULL,
         shapeBy = NULL,
         dotOrder = c("shuffle", "ascending", "descending"),
-        dotSize = 1,
+        dotSize = getOption("ligerDotSize"),
         dotAlpha = 0.9,
         trimHigh = NULL,
         trimLow = NULL,
@@ -199,11 +217,13 @@ plotCellScatter <- function(
     dotOrder <- match.arg(dotOrder)
     set.seed(seed)
     raster <- .checkRaster(nrow(plotDF), raster)
-
     if (!is.null(colorBy)) {
         if (dotOrder == "shuffle") {
-            idx <- sample(nrow(plotDF))
-            plotDF <- plotDF[idx, ]
+            # Always put NA at bottom layer, i.e. plot them first
+            isNA <- which(is.na(plotDF[[colorBy]]))
+            nonNA <- which(!is.na(plotDF[[colorBy]]))
+            idx <- sample(nonNA)
+            plotDF <- plotDF[c(isNA, idx), ]
         } else if (dotOrder == "ascending") {
             plotDF <- plotDF[order(plotDF[[colorBy]], decreasing = FALSE,
                                    na.last = FALSE),]
@@ -284,7 +304,6 @@ plotCellScatter <- function(
             # generated label coordinate table just doesn't have.
         }
     }
-
     p <- .ggplotLigerTheme(p, ...)
 
     return(p)
@@ -334,9 +353,14 @@ plotCellScatter <- function(
 #' retrieved by \code{y} as the only input, and returns an object of the same
 #' size, so that the y-axis is replaced by this output. Useful when, for
 #' example, users need to scale the gene expression shown on plot.
+#' @param cellIdx Character, logical or numeric index that can subscribe cells.
+#' Missing or \code{NULL} for all cells.
 #' @param splitBy Character vector of categorical variable names in
 #' \code{cellMeta} slot. Split all cells by groupings on this/these variable(s)
 #' to produce a violin plot containing only the cells in each group. Default
+#' \code{NULL}.
+#' @param titles Title text. A character scalar or a character vector with as
+#' many elements as multiple plots are supposed to be generated. Default
 #' \code{NULL}.
 #' @param ... More plot setting arguments. See \code{\link{.ggCellViolin}} and
 #' \code{\link{.ggplotLigerTheme}}.
@@ -363,8 +387,10 @@ plotCellViolin <- function(
         slot = c("cellMeta", "rawData", "normData",
                  "scaleData", "H.norm", "H"),
         yFunc = NULL,
+        cellIdx = NULL,
         colorBy = NULL,
         splitBy = NULL,
+        titles = NULL,
         ...
 ) {
     slot <- match.arg(slot)
@@ -377,24 +403,25 @@ plotCellViolin <- function(
         colnames(plotDF) <- groupBy
     } else {
         plotDF <- .fetchCellMetaVar(object, groupBy, checkCategorical = TRUE,
-                                    drop = FALSE)
-        #plotDF <- cellMeta(object, groupBy, as.data.frame = TRUE, drop = FALSE)
+                                    drop = FALSE, cellIdx = cellIdx,
+                                    droplevels = TRUE)
     }
-    plotDF[,splitBy] <- cellMeta(object, splitBy, as.data.frame = TRUE,
-                                  drop = FALSE)
-
+    plotDF[,splitBy] <- .fetchCellMetaVar(object, splitBy, cellIdx = cellIdx,
+                                          checkCategorical = TRUE, drop = FALSE,
+                                          droplevels = TRUE)
     if (!is.null(colorBy))
         plotDF[,colorBy] <- .fetchCellMetaVar(object, colorBy,
+                                              cellIdx = cellIdx,
                                               checkCategorical = TRUE)
-        #plotDF[,colorBy] <- cellMeta(object, colorBy, as.data.frame = TRUE,
-        #                              drop = FALSE)
 
     plotDFList <- list()
     yParam <- list()
 
     # Create copies of `plotDF` in `plotDFList`, where each `plotDF` has only
     # one `y` variable
-    yDF <- retrieveCellFeature(object, y, slot)
+    yDF <- retrieveCellFeature(object, y, slot, cellIdx = cellIdx,
+                               verbose = FALSE)
+
     # When retrieving H/H.norm, exact colname might not be what `colorBy` is
     y <- colnames(yDF)
     if (!is.null(yFunc))
@@ -422,12 +449,13 @@ plotCellViolin <- function(
         yParam <- Reduce(c, yParam)
         names(yParam) <- names(plotDFList)
     }
-
     plotList <- list()
+    titles <- .checkArgLen(titles, n = length(plotDFList), .stop = FALSE)
     for (i in seq_along(plotDFList)) {
         plotList[[i]] <- .ggCellViolin(plotDF = plotDFList[[i]],
                                        y = yParam[[i]], groupBy = groupBy,
-                                       colorBy = colorBy, ...)
+                                       colorBy = colorBy, title = titles[i],
+                                       ...)
     }
     names(plotList) <- names(plotDFList)
 
@@ -450,7 +478,7 @@ plotCellViolin <- function(
 #' @param violinWidth,boxWidth Numeric, controls the width of violin/box
 #' bounding box. Default \code{0.9} and \code{0.4}.
 #' @param dotColor,dotSize Numeric, globally controls the appearance of all
-#' dots. Default \code{"black"} and \code{0.6}.
+#' dots. Default \code{"black"} and \code{getOption("ligerDotSize")} (1).
 #' @param raster Logical, whether to rasterize the dot plot. Default \code{NULL}
 #' automatically rasterizes the dot plot when number of total cells to be
 #' plotted exceeds 100,000.
@@ -472,7 +500,7 @@ plotCellViolin <- function(
         boxWidth = 0.4,
         dot = FALSE,
         dotColor = "black",
-        dotSize = 0.6,
+        dotSize = getOption("ligerDotSize"),
         raster = NULL,
         seed = 1,
         ...
@@ -561,8 +589,8 @@ plotCellViolin <- function(
 #' @param colorLabels,colorValues Each a vector with as many values as the
 #' number of categories for the categorical coloring aesthetics. Labels will be
 #' the shown text and values will be the color code. These are passed to
-#' \code{\link[ggplot2]{scale_color_manual}}. Default \code{NULL} uses default
-#' ggplot hues and plot original labels.
+#' \code{\link[ggplot2]{scale_color_manual}}. Default uses \code{scPalette} and
+#' plot original labels (levels of the factor).
 #' @param legendNRow,legendNCol Integer, when too many categories in one
 #' variable, arranges number of rows or columns. Default \code{NULL},
 #' automatically split to \code{ceiling(levels(variable)/10)} columns.
@@ -575,7 +603,7 @@ plotCellViolin <- function(
 #' color for higher value, while \code{1} reverses this direction.
 #' @param colorLow,colorMid,colorHigh,colorMidPoint All four of these must be
 #' specified to customize palette with
-#' @param naColor The color code for \code{NA} values. Default \code{"#F5F5F5"}.
+#' @param naColor The color code for \code{NA} values. Default \code{"#DEDEDE"}.
 #' \code{\link[ggplot2]{scale_colour_gradient2}}. Default \code{NULL}.
 #' @param plotly Whether to use plotly to enable web based interactive browsing
 #' for the plot. Requires installation of package "plotly". Default
@@ -614,10 +642,10 @@ plotCellViolin <- function(
         legendNCol = NULL,
         # Coloring
         colorLabels = NULL,
-        colorValues = NULL,
+        colorValues = scPalette,
         colorPalette = "magma",
         colorDirection = -1,
-        naColor = "#F5F5F5",
+        naColor = "#DEDEDE",
         colorLow = NULL,
         colorMid = NULL,
         colorHigh = NULL,
@@ -720,9 +748,11 @@ plotCellViolin <- function(
             }
             if (a %in% c("colour", "fill")) {
                 plot <- plot +
-                    .setColorLegendPalette(aesType = a,
+                    .setColorLegendPalette(plot$data[[varName]],
+                                           aesType = a,
                                            labels = colorLabels,
-                                           values = colorValues)
+                                           values = colorValues,
+                                           naColor = naColor)
             }
         } else {
             # continuous setting
@@ -780,19 +810,26 @@ plotCellViolin <- function(
 }
 
 .setColorLegendPalette <- function(
+        fct,
         aesType = c("colour", "fill"),
         labels = NULL,
-        values = NULL
+        values = NULL,
+        naColor = "#DEDEDE"
 ) {
     aesType <- match.arg(aesType)
     layer <- NULL
+    lvlUse <- table(fct) > 0
+    labels <- labels[lvlUse]
+    values <- values[lvlUse]
     if (!is.null(labels) && !is.null(values)) {
         if (aesType == "colour") {
             layer <- ggplot2::scale_color_manual(values = values,
-                                                 labels = labels)
+                                                 labels = labels,
+                                                 na.value = naColor)
         } else {
             layer <- ggplot2::scale_fill_manual(values = values,
-                                                labels = labels)
+                                                labels = labels,
+                                                na.value = naColor)
         }
     }
     return(layer)
@@ -802,7 +839,7 @@ plotCellViolin <- function(
         aesType = c("colour", "fill"),
         palette = "magma",
         direction = 1,
-        naColor = "#F5F5F5",
+        naColor = "#DEDEDE",
         low = NULL,
         mid = NULL,
         high = NULL,

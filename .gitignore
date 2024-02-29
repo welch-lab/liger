@@ -12,4 +12,11 @@ liger.Rproj
 *.RDS
 *.rds
 .vscode/*
-*.bed
+src/_deps/**
+src/CMakeFiles/**
+src/CPM_modules/**
+src/cmake_install.cmake
+src/CMakeCache.txt
+src/Makefile
+build/*
+vignettes/articles/*_cache/

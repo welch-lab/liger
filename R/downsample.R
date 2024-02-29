@@ -1,13 +1,17 @@
 #' Downsample datasets
 #' @description This function mainly aims at downsampling datasets to a size
-#' suitable for plotting.
-#' @details Users can balance the sample size of categories of interests with
+#' suitable for plotting or expensive in-memmory calculation.
+#'
+#' Users can balance the sample size of categories of interests with
 #' \code{balance}. Multi-variable specification to \code{balance} is supported,
 #' so that at most \code{maxCells} cells will be sampled from each combination
-#' of categories from the variables. Note that \code{"dataset"} will
-#' automatically be added as one variable when balancing the downsampling.
-#' However, if users want to balance the downsampling solely basing on dataset
-#' origin, users have to explicitly set \code{balance = "dataset"}.
+#' of categories from the variables. For example, when two datasets are
+#' presented and three clusters labeled across them, there would then be at most
+#' \eqn{2 \times 3 \times maxCells} cells being selected. Note that
+#' \code{"dataset"} will automatically be added as one variable when balancing
+#' the downsampling. However, if users want to balance the downsampling solely
+#' basing on dataset origin, users have to explicitly set \code{balance =
+#' "dataset"}.
 #' @param object \linkS4class{liger} object
 #' @param balance Character vector of categorical variable names in
 #' \code{cellMeta} slot, to subsample \code{maxCells} cells from each
@@ -15,21 +19,31 @@
 #' \code{maxCells} cells from the whole object.
 #' @param maxCells Max number of cells to sample from the grouping based on
 #' \code{balance}.
-#' @param useDatasets Index selection of datasets to consider. Default
+#' @param useDatasets Index selection of datasets to include Default
 #' \code{NULL} for using all datasets.
 #' @param seed Random seed for reproducibility. Default \code{1}.
+#' @param returnIndex Logical, whether to only return the numeric index that can
+#' subset the original object instead of a subset object. Default \code{FALSE}.
 #' @param ... Arguments passed to \code{\link{subsetLiger}}, where
 #' \code{cellIdx} is occupied by internal implementation.
-#' @return Subset of \linkS4class{liger} \code{object}.
+#' @return By default, a subset of \linkS4class{liger} \code{object}.
+#' Alternatively when \code{returnIndex = TRUE}, a numeric vector to be used
+#' with the original object.
 #' @export
 #' @examples
+#' # Subsetting an object
 #' pbmc <- downsample(pbmc)
+#' # Creating a subsetting index
+#' sampleIdx <- downsample(pbmcPlot, balance = "leiden_cluster",
+#'                         maxCells = 10, returnIndex = TRUE)
+#' plotClusterDimRed(pbmcPlot, cellIdx = sampleIdx)
 downsample <- function(
     object,
     balance = NULL,
     maxCells = 1000,
     useDatasets = NULL,
     seed = 1,
+    returnIndex = FALSE,
     ...
 ) {
     set.seed(seed)
@@ -41,13 +55,10 @@ downsample <- function(
         selected <- sort(sample(useCells, maxCells))
     } else {
         balance <- unique(c("dataset", balance))
-        vars <- cellMeta(object, columns = balance, drop = FALSE,
-                          as.data.frame = TRUE)
-        vars <- vars[vars$dataset %in% useDatasets,]
-        notFactor <- sapply(vars, function(col) !is.factor(col))
-        if (any(notFactor))
-            stop("Specified variables is not categorical: ",
-                 paste(balance[notFactor], collapse = ", "))
+        vars <- .fetchCellMetaVar(object, balance, checkCategorical = TRUE,
+                                  droplevels = TRUE, drop = FALSE,
+                                  cellIdx = object$dataset %in% useDatasets)
+
         vars <- vars %>%
             dplyr::group_by_at(.vars = balance) %>%
             dplyr::count()
@@ -68,7 +79,8 @@ downsample <- function(
         }
         selected <- sort(selected)
     }
-    subsetLiger(object = object, cellIdx = selected, ...)
+    if (isTRUE(returnIndex)) return(selected)
+    else return(subsetLiger(object = object, cellIdx = selected, ...))
 }
 
 #' [Deprecated] See \code{\link{downsample}}
@@ -108,11 +120,12 @@ readSubset <- function(
         rand.seed = 1,
         verbose = getOption("ligerVerbose")
 ) {
-    .Deprecated("downsample")
+    .Deprecated("downsample") # nocov start
     if (!is.null(balance)) balance <- match.arg(balance)
     else balance <- "all"
     downsample(object = object, balance = balance,
                maxCells = max.cells, useDatasets = datasets.use,
                useGenes = genes.use, useSlot = slot.use, seed = rand.seed,
-               chunkSize = chunk, verbose = verbose)
+               chunkSize = chunk, verbose = verbose) # nocov end
 }
+

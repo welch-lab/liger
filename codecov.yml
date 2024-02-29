@@ -1,0 +1,4 @@
+ignore:
+  - "R/deprecated.R"
+  - "R/archive.R"
+

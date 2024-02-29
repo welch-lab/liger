@@ -1,39 +1,44 @@
 ## Tests for object creation and preprocessing
 
-# pbmc.file <- system.file('tests', 'testdata', 'small_pbmc_data.RDS', package = 'liger')
-#pbmc.file <- "../testdata/small_pbmc_data.RDS"
-#pbmc.small <- readRDS(pbmc.file)
 data("pbmc", package = "rliger2")
 rawDataList <- getMatrix(pbmc, "rawData")
 
 withNewH5Copy <- function(fun) {
-    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger2")
-    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger2")
-    if (!file.exists(ctrlpath.orig))
-      stop("Cannot find original h5 file at: ", ctrlpath.orig)
-    if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
-    if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
-    pwd <- getwd()
-    ctrlpath <- file.path(pwd, "ctrltest.h5")
-    stimpath <- file.path(pwd, "stimtest.h5")
-    file.copy(ctrlpath.orig, ctrlpath)
-    file.copy(stimpath.orig, stimpath)
-    if (!file.exists(ctrlpath))
-      stop("Cannot find copied h5 file at: ", ctrlpath)
+  ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger2")
+  stimpath.orig <- system.file("extdata/stim.h5", package = "rliger2")
+  if (!file.exists(ctrlpath.orig))
+    stop("Cannot find original h5 file at: ", ctrlpath.orig)
+  if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
+  if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
+  pwd <- getwd()
+  # Temp setting for GitHub Actions
+  fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
+  if (Sys.info()["sysname"] == "Windows") {
+    pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
+  }
 
-    fun(list(ctrl = ctrlpath, stim = stimpath))
+  ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
+  stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
+  cat("Working ctrl H5 file path: ", ctrlpath, "\n")
+  cat("Working stim H5 file path: ", stimpath, "\n")
+  file.copy(ctrlpath.orig, ctrlpath, copy.mode = TRUE)
+  file.copy(stimpath.orig, stimpath, copy.mode = TRUE)
+  if (!file.exists(ctrlpath))
+    stop("Cannot find copied h5 file at: ", ctrlpath)
 
-    if (file.exists(ctrlpath)) file.remove(ctrlpath)
-    if (file.exists(stimpath)) file.remove(stimpath)
+  fun(list(ctrl = ctrlpath, stim = stimpath))
+
+  if (file.exists(ctrlpath)) unlink(ctrlpath)
+  if (file.exists(stimpath)) unlink(stimpath)
 }
 
 closeH5Liger <- function(object) {
-    for (d in names(object)) {
-        if (isH5Liger(object, d)) {
-            h5file <- getH5File(object, d)
-            h5file$close()
-        }
+  for (d in names(object)) {
+    if (isH5Liger(object, d)) {
+      h5file <- getH5File(object, d)
+      h5file$close()
     }
+  }
 }
 
 process <- function(object) {
@@ -91,8 +96,29 @@ test_that("Merged sparse matrix", {
 # Normalization
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+context("QC")
+test_that("QC", {
+    pbmc <- normalize(pbmc)
+    expect_warning(getProportionMito(pbmc))
+    metric <- getProportionMito(pbmc, use.norm = TRUE)
+
+    pbmc <- removeMissing(pbmc, orient = "feature")
+    expect_equal(ncol(pbmc), 600)
+
+    if (requireNamespace("DoubletFinder", quietly = TRUE)) {
+        pbmc.df1 <- runDoubletFinder(pbmc)
+        expect_is(pbmc.df1$DoubletFinder_classification, "character")
+        expect_is(pbmc.df1$DoubletFinder_pANN, "numeric")
+
+        pbmc.df2 <- runDoubletFinder(pbmc, nExp = 0.1)
+        expect_false(identical(pbmc.df1$DoubletFinder_classification,
+                              pbmc.df2$DoubletFinder_classification))
+    }
+})
+
 context("normalization")
 test_that("Normalization - in-memory", {
+
     pbmc2 <- normalize(pbmc, log = TRUE, scaleFactor = 1e4)
     ctrl.norm <- normData(dataset(pbmc2, "ctrl"))
     expect_gt(sum(ctrl.norm[,1]), 345)
@@ -123,6 +149,14 @@ test_that("Normalization - in-memory", {
     for (i in seq_len(ncol(ld))) {
       expect_equal(sum(normPeak(ld)[, i]), 1, tolerance = 1e-6)
     }
+
+    expect_warning(fakeNorm <- normalize(fakePeak, scaleFactor = -1))
+    expect_true(all.equal(colSums(fakeNorm),
+                          setNames(rep(1, ncol(fakeNorm)), colnames(fakeNorm))))
+
+    # Seurat method
+    seu <- ligerToSeurat(pbmc, assay = "RNA")
+    expect_no_error(normalize(seu))
 })
 
 test_that("Normalize - on disk", {
@@ -149,27 +183,21 @@ test_that("Normalize - on disk", {
 context("Select variable genes")
 test_that("selectGenes", {
     pbmc <- normalize(pbmc, useDatasets = 1)
-    expect_error(selectGenes(pbmc, var.thresh = 1:3),
-                 "Wrong length of `var.thresh`.")
-    expect_warning(selectGenes(pbmc, var.thresh = 0.1),
-                   "Dataset \"stim\" is not normalized, skipped")
+    expect_error(selectGenes(pbmc, thresh = 1:3),
+                 "`thresh` has to be a vector of length 2")
+    expect_error(selectGenes(pbmc, thresh = 0.1),
+                   "Normalized data not available")
     pbmc <- normalize(pbmc, useDatasets = 2)
-    expect_error(selectGenes(pbmc, unshared = TRUE, unshared.thresh = 1:3),
-                 "Wrong length of `unshared.thresh`. ")
 
-    pbmc <- selectGenes(pbmc, unshared = TRUE, unshared.thresh = 0)
+    pbmc <- selectGenes(pbmc, useUnsharedDatasets = 1:2, unsharedThresh = 0)
     expect_identical(dataset(pbmc, "ctrl")@varUnsharedFeatures, character())
     expect_identical(dataset(pbmc, "ctrl")@varUnsharedFeatures, character())
 
     pbmc <- selectGenes(pbmc, combine = "inters")
     expect_equal(length(varFeatures(pbmc)), 161)
 
-    expect_warning(selectGenes(pbmc, var.thresh = 3),
+    expect_warning(selectGenes(pbmc, thresh = 3),
                    "No genes were selected.")
-    expect_warning(selectGenes(pbmc, num.genes = 100),
-                   "Returned number of genes for dataset ctrl differs from ")
-    expect_warning(selectGenes(pbmc, num.genes = 200),
-                   "Cannot optimize the number of selected genes for ")
 
     pbmc <- selectGenes(pbmc)
     expect_equal(length(varFeatures(pbmc)), 173)
@@ -179,6 +207,19 @@ test_that("selectGenes", {
     expect_is(glist[[1]], "ggplot")
     g <- plotVarFeatures(pbmc, combinePlot = TRUE)
     expect_is(g, "ggplot")
+
+    # Seurat method
+    seu <- ligerToSeurat(pbmc, assay = "RNA")
+    seu <- normalize(seu)
+    expect_no_error(selectGenes(seu, nGenes = 100))
+
+    pbmc <- selectGenesVST(pbmc, useDataset = "ctrl", n = 50)
+    expect_equal(length(varFeatures(pbmc)), 50)
+
+    expect_warning(pbmc <- selectGenesVST(pbmc, useDataset = "ctrl", n = 300,
+                                          useShared = FALSE),
+                   "Not all variable features passed are found in datasets")
+    expect_equal(length(varFeatures(pbmc)), 266)
 })
 
 test_that("selectGenes - on disk", {
@@ -199,7 +240,7 @@ test_that("selectGenes - on disk", {
 context('Gene scaling (no centering)')
 test_that("scaleNotCenter - in-memory", {
     expect_error(scaleNotCenter(pbmc),
-                 "No variable feature found. ")
+                 "No variable feature")
     pbmc <- normalize(pbmc)
     pbmc <- selectGenes(pbmc)
     pbmc <- scaleNotCenter(pbmc)
@@ -216,6 +257,20 @@ test_that("scaleNotCenter - in-memory", {
 
     expect_equal(scaleData(pbmc, "ctrl")[3, 5], 0.4693316, tolerance = 1e-6)
     expect_equal(scaleData(pbmc, "stim")[7, 9], 2.360295, tolerance = 1e-6)
+
+    # DNA Methylation data cases
+    ctrl.meth <- as.ligerDataset(dataset(pbmc, "ctrl"), modal = "meth")
+    ctrl.meth <- normalize(ctrl.meth)
+    ctrl.meth <- scaleNotCenter(ctrl.meth, features = varFeatures(pbmc))
+    expect_equal(sum(scaleData(ctrl.meth) == 1116), 26246)
+
+    pbmc.rev <- reverseMethData(pbmc, useDatasets = "ctrl")
+    expect_true(identical(scaleData(ctrl.meth), scaleData(pbmc.rev, "ctrl")))
+
+    seu <- ligerToSeurat(pbmc, assay = "RNA")
+    seu <- normalize(seu)
+    seu <- selectGenes(seu, datasetVar = "orig.ident")
+    expect_no_error(scaleNotCenter(seu))
 })
 
 test_that("scaleNotCenter - on-disk", {
@@ -228,10 +283,8 @@ test_that("scaleNotCenter - on-disk", {
             # unshared features
             pbmc@datasets$ctrl@varUnsharedFeatures <- varFeatures(pbmc)[1:5]
             pbmc <- scaleNotCenter(pbmc)
-            expect_is(scaleData(pbmc, "ctrl"), "H5D")
-            expect_equal(scaleData(pbmc, "ctrl")$dims, c(173, 300))
-            expect_is(scaleData(pbmc, "stim"), "H5D")
-            expect_equal(scaleData(pbmc, "stim")$dims, c(173, 300))
+            expect_is(scaleData(pbmc, "ctrl"), "H5Group")
+            expect_is(scaleData(pbmc, "stim"), "H5Group")
         }
     )
 })

@@ -55,6 +55,21 @@ correlation between gene expression and imputed peak counts for datasets
 without the modality originally (i.e. applied to \code{\link{imputeKNN}}
 result).
 }
+\examples{
+bmmc <- normalize(bmmc)
+bmmc <- selectGenes(bmmc)
+bmmc <- scaleNotCenter(bmmc)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    bmmc <- runINMF(bmmc, miniBatchSize = 100)
+    bmmc <- quantileNorm(bmmc)
+    bmmc <- normalizePeak(bmmc)
+    bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
+    corr <- linkGenesAndPeaks(
+        bmmc, useDataset = "rna",
+        pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2")
+    )
+}
+}
 \seealso{
 \code{\link{imputeKNN}}
 }

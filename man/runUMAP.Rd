@@ -9,7 +9,7 @@ runUMAP(
   useRaw = FALSE,
   useDims = NULL,
   nDims = 2,
-  distance = c("euclidean", "cosine", "manhattan", "hamming"),
+  distance = c("cosine", "euclidean", "manhattan", "hamming"),
   nNeighbors = 20,
   minDist = 0.1,
   dimredName = "UMAP",
@@ -35,8 +35,8 @@ matrices). Default \code{FALSE}.}
 \item{nDims}{Number of dimensions to reduce to. Default \code{2}.}
 
 \item{distance}{Character. Metric used to measure distance in the input
-space. Default \code{"euclidean"}, alternative options include:
-\code{"cosine"}, \code{"manhattan"} and \code{"hamming"}.}
+space. Default \code{"cosine"}, alternative options include:
+\code{"euclidean"}, \code{"manhattan"} and \code{"hamming"}.}
 
 \item{nNeighbors}{Number of neighboring points used in local approximations
 of manifold structure. Default \code{10}.}

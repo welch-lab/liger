@@ -35,22 +35,53 @@
 \alias{cellMeta,liger,missing-method}
 \alias{cellMeta<-,liger,missing-method}
 \alias{cellMeta<-,liger,character-method}
-\alias{[[,liger,ANY,missing-method}
-\alias{[[<-,liger,ANY,missing-method}
 \alias{$,liger-method}
 \alias{$<-,liger-method}
+\alias{defaultCluster}
+\alias{defaultCluster<-}
+\alias{defaultCluster,liger-method}
+\alias{defaultCluster<-,liger,ANY,ANY,character-method}
+\alias{defaultCluster<-,liger,ANY,ANY,factor-method}
+\alias{defaultCluster<-,liger,ANY,ANY,NULL-method}
+\alias{dimRed}
+\alias{dimRed<-}
+\alias{dimRed,liger,missing-method}
+\alias{dimRed,liger,character-method}
+\alias{dimRed<-,liger,character,ANY,matrixLike-method}
+\alias{defaultDimRed}
+\alias{defaultDimRed<-}
+\alias{defaultDimRed,liger-method}
+\alias{defaultDimRed<-,liger,missing,ANY,character-method}
+\alias{defaultDimRed<-,liger,character,ANY,matrixLike-method}
 \alias{varFeatures}
 \alias{varFeatures<-}
 \alias{varFeatures,liger-method}
 \alias{varFeatures<-,liger,ANY,character-method}
+\alias{varUnsharedFeatures}
+\alias{varUnsharedFeatures<-}
+\alias{varUnsharedFeatures,liger,ANY-method}
+\alias{varUnsharedFeatures,ligerDataset,missing-method}
+\alias{varUnsharedFeatures<-,liger,ANY,ANY,character-method}
+\alias{varUnsharedFeatures<-,ligerDataset,missing,ANY,character-method}
 \alias{fortify.liger}
 \alias{c.liger}
 \alias{commands}
 \alias{commands,liger-method}
-\alias{scaleData,liger,character-method}
-\alias{scaleData,liger,numeric-method}
+\alias{rawData,liger-method}
+\alias{rawData<-,liger,ANY,ANY,matrixLike_OR_NULL-method}
+\alias{rawData<-,liger,ANY,ANY,H5D-method}
+\alias{normData,liger-method}
+\alias{normData<-,liger,ANY,ANY,matrixLike_OR_NULL-method}
+\alias{normData<-,liger,ANY,ANY,H5D-method}
+\alias{scaleData,liger,ANY-method}
+\alias{scaleData<-,liger,ANY,ANY,matrixLike_OR_NULL-method}
+\alias{scaleData<-,liger,ANY,ANY,H5D-method}
+\alias{scaleData<-,liger,ANY,ANY,H5Group-method}
 \alias{scaleUnsharedData,liger,character-method}
 \alias{scaleUnsharedData,liger,numeric-method}
+\alias{scaleUnsharedData<-,liger,ANY,ANY,matrixLike_OR_NULL-method}
+\alias{scaleUnsharedData<-,liger,ANY,ANY,H5D-method}
+\alias{scaleUnsharedData<-,liger,ANY,ANY,H5Group-method}
 \alias{getMatrix,liger,ANY,ANY,ANY-method}
 \alias{getH5File,liger,ANY-method}
 \title{liger class}
@@ -91,9 +122,9 @@ dataset(x, dataset, type = NULL, qc = TRUE) <- value
 
 \S4method{dataset}{liger,character,missing,ANY,ligerDataset}(x, dataset, type = NULL, qc = TRUE) <- value
 
-\S4method{dataset}{liger,character,ANY,ANY,matrixLike}(x, dataset, type = c("rawData", "normData", "scaleData"), qc = TRUE) <- value
+\S4method{dataset}{liger,character,ANY,ANY,matrixLike}(x, dataset, type = c("rawData", "normData", "scaleData"), qc = FALSE) <- value
 
-\S4method{dataset}{liger,character,missing,ANY,`NULL`}(x, dataset, type = NULL, qc = TRUE) <- value
+\S4method{dataset}{liger,character,missing,ANY,NULL}(x, dataset, type = NULL, qc = TRUE) <- value
 
 \S4method{names}{liger}(x)
 
@@ -101,27 +132,83 @@ dataset(x, dataset, type = NULL, qc = TRUE) <- value
 
 \S4method{length}{liger}(x)
 
-cellMeta(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
+cellMeta(
+  x,
+  columns = NULL,
+  useDatasets = NULL,
+  cellIdx = NULL,
+  as.data.frame = FALSE,
+  ...
+)
 
-cellMeta(x, columns = NULL, check = FALSE) <- value
+cellMeta(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, check = FALSE) <- value
 
-\S4method{cellMeta}{liger,`NULL`}(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
+\S4method{cellMeta}{liger,NULL}(
+  x,
+  columns = NULL,
+  useDatasets = NULL,
+  cellIdx = NULL,
+  as.data.frame = FALSE,
+  ...
+)
 
-\S4method{cellMeta}{liger,character}(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
+\S4method{cellMeta}{liger,character}(
+  x,
+  columns = NULL,
+  useDatasets = NULL,
+  cellIdx = NULL,
+  as.data.frame = FALSE,
+  ...
+)
 
-\S4method{cellMeta}{liger,missing}(x, columns = NULL, cellIdx = NULL, as.data.frame = FALSE, ...)
+\S4method{cellMeta}{liger,missing}(
+  x,
+  columns = NULL,
+  useDatasets = NULL,
+  cellIdx = NULL,
+  as.data.frame = FALSE,
+  ...
+)
 
-\S4method{cellMeta}{liger,missing}(x, columns = NULL, check = FALSE) <- value
+\S4method{cellMeta}{liger,missing}(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, check = FALSE) <- value
 
-\S4method{cellMeta}{liger,character}(x, columns = NULL, check = FALSE) <- value
-
-\S4method{[[}{liger,ANY,missing}(x, i, j, ...)
-
-\S4method{[[}{liger,ANY,missing}(x, i, j, ...) <- value
+\S4method{cellMeta}{liger,character}(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, check = FALSE) <- value
 
 \S4method{$}{liger}(x, name)
 
 \S4method{$}{liger}(x, name) <- value
+
+defaultCluster(x, useDatasets = NULL, ...)
+
+defaultCluster(x, name = NULL, useDatasets = NULL, ...) <- value
+
+\S4method{defaultCluster}{liger}(x, useDatasets = NULL, droplevels = FALSE, ...)
+
+\S4method{defaultCluster}{liger,ANY,ANY,character}(x, name = NULL, useDatasets = NULL, ...) <- value
+
+\S4method{defaultCluster}{liger,ANY,ANY,factor}(x, name = NULL, useDatasets = NULL, droplevels = TRUE, ...) <- value
+
+\S4method{defaultCluster}{liger,ANY,ANY,NULL}(x, name = NULL, useDatasets = NULL, ...) <- value
+
+dimRed(x, name = NULL, useDatasets = NULL, ...)
+
+dimRed(x, name = NULL, useDatasets = NULL, ...) <- value
+
+\S4method{dimRed}{liger,missing}(x, name = NULL, useDatasets = NULL, ...)
+
+\S4method{dimRed}{liger,character}(x, name = NULL, useDatasets = NULL, ...)
+
+\S4method{dimRed}{liger,character,ANY,matrixLike}(x, name = NULL, useDatasets = NULL, asDefault = NULL, ...) <- value
+
+defaultDimRed(x, useDatasets = NULL)
+
+defaultDimRed(x, name, useDatasets = NULL) <- value
+
+\S4method{defaultDimRed}{liger}(x, useDatasets = NULL)
+
+\S4method{defaultDimRed}{liger,missing,ANY,character}(x, name = NULL, useDatasets = NULL) <- value
+
+\S4method{defaultDimRed}{liger,character,ANY,matrixLike}(x, name, useDatasets = NULL) <- value
 
 varFeatures(x)
 
@@ -131,7 +218,19 @@ varFeatures(x, check = TRUE) <- value
 
 \S4method{varFeatures}{liger,ANY,character}(x, check = TRUE) <- value
 
-\method{fortify}{liger}(x)
+varUnsharedFeatures(x, dataset = NULL)
+
+varUnsharedFeatures(x, dataset, check = TRUE) <- value
+
+\S4method{varUnsharedFeatures}{liger,ANY}(x, dataset = NULL)
+
+\S4method{varUnsharedFeatures}{ligerDataset,missing}(x, dataset = NULL)
+
+\S4method{varUnsharedFeatures}{liger,ANY,ANY,character}(x, dataset, check = TRUE) <- value
+
+\S4method{varUnsharedFeatures}{ligerDataset,missing,ANY,character}(x, dataset = NULL, check = TRUE) <- value
+
+\method{fortify}{liger}(model, data, ...)
 
 \method{c}{liger}(...)
 
@@ -139,13 +238,35 @@ commands(x, funcName = NULL, arg = NULL)
 
 \S4method{commands}{liger}(x, funcName = NULL, arg = NULL)
 
-\S4method{scaleData}{liger,character}(x, dataset = NULL)
+\S4method{rawData}{liger}(x, dataset = NULL)
 
-\S4method{scaleData}{liger,numeric}(x, dataset = NULL)
+\S4method{rawData}{liger,ANY,ANY,matrixLike_OR_NULL}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{rawData}{liger,ANY,ANY,H5D}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{normData}{liger}(x, dataset = NULL)
+
+\S4method{normData}{liger,ANY,ANY,matrixLike_OR_NULL}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{normData}{liger,ANY,ANY,H5D}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{scaleData}{liger,ANY}(x, dataset = NULL)
+
+\S4method{scaleData}{liger,ANY,ANY,matrixLike_OR_NULL}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{scaleData}{liger,ANY,ANY,H5D}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{scaleData}{liger,ANY,ANY,H5Group}(x, dataset = NULL, check = TRUE) <- value
 
 \S4method{scaleUnsharedData}{liger,character}(x, dataset = NULL)
 
 \S4method{scaleUnsharedData}{liger,numeric}(x, dataset = NULL)
+
+\S4method{scaleUnsharedData}{liger,ANY,ANY,matrixLike_OR_NULL}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{scaleUnsharedData}{liger,ANY,ANY,H5D}(x, dataset = NULL, check = TRUE) <- value
+
+\S4method{scaleUnsharedData}{liger,ANY,ANY,H5Group}(x, dataset = NULL, check = TRUE) <- value
 
 \S4method{getMatrix}{liger,ANY,ANY,ANY}(
   x,
@@ -158,12 +279,12 @@ commands(x, funcName = NULL, arg = NULL)
 \S4method{getH5File}{liger,ANY}(x, dataset = NULL)
 }
 \arguments{
-\item{x, object}{A \linkS4class{liger} object}
+\item{x, object, model}{A \linkS4class{liger} object}
 
 \item{value}{Check detail sections for requirements.}
 
 \item{i, j}{Feature and cell index for \code{`[`} method. For \code{`[[`}
-method, use a single variable name with \code{i} and \code{j} is not
+method, use a single variable name with \code{i} while \code{j} is not
 applicable.}
 
 \item{...}{See detailed sections for explanation.}
@@ -171,7 +292,7 @@ applicable.}
 \item{drop}{Not applicable.}
 
 \item{check}{Logical, whether to perform object validity check on setting new
-value.}
+value. Users are not supposed to set \code{FALSE} here.}
 
 \item{dataset}{Name or numeric index of a dataset}
 
@@ -184,13 +305,27 @@ specify what type the matrix is. Choose from \code{"rawData"},
 \item{columns}{The names of available variables in \code{cellMeta} slot. When
 \code{as.data.frame = TRUE}, please use variable names after coercion.}
 
+\item{useDatasets}{Setter or getter method should only apply on cells in
+specified datasets. Any valid character, numeric or logical subscriber is
+acceptable. Default \code{NULL} works with all datasets.}
+
 \item{cellIdx}{Valid cell subscription to subset retrieved variables. Default
 \code{NULL} uses all cells.}
 
 \item{as.data.frame}{Logical, whether to apply
 \code{\link[base]{as.data.frame}} on the subscription. Default \code{FALSE}.}
 
-\item{name}{The name of available variables in \code{cellMeta} slot.}
+\item{name}{The name of available variables in \code{cellMeta} slot or the
+name of a new variable to store.}
+
+\item{droplevels}{Whether to remove unused cluster levels from the factor
+object fetched by \code{defaultCluster()}. Default \code{FALSE}.}
+
+\item{asDefault}{Whether to set the inserted dimension reduction matrix as
+default for visualization methods. Default \code{NULL} sets it when no
+default has been set yet, otherwise does not change current default.}
+
+\item{data}{fortify method required argument. Not used.}
 
 \item{funcName, arg}{See Command records section.}
 
@@ -215,27 +350,38 @@ This manual provides explanation to the \code{liger} object structure as well
 as usage of class-specific methods. Please see detail sections for more
 information.
 
-For \code{liger} objects created with older versions of rliger2 package,
+For \code{liger} objects created with older versions of rliger package,
 please try updating the objects individually with
 \code{\link{convertOldLiger}}.
 }
 \section{Slots}{
 
 \describe{
-\item{\code{datasets}}{list of \linkS4class{ligerDataset} objects.}
+\item{\code{datasets}}{list of \linkS4class{ligerDataset} objects. Use generic
+\code{dataset}, \code{dataset<-}, \code{datasets} or \code{datasets<-} to
+interact with. See detailed section accordingly.}
 
-\item{\code{cellMeta}}{\linkS4class{DFrame} object for cell metadata.}
+\item{\code{cellMeta}}{\linkS4class{DFrame} object for cell metadata. Pre-existing
+metadata, QC metrics, cluster labeling, low-dimensional embedding and etc.
+are all stored here. Use generic \code{cellMeta}, \code{cellMeta<-},
+\code{$}, \code{[[]]} or \code{[[]]<-} to interact with. See detailed section
+accordingly.}
 
-\item{\code{varFeatures}}{Character vector of feature names.}
+\item{\code{varFeatures}}{Character vector of feature names. Use generic
+\code{varFeatures} or \code{varFeatures<-} to interact with. See detailed
+section accordingly.}
 
-\item{\code{W}}{Matrix of gene loading for each factor.}
+\item{\code{W}}{Matrix of gene loading for each factor. See
+\code{\link{runIntegration}}.}
 
-\item{\code{H.norm}}{Matrix of aligned factor loading for each cell.}
+\item{\code{H.norm}}{Matrix of aligned factor loading for each cell. See
+\code{\link{quantileNorm}} and \code{\link{runIntegration}}.}
 
 \item{\code{commands}}{List of \linkS4class{ligerCommand} objects. Record of
-analysis.}
+analysis. Use \code{commands} to retrieve information. See detailed section
+accordingly.}
 
-\item{\code{uns}}{List for unstructured meta-info of analyses}
+\item{\code{uns}}{List for unstructured meta-info of analyses or presets.}
 
 \item{\code{version}}{Record of version of rliger2 package}
 }}
@@ -313,6 +459,51 @@ metadata, the S3 method \code{fortify.liger} is implemented. With this under
 the hook, users can create simple ggplots by directly starting with
 \code{ggplot(ligerObj, aes(...))} where cell metadata variables can be
 directly thrown into \code{aes()}.
+
+Special partial metadata insertion is implemented specifically for mapping
+categorical annotation from sub-population (subset object) back to original
+experiment (full-size object). For example, when sub-clustering and
+annotation is done for a specific cell-type of cells (stored in
+\code{subobj}) subset from an experiment (stored as \code{obj}), users can do
+\code{cellMeta(obj, "sub_ann", cellIdx = colnames(subobj)) <- subobj$sub_ann}
+to map the value back, leaving other cells non-annotated with NAs. Plotting
+with this variable will then also show NA cells with default grey color.
+Furthermore, sub-clustering labels for other cell types can also be mapped
+to the same variable. For example, \code{cellMeta(obj, "sub_ann",
+cellIdx = colnames(subobj2)) <- subobj2$sub_ann}. As long as the labeling
+variables are stored as factor class (categorical), the levels (category
+names) will be properly handled and merged. Other situations follow the R
+default behavior (e.g. categories might be converted to integer numbers if
+mapped to numerical variable in the original object). Note that this feature
+is only available with using the generic function \code{cellMeta} but not
+with the \code{`[[`} or \code{`$`} accessing methods due to syntax reasons.
+
+The generic \code{defaultCluster} works as both getter and setter. As a
+setter, users can do \code{defaultCluster(obj) <- "existingVariableName"} to
+set a categorical variable as default cluster used for visualization or
+downstream analysis. Users can also do \code{defaultCluster(obj,
+"newVarName") <- factorOfLabels} to push new labeling into the object and set
+as default. For getter method, the function returns a factor object of the
+default cluster labeling. Argument \code{useDatasets} can be used for
+requiring that given or retrieved labeling should match with cells in
+specified datasets. We generally don't recommend setting \code{"dataset"} as
+a default cluster because it is a preserved (always existing) field in
+metadata and can lead to meaningless result when running analysis that
+utilizes both clustering information and the dataset source information.
+}
+
+\section{Dimension reduction access}{
+
+Currently, low-dimensional representaion of cells, presented as dense
+matrices, are all stored in \code{cellMeta} slot, and can totally be accessed
+with generics \code{cellMeta} and \code{cellMeta<-}. In addition to that,
+we provide specific generics \code{dimRed} and \code{dimRed<-} for getting
+and setting matrix like cell metadata, respectively. Adding a matrix to the
+object looks as simple as \code{dimRed(obj, "name") <- matrixLike}. It can
+be retrived back with \code{dimRed(obj, "name")}. Similar to having a default
+cluster labeling, we also constructed the feature of default dimRed. It can
+be set with \code{defaultDimRed(obj) <- "existingMatLikeVar"} and the matrix
+can be retrieved with \code{defaultDimRed(obj)}.
 }
 
 \section{Variable feature access}{

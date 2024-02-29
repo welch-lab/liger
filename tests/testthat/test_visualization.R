@@ -1,4 +1,43 @@
 data("pbmcPlot", package = "rliger2")
+
+withNewH5Copy <- function(fun) {
+    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger2")
+    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger2")
+    if (!file.exists(ctrlpath.orig))
+        stop("Cannot find original h5 file at: ", ctrlpath.orig)
+    if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
+    if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
+    pwd <- getwd()
+    # Temp setting for GitHub Actions
+    fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
+    if (Sys.info()["sysname"] == "Windows") {
+        pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
+    }
+
+    ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
+    stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
+    cat("Working ctrl H5 file path: ", ctrlpath, "\n")
+    cat("Working stim H5 file path: ", stimpath, "\n")
+    file.copy(ctrlpath.orig, ctrlpath, copy.mode = TRUE)
+    file.copy(stimpath.orig, stimpath, copy.mode = TRUE)
+    if (!file.exists(ctrlpath))
+        stop("Cannot find copied h5 file at: ", ctrlpath)
+
+    fun(list(ctrl = ctrlpath, stim = stimpath))
+
+    if (file.exists(ctrlpath)) unlink(ctrlpath)
+    if (file.exists(stimpath)) unlink(stimpath)
+}
+
+closeH5Liger <- function(object) {
+    for (d in names(object)) {
+        if (isH5Liger(object, d)) {
+            h5file <- getH5File(object, d)
+            h5file$close()
+        }
+    }
+}
+
 expect_gg <- function(...) {
     objects <- list(...)
     for (i in seq_along(objects)) {
@@ -115,9 +154,8 @@ test_that("ggplot themes", {
 context("Density plot")
 test_that("Density plot", {
     expect_gg(
-        expect_warning(plotDensityDimRed(pbmcPlot, splitBy = "dataset",
-                                         title = "one"),
-                       "Length of `title` does"),
+        expect_no_warning(plotDensityDimRed(pbmcPlot, splitBy = "dataset",
+                                            title = "one")),
         expect_warning(plotDensityDimRed(pbmcPlot, title = letters[1:3],
                                          dotRaster = TRUE),
                        "`title` has length greater than")
@@ -137,7 +175,7 @@ test_that("Proportion plots", {
         plotProportion(pbmcPlot),
         plotProportion(pbmcPlot, method = "pie"),
         plotProportionBar(pbmcPlot, method = "group"),
-        plotClusterProportions(pbmcPlot)
+        plotProportionDot(pbmcPlot)
     )
     expect_is(plotProportionBar(pbmcPlot, inclRev = TRUE, combinePlot = FALSE),
               "list")
@@ -192,7 +230,6 @@ test_that("Heatmap", {
 
 context("Dot Plot")
 test_that("Dot Plot", {
-    expect_error(plotClusterGeneDot("hello"), "Please use a liger object")
     expect_error(plotClusterFactorDot(pbmcPlot, viridisOption = letters),
                  "`viridisOption` has to be one")
     expect_is(plotClusterGeneDot(pbmcPlot, varFeatures(pbmcPlot)[1:5],
@@ -211,7 +248,6 @@ test_that("Dot Plot", {
         "HeatmapList"
     )
 
-    expect_error(plotClusterFactorDot("hello"), "Please use a liger object")
     expect_is(plotClusterFactorDot(pbmcPlot, factorScaleFunc = function(x) x),
               "HeatmapList")
 })
@@ -226,3 +262,13 @@ test_that("Gene loading", {
     expect_gg(plotGeneLoadings(pbmcPlot, res, 1))
 })
 
+context("spatial coordinates")
+test_that("Plot spatial coordinates", {
+    ctrl.fake.spatial <- as.ligerDataset(dataset(pbmc, "ctrl"), modal = "spatial")
+    fake.coords <- matrix(rnorm(2 * ncol(ctrl.fake.spatial)), ncol = 2)
+    dimnames(fake.coords) <- list(colnames(ctrl.fake.spatial), c("x", "y"))
+    coordinate(ctrl.fake.spatial) <- fake.coords
+    dataset(pbmc, "ctrl") <- ctrl.fake.spatial
+    expect_gg(plotSpatial2D(pbmc, dataset = "ctrl"))
+    expect_gg(plotSpatial2D(pbmc, dataset = "ctrl", useCluster = "dataset"))
+})

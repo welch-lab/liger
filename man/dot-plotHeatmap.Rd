@@ -17,6 +17,8 @@
   showCellLegend = TRUE,
   showFeatureLabel = TRUE,
   showFeatureLegend = TRUE,
+  cellAnnColList = NULL,
+  featureAnnColList = NULL,
   scale = FALSE,
   trim = c(-2, 2),
   baseSize = 8,
@@ -59,6 +61,12 @@ gene symbols or factor names. Default \code{TRUE} for gene/factors but
 \item{showCellLegend, showFeatureLegend}{Logical, whether to show cell or
 feature legends. Default \code{TRUE}. Can be a scalar for overall control
 or a vector matching with each given annotation variable.}
+
+\item{cellAnnColList, featureAnnColList}{List object, with each element a
+named vector of R-interpretable color code. The names of the list elements
+are used for matching the annotation variable names. The names of the colors
+in the vectors are used for matching the levels of a variable (factor object,
+categorical). Default \code{NULL} generates ggplot-flavor categorical colors.}
 
 \item{scale}{Logical, whether to take z-score to scale and center gene
 expression. Applied after \code{dataScaleFunc}. Default \code{FALSE}.}

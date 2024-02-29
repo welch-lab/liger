@@ -9,10 +9,12 @@ reference:
   - readLiger
   - read10X
   - restoreH5Liger
+  - importVignetteData
   - as.ligerDataset
   - as.liger
   - pbmc
   - pbmcPlot
+  - bmmc
 - title: "Preprocessing"
 - contents:
   - runGeneralQC
@@ -20,23 +22,38 @@ reference:
   - normalize
   - selectGenes
   - scaleNotCenter
+  - reverseMethData
   - downsample
-- title: "Factorization"
+  - selectGenesVST
+- title: "Integration"
 - contents:
-  - starts_with("optimize")
-  - online_iNMF
-  - quantileNorm,liger-method
+  - runIntegration
+  - quantileNorm
+  - runINMF
+  - runOnlineINMF
+  - runUINMF
+  - optimizeNewData
+  - optimizeNewK
+  - optimizeNewLambda
+  - optimizeSubset
   - suggestK
   - suggestLambda
 - title: "Downstream Analysis"
 - contents:
   - runUMAP
   - runTSNE
-  - runLeidenCluster
-  - runLouvainCluster
+  - runCluster
+  - mapCellMeta
+  - runMarkerDEG
+  - runPairwiseDEG
   - runWilcoxon
+  - runPseudoBulkDEG
   - getFactorMarkers
+  - runDoubletFinder
   - runGSEA
+  - runGOEnrich
+- title: "ATAC Specific Analysis"
+- contents:
   - imputeKNN
   - linkGenesAndPeaks
   - exportInteractTrack
@@ -54,10 +71,12 @@ reference:
 - contents:
   - ends_with("class")
   - rawPeak
+  - coordinate
   - retrieveCellFeature
   - subsetLiger
   - subsetLigerDataset
   - convertOldLiger
+  - ligerToSeurat
 - title: "Misc"
 - contents:
   - H5Apply
@@ -67,35 +86,46 @@ reference:
   - mergeH5
   - mergeSparseAll
   - modalOf
+  - closeAllH5
 - title: "Deprecated"
 - contents:
   - ends_with("deprecated")
   - readSubset
   - quantileAlignSNF
+  - getProportionMito
 navbar:
   title: "rliger"
   left:
     - text: "Installation"
-      href: #
-    - text: "Vignettes"
+      href: articles/installation.html
+    - text: "Tutorials"
       menu:
-        - text: Introductory Vignettes
-        - text: "Integrating Multiple scRNAseq Data"
-          href: #
-        - text: "Integrating On-Disk (HDF5 Based) Data"
-          href: #
-        - text: -------
-        - text: Data structure and access
-        - text: "Outer container - liger object"
-          href: #
-        - text: "Dataset container - ligerDataset object and subclasses"
-          href: #
-    - text: "Documentation"
+        - text: "Integrating multiple scRNAseq data"
+          href: articles/Integrating_multi_scRNA_data.html
+        - text: "Integrating scRNA and scATAC data"
+          href: articles/Integrating_scRNA_and_scATAC_data.html
+        - text: "Online iNMF with HDF5 based data"
+          href: articles/online_iNMF_tutorial.html
+        - text: "Integration using unshared features"
+          href: articles/UINMF_vignette.html
+        - text: "Cross-species Analysis with UINMF"
+          href: articles/cross_species_vig.html
+        - text: "UINMF with STARmap spatial and transcriptomic"
+          href: articles/STARmap_dropviz_vig.html
+        - text: "UINMF with SNAREseq scATAC and scRNA"
+          href: articles/SNAREseq_walkthrough.html
+        - text: "Integrating scRNAseq and DNA methylation"
+          href: articles/rna_methylation.html
+        - text: "Parameter selection"
+          href: articles/Parameter_selection.html
+    - text: "Usage"
       menu:
-        - text: "Data"
-          menu:
-            - text: "Import Data"
-              href: #
+        - text: "Import data"
+          href: articles/import_data.html
+        - text: "Introduction to a liger object"
+          href: articles/liger_object.html
+        - text: "Interoperate with Seurat"
+          href: articles/liger_with_seurat.html
     - text: "Reference"
       href: reference/index.html
     - text: "NEWS"

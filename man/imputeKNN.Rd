@@ -58,3 +58,14 @@ normalized imputed peak counts if \code{norm = TRUE}.
 \description{
 Impute query features from a reference dataset using KNN.
 }
+\examples{
+bmmc <- normalize(bmmc)
+bmmc <- selectGenes(bmmc, datasets.use = "rna")
+bmmc <- scaleNotCenter(bmmc)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    bmmc <- runINMF(bmmc, k = 20)
+    bmmc <- quantileNorm(bmmc)
+    bmmc <- normalizePeak(bmmc)
+    bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
+}
+}

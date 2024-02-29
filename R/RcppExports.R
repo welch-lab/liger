@@ -5,16 +5,20 @@ RunModularityClusteringCpp <- function(SNN, modularityFunction, resolution, algo
     .Call(`_rliger2_RunModularityClusteringCpp`, SNN, modularityFunction, resolution, algorithm, nRandomStarts, nIterations, randomSeed, printOutput, edgefilename)
 }
 
-scaleNotCenterFast <- function(x) {
-    .Call(`_rliger2_scaleNotCenterFast`, x)
+scaleNotCenter_byRow_rcpp <- function(x) {
+    .Call(`_rliger2_scaleNotCenter_byRow_rcpp`, x)
 }
 
-rowMeansFast <- function(x) {
-    .Call(`_rliger2_rowMeansFast`, x)
+scaleNotCenter_byRow_perDataset_rcpp <- function(x, ann, n) {
+    .Call(`_rliger2_scaleNotCenter_byRow_perDataset_rcpp`, x, ann, n)
 }
 
-rowVarsFast <- function(x, means) {
-    .Call(`_rliger2_rowVarsFast`, x, means)
+rowVars_sparse_rcpp <- function(x, means) {
+    .Call(`_rliger2_rowVars_sparse_rcpp`, x, means)
+}
+
+rowDivide_rcpp <- function(x, v) {
+    .Call(`_rliger2_rowDivide_rcpp`, x, v)
 }
 
 sumSquaredDeviations <- function(x, means) {
@@ -29,48 +33,16 @@ rowVarsDense <- function(x, m) {
     .Call(`_rliger2_rowVarsDense`, x, m)
 }
 
-cpp_sumGroups_dgc <- function(x, p, i, ncol, groups, ngroups) {
-    .Call(`_rliger2_cpp_sumGroups_dgc`, x, p, i, ncol, groups, ngroups)
+SparseRowVarStd <- function(x, mu, sd, vmax) {
+    .Call(`_rliger2_SparseRowVarStd`, x, mu, sd, vmax)
 }
 
-cpp_sumGroups_dgc_T <- function(x, p, i, ncol, nrow, groups, ngroups) {
-    .Call(`_rliger2_cpp_sumGroups_dgc_T`, x, p, i, ncol, nrow, groups, ngroups)
+colAggregateSums_sparse <- function(x, group, ngroups) {
+    .Call(`_rliger2_colAggregateSums_sparse`, x, group, ngroups)
 }
 
-cpp_sumGroups_dense <- function(X, groups, ngroups) {
-    .Call(`_rliger2_cpp_sumGroups_dense`, X, groups, ngroups)
-}
-
-cpp_sumGroups_dense_T <- function(X, groups, ngroups) {
-    .Call(`_rliger2_cpp_sumGroups_dense_T`, X, groups, ngroups)
-}
-
-cpp_nnzeroGroups_dense <- function(X, groups, ngroups) {
-    .Call(`_rliger2_cpp_nnzeroGroups_dense`, X, groups, ngroups)
-}
-
-cpp_nnzeroGroups_dense_T <- function(X, groups, ngroups) {
-    .Call(`_rliger2_cpp_nnzeroGroups_dense_T`, X, groups, ngroups)
-}
-
-cpp_nnzeroGroups_dgc <- function(p, i, ncol, groups, ngroups) {
-    .Call(`_rliger2_cpp_nnzeroGroups_dgc`, p, i, ncol, groups, ngroups)
-}
-
-cpp_in_place_rank_mean <- function(v_temp, idx_begin, idx_end) {
-    .Call(`_rliger2_cpp_in_place_rank_mean`, v_temp, idx_begin, idx_end)
-}
-
-cpp_rank_matrix_dgc <- function(x, p, nrow, ncol) {
-    .Call(`_rliger2_cpp_rank_matrix_dgc`, x, p, nrow, ncol)
-}
-
-cpp_rank_matrix_dense <- function(X) {
-    .Call(`_rliger2_cpp_rank_matrix_dense`, X)
-}
-
-cpp_nnzeroGroups_dgc_T <- function(p, i, ncol, nrow, groups, ngroups) {
-    .Call(`_rliger2_cpp_nnzeroGroups_dgc_T`, p, i, ncol, nrow, groups, ngroups)
+sample_cpp <- function(x, size) {
+    .Call(`_rliger2_sample_cpp`, x, size)
 }
 
 #' Fast calculation of feature count matrix
@@ -91,20 +63,12 @@ makeFeatureMatrix <- function(bedmat, barcodes) {
     .Call(`_rliger2_makeFeatureMatrix`, bedmat, barcodes)
 }
 
-cluster_vote <- function(nn_ranked, clusts) {
-    .Call(`_rliger2_cluster_vote`, nn_ranked, clusts)
+cluster_vote_rcpp <- function(nn_ranked, clusts) {
+    .Call(`_rliger2_cluster_vote_rcpp`, nn_ranked, clusts)
 }
 
-scale_columns_fast <- function(mat, scale = TRUE, center = TRUE) {
-    .Call(`_rliger2_scale_columns_fast`, mat, scale, center)
-}
-
-max_factor <- function(H, dims_use, center_cols = FALSE) {
-    .Call(`_rliger2_max_factor`, H, dims_use, center_cols)
-}
-
-solveNNLS <- function(C, B) {
-    .Call(`_rliger2_solveNNLS`, C, B)
+max_factor_rcpp <- function(H, dims_use, center = FALSE) {
+    .Call(`_rliger2_max_factor_rcpp`, H, dims_use, center)
 }
 
 ComputeSNN <- function(nn_ranked, prune) {
@@ -117,5 +81,25 @@ WriteEdgeFile <- function(snn, filename, display_progress) {
 
 DirectSNNToFile <- function(nn_ranked, prune, display_progress, filename) {
     .Call(`_rliger2_DirectSNNToFile`, nn_ranked, prune, display_progress, filename)
+}
+
+cpp_rank_matrix_dgc <- function(x, p, nrow, ncol) {
+    .Call(`_rliger2_cpp_rank_matrix_dgc`, x, p, nrow, ncol)
+}
+
+rowAggregateSum_sparse <- function(X, groups, ngroups) {
+    .Call(`_rliger2_rowAggregateSum_sparse`, X, groups, ngroups)
+}
+
+colAggregateSum_sparse <- function(X, groups, ngroups) {
+    .Call(`_rliger2_colAggregateSum_sparse`, X, groups, ngroups)
+}
+
+colNNZAggr_sparse <- function(X, groups, ngroups) {
+    .Call(`_rliger2_colNNZAggr_sparse`, X, groups, ngroups)
+}
+
+rowNNZAggr_sparse <- function(X, groups, ngroups) {
+    .Call(`_rliger2_rowNNZAggr_sparse`, X, groups, ngroups)
 }
 
