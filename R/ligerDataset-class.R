@@ -206,10 +206,6 @@ setValidity("ligerDataset", .valid.ligerDataset)
 #' @param info Name of the entry in \code{h5fileInfo} slot.
 #' @param slot The slot name when using \code{getMatrix}.
 #' @param returnList Not applicable for \code{ligerDataset} methods.
-#' @param i,j Feature and cell index for \code{`[`} method. For \code{`[[`}
-#' method, use a single variable name with \code{i} and \code{j} is not
-#' applicable.
-#' @param drop Not applicable.
 #' @param ... See detailed sections for explanation.
 #' @rdname ligerDataset-class
 #' @export
@@ -318,6 +314,15 @@ setMethod(
 #' identifiers as the second element. For \code{colnames<-} method, the
 #' character vector of cell identifiers. For \code{rownames<-} method, the
 #' character vector of feature names.
+#' @section Subsetting:
+#' For more detail of subsetting a \code{liger} object or a
+#' \linkS4class{ligerDataset} object, please check out \code{\link{subsetLiger}}
+#' and \code{\link{subsetLigerDataset}}. Here, we set the S3 method
+#' "single-bracket" \code{[} as a quick wrapper to subset a \code{ligerDataset}
+#' object. \code{i} and \code{j} serves as feature and cell subscriptor,
+#' respectively, which can be any valid index refering the available features
+#' and cells in a dataset. \code{...} arugments are passed to
+#' \code{subsetLigerDataset} so that advanced options are allowed.
 #' @rdname ligerDataset-class
 #' @export
 setMethod("dim", "ligerDataset", function(x) {
@@ -392,44 +397,31 @@ setReplaceMethod("dimnames", c("ligerDataset", "list"), function(x, value) {
     return(varNumIdx)
 }
 
-#' @section Subsetting:
-#' For more detail of subsetting a \code{liger} object or a
-#' \linkS4class{ligerDataset} object, please check out \code{\link{subsetLiger}}
-#' and \code{\link{subsetLigerDataset}}. Here, we set the S4 method
-#' "single-bracket" \code{[} as a quick wrapper to subset a \code{ligerDataset}
-#' object. \code{i} and \code{j} serves as feature and cell subscriptor,
-#' respectively, which can be any valid index refering the available features
-#' and cells in a dataset. \code{...} arugments are passed to
-#' \code{subsetLigerDataset} so that advanced options are allowed.
+#' Subset ligerDataset object
+#' @name sub-ligerDataset
+#' @param x A \linkS4class{ligerDataset} object
+#' @param i Numeric, logical index or character vector of feature names to
+#' subscribe. Leave missing for all features.
+#' @param j Numeric, logical index or character vector of cell IDs to subscribe.
+#' Leave missing for all cells.
+#' @param ... Additional arguments passed to \code{\link{subsetLigerDataset}}.
 #' @export
-#' @rdname ligerDataset-class
-setMethod(
-    "[",
-    signature(x = "ligerDataset", i = "index", j = "missing"),
-    function(x, i, j, ...) {
-        subsetLigerDataset(x, featureIdx = i, cellIdx = NULL, ...)
+#' @method [ ligerDataset
+#' @return If \code{i} is given, the selected metadata will be returned; if it
+#' is missing, the whole cell metadata table in
+#' \code{S4Vectors::\link[S4Vectors]{DataFrame}} class will be returned.
+#' @examples
+#' ctrl <- dataset(pbmc, "ctrl")
+#' ctrl[1:5, 1:5]
+`[.ligerDataset` <- function(x, i, j, ...) {
+    if (missing(i) && missing(j)) {
+        return(x)
     }
-)
+    if (missing(i)) i <- NULL
+    if (missing(j)) j <- NULL
+    subsetLigerDataset(x, featureIdx = i, cellIdx = j, ...)
+}
 
-#' @export
-#' @rdname ligerDataset-class
-setMethod(
-    "[",
-    signature(x = "ligerDataset", i = "missing", j = "index"),
-    function(x, i, j, ...) {
-        subsetLigerDataset(x, featureIdx = NULL, cellIdx = j, ...)
-    }
-)
-
-#' @export
-#' @rdname ligerDataset-class
-setMethod(
-    "[",
-    signature(x = "ligerDataset", i = "index", j = "index"),
-    function(x, i, j, ...) {
-        subsetLigerDataset(x, featureIdx = i, cellIdx = j, ...)
-    }
-)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Raw, norm, scale data access ####

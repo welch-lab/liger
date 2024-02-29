@@ -506,22 +506,23 @@ normalize.liger <- function(
 #' @export
 #' @param assay Name of assay to use. Default \code{NULL} uses current active
 #' assay.
-#' @param layer For Seurat>=4.9.9, the name of layer to store normalized data.
+#' @param save For Seurat>=4.9.9, the name of layer to store normalized data.
 #' Default \code{"ligerNormData"}. For older Seurat, stored to \code{data} slot.
-#' @param useLayer Where the input raw counts should be from. Default
+#' @param layer Where the input raw counts should be from. Default
 #' \code{"counts"}. For older Seurat, always retrieve from \code{counts} slot.
 #' @method normalize Seurat
 normalize.Seurat <- function(
         object,
         assay = NULL,
-        layer = "ligerNormData",
-        useLayer = "counts",
+        layer = "counts",
+        save = "ligerNormData",
         ...
 ) {
-    raw <- .getSeuratData(object, layer = useLayer, slot = "counts",
+    raw <- .getSeuratData(object, layer = layer, slot = "counts",
                           assay = assay)
-    normed <- normalize(raw, ...)
-    object <- .setSeuratData(object, layer = layer, slot = "data",
+    if (!is.list(raw)) normed <- normalize(raw, ...)
+    else normed <- lapply(raw, normalize, ...)
+    object <- .setSeuratData(object, layer = layer, save = save, slot = "data",
                              value = normed, assay = assay)
     return(object)
 }
@@ -813,7 +814,7 @@ calcGeneVars.H5 <- function(object, chunkSize = 1000,
 #' @export
 #' @rdname selectGenes
 #' @method selectGenes Seurat
-#' @param useLayer Where the input normalized counts should be from. Default
+#' @param layer Where the input normalized counts should be from. Default
 #' \code{"ligerNormData"}. For older Seurat, always retrieve from \code{data}
 #' slot.
 #' @param assay Name of assay to use. Default \code{NULL} uses current active
@@ -825,7 +826,8 @@ selectGenes.Seurat <- function(
         thresh = .1,
         nGenes = NULL,
         alpha = .99,
-        useLayer = "ligerNormData",
+        useDatasets = NULL,
+        layer = "ligerNormData",
         assay = NULL,
         datasetVar = "orig.ident",
         combine = c("union", "intersection"),
@@ -833,14 +835,23 @@ selectGenes.Seurat <- function(
         ...
 ) {
     combine <- match.arg(combine)
-    assay <- if (is.null(assay)) SeuratObject::DefaultAssay(object) else assay
-    mat <- .getSeuratData(object, layer = useLayer, slot = "data",
-                          assay = assay)
+    assay <- assay %||% SeuratObject::DefaultAssay(object)
+    matList <- .getSeuratData(object, layer = layer, slot = "data",
+                              assay = assay)
 
-    # the last [,1] converts data.frame to the vector/factor
-    datasetVar <- object[[datasetVar]][,1]
+    datasetVar <- object[[datasetVar, drop = TRUE]]
     if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
     datasetVar <- droplevels(datasetVar)
+    if (!is.list(matList)) matList <- splitRmMiss(matList, datasetVar)
+    else {
+        names(matList) <- gsub(paste0(layer, "."), "", names(matList))
+    }
+    useDatasets <- useDatasets %||% levels(datasetVar)
+    matList <- matList[unique(useDatasets)]
+
+    featureList <- lapply(matList, rownames)
+    allshared <- Reduce(intersect, featureList)
+    allFeatures <- SeuratObject::Features(object, assay = assay)
     thresh <- .checkArgLen(thresh, nlevels(datasetVar))
 
     # Get nUMI metric into list
@@ -848,23 +859,14 @@ selectGenes.Seurat <- function(
     nUMIAll <- object[[nUMIVar]][,1]
     nUMIList <- split(nUMIAll, datasetVar)
 
-    # Identify shared features
-    expressedList <- list()
-    for (d in levels(datasetVar)) {
-        submat <- mat[, datasetVar == d, drop = FALSE]
-        expressedList[[d]] <- unique(submat@i + 1) # numeric
-    }
-    allshared <- Reduce(intersect, expressedList) # numeric
-    allshared <- rownames(mat)[sort(allshared)] # character
-
     selectList <- list()
-    hvg.info <- data.frame(row.names = rownames(mat))
+    hvg.info <- data.frame(row.names = allFeatures)
     for (d in levels(datasetVar)) {
         if (isTRUE(verbose))
             .log("Selecting variable features for dataset: ", d)
-        submat <- mat[, datasetVar == d, drop = FALSE]
-        expressed <- unique(submat@i + 1)
-        submat <- submat[sort(expressed), , drop = FALSE]
+        submat <- matList[[d]]
+        # submat <- mat[, datasetVar == d, drop = FALSE]
+        # submat <- submat[sort(expressed), , drop = FALSE]
         sharedFeature <- rownames(submat) %in% allshared
         means <- Matrix::rowMeans(submat)
         hvg.info[[paste0("liger.mean.", d)]] <- 0
@@ -898,7 +900,7 @@ selectGenes.Seurat <- function(
             .log("Finally ", length(selected),
                  " shared variable features selected.")
     }
-    hvg.info$liger.variable <- rownames(mat) %in% selected
+    hvg.info$liger.variable <- allFeatures %in% selected
     assayObj <- Seurat::GetAssay(object, assay = assay)
     assayObj[[names(hvg.info)]] <- hvg.info
     object[[assay]] <- assayObj
@@ -1285,10 +1287,10 @@ scaleNotCenter.liger <- function(
 #' @export
 #' @param assay Name of assay to use. Default \code{NULL} uses current active
 #' assay.
-#' @param layer For Seurat>=4.9.9, the name of layer to store normalized data.
+#' @param save For Seurat>=4.9.9, the name of layer to store normalized data.
 #' Default \code{"ligerScaleData"}. For older Seurat, stored to
 #' \code{scale.data} slot.
-#' @param useLayer For Seurat>=4.9.9, the name of layer to retrieve normalized
+#' @param layer For Seurat>=4.9.9, the name of layer to retrieve normalized
 #' data. Default \code{"ligerNormData"}. For older Seurat, always retrieve from
 #' \code{data} slot.
 #' @param datasetVar Metadata variable name that stores the dataset source
@@ -1297,31 +1299,41 @@ scaleNotCenter.liger <- function(
 scaleNotCenter.Seurat <- function(
         object,
         assay = NULL,
-        layer = "ligerScaleData",
-        useLayer = "ligerNormData",
+        layer = "ligerNormData",
+        save = "ligerScaleData",
         datasetVar = "orig.ident",
         features = NULL,
         ...
 ) {
-    normed <- .getSeuratData(object, layer = useLayer, slot = "data",
+    normed <- .getSeuratData(object, layer = layer, slot = "data",
                              assay = assay)
-    if (is.null(features)) features <- SeuratObject::VariableFeatures(object)
-    if (is.null(features) || length(features) == 0) {
+
+    features <- features %||% SeuratObject::VariableFeatures(object)
+    if (!length(features)) {
         stop("No variable feature specified. Run `selectGenes()` first")
     }
-    features <- .idxCheck(normed, idx = features, orient = "feature")
-    normed <- normed[features, , drop = FALSE]
-    # the last [,1] converts data.frame to the vector/factor
-    datasetVar <- object[[datasetVar]][,1]
-    if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
-    datasetVar <- droplevels(datasetVar)
-    nlevel <- nlevels(datasetVar)
-    datasetVar <- as.integer(datasetVar) - 1
-    # efficient solution where we don't need to split and merge
-    scaled <- scaleNotCenter_byRow_perDataset_rcpp(normed, datasetVar, nlevel)
-    scaled@x[is.na(scaled@x)] <- 0
-    dimnames(scaled) <- list(rownames(object)[features], colnames(normed))
-    object <- .setSeuratData(object, layer = layer, slot = "scale.data",
+
+    if (is.list(normed)) {
+        scaled <- lapply(normed, function(x) {
+            scaleNotCenter(x[features, , drop = FALSE])
+        })
+    } else {
+        # Condition for all batches in one matrix
+        normed <- normed[features, , drop = FALSE]
+        # the last [,1] converts data.frame to the vector/factor
+        datasetVar <- object[[datasetVar, drop = TRUE]]
+        if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
+        datasetVar <- droplevels(datasetVar)
+        nlevel <- nlevels(datasetVar)
+        datasetVar <- as.integer(datasetVar) - 1
+        # efficient solution where we don't need to split and merge
+        scaled <- scaleNotCenter_byRow_perDataset_rcpp(normed, datasetVar, nlevel)
+        scaled@x[is.na(scaled@x)] <- 0
+        dimnames(scaled) <- list(features, colnames(normed))
+    }
+
+    object <- .setSeuratData(object, layer = layer, save = save,
+                             slot = "scale.data",
                              value = scaled, assay = assay,
                              denseIfNeeded = TRUE)
     return(object)

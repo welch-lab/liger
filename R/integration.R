@@ -287,7 +287,7 @@ runINMF.liger <- function(
 #' @export
 #' @param datasetVar Metadata variable name that stores the dataset source
 #' annotation. Default \code{"orig.ident"}.
-#' @param useLayer For Seurat>=4.9.9, the name of layer to retrieve input
+#' @param layer For Seurat>=4.9.9, the name of layer to retrieve input
 #' non-negative scaled data. Default \code{"ligerScaleData"}. For older Seurat,
 #' always retrieve from \code{scale.data} slot.
 #' @param assay Name of assay to use. Default \code{NULL} uses current active
@@ -300,7 +300,7 @@ runINMF.Seurat <- function(
         k = 20,
         lambda = 5.0,
         datasetVar = "orig.ident",
-        useLayer = "ligerScaleData",
+        layer = "ligerScaleData",
         assay = NULL,
         reduction = "inmf",
         nIteration = 30,
@@ -313,22 +313,24 @@ runINMF.Seurat <- function(
         ...
 ) {
     assay <- assay %||% SeuratObject::DefaultAssay(object)
-    mat <- .getSeuratData(object, layer = useLayer, slot = "scale.data",
-                          assay = assay)
-    if (any(mat < 0)) {
-        stop("Negative data encountered for integrative Non-negative Matrix ",
-             "Factorization. Please run `scaleNotCenter()` first.")
-    }
+    Es <- .getSeuratData(object, layer = layer, slot = "scale.data",
+                              assay = assay)
     # the last [,1] converts data.frame to the vector/factor
     datasetVar <- object[[datasetVar]][,1]
     if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
     datasetVar <- droplevels(datasetVar)
 
-    Es <- lapply(levels(datasetVar), function(d) {
-        methods::as(mat[, datasetVar == d], "CsparseMatrix")
-    })
-    rm(mat)
-    names(Es) <- levels(datasetVar)
+    if (!is.list(Es)) {
+        Es <- splitRmMiss(Es, datasetVar)
+        Es <- lapply(Es, methods::as, Class = "CsparseMatrix")
+    }
+    for (i in seq_along(Es)) {
+        if (any(Es[[i]]@x < 0)) {
+            stop("Negative data encountered for integrative Non-negative ",
+                 "Matrix Factorization. Please run `scaleNotCenter()` first.")
+        }
+    }
+
     res <- .runINMF.list(
         object = Es,
         k = k,
@@ -491,15 +493,18 @@ optimizeALS <- function( # nocov start
         ...
 ) {
     if (isTRUE(use.unshared)) {
-        lifecycle::deprecate_warn("1.99.0", "optimizeALS(use.unshared = 'TRUE')",
-                                  "runIntegration(method = \"UINMF\")")
+        lifecycle::deprecate_warn(
+            "1.99.0", "optimizeALS(use.unshared = 'TRUE')",
+            details = "Please use `runIntegration()` with `method = 'UINMF'` or `runUINMF()` instead."
+        )
         # Call UINMF
         object <- runUINMF(object = object, k = k, lambda = lambda,
                            nIteration = max.iters, nRandomStarts = nrep,
                            seed = rand.seed, verbose = verbose)
     } else {
-        lifecycle::deprecate_warn("1.99.0", "optimizeALS()",
-                                  "runIntegration()")
+        lifecycle::deprecate_warn(
+            "1.99.0", "optimizeALS()",
+            "runIntegration()")
         object <- runINMF(object = object, k = k, lambda = lambda,
                           nIteration = max.iters, nRandomStarts = nrep,
                           HInit = H.init, WInit = W.init, VInit = V.init,
@@ -860,7 +865,7 @@ runOnlineINMF.liger <- function(
 #' @method runOnlineINMF Seurat
 #' @param datasetVar Metadata variable name that stores the dataset source
 #' annotation. Default \code{"orig.ident"}.
-#' @param useLayer For Seurat>=4.9.9, the name of layer to retrieve input
+#' @param layer For Seurat>=4.9.9, the name of layer to retrieve input
 #' non-negative scaled data. Default \code{"ligerScaleData"}. For older Seurat,
 #' always retrieve from \code{scale.data} slot.
 #' @param assay Name of assay to use. Default \code{NULL} uses current active
@@ -872,7 +877,7 @@ runOnlineINMF.Seurat <- function(
         k = 20,
         lambda = 5,
         datasetVar = "orig.ident",
-        useLayer = "ligerScaleData",
+        layer = "ligerScaleData",
         assay = NULL,
         reduction = "onlineINMF",
         maxEpochs = 5,
@@ -883,22 +888,23 @@ runOnlineINMF.Seurat <- function(
         ...
 ) {
     assay <- assay %||% SeuratObject::DefaultAssay(object)
-    mat <- .getSeuratData(object, layer = useLayer, slot = "scale.data",
-                          assay = assay)
-    if (any(mat < 0)) {
-        stop("Negative data encountered for integrative Non-negative Matrix ",
-             "Factorization. Please run `scaleNotCenter()` first.")
-    }
+    Es <- .getSeuratData(object, layer = layer, slot = "scale.data",
+                         assay = assay)
     # the last [,1] converts data.frame to the vector/factor
     datasetVar <- object[[datasetVar]][,1]
     if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
     datasetVar <- droplevels(datasetVar)
 
-    Es <- lapply(levels(datasetVar), function(d) {
-        methods::as(mat[, datasetVar == d], "CsparseMatrix")
-    })
-    rm(mat)
-    names(Es) <- levels(datasetVar)
+    if (!is.list(Es)) {
+        Es <- splitRmMiss(Es, datasetVar)
+        Es <- lapply(Es, methods::as, Class = "CsparseMatrix")
+    }
+    for (i in seq_along(Es)) {
+        if (any(Es[[i]]@x < 0)) {
+            stop("Negative data encountered for integrative Non-negative ",
+                 "Matrix Factorization. Please run `scaleNotCenter()` first.")
+        }
+    }
 
     res <- .runOnlineINMF.list(
         object = Es, k = k, lambda = lambda,
@@ -1000,8 +1006,10 @@ online_iNMF <- function( # nocov start
         seed = 123,
         verbose = TRUE
 ) {
-    lifecycle::deprecate_warn("1.99.0", "online_iNMF()",
-                              "runIntegration(method = \"online\")")
+    lifecycle::deprecate_warn(
+        "1.99.0", "online_iNMF()",
+        details = "Please use `runIntegration()` with `method = 'online'`, or `runOnlineINMF()` instead."
+    )
     object <- runOnlineINMF.liger(
         object = object, k = k, lambda = lambda, maxEpochs = max.epochs,
         HALSiter = miniBatch_max_iters, minibatchSize = miniBatch_size,

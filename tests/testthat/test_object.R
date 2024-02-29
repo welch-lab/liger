@@ -400,7 +400,7 @@ test_that("as.liger methods", {
         )
         sce$useless <- 1
         expect_warning(lig <- as.liger(sce), 'Variable name "dataset"')
-        expect_equal(names(lig), "sce")
+        expect_equal(names(lig), "SCE")
 
         expect_warning(lig <- as.liger(sce, datasetVar = "dataset"),
                        'Variable name "dataset"')
@@ -423,8 +423,6 @@ test_that("as.liger methods", {
         expect_warning(lig <- as.liger(seu))
         expect_true(all.equal(sapply(datasets(lig), ncol), c(a = 150, b = 150)))
 
-        expect_warning(lig <- as.liger(seu, datasetVar = NULL))
-        expect_equal(names(lig), "Seurat")
         expect_in(paste0("pca.", 1:10), colnames(cellMeta(lig, as.data.frame = TRUE)))
     }
 })
@@ -473,7 +471,8 @@ test_that("ligerToSeurat", {
         pbmc <- normalize(pbmc, useDatasets = "ctrl")
         seu <- ligerToSeurat(pbmc)
         expect_equal(SeuratObject::Assays(seu), "LIGER")
-        expect_equal(SeuratObject::Layers(seu), "counts")
+        expect_true(all.equal(SeuratObject::Layers(seu),
+                              c("counts.ctrl", "counts.stim", "ligerNormData.ctrl")))
 
         expect_error(seu <- ligerToSeurat(pbmcPlot), "rawData not found")
 

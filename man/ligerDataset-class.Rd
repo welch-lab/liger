@@ -8,9 +8,6 @@
 \alias{dim,ligerDataset-method}
 \alias{dimnames,ligerDataset-method}
 \alias{dimnames<-,ligerDataset,list-method}
-\alias{[,ligerDataset,index,missing,ANY-method}
-\alias{[,ligerDataset,missing,index,ANY-method}
-\alias{[,ligerDataset,index,index,ANY-method}
 \alias{rawData}
 \alias{rawData<-}
 \alias{rawData,ligerDataset-method}
@@ -55,12 +52,6 @@
 \S4method{dimnames}{ligerDataset}(x)
 
 \S4method{dimnames}{ligerDataset,list}(x) <- value
-
-\S4method{[}{ligerDataset,index,missing,ANY}(x, i, j, ..., drop = TRUE)
-
-\S4method{[}{ligerDataset,missing,index,ANY}(x, i, j, ..., drop = TRUE)
-
-\S4method{[}{ligerDataset,index,index,ANY}(x, i, j, ..., drop = TRUE)
 
 rawData(x, dataset = NULL)
 
@@ -142,14 +133,6 @@ featureMeta(x, check = TRUE) <- value
 
 \item{value}{See detail sections for requirements}
 
-\item{i, j}{Feature and cell index for \code{`[`} method. For \code{`[[`}
-method, use a single variable name with \code{i} and \code{j} is not
-applicable.}
-
-\item{...}{See detailed sections for explanation.}
-
-\item{drop}{Not applicable.}
-
 \item{dataset}{Not applicable for \code{ligerDataset} methods.}
 
 \item{check}{Whether to perform object validity check on setting new value.}
@@ -159,6 +142,8 @@ applicable.}
 \item{returnList}{Not applicable for \code{ligerDataset} methods.}
 
 \item{info}{Name of the entry in \code{h5fileInfo} slot.}
+
+\item{...}{See detailed sections for explanation.}
 
 \item{deparse.level}{Not used here.}
 }
@@ -218,7 +203,7 @@ character vector of feature names.
 
 For more detail of subsetting a \code{liger} object or a
 \linkS4class{ligerDataset} object, please check out \code{\link{subsetLiger}}
-and \code{\link{subsetLigerDataset}}. Here, we set the S4 method
+and \code{\link{subsetLigerDataset}}. Here, we set the S3 method
 "single-bracket" \code{[} as a quick wrapper to subset a \code{ligerDataset}
 object. \code{i} and \code{j} serves as feature and cell subscriptor,
 respectively, which can be any valid index refering the available features

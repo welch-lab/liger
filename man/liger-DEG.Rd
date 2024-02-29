@@ -3,6 +3,7 @@
 \name{runPairwiseDEG}
 \alias{runPairwiseDEG}
 \alias{runMarkerDEG}
+\alias{runWilcoxon}
 \title{Find DEG between two groups}
 \usage{
 runPairwiseDEG(
@@ -32,6 +33,12 @@ runMarkerDEG(
   minCellPerRep = 10,
   seed = 1,
   verbose = getOption("ligerVerbose")
+)
+
+runWilcoxon(
+  object,
+  data.use = NULL,
+  compare.method = c("clusters", "datasets")
 )
 }
 \arguments{
@@ -71,6 +78,13 @@ markers for \code{conditionBy} within each chunk. Default \code{NULL}.}
 
 \item{useDatasets}{Datasets to perform marker detection within. Default
 \code{NULL} will use all datasets.}
+
+\item{data.use}{Same as \code{useDatasets}.}
+
+\item{compare.method}{Choose from \code{"clusters"} (default) or
+\code{"datasets"}. \code{"clusters"} compares each cluster against all other
+cells, while \code{"datasets"} run within each cluster and compare each
+dataset against all other datasets.}
 }
 \value{
 A data.frame with DEG information

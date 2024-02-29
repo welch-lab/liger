@@ -40,8 +40,8 @@ scaleNotCenter(object, ...)
 \method{scaleNotCenter}{Seurat}(
   object,
   assay = NULL,
-  layer = "ligerScaleData",
-  useLayer = "ligerNormData",
+  layer = "ligerNormData",
+  save = "ligerScaleData",
   datasetVar = "orig.ident",
   features = NULL,
   ...
@@ -78,13 +78,13 @@ ignored if specified.}
 \item{assay}{Name of assay to use. Default \code{NULL} uses current active
 assay.}
 
-\item{layer}{For Seurat>=4.9.9, the name of layer to store normalized data.
-Default \code{"ligerScaleData"}. For older Seurat, stored to
-\code{scale.data} slot.}
-
-\item{useLayer}{For Seurat>=4.9.9, the name of layer to retrieve normalized
+\item{layer}{For Seurat>=4.9.9, the name of layer to retrieve normalized
 data. Default \code{"ligerNormData"}. For older Seurat, always retrieve from
 \code{data} slot.}
+
+\item{save}{For Seurat>=4.9.9, the name of layer to store normalized data.
+Default \code{"ligerScaleData"}. For older Seurat, stored to
+\code{scale.data} slot.}
 
 \item{datasetVar}{Metadata variable name that stores the dataset source
 annotation. Default \code{"orig.ident"}.}

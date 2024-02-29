@@ -37,7 +37,8 @@ selectGenes(object, thresh = 0.1, nGenes = NULL, alpha = 0.99, ...)
   thresh = 0.1,
   nGenes = NULL,
   alpha = 0.99,
-  useLayer = "ligerNormData",
+  useDatasets = NULL,
+  layer = "ligerNormData",
   assay = NULL,
   datasetVar = "orig.ident",
   combine = c("union", "intersection"),
@@ -99,7 +100,7 @@ metric is now visualized with separated function
 \code{useUnsharedDatasets} to select unshared genes, instead of having to
 switch \code{unshared} on.}
 
-\item{useLayer}{Where the input normalized counts should be from. Default
+\item{layer}{Where the input normalized counts should be from. Default
 \code{"ligerNormData"}. For older Seurat, always retrieve from \code{data}
 slot.}
 

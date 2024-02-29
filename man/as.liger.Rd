@@ -14,15 +14,9 @@ as.liger(object, ...)
 
 \method{as.liger}{SingleCellExperiment}(object, datasetVar = NULL, modal = NULL, ...)
 
-\method{as.liger}{Seurat}(object, datasetVar = "orig.ident", modal = NULL, assay = NULL, ...)
+\method{as.liger}{Seurat}(object, datasetVar = NULL, modal = NULL, assay = NULL, ...)
 
-seuratToLiger(
-  object,
-  datasetVar = "orig.ident",
-  modal = NULL,
-  assay = NULL,
-  ...
-)
+seuratToLiger(object, datasetVar = NULL, modal = NULL, assay = NULL, ...)
 }
 \arguments{
 \item{object}{Object.}
@@ -33,9 +27,9 @@ seuratToLiger(
 existing metadata in the object (e.g. colData column); 2. Specify a
 vector/factor that assign the dataset belonging. 3. Give a single character
 string which means that all data is from one dataset (must not be a metadata
-variable, otherwise it is understood as scenario 1.). Default \code{NULL}
-gathers things into one dataset and names it "sample" for dgCMatrix, "SCE"
-for SingleCellExperiment, or "Seurat" for Seurat.}
+variable, otherwise it is understood as 1.). Default \code{NULL} gathers
+things into one dataset and names it "sample" for dgCMatrix, attempts
+to find variable "sample" from SCE or "orig.ident" from Seurat.}
 
 \item{modal}{Modality setting for each dataset. See
 \code{\link{createLiger}}.}
@@ -47,7 +41,19 @@ assay.}
 a \linkS4class{liger} object.
 }
 \description{
-Converting other classes of data to a liger object
+This function converts data stored in SingleCellExperiment (SCE), Seurat
+object or a merged sparse matrix (dgCMatrix) into a liger object. This is
+designed for a container object or matrix that already contains multiple
+datasets to be integerated with LIGER. For individual datasets, please use
+\code{\link{createLiger}} instead.
+}
+\details{
+For Seurat V5 structure, it is highly recommended that users make use of its
+split layer feature, where things like "counts", "data", and "scale.data"
+can be held for each dataset in the same Seurat object, e.g. with
+"count.ctrl", "count.stim", not merged. If a Seurat object with split layers
+is given, \code{datasetVar} will be ignored and the layers will be directly
+used.
 }
 \examples{
 # dgCMatrix (common sparse matrix class), usually obtained from other
@@ -71,4 +77,12 @@ seu <- SeuratObject::CreateSeuratObject(multiSampleMatrix)
 # to be careful and have it confirmed first.
 pbmc4 <- as.liger(seu, datasetVar = "orig.ident")
 pbmc4
+
+# As per Seurat V5 updates with layered data, specifically helpful udner the
+# scenario of dataset integration. "counts" and etc for each datasets can be
+# split into layers.
+seu5 <- seu
+seu5[["RNA"]] <- split(seu5[["RNA"]], pbmc$dataset)
+print(SeuratObject::Layers(seu5))
+pbmc5 <- as.liger(seu5)
 }

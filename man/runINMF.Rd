@@ -27,7 +27,7 @@ runINMF(object, k = 20, lambda = 5, ...)
   k = 20,
   lambda = 5,
   datasetVar = "orig.ident",
-  useLayer = "ligerScaleData",
+  layer = "ligerScaleData",
   assay = NULL,
   reduction = "inmf",
   nIteration = 30,
@@ -83,7 +83,7 @@ each element is the initial \eqn{V} matrix of each dataset. Default
 \item{datasetVar}{Metadata variable name that stores the dataset source
 annotation. Default \code{"orig.ident"}.}
 
-\item{useLayer}{For Seurat>=4.9.9, the name of layer to retrieve input
+\item{layer}{For Seurat>=4.9.9, the name of layer to retrieve input
 non-negative scaled data. Default \code{"ligerScaleData"}. For older Seurat,
 always retrieve from \code{scale.data} slot.}
 

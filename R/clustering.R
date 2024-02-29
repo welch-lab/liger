@@ -163,7 +163,7 @@ NULL
 #' as the replacement, while \code{\link{runCluster}} with default
 #' \code{method = "leiden"} is more recommended.
 #' @export
-louvainCluster <- function(
+louvainCluster <- function( # nocov start
         object,
         resolution = 1.0,
         k = 20,
@@ -175,15 +175,16 @@ louvainCluster <- function(
         verbose = getOption("ligerVerbose"),
         dims.use = NULL
 ) {
-    lifecycle::deprecate_warn("1.99.0", "louvainCluster()", # nocov start
-                              "runCluster(method = \"louvain\")")
+    lifecycle::deprecate_warn(
+        "1.99.0", "louvainCluster()",
+        details = "Please use `runCluster()` with `method = 'louvain'` instead.")
     runCluster(
         object, method = "louvain", resolution = resolution, nNeighbors = k,
         prune = prune, eps = eps, nRandomStarts = nRandomStarts,
         nIterations = nIterations, useDims = dims.use, groupSingletons = TRUE,
         clusterName = "louvain_cluster", seed = random.seed, verbose = verbose
-    ) # nocov end
-}
+    )
+} # nocov end
 
 # Group single cells that make up their own cluster in with the cluster they are
 # most connected to. (Adopted from Seurat v3)

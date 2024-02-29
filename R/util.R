@@ -420,14 +420,24 @@
         layer <- slot
     }
     if (utils::packageVersion("SeuratObject") >= package_version("4.9.9")) {
-        data <- SeuratObject::LayerData(object, assay = assay, layer = layer)
+        layers <- SeuratObject::Layers(object, assay = assay, search = layer)
+        if (length(layers) == 0) {
+            stop("Layer '", layer, "' not found in object.")
+        } else if (length(layers) == 1) {
+            data <- SeuratObject::LayerData(object, assay = assay, layer = layers)
+        } else {
+            data <- lapply(layers, function(l) {
+                SeuratObject::LayerData(object, assay = assay, layer = l)
+            })
+            names(data) <- layers
+        }
     } else {
         data <- SeuratObject::GetAssayData(object, assay = assay, slot = layer)
     }
     return(data)
 }
 
-.setSeuratData <- function(object, layer, slot, value, assay = NULL,
+.setSeuratData <- function(object, layer, save, slot, value, assay = NULL,
                            denseIfNeeded = FALSE) {
     if (!requireNamespace("Seurat", quietly = TRUE)) {
         stop("Seurat package has to be installed in advance.")
@@ -438,14 +448,27 @@
     assayObj <- Seurat::GetAssay(object, assay = assay)
     if (!"layers" %in% methods::slotNames(assayObj)) {
         # An old version Assay object,
-        layer <- slot
+        save <- slot
         if (isTRUE(denseIfNeeded)) value <- as.matrix(value)
     }
     if (utils::packageVersion("SeuratObject") >= package_version("4.9.9")) {
-        SeuratObject::LayerData(object, assay = assay, layer = layer) <- value
+        if (!is.list(value)) {
+            SeuratObject::LayerData(object, assay = assay, layer = save) <- value
+        } else {
+            # Assume this come from .getSeuratData and is guaranteed to be
+            # existing layers
+            olayer <- layer
+            layer <- names(value)
+            if (length(save) != length(layer)) {
+                save <- make.unique(gsub(olayer, save, layer))
+            }
+            for (i in seq_along(layer)) {
+                SeuratObject::LayerData(object, assay = assay, layer = save[i]) <- value[[layer[i]]]
+            }
+        }
     } else {
         object <- SeuratObject::SetAssayData(object, assay = assay,
-                                             slot = layer, new.data = value)
+                                             slot = save, new.data = value)
     }
     return(object)
 }
@@ -508,4 +531,17 @@ mapvalues <- function(x, from, to, warn_missing = TRUE) {
     })
     do.call(data.frame,
             c(df_list, list(row.names = row.names, stringsAsFactors = FALSE)))
+}
+
+
+splitRmMiss <- function(x, y) {
+    y <- factor(y)
+    y <- droplevels(y)
+    matList <- lapply(levels(y), function(lvl) {
+        idx <- y == lvl
+        xsub <- x[, idx, drop = FALSE]
+        xsub[rowSums(xsub) > 0, , drop = FALSE]
+    })
+    names(matList) <- levels(y)
+    return(matList)
 }

@@ -24,13 +24,7 @@ normalize(object, ...)
   ...
 )
 
-\method{normalize}{Seurat}(
-  object,
-  assay = NULL,
-  layer = "ligerNormData",
-  useLayer = "counts",
-  ...
-)
+\method{normalize}{Seurat}(object, assay = NULL, layer = "counts", save = "ligerNormData", ...)
 
 normalizePeak(
   object,
@@ -71,11 +65,11 @@ needed. Will be ignored if specified.}
 \item{assay}{Name of assay to use. Default \code{NULL} uses current active
 assay.}
 
-\item{layer}{For Seurat>=4.9.9, the name of layer to store normalized data.
-Default \code{"ligerNormData"}. For older Seurat, stored to \code{data} slot.}
-
-\item{useLayer}{Where the input raw counts should be from. Default
+\item{layer}{Where the input raw counts should be from. Default
 \code{"counts"}. For older Seurat, always retrieve from \code{counts} slot.}
+
+\item{save}{For Seurat>=4.9.9, the name of layer to store normalized data.
+Default \code{"ligerNormData"}. For older Seurat, stored to \code{data} slot.}
 }
 \value{
 Updated \code{object}.

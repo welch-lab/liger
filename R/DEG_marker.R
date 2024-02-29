@@ -196,6 +196,35 @@ runMarkerDEG <- function(
 
     return(result)
 }
+
+#' @rdname liger-DEG
+#' @export
+#' @param data.use Same as \code{useDatasets}.
+#' @param compare.method Choose from \code{"clusters"} (default) or
+#' \code{"datasets"}. \code{"clusters"} compares each cluster against all other
+#' cells, while \code{"datasets"} run within each cluster and compare each
+#' dataset against all other datasets.
+runWilcoxon <- function(
+        object,
+        data.use = NULL,
+        compare.method = c("clusters", "datasets")
+) {
+    lifecycle::deprecate_warn(
+        "1.99.0", "runWilcoxon()",
+        details = "Please use `runMarkerDEG()` with `method = 'wilcoxon'` instead."
+    )
+    compare.method <- match.arg(compare.method)
+    if (compare.method == "clusters") {
+        res <- runMarkerDEG(object, conditionBy = object@uns$defaultCluster,
+                            splitBy = NULL, method = "wilcoxon")
+    } else if (compare.method == "datasets") {
+        res <- runMarkerDEG(object, conditionBy = "dataset",
+                            splitBy = object@uns$defaultCluster,
+                            method = "wilcoxon")
+    }
+    return(res)
+}
+
 # groups - As underlying function, this must be organized into list of numeric
 # cell index vectors.
 .runDEG <- function(
@@ -286,7 +315,6 @@ runMarkerDEG <- function(
              method, "\", usePeak = ", usePeak, "]")
     return(slot)
 }
-
 
 ###################### Pseudo-bulk Method helper ###############################
 

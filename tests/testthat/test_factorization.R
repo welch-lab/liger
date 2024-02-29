@@ -235,13 +235,13 @@ test_that("Seurat wrapper", {
     seu1 <- runIntegration(seu)
     expect_in("inmf", SeuratObject::Reductions(seu1))
 
-    x1 <- seu@assays$RNA@layers$ligerScaleData@x[1]
-    seu@assays$RNA@layers$ligerScaleData@x[1] <- -1
+    x1 <- seu@assays$RNA@layers$ligerScaleData.ctrl@x[1]
+    seu@assays$RNA@layers$ligerScaleData.ctrl@x[1] <- -1
     expect_error(runINMF(seu),
                  "Negative data encountered")
     expect_error(runOnlineINMF(seu, k = 10, minibatchSize = 100),
                  "Negative data encountered")
-    seu@assays$RNA@layers$ligerScaleData@x[1] <- x1
+    seu@assays$RNA@layers$ligerScaleData.ctrl@x[1] <- x1
     seu$orig.ident <- as.character(seu$orig.ident)
     seu <- runINMF(seu)
     seu <- runOnlineINMF(seu, k = 10, minibatchSize = 100)
