@@ -65,7 +65,7 @@ context("Clustering")
 test_that("clustering", {
     skip_if_not(has_RcppPlanc)
     pbmc <- process(pbmc, f = FALSE, q = FALSE)
-    expect_error(runCluster(pbmc), "No factor loading ")
+    expect_error(runCluster(pbmc), "No cell factor loading available")
 
     pbmc <- runOnlineINMF(pbmc, k = 20, minibatchSize = 100)
     expect_message(runCluster(pbmc, nRandomStarts = 1),

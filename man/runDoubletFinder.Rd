@@ -53,6 +53,8 @@ single-sample Seurat object with
 \code{CreateSeuratObject(rawData(object, "datasetName"))}.
 }
 \examples{
-pbmc <- runDoubletFinder(pbmc)
-cellMeta(pbmc)
+if (requireNamespace("DoubletFinder", quietly = TRUE)) {
+    pbmc <- runDoubletFinder(pbmc)
+    print(cellMeta(pbmc))
+}
 }

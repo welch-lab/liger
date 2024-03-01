@@ -1,12 +1,12 @@
 #' Perform UMAP Dimensionality Reduction
-#' @description Run UMAP on the quantile normalized cell factors (result from
-#' \code{\link{quantileNorm}}), or unnormalized cell
-#' factors (result from \code{\link{optimizeALS}} or \code{\link{online_iNMF}}))
-#' to generate a 2D embedding for visualization (or general dimensionality
-#' reduction). Has option to run on subset of factors. It is generally
-#' recommended to use this method for dimensionality reduction with extremely
-#' large datasets. The underlying UMAP calculation imports uwot
-#' \code{\link[uwot]{umap}}.
+#' @description
+#' Run UMAP on the quantile normalized cell factors (result from
+#' \code{\link{quantileNorm}}), or unnormalized cell factors (result from
+#' \code{\link{runIntegration}})) to generate a 2D embedding for visualization
+#' (or general dimensionality reduction). Has option to run on subset of
+#' factors. It is generally recommended to use this method for dimensionality
+#' reduction with extremely large datasets. The underlying UMAP calculation
+#' imports uwot \code{\link[uwot]{umap}}.
 #' @details For \code{nNeighbors}, larger values will result in more global
 #' structure being preserved at the loss of detailed local structure. In general
 #' this parameter should often be in the range 5 to 50, with a choice of 10 to
@@ -18,7 +18,8 @@
 #' 0.001 to 0.5, with 0.1 being a reasonable default.
 #' @param object \linkS4class{liger} object with factorization results.
 #' @param useRaw Whether to use un-aligned cell factor loadings (\eqn{H}
-#' matrices). Default \code{FALSE}.
+#' matrices). Default \code{NULL} search for quantile-normalized loadings first
+#' and un-aligned loadings then.
 #' @param useDims Index of factors to use for computing UMAP embedding. Default
 #' \code{NULL} uses all factors.
 #' @param nDims Number of dimensions to reduce to. Default \code{2}.
@@ -44,7 +45,7 @@
 #' pbmc <- runUMAP(pbmcPlot)
 runUMAP <- function(
         object,
-        useRaw = FALSE,
+        useRaw = NULL,
         useDims = NULL,
         nDims = 2,
         distance = c("cosine", "euclidean", "manhattan", "hamming"),
@@ -67,16 +68,13 @@ runUMAP <- function(
     distance <- match.arg(distance)
     object <- recordCommand(object, dependencies = "uwot")
     set.seed(seed)
-    if (isTRUE(useRaw)) {
-        type <- " unnormalized "
-        H <- t(Reduce(cbind, getMatrix(object, "H")))
-    } else {
-        type <- " quantile normalized "
-        H <- getMatrix(object, "H.norm")
-    }
+    Hsearch <- searchH(object, useRaw)
+    H <- Hsearch$H
+    useRaw <- Hsearch$useRaw
+    type <- ifelse(useRaw, " unnormalized ", " quantile normalized ")
     if (isTRUE(verbose))
         .log("Generating UMAP on", type, "cell factor loadings...")
-    if (!is.null(useDims)) H <- H[, useDims]
+    if (!is.null(useDims)) H <- H[, useDims, drop = FALSE]
     umap <- uwot::umap(H,
                        n_components = as.integer(nDims),
                        metric = distance,
@@ -87,13 +85,14 @@ runUMAP <- function(
 }
 
 #' Perform t-SNE dimensionality reduction
-#' @description Runs t-SNE on the quantile normalized cell factors (result from
+#' @description
+#' Runs t-SNE on the quantile normalized cell factors (result from
 #' \code{\link{quantileNorm}}), or unnormalized cell factors (result from
-#' \code{\link{optimizeALS}} or \code{\link{online_iNMF}})) to generate a 2D
-#' embedding for visualization. By default \code{\link[Rtsne]{Rtsne}}
-#' (Barnes-Hut implementation of t-SNE) method is invoked, while alternative
-#' "fftRtsne" method (FFT-accelerated Interpolation-based t-SNE, using Kluger
-#' Lab implementation) is also supported.
+#' \code{\link{runIntegration}})) to generate a 2D embedding for visualization.
+#' By default \code{\link[Rtsne]{Rtsne}} (Barnes-Hut implementation of t-SNE)
+#' method is invoked, while alternative "fftRtsne" method (FFT-accelerated
+#' Interpolation-based t-SNE, using Kluger Lab implementation) is also
+#' supported.
 #'
 #' In order to run fftRtsne (recommended for large datasets), FIt-SNE must be
 #' installed as instructed in detailed
@@ -104,7 +103,8 @@ runUMAP <- function(
 #' \href{https://github.com/welch-lab/liger#readme}{README}.
 #' @param object \linkS4class{liger} object with factorization results.
 #' @param useRaw Whether to use un-aligned cell factor loadings (\eqn{H}
-#' matrices). Default \code{FALSE}.
+#' matrices). Default \code{NULL} search for quantile-normalized loadings first
+#' and un-aligned loadings then.
 #' @param useDims Index of factors to use for computing UMAP embedding. Default
 #' \code{NULL} uses all factors.
 #' @param nDims Number of dimensions to reduce to. Default \code{2}.
@@ -134,7 +134,7 @@ runUMAP <- function(
 #' pbmc <- runTSNE(pbmcPlot)
 runTSNE <- function(
         object,
-        useRaw = FALSE,
+        useRaw = NULL,
         useDims = NULL,
         nDims = 2,
         usePCA = FALSE,
@@ -158,20 +158,17 @@ runTSNE <- function(
                         rand.seed = "seed"))
     method <- match.arg(method)
     object <- recordCommand(object, dependencies = "Rtsne")
-    if (isTRUE(useRaw)) {
-        type <- " unnormalized "
-        data.use <- t(Reduce(cbind, getMatrix(object, "H")))
-    } else {
-        type <- " quantile normalized "
-        data.use <- getMatrix(object, "H.norm")
-    }
+    Hsearch <- searchH(object, useRaw)
+    H <- Hsearch$H
+    useRaw <- Hsearch$useRaw
+    type <- ifelse(useRaw, " unnormalized ", " quantile normalized ")
     if (isTRUE(verbose))
         .log("Generating TSNE (", method, ") on", type,
              "cell factor loadings...")
-    if (!is.null(useDims)) data.use <- data.use[, useDims]
+    if (!is.null(useDims)) H <- H[, useDims, drop = FALSE]
     if (method == "Rtsne") {
         set.seed(seed)
-        tsne <- Rtsne::Rtsne(data.use,
+        tsne <- Rtsne::Rtsne(H,
                              dims = nDims,
                              pca = usePCA,
                              check_duplicates = FALSE,
@@ -179,7 +176,7 @@ runTSNE <- function(
                              perplexity = perplexity)
         tsne <- tsne$Y
     } else if (method == "fftRtsne") {
-        tsne <- .fftRtsne(data.use,
+        tsne <- .fftRtsne(H,
                           dims = nDims,
                           rand_seed = seed,
                           fast_tsne_path = fitsnePath,

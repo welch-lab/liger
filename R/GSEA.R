@@ -16,7 +16,9 @@
 #' @return A list of matrices with GSEA analysis for each factor
 #' @export
 #' @examples
+#' \donttest{
 #' runGSEA(pbmcPlot)
+#' }
 runGSEA <- function(
         object,
         genesets = NULL,

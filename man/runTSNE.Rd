@@ -6,7 +6,7 @@
 \usage{
 runTSNE(
   object,
-  useRaw = FALSE,
+  useRaw = NULL,
   useDims = NULL,
   nDims = 2,
   usePCA = FALSE,
@@ -29,7 +29,8 @@ runTSNE(
 \item{object}{\linkS4class{liger} object with factorization results.}
 
 \item{useRaw}{Whether to use un-aligned cell factor loadings (\eqn{H}
-matrices). Default \code{FALSE}.}
+matrices). Default \code{NULL} search for quantile-normalized loadings first
+and un-aligned loadings then.}
 
 \item{useDims}{Index of factors to use for computing UMAP embedding. Default
 \code{NULL} uses all factors.}
@@ -70,11 +71,11 @@ The \code{object} where a \code{"TSNE"} variable is updated in the
 \description{
 Runs t-SNE on the quantile normalized cell factors (result from
 \code{\link{quantileNorm}}), or unnormalized cell factors (result from
-\code{\link{optimizeALS}} or \code{\link{online_iNMF}})) to generate a 2D
-embedding for visualization. By default \code{\link[Rtsne]{Rtsne}}
-(Barnes-Hut implementation of t-SNE) method is invoked, while alternative
-"fftRtsne" method (FFT-accelerated Interpolation-based t-SNE, using Kluger
-Lab implementation) is also supported.
+\code{\link{runIntegration}})) to generate a 2D embedding for visualization.
+By default \code{\link[Rtsne]{Rtsne}} (Barnes-Hut implementation of t-SNE)
+method is invoked, while alternative "fftRtsne" method (FFT-accelerated
+Interpolation-based t-SNE, using Kluger Lab implementation) is also
+supported.
 
 In order to run fftRtsne (recommended for large datasets), FIt-SNE must be
 installed as instructed in detailed

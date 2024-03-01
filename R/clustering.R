@@ -1,13 +1,14 @@
 #' SNN Graph Based Community Detection
-#' @description After quantile normalization, users can additionally run the
-#' Leiden or Louvain algorithm for community detection, which is widely used in
+#' @description
+#' After quantile normalization, users can additionally run the Leiden or
+#' Louvain algorithm for community detection, which is widely used in
 #' single-cell analysis and excels at merging small clusters into broad cell
 #' classes.
 #'
 #' While using quantile normalized factor loadings (result from
 #' \code{\link{quantileNorm}}) is recommended, this function looks for
-#' unnormalized factor loadings (result from \code{\link{optimizeALS}} or
-#' \code{\link{online_iNMF}}) when the former is not available.
+#' unnormalized factor loadings (result from \code{\link{runIntegration}}) when
+#' the former is not available.
 #' @param object A \linkS4class{liger} object. Should have valid factorization
 #' result available.
 #' @param nNeighbors Integer, the maximum number of nearest neighbors to
@@ -28,6 +29,9 @@
 #' Default \code{5}.
 #' @param method Community detection algorithm to use. Choose from
 #' \code{"leiden"} or \code{"louvain"}. Default \code{"leiden"}.
+#' @param useRaw Whether to use un-aligned cell factor loadings (\eqn{H}
+#' matrices). Default \code{NULL} search for quantile-normalized loadings first
+#' and un-aligned loadings then.
 #' @param useDims Indices of factors to use for clustering. Default \code{NULL}
 #' uses all available factors.
 #' @param groupSingletons Whether to group single cells that make up their own
@@ -58,6 +62,7 @@ runCluster <- function(
         nRandomStarts = 10,
         nIterations = 5,
         method = c("leiden", "louvain"),
+        useRaw = NULL,
         useDims = NULL,
         groupSingletons = TRUE,
         clusterName = paste0(method, "_cluster"),
@@ -69,21 +74,16 @@ runCluster <- function(
         leiden = recordCommand(object, dependencies = c("RANN", "leidenAlg")),
         louvain = recordCommand(object, dependencies = c("RANN"))
     )
+    Hsearch <- searchH(object, useRaw)
+    H <- Hsearch$H
+    useRaw <- Hsearch$useRaw
+    type <- ifelse(useRaw, " unnormalized ", " quantile normalized ")
 
-    H.norm <- getMatrix(object, "H.norm")
-    if (is.null(H.norm)) {
-        type <- " unnormalized "
-        H.norm <- Reduce(cbind, getMatrix(object, "H"))
-    } else type <- " quantile normalized "
-    if (is.null(H.norm))
-        stop("No factor loading ('H.norm' or 'H') found in `object`.")
-    if (type == " unnormalized ") H.norm <- t(H.norm)
-
-    if (!is.null(useDims)) H.norm <- H.norm[, useDims]
+    if (!is.null(useDims)) H <- H[, useDims, drop = FALSE]
 
     if (isTRUE(verbose))
         .log(method, " clustering on", type, "cell factor loadings...")
-    knn <- RANN::nn2(H.norm, k = nNeighbors, eps = eps)
+    knn <- RANN::nn2(H, k = nNeighbors, eps = eps)
     snn <- ComputeSNN(knn$nn.idx, prune = prune)
     if (!is.null(seed)) set.seed(seed)
     if (method == "leiden") {
@@ -93,7 +93,7 @@ runCluster <- function(
         edge_weights <- snnSummary[,3]
         clusts <- leidenAlg::find_partition_with_rep_rcpp(
             edgelist = edgelist, edgelist_length = edgelist_length,
-            num_vertices = nrow(H.norm), direction = FALSE,
+            num_vertices = nrow(H), direction = FALSE,
             edge_weights = edge_weights, resolution = resolution,
             niter = nIterations, nrep = nRandomStarts
         )
