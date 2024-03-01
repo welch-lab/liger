@@ -6,7 +6,7 @@
 \usage{
 runUMAP(
   object,
-  useRaw = FALSE,
+  useRaw = NULL,
   useDims = NULL,
   nDims = 2,
   distance = c("cosine", "euclidean", "manhattan", "hamming"),
@@ -27,7 +27,8 @@ runUMAP(
 \item{object}{\linkS4class{liger} object with factorization results.}
 
 \item{useRaw}{Whether to use un-aligned cell factor loadings (\eqn{H}
-matrices). Default \code{FALSE}.}
+matrices). Default \code{NULL} search for quantile-normalized loadings first
+and un-aligned loadings then.}
 
 \item{useDims}{Index of factors to use for computing UMAP embedding. Default
 \code{NULL} uses all factors.}
@@ -61,13 +62,12 @@ The \code{object} where a \code{"UMAP"} variable is updated in the
 }
 \description{
 Run UMAP on the quantile normalized cell factors (result from
-\code{\link{quantileNorm}}), or unnormalized cell
-factors (result from \code{\link{optimizeALS}} or \code{\link{online_iNMF}}))
-to generate a 2D embedding for visualization (or general dimensionality
-reduction). Has option to run on subset of factors. It is generally
-recommended to use this method for dimensionality reduction with extremely
-large datasets. The underlying UMAP calculation imports uwot
-\code{\link[uwot]{umap}}.
+\code{\link{quantileNorm}}), or unnormalized cell factors (result from
+\code{\link{runIntegration}})) to generate a 2D embedding for visualization
+(or general dimensionality reduction). Has option to run on subset of
+factors. It is generally recommended to use this method for dimensionality
+reduction with extremely large datasets. The underlying UMAP calculation
+imports uwot \code{\link[uwot]{umap}}.
 }
 \details{
 For \code{nNeighbors}, larger values will result in more global

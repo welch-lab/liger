@@ -545,3 +545,42 @@ splitRmMiss <- function(x, y) {
     names(matList) <- levels(y)
     return(matList)
 }
+
+searchH <- function(object, useRaw = NULL) {
+    if (is.null(useRaw)) {
+        # By default, look for quantile-normed H
+        H <- getMatrix(object, "H.norm")
+        if (is.null(H)) {
+            # If not found, look for raw H
+            Ht <- Reduce(cbind, getMatrix(object, "H"))
+            if (is.null(Ht)) {
+                stop("No cell factor loading available. ",
+                     "Please run `runIntegration()` and `quantileNorm()` first.")
+            } else {
+                useRaw <- TRUE
+                H <- t(Ht)
+            }
+        } else {
+            useRaw <- FALSE
+        }
+    } else {
+        if (isTRUE(useRaw)) {
+            Ht <- Reduce(cbind, getMatrix(object, "H"))
+            if (is.null(Ht)) {
+                stop("Raw cell factor loading requested but not found. ",
+                     "Please run `runIntegration()`.")
+            } else {
+                H <- t(Ht)
+            }
+        } else {
+            H <- getMatrix(object, "H.norm")
+            if (is.null(H)) {
+                stop("Quantile-normalized cell factor loading requested but ",
+                     "not found. Please run `quantileNorm()` after ",
+                     "`runIntegration()`.")
+            }
+            useRaw <- FALSE
+        }
+    }
+    return(list(H = H, useRaw = useRaw))
+}

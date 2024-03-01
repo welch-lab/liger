@@ -27,8 +27,10 @@
 #' \code{DoubletFinder_classification} updated in \code{cellMeta} slot
 #' @export
 #' @examples
-#' pbmc <- runDoubletFinder(pbmc)
-#' cellMeta(pbmc)
+#' if (requireNamespace("DoubletFinder", quietly = TRUE)) {
+#'     pbmc <- runDoubletFinder(pbmc)
+#'     print(cellMeta(pbmc))
+#' }
 runDoubletFinder <- function(
         object,
         useDatasets = NULL,

@@ -13,6 +13,7 @@ runCluster(
   nRandomStarts = 10,
   nIterations = 5,
   method = c("leiden", "louvain"),
+  useRaw = NULL,
   useDims = NULL,
   groupSingletons = TRUE,
   clusterName = paste0(method, "_cluster"),
@@ -49,6 +50,10 @@ Default \code{5}.}
 \item{method}{Community detection algorithm to use. Choose from
 \code{"leiden"} or \code{"louvain"}. Default \code{"leiden"}.}
 
+\item{useRaw}{Whether to use un-aligned cell factor loadings (\eqn{H}
+matrices). Default \code{NULL} search for quantile-normalized loadings first
+and un-aligned loadings then.}
+
 \item{useDims}{Indices of factors to use for clustering. Default \code{NULL}
 uses all available factors.}
 
@@ -71,15 +76,15 @@ in \code{cellMeta} slot of \code{object}. Default \code{"leiden_cluster"} and
 with \code{object[[clusterName]]}
 }
 \description{
-After quantile normalization, users can additionally run the
-Leiden or Louvain algorithm for community detection, which is widely used in
+After quantile normalization, users can additionally run the Leiden or
+Louvain algorithm for community detection, which is widely used in
 single-cell analysis and excels at merging small clusters into broad cell
 classes.
 
 While using quantile normalized factor loadings (result from
 \code{\link{quantileNorm}}) is recommended, this function looks for
-unnormalized factor loadings (result from \code{\link{optimizeALS}} or
-\code{\link{online_iNMF}}) when the former is not available.
+unnormalized factor loadings (result from \code{\link{runIntegration}}) when
+the former is not available.
 }
 \examples{
 pbmcPlot <- runCluster(pbmcPlot)
