@@ -57,26 +57,27 @@ imputeKNN <- function(
     #          call. = FALSE)
     # }
     if (is.null(getMatrix(object, "H.norm")))
-        stop("Aligned factor loading has to be available for imputation. ",
-             "Please run `quantileNorm()` in advance.")
-
-    if (length(reference) > 1) {
-        stop("Can only have ONE reference dataset")
-    }
-    reference <- .checkUseDatasets(object, reference)
-    if (!inherits(dataset(object, reference), "ligerATACDataset"))
-        stop("Selected reference should be ATAC dataset.")
+        cli::cli_abort(
+            "Aligned factor loading has to be available for imputation.
+            Please run {.fn quantileNorm} in advance.")
+    reference <- .checkArgLen(reference, n = 1)
+    reference <- .checkUseDatasets(object, reference)#, modal = "atac")
     queries <- .checkUseDatasets(object, queries)
     if (any(queries %in% reference)) {
-        warning("Reference dataset cannot be inclued in the query ",
-                "datasets. Removed from query list.")
+        cli::cli_alert_warning(
+            "Reference dataset cannot be inclued in the query datasets."
+        )
+        cli::cli_alert_warning(
+            "Removed from query list: {.val {queries[queries %in% reference]}}"
+        )
         queries <- queries[!queries %in% reference]
     }
     object <- recordCommand(object, ..., dependencies = c("RANN", "Matrix"))
     if (isTRUE(verbose)) {
-        .log("Imputing all the datasets exept the reference dataset\n",
-             "Reference dataset: ", reference, "\n",
-             "Query datasets: ", paste(queries, collapse = ", "))
+        cli::cli_alert_info(
+            "Imputing {length(queries)} query dataset{?s}: {.val {queries}}"
+        )
+        cli::cli_alert_info("from reference dataset: {.val {reference}}")
     }
 
     referenceCells <- colnames(dataset(object, reference))
@@ -194,35 +195,36 @@ linkGenesAndPeaks <- function(
 ) {
     ## check dependency
     if (!requireNamespace("GenomicRanges", quietly = TRUE))
-        stop("Package \"GenomicRanges\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "BiocManager::install('GenomicRanges')",
-             call. = FALSE)
+        cli::cli_abort(
+            "Package {.pkg GenomicRanges} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('GenomicRanges')}")
 
     if (!requireNamespace("IRanges", quietly = TRUE))
-        stop("Package \"IRanges\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "BiocManager::install('IRanges')",
-             call. = FALSE)
+        cli::cli_abort(
+            "Package {.pkg IRanges} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('IRanges')}")
     if (!requireNamespace("psych", quietly = TRUE))
-        stop("Package \"psych\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "BiocManager::install('psych')",
-             call. = FALSE)
+        cli::cli_abort(
+            "Package {.pkg psych} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('psych')}")
     .deprecateArgs(list(path_to_coords = "pathToCoords",
                         genes.list = "useGenes", dist = "method"))
     method <- match.arg(method)
-    if (length(useDataset) != 1)
-        stop("Please select only one dataset")
     useDataset <- .checkUseDatasets(object, useDataset)
+    if (length(useDataset) != 1)
+        cli::cli_abort("Please select only one dataset")
     lad <- dataset(object, useDataset)
     if (!inherits(lad, "ligerATACDataset"))
-        stop("Specified dataset is not of `ligerATACDataset` class. ",
-             "Please try `imputeKNN()` with `query = ", useDataset, "`. ")
+        cli::cli_abort(
+            "Specified dataset is not of `ligerATACDataset` class.
+            Please try {.fn imputeKNN} with `query = '{useDataset}'`.")
     if (is.null(normData(lad)))
-        stop("Normalized gene expression not found in specified dataset.")
+        cli::cli_abort("Normalized gene expression not found in specified dataset.")
     if (is.null(normPeak(lad)))
-        stop("Normalized peak counts not found in specified dataset.")
+        cli::cli_abort("Normalized peak counts not found in specified dataset.")
 
     ### make GRanges object for peaks
     peakCounts <- normPeak(lad)
@@ -257,23 +259,26 @@ linkGenesAndPeaks <- function(
     if (is.null(useGenes)) useGenes <- colnames(geneCounts)
     missingGenes <- !useGenes %in% names(genesCoords)
     if (sum(missingGenes) != 0 && isTRUE(verbose))
-        .log("Ignoring ",sum(missingGenes),
-             " genes not found in given gene coordinates")
-
+        cli::cli_alert_warning(
+            "Ignoring {sum(missingGenes)} genes not found in given gene coordinates"
+        )
     useGenes <- useGenes[!missingGenes]
-    if (length(useGenes) == 0)
-        stop("Number of genes to be tested equals 0. Please check input ",
-             "`useGenes` or the coordinate file.")
-    else {
-        .log(length(useGenes), " genes to be tested against ", ncol(peakCounts),
-             " peaks")
+    if (length(useGenes) == 0) {
+        cli::cli_abort(
+            "Number of genes to be tested equals 0. Please check input
+            {.code useGenes} or the coordinate file."
+        )
+    } else {
+        cli::cli_alert_info(
+            "{length(useGenes)} genes to be tested against {ncol(peakCounts)} peaks"
+        )
     }
     genesCoords <- genesCoords[useGenes]
 
     ### construct regnet
     if (isTRUE(verbose)) {
-        .log("Calculating correlation for gene-peak pairs...")
-        pb <- utils::txtProgressBar(0, length(useGenes), style = 3)
+        cli::cli_alert_info("Calculating correlation for gene-peak pairs...")
+        cli::cli_progress_bar("", total = length(useGenes), type = "iter")
     }
 
     # Result would be a sparse matrix, initialize the `i`, `p`, `x` vectors.
@@ -320,9 +325,10 @@ linkGenesAndPeaks <- function(
         ind <- c(ind, as.numeric(peaks.use))
         indp <- c(indp, as.numeric(eachLen))
         values <- c(values, res.corr)
-        if (isTRUE(verbose)) utils::setTxtProgressBar(pb, pos)
+        if (isTRUE(verbose)) {
+            cli::cli_progress_update(set = pos)
+        }
     }
-    if (isTRUE(verbose)) cat("\n")
     # make final sparse matrix
     regnet <-  Matrix::sparseMatrix(
         i = ind, p = c(0, indp), x = values,
@@ -379,20 +385,22 @@ exportInteractTrack <- function(
     if (is.null(useGenes)) {
         useGenes <- colnames(corrMat)
     } else if (any(!useGenes %in% colnames(corrMat))) {
-        .log("Removed ", sum(!useGenes %in% colnames(corrMat)), " genes not ",
-             "found in `corrMat`")
+        cli::cli_alert_warning(
+            "Removed {sum(!useGenes %in% colnames(corrMat))} genes not found in {.code corrMat}"
+        )
         useGenes <- useGenes[useGenes %in% colnames(corrMat)]
     }
     # Filter useGenes by significance
     geneSel <- Matrix::colSums(corrMat[, useGenes, drop = FALSE] != 0) > 0
     if (length(useGenes) - sum(geneSel) > 0)
-        .log("Totally ", length(useGenes) - sum(geneSel), " selected genes do ",
-             "not have significant correlated peaks, out of ", length(useGenes),
-             " selected genes")
+        cli::cli_alert_warning(
+            "Totally {length(useGenes) - sum(geneSel)} selected genes do not have significant correlated peaks, out of {length(useGenes)} selected genes",
+            wrap = TRUE
+        )
     useGenes <- useGenes[geneSel]
     if (length(useGenes) == 0) {
-        stop("No gene requested is either available or ",
-             "having significant correlated peaks. ")
+        cli::cli_abort("No gene requested is either available or having
+                       significant correlated peaks. ")
     }
 
     ### make GRanges object for genes
@@ -413,8 +421,6 @@ exportInteractTrack <- function(
     }
     if (!file.exists(outputPath)) file.create(outputPath)
     outputPath <- normalizePath(outputPath)
-
-    .log("Writing result to: ", outputPath)
 
     # Start writing BED file
     trackDoc <- paste0('track type=interact name="Interaction Track" ',
@@ -459,6 +465,8 @@ exportInteractTrack <- function(
             fileEncoding = ""
         )
     }
+    cli::cli_alert_success("Result written at: {.file {outputPath}}")
+    invisible(NULL)
 }
 
 #' [Deprecated] Export predicted gene-pair interaction

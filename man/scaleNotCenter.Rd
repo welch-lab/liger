@@ -17,14 +17,14 @@ scaleNotCenter(object, ...)
   object,
   features = NULL,
   chunk = 1000,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 
 \method{scaleNotCenter}{ligerMethDataset}(
   object,
   features = NULL,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 
@@ -32,7 +32,7 @@ scaleNotCenter(object, ...)
   object,
   useDatasets = NULL,
   features = varFeatures(object),
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   remove.missing = NULL,
   ...
 )
@@ -65,7 +65,7 @@ features. "Seurat" method by default uses
 scaling is applied to any HDF5 based dataset. Default \code{1000}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{useDatasets}{A character vector of the names, a numeric or logical
 vector of the index of the datasets to be scaled but not centered. Default

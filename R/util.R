@@ -12,8 +12,10 @@
 .checkObjVersion <- function(object) {
     if (inherits(object, "liger")) {
         if (!is.newLiger(object))
-            stop("Old version of liger object detected. Please update the ",
-                 "object with command:\nobject <- convertOldLiger(object)")
+            cli::cli_abort(
+                "Old version of liger object is detected. Please run:
+                {.code object <- convertOldLiger(object)}"
+            )
     }
 }
 
@@ -31,7 +33,7 @@
 .checkUseDatasets <- function(object, useDatasets = NULL,
                               modal = NULL) {
     if (!inherits(object, "liger"))
-        stop("A liger object is required.")
+        cli::cli_abort("A liger object is required.")
     if (is.null(useDatasets)) {
         if (is.null(modal)) useDatasets <- names(object)
         else {
@@ -43,35 +45,41 @@
     } else {
         if (is.numeric(useDatasets)) {
             if (max(useDatasets) > length(object)) {
-                stop("Numeric dataset index out of bound. Only ",
-                     length(object), " datasets exist.")
+                cli::cli_abort(
+                    "Numeric dataset index out of bound. Only {length(object)}
+                    dataset{?s} exist.")
             }
             useDatasets <- unique(useDatasets)
             useDatasets <- names(object)[useDatasets]
         } else if (is.logical(useDatasets)) {
             if (length(useDatasets) != length(object)) {
-                stop("Logical dataset subscription does not match the number ",
-                     "of datasets (", length(object), ").")
+                cli::cli_abort(
+                "Logical dataset subscription does not match the number
+                of datasets ({length(object)}).")
             }
             useDatasets <- names(object)[useDatasets]
         } else if (is.character(useDatasets)) {
             if (any(!useDatasets %in% names(object))) {
-                notFound <- useDatasets[!useDatasets %in% names(object)]
-                stop("Specified dataset name(s) not found: ",
-                     paste(notFound, collapse = ", "))
+                cli::cli_abort(
+                    "Specified dataset name(s) not found:
+                    {.val {useDatasets[!useDatasets %in% names(object)]}}"
+                )
             }
         } else {
-            stop("Please use a proper numeric/logical/character vector to ",
-                 "select dataset to use.")
+            cli::cli_abort(
+                "Please use a proper numeric/logical/character vector to
+                 select dataset to use.")
         }
         if (!is.null(modal)) {
             passing <- sapply(useDatasets, function(d) {
                 inherits(dataset(object, d), .modalClassDict[[modal]])
             })
             if (!all(passing))
-                stop("Not all specified datasets are of `",
-                     .modalClassDict[[modal]], "` class: ",
-                     paste(useDatasets[!passing], collapse = ", "))
+                cli::cli_abort(
+                    "Not all specified datasets are of
+                    {(.modalClassDict[[modal]])} class:
+                    {.val {useDatasets[!passing]}}"
+                )
         }
     }
     useDatasets
@@ -88,8 +96,8 @@
         droplevels = TRUE,
         returnList = FALSE
 ) {
-    df <- cellMeta(object, columns = variables, cellIdx = cellIdx, as.data.frame = TRUE,
-                    drop = FALSE)
+    df <- cellMeta(object, columns = variables, cellIdx = cellIdx,
+                   as.data.frame = TRUE, drop = FALSE)
     if (isTRUE(checkCategorical)) {
         passing <- sapply(variables, function(v) {
             vec <- df[[v]]
@@ -97,25 +105,26 @@
             if (is.factor(vec)) return(TRUE)
             if (is.character(vec)) {
                 if (length(unique(vec)) > 50)
-                    warning("Categorical variable selection `", v,
-                            "' has more than 100 unique values.",
-                            immediate. = TRUE)
+                    cli::cli_alert_warning(
+                        "Categorical variable selection `{v}` has more than 50 unique values."
+                    )
                 return(TRUE)
             }
             if (is.numeric(vec)) {
                 if (length(unique(vec)) > 50)
-                    warning("Categorical variable selection `", v,
-                            "` has more than 100 unique values.",
-                            immediate. = TRUE)
+                    cli::cli_alert_warning(
+                        "Categorical variable selection `{v}` has more than 50 unique values."
+                    )
                 return(FALSE)
             }
         })
         if (!all(passing)) {
-            notPassed <- variables[!passing]
-            stop("The following selected variables are not considered as ",
-                 "categorical. Please use something else or try converting ",
-                 "them to factor class to force passing checks.\n",
-                 paste(notPassed, collapse = ", "))
+            cli::cli_abort(
+                "The following selected variables are not considered as
+                categorical. Please use something else or try converting
+                them to factor class to force passing checks.
+                {.val {variables[!passing]}}"
+            )
         }
     }
     for (v in colnames(df)) {
@@ -150,7 +159,9 @@
         if (any(!idx %in% getNames(object))) {
             notFound <- paste(idx[!idx %in% getNames(object)],
                               collapse = ", ")
-            stop(paramName, " not found in object: ", notFound)
+            cli::cli_abort(
+                "{paramName} not found in object: {notFound}"
+            )
         }
         name <- seq(getNumber(object))
         names(name) <- getNames(object)
@@ -158,19 +169,23 @@
         names(idx) <- NULL
     } else if (is.logical(idx)) {
         if (length(idx) != getNumber(object)) {
-            stop("Length of logical ", paramName, " does not match to ",
-                 "number of ", orient, "s in `object`.")
+            cli::cli_abort(
+                "Length of logical {paramName} does not match to number of {orient}s in `object`."
+            )
         }
         idx <- which(idx)
     } else if (is.numeric(idx)) {
         if (max(idx) > getNumber(object) || min(idx) < 1) {
-            stop("Numeric ", paramName, " subscription out of bound.")
+            cli::cli_abort(
+                "Numeric {paramName} subscription out of bound."
+            )
         }
     } else if (is.null(idx)) {
         idx <- seq(getNumber(object))
     } else {
-        stop("Please use character, logical or numeric subscription ",
-             "for ", paramName, ".")
+        cli::cli_abort(
+            "Please use character, logical or numeric subscription for {paramName}."
+        )
     }
     return(idx)
 }
@@ -184,21 +199,19 @@
     } else {
         if (any(!slot %in% avail)) {
             notFound <- slot[!slot %in% avail]
-            stop("Specified slot not availalble: ",
-                 paste(notFound, collapse = ", "), ". Use one or more from ",
-                 '"rawData", "normData" or "scaleData"')
+            cli::cli_abort(
+                "Specified slot not availalble: {.val {notFound}}.
+                Use one or more from \"rawData\", \"normData\" or \"scaleData\""
+            )
         }
-        if ("rawData" %in% slot &&
-            is.null(rawData(object))) {
-            stop("`rawData` is not available for use.")
+        if ("rawData" %in% slot && is.null(rawData(object))) {
+            cli::cli_abort("`rawData` is not available for use.")
         }
-        if ("normData" %in% slot &&
-            is.null(normData(object))) {
-            stop("`normData` is not available for use.")
+        if ("normData" %in% slot && is.null(normData(object))) {
+            cli::cli_abort("`normData` is not available for use.")
         }
-        if ("scaleData" %in% slot &&
-            is.null(scaleData(object))) {
-            stop("`scaleData` is not available for use.")
+        if ("scaleData" %in% slot && is.null(scaleData(object))) {
+            cli::cli_abort("`scaleData` is not available for use.")
         }
     }
     slot
@@ -337,32 +350,35 @@
 .checkRaster <- function(n, raster = NULL) {
     pkgAvail <- requireNamespace("scattermore", quietly = TRUE)
     if (!is.null(raster) && !is.logical(raster)) {
-        stop("Please use `NULL` or logical value for `raster`.")
+        cli::cli_abort("Please use `NULL` or logical value for `raster`.")
     }
     if (is.null(raster)) {
         # Automatically decide whether to rasterize depending on number of cells
         if (n > 1e5) {
             if (pkgAvail) {
                 raster <- TRUE
-                .log("NOTE: Points are rasterized as number of cells/nuclei ",
-                     "plotted exceeds 100,000.\n",
-                     "Use `raster = FALSE` or `raster = TRUE` to force plot ",
-                     "in vector form or not.")
+                cli::cli_alert_info(
+                    "Points are rasterized since number of cells/nuclei exceeds
+                    100,000.
+                    Use {.code raster = FALSE} or {.code raster = TRUE} to force
+                    plot in vectorized form or not."
+                )
             } else {
                 raster <- FALSE
                 warning("Number of cells/nuclei plotted exceeds 100,000. ",
                         "Rasterizing the scatter plot is recommended but ",
-                        "package \"scattermore\" is not available. ")
+                        "package {.pkg scattermore} is not available. ")
             }
         } else {
             raster <- FALSE
         }
     } else if (isTRUE(raster)) {
         if (!pkgAvail) {
-            stop("Package \"scattermore\" needed for rasterizing the scatter ",
-                 "plot. Please install it by command:\n",
-                 "BiocManager::install('scattermore')",
-                 call. = FALSE)
+            cli::cli_abort(
+                "Package {.pkg scattermore} is needed for rasterizing the scatter
+                plot. Please install it by command:
+                {.code BiocManager::install('scattermore')}"
+            )
         }
     }
     return(raster)
@@ -376,9 +392,13 @@
         }
         if (length(arg) != n) {
             if (isTRUE(.stop))
-                stop("`", argname, "` has to be a vector of length ", n)
+                cli::cli_abort(
+                    "`{argname}` has to be a vector of length {n}."
+                )
             else {
-                warning("`", argname, "` has to be a vector of length ", n)
+                cli::cli_alert_warning(
+                    "`{argname}` should be a vector of length {n}. Using it anyway."
+                )
             }
         }
     }
@@ -386,11 +406,13 @@
         allClassCheck <- sapply(class, function(x) methods::is(arg, x))
         if (!any(allClassCheck)) {
             if (isTRUE(.stop))
-                stop("`", argname, "` has to be of class '",
-                     paste(class, collapse = "', '"), "'")
+                cli::cli_abort(
+                    "`{argname}` has to be one of the {length(class)} class{?es}: {.val {class}}"
+                )
             else {
-                warning("`", argname, "` has to be of class '",
-                        paste(class, collapse = "', '"), "'")
+                cli::cli_alert_warning(
+                    "`{argname}` has to be one of the {length(class)} class{?es}: {.val {class}}"
+                )
             }
         }
     }
@@ -409,10 +431,18 @@
 
 .getSeuratData <- function(object, layer, slot, assay = NULL) {
     if (!requireNamespace("Seurat", quietly = TRUE)) {
-        stop("Seurat package has to be installed in advance.")
+        cli::cli_abort(
+            "Package {.pkg Seurat} is needed for this function to work.
+            Please install it by command:
+            {.code install.packages('Seurat')}"
+        )
     }
     if (!requireNamespace("SeuratObject", quietly = TRUE)) {
-        stop("SeuratObject package has to be installed in advance.")
+        cli::cli_abort(
+            "Package {.pkg SeuratObject} is needed for this function to work.
+            Please install it by command:
+            {.code install.packages('SeuratObject')}"
+        )
     }
     assayObj <- Seurat::GetAssay(object, assay = assay)
     if (!"layers" %in% methods::slotNames(assayObj)) {
@@ -431,19 +461,28 @@
             })
             names(data) <- layers
         }
-    } else {
+    } else { # nocov start
+        cli::cli_alert_info("Using old Seurat package. Upgrade is recommended.")
         data <- SeuratObject::GetAssayData(object, assay = assay, slot = layer)
-    }
+    } # nocov end
     return(data)
 }
 
 .setSeuratData <- function(object, layer, save, slot, value, assay = NULL,
                            denseIfNeeded = FALSE) {
     if (!requireNamespace("Seurat", quietly = TRUE)) {
-        stop("Seurat package has to be installed in advance.")
+        cli::cli_abort(
+            "Package {.pkg Seurat} is needed for this function to work.
+            Please install it by command:
+            {.emph install.packages('Seurat')}"
+        )
     }
     if (!requireNamespace("SeuratObject", quietly = TRUE)) {
-        stop("SeuratObject package has to be installed in advance.")
+        cli::cli_abort(
+            "Package {.pkg SeuratObject} is needed for this function to work.
+            Please install it by command:
+            {.emph install.packages('SeuratObject')}"
+        )
     }
     assayObj <- Seurat::GetAssay(object, assay = assay)
     if (!"layers" %in% methods::slotNames(assayObj)) {
@@ -466,10 +505,11 @@
                 SeuratObject::LayerData(object, assay = assay, layer = save[i]) <- value[[layer[i]]]
             }
         }
-    } else {
+    } else { # nocov start
+        cli::cli_alert_info("Using old {.pkg Seurat} package. Upgrade is recommended.")
         object <- SeuratObject::SetAssayData(object, assay = assay,
                                              slot = save, new.data = value)
-    }
+    } # nocov end
     return(object)
 }
 
@@ -554,8 +594,10 @@ searchH <- function(object, useRaw = NULL) {
             # If not found, look for raw H
             Ht <- Reduce(cbind, getMatrix(object, "H"))
             if (is.null(Ht)) {
-                stop("No cell factor loading available. ",
-                     "Please run `runIntegration()` and `quantileNorm()` first.")
+                cli::cli_abort(
+                    "No cell factor loading available.
+                    Please run {.fn runIntegration} and {.fn quantileNorm} first."
+                )
             } else {
                 useRaw <- TRUE
                 H <- t(Ht)
@@ -567,17 +609,21 @@ searchH <- function(object, useRaw = NULL) {
         if (isTRUE(useRaw)) {
             Ht <- Reduce(cbind, getMatrix(object, "H"))
             if (is.null(Ht)) {
-                stop("Raw cell factor loading requested but not found. ",
-                     "Please run `runIntegration()`.")
+                cli::cli_abort(
+                    "Raw cell factor loading requested but not found.
+                    Please run {.fn runIntegration}."
+                )
             } else {
                 H <- t(Ht)
             }
         } else {
             H <- getMatrix(object, "H.norm")
             if (is.null(H)) {
-                stop("Quantile-normalized cell factor loading requested but ",
-                     "not found. Please run `quantileNorm()` after ",
-                     "`runIntegration()`.")
+                cli::cli_abort(
+                    "Quantile-normalized cell factor loading requested but
+                    not found. Please run {.fn quantileNorm} after
+                    {.fn runIntegration}."
+                )
             }
             useRaw <- FALSE
         }

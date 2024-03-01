@@ -18,7 +18,7 @@ runCluster(
   groupSingletons = TRUE,
   clusterName = paste0(method, "_cluster"),
   seed = 1,
-  verbose = getOption("ligerVerbose")
+  verbose = getOption("ligerVerbose", TRUE)
 )
 }
 \arguments{

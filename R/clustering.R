@@ -67,7 +67,7 @@ runCluster <- function(
         groupSingletons = TRUE,
         clusterName = paste0(method, "_cluster"),
         seed = 1,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     method <- match.arg(method)
     object <- switch(method,
@@ -77,12 +77,12 @@ runCluster <- function(
     Hsearch <- searchH(object, useRaw)
     H <- Hsearch$H
     useRaw <- Hsearch$useRaw
-    type <- ifelse(useRaw, " unnormalized ", " quantile normalized ")
+    type <- ifelse(useRaw, "unnormalized", "quantile normalized")
 
     if (!is.null(useDims)) H <- H[, useDims, drop = FALSE]
 
     if (isTRUE(verbose))
-        .log(method, " clustering on", type, "cell factor loadings...")
+        cli::cli_alert_info("{method} clustering on {type} cell factor loadings...")
     knn <- RANN::nn2(H, k = nNeighbors, eps = eps)
     snn <- ComputeSNN(knn$nn.idx, prune = prune)
     if (!is.null(seed)) set.seed(seed)
@@ -110,7 +110,7 @@ runCluster <- function(
             nIterations = nIterations,
             algorithm = 1,
             randomSeed = seed,
-            printOutput = TRUE,
+            printOutput = verbose,
             edgefilename = edgeOutPath
         )
         unlink(edgeOutPath)
@@ -123,7 +123,11 @@ runCluster <- function(
                               groupSingletons = groupSingletons,
                               verbose = verbose)
     cellMeta(object, clusterName, check = FALSE) <- clusts
+    if (isTRUE(verbose))
+        cli::cli_alert_success("Found {nlevels(clusts)} clusters.")
     object@uns$defaultCluster <- object@uns$defaultCluster %||% clusterName
+    if (isTRUE(verbose))
+        cli::cli_alert_info("cellMeta variable {.val {clusterName}} is now set as default.")
     return(object)
 }
 
@@ -211,7 +215,7 @@ groupSingletons <- function(
     }
     if (!isTRUE(groupSingletons)) {
         if (isTRUE(verbose)) {
-            .log(length(singletons), " singletons identified. ")
+            cli::cli_alert_info("{length(singletons)} singletons identified.")
         }
         ids <- as.character(ids)
         ids[ids %in% singletons] <- "singleton"
@@ -243,8 +247,7 @@ groupSingletons <- function(
     }
     ids <- factor(ids)
     if (isTRUE(verbose))
-        .log(length(singletons), " singletons identified. ",
-             length(levels(ids)), " final clusters.")
+        cli::cli_alert_info("{length(singletons)} singletons identified.")
     return(ids)
 }
 
@@ -287,13 +290,13 @@ mapCellMeta <- function(
 ) {
     object <- recordCommand(object, ...)
     from <- cellMeta(object, from)
-    if (!is.factor(from)) stop("`from` must be a factor class variable.")
+    if (!is.factor(from))
+        cli::cli_abort("{.code from} must be a {.cls factor}.")
     mapping <- list(...)
     fromCats <- names(mapping)
     notFound <- fromCats[!fromCats %in% levels(from)]
     if (length(notFound) > 0) {
-        stop("The following categories requested not found: ",
-             paste0(notFound, collapse = ", "))
+        cli::cli_abort("{length(notFound)} categor{?y is/ies are} requested but not found: {.val {notFound}}")
     }
 
     toCats <- unlist(mapping)

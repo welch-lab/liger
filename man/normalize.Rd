@@ -13,12 +13,12 @@ normalize(object, ...)
 
 \method{normalize}{dgCMatrix}(object, log = FALSE, scaleFactor = NULL, ...)
 
-\method{normalize}{ligerDataset}(object, chunk = 1000, verbose = getOption("ligerVerbose"), ...)
+\method{normalize}{ligerDataset}(object, chunk = 1000, verbose = getOption("ligerVerbose", TRUE), ...)
 
 \method{normalize}{liger}(
   object,
   useDatasets = NULL,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   format.type = NULL,
   remove.missing = NULL,
   ...
@@ -29,7 +29,7 @@ normalize(object, ...)
 normalizePeak(
   object,
   useDatasets = NULL,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 }
@@ -51,7 +51,7 @@ factor before transformation. \code{NULL} for not scaling. Default
 working on HDF5 file based ligerDataset. Default \code{1000}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{useDatasets}{A character vector of the names, a numeric or logical
 vector of the index of the datasets to be normalized. Should specify ATACseq

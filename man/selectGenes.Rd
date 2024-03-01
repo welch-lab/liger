@@ -18,7 +18,7 @@ selectGenes(object, thresh = 0.1, nGenes = NULL, alpha = 0.99, ...)
   unsharedThresh = 0.1,
   combine = c("union", "intersection"),
   chunk = 1000,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   var.thresh = thresh,
   alpha.thresh = alpha,
   num.genes = nGenes,
@@ -42,7 +42,7 @@ selectGenes(object, thresh = 0.1, nGenes = NULL, alpha = 0.99, ...)
   assay = NULL,
   datasetVar = "orig.ident",
   combine = c("union", "intersection"),
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 }
@@ -88,7 +88,7 @@ Choose from \code{"union"} or \code{"intersection"}. Default \code{"union"}.}
 gene selection is applied to any HDF5 based dataset. Default \code{1000}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{var.thresh, alpha.thresh, num.genes, datasets.use, unshared.datasets, unshared.thresh}{\bold{Deprecated}.
 These arguments are renamed and will be removed in the future. Please see

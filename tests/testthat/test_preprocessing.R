@@ -150,7 +150,8 @@ test_that("Normalization - in-memory", {
       expect_equal(sum(normPeak(ld)[, i]), 1, tolerance = 1e-6)
     }
 
-    expect_warning(fakeNorm <- normalize(fakePeak, scaleFactor = -1))
+    expect_message(fakeNorm <- normalize(fakePeak, scaleFactor = -1),
+                   "Invalid `scaleFactor` given")
     expect_true(all.equal(colSums(fakeNorm),
                           setNames(rep(1, ncol(fakeNorm)), colnames(fakeNorm))))
 
@@ -196,7 +197,7 @@ test_that("selectGenes", {
     pbmc <- selectGenes(pbmc, combine = "inters")
     expect_equal(length(varFeatures(pbmc)), 161)
 
-    expect_warning(selectGenes(pbmc, thresh = 3),
+    expect_message(selectGenes(pbmc, thresh = 3),
                    "No genes were selected.")
 
     pbmc <- selectGenes(pbmc)

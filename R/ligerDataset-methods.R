@@ -1,59 +1,4 @@
-setClassUnion("dgCMatrix_OR_NULL", c("dgCMatrix", "NULL"))
-setClassUnion("matrix_OR_NULL", c("matrix", "NULL"))
-setClassUnion("matrixLike", c("matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix"))
-setClassUnion("matrixLike_OR_NULL", c("matrixLike", "NULL"))
-# It is quite hard to handle "H5D here, which is indeed defined as an R6 class.
-# I'm not sure if this is a proper solution
-setOldClass("H5D")
-setOldClass("H5Group")
-suppressWarnings(setClassUnion("dgCMatrix_OR_H5D_OR_NULL", c("dgCMatrix", "H5D", "NULL")))
-setClassUnion("matrix_OR_H5D_OR_NULL", c("matrix", "H5D", "NULL"))
-setClassUnion("matrixLike_OR_H5D_OR_H5Group_OR_NULL", c("matrixLike", "H5D", "H5Group", "NULL"))
-setClassUnion("index",
-              members = c("logical", "numeric", "character"))
 
-#' ligerDataset class
-#'
-#' Object for storing dastaset specific information. Will be embedded within a
-#' higher level \linkS4class{liger} object
-#' @docType class
-#' @rdname ligerDataset-class
-#' @slot rawData Raw data.
-#' @slot normData Normalized data
-#' @slot scaleData Scaled data, usually with subset variable features
-#' @slot scaleUnsharedData Scaled data of features not shared with other
-#' datasets
-#' @slot varUnsharedFeatures Variable features not shared with other datasets
-#' @slot V matrix
-#' @slot A matrix
-#' @slot B matrix
-#' @slot H matrix
-#' @slot U matrix
-#' @slot h5fileInfo list
-#' @slot featureMeta Feature metadata, DataFrame
-#' @slot colnames character
-#' @slot rownames character
-#' @importClassesFrom S4Vectors DataFrame
-#' @exportClass ligerDataset
-ligerDataset <- setClass(
-    "ligerDataset",
-    representation(
-        rawData = "dgCMatrix_OR_H5D_OR_NULL",
-        normData = "dgCMatrix_OR_H5D_OR_NULL",
-        scaleData = "matrixLike_OR_H5D_OR_H5Group_OR_NULL",
-        scaleUnsharedData = "matrixLike_OR_H5D_OR_H5Group_OR_NULL",
-        varUnsharedFeatures = "character",
-        H = "matrix_OR_NULL",
-        V = "matrix_OR_NULL",
-        A = "matrix_OR_NULL",
-        B = "matrix_OR_NULL",
-        U = "matrix_OR_NULL",
-        h5fileInfo = "list",
-        featureMeta = "DataFrame",
-        colnames = "character",
-        rownames = "character"
-    )
-)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Dataset creatinfg function ####
@@ -115,86 +60,6 @@ modalOf <- function(object) {
         return(sapply(datasets(object), modalOf))
     }
 }
-
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Object validity ####
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-.checkLigerDatasetBarcodes <- function(x) {
-    # cell barcodes all consistant
-    if (is.null(colnames(x))) {
-        return(paste0("No valid cell barcode detected for ligerDataset.\n",
-                      "Please create object with matrices with colnames."))
-    }
-    for (slot in c("rawData", "normData", "scaleData", "scaleUnsharedData",
-                   "H")) {
-        if (!slot %in% methods::slotNames(x)) next
-        data <- methods::slot(x, slot)
-        if (!is.null(data)) {
-            barcodes.slot <- colnames(data)
-            if (!identical(colnames(x), barcodes.slot)) {
-                return(paste0("Inconsistant cell identifiers in `", slot,
-                              "` slot."))
-            }
-        }
-    }
-
-    for (slot in c("scaleData", "V")) {
-        featuresToCheck <- rownames(methods::slot(x, slot))
-        check <- !featuresToCheck %in% rownames(x)
-        if (any(check)) {
-            msg <- paste0("Features in ", slot, " not found from dataset: ",
-                          paste(featuresToCheck[check], collapse = ", "))
-            return(msg)
-        }
-    }
-    TRUE
-}
-
-.checkH5LigerDatasetLink <- function(x) {
-    restoreGuide <- "Please try running `restoreH5Liger(object)`."
-    if (!"H5File" %in% names(h5fileInfo(x))) {
-        return(paste("`h5fileInfo` incomplete.", restoreGuide))
-    }
-    h5file <- getH5File(x)
-    if (is.null(h5file)) {
-        return(paste("`H5File` is NULL in `h5fileInfo` slot.", restoreGuide))
-    }
-    if (!h5file$is_valid) {
-        return(paste("`H5File` is invalid in `h5fileInfo` slot.", restoreGuide))
-    }
-    if (!is.null(rawData(x))) {
-        if (!rawData(x)$is_valid) {
-            return(paste("`rawData` slot is invalid.", restoreGuide))
-        }
-    }
-    if (!is.null(normData(x))) {
-        if (!normData(x)$is_valid) {
-            return(paste("`normData` slot is invalid.", restoreGuide))
-        }
-    }
-    if (!is.null(scaleData(x))) {
-        if (!scaleData(x)$is_valid) {
-            return(paste("`scaleData` slot is invalid.", restoreGuide))
-        }
-    }
-    TRUE
-}
-
-.valid.ligerDataset <- function(object) {
-    if (isH5Liger(object)) {
-        # message("Checking h5 ligerDataset validity")
-        .checkH5LigerDatasetLink(object)
-    } else {
-        # message("Checking in memory ligerDataset validity")
-        .checkLigerDatasetBarcodes(object)
-    }
-    # TODO more checks
-    # TODO debating on whether to have check of the matching between scaleData
-    # features and selected variable features.
-}
-
-setValidity("ligerDataset", .valid.ligerDataset)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # S4 Methods ####
@@ -354,21 +219,20 @@ setReplaceMethod("dimnames", c("ligerDataset", "list"), function(x, value) {
         if (!is.null(scaleData(x))) {
             colnames(x@scaleData) <- value[[2L]]
             rownames(x@scaleData) <-
-                value[[1L]][.getVarFtIdx(x@rownames, rownames(x@scaleData))]
+                value[[1L]][match(rownames(x@scaleData), x@rownames)]
         }
         if (!is.null(x@scaleUnsharedData)) {
             colnames(x@scaleUnsharedData) <- value[[2L]]
             rownames(x@scaleUnsharedData) <-
-                value[[1L]][.getVarFtIdx(x@rownames,
-                                         rownames(x@scaleUnsharedData))]
+                value[[1L]][match(rownames(x@scaleUnsharedData), x@rownames)]
         }
     }
     if (!is.null(x@H))
         colnames(x@H) <- value[[2L]]
     if (!is.null(x@V))
-        rownames(x@V) <- value[[1L]][.getVarFtIdx(x@rownames, rownames(x@V))]
+        rownames(x@V) <- value[[1L]][match(rownames(x@V), x@rownames)]
     if (!is.null(x@B))
-        rownames(x@B) <- value[[1L]][.getVarFtIdx(x@rownames, rownames(x@B))]
+        rownames(x@B) <- value[[1L]][match(rownames(x@B), x@rownames)]
     if (!is.null(x@U)) colnames(x@U) <- value[[2L]]
     if ("rawPeak" %in% methods::slotNames(x)) {
         if (!is.null(rawPeak(x))) colnames(rawPeak(x)) <- value[[2L]]
@@ -384,18 +248,6 @@ setReplaceMethod("dimnames", c("ligerDataset", "list"), function(x, value) {
     return(x)
 })
 
-.getVarFtIdx <- function(full, var) {
-    # full - character vector of ligerDataset rownames
-    # var - character vector of var features (in scaleData, V), might not follow
-    # the original order of `full`
-    # return numeric value that select ordered corresponding replacement from
-    # `dimnames<-`'s value[[1]]
-    fullNamedIdx <- seq_along(full)
-    names(fullNamedIdx) <- full
-    varNumIdx <- fullNamedIdx[var]
-    names(varNumIdx) <- NULL
-    return(varNumIdx)
-}
 
 #' Subset ligerDataset object
 #' @name sub-ligerDataset
@@ -427,25 +279,7 @@ setReplaceMethod("dimnames", c("ligerDataset", "list"), function(x, value) {
 # Raw, norm, scale data access ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#' @section Matrix access:
-#' For \code{ligerDataset} object, \code{rawData()}, \code{normData},
-#' \code{scaleData()} and \code{scaleUnsharedData()} methods are exported for
-#' users to access the corresponding feature expression matrix. Replacement
-#' methods are also available to modify the slots.
-#'
-#' For other matrices, such as the \eqn{H} and \eqn{V}, which are dataset
-#' specific, please use \code{getMatrix()} method with specifying slot name.
-#' Directly accessing slot with \code{@} is generally not recommended.
-#' @export
-#' @rdname ligerDataset-class
-setGeneric("rawData", function(x, dataset = NULL) standardGeneric("rawData"))
 
-#' @export
-#' @rdname ligerDataset-class
-setGeneric(
-    "rawData<-",
-    function(x, dataset = NULL, check = TRUE, value) standardGeneric("rawData<-")
-)
 
 #' @export
 #' @rdname ligerDataset-class
@@ -453,18 +287,6 @@ setMethod("rawData", "ligerDataset",
           function(x, dataset = NULL) x@rawData)
 
 #' @export
-#' @rdname liger-class
-setMethod("rawData", c("liger", "ANY"),
-          function(x, dataset = NULL) {
-              if (is.null(dataset)) {
-                  getMatrix(x, slot = "rawData", returnList = TRUE)
-              } else {
-                  getMatrix(x, "rawData", dataset = dataset)
-              }
-          }
-)
-
-#' @export
 #' @rdname ligerDataset-class
 setReplaceMethod(
     "rawData",
@@ -492,49 +314,6 @@ setReplaceMethod(
     }
 )
 
-#' @export
-#' @rdname liger-class
-setReplaceMethod(
-    "rawData",
-    signature(x = "liger", dataset = "ANY", check = "ANY", value = "matrixLike_OR_NULL"),
-    function(x, dataset = NULL, check = TRUE, value) {
-        dataset <- .checkUseDatasets(x, dataset)
-        if (length(dataset) != 1) stop("Need to specify one dataset to insert.")
-        if (isH5Liger(x, dataset))
-            stop("Cannot replace slot with in-memory data for H5 based object.")
-        x@datasets[[dataset]]@rawData <- value
-        if (isTRUE(check)) methods::validObject(x)
-        x
-    }
-)
-
-#' @export
-#' @rdname liger-class
-setReplaceMethod(
-    "rawData",
-    signature(x = "liger", dataset = "ANY", check = "ANY", value = "H5D"),
-    function(x, dataset = NULL, check = TRUE, value) {
-        dataset <- .checkUseDatasets(x, dataset)
-        if (length(dataset) != 1) stop("Need to specify one dataset to insert.")
-        if (!isH5Liger(x, dataset))
-            stop("Cannot replace slot with on-disk data for in-memory object.")
-        x@datasets[[dataset]]@rawData <- value
-        if (isTRUE(check)) methods::validObject(x@datasets[[dataset]])
-        if (isTRUE(check)) methods::validObject(x)
-        x
-    }
-)
-
-#' @export
-#' @rdname ligerDataset-class
-setGeneric("normData", function(x, dataset = NULL) standardGeneric("normData"))
-
-#' @export
-#' @rdname ligerDataset-class
-setGeneric(
-    "normData<-",
-    function(x, dataset = NULL, check = TRUE, value) standardGeneric("normData<-")
-)
 
 #' @export
 #' @rdname ligerDataset-class
@@ -542,18 +321,6 @@ setMethod("normData", "ligerDataset",
           function(x, dataset = NULL) x@normData)
 
 #' @export
-#' @rdname liger-class
-setMethod("normData", c("liger", "ANY"),
-          function(x, dataset = NULL) {
-              if (is.null(dataset)) {
-                  getMatrix(x, slot = "normData", returnList = TRUE)
-              } else {
-                  getMatrix(x, "normData", dataset = dataset)
-              }
-          }
-)
-
-#' @export
 #' @rdname ligerDataset-class
 setReplaceMethod(
     "normData",
@@ -582,69 +349,9 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname liger-class
-setReplaceMethod(
-    "normData",
-    signature(x = "liger", dataset = "ANY", check = "ANY", value = "matrixLike_OR_NULL"),
-    function(x, dataset = NULL, check = TRUE, value) {
-        dataset <- .checkUseDatasets(x, dataset)
-        if (length(dataset) != 1) stop("Need to specify one dataset to insert.")
-        if (isH5Liger(x, dataset))
-            stop("Cannot replace slot with in-memory data for H5 based object.")
-        x@datasets[[dataset]]@normData <- value
-        if (isTRUE(check)) methods::validObject(x)
-        x
-    }
-)
-
-#' @export
-#' @rdname liger-class
-setReplaceMethod(
-    "normData",
-    signature(x = "liger", dataset = "ANY", check = "ANY", value = "H5D"),
-    function(x, dataset = NULL, check = TRUE, value) {
-        dataset <- .checkUseDatasets(x, dataset)
-        if (length(dataset) != 1) stop("Need to specify one dataset to insert.")
-        if (!isH5Liger(x, dataset))
-            stop("Cannot replace slot with on-disk data for in-memory object.")
-        x@datasets[[dataset]]@normData <- value
-        if (isTRUE(check)) methods::validObject(x)
-        x
-    }
-)
-
-#' @export
-#' @rdname ligerDataset-class
-setGeneric(
-    "scaleData",
-    function(x, dataset = NULL) standardGeneric("scaleData")
-)
-
-#' @export
-#' @rdname ligerDataset-class
-setGeneric(
-    "scaleData<-",
-    function(x, dataset = NULL, check = TRUE, value) standardGeneric("scaleData<-")
-)
-
-#' @export
 #' @rdname ligerDataset-class
 setMethod("scaleData", c("ligerDataset", "missing"),
           function(x, dataset = NULL) x@scaleData)
-
-#' @export
-#' @rdname liger-class
-setMethod(
-    "scaleData",
-    signature(x = "liger", dataset = "ANY"),
-    function(x, dataset = NULL) {
-        if (is.null(dataset)) {
-            getMatrix(x, slot = "scaleData", returnList = TRUE)
-        } else {
-            getMatrix(x, "scaleData", dataset = dataset)
-        }
-    }
-)
 
 #' @export
 #' @rdname ligerDataset-class
@@ -689,91 +396,9 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname liger-class
-setReplaceMethod(
-    "scaleData",
-    signature(x = "liger", dataset = "ANY", check = "ANY", value = "matrixLike_OR_NULL"),
-    function(x, dataset = NULL, check = TRUE, value) {
-        dataset <- .checkUseDatasets(x, dataset)
-        if (length(dataset) != 1) stop("Need to specify one dataset to insert.")
-        if (isH5Liger(x, dataset))
-            stop("Cannot replace slot with in-memory data for H5 based object.")
-        x@datasets[[dataset]]@scaleData <- value
-        if (isTRUE(check)) methods::validObject(x)
-        x
-    }
-)
-
-#' @export
-#' @rdname liger-class
-setReplaceMethod(
-    "scaleData",
-    signature(x = "liger", dataset = "ANY", check = "ANY", value = "H5D"),
-    function(x, dataset = NULL, check = TRUE, value) {
-        dataset <- .checkUseDatasets(x, dataset)
-        if (length(dataset) != 1) stop("Need to specify one dataset to insert.")
-        if (!isH5Liger(x, dataset))
-            stop("Cannot replace slot with on-disk data for in-memory object.")
-        x@datasets[[dataset]]@scaleData <- value
-        if (isTRUE(check)) methods::validObject(x)
-        x
-    }
-)
-
-#' @export
-#' @rdname liger-class
-setReplaceMethod(
-    "scaleData",
-    signature(x = "liger", dataset = "ANY", check = "ANY", value = "H5Group"),
-    function(x, dataset = NULL, check = TRUE, value) {
-        dataset <- .checkUseDatasets(x, dataset)
-        if (length(dataset) != 1) stop("Need to specify one dataset to insert.")
-        if (!isH5Liger(x, dataset))
-            stop("Cannot replace slot with on-disk data for in-memory object.")
-        x@datasets[[dataset]]@scaleData <- value
-        if (isTRUE(check)) methods::validObject(x)
-        x
-    }
-)
-
-#' @export
-#' @rdname ligerDataset-class
-setGeneric(
-    "scaleUnsharedData",
-    function(x, dataset = NULL) standardGeneric("scaleUnsharedData")
-)
-
-#' @export
-#' @rdname ligerDataset-class
-setGeneric(
-    "scaleUnsharedData<-",
-    function(x, dataset = NULL, check = TRUE, value) standardGeneric("scaleUnsharedData<-")
-)
-
-#' @export
 #' @rdname ligerDataset-class
 setMethod("scaleUnsharedData", c("ligerDataset", "missing"),
           function(x, dataset = NULL) x@scaleUnsharedData)
-
-#' @export
-#' @rdname liger-class
-setMethod(
-    "scaleUnsharedData",
-    signature(x = "liger", dataset = "character"),
-    function(x, dataset) {
-        scaleUnsharedData(dataset(x, dataset))
-    }
-)
-
-#' @export
-#' @rdname liger-class
-setMethod(
-    "scaleUnsharedData",
-    signature(x = "liger", dataset = "numeric"),
-    function(x, dataset) {
-        scaleUnsharedData(dataset(x, dataset))
-    }
-)
 
 #' @export
 #' @rdname ligerDataset-class
@@ -818,65 +443,6 @@ setReplaceMethod(
 )
 
 #' @export
-#' @rdname liger-class
-setReplaceMethod(
-    "scaleUnsharedData",
-    signature(x = "liger", dataset = "ANY", check = "ANY", value = "matrixLike_OR_NULL"),
-    function(x, dataset = NULL, check = TRUE, value) {
-        dataset <- .checkUseDatasets(x, dataset)
-        if (length(dataset) != 1) stop("Need to specify one dataset to insert.")
-        if (isH5Liger(x, dataset))
-            stop("Cannot replace slot with in-memory data for H5 based object.")
-        x@datasets[[dataset]]@scaleUnsharedData <- value
-        if (isTRUE(check)) methods::validObject(x)
-        x
-    }
-)
-
-#' @export
-#' @rdname liger-class
-setReplaceMethod(
-    "scaleUnsharedData",
-    signature(x = "liger", dataset = "ANY", check = "ANY", value = "H5D"),
-    function(x, dataset = NULL, check = TRUE, value) {
-        dataset <- .checkUseDatasets(x, dataset)
-        if (length(dataset) != 1) stop("Need to specify one dataset to insert.")
-        if (!isH5Liger(x, dataset))
-            stop("Cannot replace slot with on-disk data for in-memory object.")
-        x@datasets[[dataset]]@scaleUnsharedData <- value
-        if (isTRUE(check)) methods::validObject(x)
-        x
-    }
-)
-
-#' @export
-#' @rdname liger-class
-setReplaceMethod(
-    "scaleUnsharedData",
-    signature(x = "liger", dataset = "ANY", check = "ANY", value = "H5Group"),
-    function(x, dataset = NULL, check = TRUE, value) {
-        dataset <- .checkUseDatasets(x, dataset)
-        if (length(dataset) != 1) stop("Need to specify one dataset to insert.")
-        if (!isH5Liger(x, dataset))
-            stop("Cannot replace slot with on-disk data for in-memory object.")
-        x@datasets[[dataset]]@scaleUnsharedData <- value
-        if (isTRUE(check)) methods::validObject(x)
-        x
-    }
-)
-
-
-
-#' @export
-#' @rdname ligerDataset-class
-setGeneric(
-    "getMatrix",
-    function(x, slot = "rawData", dataset = NULL, returnList = FALSE) {
-        standardGeneric("getMatrix")
-    }
-)
-
-#' @export
 #' @rdname ligerDataset-class
 setMethod(
     "getMatrix", signature(x = "ligerDataset", dataset = "missing",
@@ -891,75 +457,9 @@ setMethod(
         methods::slot(x, slot)
     })
 
-#' @export
-#' @rdname liger-class
-setMethod(
-    "getMatrix", signature(x = "liger"),
-    function(x,
-             slot = c("rawData", "normData", "scaleData",
-                      "scaleUnsharedData", "H", "V", "U", "A", "B",
-                      "W", "H.norm"),
-             dataset = NULL,
-             returnList = FALSE) {
-        slot <- match.arg(slot)
-        if (slot == "W") return(x@W)
-        if (slot == "H.norm") return(x@H.norm)
-        if (is.null(dataset)) {
-            return(lapply(datasets(x), function(ld) getMatrix(ld, slot)))
-        } else {
-            if (length(dataset) == 1) {
-                if (isTRUE(returnList)) {
-                    result <- list(getMatrix(dataset(x, dataset), slot))
-                    names(result) <- dataset
-                    return(result)
-                } else if (isFALSE(returnList))
-                    return(getMatrix(dataset(x, dataset), slot))
-            } else {
-                lds <- datasets(x)[dataset]
-                return(lapply(lds, function(ld) getMatrix(ld, slot)))
-            }
-        }
-    })
-
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # H5 related ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-#' @section H5 file and information access:
-#' A \code{ligerDataset} object has a slot called \code{h5fileInfo}, which is a
-#' list object. The first element is called \code{$H5File}, which is an
-#' \code{H5File} class object and is the connection to the input file. The
-#' second element is \code{$filename} which stores the absolute path of the H5
-#' file in the current machine. The third element \code{$formatType} stores the
-#' name of preset being used, if applicable. The other following keys pair with
-#' paths in the H5 file that point to specific data for constructing a feature
-#' expression matrix.
-#'
-#' \code{h5fileInfo()} method access the list described above and simply
-#' retrieves the corresponding value. When \code{info = NULL}, returns the whole
-#' list. When \code{length(info) == 1}, returns the requested list value. When
-#' more info requested, returns a subset list.
-#'
-#' The replacement method modifies the list elements and corresponding slot
-#' value (if applicable) at the same time. For example, running
-#' \code{h5fileInfo(obj, "rawData") <- newPath} not only updates the list, but
-#' also updates the \code{rawData} slot with the \code{H5D} class data at
-#' "newPath" in the \code{H5File} object.
-#'
-#' \code{getH5File()} is a wrapper and is equivalent to
-#' \code{h5fileInfo(obj, "H5File")}.
-#' @export
-#' @rdname ligerDataset-class
-setGeneric("h5fileInfo", function(x, info = NULL) standardGeneric("h5fileInfo"))
-
-#' @export
-#' @rdname ligerDataset-class
-setGeneric(
-    "h5fileInfo<-",
-    function(x, info = NULL, check = TRUE, value) {
-        standardGeneric("h5fileInfo<-")
-    }
-)
 
 #' @export
 #' @rdname ligerDataset-class
@@ -1021,52 +521,10 @@ setReplaceMethod(
     }
 )
 
-#' @export
-#' @rdname ligerDataset-class
-setGeneric("getH5File", function(x, dataset = NULL) standardGeneric("getH5File"))
-
-#' @export
-#' @rdname ligerDataset-class
-setMethod("getH5File",
-          signature = signature(x = "ligerDataset", dataset = "missing"),
-          function(x, dataset = NULL) h5fileInfo(x, "H5File"))
-
-#' @export
-#' @rdname liger-class
-setMethod("getH5File",
-          signature = signature(x = "liger", dataset = "ANY"),
-          function(x, dataset = NULL) {
-              if (is.null(dataset)) dataset <- names(x)
-              dataset <- .checkUseDatasets(x, dataset)
-              results <- lapply(datasets(x)[dataset],
-                                function(ld) h5fileInfo(ld, "H5File"))
-              if (length(results) == 1) results <- results[[1]]
-              results
-          })
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Feature metadata ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-#' @section Feature metadata access:
-#' A slot \code{featureMeta} is included for each \code{ligerDataset} object.
-#' This slot requires a \code{\link[S4Vectors]{DataFrame-class}} object, which
-#' is the same as \code{cellMeta} slot of a \linkS4class{liger} object. However,
-#' the associated S4 methods only include access to the whole table for now.
-#' Internal information access follows the same way as data.frame operation.
-#' For example, \code{featureMeta(ligerD)$nCell} or
-#' \code{featureMeta(ligerD)[varFeatures(ligerObj), "gene_var"]}.
-#' @export
-#' @rdname ligerDataset-class
-setGeneric("featureMeta", function(x, check = NULL) {
-    standardGeneric("featureMeta")
-})
-
-#' @export
-#' @rdname ligerDataset-class
-setGeneric("featureMeta<-", function(x, check = TRUE, value) {
-    standardGeneric("featureMeta<-")
-})
 
 #' @export
 #' @rdname ligerDataset-class
@@ -1086,6 +544,28 @@ setReplaceMethod(
         x@featureMeta <- value
         if (isTRUE(check)) methods::validObject(x)
         x
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setMethod("varUnsharedFeatures",
+          signature(x = "ligerDataset", dataset = "missing"),
+          function(x, dataset = NULL) x@varUnsharedFeatures)
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "varUnsharedFeatures",
+    signature(x = "ligerDataset", dataset = "missing", check = "ANY", value = "character"),
+    function(x, dataset = NULL, check = TRUE, value) {
+        x@varUnsharedFeatures <- value
+        if (isTRUE(check)) {
+            if (!all(value %in% rownames(x))) {
+                warning("Not all features passed are found.")
+            }
+        }
+        return(x)
     }
 )
 

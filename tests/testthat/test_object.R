@@ -290,7 +290,7 @@ test_that("ligerDataset methods", {
     expect_true(validObject(ctrl))
     # ligerSpatialDataset related
 
-    expect_warning(ctrl <- as.ligerDataset(ctrl, modal = "spatial"),
+    expect_message(ctrl <- as.ligerDataset(ctrl, modal = "spatial"),
                    "Will remove information in the following slots when ")
     pbmc@datasets$ctrl <- ctrl
     coords <- matrix(rnorm(300*2), 300, 2)
@@ -320,7 +320,7 @@ test_that("ligerDataset methods", {
     expect_warning(coordinate(ctrl) <- coords,
                    "NA generated for missing cells")
     # ligerMethDataset related
-    expect_warning(ctrl <- as.ligerDataset(ctrl, modal = "meth"),
+    expect_message(ctrl <- as.ligerDataset(ctrl, modal = "meth"),
                    "Will remove information in the following slots when ")
     expect_no_error(validObject(ctrl))
 })
@@ -399,11 +399,10 @@ test_that("as.liger methods", {
             colData = data.frame(dataset = factor(rep(c("a", "b"), each = 150)))
         )
         sce$useless <- 1
-        expect_warning(lig <- as.liger(sce), 'Variable name "dataset"')
+        expect_message(lig <- as.liger(sce))
         expect_equal(names(lig), "SCE")
 
-        expect_warning(lig <- as.liger(sce, datasetVar = "dataset"),
-                       'Variable name "dataset"')
+        expect_message(lig <- as.liger(sce, datasetVar = "dataset"))
         expect_true(all.equal(sapply(datasets(lig), ncol), c(a = 150, b = 150)))
     }
 
@@ -420,7 +419,7 @@ test_that("as.liger methods", {
             Seurat::FindVariableFeatures() %>%
             Seurat::ScaleData() %>%
             Seurat::RunPCA()
-        expect_warning(lig <- as.liger(seu))
+        expect_message(lig <- as.liger(seu))
         expect_true(all.equal(sapply(datasets(lig), ncol), c(a = 150, b = 150)))
 
         expect_in(paste0("pca.", 1:10), colnames(cellMeta(lig, as.data.frame = TRUE)))
@@ -434,7 +433,7 @@ test_that("as.ligerDataset methods", {
     expect_is(ld, "ligerDataset")
     ld <- as.ligerDataset(ctrlLD, modal = "atac")
     expect_is(ld, "ligerATACDataset")
-    expect_warning(ld <- as.ligerDataset(ld, modal = "rna"),
+    expect_message(ld <- as.ligerDataset(ld, modal = "rna"),
                    "Will remove information in the following slots when ")
     expect_is(ld, "ligerDataset")
 

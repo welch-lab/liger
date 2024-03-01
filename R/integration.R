@@ -243,14 +243,12 @@ runINMF.liger <- function(
     object <- removeMissing(object, orient = "cell", verbose = verbose)
     data <- lapply(datasets(object), function(ld) {
         if (is.null(scaleData(ld)))
-            stop("Scaled data not available. ",
-                 "Run `scaleNotCenter(object)` first")
+            cli::cli_abort("Scaled data not available. Run {.fn scaleNotCenter} first.")
         return(scaleData(ld))
     })
     dataClasses <- sapply(data, function(x) class(x)[1])
     if (!all(dataClasses == dataClasses[1])) {
-        stop("Currently the scaledData of all datasets have to be of the ",
-             "same class.")
+        cli::cli_abort("Currently the scaledData of all datasets have to be of the same class.")
     }
     out <- .runINMF.list(
         object = data,
@@ -326,8 +324,8 @@ runINMF.Seurat <- function(
     }
     for (i in seq_along(Es)) {
         if (any(Es[[i]]@x < 0)) {
-            stop("Negative data encountered for integrative Non-negative ",
-                 "Matrix Factorization. Please run `scaleNotCenter()` first.")
+            cli::cli_abort("Negative data encountered for integrative {.emph Non-negative} Matrix Factorization.
+                           Please run {.fn scaleNotCenter} first.")
         }
     }
 
@@ -380,27 +378,23 @@ runINMF.Seurat <- function(
         features = NULL
 ) {
     if (!requireNamespace("RcppPlanc", quietly = TRUE)) # nocov start
-        stop("RcppPlanc installation required. Currently, please get the ",
-             "GitHub private repository access from the lab and run: \n",
-             "devtools::install_github(\"welch-lab/RcppPlanc\")") # nocov end
+        cli::cli_abort(
+        "Package {.pkg RcppPlanc} is required for iNMF integration.
+        Please install it by command:
+        {.code devtools::install_github('welch-lab/RcppPlanc')}") # nocov end
 
     bestResult <- list()
     bestObj <- Inf
     bestSeed <- seed
     for (i in seq(nRandomStarts)) {
         if (isTRUE(verbose) && nRandomStarts > 1) {
-            .log("Replicate run ", i, "...")
+            cli::cli_alert_info("Replicate run {i}/{nRandomStarts}")
         }
         set.seed(seed = seed + i - 1)
-        if (inherits(object[[1]], "H5D")) {
-            # RcppPlanc::bppinmf_h5dense()
-            stop("TODO: Push Yichen to test bppinmf_h5sparse/bppinmf_h5dense!")
-        } else {
-            out <- RcppPlanc::inmf(objectList = object, k = k, lambda = lambda,
-                                   niter = nIteration, Hinit = HInit,
-                                   Vinit = VInit, Winit = WInit,
-                                   verbose = verbose)
-        }
+        out <- RcppPlanc::inmf(objectList = object, k = k, lambda = lambda,
+                               niter = nIteration, Hinit = HInit,
+                               Vinit = VInit, Winit = WInit,
+                               verbose = verbose)
         if (out$objErr < bestObj) {
             bestResult <- out
             bestObj <- out$objErr
@@ -408,7 +402,7 @@ runINMF.Seurat <- function(
         }
     }
     if (isTRUE(verbose) && nRandomStarts > 1) {
-        .log("Best objective error: ", bestObj, "\nBest seed: ", bestSeed)
+        cli::cli_alert_success("Best objective error: {bestObj}; Best seed: {bestSeed}")
     }
     barcodeList <- lapply(object, colnames)
     features <- rownames(object[[1]])
@@ -684,7 +678,7 @@ runOnlineINMF.liger <- function(
     Es <- lapply(datasets(object), function(ld) {
         sd <- scaleData(ld)
         if (is.null(sd))
-            stop("Scaled data not available. Run `scaleNotCenter()` first")
+            cli::cli_abort("Scaled data not available. Run {.fn scaleNotCenter} first.")
         # if (inherits(sd, "H5D")) return(.H5DToH5Mat(sd))
         # else
         if (inherits(sd, "H5Group"))
@@ -699,19 +693,20 @@ runOnlineINMF.liger <- function(
         BInit <- BInit %||% getMatrix(object, "B", returnList = TRUE)
         if (is.null(WInit) || any(sapply(VInit, is.null)) ||
             any(sapply(AInit, is.null)) || any(sapply(BInit, is.null))) {
-            stop("Cannot find complete online iNMF result for current ",
-                 "datasets. Please run `runOnlineINMF()` without `newDataset` ",
-                 "first.")
+            cli::cli_abort(
+                "Cannot find complete online iNMF result for current datasets.
+                Please run {.fn runOnlineINMF} without {.code newDataset} first"
+            )
         }
 
         newNames <- names(newDatasets)
         if (any(newNames %in% names(object))) {
-            stop("Names of `newDatasets` overlap with existing datasets.")
+            cli::cli_abort("Names of {.code newDatasets} overlap with existing datasets.")
         }
         if (is.list(newDatasets)) {
             # A list of raw data
             if (is.null(names(newDatasets))) {
-                stop("The list of new datasets must be named.")
+                cli::cli_abort("The list of new datasets must be named.")
             }
             for (i in seq_along(newDatasets)) {
                 if (inherits(newDatasets[[i]], "dgCMatrix")) {
@@ -721,14 +716,14 @@ runOnlineINMF.liger <- function(
                     ld <- createH5LigerDataset(newDatasets[[i]])
                     dataset(object, names(newDatasets[i])) <- ld
                 } else {
-                    stop("Cannot interpret `newDatasets` element ", i)
+                    cli::cli_abort("Cannot interpret `newDatasets` element {i}")
                 }
             }
         } else if (inherits(newDatasets, "liger")) {
             # A liger object with all new datasets
             object <- c(object, newDatasets)
         } else {
-            stop("`newDatasets` must be either a named list or a liger object")
+            cli::cli_abort("{.code newDatasets} must be either a named list or a liger object")
         }
 
         object <- normalize(object, useDatasets = newNames)
@@ -807,27 +802,16 @@ runOnlineINMF.liger <- function(
         ...
 ) {
     if (!requireNamespace("RcppPlanc", quietly = TRUE)) # nocov start
-        stop("RcppPlanc installation required. Currently, please get the ",
-             "GitHub private repository access from the lab and run: \n",
-             "devtools::install_github(\"welch-lab/RcppPlanc\")") # nocov end
+        cli::cli_abort(
+            "Package {.pkg RcppPlanc} is required for online iNMF integration.
+        Please install it by command:
+        {.code devtools::install_github('welch-lab/RcppPlanc')}") # nocov end
     nDatasets <- length(object) + length(newDatasets)
     barcodeList <- c(lapply(object, colnames), lapply(newDatasets, colnames))
     names(barcodeList) <- c(names(object), names(newDatasets))
     features <- rownames(object[[1]])
     if (!is.null(seed)) set.seed(seed)
 
-    # # If minibatchSize > smallest invovled dataset, auto reset with warning
-    # minibatchSize_min <- min(sapply(object, ncol))
-    # if (!is.null(newDatasets)) {
-    #     minibatchSize_min2 <- min(sapply(newDatasets, ncol))
-    #     minibatchSize_min <- min(minibatchSize_min, minibatchSize_min2)
-    # }
-    # if (minibatchSize > minibatchSize_min) {
-    #     warning("Minibatch size larger than the smallest dataset involved.\n",
-    #             "  Setting to the smallest dataset size: ", minibatchSize_min,
-    #             immediate. = TRUE)
-    #     minibatchSize <- minibatchSize_min
-    # }
     res <- RcppPlanc::onlineINMF(objectList = object, newDatasets = newDatasets,
                                  project = projection, k = k, lambda = lambda,
                                  maxEpoch = maxEpochs,
@@ -901,8 +885,8 @@ runOnlineINMF.Seurat <- function(
     }
     for (i in seq_along(Es)) {
         if (any(Es[[i]]@x < 0)) {
-            stop("Negative data encountered for integrative Non-negative ",
-                 "Matrix Factorization. Please run `scaleNotCenter()` first.")
+            cli::cli_abort("Negative data encountered for integrative {.emph Non-negative} Matrix Factorization.
+                           Please run {.fn scaleNotCenter} first.")
         }
     }
 
@@ -1147,15 +1131,15 @@ runUINMF.liger <- function(
 
     Elist <- lapply(datasets(object), function(ld) {
         if (is.null(scaleData(ld)))
-            stop("Scaled data not available. ",
-                 "Run `scaleNotCenter(object)` first")
+            cli::cli_abort("Scaled data not available. Run {.fn scaleNotCenter} first.")
         return(scaleData(ld))
     })
     Ulist <- getMatrix(object, "scaleUnsharedData", returnList = TRUE)
     if (all(sapply(Ulist, is.null))) {
-        stop("No scaled data for unshared feature found. Run `selectGenes()` ",
-             "with `useUnsharedDatasets` specified, ",
-             "and then `scaleNotCenter()`.")
+        cli::cli_abort(
+            "No scaled data for unshared feature found. Run {.fn selectGenes}
+            with {.code useUnsharedDatasets} specified, and then {.fn scaleNotCenter}."
+        )
     }
     res <- .runUINMF.list(Elist, Ulist, k = k, lambda = lambda,
                           nIteration = nIteration,
@@ -1187,6 +1171,11 @@ runUINMF.liger <- function(
         seed = 1,
         verbose = getOption("ligerVerbose")
 ) {
+    if (!requireNamespace("RcppPlanc", quietly = TRUE)) # nocov start
+        cli::cli_abort(
+        "Package {.pkg RcppPlanc} is required for mosaic iNMF integration with unshared features.
+        Please install it by command:
+        {.code devtools::install_github('welch-lab/RcppPlanc')}")# nocov end
     bestObj <- Inf
     bestRes <- NULL
     bestSeed <- NULL
@@ -1202,7 +1191,7 @@ runUINMF.liger <- function(
         }
     }
     if (isTRUE(verbose) && nRandomStarts > 1) {
-        .log("Best objective error: ", bestObj, "\nBest seed: ", bestSeed)
+        cli::cli_alert_success("Best objective error: {bestObj}; Best seed: {bestSeed}")
     }
     rm(res)
     features <- rownames(object[[1]])
@@ -1323,8 +1312,9 @@ quantileNorm.liger <- function(
     .checkValidFactorResult(object, checkV = FALSE)
     reference <- reference %||% names(which.max(sapply(datasets(object), ncol)))
     reference <- .checkUseDatasets(object, useDatasets = reference)
-    if (length(reference) != 1)
-        stop("Should specify only one reference dataset.")
+    if (length(reference) != 1) {
+        cli::cli_abort("Should specify only one reference dataset.")
+    }
     object <- recordCommand(object, ..., dependencies = "RANN")
     out <- .quantileNorm.HList(
         object = getMatrix(object, "H"),
@@ -1369,7 +1359,7 @@ quantileNorm.Seurat <- function(
     resName <- paste0(reduction, "Norm")
     reduction <- object[[reduction]]
     if (!inherits(reduction, "DimReduc")) {
-        stop("Specified `reduction` does not points to a DimReduc.")
+        cli::cli_abort("Specified {.code reduction} does not points to a {.cls DimReduc}.")
     }
     # Retrieve some information. Might have better ways instead of using `@`
     ## Due to proper formatting in Seurat object, Hconcat is already cell x k
@@ -1416,19 +1406,15 @@ quantileNorm.Seurat <- function(
     set.seed(seed)
     if (is.character(reference)) {
         if (length(reference) != 1 || !reference %in% names(object))
-            stop("Should specify one existing dataset as reference. ",
-                 "(character `reference` wrong length or not found)")
+            cli::cli_abort("Should specify one existing dataset as reference.")
     } else if (is.numeric(reference)) {
         if (length(reference) != 1 || reference > length(object))
-            stop("Should specify one dataset within the range. ",
-                 "(numeric `reference` wrong length or out of bound)")
+            cli::cli_abort("Should specify one existing dataset as reference.")
     } else if (is.logical(reference)) {
         if (length(reference) != length(object) || sum(reference) != 1)
-            stop("Should specify one dataset within the range. ",
-                 "(logical `reference` wrong length or ",
-                 "too many selection)")
+            cli::cli_abort("Should specify one existing dataset as reference.")
     } else {
-        stop("Unable to understand `reference`. See `?quantileNorm`.")
+        cli::cli_abort("Unable to understand {.code reference}. See {.code ?quantileNorm}.")
     }
     useDims <- useDims %||% seq_len(nrow(object[[1]]))
     # Transposing all H to cell x k

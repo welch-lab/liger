@@ -13,7 +13,7 @@ removeMissing(
   useDatasets = NULL,
   newH5 = TRUE,
   filenameSuffix = "removeMissing",
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 
@@ -21,7 +21,7 @@ removeMissingObs(
   object,
   slot.use = NULL,
   use.cols = TRUE,
-  verbose = getOption("ligerVerbose")
+  verbose = getOption("ligerVerbose", TRUE)
 )
 }
 \arguments{
@@ -51,7 +51,7 @@ H5-based dataset on subset. Default \code{TRUE}}
 suffix will be added to all the filenames. Default \code{"removeMissing"}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{...}{Arguments passed to \code{\link{subsetLigerDataset}}}
 
