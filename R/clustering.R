@@ -82,7 +82,7 @@ runCluster <- function(
     if (!is.null(useDims)) H <- H[, useDims, drop = FALSE]
 
     if (isTRUE(verbose))
-        cli::cli_alert_info("{method} clustering on {type} cell factor loadings...")
+        cli::cli_process_start("{method} clustering on {type} cell factor loadings...")
     knn <- RANN::nn2(H, k = nNeighbors, eps = eps)
     snn <- ComputeSNN(knn$nn.idx, prune = prune)
     if (!is.null(seed)) set.seed(seed)
@@ -124,10 +124,10 @@ runCluster <- function(
                               verbose = verbose)
     cellMeta(object, clusterName, check = FALSE) <- clusts
     if (isTRUE(verbose))
-        cli::cli_alert_success("Found {nlevels(clusts)} clusters.")
+        cli::cli_process_done(msg_done = "{method} clustering on {type} cell factor loadings ... Found {nlevels(clusts)} clusters.")
     object@uns$defaultCluster <- object@uns$defaultCluster %||% clusterName
     if (isTRUE(verbose))
-        cli::cli_alert_info("cellMeta variable {.val {clusterName}} is now set as default.")
+        cli::cli_alert_info("cellMeta variable {.field {clusterName}} is now set as default.")
     return(object)
 }
 
@@ -291,7 +291,7 @@ mapCellMeta <- function(
     object <- recordCommand(object, ...)
     from <- cellMeta(object, from)
     if (!is.factor(from))
-        cli::cli_abort("{.code from} must be a {.cls factor}.")
+        cli::cli_abort("{.var from} must be a {.cls factor}.")
     mapping <- list(...)
     fromCats <- names(mapping)
     notFound <- fromCats[!fromCats %in% levels(from)]

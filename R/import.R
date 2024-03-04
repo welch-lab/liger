@@ -83,12 +83,12 @@ createLiger <- function(
                         indices.name = "indicesName",
                         indptr.name = "indptrName", genes.name = "genesName",
                         barcodes.name = "barcodesName"))
-    if (!is.list(rawData)) stop("`rawData` has to be a named list.")
+    if (!is.list(rawData)) cli::cli_abort("{.var rawData} has to be a named list.")
 
     nData <- length(rawData)
     if (missing(modal) || is.null(modal)) modal <- "default"
     modal <- tolower(modal)
-    modal <- .checkArgLen(modal, nData, repN = TRUE)
+    modal <- .checkArgLen(modal, nData, repN = TRUE, class = "character")
 
     # TODO handle h5 specific argument for hybrid of H5 and in memory stuff.
     datasets <- list()
@@ -188,9 +188,8 @@ createLigerDataset <- function(
     args <- as.list(environment())
     additional <- list(...)
     # Necessary initialization of slots
-    if (is.null(rawData) && is.null(normData) && is.null(scaleData)) {
-        stop("At least one type of expression data (rawData, normData or ",
-             "scaleData) has to be provided")
+    if (is.null(rawData) && is.null(normData)) {
+        cli::cli_abort("At least one of {.field rawData} or {.field normData} has to be provided.")
     }
     # Look for proper colnames and rownames
     cn <- NULL
@@ -291,8 +290,7 @@ createH5LigerDataset <- function(
             genesName <- "raw.var"
             genes <- h5file[[genesName]][]
         } else {
-            stop("Specified `formatType` '", formatType,
-                 "' is not supported for now.")
+            cli::cli_abort("Specified {.var formatType} ({.val {formatType}}) is not supported for now.")
         }
     } else {
         barcodes <- h5file[[barcodesName]][]
@@ -373,22 +371,23 @@ readLiger <- function(
         h5FilePath = NULL,
         update = TRUE) {
     obj <- readRDS(filename)
-    if (!inherits(obj, "liger"))
-        stop("Object is not of class \"liger\".")
+    if (!inherits(obj, "liger")) # nocov start
+        cli::cli_abort("Object is not of class {.cls liger}.") # nocov end
     ver <- obj@version
     if (ver >= package_version("1.99.0")) {
         if (isH5Liger(obj)) obj <- restoreH5Liger(obj)
         return(obj)
     }
-    .log("Older version (", ver, ") of liger object detected.")
+    cli::cli_alert_info("Older version ({.val {ver}}) of {.cls liger} object detected.")
     if (isTRUE(update)) {
-        .log("Updating the object structure to make it compatible ",
-             "with current version (", utils::packageVersion("rliger2"), ")")
+        cli::cli_alert_info(
+            "Updating the object structure to make it compatible with current version {.val {utils::packageVersion('rliger2')}}"
+        )
         return(convertOldLiger(obj, dimredName = dimredName,
                                clusterName = clusterName,
                                h5FilePath = h5FilePath))
     } else {
-        .log("`update = FALSE` specified. Returning the original object.")
+        cli::cli_alert_info("{.code update = FALSE} specified. Returning the original object.")
         return(obj)
     }
 }
@@ -451,12 +450,15 @@ importPBMC <- function(
     for (i in seq(nrow(info))) {
         f <- info$filename[i]
         if (file.exists(f) && isFALSE(overwrite)) {
-            warning("File already exists, skipped. set `overwrite = TRUE` ",
-                    "to force downloading: ", f)
+            cli::cli_alert_warning(
+                "Skipping file already exists at: {.file {f}}. "
+            )
+            cli::cli_alert_info("Set {.code overwrite = TRUE} to forcing download.")
             doDownload[i] <- FALSE
             next
         }
-        if (isTRUE(verbose)) .log("Downloading from ", info$url[i], " to ", f)
+        if (isTRUE(verbose))
+            cli::cli_alert_info("Downloading from {.url {info$url[i]}} to {.file {f}}")
     }
     if (sum(doDownload) > 0) {
         utils::download.file(info$url[doDownload],
@@ -500,12 +502,15 @@ importBMMC <- function(
     for (i in seq(nrow(info))) {
         f <- info$filename[i]
         if (file.exists(f) && isFALSE(overwrite)) {
-            warning("File already exists, skipped. set `overwrite = TRUE` ",
-                    "to force downloading: ", f)
+            cli::cli_alert_warning(
+                "Skipping file already exists at: {.file {f}}. "
+            )
+            cli::cli_alert_info("Set {.code overwrite = TRUE} to forcing download.")
             doDownload[i] <- FALSE
             next
         }
-        if (isTRUE(verbose)) .log("Downloading from ", info$url[i], " to ", f)
+        if (isTRUE(verbose))
+            cli::cli_alert_info("Downloading from {.url {info$url[i]}} to {.file {f}}")
     }
     if (sum(doDownload) > 0) {
         utils::download.file(info$url[doDownload],
@@ -548,12 +553,15 @@ importCGE <- function(
     for (i in seq(nrow(info))) {
         f <- info$filename[i]
         if (file.exists(f) && isFALSE(overwrite)) {
-            warning("File already exists, skipped. set `overwrite = TRUE` ",
-                    "to force downloading: ", f)
+            cli::cli_alert_warning(
+                "Skipping file already exists at: {.file {f}}. "
+            )
+            cli::cli_alert_info("Set {.code overwrite = TRUE} to forcing download.")
             doDownload[i] <- FALSE
             next
         }
-        if (isTRUE(verbose)) .log("Downloading from ", info$url[i], " to ", f)
+        if (isTRUE(verbose))
+            cli::cli_alert_info("Downloading from {.url {info$url[i]}} to {.file {f}}")
     }
     if (sum(doDownload) > 0) {
         utils::download.file(info$url[doDownload],
@@ -708,34 +716,38 @@ read10X <- function(
                 if (is.null(reference)) {
                     if (length(refsExist) == 1) {
                         reference <- refsExist
-                        .log("Using reference: ", reference)
+                        cli::cli_alert_info("Using referece {.val {reference}}")
                     } else {
-                        stop("Multiple references found, please select one ",
-                             "from: ", paste0(refsExist, collapse = ", "))
+                        cli::cli_abort(
+                            "Multiple references found, please select one from: {.val {refsExist}}"
+                        )
                     }
                 } else if (length(reference) == 1) {
                     if (!reference %in% refsExist) {
-                        stop("Specified reference not found, please select ",
-                             "one from: ", paste0(refsExist, collapse = ", "))
+                        cli::cli_abort(
+                            "Specified reference not found, please select one from: {.val {refsExist}}"
+                        )
                     }
                 } else {
-                    stop("Multiple reference specified but only one allowed.")
+                    cli::cli_abort("Multiple reference specified but only one allowed.")
                 }
                 path <- file.path(path, reference)
             }
             names(path) <- dirSampleNames
-            .log("Found the following sample folders with possible sub-folder ",
-                 "structure: \n", paste0(dirSampleNames, collapse = ", "))
+            cli::cli_alert_info(
+                c("Found the following sample folders with possible sub-folder structure: ",
+                  "{.val {dirSampleNames}}")
+            )
         } # else mtxDirs
     } # else mtxDirs
 
     allData <- list()
-    sampleNames <- .checkArgLen(sampleNames, length(path), repN = FALSE)
+    sampleNames <- .checkArgLen(sampleNames, length(path), repN = FALSE, class = "character")
     if (is.null(sampleNames) && !is.null(names(path))) {
         sampleNames <- names(path)
     } else {
         if (any(duplicated(sampleNames))) {
-            stop("Cannot set duplicated sample names.")
+            cli::cli_abort("Cannot set duplicated sample names.")
         }
     }
 
@@ -743,14 +755,13 @@ read10X <- function(
         if (isTRUE(verbose)) {
             name <- sampleNames[i]
             if (is.null(name)) name <- paste0("sample ", i)
-            .log("Reading from ", name, "...")
+            cliID <- cli::cli_process_start("Reading from {.val {name}}")
         }
         if (is.list(path)) run <- path[[i]]
         else run <- path[i]
 
         if (!dir.exists(run)) {
-            stop("Directory provided does not exist: ",
-                 normalizePath(run, mustWork = FALSE))
+            cli::cli_abort("Directory provided does not exist: {.file {normalizePath(run, mustWork = FALSE)}}")
         }
         barcode.loc <- file.path(run, 'barcodes.tsv')
         gene.loc <- file.path(run, 'genes.tsv')
@@ -764,15 +775,13 @@ read10X <- function(
             matrix.loc <- addgz(matrix.loc)
         }
         if (!file.exists(barcode.loc)) {
-            stop("Barcode file missing. Expecting ", basename(barcode.loc))
+            cli::cli_abort("Barcode file is missing. Expecting {.file {barcode.loc}}")
         }
         if (!isOldVer && !file.exists(features.loc) ) {
-            stop("Gene name or features file missing. Expecting ",
-                 basename(features.loc))
+            cli::cli_abort("Gene name or features file is missing. Expecting {.file {features.loc}}")
         }
         if (!file.exists(matrix.loc)) {
-            stop("Expression matrix file missing. Expecting ",
-                 basename(matrix.loc))
+            cli::cli_abort("Expression matrix file is missing. Expecting {.file {matrix.loc}}")
         }
         data <- read10XFiles(matrixPath = matrix.loc, barcodesPath = barcode.loc,
                              featuresPath = ifelse(isOldVer, gene.loc, features.loc),
@@ -780,6 +789,7 @@ read10X <- function(
                              cellCol = cellCol)
         if (isOldVer) names(data) <- "Gene Expression"
         allData[[i]] <- data
+        if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     }
     if (!is.null(sampleNames)) names(allData) <- sampleNames
     if (isTRUE(returnList)) return(allData)
@@ -858,23 +868,25 @@ read10XATAC <- function(
             # Now paths are sample/outs/*_peak_bc_matrix/
             path <- file.path(outsPaths, subdir)
             if (!dir.exists(path)) {
-                stop("Cannot find folder '", path, "', not standard ",
-                     "`cellranger-", pipeline, "` output. ",
-                     "Please try with the other `pipeline`.")
+                cli::cli_abort(
+                    c("Cannot find folder {.file {path}}, not standard {.code cellranger-{pipeline}} output. ",
+                      "i" = "Please try with the other {.code pipeline}.")
+                )
             }
             names(path) <- dirSampleNames
-            .log("Found the following sample folders with possible sub-folder ",
-                 "structure: \n", paste0(dirSampleNames, collapse = ", "))
+            cli::cli_alert_info(
+                "Found the following sample folders with possible sub-folder structure: {.val {dirSampleNames}}"
+            )
         } # else mtxDirs
     } # else mtxDirs
 
     allData <- list()
-    sampleNames <- .checkArgLen(sampleNames, length(path), repN = FALSE)
+    sampleNames <- .checkArgLen(sampleNames, length(path), repN = FALSE, class = "character")
     if (is.null(sampleNames) && !is.null(names(path))) {
         sampleNames <- names(path)
     } else {
         if (any(duplicated(sampleNames))) {
-            stop("Cannot set duplicated sample names.")
+            cli::cli_abort("Cannot set duplicated sample names.")
         }
     }
 
@@ -882,14 +894,13 @@ read10XATAC <- function(
         if (isTRUE(verbose)) {
             name <- sampleNames[i]
             if (is.null(name)) name <- paste0("sample ", i)
-            .log("Reading from ", name, "...")
+            cliID <- cli::cli_process_start("Reading from {.val {name}}")
         }
         if (is.list(path)) run <- path[[i]]
         else run <- path[i]
 
         if (!dir.exists(run)) {
-            stop("Directory provided does not exist: ",
-                 normalizePath(run, mustWork = FALSE))
+            cli::cli_abort("Directory provided does not exist: {.file {normalizePath(run, mustWork = FALSE)}}")
         }
         barcode.loc <- switch(pipeline,
                               arc = "barcodes.tsv.gz",
@@ -904,15 +915,13 @@ read10XATAC <- function(
         )
 
         if (!file.exists(barcode.loc)) {
-            stop("Barcode file missing. Expecting ", basename(barcode.loc))
+            cli::cli_abort("Barcode file is missing. Expecting {.file {barcode.loc}}")
         }
         if (!file.exists(feature.loc) ) {
-            stop("Peak or feature file missing. Expecting ",
-                 basename(feature.loc))
+            cli::cli_abort("Peak or feature file is missing. Expecting {.file {feature.loc}}")
         }
         if (!file.exists(matrix.loc)) {
-            stop("Expression matrix file missing. Expecting ",
-                 basename(matrix.loc))
+            cli::cli_abort("Expression matrix file is missing. Expecting {.file {matrix.loc}}")
         }
         data <- read10XFiles(matrixPath = matrix.loc,
                              barcodesPath = barcode.loc,
@@ -921,16 +930,18 @@ read10XATAC <- function(
                              geneCol = geneCol, cellCol = cellCol,
                              isATAC = pipeline == "atac")
         if (pipeline == "arc" && !arcFeatureType %in% names(data)) {
-            stop("No ATAC data retrieved from cellranger-arc pipeline. ",
-                 "Please see if the following available feature types match ",
-                 "with need and select one for `arcFeatureType`: ",
-                 paste0(names(data), collapse = ", "))
+            cli::cli_abort(
+                c("No ATAC data retrieved from cellranger-arc pipeline. ",
+                "Please see if the following available feature types match ",
+                "with need and select one for `arcFeatureType`: {.val {names(data)}}")
+            )
         }
         data <- switch(pipeline,
                        arc = data[[arcFeatureType]],
                        atac = data[[1]]
         )
         allData[[i]] <- data
+        cli::cli_process_done(id = cliID)
     }
     if (!is.null(sampleNames)) names(allData) <- sampleNames
     if (isTRUE(returnList)) return(allData)
@@ -984,16 +995,14 @@ read10XFiles <- function(
                            "-", feature.names[, 3])
     } else {
         if (ncol(feature.names) < geneCol) {
-            stop("`geneCol` was set to ", geneCol, " but feature.tsv.gz ",
-                 "(or genes.tsv) only has ", ncol(feature.names), " columns.",
-                 " Try setting `geneCol` to a value <= ",
-                 ncol(feature.names), ".")
+            cli::cli_abort(
+                c("{.var geneCol} was set to {.val {geneCol}} but {.file feature.tsv.gz} (or {.file genes.tsv}) only has {ncol(fetures.names)} columns.",
+                  "i" = "Try setting {.var geneCol} to a value <= {ncol(feature.names)}.")
+            )
         }
         if (any(is.na(feature.names[, geneCol]))) {
-            warning(
-                "Some features names are NA. Replacing NA names with ID from the ",
-                "opposite column requested",
-                call. = FALSE, immediate. = TRUE
+            cli::cli_alert_warning(
+                "Some feature names are NA. Replacing NA names with ID from the opposite column requested"
             )
             na.features <- which(is.na(feature.names[, geneCol]))
             replacement.column <- ifelse(geneCol == 2, 1, 2)
@@ -1009,8 +1018,9 @@ read10XFiles <- function(
         data_types <- factor(feature.names$V3)
         lvls <- levels(data_types)
         if (length(lvls) > 1) {
-            .log("10X data contains more than one type and is being ",
-                 "returned as a list containing matrices of each type.")
+            cli::cli_alert_warning(
+                "10X data contains more than one type and is being returned as a list containing matrices of each type."
+            )
         }
         expr_name <- "Gene Expression"
         # Return Gene Expression first

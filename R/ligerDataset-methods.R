@@ -25,10 +25,11 @@ isH5Liger <- function(object, dataset = NULL) {
         }
     } else if (inherits(object, "liger")) {
         dataset <- .checkUseDatasets(object, dataset)
+        if (length(dataset) == 0) return(FALSE)
         allCheck <- unlist(lapply(datasets(object)[dataset], isH5Liger))
         return(all(allCheck))
     } else {
-        warning("Given object is not of liger or ligerDataset class.")
+        cli::cli_alert_danger("Given object is not of {.cls liger} or {.cls ligerDataset} class.")
         return(FALSE)
     }
 }
@@ -127,8 +128,7 @@ setMethod(
             ncol(object), "cells\n")
         if (isH5Liger(object) &
             !isTRUE(methods::validObject(object, test = TRUE))) {
-            warning("Link to HDF5 file fails. Please try running ",
-                    "`restoreH5Liger(object)`.")
+            cli::cli_alert_danger("Link to HDF5 file fails. Please try running {.code restoreH5Liger(object)}.")
             return()
         }
         for (slot in c("rawData", "normData", "scaleData",
@@ -293,7 +293,7 @@ setReplaceMethod(
     signature(x = "ligerDataset", dataset = "ANY", check = "ANY", value = "matrixLike_OR_NULL"),
     function(x, dataset = NULL, check = TRUE, value) {
         if (isH5Liger(x))
-            stop("Cannot replace slot with in-memory data for H5 based object.")
+            cli::cli_abort("Cannot replace slot with in-memory data for H5 based object.")
         x@rawData <- value
         if (isTRUE(check)) methods::validObject(x)
         x
@@ -307,7 +307,7 @@ setReplaceMethod(
     signature(x = "ligerDataset", dataset = "ANY", check = "ANY", value = "H5D"),
     function(x, dataset = NULL, check = TRUE, value) {
         if (!isH5Liger(x))
-            stop("Cannot replace slot with on-disk data for in-memory object.")
+            cli::cli_abort("Cannot replace slot with on-disk data for in-memory object.")
         x@rawData <- value
         if (isTRUE(check)) methods::validObject(x)
         x
@@ -327,7 +327,7 @@ setReplaceMethod(
     signature(x = "ligerDataset", dataset = "ANY", check = "ANY", value = "matrixLike_OR_NULL"),
     function(x, dataset = NULL, check = TRUE, value) {
         if (isH5Liger(x))
-            stop("Cannot replace slot with in-memory data for H5 based object.")
+            cli::cli_abort("Cannot replace slot with in-memory data for H5 based object.")
         x@normData <- value
         if (isTRUE(check)) methods::validObject(x)
         x
@@ -341,7 +341,7 @@ setReplaceMethod(
     signature(x = "ligerDataset", dataset = "ANY", check = "ANY", value = "H5D"),
     function(x, dataset = NULL, check = TRUE, value) {
         if (!isH5Liger(x))
-            stop("Cannot replace slot with on-disk data for in-memory object.")
+            cli::cli_abort("Cannot replace slot with on-disk data for in-memory object.")
         x@normData <- value
         if (isTRUE(check)) methods::validObject(x)
         x
@@ -360,7 +360,7 @@ setReplaceMethod(
     signature(x = "ligerDataset", dataset = "ANY", check = "ANY", value = "matrixLike_OR_NULL"),
     function(x, dataset = NULL, check = TRUE, value) {
         if (isH5Liger(x))
-            stop("Cannot replace slot with in-memory data for H5 based object.")
+            cli::cli_abort("Cannot replace slot with in-memory data for H5 based object.")
         x@scaleData <- value
         if (isTRUE(check)) methods::validObject(x)
         x
@@ -374,7 +374,7 @@ setReplaceMethod(
     signature(x = "ligerDataset", dataset = "ANY", check = "ANY", value = "H5D"),
     function(x, dataset = NULL, check = TRUE, value) {
         if (!isH5Liger(x))
-            stop("Cannot replace slot with on-disk data for in-memory object.")
+            cli::cli_abort("Cannot replace slot with on-disk data for in-memory object.")
         x@scaleData <- value
         if (isTRUE(check)) methods::validObject(x)
         x
@@ -388,7 +388,7 @@ setReplaceMethod(
     signature(x = "ligerDataset", dataset = "ANY", check = "ANY", value = "H5Group"),
     function(x, dataset = NULL, check = TRUE, value) {
         if (!isH5Liger(x))
-            stop("Cannot replace slot with on-disk data for in-memory object.")
+            cli::cli_abort("Cannot replace slot with on-disk data for in-memory object.")
         x@scaleData <- value
         if (isTRUE(check)) methods::validObject(x)
         x
@@ -407,7 +407,7 @@ setReplaceMethod(
     signature(x = "ligerDataset", dataset = "missing", check = "ANY", value = "matrixLike_OR_NULL"),
     function(x, check = TRUE, value) {
         if (isH5Liger(x))
-            stop("Cannot replace slot with in-memory data for H5 based object.")
+            cli::cli_abort("Cannot replace slot with in-memory data for H5 based object.")
         x@scaleUnsharedData <- value
         if (isTRUE(check)) methods::validObject(x)
         x
@@ -421,7 +421,7 @@ setReplaceMethod(
     signature(x = "ligerDataset", dataset = "missing", check = "ANY", value = "H5D"),
     function(x, check = TRUE, value) {
         if (!isH5Liger(x))
-            stop("Cannot replace slot with on-disk data for in-memory object.")
+            cli::cli_abort("Cannot replace slot with on-disk data for in-memory object.")
         x@scaleUnsharedData <- value
         if (isTRUE(check)) methods::validObject(x)
         x
@@ -435,7 +435,7 @@ setReplaceMethod(
     signature(x = "ligerDataset", dataset = "missing", check = "ANY", value = "H5Group"),
     function(x, check = TRUE, value) {
         if (!isH5Liger(x))
-            stop("Cannot replace slot with on-disk data for in-memory object.")
+            cli::cli_abort("Cannot replace slot with on-disk data for in-memory object.")
         x@scaleUnsharedData <- value
         if (isTRUE(check)) methods::validObject(x)
         x
@@ -472,9 +472,9 @@ setMethod(
             if (length(info) == 1) result <- x@h5fileInfo[[info]]
             else {
                 if (any(!info %in% names(x@h5fileInfo))) {
-                    stop("Specified h5file info not found: ",
-                         paste(info[!info %in% names(x@h5fileInfo)],
-                               collapse = ", "))
+                    cli::cli_abort(
+                        "Specified {.code info} not found: {.val {info[!info %in% names(x@h5fileInfo)]}}"
+                    )
                 }
                 result <- x@h5fileInfo[info]
                 names(result) <- info
@@ -498,13 +498,12 @@ setReplaceMethod(
             x@h5fileInfo <- value
         } else {
             if (!is.character(info) | length(info) != 1)
-                stop("`info` has to be a single character.")
+                cli::cli_abort("{.var info} has to be a single character.")
             if (info %in% c("indicesName", "indptrName", "barcodesName",
                             "genesName", "rawData", "normData",
                             "scaleData")) {
                 if (!getH5File(x)$exists(value)) {
-                    stop("Specified info is invalid, '", info,
-                         "' does not exists in the HDF5 file.")
+                    cli::cli_abort("Specified {.var info} is invalid, {.field info} does not exist in the HDF5 file.")
                 }
             }
             x@h5fileInfo[[info]] <- value
@@ -562,7 +561,7 @@ setReplaceMethod(
         x@varUnsharedFeatures <- value
         if (isTRUE(check)) {
             if (!all(value %in% rownames(x))) {
-                warning("Not all features passed are found.")
+                cli::cli_alert_warning("Not all features passed are found.")
             }
         }
         return(x)
@@ -586,7 +585,7 @@ cbind.ligerDataset <- function(x, ...,
     args <- list(...)
     isLD <- sapply(args, function(x) inherits(x, "ligerDataset"))
     if (any(!isLD)) {
-        warning("Discarding arguments that are not of ligerDataset class")
+        cli::cli_alert_warning("Discarding arguments that are not of {.cls ligerDataset} class")
         args <- args[isLD]
     }
     if (!missing(x)) args <- c(list(x), args)
@@ -595,6 +594,5 @@ cbind.ligerDataset <- function(x, ...,
     if (all(isH5)) .cbind.ligerDataset.h5(args)
     else if (!any(isH5)) .cbind.ligerDataset.mem(args)
     else
-        stop("Cannot `cbind` a hybrid of H5 ligerDatasets and ",
-             "in-memory ligerDatasets for now.")
+        cli::cli_abort("Cannot {.fn cbind} a hybrid of H5 and in-memory {.cls ligerDataset}s for now.")
 }

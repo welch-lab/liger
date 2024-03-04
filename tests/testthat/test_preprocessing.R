@@ -184,8 +184,6 @@ test_that("Normalize - on disk", {
 context("Select variable genes")
 test_that("selectGenes", {
     pbmc <- normalize(pbmc, useDatasets = 1)
-    expect_error(selectGenes(pbmc, thresh = 1:3),
-                 "`thresh` has to be a vector of length 2")
     expect_error(selectGenes(pbmc, thresh = 0.1),
                    "Normalized data not available")
     pbmc <- normalize(pbmc, useDatasets = 2)
@@ -217,7 +215,7 @@ test_that("selectGenes", {
     pbmc <- selectGenesVST(pbmc, useDataset = "ctrl", n = 50)
     expect_equal(length(varFeatures(pbmc)), 50)
 
-    expect_warning(pbmc <- selectGenesVST(pbmc, useDataset = "ctrl", n = 300,
+    expect_message(pbmc <- selectGenesVST(pbmc, useDataset = "ctrl", n = 300,
                                           useShared = FALSE),
                    "Not all variable features passed are found in datasets")
     expect_equal(length(varFeatures(pbmc)), 266)

@@ -96,7 +96,7 @@ runPairwiseDEG <- function(
         groups <- list(group1Idx, group2Idx)
         names(groups) <- c(group1Name, group2Name)
     } else {
-        stop("Please see `?runPairwiseDEG` for usage.")
+        cli::cli_abort("Please see {.code ?runPairwiseDEG} for usage.")
     }
     result <- .runDEG(object, groups = groups, method = method,
                       usePeak = usePeak, useReplicate = useReplicate,
@@ -161,7 +161,7 @@ runMarkerDEG <- function(
     allCellIdx <- seq(ncol(object))[object$dataset %in% useDatasets]
     conditionBy <- conditionBy %||% object@uns$defaultCluster
     if (is.null(conditionBy)) {
-        stop("No `conditionBy` given or default cluster not set.")
+        cli::cli_abort("No {.var conditionBy} given or default cluster not set.")
     }
     conditionBy <- .fetchCellMetaVar(
         object, conditionBy, cellIdx = allCellIdx,
@@ -241,6 +241,8 @@ runWilcoxon <- function(
 ) {
     method <- match.arg(method)
     allCellIdx <- unlist(groups)
+    if (length(allCellIdx) == 0)
+        cli::cli_abort(c(x = "No cell selected"))
     allCellBC <- colnames(object)[allCellIdx]
     datasetInvolve <- levels(object$dataset[allCellIdx, drop = TRUE])
     var <- factor(rep(names(groups), lengths(groups)), levels = names(groups))
@@ -258,8 +260,10 @@ runWilcoxon <- function(
     mat <- Reduce(cbind, dataList)
     mat <- mat[, allCellBC, drop = FALSE]
     if (method == "wilcoxon") {
+        cliID <- cli::cli_process_start("Running Wilcoxon rank-sum test")
         mat <- log1p(1e10*mat)
         result <- wilcoxauc(mat, var)
+        cli::cli_process_done(id = cliID)
     } else if (method == "pseudoBulk") {
         if (is.null(useReplicate)) {
             replicateAnn <- setupPseudoRep(var, nRep = nPsdRep,
@@ -292,18 +296,20 @@ runWilcoxon <- function(
 
 .DE.checkDataAvail <- function(object, useDatasets, method, usePeak) {
     if (isH5Liger(object, useDatasets)) { # nocov start
-        stop("HDF5 based datasets detected but is not supported. \n",
-             "Try `object.sub <- downsample(object, useSlot = ",
-             "'normData')` to create ANOTHER object with in memory data.")
+        cli::cli_abort(
+            c("HDF5 based datasets detected but is not supported. ",
+              "i" = "Try {.code object.sub <- downsample(object, useSlot = 'normData')} to create another object with in memory data")
+        )
     } # nocov end
     if (method == "wilcoxon") {
         slot <- ifelse(usePeak, "normPeak", "normData")
     } else if (method == "pseudoBulk") {
         if (!requireNamespace("DESeq2", quietly = TRUE)) # nocov start
-            stop("Package \"DESeq2\" needed for this function to work. ",
-                 "Please install it by command:\n",
-                 "BiocManager::install('DESeq2')",
-                 call. = FALSE) # nocov end
+            cli::cli_abort(
+                "Package {.pkg DESeq2} is needed for this function to work.
+                Please install it by command:
+                {.code BiocManager::install('DESeq2')}"
+            ) # nocov end
         slot <- ifelse(usePeak, "rawPeak", "rawData")
     }
     allAvail <- all(sapply(useDatasets, function(d) {
@@ -311,8 +317,10 @@ runWilcoxon <- function(
         !is.null(methods::slot(ld, slot))
     }))
     if (!allAvail)
-        stop(slot, " not all available for involved datasets. [method = \"",
-             method, "\", usePeak = ", usePeak, "]")
+        cli::cli_abort(
+            c("{.field {slot}} not all available for involved datasets: {.val {useDatasets}}",
+              "i" = "{.code method = '{method}'}; {.code usePeak = {usePeak}}")
+        )
     return(slot)
 }
 
@@ -345,9 +353,10 @@ makePseudoBulk <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {
         subrep <- replicateAnn[replicateAnn$groups == gr,]
         splitLabel <- interaction(subrep, drop = TRUE)
         if (nlevels(splitLabel) < 2) {
-            stop("Too few replicates label for condition \"", gr, "\". ",
-                 "Cannot not create pseudo-bulks. Please use ",
-                 "consider creating pseudo-replicates or use wilcoxon instead.")
+            cli::cli_abort(
+                c("Too few replicates for condition {.val {gr}}. Cannot create pseudo-bulks.",
+                  "i" = "Please consider creating pseudo-replicates or using {.code method = 'wilcoxon'} instead.")
+            )
         }
     }
     splitLabel <- interaction(replicateAnn, drop = TRUE)
@@ -360,10 +369,9 @@ makePseudoBulk <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {
     mat <- mat[, idx, drop = FALSE]
     replicateAnn <- replicateAnn[idx, , drop = FALSE]
     if (verbose) {
-        .log("Ignoring replicates with too few cells: ",
-             paste0(ignored, collapse = ", "))
-        .log("Replicate size:")
-        .log(paste0(levels(splitLabel), ": ", table(splitLabel), collapse = ", "), level = 2)
+        if (length(ignored) > 0) cli::cli_alert_warning("Ignoring replicates with too few cells: {.val {ignored}}")
+        cli::cli_alert_info("Replicate sizes:")
+        print(table(splitLabel))
     }
     pseudoBulks <- colAggregateSums_sparse(mat, as.integer(splitLabel) - 1,
                                            nlevels(splitLabel))
@@ -375,7 +383,7 @@ makePseudoBulk <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {
 .callDESeq2 <- function(pseudoBulks, groups,
                          verbose = getOption("ligerVerbose")) {
     # DESeq2 workflow
-    if (isTRUE(verbose)) .log("Calling DESeq2 Wald test")
+    if (isTRUE(verbose)) cliID <- cli::cli_process_start("Calling DESeq2 Wald test")
     ## NOTE: DESeq2 wishes that the contrast/control group is the first level
     ## whereas we required it as the second in upstream input. So we need to
     ## reverse it here.
@@ -396,6 +404,7 @@ makePseudoBulk <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {
     res$group <- levels(groups)[2]
     res <- res[, c(7, 8, 2, 5, 6)]
     colnames(res) <- c("feature", "group", "logFC", "pval", "padj")
+    if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     return(res)
 }
 

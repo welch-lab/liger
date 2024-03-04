@@ -26,9 +26,6 @@
 \alias{dim,liger-method}
 \alias{dimnames,liger-method}
 \alias{dimnames<-,liger,list-method}
-\alias{[,liger,character,missing,ANY-method}
-\alias{[,liger,missing,index,ANY-method}
-\alias{[,liger,character,index,ANY-method}
 \alias{datasets,liger-method}
 \alias{datasets<-,liger,logical-method}
 \alias{datasets<-,liger,missing-method}
@@ -103,7 +100,14 @@ cellMeta(
   ...
 )
 
-cellMeta(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, check = FALSE) <- value
+cellMeta(
+  x,
+  columns = NULL,
+  useDatasets = NULL,
+  cellIdx = NULL,
+  inplace = FALSE,
+  check = FALSE
+) <- value
 
 defaultCluster(x, useDatasets = NULL, ...)
 
@@ -134,12 +138,6 @@ commands(x, funcName = NULL, arg = NULL)
 \S4method{dimnames}{liger}(x)
 
 \S4method{dimnames}{liger,list}(x) <- value
-
-\S4method{[}{liger,character,missing,ANY}(x, i, j, ..., drop = TRUE)
-
-\S4method{[}{liger,missing,index,ANY}(x, i, j, ..., drop = TRUE)
-
-\S4method{[}{liger,character,index,ANY}(x, i, j, ..., drop = TRUE)
 
 \S4method{datasets}{liger}(x, check = NULL)
 
@@ -194,7 +192,14 @@ commands(x, funcName = NULL, arg = NULL)
 
 \S4method{cellMeta}{liger,missing}(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, check = FALSE) <- value
 
-\S4method{cellMeta}{liger,character}(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, check = FALSE) <- value
+\S4method{cellMeta}{liger,character}(
+  x,
+  columns = NULL,
+  useDatasets = NULL,
+  cellIdx = NULL,
+  inplace = TRUE,
+  check = FALSE
+) <- value
 
 \S4method{rawData}{liger}(x, dataset = NULL)
 
@@ -309,16 +314,16 @@ acceptable. Default \code{NULL} works with all datasets.}
 
 \item{...}{See detailed sections for explanation.}
 
+\item{inplace}{For \code{cellMeta<-} method, when \code{columns} is for
+existing variable and \code{useDatasets} or \code{cellIdx} indicate partial
+insertion to the object, whether to by default (\code{TRUE}) in-place insert
+\code{value} into the variable for selected cells or to replace the whole
+variable with non-selected part left as NA.}
+
 \item{name}{The name of available variables in \code{cellMeta} slot or the
 name of a new variable to store.}
 
 \item{funcName, arg}{See Command records section.}
-
-\item{i, j}{Feature and cell index for \code{`[`} method. For \code{`[[`}
-method, use a single variable name with \code{i} while \code{j} is not
-applicable.}
-
-\item{drop}{Not applicable.}
 
 \item{slot}{Name of slot to retrieve matrix from. Options shown in Usage.}
 

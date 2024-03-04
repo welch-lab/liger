@@ -73,14 +73,17 @@ runUMAP <- function(
     useRaw <- Hsearch$useRaw
     type <- ifelse(useRaw, "unnormalized", "quantile normalized")
     if (isTRUE(verbose))
-        cli::cli_alert_info("Generating UMAP on {type} cell factor loadings...")
+        cli::cli_process_start("Generating UMAP on {type} cell factor loadings...")
     if (!is.null(useDims)) H <- H[, useDims, drop = FALSE]
     umap <- uwot::umap(H,
                        n_components = as.integer(nDims),
                        metric = distance,
                        n_neighbors = as.integer(nNeighbors),
                        min_dist = minDist)
+    if (isTRUE(verbose)) cli::cli_process_done()
     dimRed(object, dimredName) <- umap
+    if (isTRUE(verbose))
+        cli::cli_alert_info("cellMeta variable {.field {dimredName}} is now set as default.")
     return(object)
 }
 
@@ -163,7 +166,7 @@ runTSNE <- function(
     useRaw <- Hsearch$useRaw
     type <- ifelse(useRaw, "unnormalized", "quantile normalized")
     if (isTRUE(verbose))
-        cli::cli_alert_info("Generating TSNE ({method}) on {type} cell factor loadings...")
+        cli::cli_process_start("Generating TSNE ({method}) on {type} cell factor loadings...")
     if (!is.null(useDims)) H <- H[, useDims, drop = FALSE]
     if (method == "Rtsne") {
         set.seed(seed)
@@ -182,8 +185,11 @@ runTSNE <- function(
                           theta = theta,
                           perplexity = perplexity)
     }
+    if (isTRUE(verbose)) cli::cli_process_done()
     dimRed(object, dimredName) <- tsne
     object@uns$TSNE <- list(method = method)
+    if (isTRUE(verbose))
+        cli::cli_alert_info("cellMeta variable {.field {dimredName}} is now set as default.")
     return(object)
 }
 

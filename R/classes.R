@@ -420,29 +420,28 @@ ligerSpatialDataset <- setClass(
 
 .checkCoords <- function(ld, value) {
     if (is.null(rownames(value))) {
-        warning("No rownames with given spatial coordinate, ",
-                "assuming they match with the cells.")
+        cli::cli_alert_warning("No rownames with given spatial coordinate. Assuming they match with the cells.")
         rownames(value) <- colnames(ld)
     }
     if (is.null(colnames(value))) {
         if (ncol(value) <= 3) {
             colnames(value) <- c("x", "y", "z")[seq(ncol(value))]
         } else {
-            stop("More than 3 dimensions for the coordinates but no ",
-                 "colnames are given.")
+            cli::cli_abort("More than 3 dimensions for the coordinates but no colnames are given.")
         }
-        warning("No colnames with given spatial coordinate, ",
-                "setting to ", paste0(colnames(value), collapse = ", "))
+        cli::cli_alert_warning(
+            "No colnames with given spatial coordinate. Setting to {.val {colnames(value)}}"
+        )
     }
     full <- matrix(NA, nrow = ncol(ld), ncol = ncol(value),
                    dimnames = list(colnames(ld), colnames(value)))
     cellIsec <- intersect(rownames(value), colnames(ld))
     full[cellIsec, colnames(value)] <- value[cellIsec,]
     if (any(is.na(full))) {
-        warning("NA generated for missing cells.")
+        cli::cli_alert_warning("NA generated for missing cells.")
     }
     if (any(!rownames(value) %in% rownames(full))) {
-        warning("Cells in given coordinate not found in the dataset.")
+        cli::cli_alert_warning("Cells in given coordinate not found in the dataset.")
     }
     return(full)
 }

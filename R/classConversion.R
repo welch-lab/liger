@@ -18,7 +18,7 @@ as.liger.dgCMatrix <- function(
     datasetVar <- droplevels(datasetVar)
 
     rawDataList <- splitRmMiss(object, datasetVar)
-    modal <- .checkArgLen(modal, length(rawDataList))
+    modal <- .checkArgLen(modal, length(rawDataList), class = "character")
     createLiger(rawData = rawDataList, modal = modal, ...)
 }
 
@@ -61,7 +61,7 @@ as.liger.SingleCellExperiment <- function(
     if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
     datasetVar <- droplevels(datasetVar)
     raw <- splitRmMiss(raw, datasetVar)
-    modal <- .checkArgLen(modal, length(raw))
+    modal <- .checkArgLen(modal, length(raw), class = "character")
     lig <- createLiger(raw, modal = modal, ...)
     colDataCopy <- SummarizedExperiment::colData(object)
     for (cdn in colnames(colDataCopy)) {
@@ -119,7 +119,7 @@ as.liger.Seurat <- function(
     }
 
     datasetVar <- datasetVar %||% "Seurat"
-    modal <- .checkArgLen(modal, length(raw))
+    modal <- .checkArgLen(modal, length(raw), class = "character")
     lig <- createLiger(raw, modal = modal, ...)
     colnames(object) <- colnames(lig)
     for (cdn in colnames(object[[]])) {

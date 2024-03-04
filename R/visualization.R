@@ -50,7 +50,10 @@ plotClusterDimRed <- function(
         ...) {
     useDimRed <- useDimRed %||% object@uns$defaultDimRed
     if (is.null(useDimRed)) {
-        stop("No `useDimRed` given or default dimRed not set.")
+        cli::cli_abort(
+            c(x = "No {.var useDimRed} given or default dimRed not set.",
+              i = "Run {.fn runUMAP} or {.fn runTSNE} to create one. Or see {.fn dimRed} and {.fn defaultDimRed}.")
+        )
     }
     useCluster <- useCluster %||% object@uns$defaultCluster
     xVar <- paste0(useDimRed, ".1")
@@ -68,7 +71,10 @@ plotDatasetDimRed <- function(
         ...) {
     useDimRed <- useDimRed %||% object@uns$defaultDimRed
     if (is.null(useDimRed)) {
-        stop("No `useDimRed` given or default dimRed not set.")
+        cli::cli_abort(
+            c(x = "No {.var useDimRed} given or default dimRed not set.",
+              i = "Run {.fn runUMAP} or {.fn runTSNE} to create one. Or see {.fn dimRed} and {.fn defaultDimRed}.")
+        )
     }
     xVar <- paste0(useDimRed, ".1")
     yVar <- paste0(useDimRed, ".2")
@@ -433,8 +439,9 @@ plotProportionDot <- function(
     class1 <- class1 %||% object@uns$defaultCluster
     if (length(class1) != 1 ||
         length(class2) != 1)
-        stop("`class1` and `class2` must be name of one categorical variable ",
-             "in `cellMeta` slot.")
+        cli::cli_abort(
+            "{.var class1} and {.var class2} must be name of one categorical variable in {.code cellMeta(object)}"
+        )
     vars <- .fetchCellMetaVar(object, c(class1, class2),
                               checkCategorical = TRUE)
     freq <- table(vars)
@@ -471,8 +478,7 @@ plotProportionBar <- function(
     class1 <- class1 %||% object@uns$defaultCluster
     if (length(class1) != 1 ||
         length(class2) != 1)
-        stop("`class1` and `class2` must be name of one categorical variable ",
-             "in `cellMeta` slot.")
+        cli::cli_abort("{.var class1} and {.var class2} must be name of one categorical variable in {.code cellMeta(object)}")
     method <- match.arg(method)
     vars <- .fetchCellMetaVar(object, c(class1, class2),
                               checkCategorical = TRUE)
@@ -622,6 +628,9 @@ plotProportionPie <- function(
 #' passed to \code{\link[EnhancedVolcano]{EnhancedVolcano}}.
 #' @return ggplot
 #' @export
+#' @examples
+#' result <- runMarkerDEG(pbmcPlot)
+#' plotVolcano(result, 1)
 plotVolcano <- function(
         result,
         group,
@@ -635,7 +644,10 @@ plotVolcano <- function(
         ...
 ) {
     if (!group %in% result$group) {
-        stop("Selected group does not exist in `result`.")
+        cli::cli_abort(
+            c("Selected group does not exist in {.code result$group}",
+              i = "Available ones: {.val {levels(droplevels(result$group))}}")
+        )
     }
     result <- result[result$group == group, ]
     result <- result[order(abs(result$logFC), decreasing = TRUE), ]
@@ -705,12 +717,12 @@ plotEnhancedVolcano <- function(
         group,
         ...
 ) {
-    if (!requireNamespace("EnhancedVolcano", quietly = TRUE)) {
-        stop("Package \"EnhancedVolcano\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "BiocManager::install('EnhancedVolcano')",
-             call. = FALSE)
-    }
+    if (!requireNamespace("EnhancedVolcano", quietly = TRUE)) { # nocov start
+        cli::cli_abort(
+            "Package {.pkg EnhancedVolcano} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('EnhancedVolcano')}")
+    } # nocov end
     result <- result[result$group == group, ]
     EnhancedVolcano::EnhancedVolcano(
         toptable = result,
@@ -805,14 +817,12 @@ plotDensityDimRed <- function(
     } else {
         # Will return a single ggplot
         if (length(title) > 1) {
-            warning("`title` has length greater than 1 while only a single ",
-                    "plot is generated. Using the first value only. ")
+            cli::cli_alert_warning("{.var title} has length greater than 1 while only a single plot is generated. Using the first value only.")
             title <- title[1]
         }
         drList <- list(dr)
     }
     plotList <- list()
-    #if (length(drList) == 0) stop("No plot could be generated")
     if (length(drList) == 1) {
         return(.ggDensity(drList[[1]], dotCoordDF = drList[[1]],
                           title = title, minDensity = minDensity,
@@ -1110,11 +1120,11 @@ plotSankey <- function(
         colorValues = scPalette,
         mar = c(2, 2, 4, 2)
 ) {
-    if (!requireNamespace("sankey", quietly = TRUE))
-        stop("Package \"sankey\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "install.packages('sankey')",
-             call. = FALSE)
+    if (!requireNamespace("sankey", quietly = TRUE)) # nocov start
+        cli::cli_abort(
+            "Package {.pkg sankey} is needed for this function to work.
+            Please install it by command:
+            {.code install.packages('sankey')}") # nocov end
 
     clusterConsensus <- clusterConsensus %||% object@uns$defaultCluster
     clusterDF <- .fetchCellMetaVar(object,
@@ -1122,7 +1132,7 @@ plotSankey <- function(
                                    checkCategorical = TRUE, droplevels = TRUE)
 
     titles <- titles %||% c(cluster1, clusterConsensus, cluster2)
-    titles <- .checkArgLen(titles, 3, repN = FALSE)
+    titles <- .checkArgLen(titles, 3, repN = FALSE, class = "character")
     # Prepare for networkD3 input: Links, Nodes
     cluster1Fct <- droplevels(clusterDF[[1]])
     clusterCFct <- droplevels(clusterDF[[2]])
@@ -1139,7 +1149,7 @@ plotSankey <- function(
 
     if (any(duplicated(c(nodes1, nodesC, nodes2)))) {
         prefixes <- prefixes %||% c(cluster1, clusterConsensus, cluster2)
-        prefixes <- .checkArgLen(prefixes, 3, repN = FALSE)
+        prefixes <- .checkArgLen(prefixes, 3, repN = FALSE, class = "character")
         nodes1 <- .addPrefix(prefixes[1], nodes1)
         nodesC <- .addPrefix(prefixes[2], nodesC)
         nodes2 <- .addPrefix(prefixes[3], nodes2)
@@ -1240,7 +1250,7 @@ plotSpatial2D.liger <- function(
         ...) {
     dataset <- .checkUseDatasets(object, useDatasets = dataset,
                                  modal = "spatial")
-    .checkArgLen(dataset, 1)
+    .checkArgLen(dataset, 1, class = "character")
     ld <- dataset(object, dataset)
     useCluster <- useCluster %||%
         defaultCluster(object)[object$dataset == dataset]
@@ -1248,7 +1258,7 @@ plotSpatial2D.liger <- function(
         legendColorTitle <- legendColorTitle %||% useCluster
         useCluster <- cellMeta(object, useCluster, useDatasets = dataset)
     } else {
-        useCluster <- .checkArgLen(useCluster, ncol(ld), repN = FALSE)
+        useCluster <- .checkArgLen(useCluster, ncol(ld), repN = FALSE, class = "factor")
         legendColorTitle <- legendColorTitle %||% "Annotation"
     }
     plotSpatial2D.ligerSpatialDataset(
@@ -1275,11 +1285,11 @@ plotSpatial2D.ligerSpatialDataset <- function(
         labelText = FALSE,
         ...)
 {
-    .checkArgLen(useCluster, ncol(object))
+    .checkArgLen(useCluster, ncol(object), repN = FALSE, class = "factor")
     legendColorTitle <- legendColorTitle %||% "Annotation"
 
     coord <- coordinate(object)
-    .checkArgLen(useDims, 2)
+    .checkArgLen(useDims, 2, repN = FALSE, class = "numeric")
     coord <- coord[, useDims]
     plotDF <- as.data.frame(coord)
     colnames(plotDF) <- c("x", "y")

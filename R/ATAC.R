@@ -50,12 +50,6 @@ imputeKNN <- function(
         knn_k = nNeighbors
 ) {
     .deprecateArgs(list(knn_k = "nNeighbors"), defunct = "scale")
-    # if (!requireNamespace("FNN", quietly = TRUE)) {
-    #     stop("Package \"foreach\" needed for this function to work. ",
-    #          "Please install it by command:\n",
-    #          "install.packages('FNN')",
-    #          call. = FALSE)
-    # }
     if (is.null(getMatrix(object, "H.norm")))
         cli::cli_abort(
             "Aligned factor loading has to be available for imputation.

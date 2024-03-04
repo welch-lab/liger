@@ -50,12 +50,12 @@ process <- function(object) {
 
 context("subset liger object")
 test_that("subsetLiger", {
-    expect_warning(a <- subsetLiger("a"), "`object` is not a liger obejct")
+    expect_message(a <- subsetLiger("a"), "`object` is not a ")
     expect_identical(a, "a")
     skip_if_not(has_RcppPlanc)
     pbmc <- process(pbmc)
     expect_error(subsetLiger(pbmc, featureIdx = 1:3),
-                 "Feature subscription from liger object")
+                 "Feature subscription from a")
     expect_error(
         expect_warning(subsetLiger(pbmc,
                                    featureIdx = c("fakeGene1", "fakeGene2")),
@@ -79,7 +79,7 @@ test_that("subsetH5LigerDataset", {
             expect_false(isH5Liger(ctrlSmall))
             path <- dirname(h5fileInfo(ctrl, "filename"))
             newName <- file.path(path, "ctrltest.h5.small.h5")
-            expect_warning(
+            expect_message(
                 subsetLigerDataset(ctrl, featureIdx = 1:10, cellIdx = 1:10,
                                    newH5 = TRUE,
                                    filename = newName,
@@ -88,11 +88,11 @@ test_that("subsetH5LigerDataset", {
             )
             expect_true(file.exists(newName))
             unlink(newName)
-            expect_warning(
+            expect_message(
                 rliger2:::subsetH5LigerDatasetToMem(letters),
-                "`object` is not a ligerDataset obejct."
+                "`object` is not a "
             )
-            expect_warning(
+            expect_message(
                 rliger2:::subsetH5LigerDatasetToMem(dataset(pbmc, "ctrl")),
                 "`object` is not HDF5 based."
             )
@@ -101,11 +101,11 @@ test_that("subsetH5LigerDataset", {
             )
             expect_is(valueList, "list")
 
-            expect_warning(
+            expect_message(
                 rliger2:::subsetH5LigerDatasetToH5(letters),
-                "`object` is not a ligerDataset obejct."
+                "`object` is not a"
             )
-            expect_warning(
+            expect_message(
                 rliger2:::subsetH5LigerDatasetToH5(dataset(pbmc, "ctrl")),
                 "`object` is not HDF5 based."
             )

@@ -242,7 +242,7 @@ setGeneric(
 #' @rdname liger-class
 setGeneric(
     "cellMeta<-",
-    function(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, check = FALSE, value) {
+    function(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, inplace = FALSE, check = FALSE, value) {
         standardGeneric("cellMeta<-")
     }
 )

@@ -143,13 +143,13 @@ plotCellScatter <- function(
     }
 
     plotList <- list()
-    titles <- .checkArgLen(titles, n = length(plotDFList), .stop = FALSE)
+    titles <- .checkArgLen(titles, n = length(plotDFList), class = "ANY", .stop = FALSE)
     for (i in seq_along(plotDFList)) {
-        .log("Plotting feature: ", names(plotDFList)[i], ", on ",
-             nrow(plotDFList[[i]]), " cells...")
+        cliID <- cli::cli_process_start("Plotting feature {.val {names(plotDFList)[i]}} on {.val {nrow(plotDFList[[i]])}} cells")
         plotList[[i]] <- .ggScatter(plotDF = plotDFList[[i]], x = x, y = y,
                                     colorBy = colorByParam[[i]],
                                     shapeBy = shapeBy, title = titles[i], ...)
+        cli::cli_process_done(cliID)
     }
     names(plotList) <- names(plotDFList)
 
@@ -450,7 +450,7 @@ plotCellViolin <- function(
         names(yParam) <- names(plotDFList)
     }
     plotList <- list()
-    titles <- .checkArgLen(titles, n = length(plotDFList), .stop = FALSE)
+    titles <- .checkArgLen(titles, n = length(plotDFList), class = "ANY", .stop = FALSE)
     for (i in seq_along(plotDFList)) {
         plotList[[i]] <- .ggCellViolin(plotDF = plotDFList[[i]],
                                        y = yParam[[i]], groupBy = groupBy,
@@ -799,11 +799,14 @@ plotCellViolin <- function(
     }
 
     if (isTRUE(plotly)) {
-        if (requireNamespace("plotly", quietly = FALSE)) {
+        if (requireNamespace("plotly", quietly = TRUE)) {
             plot <- plotly::ggplotly(plot)
         } else {
-            warning('Run `install.packages("plotly")` to enable web based ',
-                    "interactive browsing. Returning original ggplot.")
+            cli::cli_alert_danger(
+                "Package {.pkg plotly} is needed for interactive browsing."
+            )
+            cli::cli_alert_info("Please run {.code install.packages('plotly')} to enable it.")
+            cli::cli_alert_info("Returning the original {.cls ggplot}.")
         }
     }
     return(plot)

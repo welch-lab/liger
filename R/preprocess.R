@@ -80,7 +80,7 @@ runGeneralQC <- function(
     for (d in useDatasets) {
         ld <- dataset(object, d)
         if (isTRUE(verbose))
-            cli::cli_alert_info("calculating QC for dataset {.val {d}}")
+            cliID <- cli::cli_process_start("calculating QC for dataset {.val {d}}")
         if (isH5Liger(ld))
             results <- runGeneralQC.h5(
                 ld,
@@ -97,6 +97,7 @@ runGeneralQC <- function(
         object@cellMeta[object$dataset == d, newResultNames] <- results$cell
         featureMeta(ld, check = FALSE)$nCell <- results$feature
         datasets(object, check = FALSE)[[d]] <- ld
+        if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     }
 
     return(object)
@@ -264,10 +265,10 @@ removeMissing <- function(
     orient <- match.arg(orient)
     useDatasets <- .checkUseDatasets(object, useDatasets)
     minCells <- minCells %||% rep(0, length(useDatasets))
-    minCells <- .checkArgLen(minCells, length(useDatasets))
+    minCells <- .checkArgLen(minCells, length(useDatasets), class = "numeric")
     names(minCells) <- useDatasets
     minFeatures <- minFeatures %||% rep(0, length(useDatasets))
-    minFeatures <- .checkArgLen(minFeatures, length(useDatasets))
+    minFeatures <- .checkArgLen(minFeatures, length(useDatasets), class = "numeric")
     names(minFeatures) <- useDatasets
     rmFeature <- ifelse(orient %in% c("both", "feature"), TRUE, FALSE)
     rmCell <- ifelse(orient %in% c("both", "cell"), TRUE, FALSE)
@@ -394,8 +395,8 @@ normalize.dgCMatrix <- function(
         scaleFactor = NULL,
         ...
 ) {
-    if (!is.null(scaleFactor) && scaleFactor <= 0) {
-        scaleFactor <- .checkArgLen(scaleFactor, ncol(object), repN = TRUE)
+    scaleFactor <- .checkArgLen(scaleFactor, ncol(object), repN = TRUE, class = "numeric")
+    if (!is.null(scaleFactor) && any(scaleFactor <= 0)) {
         cli::cli_alert_danger("Invalid {.code scaleFactor} given. Setting to {.code NULL}.")
         scaleFactor <- NULL
     }
@@ -488,13 +489,13 @@ normalize.liger <- function(
     useDatasets <- .checkUseDatasets(object, useDatasets)
     object <- recordCommand(object, ..., dependencies = "hdf5r")
     for (d in useDatasets) {
+        if (isTRUE(verbose)) cliID <- cli::cli_process_start("Normalizing datasets {.val {d}}")
         # `d` is the name of each dataset
-        if (isTRUE(verbose))
-            cli::cli_alert_info("Normalizing dataset: {.val {d}}")
         ld <- dataset(object, d)
         ld <- normalize(ld, verbose = verbose, ...)
         datasets(object, check = FALSE)[[d]] <- ld
     }
+    if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     object
 }
 
@@ -534,19 +535,15 @@ normalizePeak <- function(
     useDatasets <- .checkUseDatasets(object, useDatasets, modal = "atac")
     object <- recordCommand(object, ..., dependencies = "hdf5r")
     for (d in useDatasets) {
+        if (isTRUE(verbose)) cliID <- cli::cli_process_start("Normalizing peak of dataset: {.val {d}}")
         # `d` is the name of each dataset
-        if (isTRUE(verbose))
-            cli::cli_alert_info("Normalizing rawPeak counts in dataset: {.val {d}}")
         ld <- dataset(object, d)
         normPeak(ld, check = FALSE) <- normalize(rawPeak(ld), ...)
         datasets(object, check = FALSE)[[d]] <- ld
+        if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     }
     object
 }
-
-
-
-
 
 ############################### Select Genes ###################################
 
@@ -667,9 +664,9 @@ selectGenes.liger <- function(
         datasetUnshared <- .checkUseDatasets(object, useUnsharedDatasets)
     else datasetUnshared <- NULL
     useDatasets <- union(datasetShared, datasetUnshared)
-    thresh <- .checkArgLen(thresh, length(datasetShared))
-    nGenes <- .checkArgLen(nGenes, length(datasetShared))
-    unsharedThresh <- .checkArgLen(unsharedThresh, length(datasetUnshared))
+    thresh <- .checkArgLen(thresh, length(datasetShared), class = "numeric")
+    nGenes <- .checkArgLen(nGenes, length(datasetShared), class = "numeric")
+    unsharedThresh <- .checkArgLen(unsharedThresh, length(datasetUnshared), class = "numeric")
     sharedFeature <- Reduce(intersect, lapply(datasets(object), rownames))
     selectList <- list()
     for (d in useDatasets) {
@@ -845,7 +842,7 @@ selectGenes.Seurat <- function(
     featureList <- lapply(matList, rownames)
     allshared <- Reduce(intersect, featureList)
     allFeatures <- SeuratObject::Features(object, assay = assay)
-    thresh <- .checkArgLen(thresh, nlevels(datasetVar))
+    thresh <- .checkArgLen(thresh, nlevels(datasetVar), class = "numeric")
 
     # Get nUMI metric into list
     nUMIVar <- paste0("nCount_", assay)
@@ -1260,11 +1257,13 @@ scaleNotCenter.liger <- function(
     useDatasets <- .checkUseDatasets(object, useDatasets)
     object <- recordCommand(object, ...,
                             dependencies = c("RcppArmadillo", "Rcpp"))
+
     for (d in useDatasets) {
-        if (isTRUE(verbose)) cli::cli_alert_info("Scaling dataset: {.val {d}}")
+        if (isTRUE(verbose)) cliID <- cli::cli_process_start("Scaling dataset {.val {d}}")
         ld <- dataset(object, d)
         ld <- scaleNotCenter(ld, features = features, verbose = verbose, ...)
         datasets(object, check = FALSE)[[d]] <- ld
+        if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     }
     return(object)
 }
@@ -1332,10 +1331,9 @@ scaleNotCenter.Seurat <- function(
     geneRootMeanSumSq = sqrt(geneSumSq / (nCells - 1))
     h5file <- getH5File(ld)
     # Count the subset nnz first before creating data space
-    if (isTRUE(verbose)) cli::cli_alert_info("Counting number of non-zero values...")
     nnz <- 0
     nnz <- H5Apply(
-        ld, useData = "normData", chunkSize = chunk, verbose = verbose,
+        ld, useData = "normData", chunkSize = chunk, verbose = FALSE,
         FUN = function(chunk, sparseXIdx, cellIdx, values) {
             chunk <- chunk[featureIdx, , drop = FALSE]
             values <- values + length(chunk@x)

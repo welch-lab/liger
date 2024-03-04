@@ -9,6 +9,8 @@
     message(pref, msg)
 }
 
+cli_or <- function(x) cli::cli_vec(x, list("vec-last" = " or "))
+
 .checkObjVersion <- function(object) {
     if (inherits(object, "liger")) {
         if (!is.newLiger(object))
@@ -118,6 +120,7 @@
                 return(FALSE)
             }
         })
+        passing <- unlist(passing)
         if (!all(passing)) {
             cli::cli_abort(
                 "The following selected variables are not considered as
@@ -191,8 +194,6 @@
 }
 
 .checkLDSlot <- function(object, slot) {
-    if (!inherits(object, "ligerDataset"))
-        stop("Please use a ligerDataset object.")
     avail <- c("rawData", "normData", "scaleData")
     if (is.null(slot)) {
         slot <- avail
@@ -228,26 +229,27 @@
     if (type == "V") checklist <- c(1, 1, 1, 0, 0)
     if (checklist[1]) {
         if (!is.list(m))
-            stop("`", type, ".init` should be a list of matrices")
+            cli::cli_abort(
+                "{.var {type}Init} should be a list of {.cls matrix}."
+            )
         if (length(m) != length(nCells))
-            stop("Number of matrices in `", type, ".init` should match number",
-                 " of datasets in `object`")
+            cli::cli_abort(
+                "Number of matrices in {.var {type}Init} should match number of datasets in {.var object}."
+            )
         isMat <- sapply(m, is.matrix)
         if (!all(isMat)) {
-            stop(sum(!isMat), " elements in `", type, ".init` is not a matrix.")
+            cli::cli_abort("{sum(!isMat)} elements in {.var {type}Init} is not {.cls matrix}.")
         }
         isValid <- sapply(seq_along(m), function(i)
             .checkInit.mat(m[[i]], nCells[i], nGenes, k, checklist))
         if (!all(isValid))
-            stop("Not all matrices in `", type,
-                 ".init` has valid dimensionality.")
+            cli::cli_abort("Not all matrices in {.var {type}Init} has valid dimensionality.")
     } else {
         if (!is.matrix(m))
-            stop("`", type, ".init` should be a matrix")
+            cli::cli_abort("{.var {type}Init} should be a {.cls matrix}.")
         if (!.checkInit.mat(m, sum(nCells), nGenes, k, checklist))
-            stop("`", type, ".init` does not have valid dimensionality.")
+            cli::cli_abort("{.var {type}Init} does not have valid dimensionality.")
     }
-    m
 }
 
 .checkInit.mat <- function(m, nCells, nGenes, k, checklist) {
@@ -262,7 +264,7 @@
                                     checkV = TRUE) {
     result <- TRUE
     useDatasets <- .checkUseDatasets(object, useDatasets)
-    if (is.null(object@W)) stop("W matrix does not exist.")
+    if (is.null(object@W)) cli::cli_abort("W matrix does not exist.")
     k <- ncol(object@W)
 
     for (d in useDatasets) {
@@ -270,32 +272,38 @@
         nCells <- ncol(ld)
         if (isTRUE(checkV)) {
             if (is.null(ld@V)) {
-                warning("V matrix does not exist for dataset '", d, "'.")
+                cli::cli_alert_danger("V matrix does not exist for dataset {.val {d}}.")
                 result <- FALSE
             } else {
                 if (!identical(dim(ld@V), dim(object@W))) {
-                    warning("Dimensionality of V matrix for dataset '", d,
-                            "' does not match with W matrix.")
+                    cli::cli_alert_danger(
+                        "Dimensionality of V matrix for dataset {.val {d}} does not match with W matrix."
+                    )
                     result <- FALSE
                 }
             }
         }
         if (is.null(ld@H)) {
-            warning("H matrix does not exist for dataset '", d, "'.")
+            cli::cli_alert_danger("H matrix does not exist for dataset {.val {d}}.")
             result <- FALSE
         } else {
             if (!identical(dim(ld@H), c(k, nCells))) {
-                warning("Dimensionality of H matrix for dataset '", d,
-                        "' is not valid")
+                cli::cli_alert_danger(
+                    "Dimensionality of H matrix for dataset {.val {d}} is not valid."
+                )
                 result <- FALSE
             }
         }
     }
     if (k != object@uns$factorization$k)
-        warning("Number of factors does not match with object `k` slot. ")
+        cli::cli_alert_danger(
+            "Number of factors does not match with recorded parameter."
+        )
     if (isFALSE(result))
-        stop("Cannot detect valid existing factorization result. ",
-             "Please run factorization first. Check warnings.")
+        cli::cli_abort(
+            c(x = "Cannot detect valid existing factorization result. ",
+              i = "Please run factorization first. Check warnings.")
+        )
 }
 
 # !!!MaintainerDeveloperNOTE:
@@ -385,19 +393,35 @@
 }
 
 .checkArgLen <- function(arg, n, repN = TRUE, class = NULL, .stop = TRUE) {
+    if (is.null(arg)) return(arg)
     argname <- deparse(substitute(arg))
-    if (!is.null(arg)) {
-        if (length(arg) == 1 && isTRUE(repN)) {
-            arg <- rep(arg, n)
-        }
-        if (length(arg) != n) {
-            if (isTRUE(.stop))
+    if (length(arg) == 1 && isTRUE(repN)) {
+        arg <- rep(arg, n)
+    }
+    if (length(arg) != n) {
+        classTxt <- ifelse(is.null(class), "", " ")
+        if (isTRUE(.stop))
+            if (!is.null(class)) {
                 cli::cli_abort(
-                    "`{argname}` has to be a vector of length {n}."
+                    c("{.var {argname}} has to be a length {ifelse(repN, paste0('1 or ', n), n)} object of class {.cls {class}}.",
+                      "i" = "length: {length(arg)}; class: {.cls {class(arg)}}")
                 )
-            else {
+            } else {
+                cli::cli_abort(
+                    c("{.var {argname}} has to be a length {ifelse(repN, paste0('1 or ', n), n)} object.",
+                      "i" = "length: {length(arg)}; class: {.cls {class(arg)}}")
+                )
+            }
+        else {
+            if (!is.null(class)) {
                 cli::cli_alert_warning(
-                    "`{argname}` should be a vector of length {n}. Using it anyway."
+                    c("{.var {argname}} has to be a length {ifelse(repN, paste0('1 or ', n), n)} object of class {.cls {class}}.",
+                      i = "Using it anyway.")
+                )
+            } else {
+                cli::cli_alert_warning(
+                    c("{.var {argname}} has to be a length {ifelse(repN, paste0('1 or ', n), n)} object.",
+                      i = "Using it anyway.")
                 )
             }
         }
@@ -405,29 +429,21 @@
     if (!is.null(class)) {
         allClassCheck <- sapply(class, function(x) methods::is(arg, x))
         if (!any(allClassCheck)) {
+            class <- cli::cli_vec(class, list("vec-quote" ))
             if (isTRUE(.stop))
                 cli::cli_abort(
-                    "`{argname}` has to be one of the {length(class)} class{?es}: {.val {class}}"
+                    c("{.var {argname}} has to be of class {.cls {class}}",
+                      "i" = "Given class is {.cls {class(arg)}}")
                 )
             else {
                 cli::cli_alert_warning(
-                    "`{argname}` has to be one of the {length(class)} class{?es}: {.val {class}}"
+                    c("{.var {argname}} has to be of class {.cls {class}}. Using it anyway.")
                 )
             }
         }
     }
     return(arg)
 }
-
-# Format "not found" string. When we need `need` elements from some source
-# `from` format the string of ", " separeted list of not found elements.
-.nfstr <- function(need, from) {
-    nf <- need[!need %in% from]
-    paste(nf, collapse = ", ")
-}
-
-
-
 
 .getSeuratData <- function(object, layer, slot, assay = NULL) {
     if (!requireNamespace("Seurat", quietly = TRUE)) {
@@ -452,7 +468,7 @@
     if (utils::packageVersion("SeuratObject") >= package_version("4.9.9")) {
         layers <- SeuratObject::Layers(object, assay = assay, search = layer)
         if (length(layers) == 0) {
-            stop("Layer '", layer, "' not found in object.")
+            cli::cli_abort("Layer {.val {layer}} not found in object.")
         } else if (length(layers) == 1) {
             data <- SeuratObject::LayerData(object, assay = assay, layer = layers)
         } else {
@@ -511,35 +527,6 @@
                                              slot = save, new.data = value)
     } # nocov end
     return(object)
-}
-
-# plyr::mapvalues
-mapvalues <- function(x, from, to, warn_missing = TRUE) {
-    if (length(from) != length(to)) {
-        stop("`from` and `to` vectors are not the same length.")
-    }
-    if (!is.atomic(x) && !is.null(x)) {
-        stop("`x` must be an atomic vector or NULL.")
-    }
-
-    if (is.factor(x)) {
-        # If x is a factor, call self but operate on the levels
-        levels(x) <- mapvalues(levels(x), from, to, warn_missing)
-        return(x)
-    }
-
-    mapidx <- match(x, from)
-    mapidxNA  <- is.na(mapidx)
-
-    # index of items in `from` that were found in `x`
-    from_found <- sort(unique(mapidx))
-    if (warn_missing && length(from_found) != length(from)) {
-        message("The following `from` values were not present in `x`: ",
-                paste(from[!(1:length(from) %in% from_found) ], collapse = ", "))
-    }
-
-    x[!mapidxNA] <- to[mapidx[!mapidxNA]]
-    x
 }
 
 .DataFrame.as.data.frame <- function(x)

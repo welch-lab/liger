@@ -9,8 +9,6 @@ recordCommand <- function(
         ...,
         dependencies = NULL
 ) {
-    #if (!inherits(object, "liger"))
-    #    stop("Can only record commands for operation on a liger object")
     # Generate time stamp
     time <- Sys.time()
     # Capture the call
@@ -145,12 +143,12 @@ setMethod(
 commandDiff <- function(object, cmd1, cmd2) {
     cmd1 <- commands(object, cmd1)
     if (!inherits(cmd1, "ligerCommand"))
-        stop("`cmd1` matching with multiple command records. ",
-             "Available options could be viewed with `commands(object)`.")
+        cli::cli_abort("{.code cmd1} matching with multiple command records.
+                       Availble options could be viewed with {.code commands(object)}.")
     cmd2 <- commands(object, cmd2)
     if (!inherits(cmd2, "ligerCommand"))
-        stop("`cmd2` matching with multiple command records. ",
-             "Available options could be viewed with `commands(object)`.")
+        cli::cli_abort("{.code cmd2} matching with multiple command records.
+                       Availble options could be viewed with {.code commands(object)}.")
     .cmdDiff(cmd1, cmd2)
 }
 

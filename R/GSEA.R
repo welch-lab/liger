@@ -32,22 +32,22 @@ runGSEA <- function(
         custom_gene_sets = customGenesets
 ) {
     if (!requireNamespace("org.Hs.eg.db", quietly = TRUE)) # nocov start
-        stop("Package \"org.Hs.eg.db\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "BiocManager::install('org.Hs.eg.db')",
-             call. = FALSE)
+        cli::cli_abort(
+            "Package {.pkg org.Hs.eg.db} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('org.Hs.eg.db')}")
 
     if (!requireNamespace("reactome.db", quietly = TRUE))
-        stop("Package \"reactome.db\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "BiocManager::install('reactome.db')",
-             call. = FALSE)
+        cli::cli_abort(
+            "Package {.pkg reactome.db} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('reactome.db')}")
 
     if (!requireNamespace("fgsea", quietly = TRUE))
-        stop("Package \"fgsea\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "BiocManager::install('fgsea')",
-             call. = FALSE) # nocov end
+        cli::cli_abort(
+            "Package {.pkg fgsea} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('fgsea')}") # nocov end
 
     .deprecateArgs(list(gene_sets = "genesets",
                         mat_w = "useW",
@@ -164,14 +164,14 @@ runGOEnrich <- function(
         ...
 ) {
     if (!requireNamespace("gprofiler2", quietly = TRUE)) # nocov start
-        stop("Package \"gprofiler2\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "install.packages('gprofiler2')",
-             call. = FALSE) # nocov end
+        cli::cli_abort(
+            "Package {.pkg gprofiler2} is needed for this function to work.
+            Please install it by command:
+            {.code install.packages('gprofiler2')}") # nocov end
+
     group <- group %||% unique(result$group)
     if (any(!group %in% result$group)) {
-        stop("Selected groups not available `result$group`: ",
-             paste(group[!group %in% result$group], collapse = ", "))
+        cli::cli_abort("Selected groups not available in {.code result$group}: {.val {group[!group %in% result$group]}}")
     }
     bg <- NULL
     domain_scope <- "annotated" # gprofiler2 default
@@ -190,9 +190,9 @@ runGOEnrich <- function(
     ordered_query <- FALSE
     if (!is.null(orderBy)) {
         ordered_query <- TRUE
-        if (length(orderBy) > 1) stop("Only one `orderBy` metric allowed")
+        if (length(orderBy) > 1) cli::cli_abort("Only one {.code orderBy} metric allowed")
         if (!orderBy %in% c("logFC", "pval", "padj")) {
-            stop("`orderBy` should be one of 'logFC', 'pval' or 'padj'.")
+            cli::cli_abort("{.code orderBy} should be one of {.val logFC}, {.val pval} or {.val padj}.")
         }
         if (orderBy == "logFC") {
             resultUp <- resultUp[order(resultUp$logFC, decreasing = TRUE),]

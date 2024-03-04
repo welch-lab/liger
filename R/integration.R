@@ -388,7 +388,7 @@ runINMF.Seurat <- function(
     bestSeed <- seed
     for (i in seq(nRandomStarts)) {
         if (isTRUE(verbose) && nRandomStarts > 1) {
-            cli::cli_alert_info("Replicate run {i}/{nRandomStarts}")
+            cli::cli_alert_info("Replicate run [{i}/{nRandomStarts}]")
         }
         set.seed(seed = seed + i - 1)
         out <- RcppPlanc::inmf(objectList = object, k = k, lambda = lambda,
@@ -701,7 +701,7 @@ runOnlineINMF.liger <- function(
 
         newNames <- names(newDatasets)
         if (any(newNames %in% names(object))) {
-            cli::cli_abort("Names of {.code newDatasets} overlap with existing datasets.")
+            cli::cli_abort("Names of {.var newDatasets} overlap with existing datasets.")
         }
         if (is.list(newDatasets)) {
             # A list of raw data
@@ -716,14 +716,14 @@ runOnlineINMF.liger <- function(
                     ld <- createH5LigerDataset(newDatasets[[i]])
                     dataset(object, names(newDatasets[i])) <- ld
                 } else {
-                    cli::cli_abort("Cannot interpret `newDatasets` element {i}")
+                    cli::cli_abort("Cannot interpret {.var newDatasets} element {i}")
                 }
             }
         } else if (inherits(newDatasets, "liger")) {
             # A liger object with all new datasets
             object <- c(object, newDatasets)
         } else {
-            cli::cli_abort("{.code newDatasets} must be either a named list or a liger object")
+            cli::cli_abort("{.var newDatasets} must be either a named list or a {.cls liger} object")
         }
 
         object <- normalize(object, useDatasets = newNames)
@@ -1180,6 +1180,7 @@ runUINMF.liger <- function(
     bestRes <- NULL
     bestSeed <- NULL
     for (i in seq(nRandomStarts)) {
+        cli::cli_alert_info("Replicate start [{i}/{nRandomStarts}]")
         seed <- seed + i - 1
         set.seed(seed)
         res <- RcppPlanc::uinmf(object, unsharedList, k = k, lambda = lambda,
@@ -1359,7 +1360,7 @@ quantileNorm.Seurat <- function(
     resName <- paste0(reduction, "Norm")
     reduction <- object[[reduction]]
     if (!inherits(reduction, "DimReduc")) {
-        cli::cli_abort("Specified {.code reduction} does not points to a {.cls DimReduc}.")
+        cli::cli_abort("Specified {.var reduction} does not points to a {.cls DimReduc}.")
     }
     # Retrieve some information. Might have better ways instead of using `@`
     ## Due to proper formatting in Seurat object, Hconcat is already cell x k
@@ -1414,7 +1415,7 @@ quantileNorm.Seurat <- function(
         if (length(reference) != length(object) || sum(reference) != 1)
             cli::cli_abort("Should specify one existing dataset as reference.")
     } else {
-        cli::cli_abort("Unable to understand {.code reference}. See {.code ?quantileNorm}.")
+        cli::cli_abort("Unable to understand {.var reference}. See {.code ?quantileNorm}.")
     }
     useDims <- useDims %||% seq_len(nrow(object[[1]]))
     # Transposing all H to cell x k

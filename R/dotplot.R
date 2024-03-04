@@ -290,7 +290,10 @@ plotClusterFactorDot <- function(
     )
     if (length(viridisOption) != 1 ||
         !viridisOption %in% viridisAvail)
-        stop("`viridisOption` has to be one value from the available choices.")
+        cli::cli_abort(
+            c("{.var viridisOption} has to be one value from the available choices: ",
+              "{.val {viridisAvail}}")
+        )
 
     ## Font-size specification
     # Broadcast one-param setting to each
