@@ -1,68 +1,6 @@
-setClass("ligerDataset")
-setClassUnion("matrixLike", c("matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix"))
-
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # From other things to liger class ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#' Converting other classes of data to a liger object
-#' @description
-#' This function converts data stored in SingleCellExperiment (SCE), Seurat
-#' object or a merged sparse matrix (dgCMatrix) into a liger object. This is
-#' designed for a container object or matrix that already contains multiple
-#' datasets to be integerated with LIGER. For individual datasets, please use
-#' \code{\link{createLiger}} instead.
-#' @export
-#' @param object Object.
-#' @param datasetVar Specify the dataset belonging by: 1. Select a variable from
-#' existing metadata in the object (e.g. colData column); 2. Specify a
-#' vector/factor that assign the dataset belonging. 3. Give a single character
-#' string which means that all data is from one dataset (must not be a metadata
-#' variable, otherwise it is understood as 1.). Default \code{NULL} gathers
-#' things into one dataset and names it "sample" for dgCMatrix, attempts
-#' to find variable "sample" from SCE or "orig.ident" from Seurat.
-#' @param modal Modality setting for each dataset. See
-#' \code{\link{createLiger}}.
-#' @param ... Additional arguments passed to \code{\link{createLiger}}
-#' @details
-#' For Seurat V5 structure, it is highly recommended that users make use of its
-#' split layer feature, where things like "counts", "data", and "scale.data"
-#' can be held for each dataset in the same Seurat object, e.g. with
-#' "count.ctrl", "count.stim", not merged. If a Seurat object with split layers
-#' is given, \code{datasetVar} will be ignored and the layers will be directly
-#' used.
-#' @return a \linkS4class{liger} object.
-#' @rdname as.liger
-#' @examples
-#' # dgCMatrix (common sparse matrix class), usually obtained from other
-#' # container object, and contains multiple samples merged in one.
-#' matList <- rawData(pbmc)
-#' multiSampleMatrix <- mergeSparseAll(matList)
-#' # The `datasetVar` argument expects the variable assigning the sample source
-#' pbmc2 <- as.liger(multiSampleMatrix, datasetVar = pbmc$dataset)
-#' pbmc2
-#'
-#' sce <- SingleCellExperiment::SingleCellExperiment(
-#'     assays = list(counts = multiSampleMatrix)
-#' )
-#' sce$sample <- pbmc$dataset
-#' pbmc3 <- as.liger(sce, datasetVar = "sample")
-#' pbmc3
-#'
-#' seu <- SeuratObject::CreateSeuratObject(multiSampleMatrix)
-#' # Seurat creates variable "orig.ident" by identifying the cell barcode
-#' # prefixes, which is indeed what we need in this case. Users might need
-#' # to be careful and have it confirmed first.
-#' pbmc4 <- as.liger(seu, datasetVar = "orig.ident")
-#' pbmc4
-#'
-#' # As per Seurat V5 updates with layered data, specifically helpful udner the
-#' # scenario of dataset integration. "counts" and etc for each datasets can be
-#' # split into layers.
-#' seu5 <- seu
-#' seu5[["RNA"]] <- split(seu5[["RNA"]], pbmc$dataset)
-#' print(SeuratObject::Layers(seu5))
-#' pbmc5 <- as.liger(seu5)
-as.liger <- function(object, ...) UseMethod("as.liger", object)
 
 #' @rdname as.liger
 #' @export
@@ -80,7 +18,7 @@ as.liger.dgCMatrix <- function(
     datasetVar <- droplevels(datasetVar)
 
     rawDataList <- splitRmMiss(object, datasetVar)
-    modal <- .checkArgLen(modal, length(rawDataList))
+    modal <- .checkArgLen(modal, length(rawDataList), class = "character")
     createLiger(rawData = rawDataList, modal = modal, ...)
 }
 
@@ -94,15 +32,17 @@ as.liger.SingleCellExperiment <- function(
         ...
 ) {
     if (!requireNamespace("SingleCellExperiment", quietly = TRUE)) # nocov start
-        stop("Package \"SingleCellExperiment\" needed for this function ",
-             "to work. Please install it by command:\n",
-             "BiocManager::install('SingleCellExperiment')",
-             call. = FALSE)
+        cli::cli_abort(
+            "Package {.pkg SingleCellExperiment} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('SingleCellExperiment')}"
+        )
     if (!requireNamespace("SummarizedExperiment", quietly = TRUE))
-        stop("Package \"SummarizedExperiment\" needed for this function ",
-             "to work. Please install it by command:\n",
-             "BiocManager::install('SummarizedExperiment')",
-             call. = FALSE) # nocov end
+        cli::cli_abort(
+            "Package {.pkg SummarizedExperiment} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('SummarizedExperiment')}"
+        ) # nocov end
     raw <- SingleCellExperiment::counts(object)
 
     if (is.null(datasetVar)) {
@@ -121,7 +61,7 @@ as.liger.SingleCellExperiment <- function(
     if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
     datasetVar <- droplevels(datasetVar)
     raw <- splitRmMiss(raw, datasetVar)
-    modal <- .checkArgLen(modal, length(raw))
+    modal <- .checkArgLen(modal, length(raw), class = "character")
     lig <- createLiger(raw, modal = modal, ...)
     colDataCopy <- SummarizedExperiment::colData(object)
     for (cdn in colnames(colDataCopy)) {
@@ -129,8 +69,8 @@ as.liger.SingleCellExperiment <- function(
             same <- identical(colDataCopy[[cdn]], cellMeta(lig, cdn))
             if (same) next
             cdnNew <- paste0("SCE_", cdn)
-            warning("Variable name \"", cdn, "\" in colData of SingleCellExperiment ",
-                    "conflicts with liger default variables. Modified to ", cdnNew, ".")
+            cli::cli_alert_warning(
+                "Variable name {.val {cdn}} in colData of SingleCellExperiment conflicts with liger default variables. Modified to {.val {cdnNew}}.")
         } else {
             cdnNew <- cdn
         }
@@ -179,7 +119,7 @@ as.liger.Seurat <- function(
     }
 
     datasetVar <- datasetVar %||% "Seurat"
-    modal <- .checkArgLen(modal, length(raw))
+    modal <- .checkArgLen(modal, length(raw), class = "character")
     lig <- createLiger(raw, modal = modal, ...)
     colnames(object) <- colnames(lig)
     for (cdn in colnames(object[[]])) {
@@ -187,8 +127,8 @@ as.liger.Seurat <- function(
             same <- identical(object[[cdn, drop = TRUE]], cellMeta(lig, cdn))
             if (same) next
             cdnNew <- paste0("Seurat_", cdn)
-            warning("Variable name \"", cdn, "\" in meta.data of Seurat ",
-                    "conflicts with liger default variables. Modified to ", cdnNew, ".")
+            cli::cli_alert_warning(
+                "Variable name {.val {cdn}} in meta.data of Seurat conflicts with liger default variables. Modified to {.val {cdnNew}}.")
         } else {
             cdnNew <- cdn
         }
@@ -205,32 +145,6 @@ as.liger.Seurat <- function(
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # From other things to ligerDataset class ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#' Converting other classes of data to a as.ligerDataset object
-#' @description
-#' Works for converting a matrix or container object to a single ligerDataset,
-#' and can also convert the modality preset of a ligerDataset. When used with
-#' a dense matrix object, it automatically converts the matrix to sparse form
-#' (\code{\link[Matrix]{dgCMatrix-class}}). When used with container objects
-#' such as Seurat or SingleCellExperiment, it is highly recommended that the
-#' object contains only one dataset/sample which is going to be integrated with
-#' LIGER. For multi-sample objects, please use \code{\link{as.liger}} with
-#' dataset source variable specified.
-#' @export
-#' @param object Object.
-#' @param modal Modality setting for each dataset. Choose from \code{"default"},
-#' \code{"rna"}, \code{"atac"}, \code{"spatial"}, \code{"meth"}.
-#' @param ... Additional arguments passed to \code{\link{createLigerDataset}}
-#' @return a \linkS4class{liger} object.
-#' @rdname as.ligerDataset
-#' @examples
-#' ctrl <- dataset(pbmc, "ctrl")
-#' ctrl
-#' # Convert the modality preset
-#' as.ligerDataset(ctrl, modal = "atac")
-#' rawCounts <- rawData(ctrl)
-#' class(rawCounts)
-#' as.ligerDataset(rawCounts)
-as.ligerDataset <- function(object, ...) UseMethod("as.ligerDataset", object)
 
 #' @rdname as.ligerDataset
 #' @export
@@ -246,10 +160,9 @@ as.ligerDataset.ligerDataset <- function(
     slotFromClass <- methods::slotNames(class(object))
     slotToClass <- methods::slotNames(newClass)
     if (any(!slotFromClass %in% slotToClass))
-        warning("Will remove information in the following slots when ",
-                "converting class from `", class(object), "` to `", newClass,
-                "`: ", paste(slotFromClass[!slotFromClass %in% slotToClass],
-                             collapse = ", "))
+        cli::cli_alert_warning(
+            "Will remove information in the following slots when converting class
+            from {.cls {class(object)}} to {.cls {newClass}}: {.val {slotFromClass[!slotFromClass %in% slotToClass]}}")
     newCallArgs <- list(Class = newClass)
     for (s in slotFromClass) {
         if (s %in% slotToClass)
@@ -308,10 +221,11 @@ as.ligerDataset.SingleCellExperiment <- function(
         ...
 ) {
     if (!requireNamespace("SingleCellExperiment", quietly = "TRUE")) # nocov start
-        stop("Package \"SingleCellExperiment\" needed for this function ",
-             "to work. Please install it by command:\n",
-             "BiocManager::install('SingleCellExperiment')",
-             call. = FALSE) # nocov end
+        cli::cli_abort(
+            "Package {.pkg SingleCellExperiment} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('SingleCellExperiment')}"
+        ) # nocov end
     modal <- match.arg(modal)
     mat <- SingleCellExperiment::counts(object)
     createLigerDataset(rawData = mat, modal = modal, ...)
@@ -351,6 +265,7 @@ as.ligerDataset.SingleCellExperiment <- function(
 #' @param use.liger.genes [Defunct] Will be ignored and will always set LIGER
 #' variable features to the place.
 #' @export
+#' @rdname ligerToSeurat
 #' @return Always returns Seurat object(s) of the latest version. By default a
 #' Seurat object with split layers, e.g. with layers like "counts.ctrl" and
 #' "counts.stim". If \code{merge = TRUE}, return a single Seurat object with
@@ -386,7 +301,7 @@ ligerToSeurat <- function(
     rawDataList <- rawDataList[!sapply(rawDataList, is.null)]
     if (isTRUE(merge)) rawDataList <- mergeSparseAll(rawDataList)
     if (!length(rawDataList)) {
-        stop("rawData not found.")
+        cli::cli_abort("rawData not found.")
     }
     Assay <- SeuratObject::CreateAssay5Object(rawDataList)
 
@@ -588,8 +503,8 @@ convertOldLiger.mem <- function(object) {
         if (!is.null(dataList$rawData)) features <- rownames(dataList$rawData)
         else features <- rownames(dataList$normData)
         if (is.null(features)) {
-            warning("Cannot detect feature names for dataset \"", d, "\". ",
-                    "Skipped.")
+            cli::cli_alert_danger(
+                "Cannot detect feature names for dataset {.val {d}}. Skipped.")
             next
         }
         ftPassing <- .checkIDIdentical(
@@ -627,10 +542,12 @@ convertOldLiger.mem <- function(object) {
 }
 
 convertOldLiger.H5 <- function(object, h5FilePath = NULL) {
-    .log("Please use caution when restoring an H5 based liger object, because ",
-         "old version does not have solid restriction on cell/feature ",
-         "identifier matching. New rliger assumes all data was produced ",
-         "with standard old rliger workflow.")
+    cli::cli_alert_warning(
+        "Please use caution when restoring an H5 based liger object, because
+        the old version does not have any solid restriction on cell/feature
+        identifier matching. New rliger > 1.99 assumes all data was produced
+        with standard old rliger workflow.", wrap = TRUE
+    )
     dataLists <- list()
     if (.hasSlot(object, "H")) dataLists$H <- object@H
     if (.hasSlot(object, "V")) dataLists$V <- object@V
@@ -712,8 +629,7 @@ convertOldLiger.H5 <- function(object, h5FilePath = NULL) {
         if (!is.null(h5FilePath[[d]])) h5Path <- h5FilePath[[d]]
         else h5Path <- object@h5file.info[[d]]$file.path
         if (!hdf5r::is_hdf5(name = h5Path)) {
-            stop("File path for dataset \"", d, "\" not found or is not an H5 ",
-                 "file: ", h5Path)
+            cli::cli_abort("File path for dataset {.val {d}} not found or is not an H5 file: {.file {h5Path}}")
         }
         h5Format <- object@h5file.info[[d]]$format.type
         ldList[[d]] <- do.call(createH5LigerDataset, c(
@@ -750,7 +666,7 @@ convertOldLiger.H5 <- function(object, h5FilePath = NULL) {
     for (slot in names(onCol)) {
         if (is.na(slot)) next
         if (!identical(colnames(onCol[[slot]]), ref)) {
-            warning("Inconsistent column ID in slot `", slot, "`.")
+            cli::cli_alert_danger("Inconsistent column ID in slot {slot}.")
             colPassing[slot] <- FALSE
         }
     }
@@ -759,7 +675,7 @@ convertOldLiger.H5 <- function(object, h5FilePath = NULL) {
     for (slot in names(onRow)) {
         if (is.na(slot)) next
         if (!identical(rownames(onRow[[slot]]), ref)) {
-            warning("Inconsistent row ID in slot `", slot, "`.")
+            cli::cli_alert_danger("Inconsistent row ID in slot {slot}.")
             rowPassing[slot] <- FALSE
         }
     }
@@ -784,11 +700,11 @@ convertOldLiger.H5 <- function(object, h5FilePath = NULL) {
             return(TRUE)
         },
         error = function(e) {
-            .log("Skipped slot `", name, "` which is not available.")
+            cli::cli_alert_warning("Skipped slot {name} which is not available.")
             return(FALSE)
         },
         warining = function(w) {
-            .log(w)
+            cli::cli_alert_warning(w)
             return(FALSE)
         }
     )

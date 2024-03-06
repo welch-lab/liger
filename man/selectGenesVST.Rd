@@ -11,7 +11,7 @@ selectGenesVST(
   loessSpan = 0.3,
   clipMax = "auto",
   useShared = TRUE,
-  verbose = getOption("ligerVerbose")
+  verbose = getOption("ligerVerbose", TRUE)
 )
 }
 \arguments{
@@ -33,7 +33,7 @@ root of the number of cells.}
 dataset. Default \code{TRUE}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 }
 \description{
 Seurat FindVariableFeatures VST method. This allows the selection of a fixed

@@ -41,27 +41,29 @@ runDoubletFinder <- function(
         ...
 ) {
     if (!requireNamespace("DoubletFinder", quietly = TRUE)) { # nocov start
-        stop("DoubletFinder need to be installed. Please run:\n",
-             "remotes::install_github('chris-mcginnis-ucsf/DoubletFinder')")
+        cli::cli_abort(
+            "Package {.pkg DoubletFinder} is needed for this function to work.
+            Please install it by command:
+            {.code remotes::install_github('DoubletFinder')}")
     }
     if (!requireNamespace("Seurat", quietly = TRUE)) {
-        stop("Seurat need to be installed. Please run:\n",
-             "install.packages(\"Seurat\")")
+        cli::cli_abort(
+            "Package {.pkg Seurat} is needed for this function to work.
+            Please install it by command:
+            {.code install.packages('Seurat')}")
     } # nocov end
     useDatasets <- .checkUseDatasets(object, useDatasets = useDatasets)
-    nNeighbors <- .checkArgLen(nNeighbors, length(useDatasets), repN = TRUE)
-    if (!is.null(nExp)) {
-        nExp <- .checkArgLen(nExp, length(useDatasets), repN = TRUE)
-    } else {
-        nExp <- sapply(useDatasets, function(d) {
+    nNeighbors <- .checkArgLen(nNeighbors, length(useDatasets), repN = TRUE, class = "numeric")
+    nExp <- .checkArgLen(nExp, length(useDatasets), repN = TRUE, class = "numeric")
+    if (is.null(nExp))
+        nExp <- sapply(useDatasets, function(d)
             round(0.15 * ncol(dataset(object, d)))
-        })
-    }
+        )
     object <- recordCommand(object, ...,
                             dependencies = c("Seurat", "DoubletFinder"))
     for (i in seq_along(useDatasets)) {
         d <- useDatasets[i]
-        if (isTRUE(verbose)) .log("Running DoubletFinder on dataset: ", d)
+        if (isTRUE(verbose)) cliID <- cli::cli_process_start("Running DoubletFinder on dataset {.val {d}}")
         seu <- Seurat::CreateSeuratObject(rawData(object, d)) %>%
             Seurat::NormalizeData(verbose = FALSE) %>%
             Seurat::FindVariableFeatures(verbose = FALSE) %>%
@@ -74,6 +76,7 @@ runDoubletFinder <- function(
         DFCol <- grep(pattern = "DF.classifications", colnames(seuMeta))
         cellMeta(object, "DoubletFinder_pANN", useDatasets = d) <- seuMeta[,pANNCol]
         cellMeta(object, "DoubletFinder_classification", useDatasets = d) <- seuMeta[,DFCol]
+        if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     }
     return(object)
 }

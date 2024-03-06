@@ -225,7 +225,10 @@ plotFactorHeatmap <- function(
     )
     if (length(viridisOption) != 1 ||
         !viridisOption %in% viridisAvail)
-        stop("`viridisOption` has to be one value from the available choices.")
+        cli::cli_abort(
+            c("{.var viridisOption} has to be one value from the available choices: ",
+              "{.val {viridisAvail}}")
+        )
 
     ## Font-size specification
     # Broadcast one-param setting to each
@@ -391,9 +394,9 @@ plotFactorHeatmap <- function(
                 if (var %in% names(colList)) {
                     df[[var]] <- droplevels(df[[var]])
                     if (any(!levels(df[[var]]) %in% names(colList[[var]]))) {
-                        stop("Given customized annotation color must have ",
-                             "names matching to all available levels in the ",
-                             "annotation.")
+                        cli::cli_abort(
+                            "Given customized annotation color must have names matching to all available levels in the annotation."
+                        )
                     }
                     annCol[[var]] <- colList[[var]][levels(df[[var]])]
                 } else {

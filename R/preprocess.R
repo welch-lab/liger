@@ -20,7 +20,7 @@
 #' @param chunkSize Integer number of cells to include in a chunk when working
 #' on HDF5 based dataset. Default \code{1000}
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @return Updated \code{object} with \code{nUMI}, \code{nGene} updated
 #' in \code{cellMeta(object)}, as well as expression percentage value for each
 #' feature subset.
@@ -36,7 +36,7 @@ runGeneralQC <- function(
         pattern = NULL,
         useDatasets = NULL,
         chunkSize = 1000,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     .checkObjVersion(object)
     useDatasets <- .checkUseDatasets(object, useDatasets)
@@ -79,7 +79,8 @@ runGeneralQC <- function(
 
     for (d in useDatasets) {
         ld <- dataset(object, d)
-        if (isTRUE(verbose)) .log('calculating QC for dataset "', d, '"')
+        if (isTRUE(verbose))
+            cliID <- cli::cli_process_start("calculating QC for dataset {.val {d}}")
         if (isH5Liger(ld))
             results <- runGeneralQC.h5(
                 ld,
@@ -96,6 +97,7 @@ runGeneralQC <- function(
         object@cellMeta[object$dataset == d, newResultNames] <- results$cell
         featureMeta(ld, check = FALSE)$nCell <- results$feature
         datasets(object, check = FALSE)[[d]] <- ld
+        if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     }
 
     return(object)
@@ -111,7 +113,7 @@ runGeneralQC.h5 <- function(
         object,
         featureSubsets = NULL,
         chunkSize = 1000,
-        verbose = getOption("ligerVerbose")) {
+        verbose = getOption("ligerVerbose", TRUE)) {
     allFeatures <- rownames(object)
     # Initialize results
     cell <- data.frame(row.names = colnames(object))
@@ -154,7 +156,7 @@ runGeneralQC.h5 <- function(
 runGeneralQC.Matrix <- function(
         object,
         featureSubsets = NULL,
-        verbose = getOption("ligerVerbose")) {
+        verbose = getOption("ligerVerbose", TRUE)) {
     nUMI <- Matrix::colSums(rawData(object))
     # Instead of using `nonzero <- rawData > 0` which generates dense logical
     # matrix, keep it sparse with 1 for TRUE
@@ -216,7 +218,7 @@ getProportionMito <- function(object, use.norm = FALSE, pattern = "^mt-") {
         result <- c(result, pctMT)
     }
     if (all(result == 0)) {
-        message("Zero proportion detected in all cells")
+        cli::cli_alert_warning("Zero proportion detected in all cells")
     }
     return(result)
 }
@@ -241,7 +243,7 @@ getProportionMito <- function(object, use.norm = FALSE, pattern = "^mt-") {
 #' @param filenameSuffix When subsetting H5-based datasets to new H5 files, this
 #' suffix will be added to all the filenames. Default \code{"removeMissing"}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Arguments passed to \code{\link{subsetLigerDataset}}
 #' @return Updated (subset) \code{object}.
 #' @export
@@ -257,19 +259,16 @@ removeMissing <- function(
         useDatasets = NULL,
         newH5 = TRUE,
         filenameSuffix = "removeMissing",
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
-    if (!inherits(object, "liger")) {
-        stop("Please use a `liger` object.")
-    }
     orient <- match.arg(orient)
     useDatasets <- .checkUseDatasets(object, useDatasets)
     minCells <- minCells %||% rep(0, length(useDatasets))
-    minCells <- .checkArgLen(minCells, length(useDatasets))
+    minCells <- .checkArgLen(minCells, length(useDatasets), class = "numeric")
     names(minCells) <- useDatasets
     minFeatures <- minFeatures %||% rep(0, length(useDatasets))
-    minFeatures <- .checkArgLen(minFeatures, length(useDatasets))
+    minFeatures <- .checkArgLen(minFeatures, length(useDatasets), class = "numeric")
     names(minFeatures) <- useDatasets
     rmFeature <- ifelse(orient %in% c("both", "feature"), TRUE, FALSE)
     rmCell <- ifelse(orient %in% c("both", "cell"), TRUE, FALSE)
@@ -293,7 +292,8 @@ removeMissing <- function(
         rmCellDataset <- length(cellIdx) != ncol(ld)
         subsetted <- c(subsetted, any(c(rmFeatureDataset, rmCellDataset)))
         if (any(c(rmFeatureDataset, rmCellDataset))) {
-            if (isTRUE(verbose)) .log("Removing missing in dataset: ", d)
+            if (isTRUE(verbose))
+                cli::cli_alert_info("Removing missing in dataset: {.val {d}}")
             datasets.new[[d]] <- subsetLigerDataset(
                 ld,
                 featureIdx = featureIdx,
@@ -335,20 +335,16 @@ removeMissingObs <- function(
         object,
         slot.use = NULL,
         use.cols = TRUE,
-        verbose = getOption("ligerVerbose")) {
+        verbose = getOption("ligerVerbose", TRUE)) {
     lifecycle::deprecate_warn("1.99.0", "removeMissingObs()",
                               "removeMissing()")
     if (!missing(slot.use)) {
-        warning("Argument `slot.use` is ignored. ")
+        cli::cli_alert_warning("Argument {.code slot.use} is deprecated and ignored.")
     }
     orient <- ifelse(isTRUE(use.cols), "cell", "gene")
     object <- removeMissing(object, orient, verbose = verbose)
     return(object)
 }
-
-
-
-
 
 
 
@@ -399,9 +395,9 @@ normalize.dgCMatrix <- function(
         scaleFactor = NULL,
         ...
 ) {
-    if (!is.null(scaleFactor) && scaleFactor <= 0) {
-        scaleFactor <- .checkArgLen(scaleFactor, ncol(object), repN = TRUE)
-        warning("Invalid `scaleDactor` given. Setting to `NULL`.")
+    scaleFactor <- .checkArgLen(scaleFactor, ncol(object), repN = TRUE, class = "numeric")
+    if (!is.null(scaleFactor) && any(scaleFactor <= 0)) {
+        cli::cli_alert_danger("Invalid {.code scaleFactor} given. Setting to {.code NULL}.")
         scaleFactor <- NULL
     }
     normed <- object
@@ -416,12 +412,12 @@ normalize.dgCMatrix <- function(
 #' @param chunk Integer. Number of maximum number of cells in each chunk when
 #' working on HDF5 file based ligerDataset. Default \code{1000}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @method normalize ligerDataset
 normalize.ligerDataset <- function(
         object,
         chunk = 1000,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     if (!isH5Liger(object)) {
@@ -483,7 +479,7 @@ normalize.ligerDataset <- function(
 normalize.liger <- function(
         object,
         useDatasets = NULL,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         format.type = NULL,
         remove.missing = NULL,
         ...
@@ -493,12 +489,13 @@ normalize.liger <- function(
     useDatasets <- .checkUseDatasets(object, useDatasets)
     object <- recordCommand(object, ..., dependencies = "hdf5r")
     for (d in useDatasets) {
+        if (isTRUE(verbose)) cliID <- cli::cli_process_start("Normalizing datasets {.val {d}}")
         # `d` is the name of each dataset
-        if (isTRUE(verbose)) .log("Normalizing dataset: ", d)
         ld <- dataset(object, d)
         ld <- normalize(ld, verbose = verbose, ...)
         datasets(object, check = FALSE)[[d]] <- ld
     }
+    if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     object
 }
 
@@ -532,24 +529,21 @@ normalize.Seurat <- function(
 normalizePeak <- function(
         object,
         useDatasets = NULL,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     useDatasets <- .checkUseDatasets(object, useDatasets, modal = "atac")
     object <- recordCommand(object, ..., dependencies = "hdf5r")
     for (d in useDatasets) {
+        if (isTRUE(verbose)) cliID <- cli::cli_process_start("Normalizing peak of dataset: {.val {d}}")
         # `d` is the name of each dataset
-        if (isTRUE(verbose)) .log("Normalizing rawPeak counts in dataset: ", d)
         ld <- dataset(object, d)
         normPeak(ld, check = FALSE) <- normalize(rawPeak(ld), ...)
         datasets(object, check = FALSE)[[d]] <- ld
+        if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     }
     object
 }
-
-
-
-
 
 ############################### Select Genes ###################################
 
@@ -580,7 +574,7 @@ normalizePeak <- function(
 #' @param combine How to combine variable genes selected from all datasets.
 #' Choose from \code{"union"} or \code{"intersection"}. Default \code{"union"}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Arguments passed to other methods.
 #' @return Updated object
 #' \itemize{
@@ -643,7 +637,7 @@ selectGenes.liger <- function(
         unsharedThresh = .1,
         combine = c("union", "intersection"),
         chunk = 1000,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         var.thresh = thresh,
         alpha.thresh = alpha,
         num.genes = nGenes,
@@ -670,14 +664,14 @@ selectGenes.liger <- function(
         datasetUnshared <- .checkUseDatasets(object, useUnsharedDatasets)
     else datasetUnshared <- NULL
     useDatasets <- union(datasetShared, datasetUnshared)
-    thresh <- .checkArgLen(thresh, length(datasetShared))
-    nGenes <- .checkArgLen(nGenes, length(datasetShared))
-    unsharedThresh <- .checkArgLen(unsharedThresh, length(datasetUnshared))
+    thresh <- .checkArgLen(thresh, length(datasetShared), class = "numeric")
+    nGenes <- .checkArgLen(nGenes, length(datasetShared), class = "numeric")
+    unsharedThresh <- .checkArgLen(unsharedThresh, length(datasetUnshared), class = "numeric")
     sharedFeature <- Reduce(intersect, lapply(datasets(object), rownames))
     selectList <- list()
     for (d in useDatasets) {
         if (isTRUE(verbose))
-            .log("Selecting variable features for dataset: ", d)
+            cli::cli_alert_info("Selecting variable features for dataset {.val {d}}")
         ld <- dataset(object, d)
         thresh_i <- thresh[datasetShared == d]
         nGenes_i <- nGenes[datasetShared == d]
@@ -695,12 +689,10 @@ selectGenes.liger <- function(
     if (combine == "union") selected <- Reduce(union, selectList)
     else selected <- Reduce(intersect, selectList)
     if (length(selected) == 0) {
-        warning("No genes were selected. Lower `thresh` values or set ",
-                '`combine = "union"`', immediate. = TRUE)
+        cli::cli_alert_danger("No genes were selected. Lower {.code thresh} values or set {.code combine = 'union'}")
     } else {
         if (isTRUE(verbose))
-            .log("Finally ", length(selected),
-                 " shared variable features selected.")
+            cli::cli_alert_success("Finally {length(selected)} shared variable feature{?s} are selected.")
     }
     varFeatures(object) <- selected
     for (d in names(object)) {
@@ -734,9 +726,9 @@ selectGenes.liger <- function(
         unsharedThresh = .1,
         alpha = .99,
         chunk = 1000,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
-    if (is.null(normData(object))) stop("Normalized data not available.")
+    if (is.null(normData(object))) cli::cli_abort("Normalized data not available.")
     if (is.null(sharedFeature)) sharedFeature <- rownames(object)
     sharedFeature <- rownames(object) %in% sharedFeature
     unsharedFeature <- !sharedFeature
@@ -760,8 +752,7 @@ selectGenes.liger <- function(
     featureMeta(object, check = FALSE)$isVariable <-
         rownames(object) %in% selected.shared
     if (isTRUE(verbose)) {
-        .log(length(selected.shared), " features selected out of ",
-             sum(sharedFeature), " shared features", level = 2)
+        cli::cli_alert_success("... {length(selected.shared)} feature{?s} selected out of {sum(sharedFeature)} shared feature{?s}.")
     }
     if (isTRUE(unshared) && length(unsharedFeature) > 0) {
         selected.unshared <- .selectGenes.withMetric(
@@ -773,8 +764,7 @@ selectGenes.liger <- function(
         )
         object@varUnsharedFeatures <- selected.unshared
         if (isTRUE(verbose)) {
-            .log(length(selected.unshared), " features selected out of ",
-                 sum(unsharedFeature), " unshared features", level = 2)
+            cli::cli_alert_success("... {length(selected.unshared)} feature{?s} selected out of {sum(unsharedFeature)} unshared feature{?s}.")
         }
     }
     return(object)
@@ -785,11 +775,11 @@ selectGenes.liger <- function(
 #' @param chunkSize Integer for the maximum number of cells in each chunk.
 #' Default \code{1000}.
 #' @param verbose Logical. Whether to show a progress bar. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @return The input \code{object} with calculated var updated in the H5 file.
 #' @noRd
 calcGeneVars.H5 <- function(object, chunkSize = 1000,
-                            verbose = getOption("ligerVerbose")) {
+                            verbose = getOption("ligerVerbose", TRUE)) {
     h5file <- getH5File(object)
     geneVars <- rep(0, nrow(object))
     geneMeans <- h5file[["gene_means"]][]
@@ -831,7 +821,7 @@ selectGenes.Seurat <- function(
         assay = NULL,
         datasetVar = "orig.ident",
         combine = c("union", "intersection"),
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     combine <- match.arg(combine)
@@ -852,7 +842,7 @@ selectGenes.Seurat <- function(
     featureList <- lapply(matList, rownames)
     allshared <- Reduce(intersect, featureList)
     allFeatures <- SeuratObject::Features(object, assay = assay)
-    thresh <- .checkArgLen(thresh, nlevels(datasetVar))
+    thresh <- .checkArgLen(thresh, nlevels(datasetVar), class = "numeric")
 
     # Get nUMI metric into list
     nUMIVar <- paste0("nCount_", assay)
@@ -863,7 +853,7 @@ selectGenes.Seurat <- function(
     hvg.info <- data.frame(row.names = allFeatures)
     for (d in levels(datasetVar)) {
         if (isTRUE(verbose))
-            .log("Selecting variable features for dataset: ", d)
+            cli::cli_alert_info("Selecting variable features for dataset: {.val {d}}")
         submat <- matList[[d]]
         # submat <- mat[, datasetVar == d, drop = FALSE]
         # submat <- submat[sort(expressed), , drop = FALSE]
@@ -885,20 +875,17 @@ selectGenes.Seurat <- function(
             nGenes = nGenes
         )
         if (isTRUE(verbose)) {
-            .log(length(selected), " features selected out of ",
-                 length(allshared), " shared features", level = 2)
+            cli::cli_alert_success("... {length(selected)} features selected out of {length(allshared)} shared features")
         }
         selectList[[d]] <- selected
     }
     if (combine == "union") selected <- Reduce(union, selectList)
     else selected <- Reduce(intersect, selectList)
     if (length(selected) == 0) {
-        warning("No genes were selected. Lower `thresh` values or set ",
-                '`combine = "union"`', immediate. = TRUE)
+        cli::cli_alert_danger("No genes were selected. Lower {.code thresh} values or set {.code combine = 'union'}")
     } else {
         if (isTRUE(verbose))
-            .log("Finally ", length(selected),
-                 " shared variable features selected.")
+            cli::cli_alert_success("Finally {length(selected)} shared variable features selected.")
     }
     hvg.info$liger.variable <- allFeatures %in% selected
     assayObj <- Seurat::GetAssay(object, assay = assay)
@@ -1041,7 +1028,7 @@ plotVarFeatures <- function(
 #' @param useShared Logical. Whether to only select from genes shared by all
 #' dataset. Default \code{TRUE}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @references Seurat::FindVariableFeatures.default(selection.method = "vst")
 #' @export
 #' @examples
@@ -1053,13 +1040,12 @@ selectGenesVST <- function(
         loessSpan = 0.3,
         clipMax = "auto",
         useShared = TRUE,
-        verbose = getOption("ligerVerbose"))
+        verbose = getOption("ligerVerbose", TRUE))
 {
     useDataset <- .checkUseDatasets(object, useDataset)
     useDataset <- .checkArgLen(useDataset, 1)
     if (isTRUE(verbose)) {
-        .log("Selecting top ", n, " HVGs with VST method for dataset: ",
-             useDataset)
+        cli::cli_alert_info("Selecting top {n} HVG{?s} with VST method for dataset: {.val {useDataset}}")
     }
     ld <- dataset(object, useDataset)
     data <- rawData(ld)
@@ -1070,10 +1056,7 @@ selectGenesVST <- function(
         useGenes <- rownames(data)
     }
     if (isTRUE(verbose)) {
-        .log("Totally ", length(useGenes),
-             ifelse(useShared, " shared ", " dataset specific "),
-             "genes to be selected from.",
-             level = 2)
+        cli::cli_alert_info("... Totally {length(useGenes)} {ifelse(useShared, 'shared', 'dataset specific')} genes to be selected from.")
     }
     if (clipMax == "auto") {
         clipMax <- sqrt(ncol(data))
@@ -1202,12 +1185,12 @@ scaleNotCenter.dgCMatrix <- function(
 #' @param chunk Integer. Number of maximum number of cells in each chunk, when
 #' scaling is applied to any HDF5 based dataset. Default \code{1000}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 scaleNotCenter.ligerDataset <- function(
         object,
         features = NULL,
         chunk = 1000,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     features <- .idxCheck(object, features, "feature")
@@ -1238,7 +1221,7 @@ scaleNotCenter.ligerDataset <- function(
 scaleNotCenter.ligerMethDataset <- function(
         object,
         features = NULL,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     raw <- rawData(object)
@@ -1262,23 +1245,25 @@ scaleNotCenter.liger <- function(
         object,
         useDatasets = NULL,
         features = varFeatures(object),
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         remove.missing = NULL,
         ...
 ) {
     .deprecateArgs(defunct = "remove.missing")
     .checkObjVersion(object)
     if (is.null(features) || length(features) == 0) {
-        stop("No variable feature specified. Run `selectGenes()` first")
+        cli::cli_abort("No variable feature specified. Run {.fn selectGenes} first.")
     }
     useDatasets <- .checkUseDatasets(object, useDatasets)
     object <- recordCommand(object, ...,
                             dependencies = c("RcppArmadillo", "Rcpp"))
+
     for (d in useDatasets) {
-        if (isTRUE(verbose)) .log("Scaling dataset: ", d)
+        if (isTRUE(verbose)) cliID <- cli::cli_process_start("Scaling dataset {.val {d}}")
         ld <- dataset(object, d)
         ld <- scaleNotCenter(ld, features = features, verbose = verbose, ...)
         datasets(object, check = FALSE)[[d]] <- ld
+        if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     }
     return(object)
 }
@@ -1310,7 +1295,7 @@ scaleNotCenter.Seurat <- function(
 
     features <- features %||% SeuratObject::VariableFeatures(object)
     if (!length(features)) {
-        stop("No variable feature specified. Run `selectGenes()` first")
+        cli::cli_abort("No variable feature specified. Run {.fn selectGenes} first")
     }
 
     if (is.list(normed)) {
@@ -1346,10 +1331,9 @@ scaleNotCenter.Seurat <- function(
     geneRootMeanSumSq = sqrt(geneSumSq / (nCells - 1))
     h5file <- getH5File(ld)
     # Count the subset nnz first before creating data space
-    if (isTRUE(verbose)) .log("Counting number of non-zero values...")
     nnz <- 0
     nnz <- H5Apply(
-        ld, useData = "normData", chunkSize = chunk, verbose = verbose,
+        ld, useData = "normData", chunkSize = chunk, verbose = FALSE,
         FUN = function(chunk, sparseXIdx, cellIdx, values) {
             chunk <- chunk[featureIdx, , drop = FALSE]
             values <- values + length(chunk@x)
@@ -1413,7 +1397,7 @@ scaleNotCenter.Seurat <- function(
 #' logical vector of the index of the datasets that should be identified as
 #' methylation data where the reversed data will be created.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @return The input \linkS4class{liger} object, where the \code{scaleData} slot
 #' of the specified datasets will be updated with value as described in
 #' Description.
@@ -1425,16 +1409,15 @@ scaleNotCenter.Seurat <- function(
 #' pbmc <- scaleNotCenter(pbmc, useDatasets = 1)
 #' pbmc <- reverseMethData(pbmc, useDatasets = 2)
 reverseMethData <- function(object, useDatasets,
-                            verbose = getOption("ligerVerbose")) {
+                            verbose = getOption("ligerVerbose", TRUE)) {
     useDatasets <- .checkUseDatasets(object, useDatasets)
     if (is.null(varFeatures(object)) || length(varFeatures(object)) == 0) {
-        stop("Variable genes have to be identified first. ",
-             "Please run `selectGenes(object)`.")
+        cli::cli_abort("No variable feature available. Run {.fn selectGenes} first.")
     }
     for (d in useDatasets) {
         ld <- dataset(object, d)
         raw <- rawData(ld)
-        if (isTRUE(verbose)) .log("Substracting methylation data: ", d)
+        if (isTRUE(verbose)) cli::cli_alert_info("Substracting methylation data: {.val {d}}")
         scaleData(ld, check = FALSE) <- methods::as(
             max(raw) - raw[varFeatures(object), , drop = FALSE],
             "CsparseMatrix"

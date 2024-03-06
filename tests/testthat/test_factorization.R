@@ -249,14 +249,14 @@ test_that("Seurat wrapper", {
     expect_in("onlineINMF", SeuratObject::Reductions(seu))
 
     expect_error(quantileNorm(seu, reduction = "orig.ident"),
-                 "Specified `reduction` does not points to a DimReduc")
+                 "Specified `reduction` does not points to a")
     seu <- quantileNorm(seu, reduction = "inmf")
     expect_in("inmfNorm", SeuratObject::Reductions(seu))
 
     expect_error(quantileNorm(seu, reference = "hello"),
                  "Should specify one existing dataset")
     expect_error(quantileNorm(seu, reference = 114514),
-                 "Should specify one dataset within the range.")
+                 "Should specify one existing dataset as reference")
     expect_error(quantileNorm(seu, reference = c(TRUE, FALSE, TRUE)),
-                 "Should specify one dataset within the range.")
+                 "Should specify one existing dataset as reference")
 })

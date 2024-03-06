@@ -60,7 +60,7 @@ test_that("liger object creation - in memory", {
     expect_error(createLiger(rawData = "hi"),
                  "`rawData` has to be a named list.")
     expect_error(createLiger(rawData = rawDataList, modal = letters[1:3]),
-                 "`modal` has to be a vector of length 2")
+                 "`modal` has to be a length 1 or 2 object of class")
     ldList <- datasets(pbmc)
     cellmeta <- cellMeta(pbmc)
     pbmc2 <- createLiger(rawData = ldList, cellMeta = cellmeta,
@@ -83,7 +83,7 @@ test_that("liger object creation - on disk", {
     withNewH5Copy(
         function(rawList) {
             expect_error(createLiger(rawList, formatType = "Hello"),
-                         "Specified `formatType` '")
+                         "Specified `formatType`")
 
             # Customized paths
             barcodesName <- "matrix/barcodes"
@@ -161,8 +161,8 @@ test_that("liger S3/S4 methods", {
     expect_is(meta, "DFrame")
     expect_null(cellMeta(pbmc, NULL))
     expect_is(cellMeta(pbmc, "dataset"), "factor")
-    expect_warning(cellMeta(pbmc, "UMAP.1"),
-                   "Specified variables from cellMeta not found: UMAP.1")
+    expect_message(cellMeta(pbmc, "UMAP.1"),
+                   "Specified variables from cellMeta not found")
     expect_is(cellMeta(pbmc, "UMAP.1", cellIdx = 1:500, as.data.frame = TRUE),
               "numeric")
     expect_is(pbmc[["nUMI"]], "numeric")
@@ -198,7 +198,7 @@ test_that("liger S3/S4 methods", {
 
 test_that("ligerDataset (in memory) object creation", {
     expect_error(createLigerDataset(),
-                 "At least one type of")
+                 "At least one of")
 
     ld <- createLigerDataset(rawData = rawDataList[[1]], modal = "atac")
     expect_is(ld, "ligerATACDataset")
@@ -213,8 +213,10 @@ test_that("ligerDataset (in memory) object creation", {
     pbmc <- scaleNotCenter(pbmc)
     scaledMat <- scaleData(pbmc, dataset = "ctrl")
     featuremeta <- featureMeta(dataset(pbmc, "ctrl"))
-    ld <- createLigerDataset(scaleData = scaledMat, featureMeta = featuremeta)
-    expect_equal(length(varFeatures(pbmc)), nrow(ld))
+    expect_error(
+        ld <- createLigerDataset(scaleData = scaledMat, featureMeta = featuremeta),
+        "At least one of "
+    )
 })
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -227,7 +229,7 @@ test_that("ligerDataset methods", {
     expect_false(isH5Liger(pbmc))
     ctrl <- dataset(pbmc, "ctrl")
     expect_false(isH5Liger(ctrl))
-    expect_warning(isH5Liger("hi"), "Given object is not of liger")
+    expect_message(isH5Liger("hi"), "Given object is not ")
 
     expect_identical(modalOf(ctrl), "default")
     expect_identical(modalOf(pbmc), c(ctrl = "default", stim = "default"))
@@ -274,7 +276,7 @@ test_that("ligerDataset methods", {
 
     # ligerATACDataset related
     expect_error(rawPeak(pbmc, "stim"),
-                 "Specified dataset is not of ligerATACDataset class.")
+                 "Specified dataset is not of ")
     expect_error(rawPeak(pbmc, "stim") <- rawData(ctrl),
                  "Specified dataset is not of")
     ctrl <- as.ligerDataset(ctrl, modal = "atac")
@@ -282,7 +284,7 @@ test_that("ligerDataset methods", {
     rawPeak(pbmc, "ctrl") <- rawData(ctrl)
 
     expect_error(normPeak(pbmc, "stim"),
-                 "Specified dataset is not of ligerATACDataset class.")
+                 "Specified dataset is not of")
     expect_error(normPeak(pbmc, "stim") <- normData(stim),
                  "Specified dataset is not of")
     normPeak(pbmc, "ctrl") <- normData(ctrl)
@@ -290,7 +292,7 @@ test_that("ligerDataset methods", {
     expect_true(validObject(ctrl))
     # ligerSpatialDataset related
 
-    expect_warning(ctrl <- as.ligerDataset(ctrl, modal = "spatial"),
+    expect_message(ctrl <- as.ligerDataset(ctrl, modal = "spatial"),
                    "Will remove information in the following slots when ")
     pbmc@datasets$ctrl <- ctrl
     coords <- matrix(rnorm(300*2), 300, 2)
@@ -305,7 +307,7 @@ test_that("ligerDataset methods", {
     expect_true(validObject(ctrl))
 
     coords <- matrix(rnorm(300*3), 300, 3)
-    expect_warning(coordinate(ctrl) <- coords,
+    expect_message(coordinate(ctrl) <- coords,
                    "No rownames with given spatial coordinate")
     coords <- matrix(rnorm(300*4), 300, 4)
     rownames(coords) <- colnames(ctrl)
@@ -317,10 +319,10 @@ test_that("ligerDataset methods", {
     colnames(coords) <- c("x", "y")
     ctrl@coordinate <- coords
     expect_error(validObject(ctrl), "Inconsistant cell identifiers")
-    expect_warning(coordinate(ctrl) <- coords,
+    expect_message(coordinate(ctrl) <- coords,
                    "NA generated for missing cells")
     # ligerMethDataset related
-    expect_warning(ctrl <- as.ligerDataset(ctrl, modal = "meth"),
+    expect_message(ctrl <- as.ligerDataset(ctrl, modal = "meth"),
                    "Will remove information in the following slots when ")
     expect_no_error(validObject(ctrl))
 })
@@ -361,17 +363,17 @@ test_that("H5 ligerDataset methods", {
                              list(indicesName = "matrix/indices",
                                   indptrName = "matrix/indptr"))
             expect_error(h5fileInfo(ctrl, c("indicesName", "hello")),
-                         "Specified h5file info not found: hello")
+                         "Specified `info` not found")
 
             expect_error(h5fileInfo(ctrl, info = 1:2) <- "hey",
                          "`info` has to be a single character.")
             expect_error(h5fileInfo(ctrl, "indicesName") <- "hey",
-                         "Specified info is invalid,")
+                         "Specified `info`")
             expect_no_error(h5fileInfo(ctrl, "barcodesName") <-
                                 "matrix/barcodes")
 
             ctrl.h5$close()
-            expect_warning(show(ctrl), "Link to HDF5 file fails.")
+            expect_message(show(ctrl), "Link to HDF5 file fails.")
         }
     )
 })
@@ -399,11 +401,10 @@ test_that("as.liger methods", {
             colData = data.frame(dataset = factor(rep(c("a", "b"), each = 150)))
         )
         sce$useless <- 1
-        expect_warning(lig <- as.liger(sce), 'Variable name "dataset"')
+        expect_message(lig <- as.liger(sce))
         expect_equal(names(lig), "SCE")
 
-        expect_warning(lig <- as.liger(sce, datasetVar = "dataset"),
-                       'Variable name "dataset"')
+        expect_message(lig <- as.liger(sce, datasetVar = "dataset"))
         expect_true(all.equal(sapply(datasets(lig), ncol), c(a = 150, b = 150)))
     }
 
@@ -420,7 +421,7 @@ test_that("as.liger methods", {
             Seurat::FindVariableFeatures() %>%
             Seurat::ScaleData() %>%
             Seurat::RunPCA()
-        expect_warning(lig <- as.liger(seu))
+        expect_message(lig <- as.liger(seu))
         expect_true(all.equal(sapply(datasets(lig), ncol), c(a = 150, b = 150)))
 
         expect_in(paste0("pca.", 1:10), colnames(cellMeta(lig, as.data.frame = TRUE)))
@@ -434,7 +435,7 @@ test_that("as.ligerDataset methods", {
     expect_is(ld, "ligerDataset")
     ld <- as.ligerDataset(ctrlLD, modal = "atac")
     expect_is(ld, "ligerATACDataset")
-    expect_warning(ld <- as.ligerDataset(ld, modal = "rna"),
+    expect_message(ld <- as.ligerDataset(ld, modal = "rna"),
                    "Will remove information in the following slots when ")
     expect_is(ld, "ligerDataset")
 

@@ -59,3 +59,7 @@ most of arguments with other rliger plotting functions.
 substantial amount of arguments for graphical control. However, that requires
 the installation of package "EnhancedVolcano".
 }
+\examples{
+result <- runMarkerDEG(pbmcPlot)
+plotVolcano(result, 1)
+}

@@ -150,7 +150,8 @@ test_that("Normalization - in-memory", {
       expect_equal(sum(normPeak(ld)[, i]), 1, tolerance = 1e-6)
     }
 
-    expect_warning(fakeNorm <- normalize(fakePeak, scaleFactor = -1))
+    expect_message(fakeNorm <- normalize(fakePeak, scaleFactor = -1),
+                   "Invalid `scaleFactor` given")
     expect_true(all.equal(colSums(fakeNorm),
                           setNames(rep(1, ncol(fakeNorm)), colnames(fakeNorm))))
 
@@ -183,8 +184,6 @@ test_that("Normalize - on disk", {
 context("Select variable genes")
 test_that("selectGenes", {
     pbmc <- normalize(pbmc, useDatasets = 1)
-    expect_error(selectGenes(pbmc, thresh = 1:3),
-                 "`thresh` has to be a vector of length 2")
     expect_error(selectGenes(pbmc, thresh = 0.1),
                    "Normalized data not available")
     pbmc <- normalize(pbmc, useDatasets = 2)
@@ -196,7 +195,7 @@ test_that("selectGenes", {
     pbmc <- selectGenes(pbmc, combine = "inters")
     expect_equal(length(varFeatures(pbmc)), 161)
 
-    expect_warning(selectGenes(pbmc, thresh = 3),
+    expect_message(selectGenes(pbmc, thresh = 3),
                    "No genes were selected.")
 
     pbmc <- selectGenes(pbmc)
@@ -216,7 +215,7 @@ test_that("selectGenes", {
     pbmc <- selectGenesVST(pbmc, useDataset = "ctrl", n = 50)
     expect_equal(length(varFeatures(pbmc)), 50)
 
-    expect_warning(pbmc <- selectGenesVST(pbmc, useDataset = "ctrl", n = 300,
+    expect_message(pbmc <- selectGenesVST(pbmc, useDataset = "ctrl", n = 300,
                                           useShared = FALSE),
                    "Not all variable features passed are found in datasets")
     expect_equal(length(varFeatures(pbmc)), 266)

@@ -66,7 +66,7 @@ getFactorMarkers <- function(
     dataset1 <- .checkUseDatasets(object, useDatasets = dataset1)
     dataset2 <- .checkUseDatasets(object, useDatasets = dataset2)
     if (any(isH5Liger(object, dataset = c(dataset1, dataset2))))
-        stop("Please use in-memory liger object for this analysis.`")
+        cli::cli_abort("Please use in-memory {.cls liger} object for this analysis")
     if (is.null(nGenes)) {
         nGenes <- length(varFeatures(object))
     }
@@ -78,11 +78,13 @@ getFactorMarkers <- function(
     }
     useFactors <- which(abs(datasetSpecificity) <= factorShareThresh)
     if (length(useFactors) == 0) {
-        stop("No factor passed the dataset specificity threshold, ",
-             "please try a larger `factorShareThresh`.")
+        cli::cli_abort(
+            c("No factor passed the dataset specificity threshold",
+              i = "please try a larger {.var factorShareThresh}.")
+        )
     }
     if (length(useFactors) == 1 && isTRUE(verbose)) {
-        warning("Only 1 factor passed the dataset specificity threshold.")
+        cli::cli_alert_warning("Only 1 factor passed the dataset specificity threshold.")
     }
 
     H <- getMatrix(object, "H", dataset = c(dataset1, dataset2))
@@ -101,10 +103,16 @@ getFactorMarkers <- function(
     W_matrices <- list()
     vargene <- varFeatures(object)
     if (isTRUE(verbose)) {
-        .log("Performing wilcoxon test between datasets \"", dataset1,
-             "\" and \"", dataset2, "\", \nbasing on factor loading.")
-        if (!isTRUE(printGenes))
-            pb <- utils::txtProgressBar(0, length(useFactors), style = 3)
+        if (isTRUE(printGenes)) {
+            cli::cli_alert_info(
+                "Performing wilcoxon test between {.val {dataset1}} and {.val {dataset2}} basing on factor loading."
+            )
+        } else {
+            cli::cli_progress_bar(
+                name = "Testing between {.val {dataset1}} and {.val {dataset2}}",
+                total = length(useFactors), type = "iter", clear = FALSE
+            )
+        }
     }
     for (j in seq_along(useFactors)) {
         i <- useFactors[j]
@@ -116,8 +124,7 @@ getFactorMarkers <- function(
         # if not max factor for any cell in either dataset
         if (sum(labels[[dataset1]] == i) <= 1 ||
             sum(labels[[dataset2]] == i) <= 1) {
-            warning("Factor ", i, " did not appear as max in ",
-                    "any cell in either dataset", immediate. = TRUE)
+            cli::cli_alert_warning("Factor {i} did not appear as max in any cell in either dataset")
             next
         }
 
@@ -164,15 +171,16 @@ getFactorMarkers <- function(
 
         if (isTRUE(verbose)) {
             if (isTRUE(printGenes)) {
-                .log("Factor ", i)
-                message("Dataset 1:\n",
+                cli::cli_h2("Factor {i}")
+                cat("Dataset 1:\n",
                         paste(topGenesV1, collapse = ", "),
                         "\nShared:\n",
                         paste(topGenesW, collapse = ", "),
                         "\nDataset 2\n",
                         paste(topGenesV2, collapse = ", "), "\n")
             } else {
-                utils::setTxtProgressBar(pb, j)
+                cli::cli_progress_update(set = j)
+                # utils::setTxtProgressBar(pb, j)
             }
         }
 

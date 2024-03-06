@@ -156,10 +156,8 @@ test_that("wilcoxon", {
 
     expect_error(getFactorMarkers(pbmc, "ctrl", "stim", factorShareThresh = 0),
                  "No factor passed the dataset specificity threshold")
-    expect_warning(
-        expect_message(
-            res3 <- getFactorMarkers(pbmc, "ctrl", "stim", printGenes = TRUE)
-        )
+    expect_message(
+        res3 <- getFactorMarkers(pbmc, "ctrl", "stim", printGenes = TRUE)
     )
     expect_is(res3, "list")
     expect_identical(names(res3), c("ctrl", "shared", "stim", "num_factors_V1",
@@ -215,7 +213,7 @@ test_that("pseudo bulk", {
             groupCtrl = pbmc$dataset == "stim" & pbmc$leiden_cluster == 0,
             method = "pseudo", useReplicate = "dataset"
         ),
-        "Too few replicates label for condition"
+        "Too few replicates for condition"
     )
 
     pbmc@datasets$ctrl@rawData <- NULL
@@ -225,7 +223,7 @@ test_that("pseudo bulk", {
             variable1 = "leiden_cluster",　method = "pseudo",
             useReplicate = "dataset"
         ),
-        "rawData not all available for involved datasets"
+        "not all available for involved datasets"
     )
 })
 
