@@ -12,7 +12,7 @@ runUINMF(
   nIteration = 30,
   nRandomStarts = 1,
   seed = 1,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 
@@ -23,7 +23,7 @@ runUINMF(
   nIteration = 30,
   nRandomStarts = 1,
   seed = 1,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 }
@@ -52,7 +52,7 @@ of the same dataset can be run with one rep if necessary. Default \code{1}.}
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{...}{Arguments passed to other methods and wrapped functions.}
 }

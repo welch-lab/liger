@@ -79,7 +79,7 @@ quantile_norm(
   refine.knn = TRUE,
   clusterName = "H.norm_cluster",
   rand.seed = 1,
-  verbose = getOption("ligerVerbose")
+  verbose = getOption("ligerVerbose", TRUE)
 )
 }
 \description{

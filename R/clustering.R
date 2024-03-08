@@ -82,7 +82,7 @@ runCluster <- function(
     if (!is.null(useDims)) H <- H[, useDims, drop = FALSE]
 
     if (isTRUE(verbose))
-        cli::cli_process_start("{method} clustering on {type} cell factor loadings...")
+        cli::cli_process_start("{method} clustering on {type} cell factor loadings")
     knn <- RANN::nn2(H, k = nNeighbors, eps = eps)
     snn <- ComputeSNN(knn$nn.idx, prune = prune)
     if (!is.null(seed)) set.seed(seed)
