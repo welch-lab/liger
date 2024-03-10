@@ -22,6 +22,7 @@ runOnlineINMF(object, k = 20, lambda = 5, ...)
   AInit = NULL,
   BInit = NULL,
   seed = 1,
+  nCores = 2L,
   verbose = getOption("ligerVerbose", TRUE),
   ...
 )
@@ -38,6 +39,7 @@ runOnlineINMF(object, k = 20, lambda = 5, ...)
   HALSiter = 1,
   minibatchSize = 5000,
   seed = 1,
+  nCores = 2L,
   verbose = getOption("ligerVerbose", TRUE),
   ...
 )
@@ -78,6 +80,9 @@ Default \code{5000}.}
 See detail. Default \code{NULL}.}
 
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
+
+\item{nCores}{The number of parallel tasks to speed up the computation.
+Default \code{2L}. Only supported for platform with OpenMP support.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}

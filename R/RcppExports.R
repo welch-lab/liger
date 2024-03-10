@@ -9,10 +9,6 @@ colNormalize_dense_cpp <- function(x, L) {
     .Call(`_rliger2_colNormalize_dense_cpp`, x, L)
 }
 
-select_factor_cpp <- function(all_data, knn, threshold) {
-    .Call(`_rliger2_select_factor_cpp`, all_data, knn, threshold)
-}
-
 colAggregateMedian_dense_cpp <- function(x, group, n) {
     .Call(`_rliger2_colAggregateMedian_dense_cpp`, x, group, n)
 }

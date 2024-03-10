@@ -98,9 +98,7 @@ runCluster <- function(
             niter = nIterations, nrep = nRandomStarts
         )
     } else {
-        edgeOutPath <- paste0("edge_", sub("\\s", "_", Sys.time()), '.txt')
-        edgeOutPath <- gsub("-", "", edgeOutPath)
-        edgeOutPath <- gsub(":", "", edgeOutPath)
+        edgeOutPath <- tempfile(pattern = "edge_", fileext = ".txt")
         WriteEdgeFile(snn, edgeOutPath, display_progress = FALSE)
         clusts <- RunModularityClusteringCpp(
             snn,

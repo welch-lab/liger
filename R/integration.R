@@ -176,6 +176,8 @@ runIntegration.Seurat <- function(
 #' each element is the initial \eqn{V} matrix of each dataset. Default
 #' \code{NULL}.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
+#' @param nCores The number of parallel tasks to speed up the computation.
+#' Default \code{2L}. Only supported for platform with OpenMP support.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Arguments passed to methods.
@@ -235,6 +237,7 @@ runINMF.liger <- function(
         WInit = NULL,
         VInit = NULL,
         seed = 1,
+        nCores = 2L,
         verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
@@ -260,6 +263,7 @@ runINMF.liger <- function(
         WInit = WInit,
         VInit = VInit,
         seed = seed,
+        nCores = nCores,
         verbose = verbose
     )
 
@@ -305,6 +309,7 @@ runINMF.Seurat <- function(
         WInit = NULL,
         VInit = NULL,
         seed = 1,
+        nCores = 2L,
         verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
@@ -337,6 +342,7 @@ runINMF.Seurat <- function(
         WInit = WInit,
         VInit = VInit,
         seed = seed,
+        nCores = nCores,
         verbose = verbose
     )
     Hconcat <- t(Reduce(cbind, res$H))
@@ -371,6 +377,7 @@ runINMF.Seurat <- function(
         WInit = NULL,
         VInit = NULL,
         seed = 1,
+        nCores = 2L,
         verbose = getOption("ligerVerbose", TRUE)
 ) {
     if (!requireNamespace("RcppPlanc", quietly = TRUE)) # nocov start
@@ -393,7 +400,7 @@ runINMF.Seurat <- function(
         set.seed(seed = seed + i - 1)
         out <- RcppPlanc::inmf(objectList = object, k = k, lambda = lambda,
                                niter = nIteration, Hinit = HInit,
-                               Vinit = VInit, Winit = WInit,
+                               Vinit = VInit, Winit = WInit, nCores = nCores,
                                verbose = verbose)
         if (out$objErr < bestObj) {
             bestResult <- out
@@ -591,6 +598,8 @@ optimizeALS <- function( # nocov start
 #' @param minibatchSize Total number of cells in each minibatch. See detail.
 #' Default \code{5000}.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
+#' @param nCores The number of parallel tasks to speed up the computation.
+#' Default \code{2L}. Only supported for platform with OpenMP support.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Arguments passed to other S3 methods of this function.
@@ -668,6 +677,7 @@ runOnlineINMF.liger <- function(
         AInit = NULL,
         BInit = NULL,
         seed = 1,
+        nCores = 2L,
         verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
@@ -748,7 +758,7 @@ runOnlineINMF.liger <- function(
                                minibatchSize = minibatchSize,
                                HALSiter = HALSiter, verbose = verbose,
                                WInit = WInit, VInit = VInit, AInit = AInit,
-                               BInit = BInit, seed = seed)
+                               BInit = BInit, seed = seed, nCores = nCores)
     if (!isTRUE(projection)) {
         # Scenario 1&2, everything updated
         for (i in seq_along(object)) {
@@ -797,6 +807,7 @@ runOnlineINMF.liger <- function(
         HALSiter = 1,
         minibatchSize = 5000,
         seed = 1,
+        nCores = 2L,
         verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
@@ -819,7 +830,7 @@ runOnlineINMF.liger <- function(
                                  minibatchSize = minibatchSize,
                                  maxHALSIter = HALSiter, Vinit = VInit,
                                  Winit = WInit, Ainit = AInit, Binit = BInit,
-                                 verbose = verbose)
+                                 nCores = nCores, verbose = verbose)
     factorNames <- paste0("Factor_", seq(k))
     if (isTRUE(projection)) {
         # Scenario 3 only got H for new datasets
@@ -869,6 +880,7 @@ runOnlineINMF.Seurat <- function(
         HALSiter = 1,
         minibatchSize = 5000,
         seed = 1,
+        nCores = 2L,
         verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
@@ -896,6 +908,7 @@ runOnlineINMF.Seurat <- function(
         newDatasets = NULL, projection = FALSE,
         maxEpochs = maxEpochs, HALSiter = HALSiter,
         minibatchSize = minibatchSize, seed = seed, verbose = verbose,
+        nCores = nCores,
         WInit = NULL, VInit = NULL, AInit = NULL, BInit = NULL,
     )
     Hconcat <- t(Reduce(cbind, res$H))
@@ -1062,6 +1075,8 @@ online_iNMF <- function( # nocov start
 #' the random seed by 1 for each consecutive restart, so future factorization
 #' of the same dataset can be run with one rep if necessary. Default \code{1}.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
+#' @param nCores The number of parallel tasks to speed up the computation.
+#' Default \code{2L}. Only supported for platform with OpenMP support.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Arguments passed to other methods and wrapped functions.
@@ -1103,10 +1118,6 @@ runUINMF <- function(
         object,
         k = 20,
         lambda = 5,
-        nIteration = 30,
-        nRandomStarts = 1,
-        seed = 1,
-        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     UseMethod("runUINMF", object)
@@ -1122,6 +1133,7 @@ runUINMF.liger <- function(
         nIteration = 30,
         nRandomStarts = 1,
         seed = 1,
+        nCores = 2L,
         verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
@@ -1144,7 +1156,7 @@ runUINMF.liger <- function(
     }
     res <- .runUINMF.list(Elist, Ulist, k = k, lambda = lambda,
                           nIteration = nIteration,
-                          nRandomStarts = nRandomStarts,
+                          nRandomStarts = nRandomStarts, nCores = nCores,
                           seed = seed, verbose = verbose, ...)
     for (d in names(object)) {
         ld <- dataset(object, d)
@@ -1170,6 +1182,7 @@ runUINMF.liger <- function(
         nIteration = 30,
         nRandomStarts = 1,
         seed = 1,
+        nCores = 2L,
         verbose = getOption("ligerVerbose", TRUE)
 ) {
     if (!requireNamespace("RcppPlanc", quietly = TRUE)) # nocov start
@@ -1189,7 +1202,8 @@ runUINMF.liger <- function(
         seed <- seed + i - 1
         set.seed(seed)
         res <- RcppPlanc::uinmf(object, unsharedList, k = k, lambda = lambda,
-                                niter = nIteration, verbose = verbose)
+                                niter = nIteration, nCores = nCores,
+                                verbose = verbose)
         if (res$objErr < bestObj) {
             bestRes <- res
             bestObj <- res$objErr

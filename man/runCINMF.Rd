@@ -6,14 +6,13 @@
 \alias{runCINMF.Seurat}
 \title{Perform consensus iNMF on scaled datasets}
 \usage{
-runCINMF(object, k = 20, lambda = 5, rho = 0.3, tao = 0.1, ...)
+runCINMF(object, k = 20, lambda = 5, rho = 0.3, ...)
 
 \method{runCINMF}{liger}(
   object,
   k = 20,
   lambda = 5,
   rho = 0.3,
-  tao = 0.1,
   nIteration = 30,
   nRandomStarts = 10,
   HInit = NULL,
@@ -30,7 +29,6 @@ runCINMF(object, k = 20, lambda = 5, rho = 0.3, tao = 0.1, ...)
   k = 20,
   lambda = 5,
   rho = 0.3,
-  tao = 0.1,
   datasetVar = "orig.ident",
   layer = "ligerScaleData",
   assay = NULL,
@@ -59,14 +57,17 @@ higher \code{k} will be needed for datasets with more sub-structure. Default
 dataset-specific effects more strongly (i.e. alignment should increase as
 \code{lambda} increases). Default \code{5}.}
 
+\item{rho}{Numeric number between 0 and 1. Fraction for determining the
+number of nearest neighbors to look at for consensus (by
+\code{rho * nRandomStarts}). Default \code{0.3}.}
+
 \item{...}{Arguments passed to methods.}
 
 \item{nIteration}{Total number of block coordinate descent iterations to
 perform. Default \code{30}.}
 
-\item{nRandomStarts}{Number of restarts to perform (iNMF objective function
-is non-convex, so taking the best objective from multiple successive
-initialization is recommended). Default \code{1}.}
+\item{nRandomStarts}{Number of replicate runs for creating the pool of
+factorization results. Default \code{10}.}
 
 \item{HInit}{Initial values to use for \eqn{H} matrices. A list object where
 each element is the initial \eqn{H} matrix of each dataset. Default
@@ -80,6 +81,9 @@ each element is the initial \eqn{V} matrix of each dataset. Default
 \code{NULL}.}
 
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
+
+\item{nCores}{The number of parallel tasks to speed up the computation.
+Default \code{2L}. Only supported for platform with OpenMP support.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
@@ -125,9 +129,9 @@ feature key. Default \code{"cinmf"}.}
 Performs consensus integrative non-negative matrix factorization (c-iNMF)
 to return factorized \eqn{H}, \eqn{W}, and \eqn{V} matrices. We run the
 regular iNMF multiple times with different random starts, and then take the
-consensus of the factorized matrices factor gene loading matrix \eqn{W} and
-\eqn{V} matrices for each dataset. The cell factor loading \eqn{H} matrices
-are eventually solved with the consensus \eqn{W} and \eqn{V} matrices.
+consensus of frequently appearing factors from gene loading matrices, \eqn{W}
+and \eqn{V}. The cell factor loading \eqn{H} matrices are eventually solved
+with the consensus \eqn{W} and \eqn{V} matrices.
 
 Please see \code{\link{runINMF}} for detailed introduction to the regular
 iNMF algorithm which is run multiple times in this function.
@@ -144,6 +148,9 @@ if (requireNamespace("RcppPlanc", quietly = TRUE)) {
 }
 }
 \references{
-Joshua D. Welch and et al., Single-Cell Multi-omic Integration
-Compares and Contrasts Features of Brain Cell Identity, Cell, 2019
+Joshua D. Welch and et al., Single-Cell Multi-omic Integration Compares and
+Contrasts Features of Brain Cell Identity, Cell, 2019
+
+Dylan Kotliar and et al., Identifying gene expression programs of cell-type
+identity and cellular activity with single-cell RNA-Seq, eLife, 2019
 }
