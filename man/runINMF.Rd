@@ -18,7 +18,8 @@ runINMF(object, k = 20, lambda = 5, ...)
   WInit = NULL,
   VInit = NULL,
   seed = 1,
-  verbose = getOption("ligerVerbose"),
+  nCores = 2L,
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 
@@ -36,7 +37,8 @@ runINMF(object, k = 20, lambda = 5, ...)
   WInit = NULL,
   VInit = NULL,
   seed = 1,
-  verbose = getOption("ligerVerbose"),
+  nCores = 2L,
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 }
@@ -77,8 +79,11 @@ each element is the initial \eqn{V} matrix of each dataset. Default
 
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
 
+\item{nCores}{The number of parallel tasks to speed up the computation.
+Default \code{2L}. Only supported for platform with OpenMP support.}
+
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{datasetVar}{Metadata variable name that stores the dataset source
 annotation. Default \code{"orig.ident"}.}

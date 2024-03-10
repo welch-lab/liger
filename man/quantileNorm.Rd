@@ -21,7 +21,7 @@ quantileNorm(object, ...)
   refineKNN = TRUE,
   clusterName = "quantileNorm_cluster",
   seed = 1,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 
@@ -39,7 +39,7 @@ quantileNorm(object, ...)
   refineKNN = TRUE,
   clusterName = "quantileNorm_cluster",
   seed = 1,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 }
@@ -87,7 +87,7 @@ Default \code{"quantileNorm_cluster"}}
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{reduction}{Name of the reduction where LIGER integration result is
 stored. Default \code{"inmf"}.}
