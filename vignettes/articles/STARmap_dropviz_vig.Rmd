@@ -8,7 +8,6 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 library(rgl)
-library(rglwidget)
 options(rgl.useNULL = TRUE)
 knitr::knit_hooks$set(webgl = hook_webgl)
 ```
@@ -67,7 +66,7 @@ lig <- scaleNotCenter(lig)
 
 ### 5. Mosaic integrative NMF
 
-Unshared Integrative Non-negative Matrix Factorization (UINMF) can be applied with `runIntegration(..., method = "UINMF")`. A standalone function `runUINMF()` is also provided with more detailed documentation and initialization setup. This step produces factor gene loading matrices of the shared genes: $W$ for shared information across datasets, and $V$ for dataset specific information. Specific to UINMF method, additional factor gene loading matrix of unshared genes, $U$ is also produced. $H$ matrices, the cell factor loading matrices are produced for each dataset and can be interpreted as load rank representation of the cells.
+Unshared Integrative Non-negative Matrix Factorization (UINMF) can be applied with `runIntegration(..., method = "UINMF")`. A standalone function `runUINMF()` is also provided with more detailed documentation and initialization setup. This step produces factor gene loading matrices of the shared genes: $W$ for shared information across datasets, and $V$ for dataset specific information. Specific to UINMF method, additional factor gene loading matrix of unshared features, $U$ is also produced. $H$ matrices, the cell factor loading matrices are produced for each dataset and can be interpreted as low-rank representation of the cells.
 
 In this tutorial, we set dataset specific lambda (regularization parameter) values to penalize the dataset specific effect differently. 
 
