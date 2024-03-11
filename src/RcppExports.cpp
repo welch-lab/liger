@@ -216,23 +216,23 @@ BEGIN_RCPP
 END_RCPP
 }
 // ComputeSNN
-Eigen::SparseMatrix<double> ComputeSNN(Eigen::MatrixXd nn_ranked, double prune);
-RcppExport SEXP _rliger2_ComputeSNN(SEXP nn_rankedSEXP, SEXP pruneSEXP) {
+arma::sp_mat ComputeSNN(arma::umat& nn_idx, double prune);
+RcppExport SEXP _rliger2_ComputeSNN(SEXP nn_idxSEXP, SEXP pruneSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type nn_ranked(nn_rankedSEXP);
+    Rcpp::traits::input_parameter< arma::umat& >::type nn_idx(nn_idxSEXP);
     Rcpp::traits::input_parameter< double >::type prune(pruneSEXP);
-    rcpp_result_gen = Rcpp::wrap(ComputeSNN(nn_ranked, prune));
+    rcpp_result_gen = Rcpp::wrap(ComputeSNN(nn_idx, prune));
     return rcpp_result_gen;
 END_RCPP
 }
 // WriteEdgeFile
-void WriteEdgeFile(Eigen::SparseMatrix<double> snn, String filename, bool display_progress);
+void WriteEdgeFile(arma::sp_mat snn, String filename, bool display_progress);
 RcppExport SEXP _rliger2_WriteEdgeFile(SEXP snnSEXP, SEXP filenameSEXP, SEXP display_progressSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::SparseMatrix<double> >::type snn(snnSEXP);
+    Rcpp::traits::input_parameter< arma::sp_mat >::type snn(snnSEXP);
     Rcpp::traits::input_parameter< String >::type filename(filenameSEXP);
     Rcpp::traits::input_parameter< bool >::type display_progress(display_progressSEXP);
     WriteEdgeFile(snn, filename, display_progress);
@@ -240,12 +240,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // DirectSNNToFile
-Eigen::SparseMatrix<double> DirectSNNToFile(Eigen::MatrixXd nn_ranked, double prune, bool display_progress, String filename);
+arma::sp_mat DirectSNNToFile(arma::umat& nn_ranked, double prune, bool display_progress, String filename);
 RcppExport SEXP _rliger2_DirectSNNToFile(SEXP nn_rankedSEXP, SEXP pruneSEXP, SEXP display_progressSEXP, SEXP filenameSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type nn_ranked(nn_rankedSEXP);
+    Rcpp::traits::input_parameter< arma::umat& >::type nn_ranked(nn_rankedSEXP);
     Rcpp::traits::input_parameter< double >::type prune(pruneSEXP);
     Rcpp::traits::input_parameter< bool >::type display_progress(display_progressSEXP);
     Rcpp::traits::input_parameter< String >::type filename(filenameSEXP);

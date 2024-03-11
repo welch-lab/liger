@@ -1,71 +1,53 @@
-#include <RcppEigen.h>
+#include <RcppArmadillo.h>
 #include <progress.hpp>
-#include <cmath>
-#include <unordered_map>
-#include <fstream>
-#include <string>
-#include <iomanip>
-
-using namespace Rcpp;
-
-// Codes from Seurat (https://github.com/satijalab/seurat)
-
-// [[Rcpp::depends(RcppEigen)]]
+// [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::depends(RcppProgress)]]
+using namespace Rcpp;
+using namespace arma;
 
-typedef Eigen::Triplet<double> T;
-//[[Rcpp::export]]
-Eigen::SparseMatrix<double> ComputeSNN(Eigen::MatrixXd nn_ranked, double prune) {
-  std::vector<T> tripletList;
-  int k = nn_ranked.cols();
-  tripletList.reserve(nn_ranked.rows() * nn_ranked.cols());
-  for(int j=0; j<nn_ranked.cols(); ++j){
-    for(int i=0; i<nn_ranked.rows(); ++i) {
-      tripletList.push_back(T(i, nn_ranked(i, j) - 1, 1));
+// [[Rcpp::export()]]
+arma::sp_mat ComputeSNN(arma::umat& nn_idx, double prune) {
+    int n = nn_idx.n_rows;
+    int k = nn_idx.n_cols;
+    arma::umat loc(2, nn_idx.n_elem);
+    loc.row(0) = arma::vectorise<arma::umat>(arma::repmat(arma::linspace<arma::umat>(0, n - 1, n), 1, k)).t();
+    loc.row(1) = arma::vectorise<arma::umat>(nn_idx).t() - 1;
+    arma::vec val = arma::ones<arma::vec>(n*k);
+    arma::sp_mat snn(loc, val, n, n);
+    snn *= snn.t();
+    for (arma::sp_mat::iterator it = snn.begin(); it != snn.end(); ++it) {
+        *it /= k + (k - *it);
     }
-  }
-  Eigen::SparseMatrix<double> SNN(nn_ranked.rows(), nn_ranked.rows());
-  SNN.setFromTriplets(tripletList.begin(), tripletList.end());
-  SNN = SNN * (SNN.transpose());
-  for (int i=0; i < SNN.outerSize(); ++i){
-    for (Eigen::SparseMatrix<double>::InnerIterator it(SNN, i); it; ++it){
-      it.valueRef() = it.value()/(k + (k - it.value()));
-      if(it.value() < prune){
-        it.valueRef() = 0;
-      }
-    }
-  }
-  SNN.prune(0.0); // actually remove pruned values
-  return SNN;
+    snn.for_each([prune](arma::sp_mat::elem_type& val) {
+        if (val < prune) val = 0;
+    });
+    return snn;
 }
 
 //[[Rcpp::export]]
-void WriteEdgeFile(Eigen::SparseMatrix<double> snn, String filename, bool display_progress){
-  if (display_progress == true) {
-    Rcpp::Rcerr << "Writing SNN as edge file" << std::endl;
-  }
-  // Write out lower triangle
-  std::ofstream output;
-  output.open(filename);
-  Progress p(snn.outerSize(), display_progress);
-  for (int k=0; k < snn.outerSize(); ++k){
-    p.increment();
-    for (Eigen::SparseMatrix<double>::InnerIterator it(snn, k); it; ++it){
-      if(it.col() >= it.row()){
-        continue;
-      }
-      output << std::setprecision(15) << it.col() << "\t" << it.row() << "\t" << it.value() << "\n";
+void WriteEdgeFile(arma::sp_mat snn, String filename, bool display_progress){
+    if (display_progress == true) {
+        Rcpp::Rcerr << "Writing SNN as edge file" << std::endl;
     }
-  }
-  output.close();
+    // Write out lower triangle
+    std::ofstream output;
+    output.open(filename);
+    Progress p(snn.n_elem, display_progress);
+    for (arma::sp_mat::const_iterator it = snn.begin(); it != snn.end(); ++it){
+        p.increment();
+        if(it.col() >= it.row()){
+            continue;
+        }
+        output << std::setprecision(15) << it.col() << "\t" << it.row() << "\t" << *it << "\n";
+    }
+    output.close();
 }
 
-// Wrapper function so that we don't have to go back into R before writing to file
 //[[Rcpp::export]]
-Eigen::SparseMatrix<double> DirectSNNToFile(Eigen::MatrixXd nn_ranked,
+arma::sp_mat DirectSNNToFile(arma::umat& nn_ranked,
                                             double prune, bool display_progress,
                                             String filename) {
-  Eigen::SparseMatrix<double> SNN = ComputeSNN(nn_ranked, prune);
-  WriteEdgeFile(SNN, filename, display_progress);
-  return SNN;
+    arma::sp_mat SNN = ComputeSNN(nn_ranked, prune);
+    WriteEdgeFile(SNN, filename, display_progress);
+    return SNN;
 }

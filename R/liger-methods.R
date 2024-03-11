@@ -1,9 +1,14 @@
 #' Check if given liger object if under new implementation
 #' @param object A liger object
 #' @return \code{TRUE} if the version of \code{object} is later than or equal to
-#' 1.99.0. Otherwise \code{FALSE}
-#' @noRd
+#' 1.99.0. Otherwise \code{FALSE}. It raises an error if input object is not of
+#' \linkS4class{liger} class.
+#' @export
+#' @examples
+#' is.newLiger(pbmc) # TRUE
 is.newLiger <- function(object) {
+    if (!inherits(object, "liger"))
+        cli::cli_abort("{.var object} is not even of {.cls liger} class.")
     v <- object@version
     v1990 <- package_version("1.99.0")
     if (v >= v1990) TRUE

@@ -79,8 +79,8 @@ max_factor_rcpp <- function(H, dims_use, center = FALSE) {
     .Call(`_rliger2_max_factor_rcpp`, H, dims_use, center)
 }
 
-ComputeSNN <- function(nn_ranked, prune) {
-    .Call(`_rliger2_ComputeSNN`, nn_ranked, prune)
+ComputeSNN <- function(nn_idx, prune) {
+    .Call(`_rliger2_ComputeSNN`, nn_idx, prune)
 }
 
 WriteEdgeFile <- function(snn, filename, display_progress) {
