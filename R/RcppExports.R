@@ -5,6 +5,14 @@ RunModularityClusteringCpp <- function(SNN, modularityFunction, resolution, algo
     .Call(`_rliger2_RunModularityClusteringCpp`, SNN, modularityFunction, resolution, algorithm, nRandomStarts, nIterations, randomSeed, printOutput, edgefilename)
 }
 
+colNormalize_dense_cpp <- function(x, L) {
+    .Call(`_rliger2_colNormalize_dense_cpp`, x, L)
+}
+
+colAggregateMedian_dense_cpp <- function(x, group, n) {
+    .Call(`_rliger2_colAggregateMedian_dense_cpp`, x, group, n)
+}
+
 scaleNotCenter_byRow_rcpp <- function(x) {
     .Call(`_rliger2_scaleNotCenter_byRow_rcpp`, x)
 }

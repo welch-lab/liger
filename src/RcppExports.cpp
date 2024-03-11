@@ -31,6 +31,31 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// colNormalize_dense_cpp
+arma::mat colNormalize_dense_cpp(arma::mat& x, const arma::uword L);
+RcppExport SEXP _rliger2_colNormalize_dense_cpp(SEXP xSEXP, SEXP LSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::uword >::type L(LSEXP);
+    rcpp_result_gen = Rcpp::wrap(colNormalize_dense_cpp(x, L));
+    return rcpp_result_gen;
+END_RCPP
+}
+// colAggregateMedian_dense_cpp
+arma::mat colAggregateMedian_dense_cpp(const arma::mat& x, const arma::uvec& group, const arma::uword n);
+RcppExport SEXP _rliger2_colAggregateMedian_dense_cpp(SEXP xSEXP, SEXP groupSEXP, SEXP nSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type group(groupSEXP);
+    Rcpp::traits::input_parameter< const arma::uword >::type n(nSEXP);
+    rcpp_result_gen = Rcpp::wrap(colAggregateMedian_dense_cpp(x, group, n));
+    return rcpp_result_gen;
+END_RCPP
+}
 // scaleNotCenter_byRow_rcpp
 arma::sp_mat scaleNotCenter_byRow_rcpp(arma::sp_mat x);
 RcppExport SEXP _rliger2_scaleNotCenter_byRow_rcpp(SEXP xSEXP) {
@@ -297,6 +322,8 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_rliger2_RunModularityClusteringCpp", (DL_FUNC) &_rliger2_RunModularityClusteringCpp, 9},
+    {"_rliger2_colNormalize_dense_cpp", (DL_FUNC) &_rliger2_colNormalize_dense_cpp, 2},
+    {"_rliger2_colAggregateMedian_dense_cpp", (DL_FUNC) &_rliger2_colAggregateMedian_dense_cpp, 3},
     {"_rliger2_scaleNotCenter_byRow_rcpp", (DL_FUNC) &_rliger2_scaleNotCenter_byRow_rcpp, 1},
     {"_rliger2_scaleNotCenter_byRow_perDataset_rcpp", (DL_FUNC) &_rliger2_scaleNotCenter_byRow_perDataset_rcpp, 3},
     {"_rliger2_rowVars_sparse_rcpp", (DL_FUNC) &_rliger2_rowVars_sparse_rcpp, 2},

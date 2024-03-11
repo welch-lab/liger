@@ -73,7 +73,7 @@ runUMAP <- function(
     useRaw <- Hsearch$useRaw
     type <- ifelse(useRaw, "unnormalized", "quantile normalized")
     if (isTRUE(verbose))
-        cli::cli_process_start("Generating UMAP on {type} cell factor loadings...")
+        cli::cli_process_start("Generating UMAP on {type} cell factor loadings")
     if (!is.null(useDims)) H <- H[, useDims, drop = FALSE]
     umap <- uwot::umap(H,
                        n_components = as.integer(nDims),
@@ -166,7 +166,7 @@ runTSNE <- function(
     useRaw <- Hsearch$useRaw
     type <- ifelse(useRaw, "unnormalized", "quantile normalized")
     if (isTRUE(verbose))
-        cli::cli_process_start("Generating TSNE ({method}) on {type} cell factor loadings...")
+        cli::cli_process_start("Generating TSNE ({method}) on {type} cell factor loadings")
     if (!is.null(useDims)) H <- H[, useDims, drop = FALSE]
     if (method == "Rtsne") {
         set.seed(seed)

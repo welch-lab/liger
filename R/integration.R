@@ -18,7 +18,7 @@
 #' \code{"iNMF"}, \code{"onlineINMF"}, \code{"UINMF"}. Default \code{"iNMF"}.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Arguments passed to other methods and wrapped functions.
 #' @export
 #' @rdname runIntegration
@@ -60,7 +60,7 @@ runIntegration.liger <- function(
         lambda = 5.0,
         method = c("iNMF", "onlineINMF", "UINMF"),
         seed = 1,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     method <- match.arg(method)
@@ -95,7 +95,7 @@ runIntegration.Seurat <- function(
         useLayer = "ligerScaleData",
         assay = NULL,
         seed = 1,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     method <- match.arg(method)
@@ -176,8 +176,10 @@ runIntegration.Seurat <- function(
 #' each element is the initial \eqn{V} matrix of each dataset. Default
 #' \code{NULL}.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
+#' @param nCores The number of parallel tasks to speed up the computation.
+#' Default \code{2L}. Only supported for platform with OpenMP support.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Arguments passed to methods.
 #' @rdname runINMF
 #' @export
@@ -235,7 +237,8 @@ runINMF.liger <- function(
         WInit = NULL,
         VInit = NULL,
         seed = 1,
-        verbose = getOption("ligerVerbose"),
+        nCores = 2L,
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     .checkObjVersion(object)
@@ -260,9 +263,8 @@ runINMF.liger <- function(
         WInit = WInit,
         VInit = VInit,
         seed = seed,
-        verbose = verbose,
-        barcodeList = lapply(datasets(object), colnames),
-        features = varFeatures(object)
+        nCores = nCores,
+        verbose = verbose
     )
 
     object@W <- out$W
@@ -307,7 +309,8 @@ runINMF.Seurat <- function(
         WInit = NULL,
         VInit = NULL,
         seed = 1,
-        verbose = getOption("ligerVerbose"),
+        nCores = 2L,
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     assay <- assay %||% SeuratObject::DefaultAssay(object)
@@ -339,6 +342,7 @@ runINMF.Seurat <- function(
         WInit = WInit,
         VInit = VInit,
         seed = seed,
+        nCores = nCores,
         verbose = verbose
     )
     Hconcat <- t(Reduce(cbind, res$H))
@@ -373,15 +377,18 @@ runINMF.Seurat <- function(
         WInit = NULL,
         VInit = NULL,
         seed = 1,
-        verbose = getOption("ligerVerbose"),
-        barcodeList = NULL,
-        features = NULL
+        nCores = 2L,
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     if (!requireNamespace("RcppPlanc", quietly = TRUE)) # nocov start
         cli::cli_abort(
         "Package {.pkg RcppPlanc} is required for iNMF integration.
         Please install it by command:
         {.code devtools::install_github('welch-lab/RcppPlanc')}") # nocov end
+
+    barcodeList <- lapply(object, colnames)
+    allFeatures <- lapply(object, rownames)
+    features <- Reduce(.same, allFeatures)
 
     bestResult <- list()
     bestObj <- Inf
@@ -393,7 +400,7 @@ runINMF.Seurat <- function(
         set.seed(seed = seed + i - 1)
         out <- RcppPlanc::inmf(objectList = object, k = k, lambda = lambda,
                                niter = nIteration, Hinit = HInit,
-                               Vinit = VInit, Winit = WInit,
+                               Vinit = VInit, Winit = WInit, nCores = nCores,
                                verbose = verbose)
         if (out$objErr < bestObj) {
             bestResult <- out
@@ -404,8 +411,7 @@ runINMF.Seurat <- function(
     if (isTRUE(verbose) && nRandomStarts > 1) {
         cli::cli_alert_success("Best objective error: {bestObj}; Best seed: {bestSeed}")
     }
-    barcodeList <- lapply(object, colnames)
-    features <- rownames(object[[1]])
+
     factorNames <- paste0("Factor_", seq(k))
     for (i in seq_along(object)) {
         bestResult$H[[i]] <- t(bestResult$H[[i]])
@@ -592,8 +598,10 @@ optimizeALS <- function( # nocov start
 #' @param minibatchSize Total number of cells in each minibatch. See detail.
 #' Default \code{5000}.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
+#' @param nCores The number of parallel tasks to speed up the computation.
+#' Default \code{2L}. Only supported for platform with OpenMP support.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Arguments passed to other S3 methods of this function.
 #' @return
 #' \itemize{
@@ -669,7 +677,8 @@ runOnlineINMF.liger <- function(
         AInit = NULL,
         BInit = NULL,
         seed = 1,
-        verbose = getOption("ligerVerbose"),
+        nCores = 2L,
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     .checkObjVersion(object)
@@ -749,7 +758,7 @@ runOnlineINMF.liger <- function(
                                minibatchSize = minibatchSize,
                                HALSiter = HALSiter, verbose = verbose,
                                WInit = WInit, VInit = VInit, AInit = AInit,
-                               BInit = BInit, seed = seed)
+                               BInit = BInit, seed = seed, nCores = nCores)
     if (!isTRUE(projection)) {
         # Scenario 1&2, everything updated
         for (i in seq_along(object)) {
@@ -798,7 +807,8 @@ runOnlineINMF.liger <- function(
         HALSiter = 1,
         minibatchSize = 5000,
         seed = 1,
-        verbose = getOption("ligerVerbose"),
+        nCores = 2L,
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     if (!requireNamespace("RcppPlanc", quietly = TRUE)) # nocov start
@@ -809,7 +819,9 @@ runOnlineINMF.liger <- function(
     nDatasets <- length(object) + length(newDatasets)
     barcodeList <- c(lapply(object, colnames), lapply(newDatasets, colnames))
     names(barcodeList) <- c(names(object), names(newDatasets))
-    features <- rownames(object[[1]])
+    allFeatures <- c(lapply(object, rownames), lapply(newDatasets, rownames))
+    features <- Reduce(.same, allFeatures)
+
     if (!is.null(seed)) set.seed(seed)
 
     res <- RcppPlanc::onlineINMF(objectList = object, newDatasets = newDatasets,
@@ -818,7 +830,7 @@ runOnlineINMF.liger <- function(
                                  minibatchSize = minibatchSize,
                                  maxHALSIter = HALSiter, Vinit = VInit,
                                  Winit = WInit, Ainit = AInit, Binit = BInit,
-                                 verbose = verbose)
+                                 nCores = nCores, verbose = verbose)
     factorNames <- paste0("Factor_", seq(k))
     if (isTRUE(projection)) {
         # Scenario 3 only got H for new datasets
@@ -868,7 +880,8 @@ runOnlineINMF.Seurat <- function(
         HALSiter = 1,
         minibatchSize = 5000,
         seed = 1,
-        verbose = getOption("ligerVerbose"),
+        nCores = 2L,
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     assay <- assay %||% SeuratObject::DefaultAssay(object)
@@ -895,6 +908,7 @@ runOnlineINMF.Seurat <- function(
         newDatasets = NULL, projection = FALSE,
         maxEpochs = maxEpochs, HALSiter = HALSiter,
         minibatchSize = minibatchSize, seed = seed, verbose = verbose,
+        nCores = nCores,
         WInit = NULL, VInit = NULL, AInit = NULL, BInit = NULL,
     )
     Hconcat <- t(Reduce(cbind, res$H))
@@ -1061,8 +1075,10 @@ online_iNMF <- function( # nocov start
 #' the random seed by 1 for each consecutive restart, so future factorization
 #' of the same dataset can be run with one rep if necessary. Default \code{1}.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
+#' @param nCores The number of parallel tasks to speed up the computation.
+#' Default \code{2L}. Only supported for platform with OpenMP support.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Arguments passed to other methods and wrapped functions.
 #' @export
 #' @references April R. Kriebel and Joshua D. Welch, UINMF performs mosaic
@@ -1102,10 +1118,6 @@ runUINMF <- function(
         object,
         k = 20,
         lambda = 5,
-        nIteration = 30,
-        nRandomStarts = 1,
-        seed = 1,
-        verbose = getOption("ligerVerbose"),
         ...
 ) {
     UseMethod("runUINMF", object)
@@ -1121,7 +1133,8 @@ runUINMF.liger <- function(
         nIteration = 30,
         nRandomStarts = 1,
         seed = 1,
-        verbose = getOption("ligerVerbose"),
+        nCores = 2L,
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     .checkObjVersion(object)
@@ -1143,7 +1156,7 @@ runUINMF.liger <- function(
     }
     res <- .runUINMF.list(Elist, Ulist, k = k, lambda = lambda,
                           nIteration = nIteration,
-                          nRandomStarts = nRandomStarts,
+                          nRandomStarts = nRandomStarts, nCores = nCores,
                           seed = seed, verbose = verbose, ...)
     for (d in names(object)) {
         ld <- dataset(object, d)
@@ -1169,13 +1182,18 @@ runUINMF.liger <- function(
         nIteration = 30,
         nRandomStarts = 1,
         seed = 1,
-        verbose = getOption("ligerVerbose")
+        nCores = 2L,
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     if (!requireNamespace("RcppPlanc", quietly = TRUE)) # nocov start
         cli::cli_abort(
         "Package {.pkg RcppPlanc} is required for mosaic iNMF integration with unshared features.
         Please install it by command:
         {.code devtools::install_github('welch-lab/RcppPlanc')}")# nocov end
+    barcodeList <- lapply(object, colnames)
+    allFeatures <- lapply(object, rownames)
+    features <- Reduce(.same, allFeatures)
+
     bestObj <- Inf
     bestRes <- NULL
     bestSeed <- NULL
@@ -1184,7 +1202,8 @@ runUINMF.liger <- function(
         seed <- seed + i - 1
         set.seed(seed)
         res <- RcppPlanc::uinmf(object, unsharedList, k = k, lambda = lambda,
-                                niter = nIteration, verbose = verbose)
+                                niter = nIteration, nCores = nCores,
+                                verbose = verbose)
         if (res$objErr < bestObj) {
             bestRes <- res
             bestObj <- res$objErr
@@ -1195,13 +1214,11 @@ runUINMF.liger <- function(
         cli::cli_alert_success("Best objective error: {bestObj}; Best seed: {bestSeed}")
     }
     rm(res)
-    features <- rownames(object[[1]])
     unsharedFeatures <- lapply(unsharedList, rownames)
     factorNames <- paste0("Factor_", seq(k))
-    barcodes <- lapply(object, colnames)
     for (d in names(object)) {
         bestRes$H[[d]] <- t(bestRes$H[[d]])
-        dimnames(bestRes$H[[d]]) <- list(factorNames, barcodes[[d]])
+        dimnames(bestRes$H[[d]]) <- list(factorNames, barcodeList[[d]])
         dimnames(bestRes$V[[d]]) <- list(features, factorNames)
         if (d %in% names(bestRes$U)) {
             dimnames(bestRes$U[[d]]) <- list(unsharedFeatures[[d]], factorNames)
@@ -1259,7 +1276,7 @@ runUINMF.liger <- function(
 #' Default \code{"quantileNorm_cluster"}
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Arguments passed to other S3 methods of this function.
 #' @return Updated input object
 #' \itemize{
@@ -1306,7 +1323,7 @@ quantileNorm.liger <- function(
         refineKNN = TRUE,
         clusterName = "quantileNorm_cluster",
         seed = 1,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     .checkObjVersion(object)
@@ -1354,7 +1371,7 @@ quantileNorm.Seurat <- function(
         refineKNN = TRUE,
         clusterName = "quantileNorm_cluster",
         seed = 1,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     resName <- paste0(reduction, "Norm")
@@ -1402,7 +1419,7 @@ quantileNorm.Seurat <- function(
         eps = 0.9,
         refineKNN = TRUE,
         seed = 1,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     set.seed(seed)
     if (is.character(reference)) {
@@ -1543,7 +1560,7 @@ quantile_norm <- function( # nocov start
         refine.knn = TRUE,
         clusterName = "H.norm_cluster",
         rand.seed = 1,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     lifecycle::deprecate_warn("1.99.0", "quantile_norm()", "quantileNorm()")
     quantileNorm(
@@ -1561,3 +1578,12 @@ quantile_norm <- function( # nocov start
         verbose = verbose
     )
 } # nocov end
+
+
+
+
+
+.same <- function(x, y) {
+    if (identical(x, y)) return(x)
+    else cli::cli_abort("Different features are used for each dataset.")
+}

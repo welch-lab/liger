@@ -20,7 +20,7 @@ runIntegration(
   lambda = 5,
   method = c("iNMF", "onlineINMF", "UINMF"),
   seed = 1,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 
@@ -33,7 +33,7 @@ runIntegration(
   useLayer = "ligerScaleData",
   assay = NULL,
   seed = 1,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 }
@@ -58,7 +58,7 @@ dataset-specific effects more strongly (i.e. alignment should increase as
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{datasetVar}{Metadata variable name that stores the dataset source
 annotation. Default \code{"orig.ident"}.}
