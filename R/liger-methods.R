@@ -405,37 +405,48 @@ setReplaceMethod(
 
 #' @rdname liger-class
 #' @export
-setMethod("names", signature(x = "liger"), function(x) {
-    names(datasets(x))
-})
+#' @method names liger
+names.liger <- function(x) {
+    names(x@datasets)
+}
 
 #' @rdname liger-class
 #' @export
-setReplaceMethod(
-    "names",
-    signature(x = "liger", value = "character"),
-    function(x, value) {
-        originalNames <- names(x)
-        if (!identical(value, originalNames)) {
-            dataset.idx <- lapply(originalNames, function(n) {
-                x$dataset == n
-            })
-            x@cellMeta$dataset <- as.character(x@cellMeta$dataset)
-            for (i in seq_along(value)) {
-                x@cellMeta$dataset[dataset.idx[[i]]] <- value[i]
-            }
-            x@cellMeta$dataset <- factor(x@cellMeta$dataset, levels = value)
-            names(x@datasets) <- value
+#' @method names<- liger
+`names<-.liger` <- function(x, value) {
+    originalNames <- names(x)
+    if (!identical(value, originalNames)) {
+        dataset.idx <- lapply(originalNames, function(n) {
+            x$dataset == n
+        })
+        x@cellMeta$dataset <- as.character(x@cellMeta$dataset)
+        for (i in seq_along(value)) {
+            x@cellMeta$dataset[dataset.idx[[i]]] <- value[i]
         }
-        x
-    })
+        x@cellMeta$dataset <- factor(x@cellMeta$dataset, levels = value)
+        names(x@datasets) <- value
+    }
+    x
+}
 
 #' @rdname liger-class
 #' @export
-setMethod("length", signature(x = "liger"), function(x) {
+#' @method length liger
+length.liger <- function(x) {
     .checkObjVersion(x)
-    length(datasets(x))
-})
+    length(x@datasets)
+}
+
+#' @rdname liger-class
+#' @export
+#' @method lengths liger
+lengths.liger <- function(x, use.names = TRUE) {
+    .checkObjVersion(x)
+    len <- sapply(x@datasets, ncol)
+    if (isTRUE(use.names)) names(len) <- names(x@datasets)
+    else names(len) <- NULL
+    return(len)
+}
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Cell metadata ####
@@ -945,16 +956,14 @@ setMethod("getH5File",
 }
 
 #' Set cell metadata variable
-#' @rdname sub-subset-.liger
+#' @rdname liger-class
 #' @param x A \linkS4class{liger} object
-#' @param i Name or numeric index of cell meta to be replaced
-#' @param j Ignored
-#' @param ... Other argument that might be applied to [[<-,S4Vectors::DataFrame
+#' @param i Name or numeric index of cell meta variable to be replaced
 #' @param value Metadata value to be inserted
-#' @aliases [[<-,liger,ANY,missing-method
-#' @aliases [[<-,liger-method
 #' @return Input liger object updated with replaced/new variable in
 #' \code{cellMeta(x)}.
+#' @export
+#' @method [[<- liger
 #' @examples
 #' cellMeta(pbmc)
 #' # Add new variable
@@ -963,14 +972,18 @@ setMethod("getH5File",
 #' # Change existing variable
 #' pbmc[["newVar"]][1:3] <- 1:3
 #' cellMeta(pbmc)
-setMethod(
-    f = '[[<-',
-    signature = c(x = 'liger', i = 'ANY', j = 'missing', value = 'ANY'),
-    definition = function(x, i, ..., value) {
-        x@cellMeta[[i, ...]] <- value
-        return(x)
+`[[<-.liger` <- function(x, i, value) {
+    name <- if (is.character(i)) i else colnames(x@cellMeta)[i]
+    if (name == "dataset") {
+        cli::cli_abort(
+            c("x" = "Cannot directly modify {.var dataset} variable in {.cls liger} object.",
+              "i" = "Please use {.code names(x) <- value} instead.")
+        )
     }
-)
+    x@cellMeta[[i]] <- value
+    validObject(x)
+    return(x)
+}
 
 #' @export
 #' @method .DollarNames liger
@@ -981,22 +994,19 @@ setMethod(
 
 #' @export
 #' @rdname liger-class
-setMethod(
-    "$",
-    signature(x = "liger"),
-    function(x, name) {
-        if (!name %in% colnames(cellMeta(x))) NULL
-        else cellMeta(x, columns = name)
-    }
-)
+#' @method $ liger
+`$.liger` <- function(x, name) {
+    if (!name %in% colnames(cellMeta(x))) NULL
+    else cellMeta(x, columns = name)
+}
 
 #' @export
 #' @rdname liger-class
-setReplaceMethod("$", signature(x = "liger"),
-                 function(x, name, value) {
-                     cellMeta(x, columns = name) <- value
-                     return(x)
-                 })
+#' @method $<- liger
+`$<-.liger` <- function(x, name, value) {
+    cellMeta(x, columns = name) <- value
+    return(x)
+}
 
 #' @export
 #' @rdname liger-class

@@ -35,9 +35,10 @@
 \alias{dataset<-,liger,character,missing,ANY,ligerDataset-method}
 \alias{dataset<-,liger,character,ANY,ANY,matrixLike-method}
 \alias{dataset<-,liger,character,missing,ANY,NULL-method}
-\alias{names,liger-method}
-\alias{names<-,liger,character-method}
-\alias{length,liger-method}
+\alias{names.liger}
+\alias{names<-.liger}
+\alias{length.liger}
+\alias{lengths.liger}
 \alias{cellMeta,liger,NULL-method}
 \alias{cellMeta,liger,character-method}
 \alias{cellMeta,liger,missing-method}
@@ -60,8 +61,9 @@
 \alias{scaleUnsharedData<-,liger,ANY,ANY,H5Group-method}
 \alias{getMatrix,liger,ANY,ANY,ANY-method}
 \alias{getH5File,liger,ANY-method}
-\alias{$,liger-method}
-\alias{$<-,liger-method}
+\alias{[[<-.liger}
+\alias{$.liger}
+\alias{$<-.liger}
 \alias{defaultCluster,liger-method}
 \alias{defaultCluster<-,liger,ANY,ANY,character-method}
 \alias{defaultCluster<-,liger,ANY,ANY,factor-method}
@@ -157,11 +159,13 @@ commands(x, funcName = NULL, arg = NULL)
 
 \S4method{dataset}{liger,character,missing,ANY,NULL}(x, dataset, type = NULL, qc = TRUE) <- value
 
-\S4method{names}{liger}(x)
+\method{names}{liger}(x)
 
-\S4method{names}{liger,character}(x) <- value
+\method{names}{liger}(x) <- value
 
-\S4method{length}{liger}(x)
+\method{length}{liger}(x)
+
+\method{lengths}{liger}(x, use.names = TRUE)
 
 \S4method{cellMeta}{liger,NULL}(
   x,
@@ -241,9 +245,11 @@ commands(x, funcName = NULL, arg = NULL)
 
 \S4method{getH5File}{liger,ANY}(x, dataset = NULL)
 
-\S4method{$}{liger}(x, name)
+\method{[[}{liger}(x, i) <- value
 
-\S4method{$}{liger}(x, name) <- value
+\method{$}{liger}(x, name)
+
+\method{$}{liger}(x, name) <- value
 
 \S4method{defaultCluster}{liger}(x, useDatasets = NULL, droplevels = FALSE, ...)
 
@@ -289,7 +295,7 @@ commands(x, funcName = NULL, arg = NULL)
 \item{check}{Logical, whether to perform object validity check on setting new
 value. Users are not supposed to set \code{FALSE} here.}
 
-\item{value}{Check detail sections for requirements.}
+\item{value}{Metadata value to be inserted}
 
 \item{dataset}{Name or numeric index of a dataset}
 
@@ -331,6 +337,8 @@ name of a new variable to store.}
 dataset-specific matrix (i.e. expression matrices, H, V or U) is requested.
 Default \code{FALSE}.}
 
+\item{i}{Name or numeric index of cell meta variable to be replaced}
+
 \item{droplevels}{Whether to remove unused cluster levels from the factor
 object fetched by \code{defaultCluster()}. Default \code{FALSE}.}
 
@@ -339,9 +347,14 @@ default for visualization methods. Default \code{NULL} sets it when no
 default has been set yet, otherwise does not change current default.}
 
 \item{data}{fortify method required argument. Not used.}
+
+\item{x}{A \linkS4class{liger} object}
 }
 \value{
 See detailed sections for explanetion.
+
+Input liger object updated with replaced/new variable in
+\code{cellMeta(x)}.
 }
 \description{
 \code{liger} object is the main data container for LIGER
@@ -581,4 +594,11 @@ c(pbmcPlot, pbmcPlot)
 
 library(ggplot2)
 ggplot(pbmcPlot, aes(x = UMAP.1, y = UMAP.2)) + geom_point()
+cellMeta(pbmc)
+# Add new variable
+pbmc[["newVar"]] <- 1
+cellMeta(pbmc)
+# Change existing variable
+pbmc[["newVar"]][1:3] <- 1:3
+cellMeta(pbmc)
 }
