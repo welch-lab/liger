@@ -20,7 +20,7 @@
 #' @param nExp The total number of doublet predictions produced. Scalar for all
 #' used datasets or vector for each. Default \code{NULL} sets a 0.15 proportion.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Additional arguments passed to
 #' \code{DoubletFinder::doubletFinder}.
 #' @return Updated \code{object} with variables \code{DoubletFinder_pANN} and
@@ -37,7 +37,7 @@ runDoubletFinder <- function(
         PCs = 1:10,
         nNeighbors = 20,
         nExp = NULL,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     if (!requireNamespace("DoubletFinder", quietly = TRUE)) { # nocov start

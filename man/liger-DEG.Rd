@@ -18,7 +18,7 @@ runPairwiseDEG(
   nPsdRep = 5,
   minCellPerRep = 10,
   seed = 1,
-  verbose = getOption("ligerVerbose")
+  verbose = getOption("ligerVerbose", TRUE)
 )
 
 runMarkerDEG(
@@ -32,7 +32,7 @@ runMarkerDEG(
   nPsdRep = 5,
   minCellPerRep = 10,
   seed = 1,
-  verbose = getOption("ligerVerbose")
+  verbose = getOption("ligerVerbose", TRUE)
 )
 
 runWilcoxon(
@@ -67,7 +67,7 @@ less than this number of cells. Default \code{10}.}
 \code{1}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{conditionBy}{\code{cellMeta} variable(s). Marker detection will be
 performed for each level of this variable. Multiple variables will be

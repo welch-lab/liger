@@ -366,17 +366,21 @@ setReplaceMethod("dataset", signature(x = "liger", dataset = "character",
                                       type = "ANY", qc = "ANY",
                                       value = "matrixLike"),
                  function(x, dataset,
-                          type = c("rawData", "normData", "scaleData"),
+                          type = c("rawData", "normData"),
                           qc = FALSE,
                           value) {
                      type <- match.arg(type)
+                     if (!all(startsWith(colnames(value), paste0(dataset, "_")))) {
+                         cli::cli_alert_warning(
+                             "Colnames of {.var value} do not all start with {.val {dataset}_}.
+                                  Prefix added."
+                         )
+                         colnames(value) <- paste0(dataset, "_", colnames(value))
+                     }
                      if (type == "rawData") {
                          ld <- createLigerDataset(rawData = value)
-                         colnames(ld) <- paste0(dataset, "_", colnames(ld))
-                     } else if (type == "normData") {
+                     } else {
                          ld <- createLigerDataset(normData = value)
-                     } else if (type == "scaleData") {
-                         ld <- createLigerDataset(scaleData = value)
                      }
                      dataset(x, dataset, qc = qc) <- ld
                      x
@@ -415,17 +419,19 @@ names.liger <- function(x) {
 #' @method names<- liger
 `names<-.liger` <- function(x, value) {
     originalNames <- names(x)
-    if (!identical(value, originalNames)) {
-        dataset.idx <- lapply(originalNames, function(n) {
-            x$dataset == n
-        })
-        x@cellMeta$dataset <- as.character(x@cellMeta$dataset)
-        for (i in seq_along(value)) {
-            x@cellMeta$dataset[dataset.idx[[i]]] <- value[i]
-        }
-        x@cellMeta$dataset <- factor(x@cellMeta$dataset, levels = value)
-        names(x@datasets) <- value
+    if (identical(value, originalNames)) return(x)
+    if (any(duplicated(value)))
+        cli::cli_abort("Duplicated dataset names are not allowed.")
+
+    dataset.idx <- lapply(originalNames, function(n) {
+        x$dataset == n
+    })
+    x@cellMeta$dataset <- as.character(x@cellMeta$dataset)
+    for (i in seq_along(value)) {
+        x@cellMeta$dataset[dataset.idx[[i]]] <- value[i]
     }
+    x@cellMeta$dataset <- factor(x@cellMeta$dataset, levels = value)
+    names(x@datasets) <- value
     x
 }
 

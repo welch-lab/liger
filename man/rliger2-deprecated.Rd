@@ -26,7 +26,7 @@ louvainCluster(
   nRandomStarts = 10,
   nIterations = 100,
   random.seed = 1,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   dims.use = NULL
 )
 

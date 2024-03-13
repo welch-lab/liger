@@ -155,7 +155,7 @@ commands(x, funcName = NULL, arg = NULL)
 
 \S4method{dataset}{liger,character,missing,ANY,ligerDataset}(x, dataset, type = NULL, qc = TRUE) <- value
 
-\S4method{dataset}{liger,character,ANY,ANY,matrixLike}(x, dataset, type = c("rawData", "normData", "scaleData"), qc = FALSE) <- value
+\S4method{dataset}{liger,character,ANY,ANY,matrixLike}(x, dataset, type = c("rawData", "normData"), qc = FALSE) <- value
 
 \S4method{dataset}{liger,character,missing,ANY,NULL}(x, dataset, type = NULL, qc = TRUE) <- value
 

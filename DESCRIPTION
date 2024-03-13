@@ -37,7 +37,7 @@ LazyData: true
 RoxygenNote: 7.3.1
 VignetteBuilder: knitr
 Encoding: UTF-8
-LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress
+LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 Depends:
     methods,
     stats,

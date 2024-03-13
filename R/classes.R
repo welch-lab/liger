@@ -203,6 +203,16 @@ liger <- setClass(
     return(NULL)
 }
 
+.checkDatasetVar <- function(x) {
+    if (!is.factor(x@cellMeta$dataset)) {
+        return("\"dataset\" variable in cellMeta is not a factor")
+    }
+    if (!identical(x@cellMeta$dataset, names(x@datasets))) {
+        return("`levels(x$dataset)` does not match `names(x)`.")
+    }
+    return(NULL)
+}
+
 .checkLigerBarcodes <- function(x) {
     bcFromDatasets <- unlist(lapply(datasets(x), colnames), use.names = FALSE)
     if (!identical(colnames(x), bcFromDatasets)) {
@@ -271,8 +281,9 @@ liger <- setClass(
 }
 
 .valid.liger <- function(object) {
-    # message("Checking liger object validity")
     res <- .checkAllDatasets(object)
+    if (!is.null(res)) return(res)
+    res <- .checkDatasetVar(object)
     if (!is.null(res)) return(res)
     res <- .checkLigerBarcodes(object)
     if (!is.null(res)) return(res)
