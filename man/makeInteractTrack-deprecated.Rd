@@ -26,5 +26,5 @@ which is compatible with \href{https://genome.ucsc.edu/cgi-bin/hgCustom}{UCSC
 Genome Browser}.
 }
 \seealso{
-\code{\link{rliger2-deprecated}}, \code{\link{exportInteractTrack}}
+\code{\link{rliger-deprecated}}, \code{\link{exportInteractTrack}}
 }

@@ -46,7 +46,7 @@
 #' pbmc1 <- createLiger(list(ctrl = ctrl.raw, stim = stim.raw))
 #'
 #' # Create from H5 files
-#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger2")
+#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
 #' print(h5Path)
 #' lig <- createLiger(list(ctrl = h5Path))
 #'
@@ -359,7 +359,7 @@ createH5LigerDataset <- function(
 #' pbmc <- readLiger(tempPath)
 #'
 #' # Save and read H5-based liger object
-#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger2")
+#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
 #' lig <- createLiger(list(ctrl = h5Path))
 #' tempPath <- tempfile(fileext = ".rds")
 #' saveRDS(lig, tempPath)
@@ -381,7 +381,7 @@ readLiger <- function(
     cli::cli_alert_info("Older version ({.val {ver}}) of {.cls liger} object detected.")
     if (isTRUE(update)) {
         cli::cli_alert_info(
-            "Updating the object structure to make it compatible with current version {.val {utils::packageVersion('rliger2')}}"
+            "Updating the object structure to make it compatible with current version {.val {utils::packageVersion('rliger')}}"
         )
         return(convertOldLiger(obj, dimredName = dimredName,
                                clusterName = clusterName,

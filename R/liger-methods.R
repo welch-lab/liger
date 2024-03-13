@@ -59,7 +59,7 @@ is.newLiger <- function(object) {
 #' names(pbmcPlot)
 #' length(pbmcPlot)
 #'
-#' # rliger2 generics
+#' # rliger generics
 #' ## Retrieving dataset(s), replacement methods available
 #' datasets(pbmcPlot)
 #' dataset(pbmcPlot, "ctrl")
@@ -79,7 +79,9 @@ is.newLiger <- function(object) {
 #' commands(pbmcPlot, funcName = "scaleNotCenter")
 #'
 #' # S3 methods
-#' c(pbmcPlot, pbmcPlot)
+#' pbmcPlot2 <- pbmcPlot
+#' names(pbmcPlot2) <- paste0(names(pbmcPlot), 2)
+#' c(pbmcPlot, pbmcPlot2)
 #'
 #' library(ggplot2)
 #' ggplot(pbmcPlot, aes(x = UMAP.1, y = UMAP.2)) + geom_point()
@@ -445,6 +447,7 @@ length.liger <- function(x) {
 
 #' @rdname liger-class
 #' @export
+#' @param use.names Whether returned vector should be named with dataset names.
 #' @method lengths liger
 lengths.liger <- function(x, use.names = TRUE) {
     .checkObjVersion(x)
@@ -963,7 +966,6 @@ setMethod("getH5File",
 
 #' Set cell metadata variable
 #' @rdname liger-class
-#' @param x A \linkS4class{liger} object
 #' @param i Name or numeric index of cell meta variable to be replaced
 #' @param value Metadata value to be inserted
 #' @return Input liger object updated with replaced/new variable in
@@ -987,7 +989,7 @@ setMethod("getH5File",
         )
     }
     x@cellMeta[[i]] <- value
-    validObject(x)
+    methods::validObject(x)
     return(x)
 }
 
@@ -1319,6 +1321,13 @@ c.liger <- function(...) {
     objList <- list(...)
     if (any(sapply(objList, function(obj) !inherits(obj, "liger"))))
         cli::cli_abort("Can only combine {.cls liger} objects with {.fn c} method for now.")
+    allNames <- unlist(lapply(objList, names))
+    if (any(duplicated(allNames)))
+        cli::cli_abort(
+            c("x" = "Cannot combine {.cls liger} objects with duplicated dataset names.",
+              "i" = "Dataset names of an individual {.cls liger} object can be modified with {.code names(x) <- value}.")
+        )
+
     objList[[length(objList)]] <- recordCommand(objList[[length(objList)]])
     allDatasets <- list()
     allCellMeta <- NULL
@@ -1333,7 +1342,7 @@ c.liger <- function(...) {
     }
     methods::new("liger", datasets = allDatasets, cellMeta = allCellMeta,
                  varFeatures = varFeatures, commands = allCommands,
-                 version = utils::packageVersion("rliger2"))
+                 version = utils::packageVersion("rliger"))
 }
 
 

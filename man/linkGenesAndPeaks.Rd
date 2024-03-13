@@ -66,7 +66,7 @@ if (requireNamespace("RcppPlanc", quietly = TRUE)) {
     bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
     corr <- linkGenesAndPeaks(
         bmmc, useDataset = "rna",
-        pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2")
+        pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger")
     )
 }
 }

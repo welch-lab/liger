@@ -1,10 +1,10 @@
 has_RcppPlanc <- requireNamespace("RcppPlanc", quietly = TRUE)
-data("pbmc", package = "rliger2")
+data("pbmc", package = "rliger")
 rawDataList <- getMatrix(pbmc, "rawData")
 
 withNewH5Copy <- function(fun) {
-    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger2")
-    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger2")
+    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger")
+    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
     if (!file.exists(ctrlpath.orig))
         stop("Cannot find original h5 file at: ", ctrlpath.orig)
     if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
@@ -179,7 +179,7 @@ test_that("liger S3/S4 methods", {
     expect_is(varFeatures(pbmc), "character")
     expect_no_error(varFeatures(pbmc) <- varFeatures(pbmc))
 
-    expect_is(c(pbmc, pbmc), "liger")
+    expect_error(expect_is(c(pbmc, pbmc), "liger"))
     expect_is(ggplot2::fortify(pbmc), "data.frame")
 
     expect_no_error(print(commands(pbmc, "normalize")))
@@ -267,7 +267,7 @@ test_that("ligerDataset methods", {
 
     expect_is(featureMeta(ctrl), "DFrame")
     expect_no_error(featureMeta(ctrl) <- featureMeta(ctrl))
-    expect_no_error(featureMeta(ctrl) <- rliger2:::.DataFrame.as.data.frame(featureMeta(ctrl)))
+    expect_no_error(featureMeta(ctrl) <- rliger:::.DataFrame.as.data.frame(featureMeta(ctrl)))
 
     stim <- dataset(pbmc, "stim")
     merged <- cbind(ctrl, stim)

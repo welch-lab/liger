@@ -4,11 +4,11 @@
 \name{makeInteractTrack}
 \alias{makeInteractTrack}
 \alias{louvainCluster}
-\alias{rliger2-deprecated}
+\alias{rliger-deprecated}
 \alias{optimizeALS}
 \alias{online_iNMF}
 \alias{quantile_norm}
-\title{Deprecated functions in package \pkg{rliger2}.}
+\title{Deprecated functions in package \pkg{rliger}.}
 \usage{
 makeInteractTrack(
   corr.mat,

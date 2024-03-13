@@ -26,7 +26,7 @@ Here we demonstrate integrating a scRNA (Dropviz) dataset of the mouse frontal c
 The datasets provided are presented in "dgCMatrix" class, which is a common form of sparse matrix in R. We can then create a liger object with a named list of the matrices. The unshared features should not be subsetted out, or submitted separately. Rather, they should be included in the matrix submitted for that dataset. This helps ensure proper normalization. Different from other UINMF tutorials, we set the modality of each dataset with argument `modal`, in this way, a slot for spatial coordinates is preserved for the STARmap dataset.
 
 ```{r load}
-library(rliger2)
+library(rliger)
 
 dropviz <- readRDS("starmap_data/Dropviz_starmap_vig.RDS")
 starmap <- readRDS("starmap_data/STARmap_vig.RDS")

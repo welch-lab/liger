@@ -95,15 +95,12 @@ runUMAP <- function(
 #' By default \code{\link[Rtsne]{Rtsne}} (Barnes-Hut implementation of t-SNE)
 #' method is invoked, while alternative "fftRtsne" method (FFT-accelerated
 #' Interpolation-based t-SNE, using Kluger Lab implementation) is also
-#' supported.
+#' supported. For very large datasets, it is recommended to use
+#' \code{method = "fftRtsne"} due to its efficiency and scalability.
 #'
-#' In order to run fftRtsne (recommended for large datasets), FIt-SNE must be
-#' installed as instructed in detailed
-#' \href{https://github.com/KlugerLab/FIt-SNE}{here}. Include the path to the
-#' cloned FIt-SNE directory as the \code{fitsne.path} parameter, though this is
-#' only necessary for the first call to run \code{runTSNE}. For more detailed
-#' FIt-SNE installation instructions, see the liger repo
-#' \href{https://github.com/welch-lab/liger#readme}{README}.
+#' Extra external installation steps are required for using "fftRtsne" method.
+#' Please consult
+#' \href{https://welch-lab.github.io/liger/articles/installation.html}{detailed guide}.
 #' @param object \linkS4class{liger} object with factorization results.
 #' @param useRaw Whether to use un-aligned cell factor loadings (\eqn{H}
 #' matrices). Default \code{NULL} search for quantile-normalized loadings first

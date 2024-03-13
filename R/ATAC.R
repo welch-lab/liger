@@ -171,7 +171,7 @@ imputeKNN <- function(
 #'     bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
 #'     corr <- linkGenesAndPeaks(
 #'         bmmc, useDataset = "rna",
-#'         pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2")
+#'         pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger")
 #'     )
 #' }
 linkGenesAndPeaks <- function(
@@ -359,12 +359,12 @@ linkGenesAndPeaks <- function(
 #'     bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
 #'     corr <- linkGenesAndPeaks(
 #'         bmmc, useDataset = "rna",
-#'         pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2")
+#'         pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger")
 #'     )
 #'     resultPath <- tempfile()
 #'     exportInteractTrack(
 #'         corrMat = corr,
-#'         pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2"),
+#'         pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger"),
 #'         outputPath = resultPath
 #'     )
 #'     head(read.table(resultPath, skip = 1))
@@ -478,10 +478,10 @@ exportInteractTrack <- function(
 #' current working directory.
 #' @return No return value. A file located at \code{outputPath} will be created.
 #' @name makeInteractTrack-deprecated
-#' @seealso \code{\link{rliger2-deprecated}}, \code{\link{exportInteractTrack}}
+#' @seealso \code{\link{rliger-deprecated}}, \code{\link{exportInteractTrack}}
 NULL
 
-#' @rdname rliger2-deprecated
+#' @rdname rliger-deprecated
 #' @section \code{makeInteractTrack}:
 #' For \code{makeInteractTrack}, use \code{\link{exportInteractTrack}}.
 #' @export

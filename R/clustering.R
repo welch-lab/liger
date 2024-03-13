@@ -156,10 +156,10 @@ runCluster <- function(
 #' \code{"louvain_cluster"} variable in \code{cellMeta} slot. Can be fetched
 #' with \code{object$louvain_cluster}
 #' @name louvainCluster-deprecated
-#' @seealso \code{\link{rliger2-deprecated}}
+#' @seealso \code{\link{rliger-deprecated}}
 NULL
 
-#' @rdname rliger2-deprecated
+#' @rdname rliger-deprecated
 #' @section \code{louvainCluster}:
 #' For \code{louvainCluster}, use \code{\link{runCluster}(method = "louvain")}
 #' as the replacement, while \code{\link{runCluster}} with default

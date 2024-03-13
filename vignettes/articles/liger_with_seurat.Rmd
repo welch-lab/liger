@@ -25,7 +25,7 @@ This vignette uses the example shown on [Seurat official integration tutorial](h
 library(Seurat)
 library(SeuratData)
 library(patchwork)
-library(rliger2)
+library(rliger)
 
 InstallData("ifnb")
 
@@ -161,7 +161,7 @@ Note that when converting a Seurat object to a liger object, only the raw gene e
 Downstream analysis after obtaining joint clustering labels from the integration is always a common use case. LIGER provides a wide range of methods for this purpose, such as `runMarkerDEG()` and `runPairwiseDEG()` that help with across-cluster or across-condition-per-cluster comparison; `imputeKNN()` and `linkGenesAndPeaks()` for cross comparison between dual-omics data; `runGOEnrich()` and `runGSEA()` for functional enrichment analysis. For extending the analysis with as much possibility as possible, we provide conversion methods for the exporting a liger object to a more publically known structure.
 
 ```{r asseurat}
-data("pbmc", package = "rliger2")
+data("pbmc", package = "rliger")
 # Go through a full regular LIGER analysis
 pbmc <- pbmc %>%
     normalize() %>%

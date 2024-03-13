@@ -24,7 +24,7 @@ For the first portion of this protocol, we will be integrating data from control
 **For convenience, we have prepared the pre-processed data which are ready to use.** There are two datasets: PBMC control and PBMC interferon-stimulated. We provided ready-to-use liger object, which can be easily loaded with `importPBMC()`. 
 
 ```{r, results='hide'}
-library(rliger2)
+library(rliger)
 pbmcLiger <- importPBMC()
 ```
 

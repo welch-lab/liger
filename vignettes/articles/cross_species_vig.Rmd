@@ -24,7 +24,7 @@ For this tutorial, we will use two datasets, which can all be downloaded at http
 The input raw count matrices are presented in dgCMatrix class objects, which is a common form of sparse matrix. Users can then create a `liger` object with the two datasets. A named list is required for submitting the datasets to the object creator. 
 
 ```{r readRDS}
-library(rliger2)
+library(rliger)
 options(ligerDotSize = 0.5)
 
 mouse <- readRDS("cross_species_vignette_data/Drop_mouse.RDS")

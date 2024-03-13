@@ -371,10 +371,10 @@ runCINMF.Seurat <- function(
         Vs[[i]] <- colNormalize_dense_cpp(V, L = 1)
     }
     # Vs <- lapply(seq_along(object), function(i) {
-    #     matrix(runif(nrow(W) * k, 0, 2), nrow(W), k)
+    #     matrix(stats::runif(nrow(W) * k, 0, 2), nrow(W), k)
     # })
     Hs <- lapply(seq_along(object), function(i) {
-        matrix(runif(ncol(object[[i]]) * k, 0, 2), ncol(object[[i]]), k)
+        matrix(stats::runif(ncol(object[[i]]) * k, 0, 2), ncol(object[[i]]), k)
     })
 
     if (isTRUE(verbose)) cli::cli_process_done(id = cliID)

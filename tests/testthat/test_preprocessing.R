@@ -1,11 +1,11 @@
 ## Tests for object creation and preprocessing
 
-data("pbmc", package = "rliger2")
+data("pbmc", package = "rliger")
 rawDataList <- getMatrix(pbmc, "rawData")
 
 withNewH5Copy <- function(fun) {
-  ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger2")
-  stimpath.orig <- system.file("extdata/stim.h5", package = "rliger2")
+  ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger")
+  stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
   if (!file.exists(ctrlpath.orig))
     stop("Cannot find original h5 file at: ", ctrlpath.orig)
   if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")

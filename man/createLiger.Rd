@@ -87,7 +87,7 @@ stim.raw <- rawData(pbmc, "stim")
 pbmc1 <- createLiger(list(ctrl = ctrl.raw, stim = stim.raw))
 
 # Create from H5 files
-h5Path <- system.file("extdata/ctrl.h5", package = "rliger2")
+h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
 print(h5Path)
 lig <- createLiger(list(ctrl = h5Path))
 

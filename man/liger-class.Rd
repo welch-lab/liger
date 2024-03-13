@@ -331,6 +331,8 @@ name of a new variable to store.}
 
 \item{funcName, arg}{See Command records section.}
 
+\item{use.names}{Whether returned vector should be named with dataset names.}
+
 \item{slot}{Name of slot to retrieve matrix from. Options shown in Usage.}
 
 \item{returnList}{Logical, whether to force return a list even when only one
@@ -347,8 +349,6 @@ default for visualization methods. Default \code{NULL} sets it when no
 default has been set yet, otherwise does not change current default.}
 
 \item{data}{fortify method required argument. Not used.}
-
-\item{x}{A \linkS4class{liger} object}
 }
 \value{
 See detailed sections for explanetion.
@@ -401,7 +401,7 @@ accordingly.}
 
 \item{\code{uns}}{List for unstructured meta-info of analyses or presets.}
 
-\item{\code{version}}{Record of version of rliger2 package}
+\item{\code{version}}{Record of version of rliger package}
 }}
 
 \section{Dataset access}{
@@ -570,7 +570,7 @@ pbmcPlot[varFeatures(pbmcPlot)[1:10], 1:10]
 names(pbmcPlot)
 length(pbmcPlot)
 
-# rliger2 generics
+# rliger generics
 ## Retrieving dataset(s), replacement methods available
 datasets(pbmcPlot)
 dataset(pbmcPlot, "ctrl")
@@ -590,7 +590,9 @@ commands(pbmcPlot)
 commands(pbmcPlot, funcName = "scaleNotCenter")
 
 # S3 methods
-c(pbmcPlot, pbmcPlot)
+pbmcPlot2 <- pbmcPlot
+names(pbmcPlot2) <- paste0(names(pbmcPlot), 2)
+c(pbmcPlot, pbmcPlot2)
 
 library(ggplot2)
 ggplot(pbmcPlot, aes(x = UMAP.1, y = UMAP.2)) + geom_point()

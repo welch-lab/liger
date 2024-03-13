@@ -62,5 +62,5 @@ as it represents the shared components of the metagenes across datasets. The
 V matrices represent the dataset-specific components of the metagenes.
 }
 \seealso{
-\code{\link{rliger2-deprecated}}
+\code{\link{rliger-deprecated}}
 }

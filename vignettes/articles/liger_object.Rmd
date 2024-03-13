@@ -32,7 +32,7 @@ In the new version, on the right side, we first introduce another new class, [li
 We demonstrate examples below with example dataset "[pbmc](../reference/pbmc.html)", which is a minimal subset from the study conducted in Hyun Min Kang and et. al., Nature Biotechnology, 2018. The data is a ready to use (new) liger object with only raw counts data. We quickly process it here so that we can show how to retrieve all kinds of data in sections below.
 
 ```{R, message=FALSE, warning=FALSE, results="hide"}
-library(rliger2)
+library(rliger)
 data("pbmc")
 pbmc <- pbmc %>%
     normalize() %>%
