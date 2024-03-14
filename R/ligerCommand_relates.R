@@ -1,60 +1,14 @@
-setClassUnion("POSIXct_or_NULL", c("POSIXct", "NULL"))
-
-#' ligerCommand object: Record the input and time of a LIGER function call
-#' @slot funcName Name of the function
-#' @slot time A time stamp object
-#' @slot call A character string converted from system call
-#' @slot parameters List of all arguments except the \linkS4class{liger} object.
-#' Large object are summarized to short string.
-#' @slot objSummary List of attributes of the \linkS4class{liger} object as a
-#' snapshot when command is operated.
-#' @slot ligerVersion Character string converted from
-#' \code{packageVersion("rliger2")}.
-#' @slot dependencyVersion Named character vector of version number, if any
-#' dependency library has a chance to be included by the function. A
-#' dependency might only be invoked under certain conditions, such as using
-#' an alternative algorithm, which a call does not actually reach to, but it
-#' would still be included for this call.
-#' @exportClass ligerCommand
-#' @export
-#' @rdname ligerCommand-class
-ligerCommand <- setClass(
-    Class = "ligerCommand",
-    representation(
-        funcName = "character",
-        time = "POSIXct_or_NULL",
-        call = "character",
-        parameters = "list",
-        objSummary = "list",
-        ligerVersion = "character",
-        dependencyVersion = "character"
-    ),
-    prototype(
-        funcName = character(),
-        time = NULL,
-        parameters = list(),
-        objSummary = list(
-            datasets = character(),
-            nCells = numeric(),
-            nFeatures = numeric(),
-            nVarFeatures = numeric(),
-            cellMetaNames = character(),
-            ligerVersion = character(),
-            dependencyVersion = character()
-        )
-    )
-)
-
 # Call in a way like:
 # object <- recordCommand(object, dependencies = ...)
 # Conditionally, should be placed after input checks
 # like `match.arg()` or `.checkUseDatasets()`
+# `...` is for the ... arguments in real function call, so S3 arguments passed
+# to downstream can be also captured
 recordCommand <- function(
         object,
+        ...,
         dependencies = NULL
 ) {
-    #if (!inherits(object, "liger"))
-    #    stop("Can only record commands for operation on a liger object")
     # Generate time stamp
     time <- Sys.time()
     # Capture the call
@@ -80,6 +34,9 @@ recordCommand <- function(
     # beginning of working exported function but after `match.arg()` and etc.
     # is done.
     args <- as.list(parent.frame())
+    # Capture more arguments
+    moreArgs <- list(...)
+    args <- c(args, moreArgs)
     args$object <- NULL
     objSummary <- list(
         datasets = names(object),
@@ -105,7 +62,7 @@ recordCommand <- function(
         "ligerCommand", funcName = funcName,
         objSummary = objSummary,
         parameters = args,
-        ligerVersion = as.character(utils::packageVersion("rliger2")),
+        ligerVersion = as.character(utils::packageVersion("rliger")),
         dependencyVersion = dependVer
     )
     # Do a hash tag to see if an identical operation has been done before
@@ -186,12 +143,12 @@ setMethod(
 commandDiff <- function(object, cmd1, cmd2) {
     cmd1 <- commands(object, cmd1)
     if (!inherits(cmd1, "ligerCommand"))
-        stop("`cmd1` matching with multiple command records. ",
-             "Available options could be viewed with `commands(object)`.")
+        cli::cli_abort("{.code cmd1} matching with multiple command records.
+                       Availble options could be viewed with {.code commands(object)}.")
     cmd2 <- commands(object, cmd2)
     if (!inherits(cmd2, "ligerCommand"))
-        stop("`cmd2` matching with multiple command records. ",
-             "Available options could be viewed with `commands(object)`.")
+        cli::cli_abort("{.code cmd2} matching with multiple command records.
+                       Availble options could be viewed with {.code commands(object)}.")
     .cmdDiff(cmd1, cmd2)
 }
 
@@ -240,7 +197,7 @@ commandDiff <- function(object, cmd1, cmd2) {
     }
     # Versions
     if (x@ligerVersion != y@ligerVersion)
-        msg <- c(msg, paste0("\"rliger2\" versions differ: ", x@ligerVersion,
+        msg <- c(msg, paste0("\"rliger\" versions differ: ", x@ligerVersion,
                              " VS ", y@ligerVersion))
     if (!identical(x@dependencyVersion, y@dependencyVersion))
         msg <- c(msg, paste0("Dependency versions differ. ",
@@ -249,49 +206,4 @@ commandDiff <- function(object, cmd1, cmd2) {
     return(msg)
 }
 
-#' @section Command records:
-#' rliger functions, that perform calculation and update the \code{liger}
-#' object, will be recorded in a \code{ligerCommand} object and stored in the
-#' \code{commands} slot, a list, of \code{liger} object. Method
-#' \code{commands()} is implemented to retrieve or show the log history.
-#' Running with \code{funcName = NULL} (default) returns all command labels.
-#' Specifying \code{funcName} allows partial matching to all command labels
-#' and returns a subset list (of \code{ligerCommand} object) of matches (or
-#' the \code{ligerCommand} object if only one match found). If \code{arg} is
-#' further specified, a subset list of parameters from the matches will be
-#' returned. For example, requesting a list of resolution values used in
-#' all louvain cluster attempts: \code{commands(ligerObj, "louvainCluster",
-#' "resolution")}
-#' @export
-#' @rdname liger-class
-setGeneric(
-    "commands",
-    function(x, funcName = NULL, arg = NULL) standardGeneric("commands")
-)
-
-#' @export
-#' @rdname liger-class
-setMethod(
-    "commands",
-    signature(x = "liger", funcName = "ANY", arg = "ANY"),
-    function(x, funcName = NULL, arg = NULL) {
-        if (is.null(funcName)) return(names(x@commands))
-        cmdIdx <- c()
-        for (n in funcName) {
-            pat <- paste0("^", n)
-            cmdIdx <- c(cmdIdx, grep(pat, names(x@commands)))
-        }
-        cmdIdx <- sort(unique(cmdIdx))
-        result <- x@commands[cmdIdx]
-
-        if (length(result) == 1) result <- result[[1]]
-
-        if (!is.null(arg)) {
-            if (is.list(result))
-                result <- lapply(result, function(cmd) cmd@parameters[arg])
-            else result <- unlist(result@parameters[arg])
-        }
-        return(result)
-    }
-)
 

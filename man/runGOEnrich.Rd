@@ -64,7 +64,9 @@ and calls gene ontology (GO) analysis method provided by gprofiler2.
 res <- runMarkerDEG(pbmcPlot)
 # Setting `significant = FALSE` because it's hard for a gene list obtained
 # from small test dataset to represent real-life biology.
+\donttest{
 go <- runGOEnrich(res, group = 0, significant = FALSE)
+}
 }
 \references{
 Kolberg, L. et al, 2020 and Raudvere, U. et al, 2019

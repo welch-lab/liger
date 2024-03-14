@@ -25,10 +25,18 @@ as \code{filePath}.}
 }
 \description{
 When loading the saved liger object with HDF5 data in a new R
-session, the links to HDF5 files would be corrupted. This functions enables
+session, the links to HDF5 files would be closed. This function enables
 the restoration of those links so that new analyses can be carried out.
 }
 \note{
 \code{restoreOnlineLiger} will be deprecated for clarifying the terms used
 for data structure.
+}
+\examples{
+h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
+lig <- createLiger(list(ctrl = h5Path))
+# Now it is actually an invalid object! which is equivalent to what users
+# will get with `saveRDS(lig, "object.rds"); lig <- readRDS("object.rds")``
+lig <- closeAllH5(lig)
+lig <- restoreH5Liger(lig)
 }

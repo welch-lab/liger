@@ -11,7 +11,7 @@ linkGenesAndPeaks(
   useGenes = NULL,
   method = c("spearman", "pearson", "kendall"),
   alpha = 0.05,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   path_to_coords = pathToCoords,
   genes.list = useGenes,
   dist = method
@@ -38,7 +38,7 @@ Peak-gene correlations with p-values below this threshold are considered
 significant. Default \code{0.05}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{path_to_coords, genes.list, dist}{\bold{Deprecated}. See Usage section
 for replacement.}
@@ -59,14 +59,16 @@ result).
 bmmc <- normalize(bmmc)
 bmmc <- selectGenes(bmmc)
 bmmc <- scaleNotCenter(bmmc)
-bmmc <- online_iNMF(bmmc, miniBatch_size = 80)
-bmmc <- quantileNorm(bmmc)
-bmmc <- normalizePeak(bmmc)
-bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
-corr <- linkGenesAndPeaks(
-    bmmc, useDataset = "rna",
-    pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2")
-)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    bmmc <- runINMF(bmmc, miniBatchSize = 100)
+    bmmc <- quantileNorm(bmmc)
+    bmmc <- normalizePeak(bmmc)
+    bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
+    corr <- linkGenesAndPeaks(
+        bmmc, useDataset = "rna",
+        pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger")
+    )
+}
 }
 \seealso{
 \code{\link{imputeKNN}}

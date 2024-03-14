@@ -6,29 +6,19 @@
 \alias{selectGenes.Seurat}
 \title{Select a subset of informative genes}
 \usage{
-selectGenes(
-  object,
-  useDatasets = NULL,
-  thresh = 0.1,
-  nGenes = NULL,
-  alpha = 0.99,
-  combine = c("union", "intersection"),
-  verbose = getOption("ligerVerbose"),
-  ...
-)
+selectGenes(object, thresh = 0.1, nGenes = NULL, alpha = 0.99, ...)
 
 \method{selectGenes}{liger}(
   object,
-  useDatasets = NULL,
   thresh = 0.1,
   nGenes = NULL,
   alpha = 0.99,
+  useDatasets = NULL,
   useUnsharedDatasets = NULL,
   unsharedThresh = 0.1,
   combine = c("union", "intersection"),
-  capitalize = FALSE,
   chunk = 1000,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   var.thresh = thresh,
   alpha.thresh = alpha,
   num.genes = nGenes,
@@ -47,11 +37,12 @@ selectGenes(
   thresh = 0.1,
   nGenes = NULL,
   alpha = 0.99,
-  useLayer = "ligerNormData",
+  useDatasets = NULL,
+  layer = "ligerNormData",
   assay = NULL,
   datasetVar = "orig.ident",
   combine = c("union", "intersection"),
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 }
@@ -59,10 +50,6 @@ selectGenes(
 \item{object}{A \linkS4class{liger}, \linkS4class{ligerDataset} or
 \code{Seurat} object, with normalized data available (no scale factor
 multipled nor log transformed).}
-
-\item{useDatasets}{A character vector of the names, a numeric or logical
-vector of the index of the datasets to use for shared variable feature
-selection. Default \code{NULL} uses all datasets.}
 
 \item{thresh}{Variance threshold used to identify variable genes. Higher
 threshold results in fewer selected genes. Liger and Seurat S3 methods accept
@@ -78,13 +65,11 @@ does not optimize.}
 \item{alpha}{Alpha threshold. Controls upper bound for expected mean gene
 expression. Lower threshold means higher upper bound. Default \code{0.99}.}
 
-\item{combine}{How to combine variable genes selected from all datasets.
-Choose from \code{"union"} or \code{"intersection"}. Default \code{"union"}.}
-
-\item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
-
 \item{...}{Arguments passed to other methods.}
+
+\item{useDatasets}{A character vector of the names, a numeric or logical
+vector of the index of the datasets to use for shared variable feature
+selection. Default \code{NULL} uses all datasets.}
 
 \item{useUnsharedDatasets}{A character vector of the names, a numeric or
 logical vector of the index of the datasets to use for finding unshared
@@ -96,10 +81,26 @@ unshared features. A single value for all datasets in
 \code{useUnsharedDatasets} or a vector for dataset-specific setting.* Default
 \code{0.1}.}
 
+\item{combine}{How to combine variable genes selected from all datasets.
+Choose from \code{"union"} or \code{"intersection"}. Default \code{"union"}.}
+
 \item{chunk}{Integer. Number of maximum number of cells in each chunk, when
 gene selection is applied to any HDF5 based dataset. Default \code{1000}.}
 
-\item{useLayer}{Where the input normalized counts should be from. Default
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
+
+\item{var.thresh, alpha.thresh, num.genes, datasets.use, unshared.datasets, unshared.thresh}{\bold{Deprecated}.
+These arguments are renamed and will be removed in the future. Please see
+function usage for replacement.}
+
+\item{tol, do.plot, cex.use, unshared}{\bold{Deprecated}. Gene variability
+metric is now visualized with separated function
+\code{\link{plotVarFeatures}}. Users can now set none-NULL
+\code{useUnsharedDatasets} to select unshared genes, instead of having to
+switch \code{unshared} on.}
+
+\item{layer}{Where the input normalized counts should be from. Default
 \code{"ligerNormData"}. For older Seurat, always retrieve from \code{data}
 slot.}
 

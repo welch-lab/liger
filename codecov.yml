@@ -1,7 +1,4 @@
 ignore:
-  - "R/metrics.R"
   - "R/deprecated.R"
-  - "R/visualization.R"
-  - "R/tenX.R"
-  - "R/utilities.R"
+  - "R/archive.R"
 

@@ -6,48 +6,62 @@
 \usage{
 optimizeNewLambda(
   object,
-  new.lambda,
-  thresh = 1e-04,
-  max.iters = 100,
-  rand.seed = 1,
-  verbose = getOption("ligerVerbose")
+  lambdaNew,
+  nIteration = 30,
+  seed = 1,
+  verbose = getOption("ligerVerbose"),
+  new.lambda = lambdaNew,
+  max.iters = nIteration,
+  rand.seed = seed,
+  thresh = NULL
 )
 }
 \arguments{
-\item{object}{\linkS4class{liger} object. Should call
-\code{\link{optimizeALS}} in advance.}
+\item{object}{\linkS4class{liger} object. Should have integrative
+factorization (e.g. \code{\link{runINMF}}) performed in advance.}
 
-\item{new.lambda}{Numeric regularization parameter. Larger values penalize
+\item{lambdaNew}{Numeric regularization parameter. Larger values penalize
 dataset-specific effects more strongly.}
 
-\item{thresh}{Convergence threshold. Convergence occurs when
-\eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-4}.}
+\item{nIteration}{Number of block coordinate descent iterations to
+perform. Default \code{30}.}
 
-\item{max.iters}{Maximum number of block coordinate descent iterations to
-perform. Default \code{100}.}
-
-\item{rand.seed}{Random seed to allow reproducible results. Default \code{1}.}
+\item{seed}{Random seed to allow reproducible results. Default \code{1}. Used
+by \code{\link{runINMF}} factorization.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+
+\item{new.lambda, max.iters, rand.seed}{These arguments are now replaced by
+others and will be removed in the future. Please see usage for replacement.}
+
+\item{thresh}{\bold{Deprecated}. New implementation of iNMF does not require
+a threshold for convergence detection. Setting a large enough
+\code{nIteration} will bring it to convergence.}
 }
 \value{
 Input \code{object} with optimized factorization values updated.
-including the \code{W} matrix in \linkS4class{liger} object, and \code{W} and
+including the \code{W} matrix in \linkS4class{liger} object, and \code{H} and
 \code{V} matrices in each \linkS4class{ligerDataset} object in the
 \code{datasets} slot.
 }
 \description{
 Uses an efficient strategy for updating that takes advantage of
-the information in the existing factorization; uses previous k. Recommended
-mainly when re-optimizing for higher lambda and when new lambda value is
-significantly different; otherwise may not return optimal results.
+the information in the existing factorization; always uses previous k.
+Recommended mainly when re-optimizing for higher lambda and when new lambda
+value is significantly different; otherwise may not return optimal results.
 }
 \examples{
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
-# Only running a few iterations for fast examples
-pbmc <- optimizeALS(pbmc, k = 20, maxIter = 2)
-pbmc <- optimizeNewLambda(pbmc, new = 5.5, max.iters = 2)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    # Only running a few iterations for fast examples
+    pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
+    pbmc <- optimizeNewLambda(pbmc, lambdaNew = 5.5, nIteration = 2)
+}
+}
+\seealso{
+\code{\link{runINMF}}, \code{\link{optimizeNewK}},
+\code{\link{optimizeNewData}}
 }

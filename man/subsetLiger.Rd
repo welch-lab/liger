@@ -10,7 +10,7 @@ subsetLiger(
   cellIdx = NULL,
   useSlot = NULL,
   chunkSize = 1000,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   newH5 = TRUE,
   returnObject = TRUE,
   ...
@@ -33,7 +33,7 @@ Missing or \code{NULL} for all cells.}
 Default \code{1000}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{newH5}{Whether to create new H5 files on disk for the subset datasets
 if involved datasets in the \code{object} is HDF5 based. \code{TRUE} writes a

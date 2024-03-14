@@ -13,29 +13,23 @@ normalize(object, ...)
 
 \method{normalize}{dgCMatrix}(object, log = FALSE, scaleFactor = NULL, ...)
 
-\method{normalize}{ligerDataset}(object, chunk = 1000, verbose = getOption("ligerVerbose"), ...)
+\method{normalize}{ligerDataset}(object, chunk = 1000, verbose = getOption("ligerVerbose", TRUE), ...)
 
 \method{normalize}{liger}(
   object,
   useDatasets = NULL,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   format.type = NULL,
   remove.missing = NULL,
   ...
 )
 
-\method{normalize}{Seurat}(
-  object,
-  assay = NULL,
-  layer = "ligerNormData",
-  useLayer = "counts",
-  ...
-)
+\method{normalize}{Seurat}(object, assay = NULL, layer = "counts", save = "ligerNormData", ...)
 
 normalizePeak(
   object,
   useDatasets = NULL,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 }
@@ -57,7 +51,7 @@ factor before transformation. \code{NULL} for not scaling. Default
 working on HDF5 file based ligerDataset. Default \code{1000}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{useDatasets}{A character vector of the names, a numeric or logical
 vector of the index of the datasets to be normalized. Should specify ATACseq
@@ -71,11 +65,11 @@ needed. Will be ignored if specified.}
 \item{assay}{Name of assay to use. Default \code{NULL} uses current active
 assay.}
 
-\item{layer}{For Seurat>=4.9.9, the name of layer to store normalized data.
-Default \code{"ligerNormData"}. For older Seurat, stored to \code{data} slot.}
-
-\item{useLayer}{Where the input raw counts should be from. Default
+\item{layer}{Where the input raw counts should be from. Default
 \code{"counts"}. For older Seurat, always retrieve from \code{counts} slot.}
+
+\item{save}{For Seurat>=4.9.9, the name of layer to store normalized data.
+Default \code{"ligerNormData"}. For older Seurat, stored to \code{data} slot.}
 }
 \value{
 Updated \code{object}.

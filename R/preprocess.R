@@ -20,7 +20,7 @@
 #' @param chunkSize Integer number of cells to include in a chunk when working
 #' on HDF5 based dataset. Default \code{1000}
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @return Updated \code{object} with \code{nUMI}, \code{nGene} updated
 #' in \code{cellMeta(object)}, as well as expression percentage value for each
 #' feature subset.
@@ -36,7 +36,7 @@ runGeneralQC <- function(
         pattern = NULL,
         useDatasets = NULL,
         chunkSize = 1000,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     .checkObjVersion(object)
     useDatasets <- .checkUseDatasets(object, useDatasets)
@@ -79,7 +79,8 @@ runGeneralQC <- function(
 
     for (d in useDatasets) {
         ld <- dataset(object, d)
-        if (isTRUE(verbose)) .log('calculating QC for dataset "', d, '"')
+        if (isTRUE(verbose))
+            cliID <- cli::cli_process_start("calculating QC for dataset {.val {d}}")
         if (isH5Liger(ld))
             results <- runGeneralQC.h5(
                 ld,
@@ -96,6 +97,7 @@ runGeneralQC <- function(
         object@cellMeta[object$dataset == d, newResultNames] <- results$cell
         featureMeta(ld, check = FALSE)$nCell <- results$feature
         datasets(object, check = FALSE)[[d]] <- ld
+        if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     }
 
     return(object)
@@ -111,7 +113,7 @@ runGeneralQC.h5 <- function(
         object,
         featureSubsets = NULL,
         chunkSize = 1000,
-        verbose = getOption("ligerVerbose")) {
+        verbose = getOption("ligerVerbose", TRUE)) {
     allFeatures <- rownames(object)
     # Initialize results
     cell <- data.frame(row.names = colnames(object))
@@ -154,7 +156,7 @@ runGeneralQC.h5 <- function(
 runGeneralQC.Matrix <- function(
         object,
         featureSubsets = NULL,
-        verbose = getOption("ligerVerbose")) {
+        verbose = getOption("ligerVerbose", TRUE)) {
     nUMI <- Matrix::colSums(rawData(object))
     # Instead of using `nonzero <- rawData > 0` which generates dense logical
     # matrix, keep it sparse with 1 for TRUE
@@ -216,7 +218,7 @@ getProportionMito <- function(object, use.norm = FALSE, pattern = "^mt-") {
         result <- c(result, pctMT)
     }
     if (all(result == 0)) {
-        message("Zero proportion detected in all cells")
+        cli::cli_alert_warning("Zero proportion detected in all cells")
     }
     return(result)
 }
@@ -236,10 +238,12 @@ getProportionMito <- function(object, use.norm = FALSE, pattern = "^mt-") {
 #' @param useDatasets A character vector of the names, a numeric or logical
 #' vector of the index of the datasets to be processed. Default
 #' \code{NULL} removes empty entries from all datasets.
-#' @param filenameSuffix When subsetting H5 based datasets to new H5 files, this
+#' @param newH5 Logical, whether to create a new H5 file on disk for each
+#' H5-based dataset on subset. Default \code{TRUE}
+#' @param filenameSuffix When subsetting H5-based datasets to new H5 files, this
 #' suffix will be added to all the filenames. Default \code{"removeMissing"}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Arguments passed to \code{\link{subsetLigerDataset}}
 #' @return Updated (subset) \code{object}.
 #' @export
@@ -253,21 +257,18 @@ removeMissing <- function(
         minCells = NULL,
         minFeatures = NULL,
         useDatasets = NULL,
-        filenameSuffix = "removeMissing",
         newH5 = TRUE,
-        verbose = getOption("ligerVerbose"),
+        filenameSuffix = "removeMissing",
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
-    if (!inherits(object, "liger")) {
-        stop("Please use a `liger` object.")
-    }
     orient <- match.arg(orient)
     useDatasets <- .checkUseDatasets(object, useDatasets)
     minCells <- minCells %||% rep(0, length(useDatasets))
-    minCells <- .checkArgLen(minCells, length(useDatasets))
+    minCells <- .checkArgLen(minCells, length(useDatasets), class = "numeric")
     names(minCells) <- useDatasets
     minFeatures <- minFeatures %||% rep(0, length(useDatasets))
-    minFeatures <- .checkArgLen(minFeatures, length(useDatasets))
+    minFeatures <- .checkArgLen(minFeatures, length(useDatasets), class = "numeric")
     names(minFeatures) <- useDatasets
     rmFeature <- ifelse(orient %in% c("both", "feature"), TRUE, FALSE)
     rmCell <- ifelse(orient %in% c("both", "cell"), TRUE, FALSE)
@@ -291,7 +292,8 @@ removeMissing <- function(
         rmCellDataset <- length(cellIdx) != ncol(ld)
         subsetted <- c(subsetted, any(c(rmFeatureDataset, rmCellDataset)))
         if (any(c(rmFeatureDataset, rmCellDataset))) {
-            if (isTRUE(verbose)) .log("Removing missing in dataset: ", d)
+            if (isTRUE(verbose))
+                cli::cli_alert_info("Removing missing in dataset: {.val {d}}")
             datasets.new[[d]] <- subsetLigerDataset(
                 ld,
                 featureIdx = featureIdx,
@@ -324,7 +326,7 @@ removeMissing <- function(
 #' @export
 #' @param slot.use \bold{Deprecated}. Always look at \code{rawData} slot of
 #' inner \linkS4class{ligerDataset} objects.
-#' @param use.col \bold{Deprecated}. Previously means "treating each column as
+#' @param use.cols \bold{Deprecated}. Previously means "treating each column as
 #' a cell" when \code{TRUE}, now means \code{orient="cell"}.
 #' @note
 #' \code{removeMissingObs} will be deprecated. \code{removeMissing} covers and
@@ -333,18 +335,16 @@ removeMissingObs <- function(
         object,
         slot.use = NULL,
         use.cols = TRUE,
-        verbose = TRUE) {
+        verbose = getOption("ligerVerbose", TRUE)) {
     lifecycle::deprecate_warn("1.99.0", "removeMissingObs()",
                               "removeMissing()")
-    if (!is.null(slot.use)) {
-        warning("Argument `slot.use` will always be ignored. ",
-                "Please use `removeMissing()` instead.")
+    if (!missing(slot.use)) {
+        cli::cli_alert_warning("Argument {.code slot.use} is deprecated and ignored.")
     }
+    orient <- ifelse(isTRUE(use.cols), "cell", "gene")
+    object <- removeMissing(object, orient, verbose = verbose)
+    return(object)
 }
-
-
-
-
 
 
 
@@ -395,8 +395,9 @@ normalize.dgCMatrix <- function(
         scaleFactor = NULL,
         ...
 ) {
-    if (!is.null(scaleFactor) && (scaleFactor <= 0 | scaleFactor == 1)) {
-        warning("Invalid `scaleDactor` given. Setting to `NULL`.")
+    scaleFactor <- .checkArgLen(scaleFactor, ncol(object), repN = TRUE, class = "numeric")
+    if (!is.null(scaleFactor) && any(scaleFactor <= 0)) {
+        cli::cli_alert_danger("Invalid {.code scaleFactor} given. Setting to {.code NULL}.")
         scaleFactor <- NULL
     }
     normed <- object
@@ -411,12 +412,12 @@ normalize.dgCMatrix <- function(
 #' @param chunk Integer. Number of maximum number of cells in each chunk when
 #' working on HDF5 file based ligerDataset. Default \code{1000}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @method normalize ligerDataset
 normalize.ligerDataset <- function(
         object,
         chunk = 1000,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     if (!isH5Liger(object)) {
@@ -478,7 +479,7 @@ normalize.ligerDataset <- function(
 normalize.liger <- function(
         object,
         useDatasets = NULL,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         format.type = NULL,
         remove.missing = NULL,
         ...
@@ -486,14 +487,15 @@ normalize.liger <- function(
     .deprecateArgs(defunct = c("format.type", "remove.missing"))
     .checkObjVersion(object)
     useDatasets <- .checkUseDatasets(object, useDatasets)
-    object <- recordCommand(object, dependencies = "hdf5r")
+    object <- recordCommand(object, ..., dependencies = "hdf5r")
     for (d in useDatasets) {
+        if (isTRUE(verbose)) cliID <- cli::cli_process_start("Normalizing datasets {.val {d}}")
         # `d` is the name of each dataset
-        if (isTRUE(verbose)) .log("Normalizing dataset: ", d)
         ld <- dataset(object, d)
         ld <- normalize(ld, verbose = verbose, ...)
         datasets(object, check = FALSE)[[d]] <- ld
     }
+    if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     object
 }
 
@@ -501,22 +503,23 @@ normalize.liger <- function(
 #' @export
 #' @param assay Name of assay to use. Default \code{NULL} uses current active
 #' assay.
-#' @param layer For Seurat>=4.9.9, the name of layer to store normalized data.
+#' @param save For Seurat>=4.9.9, the name of layer to store normalized data.
 #' Default \code{"ligerNormData"}. For older Seurat, stored to \code{data} slot.
-#' @param useLayer Where the input raw counts should be from. Default
+#' @param layer Where the input raw counts should be from. Default
 #' \code{"counts"}. For older Seurat, always retrieve from \code{counts} slot.
 #' @method normalize Seurat
 normalize.Seurat <- function(
         object,
         assay = NULL,
-        layer = "ligerNormData",
-        useLayer = "counts",
+        layer = "counts",
+        save = "ligerNormData",
         ...
 ) {
-    raw <- .getSeuratData(object, layer = useLayer, slot = "counts",
+    raw <- .getSeuratData(object, layer = layer, slot = "counts",
                           assay = assay)
-    normed <- normalize(raw, ...)
-    object <- .setSeuratData(object, layer = layer, slot = "data",
+    if (!is.list(raw)) normed <- normalize(raw, ...)
+    else normed <- lapply(raw, normalize, ...)
+    object <- .setSeuratData(object, layer = layer, save = save, slot = "data",
                              value = normed, assay = assay)
     return(object)
 }
@@ -526,24 +529,21 @@ normalize.Seurat <- function(
 normalizePeak <- function(
         object,
         useDatasets = NULL,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     useDatasets <- .checkUseDatasets(object, useDatasets, modal = "atac")
-    object <- recordCommand(object, dependencies = "hdf5r")
+    object <- recordCommand(object, ..., dependencies = "hdf5r")
     for (d in useDatasets) {
+        if (isTRUE(verbose)) cliID <- cli::cli_process_start("Normalizing peak of dataset: {.val {d}}")
         # `d` is the name of each dataset
-        if (isTRUE(verbose)) .log("Normalizing rawPeak counts in dataset: ", d)
         ld <- dataset(object, d)
         normPeak(ld, check = FALSE) <- normalize(rawPeak(ld), ...)
         datasets(object, check = FALSE)[[d]] <- ld
+        if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     }
     object
 }
-
-
-
-
 
 ############################### Select Genes ###################################
 
@@ -574,7 +574,7 @@ normalizePeak <- function(
 #' @param combine How to combine variable genes selected from all datasets.
 #' Choose from \code{"union"} or \code{"intersection"}. Default \code{"union"}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Arguments passed to other methods.
 #' @return Updated object
 #' \itemize{
@@ -594,12 +594,10 @@ normalizePeak <- function(
 #' # Select specified number for each dataset
 #' pbmc <- selectGenes(pbmc, nGenes = c(60, 60))
 selectGenes <- function(
-        object, useDatasets = NULL,
+        object,
         thresh = .1,
         nGenes = NULL,
         alpha = .99,
-        combine = c("union", "intersection"),
-        verbose = getOption("ligerVerbose"),
         ...
 ) {
     UseMethod("selectGenes", object)
@@ -621,18 +619,25 @@ selectGenes <- function(
 #' \code{0.1}.
 #' @param chunk Integer. Number of maximum number of cells in each chunk, when
 #' gene selection is applied to any HDF5 based dataset. Default \code{1000}.
+#' @param var.thresh,alpha.thresh,num.genes,datasets.use,unshared.datasets,unshared.thresh \bold{Deprecated}.
+#' These arguments are renamed and will be removed in the future. Please see
+#' function usage for replacement.
+#' @param tol,do.plot,cex.use,unshared \bold{Deprecated}. Gene variability
+#' metric is now visualized with separated function
+#' \code{\link{plotVarFeatures}}. Users can now set none-NULL
+#' \code{useUnsharedDatasets} to select unshared genes, instead of having to
+#' switch \code{unshared} on.
 selectGenes.liger <- function(
         object,
-        useDatasets = NULL,
         thresh = .1,
         nGenes = NULL,
         alpha = .99,
+        useDatasets = NULL,
         useUnsharedDatasets = NULL,
         unsharedThresh = .1,
         combine = c("union", "intersection"),
-        capitalize = FALSE,
         chunk = 1000,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         var.thresh = thresh,
         alpha.thresh = alpha,
         num.genes = nGenes,
@@ -653,20 +658,20 @@ selectGenes.liger <- function(
                                   unshared.datasets = "useUnsharedDatasets",
                                   unshared.thresh = "unsharedThresh"),
                    defunct = c("tol", "do.plot", "cex.use"))
-    object <- recordCommand(object)
+    object <- recordCommand(object, ...)
     datasetShared <- .checkUseDatasets(object, useDatasets)
     if (!is.null(useUnsharedDatasets))
         datasetUnshared <- .checkUseDatasets(object, useUnsharedDatasets)
     else datasetUnshared <- NULL
     useDatasets <- union(datasetShared, datasetUnshared)
-    thresh <- .checkArgLen(thresh, length(datasetShared))
-    nGenes <- .checkArgLen(nGenes, length(datasetShared))
-    unsharedThresh <- .checkArgLen(unsharedThresh, length(datasetUnshared))
+    thresh <- .checkArgLen(thresh, length(datasetShared), class = "numeric")
+    nGenes <- .checkArgLen(nGenes, length(datasetShared), class = "numeric")
+    unsharedThresh <- .checkArgLen(unsharedThresh, length(datasetUnshared), class = "numeric")
     sharedFeature <- Reduce(intersect, lapply(datasets(object), rownames))
     selectList <- list()
     for (d in useDatasets) {
         if (isTRUE(verbose))
-            .log("Selecting variable features for dataset: ", d)
+            cli::cli_alert_info("Selecting variable features for dataset {.val {d}}")
         ld <- dataset(object, d)
         thresh_i <- thresh[datasetShared == d]
         nGenes_i <- nGenes[datasetShared == d]
@@ -675,7 +680,7 @@ selectGenes.liger <- function(
             ld, sharedFeature = sharedFeature, thresh = thresh_i,
             nGenes = nGenes_i, unshared = d %in% datasetUnshared,
             unsharedThresh = unsharedThresh_i,
-            nUMI = cellMeta(object, "nUMI", useDataset = d),
+            nUMI = cellMeta(object, "nUMI", useDatasets = d),
             alpha = alpha, chunk = chunk, verbose = verbose
         )
         selectList[[d]] <- rownames(ld)[featureMeta(ld)$isVariable]
@@ -684,12 +689,10 @@ selectGenes.liger <- function(
     if (combine == "union") selected <- Reduce(union, selectList)
     else selected <- Reduce(intersect, selectList)
     if (length(selected) == 0) {
-        warning("No genes were selected. Lower `thresh` values or set ",
-                '`combine = "union"`', immediate. = TRUE)
+        cli::cli_alert_danger("No genes were selected. Lower {.code thresh} values or set {.code combine = 'union'}")
     } else {
         if (isTRUE(verbose))
-            .log("Finally ", length(selected),
-                 " shared variable features selected.")
+            cli::cli_alert_success("Finally {length(selected)} shared variable feature{?s} are selected.")
     }
     varFeatures(object) <- selected
     for (d in names(object)) {
@@ -723,9 +726,9 @@ selectGenes.liger <- function(
         unsharedThresh = .1,
         alpha = .99,
         chunk = 1000,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
-    if (is.null(normData(object))) stop("Normalized data not available.")
+    if (is.null(normData(object))) cli::cli_abort("Normalized data not available.")
     if (is.null(sharedFeature)) sharedFeature <- rownames(object)
     sharedFeature <- rownames(object) %in% sharedFeature
     unsharedFeature <- !sharedFeature
@@ -749,8 +752,7 @@ selectGenes.liger <- function(
     featureMeta(object, check = FALSE)$isVariable <-
         rownames(object) %in% selected.shared
     if (isTRUE(verbose)) {
-        .log(length(selected.shared), " features selected out of ",
-             sum(sharedFeature), " shared features", level = 2)
+        cli::cli_alert_success("... {length(selected.shared)} feature{?s} selected out of {sum(sharedFeature)} shared feature{?s}.")
     }
     if (isTRUE(unshared) && length(unsharedFeature) > 0) {
         selected.unshared <- .selectGenes.withMetric(
@@ -762,8 +764,7 @@ selectGenes.liger <- function(
         )
         object@varUnsharedFeatures <- selected.unshared
         if (isTRUE(verbose)) {
-            .log(length(selected.unshared), " features selected out of ",
-                 sum(unsharedFeature), " unshared features", level = 2)
+            cli::cli_alert_success("... {length(selected.unshared)} feature{?s} selected out of {sum(unsharedFeature)} unshared feature{?s}.")
         }
     }
     return(object)
@@ -774,11 +775,11 @@ selectGenes.liger <- function(
 #' @param chunkSize Integer for the maximum number of cells in each chunk.
 #' Default \code{1000}.
 #' @param verbose Logical. Whether to show a progress bar. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @return The input \code{object} with calculated var updated in the H5 file.
 #' @noRd
 calcGeneVars.H5 <- function(object, chunkSize = 1000,
-                            verbose = getOption("ligerVerbose")) {
+                            verbose = getOption("ligerVerbose", TRUE)) {
     h5file <- getH5File(object)
     geneVars <- rep(0, nrow(object))
     geneMeans <- h5file[["gene_means"]][]
@@ -803,7 +804,7 @@ calcGeneVars.H5 <- function(object, chunkSize = 1000,
 #' @export
 #' @rdname selectGenes
 #' @method selectGenes Seurat
-#' @param useLayer Where the input normalized counts should be from. Default
+#' @param layer Where the input normalized counts should be from. Default
 #' \code{"ligerNormData"}. For older Seurat, always retrieve from \code{data}
 #' slot.
 #' @param assay Name of assay to use. Default \code{NULL} uses current active
@@ -815,46 +816,50 @@ selectGenes.Seurat <- function(
         thresh = .1,
         nGenes = NULL,
         alpha = .99,
-        useLayer = "ligerNormData",
+        useDatasets = NULL,
+        layer = "ligerNormData",
         assay = NULL,
         datasetVar = "orig.ident",
         combine = c("union", "intersection"),
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     combine <- match.arg(combine)
-    assay <- if (is.null(assay)) SeuratObject::DefaultAssay(object) else assay
-    mat <- .getSeuratData(object, layer = useLayer, slot = "data",
-                          assay = assay)
+    assay <- assay %||% SeuratObject::DefaultAssay(object)
+    matList <- .getSeuratData(object, layer = layer, slot = "data",
+                              assay = assay)
+    if (is.list(matList)) {
+        # object contain split layers
+        names(matList) <- gsub(paste0(layer, "."), "", names(matList))
+        datasetVar <- factor(rep(names(matList), sapply(matList, ncol)),
+                             levels = names(matList))
+    } else {
+        datasetVar <- object[[datasetVar, drop = TRUE]]
+        if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
+        datasetVar <- droplevels(datasetVar)
+        matList <- splitRmMiss(matList, datasetVar)
+    }
+    useDatasets <- useDatasets %||% levels(datasetVar)
+    matList <- matList[unique(useDatasets)]
 
-    # the last [,1] converts data.frame to the vector/factor
-    datasetVar <- object[[datasetVar]][,1]
-    if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
-    datasetVar <- droplevels(datasetVar)
-    thresh <- .checkArgLen(thresh, nlevels(datasetVar))
+    featureList <- lapply(matList, rownames)
+    allshared <- Reduce(intersect, featureList)
+    allFeatures <- SeuratObject::Features(object, assay = assay)
+    thresh <- .checkArgLen(thresh, nlevels(datasetVar), class = "numeric")
 
     # Get nUMI metric into list
     nUMIVar <- paste0("nCount_", assay)
     nUMIAll <- object[[nUMIVar]][,1]
     nUMIList <- split(nUMIAll, datasetVar)
 
-    # Identify shared features
-    expressedList <- list()
-    for (d in levels(datasetVar)) {
-        submat <- mat[, datasetVar == d, drop = FALSE]
-        expressedList[[d]] <- unique(submat@i + 1) # numeric
-    }
-    allshared <- Reduce(intersect, expressedList) # numeric
-    allshared <- rownames(mat)[sort(allshared)] # character
-
     selectList <- list()
-    hvg.info <- data.frame(row.names = rownames(mat))
+    hvg.info <- data.frame(row.names = allFeatures)
     for (d in levels(datasetVar)) {
         if (isTRUE(verbose))
-            .log("Selecting variable features for dataset: ", d)
-        submat <- mat[, datasetVar == d, drop = FALSE]
-        expressed <- unique(submat@i + 1)
-        submat <- submat[sort(expressed), , drop = FALSE]
+            cli::cli_alert_info("Selecting variable features for dataset: {.val {d}}")
+        submat <- matList[[d]]
+        # submat <- mat[, datasetVar == d, drop = FALSE]
+        # submat <- submat[sort(expressed), , drop = FALSE]
         sharedFeature <- rownames(submat) %in% allshared
         means <- Matrix::rowMeans(submat)
         hvg.info[[paste0("liger.mean.", d)]] <- 0
@@ -873,28 +878,21 @@ selectGenes.Seurat <- function(
             nGenes = nGenes
         )
         if (isTRUE(verbose)) {
-            .log(length(selected), " features selected out of ",
-                 length(allshared), " shared features", level = 2)
+            cli::cli_alert_success("... {length(selected)} features selected out of {length(allshared)} shared features")
         }
         selectList[[d]] <- selected
     }
     if (combine == "union") selected <- Reduce(union, selectList)
     else selected <- Reduce(intersect, selectList)
     if (length(selected) == 0) {
-        warning("No genes were selected. Lower `thresh` values or set ",
-                '`combine = "union"`', immediate. = TRUE)
+        cli::cli_alert_danger("No genes were selected. Lower {.code thresh} values or set {.code combine = 'union'}")
     } else {
         if (isTRUE(verbose))
-            .log("Finally ", length(selected),
-                 " shared variable features selected.")
+            cli::cli_alert_success("Finally {length(selected)} shared variable features selected.")
     }
-    hvg.info$liger.variable <- rownames(mat) %in% selected
+    hvg.info$liger.variable <- allFeatures %in% selected
     assayObj <- Seurat::GetAssay(object, assay = assay)
-    if (utils::packageVersion("SeuratObject") >= package_version("4.9.9")) {
-        assayObj[names(hvg.info)] <- hvg.info
-    } else {
-        assayObj[[names(hvg.info)]] <- hvg.info
-    }
+    assayObj[[names(hvg.info)]] <- hvg.info
     object[[assay]] <- assayObj
     SeuratObject::VariableFeatures(object, assay = assay) <- selected
     return(object)
@@ -936,8 +934,8 @@ selectGenes.Seurat <- function(
 #' @description For each dataset where the feature variablitity is calculated,
 #' a plot of log10 feature expression variance and log10 mean will be produced.
 #' Features that are considered as variable would be highlighted in red.
-#' @param object \linkS4class{liger} object. \code{\link{selectGenes}} need to
-#' run in advance.
+#' @param object \linkS4class{liger} object. \code{\link{selectGenes}} needs to
+#' be run in advance.
 #' @param combinePlot Logical. If \code{TRUE}, sub-figures for all datasets will
 #' be combined into one plot. if \code{FALSE}, a list of plots will be returned.
 #' Default \code{TRUE}.
@@ -948,6 +946,10 @@ selectGenes.Seurat <- function(
 #' @return \code{ggplot} object when \code{combinePlot = TRUE}, a list of
 #' \code{ggplot} objects when \code{combinePlot = FALSE}
 #' @export
+#' @examples
+#' pbmc <- normalize(pbmc)
+#' pbmc <- selectGenes(pbmc)
+#' plotVarFeatures(pbmc)
 plotVarFeatures <- function(
         object,
         combinePlot = TRUE,
@@ -968,17 +970,17 @@ plotVarFeatures <- function(
         trx_per_cell <- cellMeta(object, "nUMI", cellIdx = object$dataset == d)
         nolan_constant <- mean((1 / trx_per_cell))
 
-        data <- as.data.frame(featureMeta(ld))
-        nSelect <- sum(data$is_variable)
+        data <- .DataFrame.as.data.frame(featureMeta(ld))
+        nSelect <- sum(data$isVariable)
         data$geneMeans <- log10(data$geneMeans)
         data$geneVars <- log10(data$geneVars)
-        data$is_variable <- factor(data$is_variable,
-                                   levels = c("TRUE", "FALSE"))
+        data$isVariable <- factor(data$isVariable,
+                                  levels = c("TRUE", "FALSE"))
         p <- ggplot2::ggplot(
             data,
             ggplot2::aes(x = .data[["geneMeans"]],
                          y = .data[["geneVars"]],
-                         color = .data[["is_variable"]])
+                         color = .data[["isVariable"]])
         ) +
             ggplot2::geom_point(size = dotSize, stroke = 0) +
             ggplot2::geom_abline(intercept = log10(nolan_constant), slope = 1,
@@ -996,7 +998,9 @@ plotVarFeatures <- function(
         plotList[[d]] <- p
     }
     if (isTRUE(combinePlot)) {
-        legend <- cowplot::get_legend(plotList[[1]])
+        suppressWarnings({
+            legend <- cowplot::get_legend(plotList[[1]])
+        })
         plotList <- lapply(plotList, function(x) {
             x + ggplot2::theme(legend.position = "none")
         })
@@ -1010,12 +1014,13 @@ plotVarFeatures <- function(
 }
 
 
-#' Select variable gene from one dataset with VST method
+#' Select variable genes from one dataset with Seurat VST method
 #' @description
-#' A re-implimentation of Seurat FindVariableFeatures VST method. This allows
-#' the selection of a fixed number of variable features from one dataset.
-#' @param object A \linkS4class{liger} object
-#' @param useDataset The names, a numeric or logical index of the ONE dataset to
+#' Seurat FindVariableFeatures VST method. This allows the selection of a fixed
+#' number of variable features, but only applies to one dataset. No
+#' normalization is needed in advance.
+#' @param object A \linkS4class{liger} object.
+#' @param useDataset The names, a numeric or logical index of the dataset to
 #' be considered for selection.
 #' @param n Number of variable features needed. Default \code{2000}.
 #' @param loessSpan Loess span parameter used when fitting the variance-mean
@@ -1023,8 +1028,10 @@ plotVarFeatures <- function(
 #' @param clipMax After standardization values larger than \code{clipMax} will
 #' be set to \code{clipMax}. Default \code{"auto"} sets this value to the square
 #' root of the number of cells.
+#' @param useShared Logical. Whether to only select from genes shared by all
+#' dataset. Default \code{TRUE}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @references Seurat::FindVariableFeatures.default(selection.method = "vst")
 #' @export
 #' @examples
@@ -1035,19 +1042,25 @@ selectGenesVST <- function(
         n = 2000,
         loessSpan = 0.3,
         clipMax = "auto",
-        verbose = getOption("ligerVerbose"))
+        useShared = TRUE,
+        verbose = getOption("ligerVerbose", TRUE))
 {
     useDataset <- .checkUseDatasets(object, useDataset)
-    if (length(useDataset) != 1) {
-        stop("Can only use one dataset with VST method.")
-    }
+    useDataset <- .checkArgLen(useDataset, 1)
     if (isTRUE(verbose)) {
-        .log("Selecting top ", n, " HVGs with VST method for dataset: ",
-             useDataset)
+        cli::cli_alert_info("Selecting top {n} HVG{?s} with VST method for dataset: {.val {useDataset}}")
     }
     ld <- dataset(object, useDataset)
     data <- rawData(ld)
-
+    if (isTRUE(useShared)) {
+        useGenes <- lapply(datasets(object), rownames)
+        useGenes <- Reduce(intersect, useGenes)
+    } else {
+        useGenes <- rownames(data)
+    }
+    if (isTRUE(verbose)) {
+        cli::cli_alert_info("... Totally {length(useGenes)} {ifelse(useShared, 'shared', 'dataset specific')} genes to be selected from.")
+    }
     if (clipMax == "auto") {
         clipMax <- sqrt(ncol(data))
     }
@@ -1071,7 +1084,9 @@ selectGenesVST <- function(
     colnames(hvf.info) <- c("mean", "var", "vst.variance.expected",
                             "vst.variance.standardized")
     rank <- order(hvf.info$vst.variance.standardized, decreasing = TRUE)
-    varFeatures(object) <- rownames(ld)[rank][seq(n)]
+    selected <- rownames(ld)[rank][seq(n)]
+    selected <- selected[selected %in% useGenes]
+    varFeatures(object) <- selected
     fm <- featureMeta(ld)
     for (col in colnames(hvf.info)) fm[[col]] <- hvf.info[[col]]
     fm$selected <- FALSE
@@ -1173,12 +1188,12 @@ scaleNotCenter.dgCMatrix <- function(
 #' @param chunk Integer. Number of maximum number of cells in each chunk, when
 #' scaling is applied to any HDF5 based dataset. Default \code{1000}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 scaleNotCenter.ligerDataset <- function(
         object,
         features = NULL,
         chunk = 1000,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     features <- .idxCheck(object, features, "feature")
@@ -1209,7 +1224,7 @@ scaleNotCenter.ligerDataset <- function(
 scaleNotCenter.ligerMethDataset <- function(
         object,
         features = NULL,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     raw <- rawData(object)
@@ -1233,22 +1248,25 @@ scaleNotCenter.liger <- function(
         object,
         useDatasets = NULL,
         features = varFeatures(object),
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         remove.missing = NULL,
         ...
 ) {
     .deprecateArgs(defunct = "remove.missing")
     .checkObjVersion(object)
     if (is.null(features) || length(features) == 0) {
-        stop("No variable feature specified. Run `selectGenes()` first")
+        cli::cli_abort("No variable feature specified. Run {.fn selectGenes} first.")
     }
     useDatasets <- .checkUseDatasets(object, useDatasets)
-    object <- recordCommand(object, dependencies = c("RcppArmadillo", "Rcpp"))
+    object <- recordCommand(object, ...,
+                            dependencies = c("RcppArmadillo", "Rcpp"))
+
     for (d in useDatasets) {
-        if (isTRUE(verbose)) .log("Scaling dataset: ", d)
+        if (isTRUE(verbose)) cliID <- cli::cli_process_start("Scaling dataset {.val {d}}")
         ld <- dataset(object, d)
         ld <- scaleNotCenter(ld, features = features, verbose = verbose, ...)
         datasets(object, check = FALSE)[[d]] <- ld
+        if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     }
     return(object)
 }
@@ -1257,10 +1275,10 @@ scaleNotCenter.liger <- function(
 #' @export
 #' @param assay Name of assay to use. Default \code{NULL} uses current active
 #' assay.
-#' @param layer For Seurat>=4.9.9, the name of layer to store normalized data.
+#' @param save For Seurat>=4.9.9, the name of layer to store normalized data.
 #' Default \code{"ligerScaleData"}. For older Seurat, stored to
 #' \code{scale.data} slot.
-#' @param useLayer For Seurat>=4.9.9, the name of layer to retrieve normalized
+#' @param layer For Seurat>=4.9.9, the name of layer to retrieve normalized
 #' data. Default \code{"ligerNormData"}. For older Seurat, always retrieve from
 #' \code{data} slot.
 #' @param datasetVar Metadata variable name that stores the dataset source
@@ -1269,31 +1287,41 @@ scaleNotCenter.liger <- function(
 scaleNotCenter.Seurat <- function(
         object,
         assay = NULL,
-        layer = "ligerScaleData",
-        useLayer = "ligerNormData",
+        layer = "ligerNormData",
+        save = "ligerScaleData",
         datasetVar = "orig.ident",
         features = NULL,
         ...
 ) {
-    normed <- .getSeuratData(object, layer = useLayer, slot = "data",
+    normed <- .getSeuratData(object, layer = layer, slot = "data",
                              assay = assay)
-    if (is.null(features)) features <- SeuratObject::VariableFeatures(object)
-    if (is.null(features) || length(features) == 0) {
-        stop("No variable feature specified. Run `selectGenes()` first")
+
+    features <- features %||% SeuratObject::VariableFeatures(object)
+    if (!length(features)) {
+        cli::cli_abort("No variable feature specified. Run {.fn selectGenes} first")
     }
-    features <- .idxCheck(normed, idx = features, orient = "feature")
-    normed <- normed[features, , drop = FALSE]
-    # the last [,1] converts data.frame to the vector/factor
-    datasetVar <- object[[datasetVar]][,1]
-    if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
-    datasetVar <- droplevels(datasetVar)
-    nlevel <- nlevels(datasetVar)
-    datasetVar <- as.integer(datasetVar) - 1
-    # efficient solution where we don't need to split and merge
-    scaled <- scaleNotCenter_byRow_perDataset_rcpp(normed, datasetVar, nlevel)
-    scaled@x[is.na(scaled@x)] <- 0
-    dimnames(scaled) <- list(rownames(object)[features], colnames(normed))
-    object <- .setSeuratData(object, layer = layer, slot = "scale.data",
+
+    if (is.list(normed)) {
+        scaled <- lapply(normed, function(x) {
+            scaleNotCenter(x[features, , drop = FALSE])
+        })
+    } else {
+        # Condition for all batches in one matrix
+        normed <- normed[features, , drop = FALSE]
+        # the last [,1] converts data.frame to the vector/factor
+        datasetVar <- object[[datasetVar, drop = TRUE]]
+        if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
+        datasetVar <- droplevels(datasetVar)
+        nlevel <- nlevels(datasetVar)
+        datasetVar <- as.integer(datasetVar) - 1
+        # efficient solution where we don't need to split and merge
+        scaled <- scaleNotCenter_byRow_perDataset_rcpp(normed, datasetVar, nlevel)
+        scaled@x[is.na(scaled@x)] <- 0
+        dimnames(scaled) <- list(features, colnames(normed))
+    }
+
+    object <- .setSeuratData(object, layer = layer, save = save,
+                             slot = "scale.data",
                              value = scaled, assay = assay,
                              denseIfNeeded = TRUE)
     return(object)
@@ -1306,10 +1334,9 @@ scaleNotCenter.Seurat <- function(
     geneRootMeanSumSq = sqrt(geneSumSq / (nCells - 1))
     h5file <- getH5File(ld)
     # Count the subset nnz first before creating data space
-    if (isTRUE(verbose)) .log("Counting number of non-zero values...")
     nnz <- 0
     nnz <- H5Apply(
-        ld, useData = "normData", chunkSize = chunk, verbose = verbose,
+        ld, useData = "normData", chunkSize = chunk, verbose = FALSE,
         FUN = function(chunk, sparseXIdx, cellIdx, values) {
             chunk <- chunk[featureIdx, , drop = FALSE]
             values <- values + length(chunk@x)
@@ -1373,7 +1400,7 @@ scaleNotCenter.Seurat <- function(
 #' logical vector of the index of the datasets that should be identified as
 #' methylation data where the reversed data will be created.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @return The input \linkS4class{liger} object, where the \code{scaleData} slot
 #' of the specified datasets will be updated with value as described in
 #' Description.
@@ -1385,18 +1412,19 @@ scaleNotCenter.Seurat <- function(
 #' pbmc <- scaleNotCenter(pbmc, useDatasets = 1)
 #' pbmc <- reverseMethData(pbmc, useDatasets = 2)
 reverseMethData <- function(object, useDatasets,
-                            verbose = getOption("ligerVerbose")) {
+                            verbose = getOption("ligerVerbose", TRUE)) {
     useDatasets <- .checkUseDatasets(object, useDatasets)
     if (is.null(varFeatures(object)) || length(varFeatures(object)) == 0) {
-        stop("Variable genes have to be identified first. ",
-             "Please run `selectGenes(object)`.")
+        cli::cli_abort("No variable feature available. Run {.fn selectGenes} first.")
     }
     for (d in useDatasets) {
         ld <- dataset(object, d)
         raw <- rawData(ld)
-        if (isTRUE(verbose)) .log("Substracting methylation data: ", d)
-        scaleData(ld, check = FALSE) <- max(raw) -
-            as.matrix(raw[varFeatures(object), , drop = FALSE])
+        if (isTRUE(verbose)) cli::cli_alert_info("Substracting methylation data: {.val {d}}")
+        scaleData(ld, check = FALSE) <- methods::as(
+            max(raw) - raw[varFeatures(object), , drop = FALSE],
+            "CsparseMatrix"
+        )
         datasets(object, check = FALSE)[[d]] <- ld
     }
     return(object)

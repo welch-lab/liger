@@ -57,5 +57,5 @@ reference dataset). These aligned factor loadings are combined into a single
 matrix and returned as H.norm.
 }
 \seealso{
-\code{\link{rliger2-deprecated}}
+\code{\link{rliger-deprecated}}
 }

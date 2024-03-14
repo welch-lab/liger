@@ -15,7 +15,7 @@ subsetLigerDataset(
   filename = NULL,
   filenameSuffix = NULL,
   chunkSize = 1000,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   returnObject = TRUE,
   ...
 )
@@ -29,7 +29,7 @@ subsetH5LigerDataset(
   filename = NULL,
   filenameSuffix = NULL,
   chunkSize = 1000,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   returnObject = TRUE
 )
 
@@ -71,7 +71,7 @@ for the new files so the new filename looks like
 Default \code{1000}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{returnObject}{Logical, whether to return a \linkS4class{ligerDataset}
 object for result. Default \code{TRUE}. \code{FALSE} returns a list

@@ -49,6 +49,18 @@ jobs:
         run: |
           sudo apt-get install libhdf5-dev
           sudo apt-get install libglpk-dev
+          sudo apt-get install pandoc
+
+      - name: Install library on MacOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install hdf5
+          brew install pandoc
+
+      - name: Install library on Windows
+        if: runner.os == 'Windows'
+        run: |
+          choco install pandoc
 
       - name: Install dependencies
         run: |

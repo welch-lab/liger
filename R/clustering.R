@@ -1,13 +1,14 @@
 #' SNN Graph Based Community Detection
-#' @description After quantile normalization, users can additionally run the
-#' Leiden or Louvain algorithm for community detection, which is widely used in
+#' @description
+#' After quantile normalization, users can additionally run the Leiden or
+#' Louvain algorithm for community detection, which is widely used in
 #' single-cell analysis and excels at merging small clusters into broad cell
 #' classes.
 #'
 #' While using quantile normalized factor loadings (result from
 #' \code{\link{quantileNorm}}) is recommended, this function looks for
-#' unnormalized factor loadings (result from \code{\link{optimizeALS}} or
-#' \code{\link{online_iNMF}}) when the former is not available.
+#' unnormalized factor loadings (result from \code{\link{runIntegration}}) when
+#' the former is not available.
 #' @param object A \linkS4class{liger} object. Should have valid factorization
 #' result available.
 #' @param nNeighbors Integer, the maximum number of nearest neighbors to
@@ -26,6 +27,11 @@
 #' membership with highest quality to return. Default \code{10}.
 #' @param nIterations Integer, maximal number of iterations per random start.
 #' Default \code{5}.
+#' @param method Community detection algorithm to use. Choose from
+#' \code{"leiden"} or \code{"louvain"}. Default \code{"leiden"}.
+#' @param useRaw Whether to use un-aligned cell factor loadings (\eqn{H}
+#' matrices). Default \code{NULL} search for quantile-normalized loadings first
+#' and un-aligned loadings then.
 #' @param useDims Indices of factors to use for clustering. Default \code{NULL}
 #' uses all available factors.
 #' @param groupSingletons Whether to group single cells that make up their own
@@ -36,7 +42,7 @@
 #' \code{"louvain_cluster"}.
 #' @param seed Seed of the random number generator. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @return \code{object} with refined cluster assignment updated in
 #' \code{clusterName} variable in \code{cellMeta} slot. Can be fetched
 #' with \code{object[[clusterName]]}
@@ -56,32 +62,28 @@ runCluster <- function(
         nRandomStarts = 10,
         nIterations = 5,
         method = c("leiden", "louvain"),
+        useRaw = NULL,
         useDims = NULL,
         groupSingletons = TRUE,
         clusterName = paste0(method, "_cluster"),
         seed = 1,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     method <- match.arg(method)
     object <- switch(method,
         leiden = recordCommand(object, dependencies = c("RANN", "leidenAlg")),
         louvain = recordCommand(object, dependencies = c("RANN"))
     )
+    Hsearch <- searchH(object, useRaw)
+    H <- Hsearch$H
+    useRaw <- Hsearch$useRaw
+    type <- ifelse(useRaw, "unnormalized", "quantile normalized")
 
-    H.norm <- getMatrix(object, "H.norm")
-    if (is.null(H.norm)) {
-        type <- " unnormalized "
-        H.norm <- Reduce(cbind, getMatrix(object, "H"))
-    } else type <- " quantile normalized "
-    if (is.null(H.norm))
-        stop("No factor loading ('H.norm' or 'H') found in `object`.")
-    if (type == " unnormalized ") H.norm <- t(H.norm)
-
-    if (!is.null(useDims)) H.norm <- H.norm[, useDims]
+    if (!is.null(useDims)) H <- H[, useDims, drop = FALSE]
 
     if (isTRUE(verbose))
-        .log(method, " clustering on", type, "cell factor loadings...")
-    knn <- RANN::nn2(H.norm, k = nNeighbors, eps = eps)
+        cli::cli_process_start("{method} clustering on {type} cell factor loadings")
+    knn <- RANN::nn2(H, k = nNeighbors, eps = eps)
     snn <- ComputeSNN(knn$nn.idx, prune = prune)
     if (!is.null(seed)) set.seed(seed)
     if (method == "leiden") {
@@ -91,14 +93,12 @@ runCluster <- function(
         edge_weights <- snnSummary[,3]
         clusts <- leidenAlg::find_partition_with_rep_rcpp(
             edgelist = edgelist, edgelist_length = edgelist_length,
-            num_vertices = nrow(H.norm), direction = FALSE,
+            num_vertices = nrow(H), direction = FALSE,
             edge_weights = edge_weights, resolution = resolution,
             niter = nIterations, nrep = nRandomStarts
         )
     } else {
-        edgeOutPath <- paste0("edge_", sub("\\s", "_", Sys.time()), '.txt')
-        edgeOutPath <- gsub("-", "", edgeOutPath)
-        edgeOutPath <- gsub(":", "", edgeOutPath)
+        edgeOutPath <- tempfile(pattern = "edge_", fileext = ".txt")
         WriteEdgeFile(snn, edgeOutPath, display_progress = FALSE)
         clusts <- RunModularityClusteringCpp(
             snn,
@@ -108,7 +108,7 @@ runCluster <- function(
             nIterations = nIterations,
             algorithm = 1,
             randomSeed = seed,
-            printOutput = TRUE,
+            printOutput = verbose,
             edgefilename = edgeOutPath
         )
         unlink(edgeOutPath)
@@ -121,7 +121,11 @@ runCluster <- function(
                               groupSingletons = groupSingletons,
                               verbose = verbose)
     cellMeta(object, clusterName, check = FALSE) <- clusts
+    if (isTRUE(verbose))
+        cli::cli_process_done(msg_done = "{method} clustering on {type} cell factor loadings ... Found {nlevels(clusts)} clusters.")
     object@uns$defaultCluster <- object@uns$defaultCluster %||% clusterName
+    if (isTRUE(verbose))
+        cli::cli_alert_info("cellMeta variable {.field {clusterName}} is now set as default.")
     return(object)
 }
 
@@ -152,16 +156,16 @@ runCluster <- function(
 #' \code{"louvain_cluster"} variable in \code{cellMeta} slot. Can be fetched
 #' with \code{object$louvain_cluster}
 #' @name louvainCluster-deprecated
-#' @seealso \code{\link{rliger2-deprecated}}
+#' @seealso \code{\link{rliger-deprecated}}
 NULL
 
-#' @rdname rliger2-deprecated
+#' @rdname rliger-deprecated
 #' @section \code{louvainCluster}:
 #' For \code{louvainCluster}, use \code{\link{runCluster}(method = "louvain")}
 #' as the replacement, while \code{\link{runCluster}} with default
 #' \code{method = "leiden"} is more recommended.
 #' @export
-louvainCluster <- function(
+louvainCluster <- function( # nocov start
         object,
         resolution = 1.0,
         k = 20,
@@ -170,18 +174,19 @@ louvainCluster <- function(
         nRandomStarts = 10,
         nIterations = 100,
         random.seed = 1,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         dims.use = NULL
 ) {
-    lifecycle::deprecate_warn("1.99.0", "louvainCluster()",
-                              "runCluster(method = \"louvain\")")
+    lifecycle::deprecate_warn(
+        "1.99.0", "louvainCluster()",
+        details = "Please use `runCluster()` with `method = 'louvain'` instead.")
     runCluster(
         object, method = "louvain", resolution = resolution, nNeighbors = k,
         prune = prune, eps = eps, nRandomStarts = nRandomStarts,
         nIterations = nIterations, useDims = dims.use, groupSingletons = TRUE,
         clusterName = "louvain_cluster", seed = random.seed, verbose = verbose
     )
-}
+} # nocov end
 
 # Group single cells that make up their own cluster in with the cluster they are
 # most connected to. (Adopted from Seurat v3)
@@ -208,7 +213,7 @@ groupSingletons <- function(
     }
     if (!isTRUE(groupSingletons)) {
         if (isTRUE(verbose)) {
-            .log(length(singletons), " singletons identified. ")
+            cli::cli_alert_info("{length(singletons)} singletons identified.")
         }
         ids <- as.character(ids)
         ids[ids %in% singletons] <- "singleton"
@@ -240,8 +245,7 @@ groupSingletons <- function(
     }
     ids <- factor(ids)
     if (isTRUE(verbose))
-        .log(length(singletons), " singletons identified. ",
-             length(levels(ids)), " final clusters.")
+        cli::cli_alert_info("{length(singletons)} singletons identified.")
     return(ids)
 }
 
@@ -282,15 +286,15 @@ mapCellMeta <- function(
         newTo = NULL,
         ...
 ) {
-    object <- recordCommand(object)
+    object <- recordCommand(object, ...)
     from <- cellMeta(object, from)
-    if (!is.factor(from)) stop("`from` must be a factor class variable.")
+    if (!is.factor(from))
+        cli::cli_abort("{.var from} must be a {.cls factor}.")
     mapping <- list(...)
     fromCats <- names(mapping)
     notFound <- fromCats[!fromCats %in% levels(from)]
     if (length(notFound) > 0) {
-        stop("The following categories requested not found: ",
-             paste0(notFound, collapse = ", "))
+        cli::cli_abort("{length(notFound)} categor{?y is/ies are} requested but not found: {.val {notFound}}")
     }
 
     toCats <- unlist(mapping)

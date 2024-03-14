@@ -11,8 +11,6 @@ runIntegration(
   k = 20,
   lambda = 5,
   method = c("iNMF", "onlineINMF", "UINMF"),
-  seed = 1,
-  verbose = getOption("ligerVerbose"),
   ...
 )
 
@@ -22,7 +20,7 @@ runIntegration(
   lambda = 5,
   method = c("iNMF", "onlineINMF", "UINMF"),
   seed = 1,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 
@@ -35,7 +33,7 @@ runIntegration(
   useLayer = "ligerScaleData",
   assay = NULL,
   seed = 1,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 }
@@ -52,12 +50,15 @@ higher \code{k} will be needed for datasets with more sub-structure. Default
 dataset-specific effects more strongly (i.e. alignment should increase as
 \code{lambda} increases). Default \code{5}.}
 
+\item{method}{iNMF variant algorithm to use for integration. Choose from
+\code{"iNMF"}, \code{"onlineINMF"}, \code{"UINMF"}. Default \code{"iNMF"}.}
+
+\item{...}{Arguments passed to other methods and wrapped functions.}
+
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
-
-\item{...}{Arguments passed to other methods and wrapped functions.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{datasetVar}{Metadata variable name that stores the dataset source
 annotation. Default \code{"orig.ident"}.}
@@ -84,7 +85,9 @@ pages have more detailed description.
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
-pbmc <- runIntegration(pbmc)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    pbmc <- runIntegration(pbmc)
+}
 }
 \references{
 \enumerate{

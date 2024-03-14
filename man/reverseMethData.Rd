@@ -4,7 +4,7 @@
 \alias{reverseMethData}
 \title{Create "scaled data" for DNA methylation datasets}
 \usage{
-reverseMethData(object, useDatasets, verbose = getOption("ligerVerbose"))
+reverseMethData(object, useDatasets, verbose = getOption("ligerVerbose", TRUE))
 }
 \arguments{
 \item{object}{A \linkS4class{liger} object, with variable genes identified.}
@@ -14,7 +14,7 @@ logical vector of the index of the datasets that should be identified as
 methylation data where the reversed data will be created.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 }
 \value{
 The input \linkS4class{liger} object, where the \code{scaleData} slot

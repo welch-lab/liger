@@ -3,20 +3,22 @@
 \name{runPairwiseDEG}
 \alias{runPairwiseDEG}
 \alias{runMarkerDEG}
+\alias{runWilcoxon}
 \title{Find DEG between two groups}
 \usage{
 runPairwiseDEG(
   object,
-  group1,
-  group2,
+  groupTest,
+  groupCtrl,
   variable1 = NULL,
   variable2 = NULL,
   method = c("wilcoxon", "pseudoBulk"),
   usePeak = FALSE,
   useReplicate = NULL,
   nPsdRep = 5,
+  minCellPerRep = 10,
   seed = 1,
-  verbose = getOption("ligerVerbose")
+  verbose = getOption("ligerVerbose", TRUE)
 )
 
 runMarkerDEG(
@@ -28,14 +30,21 @@ runMarkerDEG(
   usePeak = FALSE,
   useReplicate = NULL,
   nPsdRep = 5,
+  minCellPerRep = 10,
   seed = 1,
-  verbose = getOption("ligerVerbose")
+  verbose = getOption("ligerVerbose", TRUE)
+)
+
+runWilcoxon(
+  object,
+  data.use = NULL,
+  compare.method = c("clusters", "datasets")
 )
 }
 \arguments{
 \item{object}{A \linkS4class{liger} object, with normalized data available}
 
-\item{group1, group2, variable1, variable2}{Condition specification. See
+\item{groupTest, groupCtrl, variable1, variable2}{Condition specification. See
 \code{?runPairwiseDEG} section \bold{Pairwise DEG Scenarios} for detail.}
 
 \item{method}{DEG test method to use. Choose from \code{"wilcoxon"} or
@@ -51,11 +60,14 @@ will create \code{nPsdRep} pseudo replicates per group.}
 \item{nPsdRep}{Number of pseudo replicates to create. Only used when
 \code{method = "pseudoBulk", useReplicate = NULL}. Default \code{5}.}
 
+\item{minCellPerRep}{Numeric, will not make pseudo-bulk for replicate with
+less than this number of cells. Default \code{10}.}
+
 \item{seed}{Random seed to use for pseudo-replicate generation. Default
 \code{1}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{conditionBy}{\code{cellMeta} variable(s). Marker detection will be
 performed for each level of this variable. Multiple variables will be
@@ -66,6 +78,13 @@ markers for \code{conditionBy} within each chunk. Default \code{NULL}.}
 
 \item{useDatasets}{Datasets to perform marker detection within. Default
 \code{NULL} will use all datasets.}
+
+\item{data.use}{Same as \code{useDatasets}.}
+
+\item{compare.method}{Choose from \code{"clusters"} (default) or
+\code{"datasets"}. \code{"clusters"} compares each cluster against all other
+cells, while \code{"datasets"} run within each cluster and compare each
+dataset against all other datasets.}
 }
 \value{
 A data.frame with DEG information
@@ -82,21 +101,21 @@ can be generated. Please see below for detailed scenario usage.
 
 Users can select classes of cells from a variable in \code{cellMeta}.
 \code{variable1} and \code{variable2} are used to specify a column in
-\code{cellMeta}, and \code{group1} and \code{group2} are used to specify
+\code{cellMeta}, and \code{groupTest} and \code{groupCtrl} are used to specify
 existing classes from \code{variable1} and \code{variable2}, respectively.
-When \code{variable2} is missing, \code{group2} will be considered from
+When \code{variable2} is missing, \code{groupCtrl} will be considered from
 \code{variable1}.
 
 For example, when \code{variable1 = "celltype"} and \code{variable2 = NULL},
-\code{group1} and \code{group2} should be valid cell types in
+\code{groupTest} and \code{groupCtrl} should be valid cell types in
 \code{object$celltype}.
 
 When \code{variable1} is "celltype" and \code{variable2} is "gender",
-\code{group1} should be a valid cell type from \code{object$celltype} and
-\code{group2} should be a valid class from \code{object$gender}.
+\code{groupTest} should be a valid cell type from \code{object$celltype} and
+\code{groupCtrl} should be a valid class from \code{object$gender}.
 
-When both \code{variable1} and \code{variable2} are missing, \code{group1}
-and \code{group2} should be valid index of cells in \code{object}.
+When both \code{variable1} and \code{variable2} are missing, \code{groupTest}
+and \code{groupCtrl} should be valid index of cells in \code{object}.
 }
 
 \section{Marker Detection Scenarios}{
@@ -105,29 +124,31 @@ Marker detection is generally performed in a one vs. rest manner. The
 grouping of such condition is specified by \code{conditionBy}, which should
 be a column name in \code{cellMeta}. When \code{splitBy} is specified as
 another variable name in \code{cellMeta}, the marker detection will be
-iteratively done for each level of \code{splitBy} variable.
+iteratively done for within each level of \code{splitBy} variable.
 
 For example, when \code{conditionBy = "celltype"} and \code{splitBy = NULL},
 marker detection will be performed by comparing all cells of "celltype_i"
 against all other cells, and etc.
 
 When \code{conditionBy = "celltype"} and \code{splitBy = "gender"}, marker
-detection will be performed by comparing "celltype_i" cells from "gender_i"
-against other cells from "gender_i", and etc.
+detection will be performed by comparing "celltype_i" cells from "gender_j"
+against other cells from "gender_j", and etc.
 }
 
 \examples{
 # Compare between cluster "0" and cluster "1"
-degStats <- runPairwiseDEG(pbmcPlot, group1 = 0, group2 = 1,
+degStats <- runPairwiseDEG(pbmcPlot, groupTest = 0, groupCtrl = 1,
                            variable1 = "leiden_cluster")
 # Compare between all cells from cluster "5" and
 # all cells from dataset "stim"
-degStats <- runPairwiseDEG(pbmcPlot, group1 = "5", group2 = "stim",
+degStats <- runPairwiseDEG(pbmcPlot, groupTest = "5", groupCtrl = "stim",
                            variable1 = "leiden_cluster",
                            variable2 = "dataset")
-# Identify markers for each cluster
+# Identify markers for each cluster. Equivalent to old version
+# `runWilcoxon(method = "cluster")`
 markerStats <- runMarkerDEG(pbmcPlot, conditionBy = "leiden_cluster")
-# Identify dataset markers within each cluster
+# Identify dataset markers within each cluster. Equivalent to old version
+# `runWilcoxon(method = "dataset")`.
 markerStatsList <- runMarkerDEG(pbmcPlot, conditionBy = "dataset",
                                 splitBy = "leiden_cluster")
 }

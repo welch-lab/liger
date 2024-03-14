@@ -22,7 +22,7 @@
 #' @param chunkSize Integer. Number of maximum number of cells in each chunk,
 #' Default \code{1000}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param returnObject Logical, whether to return a \linkS4class{liger} object
 #' for result. Default \code{TRUE}. \code{FALSE} returns a list containing
 #' requested values.
@@ -40,7 +40,7 @@ subsetLiger <- function(
         cellIdx = NULL,
         useSlot = NULL,
         chunkSize = 1000,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         newH5 = TRUE,
         returnObject = TRUE,
         ...
@@ -53,7 +53,8 @@ subsetLiger <- function(
         return(object)
     }
     if (!inherits(object, "liger")) {
-        warning("`object` is not a liger obejct. Nothing to be done.")
+        cli::cli_alert_danger("{.var object} is not a {.cls liger} object.")
+        cli::cli_alert_info("Nothing to be done.")
         return(object)
     }
     # Check subscription parameters ####
@@ -65,26 +66,28 @@ subsetLiger <- function(
     # feature idx need different check from ligerDataset's .idxCheck
     if (!is.null(featureIdx)) {
         if (!is.character(featureIdx)) {
-            stop("Feature subscription from liger object can only take ",
-                 "character vector.")
+            cli::cli_abort(
+                "Feature subscription from a {.cls liger} object can only take {.cls character} vector (e.g. gene names)."
+            )
         }
         genesList <- lapply(datasets(object)[useDatasets], rownames)
         allGenes <- unique(unlist(genesList, use.names = FALSE))
         if (!all(featureIdx %in% allGenes)) {
             notFound <- featureIdx[!featureIdx %in% allGenes]
-            warning(length(notFound), " out of ", length(featureIdx),
-                    " given features were not found in the union of all ",
-                    "features of used datasets")
+            cli::cli_alert_warning(
+                c("{length(notFound)} out of {length(featureIdx)} given ",
+                  "features were not found in the union of all features of ",
+                  "used datasets: {.val {notFound}}")
+            )
         }
         featureIdx <- featureIdx[featureIdx %in% allGenes]
-        if (length(featureIdx) == 0)
-            stop("No feature can be retrieved")
+        if (length(featureIdx) == 0) cli::cli_abort("No feature can be retrieved")
     }
     # Subset each involved dataset and create new liger object
 
     datasets.new <- list()
     for (d in useDatasets) {
-        if (isTRUE(verbose)) .log("Subsetting dataset: ",  d)
+        if (isTRUE(verbose)) cli::cli_process_start("Subsetting dataset: {.val {d}}")
         ld <- dataset(object, d)
         featureIdxDataset <- featureIdx
         if (isFALSE(returnObject))
@@ -194,16 +197,19 @@ retrieveCellFeature <- function(
             value <- data.frame(value, row.names = colnames(ld))
             colnames(value) <- feature
             if (!inherits(ld, "ligerATACDataset")) {
-                warning("Dataset ", d, " is not of ATAC modality, returning ",
-                        "NAs for cells belonging to this dataset.",
-                        immediate. = TRUE)
+                cli::cli_alert_warning(
+                    c("Dataset {.val {d}} is not of ATAC modality, returning ",
+                      "NAs for cells belonging to this dataset")
+                )
                 return(value)
             } else {
                 peak <- methods::slot(ld, slot)
                 if (any(!feature %in% rownames(peak))) {
                     nf <- feature[!feature %in% rownames(peak)]
-                    warning("Specified feature not found in dataset ", d,
-                            ", returning NAs.", immediate. = TRUE)
+                    cli::cli_alert_warning(
+                        c("Specified features are not found in dataset ",
+                          "{.val {d}}, returning NAs.")
+                    )
                     feature <- feature[feature %in% rownames(peak)]
                 }
                 value[,feature] <- peak[feature, ]
@@ -247,7 +253,7 @@ retrieveCellFeature <- function(
 #' @param chunkSize Integer. Number of maximum number of cells in each chunk,
 #' Default \code{1000}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param returnObject Logical, whether to return a \linkS4class{ligerDataset}
 #' object for result. Default \code{TRUE}. \code{FALSE} returns a list
 #' containing requested values.
@@ -268,7 +274,7 @@ subsetLigerDataset <- function(
         filename = NULL,
         filenameSuffix = NULL,
         chunkSize = 1000,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         returnObject = TRUE,
         ...
 ) {
@@ -295,22 +301,45 @@ subsetH5LigerDataset <- function(
         filename = NULL,
         filenameSuffix = NULL,
         chunkSize = 1000,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         returnObject = TRUE
 ) {
-    # if (newH5 == "auto") {
-    #     cellIdx <- .idxCheck(object, cellIdx, "cell")
-    #     if (length(cellIdx) > 8000) newH5 <- TRUE
-    #     else newH5 <- FALSE
-    # }
     if (isTRUE(newH5)) {
         if (isFALSE(returnObject))
-            warning("Cannot set `returnObject = FALSE` when subsetting",
-                    "H5 based ligerDataset to new H5 file.")
-        newObj <- subsetH5LigerDatasetToH5(
-            object, filename = filename, cellIdx = cellIdx,
-            featureIdx = featureIdx, filenameSuffix = filenameSuffix,
-            useSlot = useSlot, chunkSize = chunkSize, verbose = verbose)
+            cli::cli_alert_danger(
+                c("Cannot set {.code returnObject = FALSE} when subsetting H5 based {.cls ligerDataset} to new H5 file.",
+                  "i" = "Will return subset to new object.")
+            )
+        if (is.null(filename) && is.null(filenameSuffix)) {
+            oldFN <- h5fileInfo(object, "filename")
+            bn <- basename(oldFN)
+            path <- dirname(oldFN)
+            filename <- tempfile(pattern = paste0(bn, ".subset_"),
+                                 fileext = ".h5", tmpdir = path)
+            # filename <- paste0(oldFN, ".subset_",
+            #                    format(Sys.time(), "%y%m%d_%H%M%S"),
+            #                    ".h5")
+        } else if (is.null(filename) && !is.null(filenameSuffix)) {
+            oldFN <- h5fileInfo(object, "filename")
+            filename <- paste0(oldFN, ".", filenameSuffix, ".h5")
+        }
+        tryCatch(
+            expr = {
+                newObj <- subsetH5LigerDatasetToH5(
+                    object, filename = filename, cellIdx = cellIdx,
+                    featureIdx = featureIdx,
+                    useSlot = useSlot, chunkSize = chunkSize, verbose = verbose
+                )
+            }, error=function(e) {
+                cli::cli_alert_danger(
+                    "An error occurred during subseting from H5 to H5."
+                )
+                cli::cli_alert_warning("The new H5 file will be removed.")
+                unlink(filename)
+                stop(e)
+            }
+        )
+
     } else if (isFALSE(newH5)) {
         newObj <- subsetH5LigerDatasetToMem(
             object, cellIdx = cellIdx, featureIdx = featureIdx,
@@ -327,14 +356,16 @@ subsetH5LigerDatasetToMem <- function(
         useSlot = NULL,
         returnObject = TRUE,
         chunkSize = 1000,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     if (!inherits(object, "ligerDataset")) {
-        warning("`object` is not a ligerDataset obejct. Nothing to be done.")
+        cli::cli_alert_danger("{.var object} is not a {.cls ligerDataset} object.")
+        cli::cli_alert_info("Nothing to be done.")
         return(object)
     }
     if (!isH5Liger(object)) {
-        warning("`object` is not HDF5 based. Nothing to be done.")
+        cli::cli_alert_info("{.var object} is not HDF5 based.")
+        cli::cli_alert_info("Nothing to be done.")
         return(object)
     }
     modal <- modalOf(object)
@@ -346,7 +377,8 @@ subsetH5LigerDatasetToMem <- function(
     value <- list()
     # Process rawData ####
     if ("rawData" %in% slotInvolved & !is.null(rawData(object))) {
-        if (isTRUE(verbose)) .log("Subsetting `rawData`", level = 2)
+        if (isTRUE(verbose))
+            cli::cli_process_start("... Subsetting {.field rawData}")
         rawData <- H5Apply(
             object, init = NULL, useData = "rawData", chunkSize = chunkSize,
             verbose = verbose,
@@ -358,11 +390,13 @@ subsetH5LigerDatasetToMem <- function(
         rownames(rawData) <- rownames(object)[featureIdx]
         colnames(rawData) <- colnames(object)[cellIdx]
         value$rawData <- rawData
+        if (isTRUE(verbose)) cli::cli_process_done()
     }
 
     # Process normData ####
     if ("normData" %in% slotInvolved & !is.null(normData(object))) {
-        if (isTRUE(verbose)) .log("Subsetting `normData`", level = 2)
+        if (isTRUE(verbose))
+            cli::cli_process_start("... Subsetting {.field normData}")
         normData <- H5Apply(
             object, init = NULL, useData = "normData", chunkSize = chunkSize,
             verbose = verbose,
@@ -374,6 +408,7 @@ subsetH5LigerDatasetToMem <- function(
         rownames(normData) <- rownames(object)[featureIdx]
         colnames(normData) <- colnames(object)[cellIdx]
         value$normData <- normData
+        if (isTRUE(verbose)) cli::cli_process_done()
     }
 
     # Process scaled data ####
@@ -381,10 +416,11 @@ subsetH5LigerDatasetToMem <- function(
     if (!is.null(scaleData(object))) {
         # See comments in h5ToH5 for what the following two mean
         scaledFeatureIdx <- scaleData(object)[["featureIdx"]][]
-        secondIdx <- as.numeric(na.omit(match(featureIdx, scaledFeatureIdx)))
+        secondIdx <- as.numeric(stats::na.omit(match(featureIdx, scaledFeatureIdx)))
     }
     if ("scaleData" %in% slotInvolved & !is.null(scaleData(object))) {
-        if (isTRUE(verbose)) .log("Subsetting `scaleData`", level = 2)
+        if (isTRUE(verbose))
+            cli::cli_process_start("... Subsetting {.field scaleData}")
         # scaledFeatureIdx <- NULL
         # if (getH5File(object)$exists("scaleData.featureIdx")) {
         #     scaledFeatureIdx <- getH5File(object)[["scaleData.featureIdx"]][]
@@ -445,6 +481,7 @@ subsetH5LigerDatasetToMem <- function(
         #     }
         # }
         value$scaleData <- scaleDataSubset
+        if (isTRUE(verbose)) cli::cli_process_done()
     }
     # `NULL[idx1, idx2]` returns `NULL`
     # V: k x genes
@@ -482,37 +519,31 @@ subsetH5LigerDatasetToH5 <- function(
         filename = NULL,
         filenameSuffix = NULL,
         chunkSize = 1000,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     # Input checks ####
     if (!inherits(object, "ligerDataset")) {
-        warning("`object` is not a ligerDataset obejct. Nothing to be done.")
+        cli::cli_alert_danger("{.var object} is not a {.cls ligerDataset} object.")
+        cli::cli_alert_info("Nothing to be done.")
         return(object)
     }
     if (!isH5Liger(object)) {
-        warning("`object` is not HDF5 based. Nothing to be done.")
+        cli::cli_alert_info("{.var object} is not HDF5 based.")
+        cli::cli_alert_info("Nothing to be done.")
         return(object)
     }
     modal <- modalOf(object)
     cellIdx <- .idxCheck(object, cellIdx, "cell")
     featureIdx <- .idxCheck(object, featureIdx, "feature")
     useSlot <- .checkLDSlot(object, useSlot)
-    if (is.null(filename) && is.null(filenameSuffix)) {
-        oldFN <- h5fileInfo(object, "filename")
-        filename <- paste0(oldFN, ".subset_",
-                           format(Sys.time(), "%y%m%d_%H%M%S"),
-                           ".h5")
-    } else if (is.null(filename) && !is.null(filenameSuffix)) {
-        oldFN <- h5fileInfo(object, "filename")
-        filename <- paste0(oldFN, ".", filenameSuffix, ".h5")
-    }
+
     # Create new H5 file ####
     if (file.exists(filename)) {
         newH5File <- hdf5r::H5File$new(filename, mode = "r+")
     } else {
         newH5File <- hdf5r::H5File$new(filename, mode = "w")
     }
-    if (isTRUE(verbose)) .log("New H5 file at: ", filename)
+    if (isTRUE(verbose)) cli::cli_alert_info("New H5 file at: {.file {filename}}")
     newH5Meta <- h5fileInfo(object)
     newH5Meta$H5File <- newH5File
     newH5Meta$filename <- filename
@@ -522,6 +553,10 @@ subsetH5LigerDatasetToH5 <- function(
         newH5File[[newH5Meta$barcodesName]][1:length(cellIdx)] <-
             colnames(object)[cellIdx]
     } else {
+        cli::cli_abort(
+            c("AnnData (H5AD) format not supported yet.",
+              "i" = "Please submit an issue on GitHub if this is highly desired.")
+        )
         # TODO: AnnData style barcodes storage.
     }
 
@@ -532,7 +567,8 @@ subsetH5LigerDatasetToH5 <- function(
     # Process Raw Data ####
     if ("rawData" %in% useSlot & !is.null(rawData(object))) {
         # 1. Create paths to store i, p, x of sparse matrix
-        if (isTRUE(verbose)) .log("Subsetting `rawData`", level = 2)
+        if (isTRUE(verbose))
+            cli::cli_process_start("... Subsetting {.field rawData}")
         safeH5Create(newH5File, newH5Meta$indicesName, dims = 1,
                      chunkSize = 4096, dtype = "int")
         i.h5d <- newH5File[[newH5Meta$indicesName]]
@@ -580,10 +616,12 @@ subsetH5LigerDatasetToH5 <- function(
                 return(values)
             }
         )
+        if (isTRUE(verbose)) cli::cli_process_done()
     }
     # Process Normalized Data ####
     if ("normData" %in% useSlot & !is.null(normData(object))) {
-        if (isTRUE(verbose)) .log("Subsetting `normData`", level = 2)
+        if (isTRUE(verbose))
+            cli::cli_process_start("... Subsetting {.field normData}")
         safeH5Create(newH5File, newH5Meta$normData, dims = 1,
                      chunkSize = 4096, dtype = "double")
         x.h5d <- newH5File[[newH5Meta$normData]]
@@ -626,6 +664,7 @@ subsetH5LigerDatasetToH5 <- function(
                 return(values)
             }
         )
+        if (isTRUE(verbose)) cli::cli_process_done()
     }
     # Process Scaled Data ####
     secondIdx <- NULL
@@ -648,13 +687,12 @@ subsetH5LigerDatasetToH5 <- function(
         # This asserts that
         # rownames(scaleData)[secondIdx] returns a subset that follows the order
         # specified by featureIdx
-        secondIdx <- as.numeric(na.omit(match(featureIdx, scaledFeatureIdx)))
+        secondIdx <- as.numeric(stats::na.omit(match(featureIdx, scaledFeatureIdx)))
     }
     if ("scaleData" %in% useSlot & !is.null(scaleData(object))) {
         scaledFeatureIdxNew <- which(featureIdx %in% scaledFeatureIdx)
         if (isTRUE(verbose))
-            .log(length(secondIdx),
-                 " features used in scaleData were selected. ", level = 3)
+            cli::cli_process_start("... Subsetting {.field scaleData}")
         newH5File$create_group(newH5Meta$scaleData)
         safeH5Create(
             newH5File,
@@ -742,6 +780,12 @@ subsetH5LigerDatasetToH5 <- function(
         #                 "feature selection. Unable to subset from H5.")
         #     }
         # }
+        if (isTRUE(verbose)) {
+            cli::cli_process_done()
+            cli::cli_alert_info(
+                "...... {length(secondIdx)} features used in {.field scaleData} were selected."
+            )
+        }
     }
     newH5File$close()
     if (!"rawData" %in% useSlot) newH5Meta$rawData <- NULL
@@ -778,11 +822,12 @@ subsetH5LigerDatasetToH5 <- function(
 subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
                                   useSlot = NULL, returnObject = TRUE) {
     if (!inherits(object, "ligerDataset")) {
-        warning("`object` is not a ligerDataset obejct. Nothing to be done.")
+        cli::cli_alert_danger("{.var object} is not a {.cls ligerDataset} object.")
+        cli::cli_alert_info("Nothing to be done.")
         return(object)
     }
     if (isH5Liger(object)) {
-        stop("`object` is HDF5 based. Use `subsetH5LigerDataset()` instead.")
+        cli::cli_abort("{.var object} is HDF5 based. Use {.fn subsetH5LigerDataset} instead.")
     }
     if (is.null(cellIdx) && is.null(featureIdx)) return(object)
     modal <- modalOf(object)
@@ -848,18 +893,18 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
     else return(subsetData)
 }
 
-.getOrderedSubsetIdx <- function(allNames, subsetNames) {
-    # subsetNames must be real subset, but can be in a different order from
-    # original allNames
-
-    # Label the order of original allNames
-    idx <- seq_along(allNames)
-    names(idx) <- allNames
-    # Subscribe with named vector, so the value (label for original order) get
-    # ordered by subscription
-    subsetIdx <- idx[subsetNames]
-    subsetIdx <- subsetIdx[!is.na(subsetIdx)]
-    names(subsetIdx) <- NULL
-    subsetIdx
-}
+# .getOrderedSubsetIdx <- function(allNames, subsetNames) {
+#     # subsetNames must be real subset, but can be in a different order from
+#     # original allNames
+#
+#     # Label the order of original allNames
+#     idx <- seq_along(allNames)
+#     names(idx) <- allNames
+#     # Subscribe with named vector, so the value (label for original order) get
+#     # ordered by subscription
+#     subsetIdx <- idx[subsetNames]
+#     subsetIdx <- subsetIdx[!is.na(subsetIdx)]
+#     names(subsetIdx) <- NULL
+#     subsetIdx
+# }
 

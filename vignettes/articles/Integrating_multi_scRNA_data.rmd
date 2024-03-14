@@ -21,11 +21,11 @@ This guide will demonstrate the usage of the Liger package in the style of the R
 
 For the first portion of this protocol, we will be integrating data from control and interferon-stimulated PBMCs from [Kang et al, 2017](https://www.nature.com/articles/nbt.4042). The data can be found in the Gene Expression Omnibus, [Series GSE96583](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE96583). This dataset was originally in the form of output from the 10X Cellranger pipeline, though we will directly load downsampled versions of the control and stimulated DGEs here.
 
-**For convenience, we have prepared the pre-processed data which are ready to use.** There are two datasets: PBMC control and PBMC interferon-stimulated. We provided ready-to-use liger object, which can be easily loaded with `importVignetteData()`. 
+**For convenience, we have prepared the pre-processed data which are ready to use.** There are two datasets: PBMC control and PBMC interferon-stimulated. We provided ready-to-use liger object, which can be easily loaded with `importPBMC()`. 
 
 ```{r, results='hide'}
-library(rliger2)
-pbmcLiger <- importVignetteData("pbmc")
+library(rliger)
+pbmcLiger <- importPBMC()
 ```
 
 For creating a liger object from raw counts data or any other types of source, please refer to the [detailed tutorial for importing data](#).

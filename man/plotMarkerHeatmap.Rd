@@ -13,7 +13,7 @@ plotMarkerHeatmap(
   pctInThresh = 50,
   pctOutThresh = 50,
   dedupBy = c("logFC", "padj"),
-  groupBy = c("dataset", "leiden_cluster"),
+  groupBy = NULL,
   groupSize = 50,
   column_title = NULL,
   ...
@@ -35,7 +35,7 @@ to annotate available.}
 \item{pctInThresh, pctOutThresh}{Threshold on expression percentage. These
 mean that a feature will only pass the filter if it is expressed in more than
 \code{pctInThresh} percent of cells in the corresponding cluster. Similarly
-for \code{pctOutThresh}. Default \code{50} and \code{50}, respectively.}
+for \code{pctOutThresh}. Default \code{50} percent for both.}
 
 \item{dedupBy}{When ranking by padj and logFC and a feature is ranked as top
 for multiple clusters, assign this feature as the marker of a cluster when

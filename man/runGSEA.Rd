@@ -43,5 +43,7 @@ Identify the biological pathways (gene sets from Reactome) that
 each metagene (factor) might belongs to.
 }
 \examples{
+\donttest{
 runGSEA(pbmcPlot)
+}
 }

@@ -2,7 +2,6 @@
 // Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #include <RcppArmadillo.h>
-#include <RcppEigen.h>
 #include <Rcpp.h>
 
 using namespace Rcpp;
@@ -13,12 +12,12 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // RunModularityClusteringCpp
-IntegerVector RunModularityClusteringCpp(Eigen::SparseMatrix<double> SNN, int modularityFunction, double resolution, int algorithm, int nRandomStarts, int nIterations, int randomSeed, bool printOutput, std::string edgefilename);
-RcppExport SEXP _rliger2_RunModularityClusteringCpp(SEXP SNNSEXP, SEXP modularityFunctionSEXP, SEXP resolutionSEXP, SEXP algorithmSEXP, SEXP nRandomStartsSEXP, SEXP nIterationsSEXP, SEXP randomSeedSEXP, SEXP printOutputSEXP, SEXP edgefilenameSEXP) {
+IntegerVector RunModularityClusteringCpp(arma::sp_mat SNN, int modularityFunction, double resolution, int algorithm, int nRandomStarts, int nIterations, int randomSeed, bool printOutput, std::string edgefilename);
+RcppExport SEXP _rliger_RunModularityClusteringCpp(SEXP SNNSEXP, SEXP modularityFunctionSEXP, SEXP resolutionSEXP, SEXP algorithmSEXP, SEXP nRandomStartsSEXP, SEXP nIterationsSEXP, SEXP randomSeedSEXP, SEXP printOutputSEXP, SEXP edgefilenameSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::SparseMatrix<double> >::type SNN(SNNSEXP);
+    Rcpp::traits::input_parameter< arma::sp_mat >::type SNN(SNNSEXP);
     Rcpp::traits::input_parameter< int >::type modularityFunction(modularityFunctionSEXP);
     Rcpp::traits::input_parameter< double >::type resolution(resolutionSEXP);
     Rcpp::traits::input_parameter< int >::type algorithm(algorithmSEXP);
@@ -31,9 +30,34 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// colNormalize_dense_cpp
+arma::mat colNormalize_dense_cpp(arma::mat& x, const arma::uword L);
+RcppExport SEXP _rliger_colNormalize_dense_cpp(SEXP xSEXP, SEXP LSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::uword >::type L(LSEXP);
+    rcpp_result_gen = Rcpp::wrap(colNormalize_dense_cpp(x, L));
+    return rcpp_result_gen;
+END_RCPP
+}
+// colAggregateMedian_dense_cpp
+arma::mat colAggregateMedian_dense_cpp(const arma::mat& x, const arma::uvec& group, const arma::uword n);
+RcppExport SEXP _rliger_colAggregateMedian_dense_cpp(SEXP xSEXP, SEXP groupSEXP, SEXP nSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type group(groupSEXP);
+    Rcpp::traits::input_parameter< const arma::uword >::type n(nSEXP);
+    rcpp_result_gen = Rcpp::wrap(colAggregateMedian_dense_cpp(x, group, n));
+    return rcpp_result_gen;
+END_RCPP
+}
 // scaleNotCenter_byRow_rcpp
 arma::sp_mat scaleNotCenter_byRow_rcpp(arma::sp_mat x);
-RcppExport SEXP _rliger2_scaleNotCenter_byRow_rcpp(SEXP xSEXP) {
+RcppExport SEXP _rliger_scaleNotCenter_byRow_rcpp(SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -44,7 +68,7 @@ END_RCPP
 }
 // scaleNotCenter_byRow_perDataset_rcpp
 arma::sp_mat scaleNotCenter_byRow_perDataset_rcpp(arma::sp_mat x, const arma::uvec& ann, const arma::uword& n);
-RcppExport SEXP _rliger2_scaleNotCenter_byRow_perDataset_rcpp(SEXP xSEXP, SEXP annSEXP, SEXP nSEXP) {
+RcppExport SEXP _rliger_scaleNotCenter_byRow_perDataset_rcpp(SEXP xSEXP, SEXP annSEXP, SEXP nSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -57,7 +81,7 @@ END_RCPP
 }
 // rowVars_sparse_rcpp
 NumericVector rowVars_sparse_rcpp(const arma::sp_mat& x, const NumericVector& means);
-RcppExport SEXP _rliger2_rowVars_sparse_rcpp(SEXP xSEXP, SEXP meansSEXP) {
+RcppExport SEXP _rliger_rowVars_sparse_rcpp(SEXP xSEXP, SEXP meansSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -69,7 +93,7 @@ END_RCPP
 }
 // rowDivide_rcpp
 arma::sp_mat rowDivide_rcpp(arma::sp_mat x, const arma::vec& v);
-RcppExport SEXP _rliger2_rowDivide_rcpp(SEXP xSEXP, SEXP vSEXP) {
+RcppExport SEXP _rliger_rowDivide_rcpp(SEXP xSEXP, SEXP vSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -81,7 +105,7 @@ END_RCPP
 }
 // sumSquaredDeviations
 NumericVector sumSquaredDeviations(arma::sp_mat x, NumericVector means);
-RcppExport SEXP _rliger2_sumSquaredDeviations(SEXP xSEXP, SEXP meansSEXP) {
+RcppExport SEXP _rliger_sumSquaredDeviations(SEXP xSEXP, SEXP meansSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -93,7 +117,7 @@ END_RCPP
 }
 // denseZScore
 NumericMatrix denseZScore(NumericMatrix& x, NumericVector m);
-RcppExport SEXP _rliger2_denseZScore(SEXP xSEXP, SEXP mSEXP) {
+RcppExport SEXP _rliger_denseZScore(SEXP xSEXP, SEXP mSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -105,7 +129,7 @@ END_RCPP
 }
 // rowVarsDense
 NumericVector rowVarsDense(arma::mat x, arma::vec m);
-RcppExport SEXP _rliger2_rowVarsDense(SEXP xSEXP, SEXP mSEXP) {
+RcppExport SEXP _rliger_rowVarsDense(SEXP xSEXP, SEXP mSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -117,7 +141,7 @@ END_RCPP
 }
 // SparseRowVarStd
 NumericVector SparseRowVarStd(arma::sp_mat x, NumericVector mu, NumericVector sd, double vmax);
-RcppExport SEXP _rliger2_SparseRowVarStd(SEXP xSEXP, SEXP muSEXP, SEXP sdSEXP, SEXP vmaxSEXP) {
+RcppExport SEXP _rliger_SparseRowVarStd(SEXP xSEXP, SEXP muSEXP, SEXP sdSEXP, SEXP vmaxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
@@ -130,7 +154,7 @@ END_RCPP
 }
 // colAggregateSums_sparse
 arma::sp_mat colAggregateSums_sparse(const arma::sp_mat& x, const arma::uvec& group, const arma::uword& ngroups);
-RcppExport SEXP _rliger2_colAggregateSums_sparse(SEXP xSEXP, SEXP groupSEXP, SEXP ngroupsSEXP) {
+RcppExport SEXP _rliger_colAggregateSums_sparse(SEXP xSEXP, SEXP groupSEXP, SEXP ngroupsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -143,7 +167,7 @@ END_RCPP
 }
 // sample_cpp
 Rcpp::NumericVector sample_cpp(const int x, const int size);
-RcppExport SEXP _rliger2_sample_cpp(SEXP xSEXP, SEXP sizeSEXP) {
+RcppExport SEXP _rliger_sample_cpp(SEXP xSEXP, SEXP sizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -155,7 +179,7 @@ END_RCPP
 }
 // makeFeatureMatrix
 NumericMatrix makeFeatureMatrix(DataFrame& bedmat, StringVector& barcodes);
-RcppExport SEXP _rliger2_makeFeatureMatrix(SEXP bedmatSEXP, SEXP barcodesSEXP) {
+RcppExport SEXP _rliger_makeFeatureMatrix(SEXP bedmatSEXP, SEXP barcodesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -167,7 +191,7 @@ END_RCPP
 }
 // cluster_vote_rcpp
 IntegerVector cluster_vote_rcpp(const arma::mat& nn_ranked, IntegerVector clusts);
-RcppExport SEXP _rliger2_cluster_vote_rcpp(SEXP nn_rankedSEXP, SEXP clustsSEXP) {
+RcppExport SEXP _rliger_cluster_vote_rcpp(SEXP nn_rankedSEXP, SEXP clustsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -179,7 +203,7 @@ END_RCPP
 }
 // max_factor_rcpp
 IntegerVector max_factor_rcpp(arma::mat H, const arma::uvec& dims_use, bool center);
-RcppExport SEXP _rliger2_max_factor_rcpp(SEXP HSEXP, SEXP dims_useSEXP, SEXP centerSEXP) {
+RcppExport SEXP _rliger_max_factor_rcpp(SEXP HSEXP, SEXP dims_useSEXP, SEXP centerSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -191,23 +215,23 @@ BEGIN_RCPP
 END_RCPP
 }
 // ComputeSNN
-Eigen::SparseMatrix<double> ComputeSNN(Eigen::MatrixXd nn_ranked, double prune);
-RcppExport SEXP _rliger2_ComputeSNN(SEXP nn_rankedSEXP, SEXP pruneSEXP) {
+arma::sp_mat ComputeSNN(arma::umat& nn_idx, double prune);
+RcppExport SEXP _rliger_ComputeSNN(SEXP nn_idxSEXP, SEXP pruneSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type nn_ranked(nn_rankedSEXP);
+    Rcpp::traits::input_parameter< arma::umat& >::type nn_idx(nn_idxSEXP);
     Rcpp::traits::input_parameter< double >::type prune(pruneSEXP);
-    rcpp_result_gen = Rcpp::wrap(ComputeSNN(nn_ranked, prune));
+    rcpp_result_gen = Rcpp::wrap(ComputeSNN(nn_idx, prune));
     return rcpp_result_gen;
 END_RCPP
 }
 // WriteEdgeFile
-void WriteEdgeFile(Eigen::SparseMatrix<double> snn, String filename, bool display_progress);
-RcppExport SEXP _rliger2_WriteEdgeFile(SEXP snnSEXP, SEXP filenameSEXP, SEXP display_progressSEXP) {
+void WriteEdgeFile(arma::sp_mat snn, String filename, bool display_progress);
+RcppExport SEXP _rliger_WriteEdgeFile(SEXP snnSEXP, SEXP filenameSEXP, SEXP display_progressSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::SparseMatrix<double> >::type snn(snnSEXP);
+    Rcpp::traits::input_parameter< arma::sp_mat >::type snn(snnSEXP);
     Rcpp::traits::input_parameter< String >::type filename(filenameSEXP);
     Rcpp::traits::input_parameter< bool >::type display_progress(display_progressSEXP);
     WriteEdgeFile(snn, filename, display_progress);
@@ -215,12 +239,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // DirectSNNToFile
-Eigen::SparseMatrix<double> DirectSNNToFile(Eigen::MatrixXd nn_ranked, double prune, bool display_progress, String filename);
-RcppExport SEXP _rliger2_DirectSNNToFile(SEXP nn_rankedSEXP, SEXP pruneSEXP, SEXP display_progressSEXP, SEXP filenameSEXP) {
+arma::sp_mat DirectSNNToFile(arma::umat& nn_ranked, double prune, bool display_progress, String filename);
+RcppExport SEXP _rliger_DirectSNNToFile(SEXP nn_rankedSEXP, SEXP pruneSEXP, SEXP display_progressSEXP, SEXP filenameSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type nn_ranked(nn_rankedSEXP);
+    Rcpp::traits::input_parameter< arma::umat& >::type nn_ranked(nn_rankedSEXP);
     Rcpp::traits::input_parameter< double >::type prune(pruneSEXP);
     Rcpp::traits::input_parameter< bool >::type display_progress(display_progressSEXP);
     Rcpp::traits::input_parameter< String >::type filename(filenameSEXP);
@@ -230,7 +254,7 @@ END_RCPP
 }
 // cpp_rank_matrix_dgc
 std::vector<std::list<float> > cpp_rank_matrix_dgc(arma::vec& x, const arma::vec& p, int nrow, int ncol);
-RcppExport SEXP _rliger2_cpp_rank_matrix_dgc(SEXP xSEXP, SEXP pSEXP, SEXP nrowSEXP, SEXP ncolSEXP) {
+RcppExport SEXP _rliger_cpp_rank_matrix_dgc(SEXP xSEXP, SEXP pSEXP, SEXP nrowSEXP, SEXP ncolSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -244,7 +268,7 @@ END_RCPP
 }
 // rowAggregateSum_sparse
 arma::mat rowAggregateSum_sparse(arma::sp_mat& X, const arma::uvec& groups, unsigned ngroups);
-RcppExport SEXP _rliger2_rowAggregateSum_sparse(SEXP XSEXP, SEXP groupsSEXP, SEXP ngroupsSEXP) {
+RcppExport SEXP _rliger_rowAggregateSum_sparse(SEXP XSEXP, SEXP groupsSEXP, SEXP ngroupsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -257,7 +281,7 @@ END_RCPP
 }
 // colAggregateSum_sparse
 arma::mat colAggregateSum_sparse(arma::sp_mat& X, const arma::uvec& groups, unsigned ngroups);
-RcppExport SEXP _rliger2_colAggregateSum_sparse(SEXP XSEXP, SEXP groupsSEXP, SEXP ngroupsSEXP) {
+RcppExport SEXP _rliger_colAggregateSum_sparse(SEXP XSEXP, SEXP groupsSEXP, SEXP ngroupsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -270,7 +294,7 @@ END_RCPP
 }
 // colNNZAggr_sparse
 arma::mat colNNZAggr_sparse(arma::sp_mat& X, const arma::uvec& groups, unsigned ngroups);
-RcppExport SEXP _rliger2_colNNZAggr_sparse(SEXP XSEXP, SEXP groupsSEXP, SEXP ngroupsSEXP) {
+RcppExport SEXP _rliger_colNNZAggr_sparse(SEXP XSEXP, SEXP groupsSEXP, SEXP ngroupsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -283,7 +307,7 @@ END_RCPP
 }
 // rowNNZAggr_sparse
 arma::mat rowNNZAggr_sparse(arma::sp_mat& X, const arma::uvec& groups, unsigned ngroups);
-RcppExport SEXP _rliger2_rowNNZAggr_sparse(SEXP XSEXP, SEXP groupsSEXP, SEXP ngroupsSEXP) {
+RcppExport SEXP _rliger_rowNNZAggr_sparse(SEXP XSEXP, SEXP groupsSEXP, SEXP ngroupsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -296,32 +320,34 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_rliger2_RunModularityClusteringCpp", (DL_FUNC) &_rliger2_RunModularityClusteringCpp, 9},
-    {"_rliger2_scaleNotCenter_byRow_rcpp", (DL_FUNC) &_rliger2_scaleNotCenter_byRow_rcpp, 1},
-    {"_rliger2_scaleNotCenter_byRow_perDataset_rcpp", (DL_FUNC) &_rliger2_scaleNotCenter_byRow_perDataset_rcpp, 3},
-    {"_rliger2_rowVars_sparse_rcpp", (DL_FUNC) &_rliger2_rowVars_sparse_rcpp, 2},
-    {"_rliger2_rowDivide_rcpp", (DL_FUNC) &_rliger2_rowDivide_rcpp, 2},
-    {"_rliger2_sumSquaredDeviations", (DL_FUNC) &_rliger2_sumSquaredDeviations, 2},
-    {"_rliger2_denseZScore", (DL_FUNC) &_rliger2_denseZScore, 2},
-    {"_rliger2_rowVarsDense", (DL_FUNC) &_rliger2_rowVarsDense, 2},
-    {"_rliger2_SparseRowVarStd", (DL_FUNC) &_rliger2_SparseRowVarStd, 4},
-    {"_rliger2_colAggregateSums_sparse", (DL_FUNC) &_rliger2_colAggregateSums_sparse, 3},
-    {"_rliger2_sample_cpp", (DL_FUNC) &_rliger2_sample_cpp, 2},
-    {"_rliger2_makeFeatureMatrix", (DL_FUNC) &_rliger2_makeFeatureMatrix, 2},
-    {"_rliger2_cluster_vote_rcpp", (DL_FUNC) &_rliger2_cluster_vote_rcpp, 2},
-    {"_rliger2_max_factor_rcpp", (DL_FUNC) &_rliger2_max_factor_rcpp, 3},
-    {"_rliger2_ComputeSNN", (DL_FUNC) &_rliger2_ComputeSNN, 2},
-    {"_rliger2_WriteEdgeFile", (DL_FUNC) &_rliger2_WriteEdgeFile, 3},
-    {"_rliger2_DirectSNNToFile", (DL_FUNC) &_rliger2_DirectSNNToFile, 4},
-    {"_rliger2_cpp_rank_matrix_dgc", (DL_FUNC) &_rliger2_cpp_rank_matrix_dgc, 4},
-    {"_rliger2_rowAggregateSum_sparse", (DL_FUNC) &_rliger2_rowAggregateSum_sparse, 3},
-    {"_rliger2_colAggregateSum_sparse", (DL_FUNC) &_rliger2_colAggregateSum_sparse, 3},
-    {"_rliger2_colNNZAggr_sparse", (DL_FUNC) &_rliger2_colNNZAggr_sparse, 3},
-    {"_rliger2_rowNNZAggr_sparse", (DL_FUNC) &_rliger2_rowNNZAggr_sparse, 3},
+    {"_rliger_RunModularityClusteringCpp", (DL_FUNC) &_rliger_RunModularityClusteringCpp, 9},
+    {"_rliger_colNormalize_dense_cpp", (DL_FUNC) &_rliger_colNormalize_dense_cpp, 2},
+    {"_rliger_colAggregateMedian_dense_cpp", (DL_FUNC) &_rliger_colAggregateMedian_dense_cpp, 3},
+    {"_rliger_scaleNotCenter_byRow_rcpp", (DL_FUNC) &_rliger_scaleNotCenter_byRow_rcpp, 1},
+    {"_rliger_scaleNotCenter_byRow_perDataset_rcpp", (DL_FUNC) &_rliger_scaleNotCenter_byRow_perDataset_rcpp, 3},
+    {"_rliger_rowVars_sparse_rcpp", (DL_FUNC) &_rliger_rowVars_sparse_rcpp, 2},
+    {"_rliger_rowDivide_rcpp", (DL_FUNC) &_rliger_rowDivide_rcpp, 2},
+    {"_rliger_sumSquaredDeviations", (DL_FUNC) &_rliger_sumSquaredDeviations, 2},
+    {"_rliger_denseZScore", (DL_FUNC) &_rliger_denseZScore, 2},
+    {"_rliger_rowVarsDense", (DL_FUNC) &_rliger_rowVarsDense, 2},
+    {"_rliger_SparseRowVarStd", (DL_FUNC) &_rliger_SparseRowVarStd, 4},
+    {"_rliger_colAggregateSums_sparse", (DL_FUNC) &_rliger_colAggregateSums_sparse, 3},
+    {"_rliger_sample_cpp", (DL_FUNC) &_rliger_sample_cpp, 2},
+    {"_rliger_makeFeatureMatrix", (DL_FUNC) &_rliger_makeFeatureMatrix, 2},
+    {"_rliger_cluster_vote_rcpp", (DL_FUNC) &_rliger_cluster_vote_rcpp, 2},
+    {"_rliger_max_factor_rcpp", (DL_FUNC) &_rliger_max_factor_rcpp, 3},
+    {"_rliger_ComputeSNN", (DL_FUNC) &_rliger_ComputeSNN, 2},
+    {"_rliger_WriteEdgeFile", (DL_FUNC) &_rliger_WriteEdgeFile, 3},
+    {"_rliger_DirectSNNToFile", (DL_FUNC) &_rliger_DirectSNNToFile, 4},
+    {"_rliger_cpp_rank_matrix_dgc", (DL_FUNC) &_rliger_cpp_rank_matrix_dgc, 4},
+    {"_rliger_rowAggregateSum_sparse", (DL_FUNC) &_rliger_rowAggregateSum_sparse, 3},
+    {"_rliger_colAggregateSum_sparse", (DL_FUNC) &_rliger_colAggregateSum_sparse, 3},
+    {"_rliger_colNNZAggr_sparse", (DL_FUNC) &_rliger_colNNZAggr_sparse, 3},
+    {"_rliger_rowNNZAggr_sparse", (DL_FUNC) &_rliger_rowNNZAggr_sparse, 3},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_rliger2(DllInfo *dll) {
+RcppExport void R_init_rliger(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }
