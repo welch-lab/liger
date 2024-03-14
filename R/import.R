@@ -33,7 +33,7 @@
 #' Default \code{TRUE}. If \code{FALSE}, data will be subset into memory and
 #' can be dangerous for large scale analysis.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Additional slot values that should be directly placed in object.
 #' @param remove.missing,format.type,data.name,indices.name,indptr.name,genes.name,barcodes.name
 #' \bold{Deprecated.} See Usage section for replacement.
@@ -46,7 +46,7 @@
 #' pbmc1 <- createLiger(list(ctrl = ctrl.raw, stim = stim.raw))
 #'
 #' # Create from H5 files
-#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger2")
+#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
 #' print(h5Path)
 #' lig <- createLiger(list(ctrl = h5Path))
 #'
@@ -67,7 +67,7 @@ createLiger <- function(
         genesName = NULL,
         barcodesName = NULL,
         newH5 = TRUE,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...,
         # Deprecated coding style
         remove.missing = removeMissing,
@@ -359,7 +359,7 @@ createH5LigerDataset <- function(
 #' pbmc <- readLiger(tempPath)
 #'
 #' # Save and read H5-based liger object
-#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger2")
+#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
 #' lig <- createLiger(list(ctrl = h5Path))
 #' tempPath <- tempfile(fileext = ".rds")
 #' saveRDS(lig, tempPath)
@@ -381,7 +381,7 @@ readLiger <- function(
     cli::cli_alert_info("Older version ({.val {ver}}) of {.cls liger} object detected.")
     if (isTRUE(update)) {
         cli::cli_alert_info(
-            "Updating the object structure to make it compatible with current version {.val {utils::packageVersion('rliger2')}}"
+            "Updating the object structure to make it compatible with current version {.val {utils::packageVersion('rliger')}}"
         )
         return(convertOldLiger(obj, dimredName = dimredName,
                                clusterName = clusterName,
@@ -416,7 +416,7 @@ readLiger <- function(
 #' \code{\link[utils]{download.file}}. Using \code{"libcurl"} while other
 #' options might not work depending on platform.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Additional arguments passed to \code{\link{download.file}}
 #' @export
 #' @return Constructed \linkS4class{liger} object with QC performed and missing
@@ -431,7 +431,7 @@ importPBMC <- function(
         dir = getwd(),
         overwrite = FALSE,
         method = "libcurl",
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
@@ -478,7 +478,7 @@ importBMMC <- function(
         dir = getwd(),
         overwrite = FALSE,
         method = "libcurl",
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
@@ -534,7 +534,7 @@ importCGE <- function(
         dir = getwd(),
         overwrite = FALSE,
         method = "libcurl",
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
@@ -615,7 +615,7 @@ importCGE <- function(
 #' feature type can be found. Otherwise will always return a list. Default
 #' \code{FALSE}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param sample.dirs,sample.names,use.filtered These arguments are renamed and
 #' will be deprecated in the future. Please see usage for corresponding
 #' arguments.
@@ -674,7 +674,7 @@ read10X <- function(
         geneCol = 2,
         cellCol = 1,
         returnList = FALSE,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         # Renamed
         sample.dirs = path,
         sample.names = sampleNames,
@@ -850,7 +850,7 @@ read10XATAC <- function(
         returnList = FALSE,
         geneCol = 2,
         cellCol = 1,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     pipeline <- match.arg(pipeline)
     if (length(path) == 1) {

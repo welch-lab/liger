@@ -21,7 +21,7 @@
 #' @param printGenes Logical. Whether to print ordered markers passing logFC,
 #' UMI and frac thresholds, when \code{verbose = TRUE}. Default \code{FALSE}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param factor.share.thresh,dataset.specificity,log.fc.thresh,pval.thresh,num.genes,print.genes
 #' \bold{Deprecated}. See Usage section for replacement.
 #' @return A list object consisting of the following entries:
@@ -49,7 +49,7 @@ getFactorMarkers <- function(
         pvalThresh = 0.05,
         nGenes = 30,
         printGenes = FALSE,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         # Deprecated coding style
         factor.share.thresh = factorShareThresh,
         dataset.specificity = datasetSpecificity,

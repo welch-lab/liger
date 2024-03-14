@@ -1,4 +1,4 @@
-Package: rliger2
+Package: rliger
 Version: 1.99.0
 Date: 2023-11-09
 Type: Package
@@ -37,7 +37,7 @@ LazyData: true
 RoxygenNote: 7.3.1
 VignetteBuilder: knitr
 Encoding: UTF-8
-LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress
+LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 Depends:
     methods,
     stats,

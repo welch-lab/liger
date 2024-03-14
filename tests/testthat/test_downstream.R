@@ -1,9 +1,9 @@
 has_RcppPlanc <- requireNamespace("RcppPlanc", quietly = TRUE)
-data("pbmc", package = "rliger2")
+data("pbmc", package = "rliger")
 
 withNewH5Copy <- function(fun) {
-    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger2")
-    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger2")
+    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger")
+    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
     if (!file.exists(ctrlpath.orig))
         stop("Cannot find original h5 file at: ", ctrlpath.orig)
     if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
@@ -266,7 +266,7 @@ test_that("ATAC", {
     corr <- linkGenesAndPeaks(
         bmmc, useDataset = "rna",
         pathToCoords = system.file("extdata/hg19_genes.bed",
-                                   package = "rliger2")
+                                   package = "rliger")
     )
     expect_is(corr, "dgCMatrix")
 })

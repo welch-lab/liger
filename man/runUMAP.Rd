@@ -14,7 +14,7 @@ runUMAP(
   minDist = 0.1,
   dimredName = "UMAP",
   seed = 42,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   k = nDims,
   use.raw = useRaw,
   dims.use = useDims,
@@ -51,7 +51,7 @@ result matrix. Default \code{"UMAP"}.}
 \item{seed}{Random seed for reproducibility. Default \code{42}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{k, use.raw, dims.use, n_neighbors, min_dist, rand.seed}{\bold{Deprecated}.
 See Usage section for replacement.}

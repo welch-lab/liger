@@ -12,7 +12,7 @@ imputeKNN(
   weight = TRUE,
   norm = TRUE,
   scale = FALSE,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...,
   knn_k = nNeighbors
 )
@@ -41,7 +41,7 @@ reference.}
 Default \code{TRUE}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{...}{Optional arguments to be passed to \code{\link{normalize}} when
 \code{norm = TRUE}.}

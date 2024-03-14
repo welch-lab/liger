@@ -1,9 +1,14 @@
 #' Check if given liger object if under new implementation
 #' @param object A liger object
 #' @return \code{TRUE} if the version of \code{object} is later than or equal to
-#' 1.99.0. Otherwise \code{FALSE}
-#' @noRd
+#' 1.99.0. Otherwise \code{FALSE}. It raises an error if input object is not of
+#' \linkS4class{liger} class.
+#' @export
+#' @examples
+#' is.newLiger(pbmc) # TRUE
 is.newLiger <- function(object) {
+    if (!inherits(object, "liger"))
+        cli::cli_abort("{.var object} is not even of {.cls liger} class.")
     v <- object@version
     v1990 <- package_version("1.99.0")
     if (v >= v1990) TRUE
@@ -54,7 +59,7 @@ is.newLiger <- function(object) {
 #' names(pbmcPlot)
 #' length(pbmcPlot)
 #'
-#' # rliger2 generics
+#' # rliger generics
 #' ## Retrieving dataset(s), replacement methods available
 #' datasets(pbmcPlot)
 #' dataset(pbmcPlot, "ctrl")
@@ -74,7 +79,9 @@ is.newLiger <- function(object) {
 #' commands(pbmcPlot, funcName = "scaleNotCenter")
 #'
 #' # S3 methods
-#' c(pbmcPlot, pbmcPlot)
+#' pbmcPlot2 <- pbmcPlot
+#' names(pbmcPlot2) <- paste0(names(pbmcPlot), 2)
+#' c(pbmcPlot, pbmcPlot2)
 #'
 #' library(ggplot2)
 #' ggplot(pbmcPlot, aes(x = UMAP.1, y = UMAP.2)) + geom_point()
@@ -361,17 +368,21 @@ setReplaceMethod("dataset", signature(x = "liger", dataset = "character",
                                       type = "ANY", qc = "ANY",
                                       value = "matrixLike"),
                  function(x, dataset,
-                          type = c("rawData", "normData", "scaleData"),
+                          type = c("rawData", "normData"),
                           qc = FALSE,
                           value) {
                      type <- match.arg(type)
+                     if (!all(startsWith(colnames(value), paste0(dataset, "_")))) {
+                         cli::cli_alert_warning(
+                             "Colnames of {.var value} do not all start with {.val {dataset}_}.
+                                  Prefix added."
+                         )
+                         colnames(value) <- paste0(dataset, "_", colnames(value))
+                     }
                      if (type == "rawData") {
                          ld <- createLigerDataset(rawData = value)
-                         colnames(ld) <- paste0(dataset, "_", colnames(ld))
-                     } else if (type == "normData") {
+                     } else {
                          ld <- createLigerDataset(normData = value)
-                     } else if (type == "scaleData") {
-                         ld <- createLigerDataset(scaleData = value)
                      }
                      dataset(x, dataset, qc = qc) <- ld
                      x
@@ -400,37 +411,51 @@ setReplaceMethod(
 
 #' @rdname liger-class
 #' @export
-setMethod("names", signature(x = "liger"), function(x) {
-    names(datasets(x))
-})
+#' @method names liger
+names.liger <- function(x) {
+    names(x@datasets)
+}
 
 #' @rdname liger-class
 #' @export
-setReplaceMethod(
-    "names",
-    signature(x = "liger", value = "character"),
-    function(x, value) {
-        originalNames <- names(x)
-        if (!identical(value, originalNames)) {
-            dataset.idx <- lapply(originalNames, function(n) {
-                x$dataset == n
-            })
-            x@cellMeta$dataset <- as.character(x@cellMeta$dataset)
-            for (i in seq_along(value)) {
-                x@cellMeta$dataset[dataset.idx[[i]]] <- value[i]
-            }
-            x@cellMeta$dataset <- factor(x@cellMeta$dataset, levels = value)
-            names(x@datasets) <- value
-        }
-        x
+#' @method names<- liger
+`names<-.liger` <- function(x, value) {
+    originalNames <- names(x)
+    if (identical(value, originalNames)) return(x)
+    if (any(duplicated(value)))
+        cli::cli_abort("Duplicated dataset names are not allowed.")
+
+    dataset.idx <- lapply(originalNames, function(n) {
+        x$dataset == n
     })
+    x@cellMeta$dataset <- as.character(x@cellMeta$dataset)
+    for (i in seq_along(value)) {
+        x@cellMeta$dataset[dataset.idx[[i]]] <- value[i]
+    }
+    x@cellMeta$dataset <- factor(x@cellMeta$dataset, levels = value)
+    names(x@datasets) <- value
+    x
+}
 
 #' @rdname liger-class
 #' @export
-setMethod("length", signature(x = "liger"), function(x) {
+#' @method length liger
+length.liger <- function(x) {
     .checkObjVersion(x)
-    length(datasets(x))
-})
+    length(x@datasets)
+}
+
+#' @rdname liger-class
+#' @export
+#' @param use.names Whether returned vector should be named with dataset names.
+#' @method lengths liger
+lengths.liger <- function(x, use.names = TRUE) {
+    .checkObjVersion(x)
+    len <- sapply(x@datasets, ncol)
+    if (isTRUE(use.names)) names(len) <- names(x@datasets)
+    else names(len) <- NULL
+    return(len)
+}
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Cell metadata ####
@@ -940,16 +965,13 @@ setMethod("getH5File",
 }
 
 #' Set cell metadata variable
-#' @rdname sub-subset-.liger
-#' @param x A \linkS4class{liger} object
-#' @param i Name or numeric index of cell meta to be replaced
-#' @param j Ignored
-#' @param ... Other argument that might be applied to [[<-,S4Vectors::DataFrame
+#' @rdname liger-class
+#' @param i Name or numeric index of cell meta variable to be replaced
 #' @param value Metadata value to be inserted
-#' @aliases [[<-,liger,ANY,missing-method
-#' @aliases [[<-,liger-method
 #' @return Input liger object updated with replaced/new variable in
 #' \code{cellMeta(x)}.
+#' @export
+#' @method [[<- liger
 #' @examples
 #' cellMeta(pbmc)
 #' # Add new variable
@@ -958,14 +980,18 @@ setMethod("getH5File",
 #' # Change existing variable
 #' pbmc[["newVar"]][1:3] <- 1:3
 #' cellMeta(pbmc)
-setMethod(
-    f = '[[<-',
-    signature = c(x = 'liger', i = 'ANY', j = 'missing', value = 'ANY'),
-    definition = function(x, i, ..., value) {
-        x@cellMeta[[i, ...]] <- value
-        return(x)
+`[[<-.liger` <- function(x, i, value) {
+    name <- if (is.character(i)) i else colnames(x@cellMeta)[i]
+    if (name == "dataset") {
+        cli::cli_abort(
+            c("x" = "Cannot directly modify {.var dataset} variable in {.cls liger} object.",
+              "i" = "Please use {.code names(x) <- value} instead.")
+        )
     }
-)
+    x@cellMeta[[i]] <- value
+    methods::validObject(x)
+    return(x)
+}
 
 #' @export
 #' @method .DollarNames liger
@@ -976,22 +1002,19 @@ setMethod(
 
 #' @export
 #' @rdname liger-class
-setMethod(
-    "$",
-    signature(x = "liger"),
-    function(x, name) {
-        if (!name %in% colnames(cellMeta(x))) NULL
-        else cellMeta(x, columns = name)
-    }
-)
+#' @method $ liger
+`$.liger` <- function(x, name) {
+    if (!name %in% colnames(cellMeta(x))) NULL
+    else cellMeta(x, columns = name)
+}
 
 #' @export
 #' @rdname liger-class
-setReplaceMethod("$", signature(x = "liger"),
-                 function(x, name, value) {
-                     cellMeta(x, columns = name) <- value
-                     return(x)
-                 })
+#' @method $<- liger
+`$<-.liger` <- function(x, name, value) {
+    cellMeta(x, columns = name) <- value
+    return(x)
+}
 
 #' @export
 #' @rdname liger-class
@@ -1298,6 +1321,13 @@ c.liger <- function(...) {
     objList <- list(...)
     if (any(sapply(objList, function(obj) !inherits(obj, "liger"))))
         cli::cli_abort("Can only combine {.cls liger} objects with {.fn c} method for now.")
+    allNames <- unlist(lapply(objList, names))
+    if (any(duplicated(allNames)))
+        cli::cli_abort(
+            c("x" = "Cannot combine {.cls liger} objects with duplicated dataset names.",
+              "i" = "Dataset names of an individual {.cls liger} object can be modified with {.code names(x) <- value}.")
+        )
+
     objList[[length(objList)]] <- recordCommand(objList[[length(objList)]])
     allDatasets <- list()
     allCellMeta <- NULL
@@ -1312,7 +1342,7 @@ c.liger <- function(...) {
     }
     methods::new("liger", datasets = allDatasets, cellMeta = allCellMeta,
                  varFeatures = varFeatures, commands = allCommands,
-                 version = utils::packageVersion("rliger2"))
+                 version = utils::packageVersion("rliger"))
 }
 
 

@@ -466,10 +466,10 @@ runINMF.Seurat <- function(
 #' @param ... Arguments passed to other methods
 #' @return \code{liger} object with H, W, and V slots set.
 #' @name optimizeALS-deprecated
-#' @seealso \code{\link{rliger2-deprecated}}
+#' @seealso \code{\link{rliger-deprecated}}
 NULL
 
-#' @rdname rliger2-deprecated
+#' @rdname rliger-deprecated
 #' @section \code{optimizeALS}:
 #' For \code{optimizeALS}, use \code{\link{runIntegration}} or
 #' \code{\link{runINMF}}. For the case of
@@ -981,7 +981,7 @@ runOnlineINMF.Seurat <- function(
 #' @name online_iNMF-deprecated
 NULL
 
-#' @rdname rliger2-deprecated
+#' @rdname rliger-deprecated
 #' @section \code{online_iNMF}:
 #' For \code{online_iNMF}, use \code{\link{runIntegration}} with
 #' \code{method = "online"} or \code{\link{runOnlineINMF}}.
@@ -1540,10 +1540,10 @@ quantileNorm.Seurat <- function(
 #' @param rand.seed Random seed to allow reproducible results (default 1)
 #' @return \code{liger} object with 'H.norm' and 'clusters' slot set.
 #' @name quantile_norm-deprecated
-#' @seealso \code{\link{rliger2-deprecated}}
+#' @seealso \code{\link{rliger-deprecated}}
 NULL
 
-#' @rdname rliger2-deprecated
+#' @rdname rliger-deprecated
 #' @section \code{quantile_norm}:
 #' For \code{quantile_norm}, use \code{\link{quantileNorm}}.
 #' @export

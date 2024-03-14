@@ -68,7 +68,7 @@ in \code{cellMeta} slot of \code{object}. Default \code{"leiden_cluster"} and
 \item{seed}{Seed of the random number generator. Default \code{1}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 }
 \value{
 \code{object} with refined cluster assignment updated in

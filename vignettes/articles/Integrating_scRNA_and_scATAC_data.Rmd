@@ -29,7 +29,7 @@ For convenience, we have prepared the pre-processed data which are ready to use.
 - [hg19_genes.bed](https://figshare.com/ndownloader/files/40054870)
 
 ```{r, results='hide'}
-library(rliger2)
+library(rliger)
 if (!file.exists("liger_BMMC_rna_D1T1.rds"))
     download.file("https://figshare.com/ndownloader/files/40054858",
                   destfile = "liger_BMMC_rna_D1T1.rds")
@@ -108,7 +108,7 @@ barcodes <- bc_filt
 **4.** We can then use LIGER’s `makeFeatureMatrix()` function to calculate accessibility counts for gene body and promoter individually. This function takes the output from `bedmap` and efficiently counts the number of fragments overlapping each gene and promoter. We could count the genes and promoters in a single step, but choose to calculate them separately in case it is necessary to look at gene or promoter accessibility individually in downstream analyses.
 
 ```{r Count-6, eval = FALSE}
-library(rliger2)
+library(rliger)
 gene.counts <- makeFeatureMatrix(genes.bc, barcodes)
 promoter.counts <- makeFeatureMatrix(promoters.bc, barcodes)
 ```

@@ -828,13 +828,16 @@ selectGenes.Seurat <- function(
     assay <- assay %||% SeuratObject::DefaultAssay(object)
     matList <- .getSeuratData(object, layer = layer, slot = "data",
                               assay = assay)
-
-    datasetVar <- object[[datasetVar, drop = TRUE]]
-    if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
-    datasetVar <- droplevels(datasetVar)
-    if (!is.list(matList)) matList <- splitRmMiss(matList, datasetVar)
-    else {
+    if (is.list(matList)) {
+        # object contain split layers
         names(matList) <- gsub(paste0(layer, "."), "", names(matList))
+        datasetVar <- factor(rep(names(matList), sapply(matList, ncol)),
+                             levels = names(matList))
+    } else {
+        datasetVar <- object[[datasetVar, drop = TRUE]]
+        if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
+        datasetVar <- droplevels(datasetVar)
+        matList <- splitRmMiss(matList, datasetVar)
     }
     useDatasets <- useDatasets %||% levels(datasetVar)
     matList <- matList[unique(useDatasets)]

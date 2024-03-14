@@ -48,7 +48,7 @@ saveRDS(pbmc, tempPath)
 pbmc <- readLiger(tempPath)
 
 # Save and read H5-based liger object
-h5Path <- system.file("extdata/ctrl.h5", package = "rliger2")
+h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
 lig <- createLiger(list(ctrl = h5Path))
 tempPath <- tempfile(fileext = ".rds")
 saveRDS(lig, tempPath)

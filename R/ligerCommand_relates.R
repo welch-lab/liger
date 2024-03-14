@@ -62,7 +62,7 @@ recordCommand <- function(
         "ligerCommand", funcName = funcName,
         objSummary = objSummary,
         parameters = args,
-        ligerVersion = as.character(utils::packageVersion("rliger2")),
+        ligerVersion = as.character(utils::packageVersion("rliger")),
         dependencyVersion = dependVer
     )
     # Do a hash tag to see if an identical operation has been done before
@@ -197,7 +197,7 @@ commandDiff <- function(object, cmd1, cmd2) {
     }
     # Versions
     if (x@ligerVersion != y@ligerVersion)
-        msg <- c(msg, paste0("\"rliger2\" versions differ: ", x@ligerVersion,
+        msg <- c(msg, paste0("\"rliger\" versions differ: ", x@ligerVersion,
                              " VS ", y@ligerVersion))
     if (!identical(x@dependencyVersion, y@dependencyVersion))
         msg <- c(msg, paste0("Dependency versions differ. ",

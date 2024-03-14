@@ -561,13 +561,14 @@ cli_or <- function(x) cli::cli_vec(x, list("vec-last" = " or "))
 }
 
 
-splitRmMiss <- function(x, y) {
+splitRmMiss <- function(x, y, rmMiss = TRUE) {
     y <- factor(y)
     y <- droplevels(y)
     matList <- lapply(levels(y), function(lvl) {
         idx <- y == lvl
         xsub <- x[, idx, drop = FALSE]
-        xsub[rowSums(xsub) > 0, , drop = FALSE]
+        if (rmMiss) xsub[rowSums(xsub) > 0, , drop = FALSE]
+        else xsub
     })
     names(matList) <- levels(y)
     return(matList)
@@ -616,4 +617,82 @@ searchH <- function(object, useRaw = NULL) {
         }
     }
     return(list(H = H, useRaw = useRaw))
+}
+
+# Internal development use only
+# use when you have objects created when this package was named by `rliger2`
+# now we rename the package back to `rliger` and you'll need to have the objects
+# compatible with "new" package name.
+rliger2_to_rliger_namespace <- function(obj) {
+    if (inherits(obj, "liger")) {
+        new <- methods::new(
+            "liger",
+            datasets = obj@datasets,
+            cellMeta = obj@cellMeta,
+            varFeatures = obj@varFeatures,
+            W = obj@W,
+            H.norm = obj@H.norm,
+            uns = obj@uns,
+            commands = obj@commands,
+            version = obj@version
+        )
+    }
+    for (i in seq_along(obj)) {
+        ld <- obj@datasets[[i]]
+        basics <- list(
+            rawData = ld@rawData,
+            normData = ld@normData,
+            scaleData = ld@scaleData,
+            H = ld@H,
+            V = ld@V,
+            A = ld@A,
+            B = ld@B,
+            varUnsharedFeatures = ld@varUnsharedFeatures,
+            scaleUnsharedData = ld@scaleUnsharedData,
+            U = ld@U,
+            h5fileInfo = ld@h5fileInfo,
+            featureMeta = ld@featureMeta,
+            colnames = ld@colnames,
+            rownames = ld@rownames
+        )
+        if (inherits(ld, "ligerATACDataset")) {
+            basics <- c(basics, list(
+                Class = "ligerATACDataset",
+                rawPeak = ld@rawPeak,
+                normPeak = ld@normPeak
+            ))
+        } else if (inherits(ld, "ligerRNADataset")) {
+            basics <- c(basics, list(
+                Class = "ligerRNADataset"
+            ))
+        } else if (inherits(ld, "ligerMethDataset")) {
+            basics <- c(basics, list(
+                Class = "ligerMethDataset"
+            ))
+        } else if (inherits(ld, "ligerSpatialDataset")) {
+            basics <- c(basics, list(
+                Class = "ligerSpatialDataset",
+                coordinate = ld@coordinate
+            ))
+        } else {
+            basics <- c(basics, list(
+                Class = "ligerDataset"
+            ))
+        }
+        new@datasets[[i]] <- do.call("new", basics)
+    }
+    for (i in seq_along(new@commands)) {
+        cmd <- new@commands[[i]]
+        new@commands[[i]] <- methods::new(
+            "ligerCommand",
+            funcName = cmd@funcName,
+            time = cmd@time,
+            call = cmd@call,
+            parameters = cmd@parameters,
+            objSummary = cmd@objSummary,
+            ligerVersion = cmd@ligerVersion,
+            dependencyVersion = cmd@dependencyVersion
+        )
+    }
+    new
 }

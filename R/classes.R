@@ -174,7 +174,7 @@ setValidity("ligerDataset", .valid.ligerDataset)
 #' analysis. Use \code{commands} to retrieve information. See detailed section
 #' accordingly.
 #' @slot uns List for unstructured meta-info of analyses or presets.
-#' @slot version Record of version of rliger2 package
+#' @slot version Record of version of rliger package
 #' @importClassesFrom S4Vectors DataFrame
 #' @importFrom ggplot2 fortify
 liger <- setClass(
@@ -191,7 +191,7 @@ liger <- setClass(
     ),
     methods::prototype(
         cellMeta = methods::new("DFrame"),
-        version = utils::packageVersion("rliger2")
+        version = utils::packageVersion("rliger")
     )
 )
 
@@ -199,6 +199,18 @@ liger <- setClass(
 .checkAllDatasets <- function(x) {
     for (ld in datasets(x)) {
         methods::validObject(ld)
+    }
+    return(NULL)
+}
+
+.checkDatasetVar <- function(x) {
+    if (!is.factor(x@cellMeta$dataset)) {
+        return("\"dataset\" variable in cellMeta is not a factor")
+    }
+    ds_cm <- levels(droplevels(x@cellMeta[["dataset"]]))
+    ds_ds <- names(x@datasets)
+    if (!identical(ds_cm, ds_ds)) {
+        return("`levels(x$dataset)` does not match `names(x)`.")
     }
     return(NULL)
 }
@@ -271,8 +283,9 @@ liger <- setClass(
 }
 
 .valid.liger <- function(object) {
-    # message("Checking liger object validity")
     res <- .checkAllDatasets(object)
+    if (!is.null(res)) return(res)
+    res <- .checkDatasetVar(object)
     if (!is.null(res)) return(res)
     res <- .checkLigerBarcodes(object)
     if (!is.null(res)) return(res)
@@ -296,7 +309,7 @@ setClassUnion("POSIXct_or_NULL", c("POSIXct", "NULL"))
 #' @slot objSummary List of attributes of the \linkS4class{liger} object as a
 #' snapshot when command is operated.
 #' @slot ligerVersion Character string converted from
-#' \code{packageVersion("rliger2")}.
+#' \code{packageVersion("rliger")}.
 #' @slot dependencyVersion Named character vector of version number, if any
 #' dependency library has a chance to be included by the function. A
 #' dependency might only be invoked under certain conditions, such as using

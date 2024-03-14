@@ -52,7 +52,7 @@ met_clusts <- readRDS("meth_data/met_clusters.RDS")
 We then create a liger object using the methylation and expression data. 
 
 ```{R}
-library(rliger2)
+library(rliger)
 
 rna.met <- createLiger(list(rna = rna, met = met), modal = c("rna", "meth"))
 ```

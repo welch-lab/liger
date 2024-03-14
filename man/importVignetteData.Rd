@@ -10,7 +10,7 @@ importPBMC(
   dir = getwd(),
   overwrite = FALSE,
   method = "libcurl",
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 
@@ -18,7 +18,7 @@ importBMMC(
   dir = getwd(),
   overwrite = FALSE,
   method = "libcurl",
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 
@@ -26,7 +26,7 @@ importCGE(
   dir = getwd(),
   overwrite = FALSE,
   method = "libcurl",
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 }
@@ -43,7 +43,7 @@ location, whether to re-download or directly use this file. Default
 options might not work depending on platform.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{...}{Additional arguments passed to \code{\link{download.file}}}
 }

@@ -17,7 +17,7 @@ createLiger(
   genesName = NULL,
   barcodesName = NULL,
   newH5 = TRUE,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...,
   remove.missing = removeMissing,
   format.type = formatType,
@@ -70,7 +70,7 @@ Default \code{TRUE}. If \code{FALSE}, data will be subset into memory and
 can be dangerous for large scale analysis.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{...}{Additional slot values that should be directly placed in object.}
 
@@ -87,7 +87,7 @@ stim.raw <- rawData(pbmc, "stim")
 pbmc1 <- createLiger(list(ctrl = ctrl.raw, stim = stim.raw))
 
 # Create from H5 files
-h5Path <- system.file("extdata/ctrl.h5", package = "rliger2")
+h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
 print(h5Path)
 lig <- createLiger(list(ctrl = h5Path))
 

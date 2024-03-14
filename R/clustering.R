@@ -42,7 +42,7 @@
 #' \code{"louvain_cluster"}.
 #' @param seed Seed of the random number generator. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @return \code{object} with refined cluster assignment updated in
 #' \code{clusterName} variable in \code{cellMeta} slot. Can be fetched
 #' with \code{object[[clusterName]]}
@@ -156,10 +156,10 @@ runCluster <- function(
 #' \code{"louvain_cluster"} variable in \code{cellMeta} slot. Can be fetched
 #' with \code{object$louvain_cluster}
 #' @name louvainCluster-deprecated
-#' @seealso \code{\link{rliger2-deprecated}}
+#' @seealso \code{\link{rliger-deprecated}}
 NULL
 
-#' @rdname rliger2-deprecated
+#' @rdname rliger-deprecated
 #' @section \code{louvainCluster}:
 #' For \code{louvainCluster}, use \code{\link{runCluster}(method = "louvain")}
 #' as the replacement, while \code{\link{runCluster}} with default
@@ -174,7 +174,7 @@ louvainCluster <- function( # nocov start
         nRandomStarts = 10,
         nIterations = 100,
         random.seed = 1,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         dims.use = NULL
 ) {
     lifecycle::deprecate_warn(

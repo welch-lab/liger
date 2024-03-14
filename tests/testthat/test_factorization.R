@@ -1,10 +1,10 @@
 has_RcppPlanc <- requireNamespace("RcppPlanc", quietly = TRUE)
-data("pbmc", package = "rliger2")
+data("pbmc", package = "rliger")
 rawDataList <- getMatrix(pbmc, "rawData")
 
 withNewH5Copy <- function(fun) {
-    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger2")
-    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger2")
+    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger")
+    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
     if (!file.exists(ctrlpath.orig))
         stop("Cannot find original h5 file at: ", ctrlpath.orig)
     if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
@@ -105,7 +105,7 @@ test_that("UINMF", {
 
     pbmc <- scaleNotCenter(pbmc)
     pbmc <- runUINMF(pbmc, k = 10, nIteration = 2, nRandomStarts = 2)
-    expect_no_error(rliger2:::.checkValidFactorResult(pbmc))
+    expect_no_error(rliger:::.checkValidFactorResult(pbmc))
 })
 
 test_that("Optimize new parameters", {
