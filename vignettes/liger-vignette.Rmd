@@ -29,6 +29,7 @@ ligerex = createLiger(list(name1 = dge1, name2 = dge2)) #Can also pass in more t
 ligerex = normalize(ligerex)
 ligerex = selectGenes(ligerex, var.thresh = 0.1)
 ligerex = scaleNotCenter(ligerex)
+
 ```
 
 ### Loading 10X Data
@@ -73,12 +74,15 @@ ligerex = runTSNE(ligerex)
 ligerex = runUMAP(ligerex)
 plotByDatasetAndCluster(ligerex) #Can also pass in different set of cluster labels to plot
 plotFeature(ligerex, "nUMI")
+
 pdf("word_clouds.pdf")
 plotWordClouds(ligerex)
 dev.off()
+
 pdf("gene_loadings.pdf")
 plotGeneLoadings(ligerex)
 dev.off()
+
 ```
 
 ## Exploring factors and clusters
@@ -173,4 +177,5 @@ ligerex = seuratToLiger(seurat_obj, combined.seurat = T, meta.var = 'original', 
 ligerex = seuratToLiger(seurat_obj, combined.seurat = T, assays.use = c('RNA', 'ADT'))
 # Create Seurat object from liger object, keeping liger highly variable genes
 seurat_obj = ligerToSeurat(ligerex, use.liger.genes = T)
+
 ```

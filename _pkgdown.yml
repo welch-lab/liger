@@ -1,0 +1,135 @@
+template:
+  params:
+    bootswatch: flatly
+
+reference:
+- title: "Read Data"
+- contents:
+  - starts_with("create")
+  - readLiger
+  - read10X
+  - restoreH5Liger
+  - importVignetteData
+  - as.ligerDataset
+  - as.liger
+  - pbmc
+  - pbmcPlot
+  - bmmc
+- title: "Preprocessing"
+- contents:
+  - runGeneralQC
+  - removeMissing
+  - normalize
+  - selectGenes
+  - scaleNotCenter
+  - reverseMethData
+  - downsample
+  - selectGenesVST
+- title: "Integration"
+- contents:
+  - runIntegration
+  - quantileNorm
+  - runINMF
+  - runOnlineINMF
+  - runUINMF
+  - optimizeNewData
+  - optimizeNewK
+  - optimizeNewLambda
+  - optimizeSubset
+  - suggestK
+  - suggestLambda
+- title: "Downstream Analysis"
+- contents:
+  - runUMAP
+  - runTSNE
+  - runCluster
+  - mapCellMeta
+  - runMarkerDEG
+  - runPairwiseDEG
+  - runWilcoxon
+  - runPseudoBulkDEG
+  - getFactorMarkers
+  - runDoubletFinder
+  - runGSEA
+  - runGOEnrich
+- title: "ATAC Specific Analysis"
+- contents:
+  - imputeKNN
+  - linkGenesAndPeaks
+  - exportInteractTrack
+- title: "Visualization"
+- contents:
+  - starts_with("plot")
+  - makeRiverplot
+  - starts_with(".gg")
+  - starts_with(".plot")
+  - .complexHeatmapDotPlot
+- title: "Evaluation Metrics"
+- contents:
+  - starts_with("calc")
+- title: "Object Class"
+- contents:
+  - ends_with("class")
+  - rawPeak
+  - coordinate
+  - retrieveCellFeature
+  - subsetLiger
+  - subsetLigerDataset
+  - convertOldLiger
+  - ligerToSeurat
+- title: "Misc"
+- contents:
+  - H5Apply
+  - commandDiff
+  - isH5Liger
+  - makeFeatureMatrix
+  - mergeH5
+  - mergeSparseAll
+  - modalOf
+  - closeAllH5
+- title: "Deprecated"
+- contents:
+  - ends_with("deprecated")
+  - readSubset
+  - quantileAlignSNF
+  - getProportionMito
+navbar:
+  title: "rliger"
+  left:
+    - text: "Installation"
+      href: articles/installation.html
+    - text: "Tutorials"
+      menu:
+        - text: "Integrating multiple scRNAseq data"
+          href: articles/Integrating_multi_scRNA_data.html
+        - text: "Integrating scRNA and scATAC data"
+          href: articles/Integrating_scRNA_and_scATAC_data.html
+        - text: "Online iNMF with HDF5 based data"
+          href: articles/online_iNMF_tutorial.html
+        - text: "Integration using unshared features"
+          href: articles/UINMF_vignette.html
+        - text: "Cross-species Analysis with UINMF"
+          href: articles/cross_species_vig.html
+        - text: "UINMF with STARmap spatial and transcriptomic"
+          href: articles/STARmap_dropviz_vig.html
+        - text: "UINMF with SNAREseq scATAC and scRNA"
+          href: articles/SNAREseq_walkthrough.html
+        - text: "Integrating scRNAseq and DNA methylation"
+          href: articles/rna_methylation.html
+        - text: "Parameter selection"
+          href: articles/Parameter_selection.html
+    - text: "Usage"
+      menu:
+        - text: "Import data"
+          href: articles/import_data.html
+        - text: "Introduction to a liger object"
+          href: articles/liger_object.html
+        - text: "Interoperate with Seurat"
+          href: articles/liger_with_seurat.html
+    - text: "Reference"
+      href: reference/index.html
+    - text: "NEWS"
+      href: news/index.html
+  right:
+    - icon: fab fa-github fa-lg
+      href: https://github.com/welch-lab/liger

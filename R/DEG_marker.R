@@ -1,0 +1,521 @@
+#' @title Find DEG between two groups
+#' @description Find DEG between two groups. Two methods are supported:
+#' \code{"wilcoxon"} and \code{"pseudoBulk"}. Wilcoxon rank sum test is
+#' performed on single-cell level, while pseudo-bulk method aggregates cells
+#' basing on biological replicates and calls bulk RNAseq DE methods, DESeq2 wald
+#' test. When real biological replicates are not available, pseudo replicates
+#' can be generated. Please see below for detailed scenario usage.
+#' @section Pairwise DEG Scenarios:
+#' Users can select classes of cells from a variable in \code{cellMeta}.
+#' \code{variable1} and \code{variable2} are used to specify a column in
+#' \code{cellMeta}, and \code{group1} and \code{group2} are used to specify
+#' existing classes from \code{variable1} and \code{variable2}, respectively.
+#' When \code{variable2} is missing, \code{group2} will be considered from
+#' \code{variable1}.
+#'
+#' For example, when \code{variable1 = "celltype"} and \code{variable2 = NULL},
+#' \code{group1} and \code{group2} should be valid cell types in
+#' \code{object$celltype}.
+#'
+#' When \code{variable1} is "celltype" and \code{variable2} is "gender",
+#' \code{group1} should be a valid cell type from \code{object$celltype} and
+#' \code{group2} should be a valid class from \code{object$gender}.
+#'
+#' When both \code{variable1} and \code{variable2} are missing, \code{group1}
+#' and \code{group2} should be valid index of cells in \code{object}.
+#' @param object A \linkS4class{liger} object, with normalized data available
+#' @param group1,group2,variable1,variable2 Condition specification. See
+#' \code{?runPairwiseDEG} section \bold{Pairwise DEG Scenarios} for detail.
+#' @param method DEG test method to use. Choose from \code{"wilcoxon"} or
+#' \code{"pseudoBulk"}. Default \code{"wilcoxon"}
+#' @param usePeak Logical. Whether to use peak count instead of gene count.
+#' Only supported when ATAC datasets are involved. Default \code{FALSE}.
+#' @param useReplicate \code{cellMeta} variable of biological replicate
+#' annotation. Only used with \code{method = "pseudoBulk"}. Default \code{NULL}
+#' will create \code{nPsdRep} pseudo replicates per group.
+#' @param nPsdRep Number of pseudo replicates to create. Only used when
+#' \code{method = "pseudoBulk", useReplicate = NULL}. Default \code{5}.
+#' @param seed Random seed to use for pseudo-replicate generation. Default
+#' \code{1}.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' @return A data.frame with DEG information
+#' @rdname liger-DEG
+#' @export
+#' @examples
+#' # Compare between cluster "0" and cluster "1"
+#' degStats <- runPairwiseDEG(pbmcPlot, group1 = 0, group2 = 1,
+#'                            variable1 = "leiden_cluster")
+#' # Compare between all cells from cluster "5" and
+#' # all cells from dataset "stim"
+#' degStats <- runPairwiseDEG(pbmcPlot, group1 = "5", group2 = "stim",
+#'                            variable1 = "leiden_cluster",
+#'                            variable2 = "dataset")
+runPairwiseDEG <- function(
+        object,
+        group1,
+        group2,
+        variable1 = NULL,
+        variable2 = NULL,
+        method = c("wilcoxon", "pseudoBulk"),
+        usePeak = FALSE,
+        useReplicate = NULL,
+        nPsdRep = 5,
+        seed = 1,
+        verbose = getOption("ligerVerbose")
+) {
+    method <- match.arg(method)
+    if (is.null(variable1) && is.null(variable2)) {
+        # Directly using cell index
+        groups <- list(
+            .idxCheck(object, group1, "cell"),
+            .idxCheck(object, group2, "cell")
+        )
+        group1Name <- "group1"
+        group2Name <- "group2"
+        names(groups) <- c("group1", "group2")
+    } else if (!is.null(variable1)) {
+        var1 <- .fetchCellMetaVar(object, variable1,
+                                  checkCategorical = TRUE, drop = TRUE,
+                                  droplevels = TRUE)
+        group1Idx <- which(var1 %in% group1)
+        group1Name <- paste(group1, collapse = ".")
+        if (is.null(variable2)) {
+            variable2 <- variable1
+            var2 <- var1
+        } else {
+            var2 <- .fetchCellMetaVar(object, variable2,
+                                           checkCategorical = TRUE, drop = TRUE,
+                                           droplevels = TRUE)
+        }
+        group2Idx <- which(var2 %in% group2)
+        group2Name <- paste(group2, collapse = ".")
+        groups <- list(group1Idx, group2Idx)
+        names(groups) <- c(group1Name, group2Name)
+    } else {
+        stop("Please see `?runPairwiseDEG` for usage.")
+    }
+    result <- .runDEG(object, groups = groups, method = method,
+                      usePeak = usePeak, useReplicate = useReplicate,
+                      nPsdRep = nPsdRep, seed = seed, verbose = verbose)
+    result <- result[result$group == group1Name,]
+    attributes(result)$meta <- list(
+        group1 = group1,
+        variable1 = variable1,
+        group2 = group2,
+        variable2 = variable2
+    )
+    return(result)
+}
+
+#' @rdname liger-DEG
+#' @export
+#' @param conditionBy \code{cellMeta} variable(s). Marker detection will be
+#' performed for each level of this variable. Multiple variables will be
+#' combined. Default \code{NULL} uses default cluster.
+#' @param splitBy Split data by \code{cellMeta} variable(s) here and identify
+#' markers for \code{conditionBy} within each chunk. Default \code{NULL}.
+#' @param useDatasets Datasets to perform marker detection within. Default
+#' \code{NULL} will use all datasets.
+#' @section Marker Detection Scenarios:
+#' Marker detection is generally performed in a one vs. rest manner. The
+#' grouping of such condition is specified by \code{conditionBy}, which should
+#' be a column name in \code{cellMeta}. When \code{splitBy} is specified as
+#' another variable name in \code{cellMeta}, the marker detection will be
+#' iteratively done for each level of \code{splitBy} variable.
+#'
+#' For example, when \code{conditionBy = "celltype"} and \code{splitBy = NULL},
+#' marker detection will be performed by comparing all cells of "celltype_i"
+#' against all other cells, and etc.
+#'
+#' When \code{conditionBy = "celltype"} and \code{splitBy = "gender"}, marker
+#' detection will be performed by comparing "celltype_i" cells from "gender_i"
+#' against other cells from "gender_i", and etc.
+#' @examples
+#' # Identify markers for each cluster
+#' markerStats <- runMarkerDEG(pbmcPlot, conditionBy = "leiden_cluster")
+#' # Identify dataset markers within each cluster
+#' markerStatsList <- runMarkerDEG(pbmcPlot, conditionBy = "dataset",
+#'                                 splitBy = "leiden_cluster")
+runMarkerDEG <- function(
+        object,
+        conditionBy = NULL,
+        splitBy = NULL, # The previous by dataset strategy
+        method = c("wilcoxon", "pseudoBulk"),
+        useDatasets = NULL,
+        usePeak = FALSE,
+        useReplicate = NULL,
+        nPsdRep = 5,
+        seed = 1,
+        verbose = getOption("ligerVerbose")
+) {
+    useDatasets <- .checkUseDatasets(object, useDatasets)
+    allCellIdx <- seq(ncol(object))[object$dataset %in% useDatasets]
+    conditionBy <- conditionBy %||% object@uns$defaultCluster
+    if (is.null(conditionBy)) {
+        stop("No `conditionBy` given or default cluster not set.")
+    }
+    conditionBy <- .fetchCellMetaVar(
+        object, conditionBy, cellIdx = allCellIdx,
+        checkCategorical = TRUE, drop = FALSE, droplevels = TRUE
+    )
+    conditionBy <- interaction(conditionBy, drop = TRUE)
+    splitBy <- .fetchCellMetaVar(
+        object, splitBy, cellIdx = allCellIdx,
+        checkCategorical = TRUE, drop = FALSE, droplevels = TRUE
+    )
+    splitBy <- interaction(splitBy, drop = TRUE)
+    if (nlevels(splitBy) <= 1) {
+        groups <- split(allCellIdx, conditionBy)
+        result <- .runDEG(object, groups = groups, method = method,
+                          usePeak = usePeak, useReplicate = useReplicate,
+                          nPsdRep = nPsdRep, seed = seed, verbose = verbose)
+    } else {
+        result <- list()
+        for (i in seq_along(levels(splitBy))) {
+            subIdx <- splitBy == levels(splitBy)[i]
+            subCellIdx <- allCellIdx[subIdx]
+            groups <- split(subCellIdx, conditionBy[subIdx])
+            result[[levels(splitBy)[i]]] <- .runDEG(
+                object, groups = groups, method = method, usePeak = usePeak,
+                useReplicate = useReplicate, nPsdRep = nPsdRep, seed = seed,
+                verbose = verbose
+            )
+        }
+    }
+
+    return(result)
+}
+# groups - As underlying function, this must be organized into list of numeric
+# cell index vectors.
+.runDEG <- function(
+        object,
+        groups,
+        method = c("wilcoxon", "pseudoBulk"),
+        # byDataset = FALSE,
+        usePeak = FALSE,
+        useReplicate = NULL,
+        nPsdRep = 5,
+        seed = 1,
+        verbose = getOption("ligerVerbose")
+) {
+    method <- match.arg(method)
+    allCellIdx <- unlist(groups)
+    allCellBC <- colnames(object)[allCellIdx]
+    datasetInvolve <- levels(object$dataset[allCellIdx, drop = TRUE])
+    var <- factor(unlist(lapply(names(groups), function(n) {
+        rep(n, length(groups[[n]]))
+    })), levels = names(groups))
+    if (isTRUE(usePeak)) {
+        useDatasets <- .checkUseDatasets(object, useDatasets = datasetInvolve,
+                                         modal = "atac")
+    } else {
+        useDatasets <- .checkUseDatasets(object, useDatasets = datasetInvolve)
+    }
+    slot <- .DE.checkDataAvail(object, datasetInvolve, method, usePeak)
+    dataList <- getMatrix(object, slot, datasetInvolve, returnList = TRUE)
+    features <- Reduce(intersect, lapply(dataList, rownames))
+    dataList <- lapply(dataList, function(x) x[features,])
+    mat <- Reduce(cbind, dataList)
+    mat <- mat[, allCellBC]
+    if (method == "wilcoxon") {
+        mat <- log1p(1e10*mat)
+        result <- wilcoxauc(mat, var)
+    } else if (method == "pseudoBulk") {
+        if (is.null(useReplicate)) {
+            replicateAnn <- setupPseudoRep2(var, nRep = nPsdRep,
+                                            seed = seed)
+        } else {
+            replicateAnn <- .fetchCellMetaVar(
+                object, useReplicate,
+                cellIdx = allCellIdx,
+                drop = FALSE,
+                checkCategorical = TRUE,
+                droplevels = TRUE
+            )
+            replicateAnn$groups <- var
+        }
+        pbs <- makePseudoBulk2(mat, replicateAnn, verbose = verbose)
+        var <- sapply(levels(replicateAnn$groups), function(x) {
+            nlevels(interaction(replicateAnn[replicateAnn$groups == x,],
+                                drop = TRUE))
+        })
+        var <- factor(rep(names(var), var), levels = names(var))
+        result <- .callDESeq22(pbs, var, verbose)
+    }
+    return(result)
+}
+
+.DE.checkDataAvail <- function(object, useDatasets, method, usePeak) {
+    if (isH5Liger(object, useDatasets)) {
+        stop("HDF5 based datasets detected but is not supported. \n",
+             "Try `object.sub <- downsample(object, useSlot = ",
+             "'normData')` to create ANOTHER object with in memory data.")
+    }
+    if (method == "wilcoxon") {
+        if (!isTRUE(usePeak)) slot <- "normData"
+        else slot <- "normPeak"
+    } else if (method == "pseudoBulk") {
+        if (!requireNamespace("DESeq2", quietly = TRUE))
+            stop("Package \"DESeq2\" needed for this function to work. ",
+                 "Please install it by command:\n",
+                 "BiocManager::install('DESeq2')",
+                 call. = FALSE)
+        if (!isTRUE(usePeak)) slot <- "rawData"
+        else slot <- "rawPeak"
+    }
+    allAvail <- all(sapply(useDatasets, function(d) {
+        ld <- dataset(object, d)
+        !is.null(methods::slot(ld, slot))
+    }))
+    if (!allAvail)
+        stop(slot, " not all available for involved datasets. [method = \"",
+             method, "\", usePeak = ", usePeak, "]")
+    return(slot)
+}
+
+
+###################### Pseudo-bulk Method helper ###############################
+
+setupPseudoRep2 <- function(groups, nRep = 3, seed = 1) {
+    # The output data.frame should be cell per row by variable per col
+    set.seed(seed)
+    psdRep <- c()
+    for (i in seq_along(levels(groups))) {
+        groupSize <- sum(groups == levels(groups)[i])
+        repVar <- sample(seq_len(groupSize) %% nRep) + 1 + (i - 1)*nRep
+        psdRep <- c(psdRep, repVar)
+    }
+    return(data.frame(
+        groups = groups,
+        pseudoRep = factor(psdRep)
+    ))
+}
+
+makePseudoBulk2 <- function(mat, replicateAnn, verbose = TRUE) {
+    # mat - Extracted and contatenated matrix. intersection of genes by
+    #       c(group1, group2) cells
+    # groups - list of groups
+    # replicateAnn - data.frame of replicate annotation, with rownames as
+    #                barcodes and columns as variables
+
+    # Check whether enough replicates per condition
+    for (gr in levels(replicateAnn$groups)) {
+        subrep <- replicateAnn[replicateAnn$groups == gr,]
+        splitLabel <- interaction(subrep, drop = TRUE)
+        if (length(levels(splitLabel)) < 2) {
+            stop("Too few replicate labels for condition \"", gr, "\". ",
+                 "Cannot not create pseudo-bulks. Please use ",
+                 "`method = \"wilcoxon\"` instead.")
+        }
+    }
+    splitLabel <- interaction(replicateAnn, drop = TRUE)
+    pseudoBulks <- colAggregateSums_sparse(mat, as.integer(splitLabel) - 1,
+                                           nlevels(splitLabel))
+    dimnames(pseudoBulks) <- list(rownames(mat), levels(splitLabel))
+    return(pseudoBulks)
+}
+
+.callDESeq22 <- function(pseudoBulks, groups,
+                         verbose = getOption("ligerVerbose")) {
+    # DESeq2 workflow
+    if (isTRUE(verbose)) .log("Calling DESeq2 Wald test")
+    des <- DESeq2::DESeqDataSetFromMatrix(
+        countData = pseudoBulks,
+        colData = data.frame(groups = groups),
+        design = formula("~groups")
+    )
+    des <- DESeq2::DESeq(des, test = "Wald", quiet = !verbose)
+    res <- DESeq2::results(des, contrast = c("groups", levels(groups)[1],
+                                             levels(groups)[2]))
+    res <- as.data.frame(res)
+    res$feature <- rownames(res)
+    rownames(res) <- NULL
+    res$group <- levels(groups)[1]
+    res <- res[, c(7, 8, 2, 5, 6)]
+    colnames(res) <- c("feature", "group", "logFC", "pval", "padj")
+    return(res)
+}
+
+
+####################### Wilcoxon rank-sum test helper ##########################
+
+# X: matrix of data to be tested
+# y: grouping label of columns of X
+# Rcpp source code located in src/wilcoxon.cpp
+wilcoxauc <- function(x, clusterVar) {
+    if (methods::is(x, 'dgTMatrix')) x <- methods::as(x, 'CsparseMatrix')
+    if (methods::is(x, 'TsparseMatrix')) x <- methods::as(x, 'CsparseMatrix')
+    if (is.null(row.names(x))) {
+        rownames(x) <- paste0('Feature', seq(nrow(x)))
+    }
+    if (!is.factor(clusterVar)) clusterVar <- factor(clusterVar)
+    clusterVar <- droplevels(clusterVar)
+    groupSize <- as.numeric(table(clusterVar))
+
+    ## Compute primary statistics
+    n1n2 <- groupSize * (ncol(x) - groupSize)
+    # rankRes - list(X_ranked, ties), where X_ranked is obs x feature
+    xRanked <- Matrix::t(x)
+    # This computes the ranking of non-zero values and the ties
+    ties <- cpp_rank_matrix_dgc(xRanked@x, xRanked@p,
+                                nrow(xRanked), ncol(xRanked))
+    # ranksRes <- list(X_ranked = xT, ties = ties)
+
+    # rankRes <- colRanking(x)
+    ustat <- computeUstat(xRanked, clusterVar, n1n2, groupSize)
+    auc <- t(ustat / n1n2)
+    pvals <- computePval(ustat, ties, ncol(x), n1n2)
+    fdr <- apply(pvals, 2, function(p) stats::p.adjust(p, 'BH'))
+
+    ### Auxiliary Statistics (AvgExpr, PctIn, LFC, etc)
+    groupSums <- colAggregateSum_sparse(x, as.integer(clusterVar) - 1, length(unique(clusterVar)))
+    # groupSums <- colAggregateSum(x, clusterVar)
+    group_nnz <- colNNZAggr_sparse(x, as.integer(clusterVar) - 1, length(unique(clusterVar)))
+    # group_nnz <- colNNZAggr(x, clusterVar)
+    group_pct <- t(sweep(group_nnz, 1, as.numeric(table(clusterVar)), "/"))
+
+    group_pct_out <- sweep(-group_nnz, 2, colSums(group_nnz), "+")
+    group_pct_out <- sweep(group_pct_out, 1,
+                           as.numeric(length(clusterVar) - table(clusterVar)),
+                           "/")
+    group_pct_out <- t(group_pct_out)
+
+    groupMeans <- t(sweep(groupSums, 1, as.numeric(table(clusterVar)), "/"))
+
+    cs <- colSums(groupSums)
+    gs <- as.numeric(table(clusterVar))
+    lfc <- Reduce(cbind, lapply(seq_along(levels(clusterVar)), function(g) {
+        groupMeans[, g] - (cs - groupSums[g, ])/(length(clusterVar) - gs[g])
+    }))
+
+    data.frame(
+        feature = rep(row.names(x), times = length(levels(clusterVar))),
+        group = factor(rep(levels(clusterVar), each = nrow(x)),
+                       levels = levels(clusterVar)),
+        avgExpr = as.numeric(groupMeans),
+        logFC = as.numeric(lfc),
+        statistic = as.numeric(t(ustat)),
+        auc = as.numeric(auc),
+        pval = as.numeric(pvals),
+        padj = as.numeric(fdr),
+        pct_in = as.numeric(100 * group_pct),
+        pct_out = as.numeric(100 * group_pct_out)
+    )
+}
+
+computeUstat <- function(Xr, cols, n1n2, groupSize) {
+    grs <- rowAggregateSum_sparse(Xr, as.integer(cols) - 1, length(unique(cols)))
+    # grs <- rowAggregateSum(Xr, cols)
+
+    # if (inherits(Xr, 'dgCMatrix')) {
+    # With the ranking of only non-zero features, here the tie-ranking of
+    # zeros need to be added.
+    nnz <- rowNNZAggr_sparse(Xr, as.integer(cols) - 1, length(unique(cols)))
+    gnz <- groupSize - nnz
+    zero.ranks <- (nrow(Xr) - diff(Xr@p) + 1) / 2
+    ustat <- t((t(gnz) * zero.ranks)) + grs - groupSize*(groupSize + 1)/2
+    # } else {
+    #     ustat <- grs - groupSize * (groupSize + 1) / 2
+    # }
+    return(ustat)
+}
+
+computePval <- function(ustat, ties, N, n1n2) {
+    z <- ustat - .5 * n1n2
+    z <- z - sign(z) * .5
+    .x1 <- N ^ 3 - N
+    .x2 <- 1 / (12 * (N ^ 2 - N))
+    rhs <- unlist(lapply(ties, function(tvals) {
+        (.x1 - sum(tvals ^ 3 - tvals)) * .x2
+    }))
+    usigma <- sqrt(matrix(n1n2, ncol = 1) %*% matrix(rhs, nrow = 1))
+    z <- t(z / usigma)
+    pvals <- matrix(2 * stats::pnorm(-abs(as.numeric(z))), ncol = ncol(z))
+    return(pvals)
+}
+
+
+
+
+
+######################## Visualization #########################################
+
+#' Create heatmap for showing top marker expression in conditions
+#' @export
+#' @param object A \linkS4class{liger} object, with normalized data and metadata
+#' to annotate available.
+#' @param result The data.frame returned by \code{\link{runMarkerDEG}}.
+#' @param topN Number of top features to be plot for each group. Default
+#' \code{5}.
+#' @param lfcThresh Hard threshold on logFC value. Default \code{1}.
+#' @param padjThresh Hard threshold on adjusted P-value. Default \code{0.05}.
+#' @param pctInThresh,pctOutThresh Threshold on expression percentage. These
+#' mean that a feature will only pass the filter if it is expressed in more than
+#' \code{pctInThresh} percent of cells in the corresponding cluster. Similarly
+#' for \code{pctOutThresh}. Default \code{50} and \code{50}, respectively.
+#' @param dedupBy When ranking by padj and logFC and a feature is ranked as top
+#' for multiple clusters, assign this feature as the marker of a cluster when
+#' it has the largest \code{"logFC"} in the cluster or has the lowest
+#' \code{"padj"}. Default \code{"logFC"}.
+#' @param groupBy Cell metadata variable names for cell grouping. Downsample
+#' balancing will also be aware of this. Default \code{c("dataset",
+#' "leiden_cluster")}.
+#' @param groupSize Maximum number of cells in each group to be downsampled for
+#' plotting. Default \code{50}.
+#' @param column_title Title on the column. Default \code{NULL}.
+#' @param ... Parameter passed to wrapped functions in the inheritance order:
+#' \code{\link{plotGeneHeatmap}}, \code{\link{.plotHeatmap}},
+#' \code{ComplexHeatmap::\link[ComplexHeatmap]{Heatmap}}
+#' @examples
+#' markerTable <- runMarkerDEG(pbmcPlot)
+#' plotMarkerHeatmap(pbmcPlot, markerTable)
+plotMarkerHeatmap <- function(
+        object,
+        result,
+        topN = 5,
+        lfcThresh = 1,
+        padjThresh = 0.05,
+        pctInThresh = 50,
+        pctOutThresh = 50,
+        dedupBy = c("logFC", "padj"),
+        groupBy = c("dataset", "leiden_cluster"),
+        groupSize = 50,
+        column_title = NULL,
+        ...
+) {
+    dedupBy <- match.arg(dedupBy)
+    if (dedupBy == "logFC") {
+        result <- result[order(result[[dedupBy]], decreasing = TRUE), ]
+    } else if (dedupBy == "padj") {
+        result <- result[order(result[[dedupBy]], decreasing = FALSE), ]
+    }
+    result <- result[!duplicated(result$feature), ]
+    result <- result %>% dplyr::filter(.data$logFC > lfcThresh,
+                                       .data$padj < padjThresh,
+                                       .data$pct_in > pctInThresh,
+                                       .data$pct_out < pctOutThresh) %>%
+        dplyr::group_by(.data[["group"]]) %>%
+        dplyr::arrange(.data[["padj"]], -.data[["logFC"]], .by_group = TRUE) %>%
+        dplyr::filter(dplyr::row_number() %in% seq(topN)) %>%
+        as.data.frame()
+    cellIdx <- downsample(object, maxCells = groupSize, balance = groupBy,
+                          returnIndex = TRUE)
+    featureAnn <- result[, "group", drop = FALSE]
+
+    rownames(featureAnn) <- result$feature
+    colnames(featureAnn) <- "marker"
+    plotGeneHeatmap(object, features = result$feature,
+                    cellIdx = cellIdx,
+                    useCellMeta = groupBy,
+                    featureAnnotation = featureAnn,
+                    cellSplitBy = rev(groupBy),
+                    featureSplitBy = "marker",
+                    showFeatureLegend = FALSE,
+                    cluster_columns = FALSE,
+                    cluster_column_slices = FALSE,
+                    cluster_rows = FALSE,
+                    cluster_row_slices = FALSE,
+                    column_title = column_title,
+                    ...)
+}

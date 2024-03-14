@@ -1,0 +1,100 @@
+---
+title: "Install LIGER with R"
+author: "Yichen Wang"
+date: "2023-11-05"
+output: 
+  html_document:
+    toc: 3
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+```
+
+Before setting up the "rliger" package, users should have [R](https://www.r-project.org/) version 3.6.0 or higher. 
+  
+## LIGER is available on CRAN
+
+To install the latest stable release, please run the following command in R console:
+
+```{R}
+install.packages("rliger")
+```
+
+## Lastest developmental version
+
+The developmental versions are accessible from GitHub. We are currently contributing to the repository "mvfki/liger" in branch "newObj".
+
+```{R}
+if (!requireNamespace("devtools")) install.packages("devtools")
+devtools::install_github("mvfki/liger@newObj")
+```
+
+If you encounter issues when building from GitHub (source), please see below sections for details about some dependencies.
+
+**Please note that the latest version (>=1.9.9) is massively updated compared to prior versions, and functions are not directly compatible with the old version objects which users might possess. Please use `readLiger()` to load old RDS files or `convertOldLiger()` to convert a loaded object into the up-to-date structure. You might need to be careful when overwriting existing analysis because we don't provide methods to convert new the structure backwards.**
+
+### Compiler setup
+
+Installation from CRAN is easy because pre-compiled binaries are available for Windows and MacOS. However, a few additional steps are required to install from source on MacOS/Windows.
+
+Windows users will need to install [Rtools](https://cran.r-project.org/bin/windows/Rtools/) which can be downloaded from CRAN. After downloading it, open the file and follow the prompt to install.
+
+MacOS users will need Clang and gfortran, which can also be found on [CRAN Mac Tools](https://mac.r-project.org/tools/).
+
+### Installing HDF5 Library
+
+HDF5 library is required for interacting with H5 files. It can be installed via the following commands.
+
+| System                                    | Command
+|:------------------------------------------|:---------------------------------|
+|OS X (using Homebrew or Conda)         | `brew install hdf5` or `conda install -c anaconda hdf5`
+|Debian-based systems (including Ubuntu) | `sudo apt-get install libhdf5-dev`
+|Systems supporting yum and RPMs        | `sudo yum install hdf5-devel`
+|Windows | Go to [HDF5 website](https://www.hdfgroup.org/downloads/hdf5/) and download the proper installer
+
+### Installing RcppPlanc
+
+[RcppPlanc](https://github.com/welch-lab/RcppPlanc) is an extension R package built basing on [Planc](https://github.com/ramkikannan/planc). We implemented highly optimized iNMF algorithm and its variants here for the new version upgrade. It can be obtained also from CRAN with:
+
+```{R}
+install.packages("RcppPlanc")
+```
+
+For latest developmental version, please refer to [RcppPlanc GitHub repository](https://github.com/welch-lab/RcppPlanc) for detail.
+
+### Installing Flt-SNE
+
+For dimensionality reduction, we have options of UMAP and t-SNE. For UMAP, we depend on "uwot" which is readily scalable with large datasets. For t-SNE, we by default use "Rtsne", which is not scalable for large datasets. We allow using another implementation of t-SNE, namingly Flt-SNE, for efficient computation. Flt-SNE is not distributed with the package or CRAN, thus users need to install it following steps below.
+
+#### 1. Install FFTW library.
+
+Download FFTW from [here](http://www.fftw.org/). For UNIX like users, run the following command in terminal.
+
+```{bash}
+tar -xvzf  fftw-x.x.x.tar.gz
+cd fftw-x.x.x.tar.gz
+./configure
+make
+make install
+```
+
+#### 2. Install Flt-SNE
+
+`cd` to a desired location, and run
+
+```{bash}
+git clone https://github.com/KlugerLab/FIt-SNE.git
+cd FIt-SNE
+g++ -std=c++11 -O3  src/sptree.cpp src/tsne.cpp src/nbodyfft.cpp  -o bin/fast_tsne -pthread -lfftw3 -lm
+pwd
+```
+
+#### 3. Run t-SNE with Flt-SNE
+
+Now, we've had the binary compiled, and command `pwd` shows the location to the binary. Then back to an R LIGER analysis, the following command can be used to invoke the binary.
+
+```{R}
+ligerObj <- runTSNE(ligerObj, method = "fftRtsne", fitsnePath = "whatPWDShows")
+```

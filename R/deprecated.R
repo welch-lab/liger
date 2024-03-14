@@ -1,363 +1,309 @@
-# These are deprecated functions likely to be removed in future versions. 
+#' @title Deprecated functions in package \pkg{rliger2}.
+#' @description The functions listed below are deprecated and will be defunct in
+#'   the near future. When possible, alternative functions with similar
+#'   functionality or a replacement are also mentioned. Help pages for
+#'   deprecated functions are available at \code{help("<function>-deprecated")}.
+#' @name rliger2-deprecated
+#' @keywords internal
+NULL
+
+
+# These are deprecated functions likely to be removed in future versions.
 # Documentation for these functions is incomplete.
 
-#' Quantile normalizes cell factors
+#' Quantile align (normalize) factor loadings
 #'
-#' @param object analogizer object. Should run optimizeALS before calling.
-#' @param quantiles Number of quantiles to use for quantile normalization
+#' This is a deprecated function. Calling 'quantileNorm' instead.
+#'
+#' This process builds a shared factor neighborhood graph to jointly cluster cells, then quantile
+#' normalizes corresponding clusters.
+#'
+#' The first step, building the shared factor neighborhood graph, is performed in SNF(), and
+#' produces a graph representation where edge weights between cells (across all datasets)
+#' correspond to their similarity in the shared factor neighborhood space. An important parameter
+#' here is knn_k, the number of neighbors used to build the shared factor space (see SNF()). Afterwards,
+#' modularity-based community detection is performed on this graph (Louvain clustering) in order
+#' to identify shared clusters across datasets. The method was first developed by Waltman and van Eck
+#' (2013) and source code is available at http://www.ludowaltman.nl/slm/. The most important parameter
+#' here is resolution, which corresponds to the number of communities detected.
+#'
+#' Next we perform quantile alignment for each dataset, factor, and cluster (by
+#' stretching/compressing datasets' quantiles to better match those of the reference dataset). These
+#' aligned factor loadings are combined into a single matrix and returned as H.norm.
+#'
+#' @param object \code{liger} object. Should run optimizeALS before calling.
+#' @param knn_k Number of nearest neighbors for within-dataset knn graph (default 20).
+#' @param k2 Horizon parameter for shared nearest factor graph. Distances to all but the k2 nearest
+#'   neighbors are set to 0 (cuts down on memory usage for very large graphs). (default 500)
+#' @param prune.thresh Minimum allowed edge weight. Any edges below this are removed (given weight
+#'  0) (default 0.2)
 #' @param ref_dataset Name of dataset to use as a "reference" for normalization. By default,
-#' the dataset with the largest number of cells is used.
+#'   the dataset with the largest number of cells is used.
+#' @param min_cells Minimum number of cells to consider a cluster shared across datasets (default 2)
+#' @param quantiles Number of quantiles to use for quantile normalization (default 50).
+#' @param nstart Number of times to perform Louvain community detection with different random
+#'   starts (default 10).
+#' @param resolution Controls the number of communities detected. Higher resolution -> more
+#'   communities. (default 1)
+#' @param dims.use Indices of factors to use for shared nearest factor determination (default
+#'   1:ncol(H[[1]])).
+#' @param dist.use Distance metric to use in calculating nearest neighbors (default "CR").
+#' @param center Centers the data when scaling factors (useful for less sparse modalities like
+#'   methylation data). (default FALSE)
+#' @param small.clust.thresh Extracts small clusters loading highly on single factor with fewer
+#'   cells than this before regular alignment (default 0 -- no small cluster extraction).
+#' @param id.number Number to use for identifying edge file (when running in parallel)
+#'   (generates random value by default).
+#' @param print.mod Print modularity output from clustering algorithm (default FALSE).
+#' @param print.align.summary Print summary of clusters which did not align normally (default FALSE).
 #'
-#' @return analogizer object
-#' @importFrom FNN get.knn
+#' @return \code{liger} object with H.norm and cluster slots set.
 #' @export
+#'
 #' @examples
 #' \dontrun{
-#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-#' analogy = Analogizer(list(Y,Z))
-#' analogy@var.genes = c(1,2,3,4)
-#' analogy = scaleNotCenter(analogy)
+#' # liger object, factorization complete
+#' ligerex
+#' # do basic quantile alignment
+#' ligerex <- quantileAlignSNF(ligerex)
+#' # higher resolution for more clusters (note that SNF is conserved)
+#' ligerex <- quantileAlignSNF(ligerex, resolution = 1.2)
+#' # change knn_k for more fine-grained local clustering
+#' ligerex <- quantileAlignSNF(ligerex, knn_k = 15, resolution = 1.2)
 #' }
-quantile_norm = function(object,quantiles=50,ref_dataset=NULL,min_cells=2)
-{
-  if (is.null(ref_dataset))
-  {
-    ns = sapply(object@scale.data,nrow)
-    ref_dataset = names(object@scale.data)[which.max(ns)]
-  }
-  
-  Hs_scaled = object@H
-  for (i in 1:ncol(Hs_scaled[[1]]))
-  {
-    for (j in 1:length(Hs_scaled)){
-      #Hs_scaled[[j]][,i] = object@H[[j]][,i]/sqrt(sum(object@H[[j]][,i]^2))
-      Hs_scaled[[j]] = scale(Hs_scaled[[j]],scale=T,center=T)
+#'
+quantileAlignSNF <- function(
+                             object,
+                             knn_k = 20,
+                             k2 = 500,
+                             prune.thresh = 0.2,
+                             ref_dataset = NULL,
+                             min_cells = 20,
+                             quantiles = 50,
+                             nstart = 10,
+                             resolution = 1,
+                             dims.use = 1:ncol(x = object@H[[1]]),
+                             dist.use = "CR",
+                             center = FALSE,
+                             small.clust.thresh = 0,
+                             id.number = NULL,
+                             print.mod = FALSE,
+                             print.align.summary = FALSE) {
+  .Deprecated(
+    msg = paste(
+      "This is a deprecated function. Calling 'quantileNorm' instead.",
+      "Note that not all parameters can be passed to 'quantileNorm'.",
+      "It's suggested to run 'louvainCluster' subsequently as well."
+    )
+  )
+  quantileNorm(object, quantiles = quantiles, reference = ref_dataset,
+               minCells = min_cells, nNeighbors = knn_k, useDims = dims.use,
+               center = center, maxSample = 1000, eps = 0.9, refineKNN = TRUE)
+}
+
+
+
+
+
+# Variance for sparse matrices
+sparse.var = function(x) {
+  rms <- rowMeans(x)
+  rowSums((x - rms) ^ 2) / (dim(x)[2] - 1)
+}
+
+# Transposition for sparse matrices
+sparse.transpose = function(x) {
+  h = summary(x)
+  Matrix::sparseMatrix(i = h[, 2], j = h[, 1], x = h[, 3])
+}
+
+# After running modularity clustering, assign singleton communities to the mode of the cluster
+# assignments of the within-dataset neighbors
+assign.singletons <-
+  function(object,
+           idents,
+           k.use = 15,
+           center = FALSE) {
+    if (!inherits(x = object, what = 'liger')) {
+      stop("'asign.singletons' expects an object of class 'liger'")
     }
+    return(
+      assign.singletons.list(
+        object = object@H,
+        idents = idents,
+        k.use = k.use,
+        center = center
+      )
+    )
   }
-  labels = list()
-  for(i in 1:length(Hs_scaled)){
-    #knn_k=15
-    #knn = get.knn(object@H[[i]],knn_k)
-    pct1 = apply(object@H[[i]],2,sum)/sum(apply(object@H[[i]],2,sum))
-    pct2 = apply(object@H[[ref_dataset]],2,sum)/sum(apply(object@H[[ref_dataset]],2,sum))
-    if (names(object@H)[i]==ref_dataset)
-    {
-      pct1 = apply(object@H[[i]],2,sum)/sum(apply(object@H[[i]],2,sum))
-      pct2 = apply(object@H[[2]],2,sum)/sum(apply(object@H[[2]],2,sum))
+
+assign.singletons.list <-
+  function(object,
+           idents,
+           k.use = 15,
+           center = FALSE) {
+    if (!is.list(x = object) ||
+        !all(sapply(X = object, FUN = is.matrix))) {
+      stop("'assign.singletons.list' expects a list of matrices")
     }
-    use_these_factors = 1:ncol(object@H[[i]])#which(log(pct1/pct2) > -2)
-    
-    labels[[i]] = as.factor(use_these_factors[apply(Hs_scaled[[i]][,use_these_factors],1,which.max)])
-    #labels[[i]] = as.factor(t(apply(knn$nn.index,1,function(x){which.max(table(labels[[i]][x]))}))[1,])
-  }
-  
-  object@clusters = as.factor(unlist(lapply(labels,as.character)))
-  names(object@clusters)=unlist(lapply(object@scale.data,rownames))
-  
-  clusters = labels
-  names(clusters)=names(object@H)
-  dims = ncol(object@H[[ref_dataset]])
-  
-  Hs = object@H
-  num_clusters = dims
-  for (k in 1:length(Hs))
-  {
-    for (i in 1:dims)
-    {
-      for (j in 1:num_clusters)
-      {
-        if (sum(clusters[[ref_dataset]]==j) < min_cells | sum(clusters[[k]]==j) < min_cells){next}
-        if (sum(clusters[[k]]==j)==1){
-          Hs[[k]][clusters[[k]]==j,i] = mean(Hs[[ref_dataset]][clusters[[ref_dataset]]==j,i])
-          next
+    message('Assigning singletons')
+    singleton.clusters <-
+      names(x = table(idents))[which(x = table(idents) == 1)]
+    singleton.cells <-
+      names(x = idents)[which(x = idents %in% singleton.clusters)]
+    if (length(x = singleton.cells) > 0) {
+      singleton.list <- lapply(
+        X = object,
+        FUN = function(H) {
+          return(intersect(x = rownames(x = H), y = singleton.cells))
         }
-        q2 = quantile(Hs[[k]][clusters[[k]]==j,i],seq(0,1,by=1/quantiles))
-        q1 = quantile(Hs[[ref_dataset]][clusters[[ref_dataset]]==j,i],seq(0,1,by=1/quantiles))
-        if (sum(q1)==0 | sum(q2)==0 | length(unique(q1)) < 2 | length(unique(q2)) < 2)
-        {
-          new_vals = rep(0,sum(clusters[[k]]==j))
+      )
+      out <- unlist(x = lapply(
+        X = 1:length(x = object),
+        FUN = function(d) {
+          H = object[[d]]
+          H = t(x = apply(
+            X = H,
+            MARGIN = 1,
+            FUN = ifelse(
+              test = center,
+              yes = scale,
+              no = scaleL2norm
+            )
+          ))
+          cells.use <- singleton.list[[d]]
+          if (length(x = cells.use) > 0) {
+            knn.idx <-  RANN::nn2(
+              data = H,
+              query = matrix(H[cells.use,], ncol = ncol(x = H)),
+              k = k.use,
+            )$nn.idx
+            o <- sapply(
+              X = 1:length(x = cells.use),
+              FUN = function(i) {
+                ids <-  idents[knn.idx[i, ]]
+                return(getMode(x = ids[which(x = !(ids %in% singleton.clusters))]))
+              }
+            )
+            return(o)
+          } else {
+            return(NULL)
+          }
         }
-        else
-        {
-          warp_func = approxfun(q2,q1)
-          new_vals = warp_func(Hs[[k]][clusters[[k]]==j,i])
-        }
-        
-        Hs[[k]][clusters[[k]]==j,i] = new_vals
-      }
+      ))
+      names(x = out) <- unlist(x = singleton.list)
+      idx <- names(x = idents) %in% names(x = out)
+      idents[idx] <- out
+      idents <- droplevels(idents)
     }
+    return(idents)
   }
-  object@H.norm = Reduce(rbind,Hs)
-  return(object)
-}
 
-#' Calculate alignment metric per factor.
-#' 
-#' @param object Analogizer object. Should run quantile_align_SNF before calling.
-alignment_metric_per_factor<-function(object,k=NULL)
-{
-  H1_scaled = scale(object@H[[1]],center=F,scale=T)
-  H2_scaled = scale(object@H[[2]],center=F,scale=T)
-  H_scaled = rbind(H1_scaled,H2_scaled)
-  num_cells = nrow(H_scaled)
-  num_factors = ncol(H_scaled)
-  nmf_factors = H_scaled
-  N = length(object@H)
-  rownames(nmf_factors)=names(object@clusters)
-  num_clusters = length(levels(object@clusters))
-  
-  dataset = unlist(sapply(1:N, function(x) {
-    rep(names(object@H)[x], nrow(object@H[[x]]))
-  }))
-  names(dataset)=names(object@clusters)
-  align_metrics = rep(0,num_clusters)
-  for (i in 1:num_clusters)
-  {
-    cells_i = which(object@clusters==levels(object@clusters)[i])
-    cell_names = names(object@clusters)[cells_i]
-    num_cells = length(cells_i)
-    if(is.null(k))
-    {
-      k = max(floor(0.05 * num_cells),10)
-      print(k)
+# Run modularity based clustering on edge file
+SLMCluster <-
+  function(edge,
+           prune.thresh = 0.2,
+           nstart = 100,
+           iter.max = 10,
+           algorithm = 1,
+           R = 1,
+           modularity = 1,
+           ModularityJarFile = "",
+           random.seed = 1,
+           id.number = NULL,
+           print.mod = F) {
+    # Prepare data for modularity based clustering
+    edge = edge[which(edge[, 3] > prune.thresh), ]
+
+    message("making edge file.")
+    edge_file <- paste0("edge", id.number, fileext = ".txt")
+    # Make sure no scientific notation written to edge file
+
+    # restore default settings when the current function exits
+    init_option <- options()
+    on.exit(options(init_option))
+
+    saveScipen = options(scipen = 10000)[[1]]
+    utils::write.table(
+      x = edge,
+      file = edge_file,
+      sep = "\t",
+      row.names = F,
+      col.names = F
+    )
+    options(scipen = saveScipen)
+    output_file <- tempfile("louvain.out", fileext = ".txt")
+    if (is.null(random.seed)) {
+      # NULL random.seed disallowed for this program.
+      random.seed = 0
     }
-    knn_graph = get.knn(nmf_factors[, 1:num_factors], k)
-    
-    num_same_dataset = rep(0, num_cells)
-    num_diff_dataset = rep(0, num_cells)
-    for (j in 1:length(cells_i)) {
-      inds = knn_graph$nn.index[cells_i[j], ]
-      num_same_dataset[j] = sum(dataset[inds] == dataset[cells_i[j]])
-      num_diff_dataset[j] = sum(dataset[inds] != dataset[cells_i[j]])
+    liger.dir <- "."#system.file(package = "rliger2")
+    ModularityJarFile <-
+      paste0(liger.dir, "/java/ModularityOptimizer.jar")
+    command <-
+      paste(
+        "java -jar",
+        ModularityJarFile,
+        edge_file,
+        output_file,
+        modularity,
+        R,
+        algorithm,
+        nstart,
+        iter.max,
+        random.seed,
+        as.numeric(print.mod),
+        sep = " "
+      )
+    message("Starting SLM")
+    ret = system(command, wait = TRUE)
+    if (ret != 0) {
+      stop(paste0(ret, " exit status from ", command))
     }
-    align_metrics[i] = sum(num_diff_dataset/(num_same_dataset+num_diff_dataset))
+    unlink(edge_file)
+    ident.use <-
+      factor(utils::read.table(
+        file = output_file,
+        header = FALSE,
+        sep = "\t"
+      )[, 1])
+
+    return(ident.use)
   }
-  return(align_metrics)
+
+
+# Scale to unit vector (scale by l2-norm)
+scaleL2norm <- function(x) {
+  return(x / sqrt(sum(x ^ 2)))
 }
 
-#' Perform graph-based clustering (Louvain algorithm) using number of shared nearest neighbors (Jaccard index) as a distance metric.
-#'
-#' @param object analogizer object. Should call quantile_norm before calling.
-#' @param res.param cluster resolution parameter
-#' @param k.param nearest neighbor parameter for shared nearest neighbor graph construction
-#' @param k.scale scale parameter for shared nearest neighbor graph construction
-#' @return analogizer object with cluster assignments
-#' @importFrom Seurat FindClusters
-#' @importFrom Seurat CreateSeuratObject
-#' @export
-#' @examples
-#' \dontrun{
-#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-#' analogy = Analogizer(Y,Z)
-#' analogy@var.genes = c(1,2,3,4)
-#' analogy = scaleNotCenter(analogy)
-#' analogy = optimize_als(analogy,k=2,nrep=1)
-#' analogy = quantile_norm(analogy)
-#' analogy = clusterLouvainJaccard(object)
-#' }
-clusterLouvainJaccard = function(object, resolution = 0.1, k.param=30, n.iter = 10, n.start = 10,
-                                 print.output = F, ...)
-{
-  temp.seurat = CreateSeuratObject(t(Reduce(rbind,object@scale.data)))
-  temp.seurat@scale.data = t(Reduce(rbind,object@scale.data))
-  rownames(object@H.norm)=colnames(temp.seurat@scale.data)
-  temp.seurat@dr$NMF=new(Class="dim.reduction",cell.embeddings=object@H.norm,key="NMF")
-  temp.seurat <- FindClusters(object = temp.seurat, reduction.type = "NMF", 
-                              dims.use = 1:ncol(object@H.norm),force.recalc=T,
-                              save.SNN = T,resolution=resolution,k.param=k.param,
-                              n.iter = n.iter, n.start = n.start, print.output = print.output, ...)
-  object@clusters = temp.seurat@ident
-  return(object)
+# get mode of identities
+getMode <- function(x, na.rm = FALSE) {
+  if (na.rm) {
+    x = x[!is.na(x)]
+  }
+  ux <- unique(x)
+  return(ux[which.max(tabulate(match(x, ux)))])
 }
 
-#' Aggregate gene-level measurements across cells within clusters to allow correlation across datasets
-#'
-#' @param object analogizer object. Should run quantile_norm and possibly clusterLouvainJaccard before calling.
-#' @return analogizer object with agg.data
-#' @export
-#' @examples
-#' \dontrun{
-#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-#' analogy = Analogizer(Y,Z)
-#' analogy@var.genes = c(1,2,3,4)
-#' analogy = scaleNotCenter(analogy)
-#' analogy = optimize_als(analogy,k=2,nrep=1)
-#' analogy = quantile_norm(analogy)
-#' analogy = clusterLouvainJaccard(object)
-#' }
-aggregateByCluster = function(object)
-{
-  object@agg.data = list()
-  for (i in 1:length(object@raw.data))
-  {
-    clusters_i = object@clusters[names(object@clusters)%in%colnames(object@raw.data[[i]])]
-    temp = matrix(0,nrow(object@raw.data[[i]]),length(levels(object@clusters)))
-    for (j in 1:length(levels(object@clusters)))
-    {
-      temp[,j]=rowSums(object@raw.data[[i]][,clusters_i==levels(object@clusters)[j]])
-    }
-    object@agg.data[[names(object@raw.data)[i]]] = temp
-    rownames(object@agg.data[[i]])=rownames(object@raw.data[[i]])
-    print(dim(object@agg.data[[i]]))
-  }
-  object@agg.data = lapply(object@agg.data,function(x){sweep(x,2,colSums(x),"/")})
-  
-  return(object)
-}
+# Helper function for plotFactors
+fplot <- function(tsne,
+                 NMFfactor,
+                 title,
+                 cols.use = grDevices::heat.colors(10),
+                 pt.size = 0.7,
+                 pch.use = 20) {
+  data.cut = as.numeric(as.factor(cut(
+    as.numeric(NMFfactor), breaks = length(cols.use)
+  )))
+  data.col = rev(cols.use)[data.cut]
+  plot(
+    tsne[, 1],
+    tsne[, 2],
+    col = data.col,
+    cex = pt.size,
+    pch = pch.use,
+    main = title
+  )
 
-plot_violin_summary = function(object,cluster,genes.use)
-{
-  pdf(filename)
-  nmf_factors = data.frame(rbind(object@H[[1]],object@H[[2]]))
-  colnames(nmf_factors)=c("tsne1","tsne2")
-  nmf_factors$Protocol = as.factor(unlist(sapply(1:length(object@H),function(x){rep(names(object@H)[x],nrow(object@H[[x]]))})))
-  if(is.null(clusters))
-  {
-    clusters = object@clusters
-  }
-  nmf_factors$Cluster = clusters[names(object@clusters)]
-  for (i in 1:(ncol(nmf_factors)-2))
-  {
-    print(ggplot(nmf_factors,aes(x=Protocol,y=nmf_factors[,i],fill=Protocol))+geom_violin() + geom_jitter(aes(colour=Cluster),shape=16,position=position_jitter(0.4),size=0.6) + guides(colour = guide_legend(override.aes = list(size=4)))+labs(y=paste("Factor",i)))
-    print(ggplot(nmf_factors,aes(x=Cluster,y=nmf_factors[,i],fill=Cluster))+geom_violin() + geom_jitter(aes(colour=Protocol),shape=16,position=position_jitter(0.4),size=0.6) + guides(colour = guide_legend(override.aes = list(size=4)))+labs(y=paste("Factor",i)))
-  }
-  dev.off()
-}
-
-# k is the number of nearest neighbors (for geometry preservation)
-# sigma is the bandwidth parameter for the RBF kernel (geometry preservation)
-# alpha sets the tradeoff between reconstructing geometry and aligning corresponding clusters
-spectral_alignment=function(object,k=30,alpha=1,sigma=NULL,neigen=NULL)
-{
-  print("Building graph")
-  #knn1 = get.knn(scale(object@H[[1]],center=F,scale=T),k=k)
-  #knn2 = get.knn(scale(object@H[[2]],center=F,scale=T),k=k)
-  #knn1 = get.knn(object@H[[1]],k=k)
-  #knn2 = get.knn(object@H[[2]],k=k)
-  obj = CreateSeuratObject(t(analogy@scale.data[[1]]))
-  knn1 = BuildSNN(obj,distance.matrix=as.matrix(dist(analogy@H[[1]])),k.param=30)@snn
-  obj = CreateSeuratObject(t(analogy@scale.data[[2]]))
-  knn2 = BuildSNN(obj,distance.matrix=as.matrix(dist(analogy@H[[2]])),k.param=30)@snn
-  rm(obj)
-  adj_mat = replicate(length(object@clusters),object@clusters)
-  adj_mat = (adj_mat==t(adj_mat))
-  adj_mat = as.matrix(1*adj_mat)
-  colnames(adj_mat)=rownames(adj_mat)
-  adj_mat[rownames(object@scale.data[[1]]),rownames(object@scale.data[[1]])]=0
-  adj_mat[rownames(object@scale.data[[2]]),rownames(object@scale.data[[2]])]=0
-  
-  if (is.null(sigma))
-  {
-    sigma=mean(as.matrix(dist(object@H[[1]])))
-    #sigma=mean(as.matrix(dist(scale(object@H[[1]],center=F,scale=T))))
-  }
-  
-  adj_mat_dists = matrix(0,nrow = nrow(adj_mat),ncol=ncol(adj_mat))
-  dimnames(adj_mat_dists)=dimnames(adj_mat)
-  for(i in 1:nrow(object@scale.data[[1]]))
-  {
-    adj_mat_dists[rownames(object@scale.data[[1]])[i],rownames(object@scale.data[[1]])[knn1$nn.index[i,]]] = exp(-1*knn1$nn.dist[i,]/sigma)
-  }
-  for(i in 1:nrow(object@scale.data[[2]]))
-  {
-    adj_mat_dists[rownames(object@scale.data[[2]])[i],rownames(object@scale.data[[2]])[knn2$nn.index[i,]]] = exp(-1*knn2$nn.dist[i,]/sigma)
-  }
-  adj_mat = adj_mat/sum(adj_mat)*sum(adj_mat_dists)
-  g = graph_from_adjacency_matrix(adj_mat_dists+alpha*adj_mat,mode="undirected",weighted=T)
-  print("Finding eigenvectors of the Laplacian")
-  if (is.null(neigen))
-  {
-    neigen = length(levels(object@clusters))
-  }
-  res = eigs(laplacian_matrix(g),k=neigen,which="LM",sigma=0)
-  rownames(res$vectors)=names(V(g))
-  object@H.norm = res$vectors[names(object@clusters),]
-  return(object)
-}
-
-#SNN version
-spectral_alignment=function(object,k=30,alpha=1,sigma=NULL,neigen=NULL)
-{
-  print("Building graph")
-  #knn1 = get.knn(scale(object@H[[1]],center=F,scale=T),k=k)
-  #knn2 = get.knn(scale(object@H[[2]],center=F,scale=T),k=k)
-  #knn1 = get.knn(object@H[[1]],k=k)
-  #knn2 = get.knn(object@H[[2]],k=k)
-  obj = CreateSeuratObject(t(object@scale.data[[1]]))
-  knn1 = BuildSNN(obj,distance.matrix=as.matrix(dist(object@H[[1]])),k.param=k)@snn
-  obj = CreateSeuratObject(t(object@scale.data[[2]]))
-  knn2 = BuildSNN(obj,distance.matrix=as.matrix(dist(object@H[[2]])),k.param=k)@snn
-  rm(obj)
-  adj_mat = replicate(length(object@clusters),object@clusters)
-  adj_mat = (adj_mat==t(adj_mat))
-  adj_mat = as.matrix(1*adj_mat)
-  colnames(adj_mat)=rownames(adj_mat)
-  adj_mat[rownames(object@scale.data[[1]]),rownames(object@scale.data[[1]])]=0
-  adj_mat[rownames(object@scale.data[[2]]),rownames(object@scale.data[[2]])]=0
-  
-  if (is.null(sigma))
-  {
-    sigma=mean(as.matrix(dist(object@H[[1]])))
-    #sigma=mean(as.matrix(dist(scale(object@H[[1]],center=F,scale=T))))
-  }
-  
-  adj_mat_dists = bdiag(knn1,knn2)
-  dimnames(adj_mat_dists)=dimnames(adj_mat)
-  rm(knn1)
-  rm(knn2)
-  
-  adj_mat = adj_mat/sum(adj_mat)*sum(adj_mat_dists)
-  g = graph_from_adjacency_matrix(adj_mat_dists+alpha*adj_mat,mode="undirected",weighted=T)
-  print("Finding eigenvectors of the Laplacian")
-  if (is.null(neigen))
-  {
-    neigen = length(levels(object@clusters))
-  }
-  res = eigs(laplacian_matrix(g),k=neigen,which="LM",sigma=0)
-  rownames(res$vectors)=names(V(g))
-  object@H.norm = res$vectors[names(object@clusters),]
-  return(object)
-}
-
-#' Perform fast and memory-efficient data scaling operation on sparse matrix data.
-#'
-#' @param object Sparse matrix DGE.
-#' 
-#' @export
-#' @examples
-#' \dontrun{
-#' Y = matrix(c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=4,byrow=T)
-#' Z = matrix(c(1,2,3,4,5,6,7,6,5,4,3,2),nrow=4,byrow=T)
-#' ligerex = createLiger(list(Y,Z))
-#' ligerex@var.genes = c(1,2,3,4)
-#' ligerex = scaleNotCenter(ligerex)
-#' }
-scaleNotCenter_sparse<-function (object, cells = NULL)
-{
-  print('This function has been deprecated and will soon be removed. Its functionality has been
-         added to scaleNotCenter.')
-  if (is.null(cells)) {
-    cells = lapply(1:length(object@raw.data), function(i) {
-      1:ncol(object@raw.data[[i]])
-    })
-  }
-  object@scale.data = lapply(1:length(object@norm.data), function(i) {
-    scale(sparse.transpose(object@norm.data[[i]][object@var.genes, ]), center = F,
-          scale = T)
-  })
-  names(object@scale.data) = names(object@norm.data)
-  for (i in 1:length(object@scale.data)) {
-    object@scale.data[[i]][is.na(object@scale.data[[i]])] = 0
-    rownames(object@scale.data[[i]]) = colnames(object@raw.data[[i]])
-    colnames(object@scale.data[[i]]) = object@var.genes
-  }
-  return(object)
-}
-
-newLiger <- function(raw.data, make.sparse = T, take.gene.union = F) {
-  print('This function has been deprecated and will soon be removed. Please use createLiger instead.')
-  return(createLiger(raw.data, make.sparse = make.sparse, take.gene.union = take.gene.union))
 }

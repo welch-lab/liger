@@ -1,0 +1,30 @@
+summary {
+  cursor: pointer;
+}
+
+details {
+  padding-inline-start: 1em;
+  margin-bottom: 10px;
+}
+
+pre, code {
+    background-color: #f8f8f8;
+}
+
+img {
+  border: 1px solid #F5F5F5;
+  border-radius: 4px;
+  padding: 5px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+img:hover {
+  box-shadow: 0 0 2px 1px rgba(0, 140, 186, 0.5);
+}
+
+blockquote {
+    background: #f8f9f4;
+    font-size: 15px;
+}
