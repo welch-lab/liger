@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Linked Inference of Genomic Experimental Relationships • rliger2</title>
+<title>Linked Inference of Genomic Experimental Relationships • rliger</title>
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/flatly/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="bootstrap-toc.css">
 <script src="bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
@@ -33,7 +33,7 @@
         <span class="icon-bar"></span>
       </button>
       <span class="navbar-brand">
-        <a class="navbar-link" href="index.html">rliger2</a>
+        <a class="navbar-link" href="index.html">rliger</a>
         <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.0</span>
       </span>
     </div>
@@ -125,15 +125,15 @@
   <div class="contents col-md-9">
 
 <p><img src="https://github.com/mvfki/liger/raw/newObj/inst/extdata/logo.png" width="120"></p>
-<p><a href="https://github.com/mvfki/liger/actions/workflows/r.yml" class="external-link"><img src="https://github.com/mvfki/liger/actions/workflows/r.yml/badge.svg?branch=newObj" alt="R"></a><a href="https://codecov.io/gh/mvfki/liger" class="external-link"><img src="https://codecov.io/gh/mvfki/liger/branch/newObj/graph/badge.svg?token=77TTU4GY8A" alt="codecov"></a></p>
+<p><a href="https://github.com/mvfki/liger/actions/workflows/r.yml" class="external-link"><img src="https://github.com/mvfki/liger/actions/workflows/r.yml/badge.svg?branch=newObj" alt="R"></a><a href="https://codecov.io/gh/mvfki/liger" class="external-link"><img src="https://codecov.io/gh/mvfki/liger/graph/badge.svg?token=77TTU4GY8A" alt="codecov"></a><a href="https://cran.r-project.org/package=rliger" class="external-link"><img src="https://cranlogs.r-pkg.org/badges/rliger"></a></p>
 <div class="section level1">
 <div class="page-header"><h1 id="liger-linked-inference-of-genomic-experimental-relationships">LIGER (Linked Inference of Genomic Experimental Relationships)<a class="anchor" aria-label="anchor" href="#liger-linked-inference-of-genomic-experimental-relationships"></a>
 </h1></div>
-<blockquote>
-<p>Now we have a comprehensive documentation site for the latest development version of <a href="https://mvfki.github.io/liger/index.html" class="external-link">rliger 2.0</a>!</p>
-</blockquote>
+<div class="section level3">
+<h3 id="now-we-have-a-comprehensive-documentation-site-for-the-latest-version-of-rliger-20">Now we have a comprehensive documentation site for the latest version of <a href="https://mvfki.github.io/liger/index.html" class="external-link">rliger (2.0)</a>!<a class="anchor" aria-label="anchor" href="#now-we-have-a-comprehensive-documentation-site-for-the-latest-version-of-rliger-20"></a>
+</h3>
 <p>LIGER (installed as <code>rliger</code> ) is a package for integrating and analyzing multiple single-cell datasets, developed by the Macosko lab and maintained/extended by the Welch lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors.</p>
-<p>Check out our <a href="https://doi.org/10.1016/j.cell.2019.05.006" class="external-link">Cell paper</a> for a more complete description of the methods and analyses. To access data used in our SN and BNST analyses, visit our <a href="https://portals.broadinstitute.org/single_cell/study/SCP466" class="external-link">study</a> on the Single Cell Portal.</p>
+<p>Check out our <a href="https://doi.org/10.1016/j.cell.2019.05.006" class="external-link">Cell paper</a> for a more complete description of the methods and analyses. To access data used in our SN and BNST analyses, visit our study “SCP466” on the <a href="https://singlecell.broadinstitute.org/single_cell" class="external-link">Single Cell Portal</a>.</p>
 <p>LIGER can be used to compare and contrast experimental datasets in a variety of contexts, for instance:</p>
 <ul>
 <li>Across experimental batches</li>
@@ -151,6 +151,7 @@
 <li>Visualize clusters and gene expression using t-SNE and UMAP</li>
 </ul>
 <p>We have also designed LIGER to interface with existing single-cell analysis packages, including <a href="https://satijalab.org/seurat/" class="external-link">Seurat</a>.</p>
+</div>
 <div class="section level2">
 <h2 id="feedback">Feedback<a class="anchor" aria-label="anchor" href="#feedback"></a>
 </h2>
@@ -161,16 +162,19 @@
 </h2>
 <p>For usage examples and guided walkthroughs, check the <code>vignettes</code> directory of the repo.</p>
 <ul>
-<li><p><a href="http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/online_iNMF_tutorial.html" class="external-link">Iterative Single-Cell Multi-Omic Integration Using Online iNMF</a></p></li>
-<li><p><a href="http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/UINMF_vignette.html" class="external-link">Integrating unshared features with UINMF</a></p></li>
-<li><p><a href="http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/SNAREseq_walkthrough.html" class="external-link">scATAC and scRNA Integration using unshared features (UINMF)</a></p></li>
-<li><p><a href="http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/cross_species_vig.html" class="external-link">Cross-species Analysis with UINMF</a></p></li>
-<li><p><a href="http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/Parameter_selection.html" class="external-link">Performing Parameter Selection</a></p></li>
-<li><p><a href="https://www.dropbox.com/s/ho62az1kshj59d2/STARmap_dropviz_vig.html?dl=0" class="external-link">Integrating spatial transcriptomic and transcriptomic datasets using UINMF</a> (Click to Download)</p></li>
-<li><p><a href="http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/Integrating_multi_scRNA_data.html" class="external-link">Integrating Multiple Single-Cell RNA-seq Datasets</a></p></li>
-<li><p><a href="http://htmlpreview.github.io/?https://github.com/welch-lab/liger/blob/master/vignettes/Integrating_scRNA_and_scATAC_data.html" class="external-link">Jointly Defining Cell Types from scRNA-seq and scATAC-seq</a></p></li>
-<li><p><a href="https://welch-lab.github.io/liger/rna-methylation.html" class="external-link">Jointly Defining Cell Types from Single-Cell RNA-seq and DNA Methylation</a></p></li>
-<li><p><a href="https://htmlpreview.github.io/?https://github.com/satijalab/seurat.wrappers/blob/master/docs/liger.html" class="external-link">Running Liger directly on Seurat objects using Seurat wrappers</a></p></li>
+<li><a href="https://mvfki.github.io/liger/articles/Integrating_multi_scRNA_data.html" class="external-link">Integrating Multiple Single-Cell RNA-seq Datasets</a></li>
+<li><a href="https://mvfki.github.io/liger/articles/Integrating_scRNA_and_scATAC_data.html" class="external-link">Jointly Defining Cell Types from scRNA-seq and scATAC-seq</a></li>
+<li><a href="https://mvfki.github.io/liger/articles/online_iNMF_tutorial.html" class="external-link">Iterative Single-Cell Multi-Omic Integration Using Online iNMF</a></li>
+<li><a href="https://mvfki.github.io/liger/articles/UINMF_vignette.html" class="external-link">Integrating unshared features with UINMF</a></li>
+<li><a href="https://mvfki.github.io/liger/articles/STARmap_dropviz_vig.html" class="external-link">Integrating spatial transcriptomic and transcriptomic datasets using UINMF</a></li>
+<li><a href="https://mvfki.github.io/liger/articles/SNAREseq_walkthrough.html" class="external-link">scATAC and scRNA Integration using unshared features (UINMF)</a></li>
+<li><a href="https://mvfki.github.io/liger/articles/cross_species_vig.html" class="external-link">Cross-species Analysis with UINMF</a></li>
+<li><a href="https://mvfki.github.io/liger/articles/rna_methylation.html" class="external-link">Jointly Defining Cell Types from Single-Cell RNA-seq and DNA Methylation</a></li>
+</ul>
+<p>Meanwhile, since version 2.0.0, LIGER is massively updated for usability and interoperability with other packages. Below are links to the introduction of new features.</p>
+<ul>
+<li><a href="https://mvfki.github.io/liger/articles/liger_object.html" class="external-link">Introduction to new liger object and other related classes</a></li>
+<li><a href="https://mvfki.github.io/liger/articles/liger_with_seurat.html" class="external-link">Running Liger directly on Seurat objects</a></li>
 </ul>
 </div>
 <div class="section level2">
@@ -225,6 +229,7 @@
     <div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
+<li><a href="https://cloud.r-project.org/package=rliger" class="external-link">View on CRAN</a></li>
 <li><a href="https://github.com/welch-lab/liger/" class="external-link">Browse source code</a></li>
 <li><a href="https://github.com/welch-lab/liger/issues" class="external-link">Report a bug</a></li>
 </ul>
@@ -233,9 +238,7 @@
 <div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li>
-<a href="https://www.r-project.org/Licenses/GPL-3" class="external-link">GPL-3</a> | file <a href="LICENSE-text.html">LICENSE</a>
-</li>
+<li><a href="https://www.r-project.org/Licenses/GPL-3" class="external-link">GPL-3</a></li>
 </ul>
 </div>
 
@@ -243,7 +246,7 @@
 <div class="citation">
 <h2 data-toc-skip>Citation</h2>
 <ul class="list-unstyled">
-<li><a href="authors.html#citation">Citing rliger2</a></li>
+<li><a href="authors.html#citation">Citing rliger</a></li>
 </ul>
 </div>
 

@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Joint definition of cell types from multiple scRNA-seq datasets • rliger2</title>
+<title>Joint definition of cell types from multiple scRNA-seq datasets • rliger</title>
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/flatly/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
@@ -13,7 +13,7 @@
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <meta property="og:title" content="Joint definition of cell types from multiple scRNA-seq datasets">
-<meta property="og:description" content="rliger2">
+<meta property="og:description" content="rliger">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
@@ -33,7 +33,7 @@
         <span class="icon-bar"></span>
       </button>
       <span class="navbar-brand">
-        <a class="navbar-link" href="../index.html">rliger2</a>
+        <a class="navbar-link" href="../index.html">rliger</a>
         <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.0</span>
       </span>
     </div>
@@ -156,10 +156,10 @@ versions of the control and stimulated DGEs here.</p>
 <p><strong>For convenience, we have prepared the pre-processed data
 which are ready to use.</strong> There are two datasets: PBMC control
 and PBMC interferon-stimulated. We provided ready-to-use liger object,
-which can be easily loaded with <code><a href="../reference/importVignetteData.html">importVignetteData()</a></code>.</p>
+which can be easily loaded with <code><a href="../reference/importVignetteData.html">importPBMC()</a></code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/welch-lab/liger" class="external-link">rliger2</a></span><span class="op">)</span></span>
-<span><span class="va">pbmcLiger</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/importVignetteData.html">importVignetteData</a></span><span class="op">(</span><span class="st">"pbmc"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/welch-lab/liger" class="external-link">rliger</a></span><span class="op">)</span></span>
+<span><span class="va">pbmcLiger</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/importVignetteData.html">importPBMC</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>For creating a liger object from raw counts data or any other types
 of source, please refer to the <a href="#">detailed tutorial for
 importing data</a>.</p>
@@ -346,11 +346,11 @@ interferon-stimulated cells.</p>
 <span><span class="co">## 5      HES4  ctrl 0.18860594  -8.50750976  777066.5 0.2278590937 7.338249e-270</span></span>
 <span><span class="co">## 6     ISG15  ctrl 6.06724941 -13.84775223    2253.0 0.0006606469  0.000000e+00</span></span>
 <span><span class="co">##            padj     pct_in     pct_out</span></span>
-<span><span class="co">## 1  8.598479e-01  0.4689332   0.4002001</span></span>
-<span><span class="co">## 2  3.518812e-07  4.3962485   1.4507254</span></span>
-<span><span class="co">## 3  1.265089e-01  0.1758499   0.0000000</span></span>
-<span><span class="co">## 4  7.804149e-03  0.6447831   1.7508754</span></span>
-<span><span class="co">## 5 1.376677e-267  1.2309496  55.4277139</span></span>
+<span><span class="co">## 1  8.307976e-01  0.4689332   0.4002001</span></span>
+<span><span class="co">## 2  3.399928e-07  4.3962485   1.4507254</span></span>
+<span><span class="co">## 3  1.222348e-01  0.1758499   0.0000000</span></span>
+<span><span class="co">## 4  7.540483e-03  0.6447831   1.7508754</span></span>
+<span><span class="co">## 5 1.330165e-267  1.2309496  55.4277139</span></span>
 <span><span class="co">## 6  0.000000e+00 37.8663540 100.0000000</span></span></code></pre>
 <p>The number of significant genes identified by
 <code><a href="../reference/liger-DEG.html">runMarkerDEG()</a></code> varies and depends on the datasets used. And
@@ -428,9 +428,9 @@ of cluster markers within and between datasets.</p>
 <div class="section level2">
 <h2 id="r-session-info">R Session Info<a class="anchor" aria-label="anchor" href="#r-session-info"></a>
 </h2>
-<pre><code><span><span class="co">## R version 4.3.0 (2023-04-21)</span></span>
+<pre><code><span><span class="co">## R version 4.3.2 RC (2023-10-30 r85440)</span></span>
 <span><span class="co">## Platform: aarch64-apple-darwin20 (64-bit)</span></span>
-<span><span class="co">## Running under: macOS 14.1</span></span>
+<span><span class="co">## Running under: macOS Sonoma 14.4</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Matrix products: default</span></span>
 <span><span class="co">## BLAS:   /Library/Frameworks/R.framework/Versions/4.3-arm64/Resources/lib/libRblas.0.dylib </span></span>
@@ -446,33 +446,31 @@ of cluster markers within and between datasets.</p>
 <span><span class="co">## [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## other attached packages:</span></span>
-<span><span class="co">## [1] dplyr_1.1.3    rliger2_1.99.0 Matrix_1.6-1.1</span></span>
+<span><span class="co">## [1] dplyr_1.1.4   rliger_1.99.0</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## loaded via a namespace (and not attached):</span></span>
-<span><span class="co">##  [1] sass_0.4.7          utf8_1.2.4          generics_0.1.3     </span></span>
-<span><span class="co">##  [4] stringi_1.7.12      lattice_0.22-5      digest_0.6.33      </span></span>
-<span><span class="co">##  [7] magrittr_2.0.3      evaluate_0.23       grid_4.3.0         </span></span>
-<span><span class="co">## [10] fastmap_1.1.1       rprojroot_2.0.3     jsonlite_1.8.7     </span></span>
-<span><span class="co">## [13] ggrepel_0.9.4       scattermore_1.2     purrr_1.0.2        </span></span>
-<span><span class="co">## [16] fansi_1.0.5         viridisLite_0.4.2   scales_1.2.1       </span></span>
+<span><span class="co">##  [1] sass_0.4.8          utf8_1.2.4          generics_0.1.3     </span></span>
+<span><span class="co">##  [4] stringi_1.8.3       lattice_0.22-5      digest_0.6.34      </span></span>
+<span><span class="co">##  [7] magrittr_2.0.3      evaluate_0.23       grid_4.3.2         </span></span>
+<span><span class="co">## [10] fastmap_1.1.1       jsonlite_1.8.8      Matrix_1.6-5       </span></span>
+<span><span class="co">## [13] ggrepel_0.9.5       scattermore_1.2     purrr_1.0.2        </span></span>
+<span><span class="co">## [16] fansi_1.0.6         viridisLite_0.4.2   scales_1.3.0       </span></span>
 <span><span class="co">## [19] codetools_0.2-19    textshaping_0.3.7   jquerylib_0.1.4    </span></span>
-<span><span class="co">## [22] cli_3.6.1           rlang_1.1.1         RcppAnnoy_0.0.21   </span></span>
-<span><span class="co">## [25] uwot_0.1.16         cowplot_1.1.1       munsell_0.5.0      </span></span>
-<span><span class="co">## [28] withr_2.5.2         RANN_2.6.1          cachem_1.0.8       </span></span>
-<span><span class="co">## [31] yaml_2.3.7          parallel_4.3.0      tools_4.3.0        </span></span>
-<span><span class="co">## [34] memoise_2.0.1       colorspace_2.1-0    ggplot2_3.4.4      </span></span>
-<span><span class="co">## [37] sccore_1.0.4        BiocGenerics_0.46.0 vctrs_0.6.4        </span></span>
-<span><span class="co">## [40] R6_2.5.1            stats4_4.3.0        lifecycle_1.0.3    </span></span>
-<span><span class="co">## [43] stringr_1.5.0       S4Vectors_0.38.2    fs_1.6.3           </span></span>
-<span><span class="co">## [46] irlba_2.3.5.1       ragg_1.2.6          leidenAlg_1.1.2    </span></span>
-<span><span class="co">## [49] pkgconfig_2.0.3     desc_1.4.2          pkgdown_2.0.7      </span></span>
-<span><span class="co">## [52] bslib_0.5.1         pillar_1.9.0        gtable_0.3.4       </span></span>
-<span><span class="co">## [55] glue_1.6.2          Rcpp_1.0.11         systemfonts_1.0.5  </span></span>
-<span><span class="co">## [58] highr_0.10          xfun_0.41           tibble_3.2.1       </span></span>
-<span><span class="co">## [61] tidyselect_1.2.0    rstudioapi_0.15.0   knitr_1.45         </span></span>
-<span><span class="co">## [64] farver_2.1.1        igraph_1.5.1        htmltools_0.5.6.1  </span></span>
-<span><span class="co">## [67] labeling_0.4.3      rmarkdown_2.25      RcppPlanc_1.0.0    </span></span>
-<span><span class="co">## [70] compiler_4.3.0</span></span></code></pre>
+<span><span class="co">## [22] cli_3.6.2           rlang_1.1.3         RcppAnnoy_0.0.22   </span></span>
+<span><span class="co">## [25] uwot_0.1.16         cowplot_1.1.3       munsell_0.5.0      </span></span>
+<span><span class="co">## [28] withr_3.0.0         cachem_1.0.8        yaml_2.3.8         </span></span>
+<span><span class="co">## [31] tools_4.3.2         memoise_2.0.1       colorspace_2.1-0   </span></span>
+<span><span class="co">## [34] ggplot2_3.4.4       BiocGenerics_0.48.1 vctrs_0.6.5        </span></span>
+<span><span class="co">## [37] R6_2.5.1            stats4_4.3.2        lifecycle_1.0.4    </span></span>
+<span><span class="co">## [40] stringr_1.5.1       S4Vectors_0.40.2    fs_1.6.3           </span></span>
+<span><span class="co">## [43] irlba_2.3.5.1       ragg_1.2.7          pkgconfig_2.0.3    </span></span>
+<span><span class="co">## [46] desc_1.4.3          pkgdown_2.0.7       bslib_0.6.1        </span></span>
+<span><span class="co">## [49] pillar_1.9.0        gtable_0.3.4        glue_1.7.0         </span></span>
+<span><span class="co">## [52] Rcpp_1.0.12         systemfonts_1.0.5   highr_0.10         </span></span>
+<span><span class="co">## [55] xfun_0.41           tibble_3.2.1        tidyselect_1.2.0   </span></span>
+<span><span class="co">## [58] rstudioapi_0.15.0   knitr_1.45          farver_2.1.1       </span></span>
+<span><span class="co">## [61] htmltools_0.5.7     labeling_0.4.3      rmarkdown_2.25     </span></span>
+<span><span class="co">## [64] compiler_4.3.2</span></span></code></pre>
 </div>
   </div>
 

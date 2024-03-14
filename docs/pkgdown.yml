@@ -1,4 +1,4 @@
-pandoc: 2.19.2
+pandoc: 3.1.1
 pkgdown: 2.0.7
 pkgdown_sha: ~
 articles:
@@ -9,8 +9,12 @@ articles:
   STARmap_dropviz_vig: STARmap_dropviz_vig.html
   UINMF_vignette: UINMF_vignette.html
   cross_species_vig: cross_species_vig.html
-  liger-vignette: liger-vignette.html
+  installation: installation.html
+  liger_object: liger_object.html
+  liger_with_seurat: liger_with_seurat.html
   online_iNMF_tutorial: online_iNMF_tutorial.html
+  rna_methylation: rna_methylation.html
   walkthrough_pbmc: walkthrough_pbmc.html
-last_built: 2023-02-27T16:54Z
+  liger-vignette: liger-vignette.html
+last_built: 2024-03-14T03:54Z
 
