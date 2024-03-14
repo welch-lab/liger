@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Joint definition of cell types from single-cell gene expression and chromatin accessibility data (human bone marrow mononuclear cells) • rliger2</title>
+<title>Joint definition of cell types from single-cell gene expression and chromatin accessibility data (human bone marrow mononuclear cells) • rliger</title>
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/flatly/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
@@ -13,7 +13,7 @@
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <meta property="og:title" content="Joint definition of cell types from single-cell gene expression and chromatin accessibility data (human bone marrow mononuclear cells)">
-<meta property="og:description" content="rliger2">
+<meta property="og:description" content="rliger">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
@@ -33,7 +33,7 @@
         <span class="icon-bar"></span>
       </button>
       <span class="navbar-brand">
-        <a class="navbar-link" href="../index.html">rliger2</a>
+        <a class="navbar-link" href="../index.html">rliger</a>
         <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.0</span>
       </span>
     </div>
@@ -177,7 +177,7 @@ find that the simplest possible strategy seems to work well: counting
 the total number of ATAC-seq reads within the gene body and promoter
 region (typically 3 kb upstream) of each gene in each cell.</p>
 <p>For convenience, we have prepared the pre-processed data which are
-ready to use.</p>
+ready to use, provided by <a href="https://github.com/GreenleafLab/MPAL-Single-Cell-2019" class="external-link">GreenleafLab</a>.</p>
 <ul>
 <li><a href="https://figshare.com/ndownloader/files/40054858" class="external-link">GSM4138872_scRNA_BMMC_D1T1.rds</a></li>
 <li><a href="https://figshare.com/ndownloader/files/40054861" class="external-link">GSM4138873_scRNA_BMMC_D1T2.rds</a></li>
@@ -186,7 +186,7 @@ ready to use.</p>
 <li><a href="https://figshare.com/ndownloader/files/40054870" class="external-link">hg19_genes.bed</a></li>
 </ul>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/welch-lab/liger" class="external-link">rliger2</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/welch-lab/liger" class="external-link">rliger</a></span><span class="op">)</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="st">"liger_BMMC_rna_D1T1.rds"</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file</a></span><span class="op">(</span><span class="st">"https://figshare.com/ndownloader/files/40054858"</span>,</span>
 <span>                  destfile <span class="op">=</span> <span class="st">"liger_BMMC_rna_D1T1.rds"</span><span class="op">)</span></span>
@@ -221,7 +221,15 @@ the 10X Chromium system, the most widely used scATAC-seq protocol. The
 starting input for this process is the file fragments.tsv output by
 CellRanger, which contains all ATAC reads that passed filtering
 steps.</p>
-<details><summary><b>Detailed CellRanger output preprocessing</b></summary><p><strong>1.</strong> We must first sort fragments.tsv by chromosome,
+<details><summary><b>Detailed CellRanger output preprocessing</b></summary><blockquote>
+<p><strong>Note: 1. We don’t provide actual example input data for the
+demonstration in this block. Users will need to try with their own data.
+2. Part of the preprocessing steps are carried out through command-line
+interface (cmd/terminal). 3. Please pay attention that there are file
+and directory paths left as placeholders. Users should replace them with
+their own paths.</strong></p>
+</blockquote>
+<p><strong>1.</strong> We must first sort fragments.tsv by chromosome,
 start, and end position using the sort command line utility. The
 <code>-k</code> option lets the user sort the file on a certain column;
 including multiple <code>-k</code> options allows sorting by multiple
@@ -234,15 +242,18 @@ end coordinate order (using parameter <code>-k3,3n</code>). Note that
 this step may take a while, since the input fragment file is usually
 very large (for example, a typical fragment file of 4-5 GB can take
 about 40 minutes).</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">sort</span> <span class="at">-k1,1</span> <span class="at">-k2,2n</span> <span class="at">-k3,3n</span> GSM4138888_scATAC_BMMC_D5T1.fragments.tsv <span class="op">&gt;</span> atac_fragments.sort.bed</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># shell</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">sort</span> <span class="at">-k1,1</span> <span class="at">-k2,2n</span> <span class="at">-k3,3n</span> GSM4138888_scATAC_BMMC_D5T1.fragments.tsv <span class="op">&gt;</span> atac_fragments.sort.bed</span></code></pre></div>
 <p>Gene body and promoter indexes should also be sorted using the same
 strategy for sorting fragments output files:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">sort</span> <span class="at">-k</span> 1,1 <span class="at">-k2,2n</span> <span class="at">-k3,3n</span> hg19_genes.bed <span class="op">&gt;</span> hg19_genes.sort.bed</span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">sort</span> <span class="at">-k</span> 1,1 <span class="at">-k2,2n</span> <span class="at">-k3,3n</span> hg19_promoters.bed <span class="op">&gt;</span> hg19_promoters.sort.bed</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># shell</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">sort</span> <span class="at">-k</span> 1,1 <span class="at">-k2,2n</span> <span class="at">-k3,3n</span> hg19_genes.bed <span class="op">&gt;</span> hg19_genes.sort.bed</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="fu">sort</span> <span class="at">-k</span> 1,1 <span class="at">-k2,2n</span> <span class="at">-k3,3n</span> hg19_promoters.bed <span class="op">&gt;</span> hg19_promoters.sort.bed</span></code></pre></div>
 <p><strong>2.</strong> Use <code>bedmap</code> command to calculate
 overlapping elements between indexes and fragment output files:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="ex">bedmap</span> <span class="at">--ec</span> <span class="at">--delim</span> <span class="st">"\t"</span> <span class="at">--echo</span> <span class="at">--echo-map-id</span> hg19_promoters.sort.bed atac_fragments.sort.bed <span class="op">&gt;</span> atac_promoters_bc.bed</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="ex">bedmap</span> <span class="at">--ec</span> <span class="at">--delim</span> <span class="st">"\t"</span> <span class="at">--echo</span> <span class="at">--echo-map-id</span> hg19_genes.sort.bed atac_fragments.sort.bed <span class="op">&gt;</span> atac_genes_bc.bed</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># shell</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="ex">bedmap</span> <span class="at">--ec</span> <span class="at">--delim</span> <span class="st">"\t"</span> <span class="at">--echo</span> <span class="at">--echo-map-id</span> hg19_promoters.sort.bed atac_fragments.sort.bed <span class="op">&gt;</span> atac_promoters_bc.bed</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="ex">bedmap</span> <span class="at">--ec</span> <span class="at">--delim</span> <span class="st">"\t"</span> <span class="at">--echo</span> <span class="at">--echo-map-id</span> hg19_genes.sort.bed atac_fragments.sort.bed <span class="op">&gt;</span> atac_genes_bc.bed</span></code></pre></div>
 <p>Important flags of <code>bedmap</code> command are as follows:</p>
 <ul>
 <li>
@@ -265,7 +276,8 @@ Console or RStudio. Note that the as.is option in
 <code><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table()</a></code> is specified to prevent the conversion of
 character columns to factor columns:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">genes.bc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"atac_genes_bc.bed"</span>, sep <span class="op">=</span> <span class="st">"\t"</span>, as.is <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>,<span class="fl">7</span><span class="op">)</span>, header <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># R</span></span>
+<span><span class="va">genes.bc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"atac_genes_bc.bed"</span>, sep <span class="op">=</span> <span class="st">"\t"</span>, as.is <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>,<span class="fl">7</span><span class="op">)</span>, header <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">promoters.bc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"atac_promoters_bc.bed"</span>, sep <span class="op">=</span> <span class="st">"\t"</span>, as.is <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>,<span class="fl">7</span><span class="op">)</span>, header <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p>Cell barcodes are then split and extracted from the outputs. We
 recommend the user to filter out those barcodes which have a total
@@ -273,7 +285,8 @@ number of reads lower than a certain threshold, for example, 1500. This
 threshold can be adjusted according to the size and quality of the
 samples.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">bc</span> <span class="op">&lt;-</span> <span class="va">genes.bc</span><span class="op">[</span>,<span class="fl">7</span><span class="op">]</span></span>
+<code class="sourceCode R"><span><span class="co"># R</span></span>
+<span><span class="va">bc</span> <span class="op">&lt;-</span> <span class="va">genes.bc</span><span class="op">[</span>,<span class="fl">7</span><span class="op">]</span></span>
 <span><span class="va">bc_split</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">bc</span>,<span class="st">";"</span><span class="op">)</span></span>
 <span><span class="va">bc_split_vec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">bc_split</span><span class="op">)</span></span>
 <span><span class="va">bc_unique</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">bc_split_vec</span><span class="op">)</span></span>
@@ -289,14 +302,16 @@ and promoters in a single step, but choose to calculate them separately
 in case it is necessary to look at gene or promoter accessibility
 individually in downstream analyses.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/welch-lab/liger" class="external-link">rliger2</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># R</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/welch-lab/liger" class="external-link">rliger</a></span><span class="op">)</span></span>
 <span><span class="va">gene.counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/makeFeatureMatrix.html">makeFeatureMatrix</a></span><span class="op">(</span><span class="va">genes.bc</span>, <span class="va">barcodes</span><span class="op">)</span></span>
 <span><span class="va">promoter.counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/makeFeatureMatrix.html">makeFeatureMatrix</a></span><span class="op">(</span><span class="va">promoters.bc</span>, <span class="va">barcodes</span><span class="op">)</span></span></code></pre></div>
 <p>Next, these two count matrices need to be re-sorted by gene symbol.
 We then add the matrices together, yielding a single matrix of gene
 accessibility counts in each cell.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">gene.counts</span> <span class="op">&lt;-</span> <span class="va">gene.counts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">gene.counts</span><span class="op">)</span><span class="op">)</span>,<span class="op">]</span></span>
+<code class="sourceCode R"><span><span class="co"># R</span></span>
+<span><span class="va">gene.counts</span> <span class="op">&lt;-</span> <span class="va">gene.counts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">gene.counts</span><span class="op">)</span><span class="op">)</span>,<span class="op">]</span></span>
 <span><span class="va">promoter.counts</span> <span class="op">&lt;-</span> <span class="va">promoter.counts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">promoter.counts</span><span class="op">)</span><span class="op">)</span>,<span class="op">]</span></span>
 <span><span class="va">D5T1</span> <span class="op">&lt;-</span> <span class="va">gene.counts</span> <span class="op">+</span> <span class="va">promoter.counts</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">D5T1</span><span class="op">)</span><span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D5T1_"</span>,<span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">D5T1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -311,7 +326,8 @@ should be passed to parameter <code>sample.names</code> as well. LIGER
 can also use data from any other protocol, as long as it is provided in
 a genes x cells R matrix format.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">bmmc.rna</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read10X.html">read10X</a></span><span class="op">(</span>path <span class="op">=</span> <span class="st">"/path_to/filtered_feature_barcode_matrix"</span>, sampleNames <span class="op">=</span> <span class="st">"rna"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># R</span></span>
+<span><span class="va">bmmc.rna</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read10X.html">read10X</a></span><span class="op">(</span>path <span class="op">=</span> <span class="st">"/path_to/filtered_feature_barcode_matrix"</span>, sampleNames <span class="op">=</span> <span class="st">"rna"</span><span class="op">)</span></span></code></pre></div>
 </details><br>
 </div>
 </div>
@@ -632,7 +648,7 @@ with <code>rawPeak&lt;-()</code> method.</p>
 <p>Now we can perform the Wilcoxon test on the peak counts with setting
 <code>usePeak = TRUE</code>:</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">peak.wilcoxon</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runWilcoxon.html">runWilcoxon</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, useDatasets <span class="op">=</span> <span class="st">"atac"</span>, usePeak <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">peak.wilcoxon</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/liger-DEG.html">runWilcoxon</a></span><span class="op">(</span><span class="va">bmmcLiger</span>, useDatasets <span class="op">=</span> <span class="st">"atac"</span>, usePeak <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>We can now use the results of the Wilcoxon test to retain only peaks
 showing differential accessibility across our set of joint clusters.
 Here we kept peaks with Benjamini-Hochberg adjusted p-value &lt; 0.05
