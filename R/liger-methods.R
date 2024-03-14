@@ -1375,14 +1375,14 @@ setMethod(
 
 #' @rdname peak
 #' @export
-setMethod("rawPeak", signature(x = "liger", dataset = "character"),
-          function(x, dataset) {
-              atac <- dataset(x, dataset)
-              if (!inherits(atac, "ligerATACDataset")) {
-                  cli::cli_abort("Specified dataset is not of {.cls ligerATACDataset} class.")
-              }
-              atac@rawPeak
-          })
+setMethod(
+    "rawPeak",
+    signature(x = "liger", dataset = "character"),
+    function(x, dataset) {
+        atac <- dataset(x, dataset)
+        rawPeak(atac)
+    }
+)
 
 #' @rdname peak
 #' @export
@@ -1390,23 +1390,23 @@ setReplaceMethod(
     "rawPeak",
     signature(x = "liger", dataset = "character"),
     function(x, dataset, check = TRUE, value) {
-        if (!inherits(dataset(x, dataset), "ligerATACDataset"))
-            cli::cli_abort("Specified dataset is not of {.cls ligerATACDataset} class.")
-        x@datasets[[dataset]]@rawPeak <- value
-        if (isTRUE(check)) methods::validObject(dataset(x, dataset))
+        ld <- dataset(x, dataset)
+        rawPeak(ld, check = check) <- value
+        x@datasets[[dataset]] <- ld
         x
-    })
+    }
+)
 
 #' @rdname peak
 #' @export
-setMethod("normPeak", signature(x = "liger", dataset = "character"),
-          function(x, dataset) {
-              atac <- dataset(x, dataset)
-              if (!inherits(atac, "ligerATACDataset")) {
-                  cli::cli_abort("Specified dataset is not of {.cls ligerATACDataset} class.")
-              }
-              atac@normPeak
-          })
+setMethod(
+    "normPeak",
+    signature(x = "liger", dataset = "character"),
+    function(x, dataset) {
+        atac <- dataset(x, dataset)
+        normPeak(atac)
+    }
+)
 
 #' @rdname peak
 #' @export
@@ -1414,24 +1414,24 @@ setReplaceMethod(
     "normPeak",
     signature(x = "liger", dataset = "character"),
     function(x, dataset, check = TRUE, value) {
-        if (!inherits(dataset(x, dataset), "ligerATACDataset"))
-            cli::cli_abort("Specified dataset is not of {.cls ligerATACDataset} class.")
-        x@datasets[[dataset]]@normPeak <- value
-        if (isTRUE(check)) methods::validObject(dataset(x, dataset))
+        ld <- dataset(x, dataset)
+        normPeak(ld, check = check) <- value
+        x@datasets[[dataset]] <- ld
         x
-    })
+    }
+)
 
 
 #' @rdname coordinate
 #' @export
-setMethod("coordinate", signature(x = "liger", dataset = "character"),
-          function(x, dataset) {
-              spatial <- dataset(x, dataset)
-              if (!inherits(spatial, "ligerSpatialDataset")) {
-                  cli::cli_abort("Specified dataset is not of {.cls ligerSpatialDataset} class.")
-              }
-              spatial@coordinate
-          })
+setMethod(
+    "coordinate",
+    signature(x = "liger", dataset = "character"),
+    function(x, dataset) {
+        spatial <- dataset(x, dataset)
+        coordinate(spatial)
+    }
+)
 
 #' @rdname coordinate
 #' @export
@@ -1439,10 +1439,9 @@ setReplaceMethod(
     "coordinate",
     signature(x = "liger", dataset = "character"),
     function(x, dataset, check = TRUE, value) {
-        if (!inherits(dataset(x, dataset), "ligerSpatialDataset"))
-            cli::cli_abort("Specified dataset is not of {.cls ligerSpatialDataset} class.")
-        value <- .checkCoords(ld = dataset(x, dataset), value = value)
-        x@datasets[[dataset]]@coordinate <- value
-        if (isTRUE(check)) methods::validObject(dataset(x, dataset))
+        ld <- dataset(x, dataset)
+        coordinate(ld, check = check) <- value
+        x@datasets[[dataset]] <- ld
         x
-    })
+    }
+)
