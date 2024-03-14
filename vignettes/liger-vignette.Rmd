@@ -35,20 +35,20 @@ Once multiple datasets are integrated, the package provides functionality for fu
 
 ## Usage
 
-We have now made a [documentation website for rliger 2.0.0](https://mvfki.github.io/liger/). Please check it out for detailed introduction. 
+We have now made a [documentation website for rliger 2.0.0](https://welch-lab.github.io/liger/). Please check it out for detailed introduction. 
 
 We have made a number of vignettes for typical types of analysis that can be performed with LIGER.
 
-* [Integrating Multiple Single-Cell RNA-seq Datasets](https://mvfki.github.io/liger/articles/Integrating_multi_scRNA_data.html)
-* [Jointly Defining Cell Types from scRNA-seq and scATAC-seq](https://mvfki.github.io/liger/articles/Integrating_scRNA_and_scATAC_data.html)
-* [Iterative Single-Cell Multi-Omic Integration Using Online iNMF](https://mvfki.github.io/liger/articles/online_iNMF_tutorial.html)
-* [Integrating unshared features with UINMF](https://mvfki.github.io/liger/articles/UINMF_vignette.html)
-* [Integrating spatial transcriptomic and transcriptomic datasets using UINMF](https://mvfki.github.io/liger/articles/STARmap_dropviz_vig.html)
-* [scATAC and scRNA Integration using unshared features (UINMF)](https://mvfki.github.io/liger/articles/SNAREseq_walkthrough.html)
-* [Cross-species Analysis with UINMF](https://mvfki.github.io/liger/articles/cross_species_vig.html)
-* [Jointly Defining Cell Types from Single-Cell RNA-seq and DNA Methylation](https://mvfki.github.io/liger/articles/rna_methylation.html)
+* [Integrating Multiple Single-Cell RNA-seq Datasets](https://welch-lab.github.io/liger/articles/Integrating_multi_scRNA_data.html)
+* [Jointly Defining Cell Types from scRNA-seq and scATAC-seq](https://welch-lab.github.io/liger/articles/Integrating_scRNA_and_scATAC_data.html)
+* [Iterative Single-Cell Multi-Omic Integration Using Online iNMF](https://welch-lab.github.io/liger/articles/online_iNMF_tutorial.html)
+* [Integrating unshared features with UINMF](https://welch-lab.github.io/liger/articles/UINMF_vignette.html)
+* [Integrating spatial transcriptomic and transcriptomic datasets using UINMF](https://welch-lab.github.io/liger/articles/STARmap_dropviz_vig.html)
+* [scATAC and scRNA Integration using unshared features (UINMF)](https://welch-lab.github.io/liger/articles/SNAREseq_walkthrough.html)
+* [Cross-species Analysis with UINMF](https://welch-lab.github.io/liger/articles/cross_species_vig.html)
+* [Jointly Defining Cell Types from Single-Cell RNA-seq and DNA Methylation](https://welch-lab.github.io/liger/articles/rna_methylation.html)
 
 Meanwhile, since version 2.0.0, LIGER is massively updated for usability and interoperability with other packages. Below are links to the introduction of new features.
 
-* [Introduction to new liger object and other related classes](https://mvfki.github.io/liger/articles/liger_object.html)
-* [Running Liger directly on Seurat objects](https://mvfki.github.io/liger/articles/liger_with_seurat.html)
+* [Introduction to new liger object and other related classes](https://welch-lab.github.io/liger/articles/liger_object.html)
+* [Running Liger directly on Seurat objects](https://welch-lab.github.io/liger/articles/liger_with_seurat.html)
