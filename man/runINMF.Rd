@@ -6,19 +6,7 @@
 \alias{runINMF.Seurat}
 \title{Perform iNMF on scaled datasets}
 \usage{
-runINMF(
-  object,
-  k = 20,
-  lambda = 5,
-  nIteration = 30,
-  nRandomStarts = 1,
-  HInit = NULL,
-  WInit = NULL,
-  VInit = NULL,
-  seed = 1,
-  verbose = getOption("ligerVerbose"),
-  ...
-)
+runINMF(object, k = 20, lambda = 5, ...)
 
 \method{runINMF}{liger}(
   object,
@@ -30,7 +18,8 @@ runINMF(
   WInit = NULL,
   VInit = NULL,
   seed = 1,
-  verbose = getOption("ligerVerbose"),
+  nCores = 2L,
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 
@@ -39,7 +28,7 @@ runINMF(
   k = 20,
   lambda = 5,
   datasetVar = "orig.ident",
-  useLayer = "ligerScaleData",
+  layer = "ligerScaleData",
   assay = NULL,
   reduction = "inmf",
   nIteration = 30,
@@ -48,7 +37,8 @@ runINMF(
   WInit = NULL,
   VInit = NULL,
   seed = 1,
-  verbose = getOption("ligerVerbose"),
+  nCores = 2L,
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 }
@@ -64,6 +54,8 @@ higher \code{k} will be needed for datasets with more sub-structure. Default
 \item{lambda}{Regularization parameter. Larger values penalize
 dataset-specific effects more strongly (i.e. alignment should increase as
 \code{lambda} increases). Default \code{5}.}
+
+\item{...}{Arguments passed to methods.}
 
 \item{nIteration}{Total number of block coordinate descent iterations to
 perform. Default \code{30}.}
@@ -87,15 +79,16 @@ each element is the initial \eqn{V} matrix of each dataset. Default
 
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
 
-\item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\item{nCores}{The number of parallel tasks to speed up the computation.
+Default \code{2L}. Only supported for platform with OpenMP support.}
 
-\item{...}{Arguments passed to methods.}
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{datasetVar}{Metadata variable name that stores the dataset source
 annotation. Default \code{"orig.ident"}.}
 
-\item{useLayer}{For Seurat>=4.9.9, the name of layer to retrieve input
+\item{layer}{For Seurat>=4.9.9, the name of layer to retrieve input
 non-negative scaled data. Default \code{"ligerScaleData"}. For older Seurat,
 always retrieve from \code{scale.data} slot.}
 
@@ -172,7 +165,9 @@ optimized, running this many iteration should be acceptable.
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
-pbmc <- runINMF(pbmc)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    pbmc <- runINMF(pbmc)
+}
 }
 \references{
 Joshua D. Welch and et al., Single-Cell Multi-omic Integration

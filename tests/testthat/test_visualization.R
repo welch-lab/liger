@@ -1,8 +1,8 @@
-data("pbmcPlot", package = "rliger2")
+data("pbmcPlot", package = "rliger")
 
 withNewH5Copy <- function(fun) {
-    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger2")
-    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger2")
+    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger")
+    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
     if (!file.exists(ctrlpath.orig))
         stop("Cannot find original h5 file at: ", ctrlpath.orig)
     if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
@@ -156,7 +156,7 @@ test_that("Density plot", {
     expect_gg(
         expect_no_warning(plotDensityDimRed(pbmcPlot, splitBy = "dataset",
                                             title = "one")),
-        expect_warning(plotDensityDimRed(pbmcPlot, title = letters[1:3],
+        expect_message(plotDensityDimRed(pbmcPlot, title = letters[1:3],
                                          dotRaster = TRUE),
                        "`title` has length greater than")
     )
@@ -175,7 +175,7 @@ test_that("Proportion plots", {
         plotProportion(pbmcPlot),
         plotProportion(pbmcPlot, method = "pie"),
         plotProportionBar(pbmcPlot, method = "group"),
-        plotClusterProportions(pbmcPlot)
+        plotProportionDot(pbmcPlot)
     )
     expect_is(plotProportionBar(pbmcPlot, inclRev = TRUE, combinePlot = FALSE),
               "list")
@@ -230,7 +230,6 @@ test_that("Heatmap", {
 
 context("Dot Plot")
 test_that("Dot Plot", {
-    expect_error(plotClusterGeneDot("hello"), "Please use a liger object")
     expect_error(plotClusterFactorDot(pbmcPlot, viridisOption = letters),
                  "`viridisOption` has to be one")
     expect_is(plotClusterGeneDot(pbmcPlot, varFeatures(pbmcPlot)[1:5],
@@ -249,7 +248,6 @@ test_that("Dot Plot", {
         "HeatmapList"
     )
 
-    expect_error(plotClusterFactorDot("hello"), "Please use a liger object")
     expect_is(plotClusterFactorDot(pbmcPlot, factorScaleFunc = function(x) x),
               "HeatmapList")
 })
@@ -264,3 +262,13 @@ test_that("Gene loading", {
     expect_gg(plotGeneLoadings(pbmcPlot, res, 1))
 })
 
+context("spatial coordinates")
+test_that("Plot spatial coordinates", {
+    ctrl.fake.spatial <- as.ligerDataset(dataset(pbmc, "ctrl"), modal = "spatial")
+    fake.coords <- matrix(rnorm(2 * ncol(ctrl.fake.spatial)), ncol = 2)
+    dimnames(fake.coords) <- list(colnames(ctrl.fake.spatial), c("x", "y"))
+    coordinate(ctrl.fake.spatial) <- fake.coords
+    dataset(pbmc, "ctrl") <- ctrl.fake.spatial
+    expect_gg(plotSpatial2D(pbmc, dataset = "ctrl"))
+    expect_gg(plotSpatial2D(pbmc, dataset = "ctrl", useCluster = "dataset"))
+})

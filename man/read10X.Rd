@@ -14,7 +14,7 @@ read10X(
   geneCol = 2,
   cellCol = 1,
   returnList = FALSE,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   sample.dirs = path,
   sample.names = sampleNames,
   use.filtered = useFiltered,
@@ -42,7 +42,7 @@ read10XATAC(
   returnList = FALSE,
   geneCol = 2,
   cellCol = 1,
-  verbose = getOption("ligerVerbose")
+  verbose = getOption("ligerVerbose", TRUE)
 )
 }
 \arguments{
@@ -77,7 +77,14 @@ feature type can be found. Otherwise will always return a list. Default
 \code{FALSE}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
+
+\item{sample.dirs, sample.names, use.filtered}{These arguments are renamed and
+will be deprecated in the future. Please see usage for corresponding
+arguments.}
+
+\item{data.type, merge, num.cells, min.umis}{These arguments are defuncted
+because the functionality can/should be fulfilled with other functions.}
 
 \item{...}{Arguments passed to \code{read10X}}
 

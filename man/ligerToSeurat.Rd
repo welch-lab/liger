@@ -8,6 +8,7 @@ ligerToSeurat(
   object,
   assay = NULL,
   identByDataset = FALSE,
+  merge = FALSE,
   nms = NULL,
   renormalize = NULL,
   use.liger.genes = NULL,
@@ -19,22 +20,32 @@ ligerToSeurat(
 
 \item{assay}{Name of assay to store the data. Default \code{NULL} detects by
 dataset modality. If the object contains various modality, default to
-\code{"liger"}.}
+\code{"LIGER"}. Default dataset modality setting is understood as
+\code{"RNA"}.}
 
-\item{identByDataset}{Logical, whether to combine dataset variable and default
-cluster labeling to set the Idents. Default \code{FALSE}.}
+\item{identByDataset}{Logical, whether to combine dataset variable and
+default cluster labeling to set the Idents. Default \code{FALSE}.}
+
+\item{merge}{Logical, whether to merge layers of different datasets into one.
+Not recommended. Default \code{FALSE}.}
 
 \item{nms}{[Defunct] Will be ignored because new object structure does not
 have related problem.}
 
 \item{renormalize}{[Defunct] Will be ignored because since Seurat V5, layers
 of data can exist at the same time and it is better to left it for users to
-do it by theirselves.}
+do it by themselves.}
 
 \item{use.liger.genes}{[Defunct] Will be ignored and will always set LIGER
 variable features to the place.}
 
 \item{by.dataset}{[Deprecated]. Use \code{identByDataset} instead.}
+}
+\value{
+Always returns Seurat object(s) of the latest version. By default a
+Seurat object with split layers, e.g. with layers like "counts.ctrl" and
+"counts.stim". If \code{merge = TRUE}, return a single Seurat object with
+layers for all datasets merged.
 }
 \description{
 For converting a \linkS4class{liger} object to a Seurat object, the
@@ -43,4 +54,7 @@ the \code{cellMeta}, \code{H.norm} and \code{varFeatures} slot will be
 included. Compatible with V4 and V5. It is not recommended to use this
 conversion if your \linkS4class{liger} object contains datasets from
 various modalities.
+}
+\examples{
+seu <- ligerToSeurat(pbmc)
 }

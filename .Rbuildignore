@@ -4,6 +4,7 @@ LICENSE
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.travis\.yml$
+^\.covrignore$
 ^travis_setup\.sh$
 ^_config\.yml$
 ^_pkgdown\.yml$
@@ -15,7 +16,10 @@ LICENSE
 ^\.github/*
 ^pkgdown/*
 ^/cmake*
-^vignettes/articles/
+^vignettes/articles/*
 ^docs
 ^devdata
-
+^tests/testthat/*\.h5$
+^vignettes/articles$
+^doc$
+^Meta$

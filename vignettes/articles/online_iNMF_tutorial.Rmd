@@ -23,7 +23,7 @@ To integrate datasets stored in HDF5 files, we first create a [liger object](../
 - [pbmcs_stim.h5](https://figshare.com/ndownloader/files/43108966)
 
 ```{R}
-library(rliger2)
+library(rliger)
 
 dataSource <- data.frame(
     filenames = c("pbmcs_ctrl_vignette.h5", 

@@ -5,16 +5,7 @@
 \alias{runUINMF.liger}
 \title{Perform Mosaic iNMF (UINMF) on scaled datasets with unshared features}
 \usage{
-runUINMF(
-  object,
-  k = 20,
-  lambda = 5,
-  nIteration = 30,
-  nRandomStarts = 1,
-  seed = 1,
-  verbose = getOption("ligerVerbose"),
-  ...
-)
+runUINMF(object, k = 20, lambda = 5, ...)
 
 \method{runUINMF}{liger}(
   object,
@@ -23,7 +14,8 @@ runUINMF(
   nIteration = 30,
   nRandomStarts = 1,
   seed = 1,
-  verbose = getOption("ligerVerbose"),
+  nCores = 2L,
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 }
@@ -40,6 +32,8 @@ higher \code{k} will be needed for datasets with more sub-structure. Default
 dataset-specific effects more strongly (i.e. alignment should increase as
 \code{lambda} increases). Default \code{5}.}
 
+\item{...}{Arguments passed to other methods and wrapped functions.}
+
 \item{nIteration}{Total number of block coordinate descent iterations to
 perform. Default \code{30}.}
 
@@ -51,10 +45,11 @@ of the same dataset can be run with one rep if necessary. Default \code{1}.}
 
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
 
-\item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\item{nCores}{The number of parallel tasks to speed up the computation.
+Default \code{2L}. Only supported for platform with OpenMP support.}
 
-\item{...}{Arguments passed to other methods and wrapped functions.}
+\item{verbose}{Logical. Whether to show information of the progress. Default
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 }
 \value{
 \itemize{

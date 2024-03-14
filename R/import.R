@@ -5,9 +5,10 @@
 #' matrix, a \code{Seurat} object, a \code{SingleCellExperiment} object, an
 #' \code{AnnData} object, a \linkS4class{ligerDataset} object or a filename to
 #' an HDF5 file. See detail for HDF5 reading.
-#' @param modal Character vector for modality setting. Currently options of
-#' \code{"default"}, \code{"rna"}, \code{"atac"}, \code{"spatial"} and
-#' \code{"meth"} are supported.
+#' @param modal Character vector for modality setting. Use one string for all
+#' datasets, or the same number of strings as the number of datasets. Currently
+#' options of \code{"default"}, \code{"rna"}, \code{"atac"}, \code{"spatial"}
+#' and \code{"meth"} are supported.
 #' @param cellMeta data.frame of metadata at single-cell level. Default
 #' \code{NULL}.
 #' @param removeMissing Logical. Whether to remove cells that do not have any
@@ -32,12 +33,27 @@
 #' Default \code{TRUE}. If \code{FALSE}, data will be subset into memory and
 #' can be dangerous for large scale analysis.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Additional slot values that should be directly placed in object.
 #' @param remove.missing,format.type,data.name,indices.name,indptr.name,genes.name,barcodes.name
 #' \bold{Deprecated.} See Usage section for replacement.
 #' @export
 #' @seealso \code{\link{createLigerDataset}}, \code{\link{createH5LigerDataset}}
+#' @examples
+#' # Create from raw count matrices
+#' ctrl.raw <- rawData(pbmc, "ctrl")
+#' stim.raw <- rawData(pbmc, "stim")
+#' pbmc1 <- createLiger(list(ctrl = ctrl.raw, stim = stim.raw))
+#'
+#' # Create from H5 files
+#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
+#' print(h5Path)
+#' lig <- createLiger(list(ctrl = h5Path))
+#'
+#' # Create from other container object
+#' ctrl.seu <- SeuratObject::CreateSeuratObject(ctrl.raw)
+#' stim.seu <- SeuratObject::CreateSeuratObject(stim.raw)
+#' pbmc2 <- createLiger(list(ctrl = ctrl.seu, stim = stim.seu))
 createLiger <- function(
         rawData,
         modal = NULL,
@@ -51,7 +67,7 @@ createLiger <- function(
         genesName = NULL,
         barcodesName = NULL,
         newH5 = TRUE,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...,
         # Deprecated coding style
         remove.missing = removeMissing,
@@ -67,12 +83,12 @@ createLiger <- function(
                         indices.name = "indicesName",
                         indptr.name = "indptrName", genes.name = "genesName",
                         barcodes.name = "barcodesName"))
-    if (!is.list(rawData)) stop("`rawData` has to be a named list.")
+    if (!is.list(rawData)) cli::cli_abort("{.var rawData} has to be a named list.")
 
     nData <- length(rawData)
     if (missing(modal) || is.null(modal)) modal <- "default"
     modal <- tolower(modal)
-    modal <- .checkArgLen(modal, nData, repN = TRUE)
+    modal <- .checkArgLen(modal, nData, repN = TRUE, class = "character")
 
     # TODO handle h5 specific argument for hybrid of H5 and in memory stuff.
     datasets <- list()
@@ -155,8 +171,11 @@ createLiger <- function(
 #' @param ... Additional slot data. See \linkS4class{ligerDataset} for detail.
 #' Given values will be directly placed at corresponding slots.
 #' @seealso \linkS4class{ligerDataset}, \linkS4class{ligerATACDataset},
-#' \code{\link{createH5LigerDataset}}
+#' \linkS4class{ligerSpatialDataset}, \linkS4class{ligerMethDataset}
 #' @export
+#' @examples
+#' ctrl.raw <- rawData(pbmc, "ctrl")
+#' ctrl.ld <- createLigerDataset(ctrl.raw)
 createLigerDataset <- function(
         rawData = NULL,
         modal = c("default", "rna", "atac", "spatial", "meth"),
@@ -169,9 +188,8 @@ createLigerDataset <- function(
     args <- as.list(environment())
     additional <- list(...)
     # Necessary initialization of slots
-    if (is.null(rawData) && is.null(normData) && is.null(scaleData)) {
-        stop("At least one type of expression data (rawData, normData or ",
-             "scaleData) has to be provided")
+    if (is.null(rawData) && is.null(normData)) {
+        cli::cli_abort("At least one of {.field rawData} or {.field normData} has to be provided.")
     }
     # Look for proper colnames and rownames
     cn <- NULL
@@ -192,6 +210,8 @@ createLigerDataset <- function(
     }
     if (!is.null(scaleData)) {
         if (is.null(rn)) rn <- rownames(scaleData)
+        if (!inherits(scaleData, "matrix"))
+            scaleData <- methods::as(scaleData, "matrix")
     }
     if (is.null(h5fileInfo)) h5fileInfo <- list()
     if (is.null(featureMeta))
@@ -270,8 +290,7 @@ createH5LigerDataset <- function(
             genesName <- "raw.var"
             genes <- h5file[[genesName]][]
         } else {
-            stop("Specified `formatType` '", formatType,
-                 "' is not supported for now.")
+            cli::cli_abort("Specified {.var formatType} ({.val {formatType}}) is not supported for now.")
         }
     } else {
         barcodes <- h5file[[barcodesName]][]
@@ -312,6 +331,13 @@ createH5LigerDataset <- function(
 
 
 #' Read liger object from RDS file
+#' @description
+#' This file reads a liger object stored in RDS files under all kinds of types.
+#' 1. A \linkS4class{liger} object with in-memory data created from package
+#' version since 1.99. 2. A liger object with on-disk H5 data associated, where
+#' the link to H5 files will be automatically restored. 3. A liger object
+#' created with older package version, and can be updated to the latest data
+#' structure by default.
 #' @param filename Path to an RDS file of a \code{liger} object of old versions.
 #' @param dimredName The name of variable in \code{cellMeta} slot to store the
 #' dimensionality reduction matrix, which originally located in
@@ -326,6 +352,18 @@ createH5LigerDataset <- function(
 #' to the currect version of structure. Default \code{TRUE}.
 #' @return New version of \linkS4class{liger} object
 #' @export
+#' @examples
+#' # Save and read regular current-version liger object
+#' tempPath <- tempfile(fileext = ".rds")
+#' saveRDS(pbmc, tempPath)
+#' pbmc <- readLiger(tempPath)
+#'
+#' # Save and read H5-based liger object
+#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
+#' lig <- createLiger(list(ctrl = h5Path))
+#' tempPath <- tempfile(fileext = ".rds")
+#' saveRDS(lig, tempPath)
+#' lig <- readLiger(tempPath)
 readLiger <- function(
         filename,
         dimredName = "tsne_coords",
@@ -333,112 +371,209 @@ readLiger <- function(
         h5FilePath = NULL,
         update = TRUE) {
     obj <- readRDS(filename)
-    if (!inherits(obj, "liger"))
-        stop("Object is not of class \"liger\".")
+    if (!inherits(obj, "liger")) # nocov start
+        cli::cli_abort("Object is not of class {.cls liger}.") # nocov end
     ver <- obj@version
     if (ver >= package_version("1.99.0")) {
         if (isH5Liger(obj)) obj <- restoreH5Liger(obj)
         return(obj)
     }
-    .log("Older version (", ver, ") of liger object detected.")
+    cli::cli_alert_info("Older version ({.val {ver}}) of {.cls liger} object detected.")
     if (isTRUE(update)) {
-        .log("Updating the object structure to make it compatible ",
-             "with current version (", utils::packageVersion("rliger2"), ")")
+        cli::cli_alert_info(
+            "Updating the object structure to make it compatible with current version {.val {utils::packageVersion('rliger')}}"
+        )
         return(convertOldLiger(obj, dimredName = dimredName,
                                clusterName = clusterName,
                                h5FilePath = h5FilePath))
     } else {
-        .log("`update = FALSE` specified. Returning the original object.")
+        cli::cli_alert_info("{.code update = FALSE} specified. Returning the original object.")
         return(obj)
     }
 }
 
+# nocov start
 #' Import prepared dataset publically available
-#' @param dataset Name of dataset, see available options with
-#' \code{names(.manifest)}.
+#' @description
+#' These are functions to download example datasets that are subset from public
+#' data.
+#' \itemize{
+#' \item{\bold{PBMC} - Downsampled from GSE96583, Kang et al, Nature
+#' Biotechnology, 2018. Contains two scRNAseq datasets.}
+#' \item{\bold{BMMC} - Downsampled from GSE139369, Granja et al, Nature
+#' Biotechnology, 2019. Contains two scRNAseq datasets and one scATAC data.}
+#' \item{\bold{CGE} - Downsampled from GSE97179, Luo et al, Science, 2017.
+#' Contains one scRNAseq dataset and one DNA methylation data.}
+#' }
+#'
+#' @rdname importVignetteData
 #' @param overwrite Logical, if a file exists at corresponding download
 #' location, whether to re-download or directly use this file. Default
 #' \code{FALSE}.
-#' @param dir Path to download datasets. Default \code{getwd()}.
+#' @param dir Path to download datasets. Default current working directory
+#' \code{getwd()}.
 #' @param method \code{method} argument directly passed to
 #' \code{\link[utils]{download.file}}. Using \code{"libcurl"} while other
 #' options might not work depending on platform.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Additional arguments passed to \code{\link{download.file}}
-#' @return \code{\linkS4class{liger}} object of specified dataset.
 #' @export
-#' @examples
-#' if (FALSE) {
-#'     pbmc <- importVignetteData("pbmc")
+#' @return Constructed \linkS4class{liger} object with QC performed and missing
+#' data removed.
+#' @examplesIf interactive()
+#' \donttest{
+#' pbmc <- importPBMC()
+#' bmmc <- importBMMC()
+#' cge <- importCGE()
 #' }
-importVignetteData <- function(
-        dataset,
-        overwrite = FALSE,
+importPBMC <- function(
         dir = getwd(),
+        overwrite = FALSE,
         method = "libcurl",
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
-    if (!dataset %in% names(.manifest)) {
-        stop("Requested dataset \"", dataset, "\" not supported yet. \n",
-             "Available options: ", paste(names(.manifest), collapse = ", "))
-    }
     fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
-
-    info <- .manifest[[dataset]]
-    url <- sapply(info, function(x) x$url)
-    dataNames <- names(info)
-    filenames <- sapply(info, function(x) x$filename)
-    modal <- sapply(info, function(x) x$modal)
-
-    # ATAC assay specific processing
-    # If non of them, peakURL and peakFilename should be empty lists
-    atacIdx <- modal == "atac"
-    peakURL <- sapply(info[atacIdx], function(x) x$peak$url)
-
-    peakFilename <- sapply(info[atacIdx], function(x) x$peak$filename)
-    peakFilename <- file.path(dir, peakFilename, fsep = fsep)
-    names(peakFilename) <- names(info[atacIdx])
-
-    filenames <- file.path(dir, filenames, fsep = fsep)
-
-    allURLs <- c(url, peakURL)
-    allFiles <- c(filenames, peakFilename)
-
-    doDownload <- rep(TRUE, length(allURLs))
-    for (i in seq_along(allURLs)) {
-        f <- allFiles[i]
+    info <- data.frame(
+        name = c("ctrl", "stim"),
+        url = c(
+            "https://figshare.com/ndownloader/files/40054042",
+            "https://figshare.com/ndownloader/files/40054048"
+        ),
+        filename = file.path(dir,
+                             c("liger_PBMCs_ctrl.rds", "liger_PBMCs_stim.rds"),
+                             fsep = fsep),
+        modal = "default"
+    )
+    doDownload <- rep(TRUE, nrow(info))
+    for (i in seq(nrow(info))) {
+        f <- info$filename[i]
         if (file.exists(f) && isFALSE(overwrite)) {
-            warning("File already exists, skipped. set `overwrite = TRUE` ",
-                    "to force downloading: ", f)
+            cli::cli_alert_warning(
+                "Skipping file already exists at: {.file {f}}. "
+            )
+            cli::cli_alert_info("Set {.code overwrite = TRUE} to forcing download.")
             doDownload[i] <- FALSE
             next
         }
-        if (isTRUE(verbose)) .log("Downloading from ", allURLs[i], " to ", f)
+        if (isTRUE(verbose))
+            cli::cli_alert_info("Downloading from {.url {info$url[i]}} to {.file {f}}")
     }
     if (sum(doDownload) > 0) {
-        allURLs <- allURLs[doDownload]
-        allURLs <- unlist(allURLs)
-        utils::download.file(allURLs,
-                             destfile = allFiles[doDownload],
+        utils::download.file(info$url[doDownload],
+                             destfile = info$filename[doDownload],
                              mode = "wb", quiet = !verbose, method = method,
                              ...)
     }
-
-    rawList <- lapply(filenames, readRDS)
-    names(rawList) <- dataNames
-    object <- createLiger(rawList, modal = modal, verbose = verbose)
-    for (i in which(atacIdx)) {
-        name <- names(object)[i]
-        rawPeak(object, dataset = name) <- readRDS(peakFilename[name])
-    }
+    rawList <- lapply(info$filename, readRDS)
+    names(rawList) <- info$name
+    object <- createLiger(rawList, modal = info$modal, verbose = verbose)
     return(object)
 }
 
+#' @rdname importVignetteData
+#' @export
+importBMMC <- function(
+        dir = getwd(),
+        overwrite = FALSE,
+        method = "libcurl",
+        verbose = getOption("ligerVerbose", TRUE),
+        ...
+) {
+    fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
+    info <- data.frame(
+        name = c("rna_D1T1", "rna_D1T2", "atac_D5T1", NA),
+        url = c(
+            "https://figshare.com/ndownloader/files/40054858",
+            "https://figshare.com/ndownloader/files/40054861",
+            "https://figshare.com/ndownloader/files/40054891",
+            "https://figshare.com/ndownloader/files/40054864"
+        ),
+        filename = file.path(dir,
+                             c("liger_BMMC_rna_D1T1.rds",
+                               "liger_BMMC_rna_D1T2.rds",
+                               "liger_BMMC_atac_D5T1.rds",
+                               "liger_BMMC_atac_D5T1_peak.rds"),
+                             fsep = fsep),
+        modal = c("default", "default", "atac", NA)
+    )
+    doDownload <- rep(TRUE, nrow(info))
+    for (i in seq(nrow(info))) {
+        f <- info$filename[i]
+        if (file.exists(f) && isFALSE(overwrite)) {
+            cli::cli_alert_warning(
+                "Skipping file already exists at: {.file {f}}. "
+            )
+            cli::cli_alert_info("Set {.code overwrite = TRUE} to forcing download.")
+            doDownload[i] <- FALSE
+            next
+        }
+        if (isTRUE(verbose))
+            cli::cli_alert_info("Downloading from {.url {info$url[i]}} to {.file {f}}")
+    }
+    if (sum(doDownload) > 0) {
+        utils::download.file(info$url[doDownload],
+                             destfile = info$filename[doDownload],
+                             mode = "wb", quiet = !verbose, method = method,
+                             ...)
+    }
+    rawList <- lapply(info$filename, readRDS)
+    names(rawList) <- info$name
+    # BMMC raw data has prefix added to barcodes, so don't add it
+    object <- createLiger(rawList[1:3], modal = info$modal[1:3], verbose = verbose,
+                          addPrefix = FALSE)
+    rawPeak(object, info$name[3]) <- rawList[[4]]
 
+    return(object)
+}
 
-
+#' @rdname importVignetteData
+#' @export
+importCGE <- function(
+        dir = getwd(),
+        overwrite = FALSE,
+        method = "libcurl",
+        verbose = getOption("ligerVerbose", TRUE),
+        ...
+) {
+    fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
+    info <- data.frame(
+        name = c("rna", "met"),
+        url = c(
+            "https://figshare.com/ndownloader/files/40222699",
+            "https://figshare.com/ndownloader/files/40222702"
+        ),
+        filename = file.path(dir,
+                             c("liger_CGE_rna.rds", "liger_CGE_met.rds"),
+                             fsep = fsep),
+        modal = c("default", "meth")
+    )
+    doDownload <- rep(TRUE, nrow(info))
+    for (i in seq(nrow(info))) {
+        f <- info$filename[i]
+        if (file.exists(f) && isFALSE(overwrite)) {
+            cli::cli_alert_warning(
+                "Skipping file already exists at: {.file {f}}. "
+            )
+            cli::cli_alert_info("Set {.code overwrite = TRUE} to forcing download.")
+            doDownload[i] <- FALSE
+            next
+        }
+        if (isTRUE(verbose))
+            cli::cli_alert_info("Downloading from {.url {info$url[i]}} to {.file {f}}")
+    }
+    if (sum(doDownload) > 0) {
+        utils::download.file(info$url[doDownload],
+                             destfile = info$filename[doDownload],
+                             mode = "wb", quiet = !verbose, method = method,
+                             ...)
+    }
+    rawList <- lapply(info$filename, readRDS)
+    names(rawList) <- info$name
+    object <- createLiger(rawList, modal = info$modal, verbose = verbose)
+    return(object)
+}
 
 
 #' Load in data from 10X
@@ -480,7 +615,12 @@ importVignetteData <- function(
 #' feature type can be found. Otherwise will always return a list. Default
 #' \code{FALSE}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
+#' @param sample.dirs,sample.names,use.filtered These arguments are renamed and
+#' will be deprecated in the future. Please see usage for corresponding
+#' arguments.
+#' @param data.type,merge,num.cells,min.umis These arguments are defuncted
+#' because the functionality can/should be fulfilled with other functions.
 #' @return
 #' \itemize{
 #'  \item{When only one sample is given or detected, and only one feature type
@@ -534,7 +674,7 @@ read10X <- function(
         geneCol = 2,
         cellCol = 1,
         returnList = FALSE,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         # Renamed
         sample.dirs = path,
         sample.names = sampleNames,
@@ -576,34 +716,38 @@ read10X <- function(
                 if (is.null(reference)) {
                     if (length(refsExist) == 1) {
                         reference <- refsExist
-                        .log("Using reference: ", reference)
+                        cli::cli_alert_info("Using referece {.val {reference}}")
                     } else {
-                        stop("Multiple references found, please select one ",
-                             "from: ", paste0(refsExist, collapse = ", "))
+                        cli::cli_abort(
+                            "Multiple references found, please select one from: {.val {refsExist}}"
+                        )
                     }
                 } else if (length(reference) == 1) {
                     if (!reference %in% refsExist) {
-                        stop("Specified reference not found, please select ",
-                             "one from: ", paste0(refsExist, collapse = ", "))
+                        cli::cli_abort(
+                            "Specified reference not found, please select one from: {.val {refsExist}}"
+                        )
                     }
                 } else {
-                    stop("Multiple reference specified but only one allowed.")
+                    cli::cli_abort("Multiple reference specified but only one allowed.")
                 }
                 path <- file.path(path, reference)
             }
             names(path) <- dirSampleNames
-            .log("Found the following sample folders with possible sub-folder ",
-                 "structure: \n", paste0(dirSampleNames, collapse = ", "))
+            cli::cli_alert_info(
+                c("Found the following sample folders with possible sub-folder structure: ",
+                  "{.val {dirSampleNames}}")
+            )
         } # else mtxDirs
     } # else mtxDirs
 
     allData <- list()
-    sampleNames <- .checkArgLen(sampleNames, length(path), repN = FALSE)
+    sampleNames <- .checkArgLen(sampleNames, length(path), repN = FALSE, class = "character")
     if (is.null(sampleNames) && !is.null(names(path))) {
         sampleNames <- names(path)
     } else {
         if (any(duplicated(sampleNames))) {
-            stop("Cannot set duplicated sample names.")
+            cli::cli_abort("Cannot set duplicated sample names.")
         }
     }
 
@@ -611,14 +755,13 @@ read10X <- function(
         if (isTRUE(verbose)) {
             name <- sampleNames[i]
             if (is.null(name)) name <- paste0("sample ", i)
-            .log("Reading from ", name, "...")
+            cliID <- cli::cli_process_start("Reading from {.val {name}}")
         }
         if (is.list(path)) run <- path[[i]]
         else run <- path[i]
 
         if (!dir.exists(run)) {
-            stop("Directory provided does not exist: ",
-                 normalizePath(run, mustWork = FALSE))
+            cli::cli_abort("Directory provided does not exist: {.file {normalizePath(run, mustWork = FALSE)}}")
         }
         barcode.loc <- file.path(run, 'barcodes.tsv')
         gene.loc <- file.path(run, 'genes.tsv')
@@ -632,15 +775,13 @@ read10X <- function(
             matrix.loc <- addgz(matrix.loc)
         }
         if (!file.exists(barcode.loc)) {
-            stop("Barcode file missing. Expecting ", basename(barcode.loc))
+            cli::cli_abort("Barcode file is missing. Expecting {.file {barcode.loc}}")
         }
         if (!isOldVer && !file.exists(features.loc) ) {
-            stop("Gene name or features file missing. Expecting ",
-                 basename(features.loc))
+            cli::cli_abort("Gene name or features file is missing. Expecting {.file {features.loc}}")
         }
         if (!file.exists(matrix.loc)) {
-            stop("Expression matrix file missing. Expecting ",
-                 basename(matrix.loc))
+            cli::cli_abort("Expression matrix file is missing. Expecting {.file {matrix.loc}}")
         }
         data <- read10XFiles(matrixPath = matrix.loc, barcodesPath = barcode.loc,
                              featuresPath = ifelse(isOldVer, gene.loc, features.loc),
@@ -648,6 +789,7 @@ read10X <- function(
                              cellCol = cellCol)
         if (isOldVer) names(data) <- "Gene Expression"
         allData[[i]] <- data
+        if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     }
     if (!is.null(sampleNames)) names(allData) <- sampleNames
     if (isTRUE(returnList)) return(allData)
@@ -708,7 +850,7 @@ read10XATAC <- function(
         returnList = FALSE,
         geneCol = 2,
         cellCol = 1,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     pipeline <- match.arg(pipeline)
     if (length(path) == 1) {
@@ -726,23 +868,25 @@ read10XATAC <- function(
             # Now paths are sample/outs/*_peak_bc_matrix/
             path <- file.path(outsPaths, subdir)
             if (!dir.exists(path)) {
-                stop("Cannot find folder '", path, "', not standard ",
-                     "`cellranger-", pipeline, "` output. ",
-                     "Please try with the other `pipeline`.")
+                cli::cli_abort(
+                    c("Cannot find folder {.file {path}}, not standard {.code cellranger-{pipeline}} output. ",
+                      "i" = "Please try with the other {.code pipeline}.")
+                )
             }
             names(path) <- dirSampleNames
-            .log("Found the following sample folders with possible sub-folder ",
-                 "structure: \n", paste0(dirSampleNames, collapse = ", "))
+            cli::cli_alert_info(
+                "Found the following sample folders with possible sub-folder structure: {.val {dirSampleNames}}"
+            )
         } # else mtxDirs
     } # else mtxDirs
 
     allData <- list()
-    sampleNames <- .checkArgLen(sampleNames, length(path), repN = FALSE)
+    sampleNames <- .checkArgLen(sampleNames, length(path), repN = FALSE, class = "character")
     if (is.null(sampleNames) && !is.null(names(path))) {
         sampleNames <- names(path)
     } else {
         if (any(duplicated(sampleNames))) {
-            stop("Cannot set duplicated sample names.")
+            cli::cli_abort("Cannot set duplicated sample names.")
         }
     }
 
@@ -750,14 +894,13 @@ read10XATAC <- function(
         if (isTRUE(verbose)) {
             name <- sampleNames[i]
             if (is.null(name)) name <- paste0("sample ", i)
-            .log("Reading from ", name, "...")
+            cliID <- cli::cli_process_start("Reading from {.val {name}}")
         }
         if (is.list(path)) run <- path[[i]]
         else run <- path[i]
 
         if (!dir.exists(run)) {
-            stop("Directory provided does not exist: ",
-                 normalizePath(run, mustWork = FALSE))
+            cli::cli_abort("Directory provided does not exist: {.file {normalizePath(run, mustWork = FALSE)}}")
         }
         barcode.loc <- switch(pipeline,
                               arc = "barcodes.tsv.gz",
@@ -772,15 +915,13 @@ read10XATAC <- function(
         )
 
         if (!file.exists(barcode.loc)) {
-            stop("Barcode file missing. Expecting ", basename(barcode.loc))
+            cli::cli_abort("Barcode file is missing. Expecting {.file {barcode.loc}}")
         }
         if (!file.exists(feature.loc) ) {
-            stop("Peak or feature file missing. Expecting ",
-                 basename(feature.loc))
+            cli::cli_abort("Peak or feature file is missing. Expecting {.file {feature.loc}}")
         }
         if (!file.exists(matrix.loc)) {
-            stop("Expression matrix file missing. Expecting ",
-                 basename(matrix.loc))
+            cli::cli_abort("Expression matrix file is missing. Expecting {.file {matrix.loc}}")
         }
         data <- read10XFiles(matrixPath = matrix.loc,
                              barcodesPath = barcode.loc,
@@ -789,16 +930,18 @@ read10XATAC <- function(
                              geneCol = geneCol, cellCol = cellCol,
                              isATAC = pipeline == "atac")
         if (pipeline == "arc" && !arcFeatureType %in% names(data)) {
-            stop("No ATAC data retrieved from cellranger-arc pipeline. ",
-                 "Please see if the following available feature types match ",
-                 "with need and select one for `arcFeatureType`: ",
-                 paste0(names(data), collapse = ", "))
+            cli::cli_abort(
+                c("No ATAC data retrieved from cellranger-arc pipeline. ",
+                "Please see if the following available feature types match ",
+                "with need and select one for `arcFeatureType`: {.val {names(data)}}")
+            )
         }
         data <- switch(pipeline,
                        arc = data[[arcFeatureType]],
                        atac = data[[1]]
         )
         allData[[i]] <- data
+        cli::cli_process_done(id = cliID)
     }
     if (!is.null(sampleNames)) names(allData) <- sampleNames
     if (isTRUE(returnList)) return(allData)
@@ -824,8 +967,8 @@ read10XFiles <- function(
     data <- methods::as(Matrix::readMM(matrixPath), "CsparseMatrix")
 
     # Processing barcodes
-    cell.barcodes <- read.table(barcodesPath, header = FALSE,
-                                sep = '\t', row.names = NULL)
+    cell.barcodes <- utils::read.table(barcodesPath, header = FALSE,
+                                       sep = '\t', row.names = NULL)
     if (ncol(cell.barcodes) > 1) {
         cell.names <- cell.barcodes[, cellCol]
     } else {
@@ -852,16 +995,14 @@ read10XFiles <- function(
                            "-", feature.names[, 3])
     } else {
         if (ncol(feature.names) < geneCol) {
-            stop("`geneCol` was set to ", geneCol, " but feature.tsv.gz ",
-                 "(or genes.tsv) only has ", ncol(feature.names), " columns.",
-                 " Try setting `geneCol` to a value <= ",
-                 ncol(feature.names), ".")
+            cli::cli_abort(
+                c("{.var geneCol} was set to {.val {geneCol}} but {.file feature.tsv.gz} (or {.file genes.tsv}) only has {ncol(fetures.names)} columns.",
+                  "i" = "Try setting {.var geneCol} to a value <= {ncol(feature.names)}.")
+            )
         }
         if (any(is.na(feature.names[, geneCol]))) {
-            warning(
-                "Some features names are NA. Replacing NA names with ID from the ",
-                "opposite column requested",
-                call. = FALSE, immediate. = TRUE
+            cli::cli_alert_warning(
+                "Some feature names are NA. Replacing NA names with ID from the opposite column requested"
             )
             na.features <- which(is.na(feature.names[, geneCol]))
             replacement.column <- ifelse(geneCol == 2, 1, 2)
@@ -877,8 +1018,9 @@ read10XFiles <- function(
         data_types <- factor(feature.names$V3)
         lvls <- levels(data_types)
         if (length(lvls) > 1) {
-            .log("10X data contains more than one type and is being ",
-                 "returned as a list containing matrices of each type.")
+            cli::cli_alert_warning(
+                "10X data contains more than one type and is being returned as a list containing matrices of each type."
+            )
         }
         expr_name <- "Gene Expression"
         # Return Gene Expression first
@@ -894,3 +1036,5 @@ read10XFiles <- function(
     }
     return(data)
 }
+# nocov end
+

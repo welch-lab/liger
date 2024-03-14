@@ -24,7 +24,7 @@ For this tutorial, we will use two datasets, which can all be downloaded at http
 The input raw count matrices are presented in dgCMatrix class objects, which is a common form of sparse matrix. Users can then create a `liger` object with the two datasets. A named list is required for submitting the datasets to the object creator. 
 
 ```{r readRDS}
-library(rliger2)
+library(rliger)
 options(ligerDotSize = 0.5)
 
 mouse <- readRDS("cross_species_vignette_data/Drop_mouse.RDS")
@@ -48,7 +48,7 @@ lig <- normalize(lig)
 For cross-species analysis, we select shared, homologous genes between the two species, as well as unshared, non-homologous genes from the lizard dataset. The default setting of `selectGenes()` function selects for homologous genes shared between all datasets. To enable selection of unshared genes, users need to specify the name(s) of dataset(s) where unshared genes should be chosen from to `useUnsharedDatasets`. 
 
 ```{r selectvargenes, message=TRUE}
-lig <- selectGenes(lig, var.thres = 0.3, useUnsharedDatasets = "lizard", unsharedThresh = 0.3)
+lig <- selectGenes(lig, thresh = 0.3, useUnsharedDatasets = "lizard", unsharedThresh = 0.3)
 ```
 
 ### 4. Scale not center
@@ -128,3 +128,10 @@ plotClusterDimRed(lig, useCluster = "mouse_ann", legendNCol = 1)
 plotClusterDimRed(lig, useCluster = "lizard_ann", legendNCol = 1)
 ``` 
 
+We also implemented a Sankey diagram function that shows the mapping network between the individual cluster assignments and the joint clustering. With the individual cluster assignment added above, we can simply use the variables and show the diagram with `plotSankey()`. 
+
+```{r sankey, fig.height=6}
+plotSankey(lig, cluster1 = "mouse_ann", cluster2 = "lizard_ann", 
+           titles = c("Mouse", "Integrated", "Lizard"), 
+           mar = c(1, 8, 2, 3))
+```

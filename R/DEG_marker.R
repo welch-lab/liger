@@ -8,23 +8,23 @@
 #' @section Pairwise DEG Scenarios:
 #' Users can select classes of cells from a variable in \code{cellMeta}.
 #' \code{variable1} and \code{variable2} are used to specify a column in
-#' \code{cellMeta}, and \code{group1} and \code{group2} are used to specify
+#' \code{cellMeta}, and \code{groupTest} and \code{groupCtrl} are used to specify
 #' existing classes from \code{variable1} and \code{variable2}, respectively.
-#' When \code{variable2} is missing, \code{group2} will be considered from
+#' When \code{variable2} is missing, \code{groupCtrl} will be considered from
 #' \code{variable1}.
 #'
 #' For example, when \code{variable1 = "celltype"} and \code{variable2 = NULL},
-#' \code{group1} and \code{group2} should be valid cell types in
+#' \code{groupTest} and \code{groupCtrl} should be valid cell types in
 #' \code{object$celltype}.
 #'
 #' When \code{variable1} is "celltype" and \code{variable2} is "gender",
-#' \code{group1} should be a valid cell type from \code{object$celltype} and
-#' \code{group2} should be a valid class from \code{object$gender}.
+#' \code{groupTest} should be a valid cell type from \code{object$celltype} and
+#' \code{groupCtrl} should be a valid class from \code{object$gender}.
 #'
-#' When both \code{variable1} and \code{variable2} are missing, \code{group1}
-#' and \code{group2} should be valid index of cells in \code{object}.
+#' When both \code{variable1} and \code{variable2} are missing, \code{groupTest}
+#' and \code{groupCtrl} should be valid index of cells in \code{object}.
 #' @param object A \linkS4class{liger} object, with normalized data available
-#' @param group1,group2,variable1,variable2 Condition specification. See
+#' @param groupTest,groupCtrl,variable1,variable2 Condition specification. See
 #' \code{?runPairwiseDEG} section \bold{Pairwise DEG Scenarios} for detail.
 #' @param method DEG test method to use. Choose from \code{"wilcoxon"} or
 #' \code{"pseudoBulk"}. Default \code{"wilcoxon"}
@@ -35,51 +35,54 @@
 #' will create \code{nPsdRep} pseudo replicates per group.
 #' @param nPsdRep Number of pseudo replicates to create. Only used when
 #' \code{method = "pseudoBulk", useReplicate = NULL}. Default \code{5}.
+#' @param minCellPerRep Numeric, will not make pseudo-bulk for replicate with
+#' less than this number of cells. Default \code{10}.
 #' @param seed Random seed to use for pseudo-replicate generation. Default
 #' \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @return A data.frame with DEG information
 #' @rdname liger-DEG
 #' @export
 #' @examples
 #' # Compare between cluster "0" and cluster "1"
-#' degStats <- runPairwiseDEG(pbmcPlot, group1 = 0, group2 = 1,
+#' degStats <- runPairwiseDEG(pbmcPlot, groupTest = 0, groupCtrl = 1,
 #'                            variable1 = "leiden_cluster")
 #' # Compare between all cells from cluster "5" and
 #' # all cells from dataset "stim"
-#' degStats <- runPairwiseDEG(pbmcPlot, group1 = "5", group2 = "stim",
+#' degStats <- runPairwiseDEG(pbmcPlot, groupTest = "5", groupCtrl = "stim",
 #'                            variable1 = "leiden_cluster",
 #'                            variable2 = "dataset")
 runPairwiseDEG <- function(
         object,
-        group1,
-        group2,
+        groupTest,
+        groupCtrl,
         variable1 = NULL,
         variable2 = NULL,
         method = c("wilcoxon", "pseudoBulk"),
         usePeak = FALSE,
         useReplicate = NULL,
         nPsdRep = 5,
+        minCellPerRep = 10,
         seed = 1,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     method <- match.arg(method)
     if (is.null(variable1) && is.null(variable2)) {
         # Directly using cell index
         groups <- list(
-            .idxCheck(object, group1, "cell"),
-            .idxCheck(object, group2, "cell")
+            .idxCheck(object, groupTest, "cell"),
+            .idxCheck(object, groupCtrl, "cell")
         )
-        group1Name <- "group1"
-        group2Name <- "group2"
-        names(groups) <- c("group1", "group2")
+        group1Name <- "test"
+        group2Name <- "control"
+        names(groups) <- c("test", "control")
     } else if (!is.null(variable1)) {
         var1 <- .fetchCellMetaVar(object, variable1,
                                   checkCategorical = TRUE, drop = TRUE,
                                   droplevels = TRUE)
-        group1Idx <- which(var1 %in% group1)
-        group1Name <- paste(group1, collapse = ".")
+        group1Idx <- which(var1 %in% groupTest)
+        group1Name <- paste(groupTest, collapse = ".")
         if (is.null(variable2)) {
             variable2 <- variable1
             var2 <- var1
@@ -88,21 +91,23 @@ runPairwiseDEG <- function(
                                            checkCategorical = TRUE, drop = TRUE,
                                            droplevels = TRUE)
         }
-        group2Idx <- which(var2 %in% group2)
-        group2Name <- paste(group2, collapse = ".")
+        group2Idx <- which(var2 %in% groupCtrl)
+        group2Name <- paste(groupCtrl, collapse = ".")
         groups <- list(group1Idx, group2Idx)
         names(groups) <- c(group1Name, group2Name)
     } else {
-        stop("Please see `?runPairwiseDEG` for usage.")
+        cli::cli_abort("Please see {.code ?runPairwiseDEG} for usage.")
     }
     result <- .runDEG(object, groups = groups, method = method,
                       usePeak = usePeak, useReplicate = useReplicate,
-                      nPsdRep = nPsdRep, seed = seed, verbose = verbose)
+                      nPsdRep = nPsdRep,
+                      minCellPerRep = minCellPerRep, seed = seed,
+                      verbose = verbose)
     result <- result[result$group == group1Name,]
     attributes(result)$meta <- list(
-        group1 = group1,
+        groupTest = groupTest,
         variable1 = variable1,
-        group2 = group2,
+        groupCtrl = groupCtrl,
         variable2 = variable2
     )
     return(result)
@@ -122,19 +127,21 @@ runPairwiseDEG <- function(
 #' grouping of such condition is specified by \code{conditionBy}, which should
 #' be a column name in \code{cellMeta}. When \code{splitBy} is specified as
 #' another variable name in \code{cellMeta}, the marker detection will be
-#' iteratively done for each level of \code{splitBy} variable.
+#' iteratively done for within each level of \code{splitBy} variable.
 #'
 #' For example, when \code{conditionBy = "celltype"} and \code{splitBy = NULL},
 #' marker detection will be performed by comparing all cells of "celltype_i"
 #' against all other cells, and etc.
 #'
 #' When \code{conditionBy = "celltype"} and \code{splitBy = "gender"}, marker
-#' detection will be performed by comparing "celltype_i" cells from "gender_i"
-#' against other cells from "gender_i", and etc.
+#' detection will be performed by comparing "celltype_i" cells from "gender_j"
+#' against other cells from "gender_j", and etc.
 #' @examples
-#' # Identify markers for each cluster
+#' # Identify markers for each cluster. Equivalent to old version
+#' # `runWilcoxon(method = "cluster")`
 #' markerStats <- runMarkerDEG(pbmcPlot, conditionBy = "leiden_cluster")
-#' # Identify dataset markers within each cluster
+#' # Identify dataset markers within each cluster. Equivalent to old version
+#' # `runWilcoxon(method = "dataset")`.
 #' markerStatsList <- runMarkerDEG(pbmcPlot, conditionBy = "dataset",
 #'                                 splitBy = "leiden_cluster")
 runMarkerDEG <- function(
@@ -146,14 +153,15 @@ runMarkerDEG <- function(
         usePeak = FALSE,
         useReplicate = NULL,
         nPsdRep = 5,
+        minCellPerRep = 10,
         seed = 1,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     useDatasets <- .checkUseDatasets(object, useDatasets)
     allCellIdx <- seq(ncol(object))[object$dataset %in% useDatasets]
     conditionBy <- conditionBy %||% object@uns$defaultCluster
     if (is.null(conditionBy)) {
-        stop("No `conditionBy` given or default cluster not set.")
+        cli::cli_abort("No {.var conditionBy} given or default cluster not set.")
     }
     conditionBy <- .fetchCellMetaVar(
         object, conditionBy, cellIdx = allCellIdx,
@@ -169,7 +177,9 @@ runMarkerDEG <- function(
         groups <- split(allCellIdx, conditionBy)
         result <- .runDEG(object, groups = groups, method = method,
                           usePeak = usePeak, useReplicate = useReplicate,
-                          nPsdRep = nPsdRep, seed = seed, verbose = verbose)
+                          nPsdRep = nPsdRep,
+                          minCellPerRep = minCellPerRep,
+                          seed = seed, verbose = verbose)
     } else {
         result <- list()
         for (i in seq_along(levels(splitBy))) {
@@ -178,14 +188,43 @@ runMarkerDEG <- function(
             groups <- split(subCellIdx, conditionBy[subIdx])
             result[[levels(splitBy)[i]]] <- .runDEG(
                 object, groups = groups, method = method, usePeak = usePeak,
-                useReplicate = useReplicate, nPsdRep = nPsdRep, seed = seed,
-                verbose = verbose
+                useReplicate = useReplicate, nPsdRep = nPsdRep,
+                minCellPerRep = minCellPerRep, seed = seed, verbose = verbose
             )
         }
     }
 
     return(result)
 }
+
+#' @rdname liger-DEG
+#' @export
+#' @param data.use Same as \code{useDatasets}.
+#' @param compare.method Choose from \code{"clusters"} (default) or
+#' \code{"datasets"}. \code{"clusters"} compares each cluster against all other
+#' cells, while \code{"datasets"} run within each cluster and compare each
+#' dataset against all other datasets.
+runWilcoxon <- function(
+        object,
+        data.use = NULL,
+        compare.method = c("clusters", "datasets")
+) {
+    lifecycle::deprecate_warn(
+        "1.99.0", "runWilcoxon()",
+        details = "Please use `runMarkerDEG()` with `method = 'wilcoxon'` instead."
+    )
+    compare.method <- match.arg(compare.method)
+    if (compare.method == "clusters") {
+        res <- runMarkerDEG(object, conditionBy = object@uns$defaultCluster,
+                            splitBy = NULL, method = "wilcoxon")
+    } else if (compare.method == "datasets") {
+        res <- runMarkerDEG(object, conditionBy = "dataset",
+                            splitBy = object@uns$defaultCluster,
+                            method = "wilcoxon")
+    }
+    return(res)
+}
+
 # groups - As underlying function, this must be organized into list of numeric
 # cell index vectors.
 .runDEG <- function(
@@ -196,16 +235,17 @@ runMarkerDEG <- function(
         usePeak = FALSE,
         useReplicate = NULL,
         nPsdRep = 5,
+        minCellPerRep = 10,
         seed = 1,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     method <- match.arg(method)
     allCellIdx <- unlist(groups)
+    if (length(allCellIdx) == 0)
+        cli::cli_abort(c(x = "No cell selected"))
     allCellBC <- colnames(object)[allCellIdx]
     datasetInvolve <- levels(object$dataset[allCellIdx, drop = TRUE])
-    var <- factor(unlist(lapply(names(groups), function(n) {
-        rep(n, length(groups[[n]]))
-    })), levels = names(groups))
+    var <- factor(rep(names(groups), lengths(groups)), levels = names(groups))
     if (isTRUE(usePeak)) {
         useDatasets <- .checkUseDatasets(object, useDatasets = datasetInvolve,
                                          modal = "atac")
@@ -215,15 +255,18 @@ runMarkerDEG <- function(
     slot <- .DE.checkDataAvail(object, datasetInvolve, method, usePeak)
     dataList <- getMatrix(object, slot, datasetInvolve, returnList = TRUE)
     features <- Reduce(intersect, lapply(dataList, rownames))
-    dataList <- lapply(dataList, function(x) x[features,])
+    dataList <- lapply(dataList, function(x) x[features, , drop = FALSE])
+
     mat <- Reduce(cbind, dataList)
-    mat <- mat[, allCellBC]
+    mat <- mat[, allCellBC, drop = FALSE]
     if (method == "wilcoxon") {
+        cliID <- cli::cli_process_start("Running Wilcoxon rank-sum test")
         mat <- log1p(1e10*mat)
         result <- wilcoxauc(mat, var)
+        cli::cli_process_done(id = cliID)
     } else if (method == "pseudoBulk") {
         if (is.null(useReplicate)) {
-            replicateAnn <- setupPseudoRep2(var, nRep = nPsdRep,
+            replicateAnn <- setupPseudoRep(var, nRep = nPsdRep,
                                             seed = seed)
         } else {
             replicateAnn <- .fetchCellMetaVar(
@@ -235,49 +278,55 @@ runMarkerDEG <- function(
             )
             replicateAnn$groups <- var
         }
-        pbs <- makePseudoBulk2(mat, replicateAnn, verbose = verbose)
+
+        pbs <- makePseudoBulk(mat, replicateAnn,
+                               minCellPerRep = minCellPerRep,
+                               verbose = verbose)
+        pb <- pbs[[1]]
+        replicateAnn <- pbs[[2]]
         var <- sapply(levels(replicateAnn$groups), function(x) {
-            nlevels(interaction(replicateAnn[replicateAnn$groups == x,],
+            nlevels(interaction(replicateAnn[replicateAnn$groups == x, , drop = FALSE],
                                 drop = TRUE))
         })
         var <- factor(rep(names(var), var), levels = names(var))
-        result <- .callDESeq22(pbs, var, verbose)
+        result <- .callDESeq2(pb, var, verbose)
     }
     return(result)
 }
 
 .DE.checkDataAvail <- function(object, useDatasets, method, usePeak) {
-    if (isH5Liger(object, useDatasets)) {
-        stop("HDF5 based datasets detected but is not supported. \n",
-             "Try `object.sub <- downsample(object, useSlot = ",
-             "'normData')` to create ANOTHER object with in memory data.")
-    }
+    if (isH5Liger(object, useDatasets)) { # nocov start
+        cli::cli_abort(
+            c("HDF5 based datasets detected but is not supported. ",
+              "i" = "Try {.code object.sub <- downsample(object, useSlot = 'normData')} to create another object with in memory data")
+        )
+    } # nocov end
     if (method == "wilcoxon") {
-        if (!isTRUE(usePeak)) slot <- "normData"
-        else slot <- "normPeak"
+        slot <- ifelse(usePeak, "normPeak", "normData")
     } else if (method == "pseudoBulk") {
-        if (!requireNamespace("DESeq2", quietly = TRUE))
-            stop("Package \"DESeq2\" needed for this function to work. ",
-                 "Please install it by command:\n",
-                 "BiocManager::install('DESeq2')",
-                 call. = FALSE)
-        if (!isTRUE(usePeak)) slot <- "rawData"
-        else slot <- "rawPeak"
+        if (!requireNamespace("DESeq2", quietly = TRUE)) # nocov start
+            cli::cli_abort(
+                "Package {.pkg DESeq2} is needed for this function to work.
+                Please install it by command:
+                {.code BiocManager::install('DESeq2')}"
+            ) # nocov end
+        slot <- ifelse(usePeak, "rawPeak", "rawData")
     }
     allAvail <- all(sapply(useDatasets, function(d) {
         ld <- dataset(object, d)
         !is.null(methods::slot(ld, slot))
     }))
     if (!allAvail)
-        stop(slot, " not all available for involved datasets. [method = \"",
-             method, "\", usePeak = ", usePeak, "]")
+        cli::cli_abort(
+            c("{.field {slot}} not all available for involved datasets: {.val {useDatasets}}",
+              "i" = "{.code method = '{method}'}; {.code usePeak = {usePeak}}")
+        )
     return(slot)
 }
 
-
 ###################### Pseudo-bulk Method helper ###############################
 
-setupPseudoRep2 <- function(groups, nRep = 3, seed = 1) {
+setupPseudoRep <- function(groups, nRep = 3, seed = 1) {
     # The output data.frame should be cell per row by variable per col
     set.seed(seed)
     psdRep <- c()
@@ -292,9 +341,9 @@ setupPseudoRep2 <- function(groups, nRep = 3, seed = 1) {
     ))
 }
 
-makePseudoBulk2 <- function(mat, replicateAnn, verbose = TRUE) {
+makePseudoBulk <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {
     # mat - Extracted and contatenated matrix. intersection of genes by
-    #       c(group1, group2) cells
+    #       c(groupTest, groupCtrl) cells
     # groups - list of groups
     # replicateAnn - data.frame of replicate annotation, with rownames as
     #                barcodes and columns as variables
@@ -303,37 +352,59 @@ makePseudoBulk2 <- function(mat, replicateAnn, verbose = TRUE) {
     for (gr in levels(replicateAnn$groups)) {
         subrep <- replicateAnn[replicateAnn$groups == gr,]
         splitLabel <- interaction(subrep, drop = TRUE)
-        if (length(levels(splitLabel)) < 2) {
-            stop("Too few replicate labels for condition \"", gr, "\". ",
-                 "Cannot not create pseudo-bulks. Please use ",
-                 "`method = \"wilcoxon\"` instead.")
+        if (nlevels(splitLabel) < 2) {
+            cli::cli_abort(
+                c("Too few replicates for condition {.val {gr}}. Cannot create pseudo-bulks.",
+                  "i" = "Please consider creating pseudo-replicates or using {.code method = 'wilcoxon'} instead.")
+            )
         }
     }
     splitLabel <- interaction(replicateAnn, drop = TRUE)
+
+    labelCounts <- table(splitLabel)
+    ignored <- names(labelCounts)[labelCounts < minCellPerRep]
+    keep <- names(labelCounts)[labelCounts >= minCellPerRep]
+    idx <- splitLabel %in% keep
+    splitLabel <- splitLabel[idx, drop = TRUE]
+    mat <- mat[, idx, drop = FALSE]
+    replicateAnn <- replicateAnn[idx, , drop = FALSE]
+    if (verbose) {
+        if (length(ignored) > 0) cli::cli_alert_warning("Ignoring replicates with too few cells: {.val {ignored}}")
+        cli::cli_alert_info("Replicate sizes:")
+        print(table(splitLabel))
+    }
     pseudoBulks <- colAggregateSums_sparse(mat, as.integer(splitLabel) - 1,
                                            nlevels(splitLabel))
     dimnames(pseudoBulks) <- list(rownames(mat), levels(splitLabel))
-    return(pseudoBulks)
+    pseudoBulks <- pseudoBulks[rowSums(pseudoBulks) > 0,]
+    return(list(pseudoBulks, replicateAnn))
 }
 
-.callDESeq22 <- function(pseudoBulks, groups,
-                         verbose = getOption("ligerVerbose")) {
+.callDESeq2 <- function(pseudoBulks, groups,
+                         verbose = getOption("ligerVerbose", TRUE)) {
     # DESeq2 workflow
-    if (isTRUE(verbose)) .log("Calling DESeq2 Wald test")
+    if (isTRUE(verbose)) cliID <- cli::cli_process_start("Calling DESeq2 Wald test")
+    ## NOTE: DESeq2 wishes that the contrast/control group is the first level
+    ## whereas we required it as the second in upstream input. So we need to
+    ## reverse it here.
+    groups <- stats::relevel(groups, ref = levels(groups)[2])
+    ## Now levels(groups)[1] becomes control and levels(groups)[2] becomes
+    ## the test group
     des <- DESeq2::DESeqDataSetFromMatrix(
         countData = pseudoBulks,
         colData = data.frame(groups = groups),
-        design = formula("~groups")
+        design = stats::formula("~groups")
     )
     des <- DESeq2::DESeq(des, test = "Wald", quiet = !verbose)
-    res <- DESeq2::results(des, contrast = c("groups", levels(groups)[1],
-                                             levels(groups)[2]))
-    res <- as.data.frame(res)
+    res <- DESeq2::results(des, contrast = c("groups", levels(groups)[2],
+                                             levels(groups)[1]))
+    res <- .DataFrame.as.data.frame(res)
     res$feature <- rownames(res)
     rownames(res) <- NULL
-    res$group <- levels(groups)[1]
+    res$group <- levels(groups)[2]
     res <- res[, c(7, 8, 2, 5, 6)]
     colnames(res) <- c("feature", "group", "logFC", "pval", "padj")
+    if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     return(res)
 }
 
@@ -344,11 +415,11 @@ makePseudoBulk2 <- function(mat, replicateAnn, verbose = TRUE) {
 # y: grouping label of columns of X
 # Rcpp source code located in src/wilcoxon.cpp
 wilcoxauc <- function(x, clusterVar) {
-    if (methods::is(x, 'dgTMatrix')) x <- methods::as(x, 'CsparseMatrix')
+    if (methods::is(x, 'dgTMatrix')) x <- methods::as(x, 'CsparseMatrix') # nocov start
     if (methods::is(x, 'TsparseMatrix')) x <- methods::as(x, 'CsparseMatrix')
     if (is.null(row.names(x))) {
         rownames(x) <- paste0('Feature', seq(nrow(x)))
-    }
+    } # nocov end
     if (!is.factor(clusterVar)) clusterVar <- factor(clusterVar)
     clusterVar <- droplevels(clusterVar)
     groupSize <- as.numeric(table(clusterVar))
@@ -453,7 +524,7 @@ computePval <- function(ustat, ties, N, n1n2) {
 #' @param pctInThresh,pctOutThresh Threshold on expression percentage. These
 #' mean that a feature will only pass the filter if it is expressed in more than
 #' \code{pctInThresh} percent of cells in the corresponding cluster. Similarly
-#' for \code{pctOutThresh}. Default \code{50} and \code{50}, respectively.
+#' for \code{pctOutThresh}. Default \code{50} percent for both.
 #' @param dedupBy When ranking by padj and logFC and a feature is ranked as top
 #' for multiple clusters, assign this feature as the marker of a cluster when
 #' it has the largest \code{"logFC"} in the cluster or has the lowest
@@ -479,7 +550,7 @@ plotMarkerHeatmap <- function(
         pctInThresh = 50,
         pctOutThresh = 50,
         dedupBy = c("logFC", "padj"),
-        groupBy = c("dataset", "leiden_cluster"),
+        groupBy = NULL,
         groupSize = 50,
         column_title = NULL,
         ...
@@ -490,6 +561,9 @@ plotMarkerHeatmap <- function(
     } else if (dedupBy == "padj") {
         result <- result[order(result[[dedupBy]], decreasing = FALSE), ]
     }
+    pctInThresh <- pctInThresh %||% 0
+    pctOutThresh <- pctOutThresh %||% 100
+    groupBy <- groupBy %||% c("dataset", object@uns$defaultCluster)
     result <- result[!duplicated(result$feature), ]
     result <- result %>% dplyr::filter(.data$logFC > lfcThresh,
                                        .data$padj < padjThresh,

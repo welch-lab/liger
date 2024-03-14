@@ -6,49 +6,66 @@
 \usage{
 optimizeSubset(
   object,
-  cellIdx,
+  clusterVar = NULL,
+  useClusters = NULL,
   lambda = NULL,
-  thresh = 1e-04,
-  max.iters = 100,
-  datasets.scale = NULL,
+  nIteration = 30,
+  cellIdx = NULL,
+  scaleDatasets = NULL,
   seed = 1,
   verbose = getOption("ligerVerbose"),
-  cell.subset = NULL,
-  cluster.subset = NULL
+  cell.subset = cellIdx,
+  cluster.subset = useClusters,
+  max.iters = nIteration,
+  datasets.scale = scaleDatasets,
+  thresh = NULL
 )
 }
 \arguments{
-\item{object}{\linkS4class{liger} object. Should call
-\code{\link{optimizeALS}} in advance.}
+\item{object}{\linkS4class{liger} object. Should have integrative
+factorization (e.g. \code{\link{runINMF}}) performed in advance.}
+
+\item{clusterVar, useClusters}{Together select the clusters to subset the
+object conveniently. \code{clusterVar} is the name of variable in
+\code{cellMeta(object)} and \code{useClusters} should be vector of names of
+clusters in the variable. \code{clusterVar} is by default the default
+cluster (See \code{\link{runCluster}}, or \code{\link{defaultCluster}} at
+"Cell metadata access"). Users can otherwise select cells explicitly with
+\code{cellIdx} for complex conditions. \code{useClusters} overrides
+\code{cellIdx}.}
+
+\item{lambda}{Numeric regularization parameter. By default \code{NULL}, this
+will use the lambda value used in the latest factorization.}
+
+\item{nIteration}{Maximum number of block coordinate descent iterations to
+perform. Default \code{30}.}
 
 \item{cellIdx}{Valid index vector that applies to the whole object. See
-\code{\link{subsetLiger}} for requirement.}
+\code{\link{subsetLiger}} for requirement. Default \code{NULL}.}
 
-\item{lambda}{Numeric regularization parameter. Default \code{5}.}
+\item{scaleDatasets}{Names of datasets to re-scale after subsetting.
+Default \code{NULL} does not re-scale.}
 
-\item{thresh}{Convergence threshold. Convergence occurs when
-\eqn{|obj_0-obj|/(mean(obj_0,obj)) < thresh}. Default \code{1e-4}.}
-
-\item{max.iters}{Maximum number of block coordinate descent iterations to
-perform. Default \code{100}.}
-
-\item{datasets.scale}{Names of datasets to rescale after subsetting.
-Default \code{NULL} does not rescale.}
-
-\item{seed}{Random seed to allow reproducible results. Default \code{1}.}
+\item{seed}{Random seed to allow reproducible results. Default \code{1}. Used
+by \code{\link{runINMF}} factorization.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
 
-\item{cell.subset, cluster.subset}{\bold{Deprecated}. Please use
-\code{cellIdx} to explicitly specify.}
+\item{cell.subset, cluster.subset, max.iters, datasets.scale}{These arguments
+are now replaced by others and will be removed in the future. Please see
+usage for replacement.}
+
+\item{thresh}{\bold{Deprecated}. New implementation of iNMF does not require
+a threshold for convergence detection. Setting a large enough
+\code{nIteration} will bring it to convergence.}
 }
 \value{
-Subset \code{object} with factorization matrices reset, including
+Subset \code{object} with factorization matrices optimized, including
 the \code{W} matrix in \linkS4class{liger} object, and \code{W} and \code{V}
 matrices in each \linkS4class{ligerDataset} object in the \code{datasets}
 slot. \code{scaleData} in the \linkS4class{ligerDataset} objects of
-datasets specified by \code{datasets.scale} will also be updated to reflect
+datasets specified by \code{scaleDatasets} will also be updated to reflect
 the subset.
 }
 \description{
@@ -59,8 +76,10 @@ the information in the existing factorization.
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
-# Only running a few iterations for fast examples
-pbmc <- optimizeALS(pbmc, k = 20, maxIter = 2)
-pbmc <- optimizeSubset(pbmc, cellIdx = sort(sample(ncol(pbmc), 200)),
-                       max.iters = 2)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    # Only running a few iterations for fast examples
+    pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
+    pbmc <- optimizeSubset(pbmc, cellIdx = sort(sample(ncol(pbmc), 200)),
+                           nIteration = 2)
+}
 }

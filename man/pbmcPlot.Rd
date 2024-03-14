@@ -16,10 +16,10 @@ pbmcPlot
 }
 \description{
 This data was generated from data \code{"pbmc"} with default
-parameter integration pipeline, with setting \code{k = 20, maxIter = 10}
-for \code{\link{optimizeALS}}. UMAP was generated with \code{minDist = 0.5}.
-Only the 2nd and 3rd factors, the normalized expression of the top 50
-variable genes, and the clustering label were kept for visualization example.
+parameter integration pipeline: normalize, selectGenes, scaleNotCenter,
+runINMF, runCluster, runUMAP. To minimize the object size distributed with
+the package, rawData and scaleData were removed. Genes are downsampled to
+the top 50 variable genes, for smaller normData and \eqn{W} matrix.
 }
 \references{
 Hyun Min Kang and et. al., Nature Biotechnology, 2018

@@ -13,7 +13,7 @@ readSubset(
   datasets.use = NULL,
   genes.use = NULL,
   rand.seed = 1,
-  verbose = getOption("ligerVerbose")
+  verbose = getOption("ligerVerbose", TRUE)
 )
 }
 \arguments{
@@ -43,7 +43,7 @@ Default \code{NULL} does not subset features.}
 \item{rand.seed}{Random seed for reproducibility. Default \code{1}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 }
 \value{
 Subset of \linkS4class{liger} \code{object}.

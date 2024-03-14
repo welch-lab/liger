@@ -7,7 +7,7 @@
 plotClusterGeneDot(
   object,
   features,
-  groupBy = "leiden_cluster",
+  groupBy = NULL,
   splitBy = NULL,
   featureScaleFunc = function(x) log2(10000 * x + 1),
   cellIdx = NULL,
@@ -21,14 +21,13 @@ plotClusterGeneDot(
 \arguments{
 \item{object}{A \linkS4class{liger} object}
 
-\item{features}{Character vector of gene names \code{object}. Alternatively,
-a data.frame where the first column is gene names and second column is
-grouping variable (e.g. \code{runWilcoxon} output, recommended to be row
-subset).}
+\item{features}{Use a character vector of gene names to make plain dot plot
+like a heatmap. Use a data.frame where the first column is gene names and
+second column is a grouping variable (e.g. subset \code{runMarkerDEG} output)}
 
 \item{groupBy}{The names of the columns in \code{cellMeta} slot storing
 categorical variables. Expression data would be aggregated basing on these,
-together with \code{splitBy}. Default \code{"leiden_cluster"}.}
+together with \code{splitBy}. Default uses default clusters.}
 
 \item{splitBy}{The names of the columns in \code{cellMeta} slot storing
 categorical variables. Dotplot panel splitting would be based on these.
@@ -84,7 +83,6 @@ column_split, column_title_gp, column_title, column_labels, column_names_gp,
 top_annotation}.
 }
 \examples{
-data("pbmcPlot", package = "rliger2")
 # Use character vector of genes
 features <- varFeatures(pbmcPlot)[1:10]
 plotClusterGeneDot(pbmcPlot, features = features)

@@ -17,7 +17,7 @@ createLiger(
   genesName = NULL,
   barcodesName = NULL,
   newH5 = TRUE,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...,
   remove.missing = removeMissing,
   format.type = formatType,
@@ -34,9 +34,10 @@ matrix, a \code{Seurat} object, a \code{SingleCellExperiment} object, an
 \code{AnnData} object, a \linkS4class{ligerDataset} object or a filename to
 an HDF5 file. See detail for HDF5 reading.}
 
-\item{modal}{Character vector for modality setting. Currently options of
-\code{"default"}, \code{"rna"}, \code{"atac"}, \code{"spatial"} and
-\code{"meth"} are supported.}
+\item{modal}{Character vector for modality setting. Use one string for all
+datasets, or the same number of strings as the number of datasets. Currently
+options of \code{"default"}, \code{"rna"}, \code{"atac"}, \code{"spatial"}
+and \code{"meth"} are supported.}
 
 \item{cellMeta}{data.frame of metadata at single-cell level. Default
 \code{NULL}.}
@@ -69,7 +70,7 @@ Default \code{TRUE}. If \code{FALSE}, data will be subset into memory and
 can be dangerous for large scale analysis.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{...}{Additional slot values that should be directly placed in object.}
 
@@ -78,6 +79,22 @@ can be dangerous for large scale analysis.}
 \description{
 This function allows creating \linkS4class{liger} object from
 multiple datasets of various forms (See \code{rawData}).
+}
+\examples{
+# Create from raw count matrices
+ctrl.raw <- rawData(pbmc, "ctrl")
+stim.raw <- rawData(pbmc, "stim")
+pbmc1 <- createLiger(list(ctrl = ctrl.raw, stim = stim.raw))
+
+# Create from H5 files
+h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
+print(h5Path)
+lig <- createLiger(list(ctrl = h5Path))
+
+# Create from other container object
+ctrl.seu <- SeuratObject::CreateSeuratObject(ctrl.raw)
+stim.seu <- SeuratObject::CreateSeuratObject(stim.raw)
+pbmc2 <- createLiger(list(ctrl = ctrl.seu, stim = stim.seu))
 }
 \seealso{
 \code{\link{createLigerDataset}}, \code{\link{createH5LigerDataset}}

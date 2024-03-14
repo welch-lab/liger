@@ -1,4 +1,4 @@
-Package: rliger2
+Package: rliger
 Version: 1.99.0
 Date: 2023-11-09
 Type: Package
@@ -31,21 +31,21 @@ Author: Joshua Welch [aut],
 Maintainer: Yichen Wang <wayichen@umich.edu>
 BugReports: https://github.com/welch-lab/liger/issues
 URL: https://github.com/welch-lab/liger
-License: GPL-3 | file LICENSE
+License: GPL-3
 biocViews:
 LazyData: true
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 VignetteBuilder: knitr
 Encoding: UTF-8
-LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppProgress
+LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 Depends:
-    Matrix,
     methods,
     stats,
     utils,
     R (>= 3.4)
 Imports:
     circlize,
+    cli,
     cowplot,
     ComplexHeatmap,
     dplyr,
@@ -55,6 +55,7 @@ Imports:
     leidenAlg (>= 1.1.1),
     lifecycle,
     magrittr,
+    Matrix,
     RANN,
     RColorBrewer,
     Rcpp,
@@ -67,30 +68,21 @@ Imports:
 Suggests:
     AnnotationDbi,
     DESeq2,
-    doParallel,
-    DoubletFinder,
+    DoubletFinder (>= 2.0.4),
     EnhancedVolcano,
     fgsea,
-    foreach,
     GenomicRanges,
     ggrepel,
     gprofiler2,
-    ica,
     IRanges,
-    irlba,
     knitr,
-    mclust,
     org.Hs.eg.db,
-    parallel,
     plotly,
     psych,
     RcppPlanc,
-    RcppML,
     reactome.db,
-    rgl,
-    rglwidget,
-    riverplot,
     rmarkdown,
+    sankey,
     scattermore (>= 0.7),
     Seurat,
     SeuratObject,
@@ -98,5 +90,5 @@ Suggests:
     SummarizedExperiment,
     testthat
 Remotes:
-    chris-mcginnis-ucsf/DoubletFinder
-
+    chris-mcginnis-ucsf/DoubletFinder,
+    welch-lab/RcppPlanc

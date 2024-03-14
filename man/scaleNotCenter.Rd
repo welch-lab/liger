@@ -17,14 +17,14 @@ scaleNotCenter(object, ...)
   object,
   features = NULL,
   chunk = 1000,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 
 \method{scaleNotCenter}{ligerMethDataset}(
   object,
   features = NULL,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 
@@ -32,7 +32,7 @@ scaleNotCenter(object, ...)
   object,
   useDatasets = NULL,
   features = varFeatures(object),
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   remove.missing = NULL,
   ...
 )
@@ -40,8 +40,8 @@ scaleNotCenter(object, ...)
 \method{scaleNotCenter}{Seurat}(
   object,
   assay = NULL,
-  layer = "ligerScaleData",
-  useLayer = "ligerNormData",
+  layer = "ligerNormData",
+  save = "ligerScaleData",
   datasetVar = "orig.ident",
   features = NULL,
   ...
@@ -65,7 +65,7 @@ features. "Seurat" method by default uses
 scaling is applied to any HDF5 based dataset. Default \code{1000}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{useDatasets}{A character vector of the names, a numeric or logical
 vector of the index of the datasets to be scaled but not centered. Default
@@ -78,13 +78,13 @@ ignored if specified.}
 \item{assay}{Name of assay to use. Default \code{NULL} uses current active
 assay.}
 
-\item{layer}{For Seurat>=4.9.9, the name of layer to store normalized data.
-Default \code{"ligerScaleData"}. For older Seurat, stored to
-\code{scale.data} slot.}
-
-\item{useLayer}{For Seurat>=4.9.9, the name of layer to retrieve normalized
+\item{layer}{For Seurat>=4.9.9, the name of layer to retrieve normalized
 data. Default \code{"ligerNormData"}. For older Seurat, always retrieve from
 \code{data} slot.}
+
+\item{save}{For Seurat>=4.9.9, the name of layer to store normalized data.
+Default \code{"ligerScaleData"}. For older Seurat, stored to
+\code{scale.data} slot.}
 
 \item{datasetVar}{Metadata variable name that stores the dataset source
 annotation. Default \code{"orig.ident"}.}

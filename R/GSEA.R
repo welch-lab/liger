@@ -16,7 +16,9 @@
 #' @return A list of matrices with GSEA analysis for each factor
 #' @export
 #' @examples
+#' \donttest{
 #' runGSEA(pbmcPlot)
+#' }
 runGSEA <- function(
         object,
         genesets = NULL,
@@ -29,23 +31,23 @@ runGSEA <- function(
         mat_v = useDatasets,
         custom_gene_sets = customGenesets
 ) {
-    if (!requireNamespace("org.Hs.eg.db", quietly = TRUE))
-        stop("Package \"org.Hs.eg.db\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "BiocManager::install('org.Hs.eg.db')",
-             call. = FALSE)
+    if (!requireNamespace("org.Hs.eg.db", quietly = TRUE)) # nocov start
+        cli::cli_abort(
+            "Package {.pkg org.Hs.eg.db} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('org.Hs.eg.db')}")
 
     if (!requireNamespace("reactome.db", quietly = TRUE))
-        stop("Package \"reactome.db\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "BiocManager::install('reactome.db')",
-             call. = FALSE)
+        cli::cli_abort(
+            "Package {.pkg reactome.db} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('reactome.db')}")
 
     if (!requireNamespace("fgsea", quietly = TRUE))
-        stop("Package \"fgsea\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "BiocManager::install('fgsea')",
-             call. = FALSE)
+        cli::cli_abort(
+            "Package {.pkg fgsea} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('fgsea')}") # nocov end
 
     .deprecateArgs(list(gene_sets = "genesets",
                         mat_w = "useW",
@@ -148,7 +150,9 @@ runGSEA <- function(
 #' res <- runMarkerDEG(pbmcPlot)
 #' # Setting `significant = FALSE` because it's hard for a gene list obtained
 #' # from small test dataset to represent real-life biology.
+#' \donttest{
 #' go <- runGOEnrich(res, group = 0, significant = FALSE)
+#' }
 runGOEnrich <- function(
         result,
         group = NULL,
@@ -159,15 +163,15 @@ runGOEnrich <- function(
         splitReg = FALSE,
         ...
 ) {
-    if (!requireNamespace("gprofiler2", quietly = TRUE))
-        stop("Package \"gprofiler2\" needed for this function to work. ",
-             "Please install it by command:\n",
-             "install.packages('gprofiler2')",
-             call. = FALSE)
-    if (is.null(group)) group <- unique(result$group)
+    if (!requireNamespace("gprofiler2", quietly = TRUE)) # nocov start
+        cli::cli_abort(
+            "Package {.pkg gprofiler2} is needed for this function to work.
+            Please install it by command:
+            {.code install.packages('gprofiler2')}") # nocov end
+
+    group <- group %||% unique(result$group)
     if (any(!group %in% result$group)) {
-        stop("Selected groups not available `result`: ",
-             paste(group[!group %in% result$group], collapse = ", "))
+        cli::cli_abort("Selected groups not available in {.code result$group}: {.val {group[!group %in% result$group]}}")
     }
     bg <- NULL
     domain_scope <- "annotated" # gprofiler2 default
@@ -179,16 +183,16 @@ runGOEnrich <- function(
         abs(result$logFC) > logFCThresh &
         result$padj < padjThresh
     filter[is.na(filter)] <- FALSE
-    result <- result[filter, ]
+    result <- result[filter, , drop = FALSE]
     resultUp <- result[result$logFC > 0,]
     if (isTRUE(splitReg)) resultDown <- result[result$logFC < 0,]
 
     ordered_query <- FALSE
     if (!is.null(orderBy)) {
         ordered_query <- TRUE
-        if (length(orderBy) > 1) stop("Only one `orderBy` metric allowed")
+        if (length(orderBy) > 1) cli::cli_abort("Only one {.code orderBy} metric allowed")
         if (!orderBy %in% c("logFC", "pval", "padj")) {
-            stop("`orderBy` should be one of 'logFC', 'pval' or 'padj'.")
+            cli::cli_abort("{.code orderBy} should be one of {.val logFC}, {.val pval} or {.val padj}.")
         }
         if (orderBy == "logFC") {
             resultUp <- resultUp[order(resultUp$logFC, decreasing = TRUE),]

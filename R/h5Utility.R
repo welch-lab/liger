@@ -56,8 +56,12 @@ H5Apply <- function(
     colptr <- h5file[[h5meta$indptrName]]
     rowind <- h5file[[h5meta$indicesName]]
     data <- h5file[[h5meta[[useData]]]]
-    if (isTRUE(verbose)) pb <- utils::txtProgressBar(0, numChunks, style = 3)
+    if (isTRUE(verbose))
+        cliID <- cli::cli_progress_bar(name = "HDF5 chunk processing", type = "iter",
+                                       total = numChunks, clear = FALSE)
+        # pb <- utils::txtProgressBar(0, numChunks, style = 3)
     for (i in seq(numChunks)) {
+        Sys.sleep(0.1)
         start <- (i - 1)*chunkSize + 1
         end <- if (i*chunkSize > ncol(object)) ncol(object) else i*chunkSize
         colptrStart <- start
@@ -78,15 +82,15 @@ H5Apply <- function(
         init <- do.call(FUN, c(list(chunk, nnzStart:nnzEnd,
                                     start:end, init),
                                fun.args))
-        if (isTRUE(verbose)) utils::setTxtProgressBar(pb, i)
+        # if (isTRUE(verbose)) utils::setTxtProgressBar(pb, i)
+        if (isTRUE(verbose)) cli::cli_progress_update(id = cliID, set = i)
     }
     # Break a new line otherwise next message comes right after the "%" sign.
     if (isTRUE(verbose)) cat("\n")
     init
 }
 
-#' Safely add new H5 Data to the HDF5 file in a ligerDataset object
-#' @noRd
+# Safely add new H5 Data to the HDF5 file in a ligerDataset object
 safeH5Create <- function(object,
                          dataPath,
                          dims,
@@ -101,9 +105,7 @@ safeH5Create <- function(object,
     # Check/Create H5Group ####
     # Inspect given `dataPath` b/c `hdf5r` does not allow creating dataset w/
     # "group" path(s)
-    if (length(dataPath) != 1 || !is.character(dataPath)) {
-        stop("`path` has to be a single character.")
-    }
+    dataPath <- .checkArgLen(dataPath, n = 1, class = "character")
     dataPath <- trimws(dataPath, whitespace = "/")
     dataPath <- strsplit(dataPath, "/")[[1]]
     if (length(dataPath) > 1) {
@@ -166,7 +168,7 @@ safeH5Create <- function(object,
 
 #' Restore links (to HDF5 files) for reloaded liger/ligerDataset object
 #' @description When loading the saved liger object with HDF5 data in a new R
-#' session, the links to HDF5 files would be corrupted. This functions enables
+#' session, the links to HDF5 files would be closed. This function enables
 #' the restoration of those links so that new analyses can be carried out.
 #' @param object \linkS4class{liger} or \linkS4class{ligerDataset} object.
 #' @param filePath Paths to HDF5 files. A single character path for
@@ -176,9 +178,16 @@ safeH5Create <- function(object,
 #' @return \code{object} with restored links.
 #' @rdname restoreH5Liger
 #' @export
+#' @examples
+#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
+#' lig <- createLiger(list(ctrl = h5Path))
+#' # Now it is actually an invalid object! which is equivalent to what users
+#' # will get with `saveRDS(lig, "object.rds"); lig <- readRDS("object.rds")``
+#' lig <- closeAllH5(lig)
+#' lig <- restoreH5Liger(lig)
 restoreH5Liger <- function(object, filePath = NULL) {
     if (!inherits(object, "liger") && !inherits(object, "ligerDataset")) {
-        stop("Please specify a liger or ligerDataset object to restore.")
+        cli::cli_abort("Please specify a {.cls liger} or {.cls ligerDataset} object to restore.")
     }
     if (inherits(object, "ligerDataset")) {
         if (isTRUE(methods::validObject(object, test = TRUE))) {
@@ -187,13 +196,12 @@ restoreH5Liger <- function(object, filePath = NULL) {
         h5.meta <- h5fileInfo(object)
         if (is.null(filePath)) filePath <- h5.meta$filename
         if (is.null(filePath)) {
-            stop("No filename identified")
+            cli::cli_abort("No filename identified.")
         }
         if (!file.exists(filePath)) {
-            stop("HDF5 file path does not exist:\n",
-                 filePath)
+            cli::cli_abort("HDF5 file path does not exist: {.file {filePath}}")
         }
-        .log("filename identified: ", filePath)
+        cliID <- cli::cli_process_start("Restoring HDF5 link from: {.file {filePath}}")
         h5file <- hdf5r::H5File$new(filePath, mode = "r+")
         h5.meta$filename <- h5file$filename
         pathChecks <- unlist(lapply(h5.meta[4:10], function(x) {
@@ -203,18 +211,23 @@ restoreH5Liger <- function(object, filePath = NULL) {
         if (any(!pathChecks)) {
             info.name <- names(pathChecks)[!pathChecks]
             paths <- unlist(h5.meta[info.name])
-            errorMsg <- paste(paste0('HDF5 info "', info.name,
-                                     '" not found at path: "', paths, '"'),
-                              collapse = "\n  ")
-            stop(errorMsg)
+            errMsg_cli <- paste0("HDF5 info {.val ", info.name, "} not found at path: {.val ", paths, "}")
+            lapply(errMsg_cli, cli::cli_alert_danger)
+            cli::cli_abort(
+                "Cannot restore this dataset."
+            )
+            # errorMsg <- paste(paste0('HDF5 info "', info.name,
+            #                          '" not found at path: "', paths, '"'),
+            #                   collapse = "\n  ")
+            # stop(errorMsg)
         }
         barcodes <- h5file[[h5.meta$barcodesName]]
         if (identical(barcodes, colnames(object))) {
-            stop("Barcodes in the HDF5 file do not match to object.")
+            cli::cli_abort("Barcodes in the HDF5 file do not match to object.")
         }
         features <- h5file[[h5.meta$genesName]]
         if (identical(features, rownames(object))) {
-            stop("Features in the HDF5 file do not match to object.")
+            cli::cli_abort("Features in the HDF5 file do not match to object.")
         }
         # All checks passed!
         h5.meta$H5File <- h5file
@@ -226,25 +239,27 @@ restoreH5Liger <- function(object, filePath = NULL) {
             scaleData(object, check = FALSE) <- h5file[[h5.meta$scaleData]]
         }
         methods::validObject(object)
+        cli::cli_process_done(id = cliID)
     } else {
         # Working for liger object
         if (!is.null(filePath)) {
             if (!is.list(filePath) || is.null(names(filePath)))
-                stop("`filePath` has to be a named list for liger object.")
+                cli::cli_abort(
+                    "{.var filePath} has to be named list of {.cls liger} objects."
+                )
         }
         for (d in names(object)) {
             if (isH5Liger(object, d)) {
                 path <- NULL
                 if (d %in% names(filePath)) {
-                    if (!hdf5r::is.h5file(filePath[[d]]))
-                        warning("Path for dataset \"", d,
-                                "\" is not an HDF5 file: ",
-                                filePath[[d]])
-                    else path <- filePath[[d]]
+                    if (!hdf5r::is.h5file(filePath[[d]])) {
+                        cli::cli_alert_danger("Path for dataset {.val {d}} is not an HDF5 file: {.file {filePath[[d]]}}")
+                    } else path <- filePath[[d]]
                 }
-                .log("Restoring dataset \"", d, "\"")
+                cliID <- cli::cli_process_start("Restoring dataset {.val {d}}")
                 datasets(object, check = FALSE)[[d]] <-
                     restoreH5Liger(dataset(object, d), filePath[[d]])
+                cli::cli_process_done(id = cliID)
             }
         }
     }
@@ -266,7 +281,7 @@ restoreOnlineLiger <- function(object, file.path = NULL) {
 
 .inspectH5Path <- function(path) {
     if (length(path) != 1 || !is.character(path)) {
-        stop("`path` has to be a single character.")
+        cli::cli_abort("{.var path} has to be a single {.cls character}.")
     }
     path <- trimws(path, whitespace = "/")
     path <- strsplit(path, "/")[[1]]
@@ -289,11 +304,6 @@ closeAllH5 <- function(object) {
     if (!isH5Liger(object)) return(object)
     for (dn in names(object)) {
         if (!isH5Liger(object, dn)) next
-        ld <- dataset(object, dn)
-        # if (!is.null(rawData(ld))) rawData(ld)$close()
-        # if (!is.null(normData(ld))) normData(ld)$close()
-        # if (!is.null(scaleData(ld))) scaleData(ld)$close()
-        # if (!is.null(scaleUnsharedData(ld))) scaleUnsharedData(ld)$close()
         h5f <- getH5File(object, dn)
         h5f$close_all()
     }
@@ -309,7 +319,7 @@ closeAllH5 <- function(object) {
                        nrow = dims[1], ncol = dims[2])
 }
 
-.H5DToH5Mat <- function(obj) {
-    RcppPlanc::H5Mat(filename = obj$get_filename(),
-                     dataPath = obj$get_obj_name())
-}
+# .H5DToH5Mat <- function(obj) {
+#     RcppPlanc::H5Mat(filename = obj$get_filename(),
+#                      dataPath = obj$get_obj_name())
+# }

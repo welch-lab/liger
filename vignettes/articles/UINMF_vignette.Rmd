@@ -28,7 +28,7 @@ The prepared RDS files can be directly loaded into the R environment. They are p
 Next, create your Liger object, submitting the datasets in list format. The unshared features should not be subsetted out, or submitted separately. Rather, they should be included in the matrix submitted for that dataset. For example,the scRNA-seq data is submitted in its entirety, the unshared features are not submitted separately. This helps ensure proper normalization.
 
 ```{r createliger}
-library(rliger2)
+library(rliger)
 library(Matrix)
 
 options(ligerDotSize = 0.5)

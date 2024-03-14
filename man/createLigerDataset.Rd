@@ -31,7 +31,11 @@ Given values will be directly placed at corresponding slots.}
 \description{
 Create in-memory ligerDataset object
 }
+\examples{
+ctrl.raw <- rawData(pbmc, "ctrl")
+ctrl.ld <- createLigerDataset(ctrl.raw)
+}
 \seealso{
 \linkS4class{ligerDataset}, \linkS4class{ligerATACDataset},
-\code{\link{createH5LigerDataset}}
+\linkS4class{ligerSpatialDataset}, \linkS4class{ligerMethDataset}
 }

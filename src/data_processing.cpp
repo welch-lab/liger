@@ -186,6 +186,18 @@ arma::sp_mat colAggregateSums_sparse(const arma::sp_mat& x,
     return out;
 }
 
+// // [[Rcpp::export()]]
+// arma::sp_mat colAggregateMeans_sparse(const arma::sp_mat& x,
+//                                       const arma::uvec& group,
+//                                       const arma::uword& ngroups,
+//                                       const arma::uvec& groupSizes) {
+//     arma::sp_mat out(x.n_rows, ngroups);
+//     for (arma::sp_mat::const_iterator it = x.begin(); it != x.end(); ++it) {
+//         out(it.row(), group(it.col())) += *it / groupSizes[group(it.col())];
+//     }
+//     return out;
+// }
+
 // [[Rcpp::export()]]
 Rcpp::NumericVector sample_cpp(const int x, const int size) {
     arma::uvec rand = arma::randperm<arma::uvec>(x);

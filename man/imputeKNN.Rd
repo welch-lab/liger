@@ -12,7 +12,7 @@ imputeKNN(
   weight = TRUE,
   norm = TRUE,
   scale = FALSE,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...,
   knn_k = nNeighbors
 )
@@ -41,7 +41,7 @@ reference.}
 Default \code{TRUE}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{...}{Optional arguments to be passed to \code{\link{normalize}} when
 \code{norm = TRUE}.}
@@ -62,8 +62,10 @@ Impute query features from a reference dataset using KNN.
 bmmc <- normalize(bmmc)
 bmmc <- selectGenes(bmmc, datasets.use = "rna")
 bmmc <- scaleNotCenter(bmmc)
-bmmc <- runINMF(bmmc, k = 20)
-bmmc <- quantileNorm(bmmc)
-bmmc <- normalizePeak(bmmc)
-bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    bmmc <- runINMF(bmmc, k = 20)
+    bmmc <- quantileNorm(bmmc)
+    bmmc <- normalizePeak(bmmc)
+    bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
+}
 }

@@ -19,7 +19,7 @@ Here we integrate the scATAC and scRNA reads from the dual-omics dataset SNARE-s
 ## Step 1: Load data
 
 ```{r}
-library(rliger2)
+library(rliger)
 
 rna <- readRDS("SNAREseq_data/SNAREseq_RNA.RDS")
 atac_shared <- readRDS("SNAREseq_data/SNAREseq_chromatin_accessibility_shared.RDS")

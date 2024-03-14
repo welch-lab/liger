@@ -11,13 +11,18 @@ removeMissing(
   minCells = NULL,
   minFeatures = NULL,
   useDatasets = NULL,
-  filenameSuffix = "removeMissing",
   newH5 = TRUE,
-  verbose = getOption("ligerVerbose"),
+  filenameSuffix = "removeMissing",
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 
-removeMissingObs(object, slot.use = NULL, use.cols = TRUE, verbose = TRUE)
+removeMissingObs(
+  object,
+  slot.use = NULL,
+  use.cols = TRUE,
+  verbose = getOption("ligerVerbose", TRUE)
+)
 }
 \arguments{
 \item{object}{\linkS4class{liger} object}
@@ -39,18 +44,21 @@ for each dataset. Default \code{NULL} only removes none expressing cells.}
 vector of the index of the datasets to be processed. Default
 \code{NULL} removes empty entries from all datasets.}
 
-\item{filenameSuffix}{When subsetting H5 based datasets to new H5 files, this
+\item{newH5}{Logical, whether to create a new H5 file on disk for each
+H5-based dataset on subset. Default \code{TRUE}}
+
+\item{filenameSuffix}{When subsetting H5-based datasets to new H5 files, this
 suffix will be added to all the filenames. Default \code{"removeMissing"}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{...}{Arguments passed to \code{\link{subsetLigerDataset}}}
 
 \item{slot.use}{\bold{Deprecated}. Always look at \code{rawData} slot of
 inner \linkS4class{ligerDataset} objects.}
 
-\item{use.col}{\bold{Deprecated}. Previously means "treating each column as
+\item{use.cols}{\bold{Deprecated}. Previously means "treating each column as
 a cell" when \code{TRUE}, now means \code{orient="cell"}.}
 }
 \value{
