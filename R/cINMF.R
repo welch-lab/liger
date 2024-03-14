@@ -515,8 +515,8 @@ inmf_objErr_i <- function(H, W, V, E, lambda) {
     return(obj)
 }
 
-factor_cluster_sel <- function(geneLoadings, nNeighbor = 3, minWeight = 0.6, k = 20,
-                               resolution = 0.2) {
+factor_cluster_sel <- function(geneLoadings, nNeighbor = 3, minWeight = 0.6,
+                               k = 20, resolution = 0.2) {
     graphList <- lapply(geneLoadings, function(w) {
         knn <- RANN::nn2(t(w), k = nNeighbor + 1)
         target <- as.integer(t(knn$nn.idx))

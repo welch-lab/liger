@@ -2,7 +2,6 @@
 % Please edit documentation in R/visualization.R
 \name{plotSankey}
 \alias{plotSankey}
-\alias{makeRiverplot}
 \title{Make Riverplot/Sankey diagram that shows label mapping across datasets}
 \usage{
 plotSankey(
@@ -19,8 +18,6 @@ plotSankey(
   colorValues = scPalette,
   mar = c(2, 2, 4, 2)
 )
-
-makeRiverplot(object, cluster1, cluster2)
 }
 \arguments{
 \item{object}{A \linkS4class{liger} object with all three clustering

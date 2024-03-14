@@ -9,9 +9,13 @@ reference:
   - readLiger
   - read10X
   - restoreH5Liger
-  - importVignetteData
   - as.ligerDataset
   - as.liger
+- title: "Example Data"
+- contents:
+  - importBMMC
+  - importCGE
+  - importPBMC
   - pbmc
   - pbmcPlot
   - bmmc
@@ -32,12 +36,11 @@ reference:
   - runINMF
   - runOnlineINMF
   - runUINMF
+  - runCINMF
   - optimizeNewData
   - optimizeNewK
   - optimizeNewLambda
   - optimizeSubset
-  - suggestK
-  - suggestLambda
 - title: "Downstream Analysis"
 - contents:
   - runUMAP
@@ -47,7 +50,6 @@ reference:
   - runMarkerDEG
   - runPairwiseDEG
   - runWilcoxon
-  - runPseudoBulkDEG
   - getFactorMarkers
   - runDoubletFinder
   - runGSEA
@@ -70,6 +72,9 @@ reference:
 - title: "Object Class"
 - contents:
   - ends_with("class")
+  - sub-liger
+  - sub-sub-liger
+  - sub-ligerDataset
   - rawPeak
   - coordinate
   - retrieveCellFeature
@@ -77,6 +82,7 @@ reference:
   - subsetLigerDataset
   - convertOldLiger
   - ligerToSeurat
+  - is.newLiger
 - title: "Misc"
 - contents:
   - H5Apply

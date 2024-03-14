@@ -1200,15 +1200,54 @@ plotSankey <- function(
     graphics::mtext(titles[3], side = 3, adj = 0.95, cex = titleCex, font = 2)
 }
 
-#' @rdname plotSankey
+#' [Deprecated] Generate a river (Sankey) plot
+#' @description
+#' Creates a riverplot to show how separate cluster assignments from two
+#' datasets map onto a joint clustering. The joint clustering is by default the
+#' object clustering, but an external one can also be passed in. Uses the
+#' riverplot package to construct riverplot object and then plot.
+#' @param object \code{liger} object. Should run quantileAlignSNF before calling.
+#' @param cluster1 Cluster assignments for dataset 1. Note that cluster names
+#' should be distinct across datasets.
+#' @param cluster2 Cluster assignments for dataset 2. Note that cluster names
+#' should be distinct across datasets.
+#' @param cluster_consensus Optional external consensus clustering (to use
+#' instead of object clusters)
+#' @param min.frac Minimum fraction of cluster for edge to be shown (default
+#' 0.05).
+#' @param min.cells Minumum number of cells for edge to be shown (default 10).
+#' @param river.yscale y-scale to pass to riverplot -- scales the edge with
+#' values by this factor, can be used to squeeze vertically (default 1).
+#' @param river.lty Line style to pass to riverplot (default 0).
+#' @param river.node_margin Node_margin to pass to riverplot -- how much
+#' vertical space to keep between the nodes (default 0.1).
+#' @param label.cex Size of text labels (default 1).
+#' @param label.col Color of text labels (defualt "black").
+#' @param lab.srt Angle of text labels (default 0).
+#' @param river.usr Coordinates at which to draw the plot in form (x0, x1, y0,
+#' y1).
+#' @param node.order Order of clusters in each set (list with three vectors of
+#' ordinal numbers). By default will try to automatically order them
+#' appropriately.
+#' @return \code{object} with refined cluster assignment updated in
+#' \code{"louvain_cluster"} variable in \code{cellMeta} slot. Can be fetched
+#' with \code{object$louvain_cluster}
+#' @name makeRiverplot-deprecated
+#' @seealso \code{\link{rliger-deprecated}}
+NULL
+
+#' @rdname rliger-deprecated
+#' @section \code{makeRiverplot}:
+#' For \code{makeRiverplot}, use \code{\link{plotSankey}} as the replacement.
 #' @export
-makeRiverplot <- function(object, cluster1, cluster2) {
+makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL,
+                          min.frac = 0.05, min.cells = 10, river.yscale = 1,
+                          river.lty = 0, river.node_margin = 0.1, label.cex = 1,
+                          label.col = "black", lab.srt = 0, river.usr = NULL,
+                          node.order = "auto") {
     lifecycle::deprecate_stop("1.99.0", "makeRiverplot()",
                               "plotSankey()")
 }
-
-
-
 
 
 #' Visualize a spatial dataset
