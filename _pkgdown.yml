@@ -122,8 +122,6 @@ navbar:
           href: articles/SNAREseq_walkthrough.html
         - text: "Integrating scRNAseq and DNA methylation"
           href: articles/rna_methylation.html
-        - text: "Parameter selection"
-          href: articles/Parameter_selection.html
     - text: "Usage"
       menu:
         - text: "Import data"
@@ -137,5 +135,10 @@ navbar:
     - text: "NEWS"
       href: news/index.html
   right:
+    - text: Welch Lab
+      href: https://welch-lab.github.io/
     - icon: fab fa-github fa-lg
       href: https://github.com/welch-lab/liger
+    - icon: fab fa-twitter fa-lg
+      href: https://twitter.com/LabWelch
+
