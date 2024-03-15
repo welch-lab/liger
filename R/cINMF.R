@@ -74,11 +74,13 @@
 #' Dylan Kotliar and et al., Identifying gene expression programs of cell-type
 #' identity and cellular activity with single-cell RNA-Seq, eLife, 2019
 #' @examples
+#' \donttest{
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
 #' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
 #'     pbmc <- runCINMF(pbmc)
+#' }
 #' }
 runCINMF <- function(
         object,

@@ -83,7 +83,7 @@ runUMAP <- function(
     if (isTRUE(verbose)) cli::cli_process_done()
     dimRed(object, dimredName) <- umap
     if (isTRUE(verbose))
-        cli::cli_alert_info("cellMeta variable {.field {dimredName}} is now set as default.")
+        cli::cli_alert_info("{.field DimRed} {.val {dimredName}} is now set as default.")
     return(object)
 }
 
@@ -186,7 +186,7 @@ runTSNE <- function(
     dimRed(object, dimredName) <- tsne
     object@uns$TSNE <- list(method = method)
     if (isTRUE(verbose))
-        cli::cli_alert_info("cellMeta variable {.field {dimredName}} is now set as default.")
+        cli::cli_alert_info("{.field DimRed} {.val {dimredName}} is now set as default.")
     return(object)
 }
 

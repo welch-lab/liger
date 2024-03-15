@@ -1587,3 +1587,291 @@ quantile_norm <- function( # nocov start
     if (identical(x, y)) return(x)
     else cli::cli_abort("Different features are used for each dataset.")
 }
+
+
+
+
+
+
+################################## EVALUATION ##################################
+
+#' Calculate agreement metric after integration
+#' @description
+#' This metric quantifies how much the factorization and alignment distorts the
+#' geometry of the original datasets. The greater the agreement, the less
+#' distortion of geometry there is. This is calculated by performing
+#' dimensionality reduction on the original and quantile aligned (or just
+#' factorized) datasets, and measuring similarity between the k nearest
+#' neighbors for each cell in original and aligned datasets. The Jaccard index
+#' is used to quantify similarity, and is the final metric averages across all
+#' cells.
+#'
+#' Note that for most datasets, the greater the chosen \code{nNeighbor}, the
+#' greater the agreement in general. Although agreement can theoretically
+#' approach 1, in practice it is usually no higher than 0.2-0.3.
+#' @param object \code{liger} object. Should call quantile_norm before calling.
+#' @param ndims Number of factors to produce in NMF. Default \code{40}.
+#' @param nNeighbors Number of nearest neighbors to use in calculating Jaccard
+#' index. Default \code{15}.
+#' @param useRaw Whether to evaluate just factorized \eqn{H} matrices instead of
+#' using quantile aligned \eqn{H.norm} matrix. Default \code{FALSE} uses
+#' aligned matrix.
+#' @param byDataset Whether to return agreement calculated for each dataset
+#' instead of the average for all datasets. Default \code{FALSE}.
+#' @param seed Random seed to allow reproducible results. Default \code{1}.
+#' @param k,rand.seed,by.dataset [Deprecated] See Usage for replacement.
+#' @param use.aligned [defunct] Use \code{useRaw} instead.
+#' @param dr.method [defunct] We no longer support other methods but just NMF.
+#' @return A numeric vector of agreement metric. A single value if
+#' \code{byDataset = FALSE} or each dataset a value otherwise.
+#' @export
+#' @examples
+#' pbmc <- pbmc %>%
+#'   normalize %>%
+#'   selectGenes %>%
+#'   scaleNotCenter %>%
+#'   runINMF %>%
+#'   quantileNorm
+#' calcAgreement(pbmc)
+calcAgreement <- function(
+        object,
+        ndims = 40,
+        nNeighbors = 15,
+        useRaw = FALSE,
+        byDataset = FALSE,
+        seed = 1,
+        # Deprecated
+        dr.method = NULL,
+        k = nNeighbors,
+        use.aligned = NULL,
+        rand.seed = seed,
+        by.dataset = byDataset
+) {
+    .deprecateArgs(
+        list(k = "nNeighbors", by.dataset = "byDataset", rand.seed = "seed"),
+        c("dr.method", "use.aligned")
+    )
+    if (isH5Liger(object)) {
+        cli::cli_abort(
+            c("x" = "HDF5 based liger object is not supported for now.",
+              "i" = "Please create another object with {.field scaleData} loaded into memory and use that as input.",
+              "i" = "e.g. {.code memCopy <- subsetLiger(object, useSlot = 'scaleData', newH5 = FALSE)}")
+        )
+    }
+    if (!requireNamespace("RcppPlanc", quietly = TRUE))
+        cli::cli_abort(
+            "Package {.pkg RcppPlanc} is needed for this function to work.
+            Please install it by command:
+            {.code devtools::install_github('RcppPlanc')}")
+
+
+    scaled <- getMatrix(object, "scaleData", returnList = TRUE)
+    scaleDataIsNull <- sapply(scaled, is.null)
+    if (any(scaleDataIsNull)) {
+        cli::cli_abort("No {.field scaleData} available for dataset: {.val {names(scaleDataIsNull)[scaleDataIsNull]}}.")
+    }
+    if (isTRUE(useRaw)) {
+        H <- getMatrix(object, "H", returnList = TRUE)
+        HIsNull <- sapply(H, is.null)
+        if (any(HIsNull)) {
+            cli::cli_abort("No {.field H} available for dataset: {.val {names(HIsNull)[HIsNull]}}.")
+        }
+        H <- Reduce(cbind, H)
+        H <- t(H)
+    } else {
+        H <- getMatrix(object, "H.norm", returnList = FALSE)
+        if (is.null(H)) {
+            cli::cli_abort("No {.field H.norm} available.")
+        }
+    }
+    set.seed(seed)
+    dr <- lapply(scaled, RcppPlanc::nmf, k = ndims) %>%
+        lapply(`[[`, i = "H")
+    nCells <- lengths(object)
+    jaccard_inds <- c()
+    distorts <- c()
+
+    for (i in seq_along(object)) {
+        datasetName <- names(object)[i]
+        idx <- object$dataset %in% datasetName
+        Hsub <- H[idx, , drop = FALSE]
+        knn1 <- RANN::nn2(dr[[i]], k = nNeighbors + 1)$nn.idx[,2:(nNeighbors + 1)]
+        knn2 <- RANN::nn2(Hsub, k = nNeighbors + 1)$nn.idx[,2:(nNeighbors + 1)]
+        jaccard_inds_i <- sapply(seq_len(nCells[i]), function(i) {
+            intersect <- intersect(knn1[i, ], knn2[i, ])
+            union <- union(knn1[i, ], knn2[i, ])
+            length(intersect) / length(union)
+        })
+        jaccard_inds_i <- jaccard_inds_i[is.finite(jaccard_inds_i)]
+        jaccard_inds <- c(jaccard_inds, jaccard_inds_i)
+        distorts <- c(distorts, mean(jaccard_inds_i))
+    }
+    if (isTRUE(byDataset)) {
+        return(distorts)
+    }
+    return(mean(jaccard_inds))
+}
+
+#' Calculate alignment metric after integration
+#' @description
+#' This metric quantifies how well-aligned two or more datasets are. We randomly
+#' downsample all datasets to have as many cells as the smallest one. We
+#' construct a nearest-neighbor graph and calculate for each cell how many of
+#' its neighbors are from the same dataset. We average across all cells and
+#' compare to the expected value for perfectly mixed datasets, and scale the
+#' value from 0 to 1. Note that in practice, alignment can be greater than 1
+#' occasionally.
+#' @details
+#' \eqn{\bar{x}} is the average number of neighbors belonging to any cells' same
+#' dataset, \eqn{N} is the number of datasets, \eqn{k} is the number of
+#' neighbors in the KNN graph.
+#' \deqn{1 - \frac{\bar{x} - \frac{k}{N}}{k - \frac{k}{N}}}
+#'
+#' The selection on cells to be measured can be done in various way and
+#' represent different scenarios:
+#' \enumerate{
+#' \item{By default, all cells are considered and the alignment across all
+#' datasets will be calculated.}
+#' \item{Select \code{clustersUse} from \code{clusterVar} to use cells from the
+#' clusters of interests. This measures the alignment across all covered
+#' datasets within the specified clusters.}
+#' \item{Only Specify \code{cellIdx} for flexible selection. This measures the
+#' alignment across all covered datasets within the specified cells. A none-NULL
+#' \code{cellIdx} privileges over \code{clustersUse}.}
+#' \item{Specify \code{cellIdx} and \code{cellComp} at the same time, so that
+#' the original dataset source will be ignored and cells specified by each
+#' argument will be regarded as from each a dataset. This measures the alignment
+#' between cells specified by the two arguments. \code{cellComp} can contain
+#' cells already specified in \code{cellIdx}.}
+#' }
+#' @param object A \linkS4class{liger} object, with \code{\link{quantileNorm}}
+#' already run.
+#' @param clustersUse The clusters to consider for calculating the alignment.
+#' Should be a vector of existing levels in \code{clusterVar}. Default
+#' \code{NULL}. See Details.
+#' @param clusterVar The name of one variable in \code{cellMeta(object)}.
+#' Default \code{NULL} uses default clusters.
+#' @param nNeighbors Number of neighbors to use in calculating alignment.
+#' Default \code{NULL} uses code{floor(0.01 * ncol(object))}, with a lower bound
+#' of 10 in all cases except where the total number of sampled cells is less
+#' than 10.
+#' @param cellIdx,cellComp Character, logical or numeric index that can
+#' subscribe cells. Default \code{NULL}. See Details.
+#' @param resultBy Select from \code{"all"}, \code{"dataset"} or \code{"cell"}.
+#' On which level should the mean alignment be calculated. Default \code{"all"}.
+#' @param seed Random seed to allow reproducible results. Default \code{1}.
+#' @param k,rand.seed,cells.use,cells.comp,clusters.use [Deprecated] Please
+#' see Usage for replacement.
+#' @param by.cell,by.dataset [Defunct] Use \code{resultBy} instead.
+#' @return The alignment metric.
+#' @export
+#' @examples
+#' pbmc <- pbmc %>%
+#'   normalize %>%
+#'   selectGenes %>%
+#'   scaleNotCenter %>%
+#'   runINMF %>%
+#'   quantileNorm
+#' calcAlignment(pbmc)
+calcAlignment <- function(
+        object,
+        clustersUse = NULL,
+        clusterVar = NULL,
+        nNeighbors = NULL,
+        cellIdx = NULL,
+        cellComp = NULL,
+        resultBy = c("all", "dataset", "cell"),
+        seed = 1,
+        # Deprecated
+        k = nNeighbors,
+        rand.seed = seed,
+        cells.use = cellIdx,
+        cells.comp = cellComp,
+        clusters.use = clustersUse,
+        by.cell = NULL,
+        by.dataset = NULL
+) {
+    .deprecateArgs(
+        list(rand.seed = "seed", cells.use = "cellIdx", cells.comp = "cellComp",
+             clusters.use = "clustersUse"),
+        c("by.cell", "by.dataset")
+    )
+    resultBy <- match.arg(resultBy)
+    hnorm <- getMatrix(object, 'H.norm')
+    if (is.null(hnorm)) {
+        cli::cli_abort(
+            c("x" = "Aligned cell factor loading {.field H.norm} not available.",
+              "i" = "Please run {.fn quantileNorm} first.")
+        )
+    }
+    if (is.null(cellIdx) && is.null(clustersUse)) {
+        cellIdx <- seq_len(ncol(object))
+        datasetVar <- droplevels(object$dataset)
+    } else if (!is.null(cellIdx)) {
+        cellIdx <- .idxCheck(object, cellIdx, "cell")
+        if (!is.null(cellComp)) {
+            cellComp <- .idxCheck(object, cellComp, "cell")
+            cellIdx <- c(cellIdx, cellComp)
+            datasetVar <- factor(rep.int(c("cellIdx", "cellComp"), c(length(cellIdx), length(cellComp))))
+            cli::cli_alert_info("Using designated sets {.var cellIdx} and {.var cellComp} as subsets to compare.")
+        } else {
+            datasetVar <- droplevels(object$dataset[cellIdx])
+        }
+    } else {
+        clusterVar <- clusterVar %||% object@uns$defaultCluster
+        clusters <- .fetchCellMetaVar(object, clusterVar, checkCategorical = TRUE)
+        notFound <- clustersUse[!clustersUse %in% clusters]
+        if (length(notFound) > 0) {
+            cli::cli_abort(
+                c("x" = "{length(notFound)} cluster{?s} not found in {.val {clusterVar}}: {.val {notFound}}.",
+                  "i" = "Available clusters: {.val {levels(droplevels(clusters))}}")
+            )
+        }
+        cellIdx <- which(clusters %in% clustersUse)
+        datasetVar <- droplevels(object$dataset[cellIdx])
+    }
+    if (length(cellIdx) == 0) cli::cli_abort("No cell is selected.")
+    if (nlevels(datasetVar) == 1) {
+        cli::cli_alert_warning("Alignment null for single dataset.")
+    }
+    set.seed(seed)
+    minCells <- min(table(datasetVar))
+    sampledCells <- lapply(split(cellIdx, datasetVar), sample, size = minCells)
+    nSampled <- nlevels(datasetVar)*minCells
+    maxNNeighbors <- nSampled - 1
+    if (is.null(nNeighbors)) {
+        nNeighbors <- min(max(floor(0.01 * length(cellIdx)), 10), maxNNeighbors)
+    } else if (nNeighbors > maxNNeighbors) {
+        cli::cli_abort("Please select {.var nNeighbors} <= {maxNNeighbors}.")
+    }
+    # RANN::nn2 always consider the query itself as the nearest nearest neighbor
+    # So we have to find one more neighbor than we need and remove the first one
+    knn <- RANN::nn2(
+        hnorm[unlist(sampledCells), , drop = FALSE],
+        k = nNeighbors + 1
+    )
+    knnIdx <- knn$nn.idx[, -1]
+    kOverN <- nNeighbors/nlevels(datasetVar)
+    nSameDataset <- sapply(seq_len(nSampled), function(i) {
+        sum(datasetVar[knnIdx[i, ]] == datasetVar[i])
+    })
+    alignmentPerCell <- sapply(seq_len(nSampled), function(i) {
+        1 - (nSameDataset[i] - kOverN)/(nNeighbors - kOverN)
+    })
+
+    if (resultBy == "all") {
+        alignment <- mean(alignmentPerCell)
+    } else if (resultBy == "dataset") {
+        sampledDatasetVar <- rep(levels(datasetVar), each = minCells)
+        alignment <- sapply(
+            split(nSameDataset, sampledDatasetVar),
+            function(x) 1 - (mean(x) - kOverN)/(nNeighbors - kOverN)
+        )
+    } else {
+        alignment <- stats::setNames(
+            alignmentPerCell,
+            colnames(object)[unlist(sampledCells)]
+        )
+    }
+    return(alignment)
+}

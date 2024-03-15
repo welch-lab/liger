@@ -84,7 +84,7 @@ is.newLiger <- function(object) {
 #' c(pbmcPlot, pbmcPlot2)
 #'
 #' library(ggplot2)
-#' ggplot(pbmcPlot, aes(x = UMAP.1, y = UMAP.2)) + geom_point()
+#' ggplot(pbmcPlot, aes(x = UMAP_1, y = UMAP_2)) + geom_point()
 setMethod(
     f = "show",
     signature(object = "liger"),
@@ -100,6 +100,8 @@ setMethod(
         cat(.collapseLongNames(colnames(cellMeta(object))), "\n")
         cat(paste0("varFeatures(", length(varFeatures(object)), "): "))
         cat(.collapseLongNames(varFeatures(object)), "\n")
+        cat(paste0("dimReds(", length(object@dimReds), "): "))
+        cat(.collapseLongNames(names(object@dimReds)), "\n")
         invisible(x = NULL)
     }
 )
@@ -350,11 +352,21 @@ setReplaceMethod("dataset", signature(x = "liger", dataset = "character",
                      x@cellMeta <- cm
                      # x@W is genes x k, no need to worry
                      if (!is.null(x@H.norm)) {
-                         cli::cli_alert_info("Finning in NAs to H.norm matrix")
+                         cli::cli_alert_info("Filling in NAs to {.field H.norm} matrix")
                          H.normNew <- matrix(
                              NA, ncol(value), ncol(x@H.norm),
                              dimnames = list(colnames(value), NULL))
                          x@H.norm <- rbind(x@H.norm, H.normNew)
+                     }
+                     if (length(x@dimReds) != 0) {
+                         cli::cli_alert_info("Filling in NAs to {.field dimReds}")
+                         for (dr in names(x@dimReds)) {
+                             x@dimReds[[dr]] <- rbind(
+                                 x@dimReds[[dr]],
+                                 matrix(NA, ncol(value), ncol(x@dimReds[[dr]]),
+                                        dimnames = list(colnames(value), NULL))
+                             )
+                         }
                      }
                      methods::validObject(x)
                      if (qc) x <- runGeneralQC(x, useDatasets = dataset,
@@ -404,6 +416,9 @@ setReplaceMethod(
             x@cellMeta <- x@cellMeta[!idxToRemove, , drop = FALSE]
             x@H.norm <- x@H.norm[!idxToRemove, , drop = FALSE]
             x@cellMeta$dataset <- droplevels(x@cellMeta$dataset)
+            for (i in seq_along(x@dimReds)) {
+                x@dimReds[[i]] <- x@dimReds[[i]][!idxToRemove, , drop = FALSE]
+            }
         }
         x
     }
@@ -1114,30 +1129,26 @@ setReplaceMethod(
 #' @rdname liger-class
 setMethod(
     "dimRed",
-    signature = c(x = "liger", name = "missing", useDatasets = "ANY"),
-    function(x, name = NULL, useDatasets = NULL, ...) {
-        # No name given, retrieve default
-        useDatasets <- .checkUseDatasets(x, useDatasets)
+    signature = c(x = "liger", name = "missing_OR_NULL"),
+    function(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...) {
         name <- x@uns$defaultDimRed
         dimred <- NULL
         if (is.null(name)) {
-            for (i in seq_along(cellMeta(x))) {
-                if (!is.null(dim(cellMeta(x)[[i]]))) {
-                    cli::cli_alert_warning(
-                        "No default dimRed recorded. Returning the first matrix alike in {.code cellMeta(object)}.")
-                    dimred <- cellMeta(x)[[i]]
-                    break
-                }
-            }
-            if (is.null(dimred)) {
-                cli::cli_abort("No possible dimRed can be found in this {.cls liger} object.")
+            if (length(x@dimReds) > 0) {
+                cli::cli_alert_warning(
+                    "No default {.field dimRed} recorded. Returning the first available."
+                )
+                dimred <- dimRed(x, name = 1, useDatasets = useDatasets,
+                                 cellIdx = cellIdx, ...)
+            } else {
+                cli::cli_abort(
+                    "No {.field dimRed} available in this {.cls liger} object."
+                )
             }
         } else {
-            dimred <- cellMeta(x, name, x$dataset %in% useDatasets)
+            dimred <- dimRed(x, name = name, useDatasets = useDatasets,
+                             cellIdx = cellIdx, ...)
         }
-        dimred <- as.matrix(dimred)
-        rownames(dimred) <- colnames(x)[x$dataset %in% useDatasets]
-        colnames(dimred) <- paste0(name, "_", seq_len(ncol(dimred)))
         return(dimred)
     }
 )
@@ -1146,18 +1157,36 @@ setMethod(
 #' @rdname liger-class
 setMethod(
     "dimRed",
-    signature = c(x = "liger", name = "character", useDatasets = "ANY"),
-    function(x, name, useDatasets = NULL, ...) {
-        # No name given, retrieve default
-        useDatasets <- .checkUseDatasets(x, useDatasets)
-        dimred <- cellMeta(x, name, x$dataset %in% useDatasets)
-        if (is.null(dim(dimred))) {
-            cli::cli_abort("Retrieved data for {.val {name}} is not a matrix.")
+    signature = c(x = "liger", name = "index"),
+    function(x, name, useDatasets = NULL, cellIdx = NULL, ...) {
+        if (is.null(useDatasets) && is.null(cellIdx)) {
+            cellIdx <- seq_len(ncol(x))
+        } else if (!is.null(cellIdx)) {
+            cellIdx <- .idxCheck(x, cellIdx, "cell")
+        } else if (!is.null(useDatasets)) {
+            useDatasets <- .checkUseDatasets(x, useDatasets)
+            cellIdx <- which(x$dataset %in% useDatasets)
         }
-        dimred <- as.matrix(dimred)
-        rownames(dimred) <- colnames(x)[x$dataset %in% useDatasets]
+
+        name <- .findDimRedName(x, name, stopOnNull = TRUE)
+        dimred <- x@dimReds[[name]]
+        dimred <- dimred[cellIdx, , drop = FALSE]
+        rownames(dimred) <- colnames(x)[cellIdx]
         colnames(dimred) <- paste0(name, "_", seq_len(ncol(dimred)))
         return(dimred)
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "dimRed",
+    signature(x = "liger", name = "index", value = "NULL"),
+    function(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ..., value = NULL) {
+        name <- .findDimRedName(x, name, stopOnNull = TRUE, returnFirst = FALSE)
+        x@dimReds[[name]] <- NULL
+        if (name %in% x@uns$defaultDimRed) x@uns$defaultDimRed <- NULL
+        return(x)
     }
 )
 
@@ -1169,17 +1198,61 @@ setMethod(
 setReplaceMethod(
     "dimRed",
     signature(x = "liger", name = "character", value = "matrixLike"),
-    function(x, name = NULL, useDatasets = NULL, asDefault = NULL, ..., value) {
-        useDatasets <- .checkUseDatasets(x, useDatasets)
-        cellIdx <- x$dataset %in% useDatasets
+    function(x, name = NULL, useDatasets = NULL, cellIdx = NULL, asDefault = NULL, inplace = FALSE, ..., value) {
+        if (is.null(useDatasets) && is.null(cellIdx)) {
+            cellIdx <- seq_len(ncol(x))
+        } else if (!is.null(cellIdx)) {
+            cellIdx <- .idxCheck(x, cellIdx, "cell")
+        } else if (!is.null(useDatasets)) {
+            useDatasets <- .checkUseDatasets(x, useDatasets)
+            cellIdx <- which(x$dataset %in% useDatasets)
+        }
+
+        if (!name %in% names(x@dimReds) || isFALSE(inplace)) {
+            # Totally new thing or just replace
+            init <- matrix(
+                data = NA,
+                nrow = ncol(x), ncol = ncol(value),
+                dimnames = list(
+                    colnames(x),
+                    paste0(name, "_", seq_len(ncol(value)))
+                )
+            )
+        } else {
+            # Partial insertion
+            init <- dimRed(x, name = name)
+            if (ncol(init) != ncol(value)) {
+                cli::cli_abort(
+                    "Cannot partially insert {ncol(value)} columns to {ncol(init)} columns inplace, at {.field dimReds}: {.val {name}}"
+                )
+            }
+        }
+
         value <- as.matrix(value)
+        if (nrow(value) != length(cellIdx)) {
+            cli::cli_abort(
+                "{.code nrow(value)} does not match with the number of cells selected."
+            )
+        }
+        if (is.null(rownames(value))) {
+            cli::cli_alert_warning(
+                "No rownames detected. Assume cells match to the same order as in the object."
+            )
+        } else {
+            if (!all(endsWith(colnames(x)[cellIdx], rownames(value)))) {
+                cli::cli_abort(
+                    "Cell identifiers in {.var value} do not match to those in the object"
+                )
+            }
+        }
+        rownames(value) <- colnames(x)[cellIdx]
+        colnames(value) <- paste0(name, "_", seq_len(ncol(value)))
+        init[rownames(value), ] <- value
+        x@dimReds[[name]] <- init
         if (is.null(asDefault)) {
             if (!is.null(x@uns$defaultDimRed)) asDefault <- FALSE
             else asDefault <- TRUE
         }
-        colnames(value) <- seq_len(ncol(value))
-        rownames(value) <- colnames(x)[cellIdx]
-        cellMeta(x, name, cellIdx) <- value
         if (isTRUE(asDefault)) defaultDimRed(x) <- name
         return(x)
     }
@@ -1190,10 +1263,10 @@ setReplaceMethod(
 setMethod(
     "defaultDimRed",
     signature(x = "liger", useDatasets = "ANY"),
-    function(x, useDatasets = NULL) {
+    function(x, useDatasets = NULL, cellIdx = cellIdx) {
         name <- x@uns$defaultDimRed
         if (is.null(name)) return(NULL)
-        else dimRed(x, name = name, useDatasets = useDatasets)
+        else dimRed(x, name = name, useDatasets = useDatasets, cellIdx = cellIdx)
     }
 )
 
@@ -1201,33 +1274,13 @@ setMethod(
 #' @rdname liger-class
 setReplaceMethod(
     "defaultDimRed",
-    signature(x = "liger", name = "missing", value = "character"),
-    function(x, name = NULL, useDatasets = NULL, value) {
-        value <- value[1]
-        dimred <- cellMeta(x, value)
-        if (is.null(dim(dimred))) {
-            cli::cli_abort("Specified variable is not a matrix alike.")
+    signature(x = "liger", value = "character"),
+    function(x, value) {
+        if (length(value) != 1) {
+            cli::cli_abort("Can only set one {.field dimRed} as default.")
         }
-        if (ncol(dimred) == 0) {
-            cli::cli_abort("Cannot set unexisting variable as default dimRed.")
-        }
+        value <- .findDimRedName(x, value, stopOnNull = TRUE)
         x@uns$defaultDimRed <- value
-        return(x)
-    }
-)
-
-#' @export
-#' @rdname liger-class
-setReplaceMethod(
-    "defaultDimRed",
-    signature(x = "liger", name = "character", value = "matrixLike"),
-    function(x, name, useDatasets = NULL, value) {
-        useDatasets <- .checkUseDatasets(x, useDatasets)
-        cellIdx <- x$dataset %in% useDatasets
-        colnames(value) <- seq_len(ncol(value))
-        rownames(value) <- colnames(x)[cellIdx]
-        cellMeta(x, name, cellIdx) <- value
-        x@uns$defaultDimRed <- name
         return(x)
     }
 )
@@ -1306,6 +1359,8 @@ setReplaceMethod(
 fortify.liger <- function(model, data, ...) {
     df <- cellMeta(model, as.data.frame = TRUE)
     if (!is.null(model@H.norm)) df <- cbind(df, model@H.norm)
+    drs <- Reduce(cbind, model@dimReds)
+    if (!is.null(drs)) df <- cbind(df, drs)
     df
 }
 

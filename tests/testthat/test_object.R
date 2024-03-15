@@ -163,7 +163,7 @@ test_that("liger S3/S4 methods", {
     expect_is(cellMeta(pbmc, "dataset"), "factor")
     expect_message(cellMeta(pbmc, "UMAP.1"),
                    "Specified variables from cellMeta not found")
-    expect_is(cellMeta(pbmc, "UMAP.1", cellIdx = 1:500, as.data.frame = TRUE),
+    expect_is(cellMeta(pbmc, "nUMI", cellIdx = 1:500, as.data.frame = TRUE),
               "numeric")
     expect_is(pbmc[["nUMI"]], "numeric")
     expect_is(pbmc$mito, "numeric")
@@ -276,17 +276,17 @@ test_that("ligerDataset methods", {
 
     # ligerATACDataset related
     expect_error(rawPeak(pbmc, "stim"),
-                 "Specified dataset is not of ")
+                 "unable to find an inherited")
     expect_error(rawPeak(pbmc, "stim") <- rawData(ctrl),
-                 "Specified dataset is not of")
+                 "unable to find an inherited")
     ctrl <- as.ligerDataset(ctrl, modal = "atac")
     pbmc@datasets$ctrl <- ctrl
     rawPeak(pbmc, "ctrl") <- rawData(ctrl)
 
     expect_error(normPeak(pbmc, "stim"),
-                 "Specified dataset is not of")
+                 "unable to find an inherited")
     expect_error(normPeak(pbmc, "stim") <- normData(stim),
-                 "Specified dataset is not of")
+                 "unable to find an inherited")
     normPeak(pbmc, "ctrl") <- normData(ctrl)
     expect_true(identical(normPeak(pbmc, "ctrl"), normData(ctrl, "ctrl")))
     expect_true(validObject(ctrl))
@@ -299,9 +299,9 @@ test_that("ligerDataset methods", {
     rownames(coords) <- colnames(ctrl)
     colnames(coords) <- c("x", "y")
     expect_error(coordinate(pbmc, "stim"),
-                 "Specified dataset is not of")
+                 "unable to find an inherited")
     expect_error(coordinate(pbmc, "stim") <- coords,
-                 "Specified dataset is not of")
+                 "unable to find an inherited")
     coordinate(pbmc, "ctrl") <- coords
     expect_true(identical(coordinate(pbmc, "ctrl"), coords))
     expect_true(validObject(ctrl))

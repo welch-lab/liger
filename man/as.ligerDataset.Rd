@@ -7,7 +7,7 @@
 \alias{as.ligerDataset.Seurat}
 \alias{as.ligerDataset.SingleCellExperiment}
 \alias{as.ligerDataset}
-\title{Converting other classes of data to a as.ligerDataset object}
+\title{Converting other classes of data to a ligerDataset object}
 \usage{
 \method{as.ligerDataset}{ligerDataset}(
   object,

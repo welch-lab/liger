@@ -6,7 +6,7 @@
 #' tested. Default \code{NULL} uses all the gene sets from the Reactome.
 #' @param useW Logical, whether to use the shared factor loadings (\eqn{W}).
 #' Default \code{TRUE}.
-#' @param useDatasets A character vector of the names, a numeric or logical
+#' @param useV A character vector of the names, a numeric or logical
 #' vector of the index of the datasets where the \eqn{V} matrices will be
 #' included for analysis. Default \code{NULL} uses all datasets.
 #' @param customGenesets A named list of character vectors of entrez gene ids.
@@ -23,12 +23,12 @@ runGSEA <- function(
         object,
         genesets = NULL,
         useW = TRUE,
-        useDatasets = NULL,
+        useV = NULL,
         customGenesets = NULL,
         # Deprecated coding style
         gene_sets = genesets,
         mat_w = useW,
-        mat_v = useDatasets,
+        mat_v = useV,
         custom_gene_sets = customGenesets
 ) {
     if (!requireNamespace("org.Hs.eg.db", quietly = TRUE)) # nocov start
@@ -51,13 +51,13 @@ runGSEA <- function(
 
     .deprecateArgs(list(gene_sets = "genesets",
                         mat_w = "useW",
-                        mat_v = "useDatasets",
+                        mat_v = "useV",
                         custom_gene_sets = "customGenesets"))
-    useDatasets <- .checkUseDatasets(object, useDatasets = useDatasets)
-    .checkValidFactorResult(object, useDatasets)
+    useV <- .checkUseDatasets(object, useDatasets = useV)
+    .checkValidFactorResult(object, useV)
 
     # list of V matrices: gene x k
-    Vs <- getMatrix(object, "V", dataset = useDatasets, returnList = TRUE)
+    Vs <- getMatrix(object, "V", dataset = useV, returnList = TRUE)
     # Get gene ranks in each factor
     geneLoading <- Reduce("+", Vs)
     if (isTRUE(useW)) geneLoading <- geneLoading + getMatrix(object, "W")

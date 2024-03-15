@@ -8,7 +8,6 @@ reference:
   - starts_with("create")
   - readLiger
   - read10X
-  - restoreH5Liger
   - as.ligerDataset
   - as.liger
 - title: "Example Data"
@@ -22,6 +21,7 @@ reference:
 - title: "Preprocessing"
 - contents:
   - runGeneralQC
+  - runDoubletFinder
   - removeMissing
   - normalize
   - selectGenes
@@ -30,31 +30,49 @@ reference:
   - downsample
   - selectGenesVST
 - title: "Integration"
+- subtitle: "Perform iNMF and Variants"
 - contents:
   - runIntegration
-  - quantileNorm
   - runINMF
   - runOnlineINMF
   - runUINMF
   - runCINMF
+- subtitle: "Post-Factorization Alignment"
+- contents:
+  - quantileNorm
+- subtitle: "Evaluation"
+- contents:
+  - calcAlignment
+  - calcAgreement
+  - calcDatasetSpecificity
+- subtitle: "Optimization with New Parameter"
+- contents:
   - optimizeNewData
   - optimizeNewK
   - optimizeNewLambda
   - optimizeSubset
 - title: "Downstream Analysis"
+- subtitle: "Dimensionality Reduction"
 - contents:
   - runUMAP
   - runTSNE
+- subtitle: "Clustering"
+- contents:
   - runCluster
   - mapCellMeta
+  - calcARI
+  - calcPurity
+- subtitle: "Differential Expression"
+- contents:
   - runMarkerDEG
   - runPairwiseDEG
   - runWilcoxon
   - getFactorMarkers
-  - runDoubletFinder
-  - runGSEA
+- subtitle: "GO and GSEA"
+- contents:
   - runGOEnrich
-- title: "ATAC Specific Analysis"
+  - runGSEA
+- subtitle: "ATAC Specific Analysis"
 - contents:
   - imputeKNN
   - linkGenesAndPeaks
@@ -66,9 +84,6 @@ reference:
   - starts_with(".gg")
   - starts_with(".plot")
   - .complexHeatmapDotPlot
-- title: "Evaluation Metrics"
-- contents:
-  - starts_with("calc")
 - title: "Object Class"
 - contents:
   - ends_with("class")
@@ -83,16 +98,17 @@ reference:
   - convertOldLiger
   - ligerToSeurat
   - is.newLiger
+  - modalOf
+  - isH5Liger
+  - restoreH5Liger
+  - closeAllH5
 - title: "Misc"
 - contents:
   - H5Apply
   - commandDiff
-  - isH5Liger
   - makeFeatureMatrix
   - mergeH5
   - mergeSparseAll
-  - modalOf
-  - closeAllH5
 - title: "Deprecated"
 - contents:
   - ends_with("deprecated")

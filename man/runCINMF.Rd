@@ -140,11 +140,13 @@ The consensus iNMF algorithm is developed basing on the consensus NMF (cNMF)
 method (D. Kotliar et al., 2019).
 }
 \examples{
+\donttest{
 pbmc <- normalize(pbmc)
 pbmc <- selectGenes(pbmc)
 pbmc <- scaleNotCenter(pbmc)
 if (requireNamespace("RcppPlanc", quietly = TRUE)) {
     pbmc <- runCINMF(pbmc)
+}
 }
 }
 \references{

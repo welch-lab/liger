@@ -68,12 +68,12 @@
 \alias{defaultCluster<-,liger,ANY,ANY,character-method}
 \alias{defaultCluster<-,liger,ANY,ANY,factor-method}
 \alias{defaultCluster<-,liger,ANY,ANY,NULL-method}
-\alias{dimRed,liger,missing-method}
-\alias{dimRed,liger,character-method}
-\alias{dimRed<-,liger,character,ANY,matrixLike-method}
+\alias{dimRed,liger,missing_OR_NULL-method}
+\alias{dimRed,liger,index-method}
+\alias{dimRed<-,liger,index,ANY,ANY,NULL-method}
+\alias{dimRed<-,liger,character,ANY,ANY,matrixLike-method}
 \alias{defaultDimRed,liger-method}
-\alias{defaultDimRed<-,liger,missing,ANY,character-method}
-\alias{defaultDimRed<-,liger,character,ANY,matrixLike-method}
+\alias{defaultDimRed<-,liger,character-method}
 \alias{varFeatures,liger-method}
 \alias{varFeatures<-,liger,ANY,character-method}
 \alias{varUnsharedFeatures,liger,ANY-method}
@@ -115,13 +115,13 @@ defaultCluster(x, useDatasets = NULL, ...)
 
 defaultCluster(x, name = NULL, useDatasets = NULL, ...) <- value
 
-dimRed(x, name = NULL, useDatasets = NULL, ...)
+dimRed(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...)
 
-dimRed(x, name = NULL, useDatasets = NULL, ...) <- value
+dimRed(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...) <- value
 
-defaultDimRed(x, useDatasets = NULL)
+defaultDimRed(x, useDatasets = NULL, cellIdx = NULL)
 
-defaultDimRed(x, name, useDatasets = NULL) <- value
+defaultDimRed(x) <- value
 
 varFeatures(x)
 
@@ -259,17 +259,25 @@ commands(x, funcName = NULL, arg = NULL)
 
 \S4method{defaultCluster}{liger,ANY,ANY,NULL}(x, name = NULL, useDatasets = NULL, ...) <- value
 
-\S4method{dimRed}{liger,missing}(x, name = NULL, useDatasets = NULL, ...)
+\S4method{dimRed}{liger,missing_OR_NULL}(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...)
 
-\S4method{dimRed}{liger,character}(x, name = NULL, useDatasets = NULL, ...)
+\S4method{dimRed}{liger,index}(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...)
 
-\S4method{dimRed}{liger,character,ANY,matrixLike}(x, name = NULL, useDatasets = NULL, asDefault = NULL, ...) <- value
+\S4method{dimRed}{liger,index,ANY,ANY,NULL}(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...) <- value
 
-\S4method{defaultDimRed}{liger}(x, useDatasets = NULL)
+\S4method{dimRed}{liger,character,ANY,ANY,matrixLike}(
+  x,
+  name = NULL,
+  useDatasets = NULL,
+  cellIdx = NULL,
+  asDefault = NULL,
+  inplace = FALSE,
+  ...
+) <- value
 
-\S4method{defaultDimRed}{liger,missing,ANY,character}(x, name = NULL, useDatasets = NULL) <- value
+\S4method{defaultDimRed}{liger}(x, useDatasets = NULL, cellIdx = cellIdx)
 
-\S4method{defaultDimRed}{liger,character,ANY,matrixLike}(x, name, useDatasets = NULL) <- value
+\S4method{defaultDimRed}{liger,character}(x) <- value
 
 \S4method{varFeatures}{liger}(x)
 
@@ -483,15 +491,13 @@ utilizes both clustering information and the dataset source information.
 \section{Dimension reduction access}{
 
 Currently, low-dimensional representaion of cells, presented as dense
-matrices, are all stored in \code{cellMeta} slot, and can totally be accessed
-with generics \code{cellMeta} and \code{cellMeta<-}. In addition to that,
-we provide specific generics \code{dimRed} and \code{dimRed<-} for getting
-and setting matrix like cell metadata, respectively. Adding a matrix to the
+matrices, are all stored in \code{dimReds} slot, and can totally be accessed
+with generics \code{dimRed} and \code{dimRed<-}. Adding a dimRed to the
 object looks as simple as \code{dimRed(obj, "name") <- matrixLike}. It can
-be retrived back with \code{dimRed(obj, "name")}. Similar to having a default
-cluster labeling, we also constructed the feature of default dimRed. It can
-be set with \code{defaultDimRed(obj) <- "existingMatLikeVar"} and the matrix
-can be retrieved with \code{defaultDimRed(obj)}.
+be retrieved back with \code{dimRed(obj, "name")}. Similar to having a
+default cluster labeling, we also constructed the feature of default dimRed.
+It can be set with \code{defaultDimRed(obj) <- "existingMatLikeVar"} and the
+matrix can be retrieved with \code{defaultDimRed(obj)}.
 }
 
 \section{Variable feature access}{
@@ -595,7 +601,7 @@ names(pbmcPlot2) <- paste0(names(pbmcPlot), 2)
 c(pbmcPlot, pbmcPlot2)
 
 library(ggplot2)
-ggplot(pbmcPlot, aes(x = UMAP.1, y = UMAP.2)) + geom_point()
+ggplot(pbmcPlot, aes(x = UMAP_1, y = UMAP_2)) + geom_point()
 cellMeta(pbmc)
 # Add new variable
 pbmc[["newVar"]] <- 1

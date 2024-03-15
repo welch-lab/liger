@@ -424,12 +424,12 @@ seuratToLiger <- as.liger.Seurat
 #' }
 convertOldLiger <- function( # nocov start
         object,
-        dimredName = "tsne.coords",
+        dimredName,
         clusterName = "clusters",
         h5FilePath = NULL
 ) {
-    ver120 <- package_version("1.99.0")
-    if (object@version >= ver120) return(object)
+    ver1990 <- package_version("1.99.0")
+    if (object@version >= ver1990) return(object)
     if (inherits(object@raw.data[[1]], "H5File")) {
         ldList <- convertOldLiger.H5(object, h5FilePath = h5FilePath)
     } else {
@@ -440,10 +440,11 @@ convertOldLiger <- function( # nocov start
     cellID <- unlist(lapply(ldList, colnames), use.names = FALSE)
     # 4. Wrap up liger object
     cellMeta <- S4Vectors::DataFrame(cellMeta)
+    oldID <- rownames(cellMeta)
     # TODO: check default prototype of tsne.coords and clusters.
-    dimred <- object@tsne.coords[rownames(cellMeta), , drop = FALSE]
-    colnames(dimred) <- seq_len(ncol(dimred))
-    cellMeta[[dimredName]] <- dimred
+    dimred <- object@tsne.coords[oldID, , drop = FALSE]
+    colnames(dimred) <- paste0(dimredName, "_", seq_len(ncol(dimred)))
+    cellMeta$barcode <- oldID
     cellMeta[[clusterName]] <- object@clusters[rownames(cellMeta)]
     rownames(cellMeta) <- cellID
     hnorm <- object@H.norm
@@ -451,6 +452,9 @@ convertOldLiger <- function( # nocov start
     newObj <- createLiger(ldList, W = t(object@W), H.norm = hnorm,
                           varFeatures = varFeatures, cellMeta = cellMeta,
                           addPrefix = FALSE, removeMissing = FALSE)
+    dimRed(newObj, dimredName) <- dimred
+    defaultCluster(newObj) <- clusterName
+    defaultDimRed(newObj) <- dimredName
     return(newObj)
 }
 
@@ -536,7 +540,8 @@ convertOldLiger.mem <- function(object) {
         }
         # 3. Construct ligerDataset objects for each dataset
         ldList[[d]] <- do.call(createLigerDataset, dataList)
-        colnames(ldList[[d]]) <- paste0(d, "_", colnames(ldList[[d]]))
+        if (!all(startsWith(colnames(ldList[[d]]), d)))
+            colnames(ldList[[d]]) <- paste0(d, "_", colnames(ldList[[d]]))
     }
     return(ldList)
 }

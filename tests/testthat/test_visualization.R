@@ -62,27 +62,23 @@ test_that("scatter plots", {
 
     # General
     expect_is(
-        plotCellScatter(pbmcPlot, "UMAP.1", "UMAP.2", splitBy = "dataset"),
+        plotDimRed(pbmcPlot, splitBy = "dataset"),
         "list"
     )
     expect_is(
-        plotCellScatter(pbmcPlot, "UMAP.1", "UMAP.2", colorBy = "dataset",
+        plotDimRed(pbmcPlot, colorBy = "dataset",
                         splitBy = "dataset"),
         "list"
     )
     for (o in c("shuffle", "ascending", "descending")) {
-        expect_gg(plotCellScatter(pbmcPlot, "UMAP.1", "UMAP.2",
-                                  colorBy = "dataset", dotOrder = o))
+        expect_gg(plotDimRed(pbmcPlot, colorBy = "dataset", dotOrder = o))
     }
     expect_gg(
-        plotCellScatter(pbmcPlot, "UMAP.1", "UMAP.2", colorBy = "S100A8",
-                        slot = "normData", trimHigh = 5, trimLow = 0),
-        plotCellScatter(pbmcPlot, "UMAP.1", "UMAP.2",
-                        colorBy = "leiden_cluster", shapeBy = "dataset"),
-        plotCellScatter(pbmcPlot, "UMAP.1", "UMAP.2", colorBy = NULL,
-                        shapeBy = "dataset"),
-        plotCellScatter(pbmcPlot, "UMAP.1", "UMAP.2",
-                        colorBy = "leiden_cluster", raster = TRUE)
+        plotDimRed(pbmcPlot, colorBy = "S100A8", slot = "normData",
+                   trimHigh = 5, trimLow = 0),
+        plotDimRed(pbmcPlot, colorBy = "leiden_cluster", shapeBy = "dataset"),
+        plotDimRed(pbmcPlot, colorBy = NULL, shapeBy = "dataset"),
+        plotDimRed(pbmcPlot, colorBy = "leiden_cluster", raster = TRUE)
     )
 })
 

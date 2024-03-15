@@ -108,11 +108,16 @@ subsetLiger <- function(
             W <- object@W
             varFeature <- varFeatures(object)
         }
+        dimRedsSub <- lapply(
+            object@dimReds,
+            `[`, i = orderedCellIdx, j = , drop = FALSE
+        )
         return(methods::new(
             "liger",
             datasets = datasets.new,
             cellMeta = cellMeta(object, cellIdx = orderedCellIdx,
                                 drop = FALSE),
+            dimReds = dimRedsSub,
             varFeatures = varFeature,
             W = W,
             H.norm = object@H.norm[orderedCellIdx, , drop = FALSE],
@@ -127,8 +132,7 @@ subsetLiger <- function(
 #' Retrieve a single matrix of cells from a slot
 #' @description Only retrieve data from specific slot to reduce memory used by
 #' a whole \linkS4class{liger} object of the subset. Useful for plotting.
-#' Internally used by \code{\link{plotCellScatter}} and
-#' \code{\link{plotCellViolin}}.
+#' Internally used by \code{\link{plotDimRed}} and \code{\link{plotCellViolin}}.
 #' @param object \linkS4class{liger} object
 #' @param feature Gene names, factor index or cell metadata variable names.
 #' Should be available in specified \code{slot}.

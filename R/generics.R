@@ -269,18 +269,16 @@ setGeneric(
 #' @rdname liger-class
 #' @section Dimension reduction access:
 #' Currently, low-dimensional representaion of cells, presented as dense
-#' matrices, are all stored in \code{cellMeta} slot, and can totally be accessed
-#' with generics \code{cellMeta} and \code{cellMeta<-}. In addition to that,
-#' we provide specific generics \code{dimRed} and \code{dimRed<-} for getting
-#' and setting matrix like cell metadata, respectively. Adding a matrix to the
+#' matrices, are all stored in \code{dimReds} slot, and can totally be accessed
+#' with generics \code{dimRed} and \code{dimRed<-}. Adding a dimRed to the
 #' object looks as simple as \code{dimRed(obj, "name") <- matrixLike}. It can
-#' be retrived back with \code{dimRed(obj, "name")}. Similar to having a default
-#' cluster labeling, we also constructed the feature of default dimRed. It can
-#' be set with \code{defaultDimRed(obj) <- "existingMatLikeVar"} and the matrix
-#' can be retrieved with \code{defaultDimRed(obj)}.
+#' be retrieved back with \code{dimRed(obj, "name")}. Similar to having a
+#' default cluster labeling, we also constructed the feature of default dimRed.
+#' It can be set with \code{defaultDimRed(obj) <- "existingMatLikeVar"} and the
+#' matrix can be retrieved with \code{defaultDimRed(obj)}.
 setGeneric(
     "dimRed",
-    function(x, name = NULL, useDatasets = NULL, ...) {
+    function(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...) {
         standardGeneric("dimRed")
     }
 )
@@ -289,7 +287,7 @@ setGeneric(
 #' @rdname liger-class
 setGeneric(
     "dimRed<-",
-    function(x, name = NULL, useDatasets = NULL, ..., value) {
+    function(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ..., value) {
         standardGeneric("dimRed<-")
     }
 )
@@ -298,7 +296,7 @@ setGeneric(
 #' @rdname liger-class
 setGeneric(
     "defaultDimRed",
-    function(x, useDatasets = NULL) {
+    function(x, useDatasets = NULL, cellIdx = NULL) {
         standardGeneric("defaultDimRed")
     }
 )
@@ -307,7 +305,7 @@ setGeneric(
 #' @rdname liger-class
 setGeneric(
     "defaultDimRed<-",
-    function(x, name, useDatasets = NULL, value) {
+    function(x, value) {
         standardGeneric("defaultDimRed<-")
     }
 )
@@ -491,7 +489,7 @@ setGeneric("normPeak<-", function(x, dataset, check = TRUE, value) standardGener
 #' }
 as.liger <- function(object, ...) UseMethod("as.liger", object)
 
-#' Converting other classes of data to a as.ligerDataset object
+#' Converting other classes of data to a ligerDataset object
 #' @description
 #' Works for converting a matrix or container object to a single ligerDataset,
 #' and can also convert the modality preset of a ligerDataset. When used with

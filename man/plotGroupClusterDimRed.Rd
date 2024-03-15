@@ -56,7 +56,7 @@ of rows and columns. Default \code{NULL} will be automatically handled by
 \code{1}.}
 
 \item{...}{Additional graphic setting arguments passed to
-\code{\link{plotCellScatter}}.}
+\code{\link{plotDimRed}}.}
 }
 \value{
 ggplot object when only one feature (e.g. cluster variable, gene,
@@ -73,7 +73,7 @@ subplot of each group.
 plotGroupClusterDimRed(pbmcPlot)
 }
 \seealso{
-Please refer to \code{\link{plotCellScatter}},
+Please refer to \code{\link{plotDimRed}},
 \code{\link{.ggScatter}}, \code{\link{.ggplotLigerTheme}} for additional
 graphic setting
 }

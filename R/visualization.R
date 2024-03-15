@@ -28,11 +28,9 @@
 #' @param colorPalette Name of viridis palette. See
 #' \code{\link[viridisLite]{viridis}} for options. Default \code{"C"} ("plasma")
 #' for gene expression and \code{"D"} ("viridis") for factor loading.
-#' @param ... Additional graphic setting arguments passed to
-#' \code{\link{plotCellScatter}}.
 #' @return ggplot object when only one feature (e.g. cluster variable, gene,
 #' factor) is set. List object when multiple of those are specified.
-#' @seealso Please refer to \code{\link{plotCellScatter}},
+#' @seealso Please refer to \code{\link{plotDimRed}},
 #' \code{\link{.ggScatter}}, \code{\link{.ggplotLigerTheme}} for additional
 #' graphic setting
 #' @rdname plotDimRed
@@ -48,19 +46,9 @@ plotClusterDimRed <- function(
         useCluster = NULL,
         useDimRed = NULL,
         ...) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
-    if (is.null(useDimRed)) {
-        cli::cli_abort(
-            c(x = "No {.var useDimRed} given or default dimRed not set.",
-              i = "Run {.fn runUMAP} or {.fn runTSNE} to create one. Or see {.fn dimRed} and {.fn defaultDimRed}.")
-        )
-    }
     useCluster <- useCluster %||% object@uns$defaultCluster
-    xVar <- paste0(useDimRed, ".1")
-    yVar <- paste0(useDimRed, ".2")
-    plotCellScatter(object, x = xVar, y = yVar,
-                    colorBy = useCluster,
-                    slot = "cellMeta", dotOrder = "shuffle", ...)
+    plotDimRed(object, colorBy = useCluster, useDimRed = useDimRed,
+               slot = "cellMeta", dotOrder = "shuffle", ...)
 }
 
 #' @rdname plotDimRed
@@ -69,18 +57,9 @@ plotDatasetDimRed <- function(
         object,
         useDimRed = NULL,
         ...) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
-    if (is.null(useDimRed)) {
-        cli::cli_abort(
-            c(x = "No {.var useDimRed} given or default dimRed not set.",
-              i = "Run {.fn runUMAP} or {.fn runTSNE} to create one. Or see {.fn dimRed} and {.fn defaultDimRed}.")
-        )
-    }
-    xVar <- paste0(useDimRed, ".1")
-    yVar <- paste0(useDimRed, ".2")
-    plotCellScatter(object, x = xVar, y = yVar, colorBy = "dataset",
-                    slot = "cellMeta", labelText = FALSE,
-                    dotOrder = "shuffle", ...)
+    plotDimRed(object, colorBy = "dataset", slot = "cellMeta",
+               useDimRed = useDimRed, labelText = FALSE,
+               dotOrder = "shuffle", ...)
 }
 
 #' @rdname plotDimRed
@@ -92,12 +71,13 @@ plotByDatasetAndCluster <- function(
         combinePlots = TRUE,
         ...
 ) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
-    useCluster <- useCluster %||% object@uns$defaultCluster
     plot <- list(
-        dataset = plotDatasetDimRed(object, useDimRed = useDimRed, ...),
-        cluster = plotClusterDimRed(object, useCluster = useCluster,
-                                    useDimRed = useDimRed, ...)
+        dataset = plotDatasetDimRed(
+            object, useDimRed = useDimRed, ...
+        ),
+        cluster = plotClusterDimRed(
+            object, useCluster = useCluster, useDimRed = useDimRed, ...
+        )
     )
     if (isTRUE(combinePlots)) {
         plot <- cowplot::plot_grid(plotlist = plot, nrow = 1,
@@ -118,18 +98,15 @@ plotGeneDimRed <- function(
         colorPalette = "C",
         ...
 ) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
-    xVar <- paste0(useDimRed, ".1")
-    yVar <- paste0(useDimRed, ".2")
     scaleFunc <- function(x) {
         if (!is.null(scaleFactor)) x <- scaleFactor*x
         if (isTRUE(log)) x <- log2(x + 1)
         x
     }
-    plotCellScatter(object, x = xVar, y = yVar, colorBy = features,
-                    slot = "normData", colorByFunc = scaleFunc,
-                    dotOrder = "ascending", zeroAsNA = zeroAsNA,
-                    colorPalette = colorPalette, ...)
+    plotDimRed(object, colorBy = features, useDimRed = useDimRed,
+               slot = "normData", colorByFunc = scaleFunc,
+               dotOrder = "ascending", zeroAsNA = zeroAsNA,
+               colorPalette = colorPalette, ...)
 }
 
 #' @rdname plotDimRed
@@ -144,18 +121,16 @@ plotPeakDimRed <- function(
         colorPalette = "C",
         ...
 ) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
-    xVar <- paste0(useDimRed, ".1")
-    yVar <- paste0(useDimRed, ".2")
     scaleFunc <- function(x) {
         if (!is.null(scaleFactor)) x <- scaleFactor*x
         if (isTRUE(log)) x <- log2(x + 1)
         x
     }
-    plotCellScatter(object, x = xVar, y = yVar, colorBy = features,
-                    slot = "normPeak", colorByFunc = scaleFunc,
-                    dotOrder = "ascending", zeroAsNA = zeroAsNA,
-                    colorPalette = colorPalette, ...)
+    plotDimRed(
+        object, useDimRed = useDimRed, colorBy = features, slot = "normPeak",
+        colorByFunc = scaleFunc, dotOrder = "ascending", zeroAsNA = zeroAsNA,
+        colorPalette = colorPalette, ...
+    )
 }
 
 #' @rdname plotDimRed
@@ -169,13 +144,10 @@ plotFactorDimRed <- function(
         colorPalette = "D",
         ...
 ) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
-    xVar <- paste0(useDimRed, ".1")
-    yVar <- paste0(useDimRed, ".2")
-    plotCellScatter(object, x = xVar, y = yVar, colorBy = factors,
-                    slot = "H.norm", dotOrder = "ascending",
-                    trimHigh = trimHigh, zeroAsNA = zeroAsNA,
-                    colorPalette = colorPalette, ...)
+    plotDimRed(object, colorBy = factors, useDimRed = useDimRed,
+               slot = "H.norm", dotOrder = "ascending",
+               trimHigh = trimHigh, zeroAsNA = zeroAsNA,
+               colorPalette = colorPalette, ...)
 }
 
 #' Comprehensive group splited cluster plot on dimension reduction with
@@ -211,10 +183,10 @@ plotFactorDimRed <- function(
 #' @param legendNRow Arrangement of the legend, number of rows. Default
 #' \code{1}.
 #' @param ... Additional graphic setting arguments passed to
-#' \code{\link{plotCellScatter}}.
+#' \code{\link{plotDimRed}}.
 #' @return ggplot object when only one feature (e.g. cluster variable, gene,
 #' factor) is set. List object when multiple of those are specified.
-#' @seealso Please refer to \code{\link{plotCellScatter}},
+#' @seealso Please refer to \code{\link{plotDimRed}},
 #' \code{\link{.ggScatter}}, \code{\link{.ggplotLigerTheme}} for additional
 #' graphic setting
 #' @export
@@ -234,11 +206,8 @@ plotGroupClusterDimRed <- function(
         legendNRow = 1,
         ...
 ) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
     useCluster <- useCluster %||% object@uns$defaultCluster
     clusterVar <- cellMeta(object, useCluster)
-    xVar <- paste0(useDimRed, ".1")
-    yVar <- paste0(useDimRed, ".2")
     groupVar <- .fetchCellMetaVar(object, useGroup, checkCategorical = TRUE,
                                   droplevels = droplevels)
     plotList <- list()
@@ -250,18 +219,19 @@ plotGroupClusterDimRed <- function(
         clusterVarMasked <- droplevels(clusterVarMasked)
         tempVarName <- paste0(useCluster, "_", lvl)
         cellMeta(object, tempVarName) <- clusterVarMasked
-        plotList[[lvl]] <- plotCellScatter(object, x = xVar, y = yVar,
-                                           colorBy = tempVarName,
-                                           dotOrder = "shuffle", titles = lvl,
-                                           legendColorTitle = "",
-                                           legendPosition = "bottom",
-                                           legendNRow = legendNRow,
-                                           ...) +
-            ggplot2::theme(line = ggplot2::element_blank(),
-                           axis.text.x = ggplot2::element_blank(),
-                           axis.text.y = ggplot2::element_blank(),
-                           axis.title.x = ggplot2::element_blank(),
-                           axis.title.y = ggplot2::element_blank())
+        plotList[[lvl]] <- plotDimRed(
+            object, colorBy = tempVarName, useDimRed = useDimRed,
+            slot = "cellMeta", dotOrder = "shuffle", titles = lvl,
+            legendColorTitle = "", legendPosition = "bottom",
+            legendNRow = legendNRow, ...
+        ) +
+            ggplot2::theme(
+                line = ggplot2::element_blank(),
+                axis.text.x = ggplot2::element_blank(),
+                axis.text.y = ggplot2::element_blank(),
+                axis.title.x = ggplot2::element_blank(),
+                axis.title.y = ggplot2::element_blank()
+            )
         proportions <- table(clusterVarMasked) / sum(table(clusterVarMasked))
         propDF <- data.frame(group = lvl, proportions)
         # propDF$clusterVarMasked <- as.character()
@@ -803,10 +773,7 @@ plotDensityDimRed <- function(
         colorDirection = -1,
         ...
 ) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
-    xVar <- paste0(useDimRed, ".1")
-    yVar <- paste0(useDimRed, ".2")
-    dr <- .fetchCellMetaVar(object, c(xVar, yVar))
+    dr <- as.data.frame(dimRed(object, useDimRed))
     splitVar <- .fetchCellMetaVar(object, splitBy, checkCategorical = TRUE,
                                   drop = FALSE)
 
@@ -946,16 +913,14 @@ plotGeneLoadings <- function(
         object,
         markerTable,
         useFactor,
-        useDimRed = "UMAP",
+        useDimRed = NULL,
         nLabel = 15,
         nPlot = 30,
         ...
 ) {
-    p1 <- plotCellScatter(
-        object,
-        x = paste0(useDimRed, ".1"), y = paste0(useDimRed, ".2"),
-        colorBy = useFactor, slot = "H.norm", zeroAsNA = TRUE, dotOrder = "asc",
-        splitBy = NULL, shapeBy = NULL, colorByFunc = NULL, ...
+    p1 <- plotDimRed(
+        object, colorBy = useFactor, useDimRed = useDimRed, slot = "H.norm",
+        zeroAsNA = TRUE, dotOrder = "asc", splitBy = NULL, ...
     )
     bottom <- plotGeneLoadingRank(object, markerTable, useFactor,
                                   nLabel, nPlot, ...)

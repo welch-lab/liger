@@ -125,7 +125,7 @@ runCluster <- function(
         cli::cli_process_done(msg_done = "{method} clustering on {type} cell factor loadings ... Found {nlevels(clusts)} clusters.")
     object@uns$defaultCluster <- object@uns$defaultCluster %||% clusterName
     if (isTRUE(verbose))
-        cli::cli_alert_info("cellMeta variable {.field {clusterName}} is now set as default.")
+        cli::cli_alert_info("{.field cellMeta} variable {.val {clusterName}} is now set as default.")
     return(object)
 }
 
@@ -308,3 +308,198 @@ mapCellMeta <- function(
     cellMeta(object, newTo) <- to
     return(object)
 }
+
+
+#' Calculate purity by comparing two cluster labeling variables
+#' @description
+#' This function aims at calculating the purity for the clustering result
+#' obtained with LIGER and the external clustering (existing "true" annotation).
+#' Purity can sometimes be a more useful metric when the clustering to be tested
+#' contains more subgroups or clusters than the true clusters. Purity ranges
+#' from 0 to 1, with a score of 1 representing a pure, accurate clustering.
+#'
+#' The true clustering annotation must be specified as the base line. We suggest
+#' setting it to the object cellMeta so that it can be easily used for many
+#' other visualization and evaluation functions.
+#'
+#' The purity can be calculated for only specified datasets, since true
+#' annotation might not be available for all datasets. Evaluation for only one
+#' or a few datasets can be done by specifying \code{useDatasets}. If
+#' \code{useDatasets} is specified, the argument checking for \code{trueCluster}
+#' and \code{useCluster} will be enforced to match the cells in the specified
+#' datasets.
+#' @param object A \linkS4class{liger} object, with the clustering result
+#' present in cellMeta.
+#' @param trueCluster Either the name of one variable in \code{cellMeta(object)}
+#' or a factor object with annotation that matches with all cells being
+#' considered.
+#' @param useCluster The name of one variable in \code{cellMeta(object)}.
+#' Default \code{NULL} uses default clusters.
+#' @param useDatasets A character vector of the names, a numeric or logical
+#' vector of the index of the datasets to be considered for the purity
+#' calculation. Default \code{NULL} uses all datasets.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
+#' @param classes.compare [Deprecated/Renamed]. Use \code{trueCluster} instead.
+#' @return A numeric scalar, the purity of the clustering result indicated by
+#' \code{useCluster} compared to \code{trueCluster}.
+#' @export
+#' @examples
+#' # Assume the true cluster in `pbmcPlot` is "leiden_cluster"
+#' # generate fake new labeling
+#' fake <- sample(1:7, ncol(pbmcPlot), replace = TRUE)
+#' # Insert into cellMeta
+#' pbmcPlot$new <- factor(fake)
+#' calcPurity(pbmcPlot, trueCluster = "leiden_cluster", useCluster = "new")
+#'
+#' # Now assume we got existing base line annotation only for "stim" dataset
+#' nStim <- ncol(dataset(pbmcPlot, "stim"))
+#' stimTrueLabel <- factor(fake[1:nStim])
+#' # Insert into cellMeta
+#' cellMeta(pbmcPlot, "stim_true_label", useDatasets = "stim") <- stimTrueLabel
+#' # Assume "leiden_cluster" is the clustering result we got and need to be
+#' # evaluated
+#' calcPurity(pbmcPlot, trueCluster = "stim_true_label",
+#'            useCluster = "leiden_cluster", useDatasets = "stim")
+calcPurity <- function(
+        object,
+        trueCluster,
+        useCluster = NULL,
+        useDatasets = NULL,
+        verbose = getOption("ligerVerbose", TRUE),
+        classes.compare = trueCluster
+) {
+    .deprecateArgs(replace = list(classes.compare = "trueCluster"))
+    cellIdx <- rownames(cellMeta(object, useDatasets = useDatasets))
+    # Ensure that trueCluster is a factor object, as long as `cellIdx`, named
+    # by `cellIdx`
+    if (length(trueCluster) == 1) {
+        trueCluster <- cellMeta(object, trueCluster, useDatasets = useDatasets)
+    } else {
+        if (length(trueCluster) != length(cellIdx)) {
+            if (is.null(names(trueCluster))) {
+                cli::cli_abort("Longer/shorter {.var trueCluster} than cells considered requires {.fn names()} to identify matching.")
+            }
+        } else {
+            if (is.null(names(trueCluster))) {
+                cli::cli_alert_warning(
+                    "Assuming unnamed {.var trueCluster} matches with the cells represented by {.code rownames(cellMeta(object, useDatasets = useDatasets))}."
+                )
+                names(trueCluster) <- cellIdx
+            }
+        }
+        trueCluster <- trueCluster[cellIdx]
+    }
+
+    useCluster <- useCluster %||% defaultCluster(object)
+    useCluster <- cellMeta(object, useCluster, useDatasets = useDatasets)
+
+    purity <- sum(apply(table(trueCluster, useCluster), 2, max)) / ncol(object)
+    return(purity)
+}
+
+
+
+#' Calculate adjusted Rand index (ARI) by comparing two cluster labeling variables
+#' @description
+#' This function aims at calculating the adjusted Rand index for the clustering
+#' result obtained with LIGER and the external clustering (existing "true"
+#' annotation). ARI ranges from 0 to 1, with a score of 0 indicating no
+#' agreement between clusterings and 1 indicating perfect agreement.
+#'
+#' The true clustering annotation must be specified as the base line. We suggest
+#' setting it to the object cellMeta so that it can be easily used for many
+#' other visualization and evaluation functions.
+#'
+#' The ARI can be calculated for only specified datasets, since true annotation
+#' might not be available for all datasets. Evaluation for only one or a few
+#' datasets can be done by specifying \code{useDatasets}. If \code{useDatasets}
+#' is specified, the argument checking for \code{trueCluster} and
+#' \code{useCluster} will be enforced to match the cells in the specified
+#' datasets.
+#' @param object A \linkS4class{liger} object, with the clustering result
+#' present in cellMeta.
+#' @param trueCluster Either the name of one variable in \code{cellMeta(object)}
+#' or a factor object with annotation that matches with all cells being
+#' considered.
+#' @param useCluster The name of one variable in \code{cellMeta(object)}.
+#' Default \code{NULL} uses default clusters.
+#' @param useDatasets A character vector of the names, a numeric or logical
+#' vector of the index of the datasets to be considered for the purity
+#' calculation. Default \code{NULL} uses all datasets.
+#' @param verbose Logical. Whether to show information of the progress. Default
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
+#' @param classes.compare [Deprecated/Renamed]. Use \code{trueCluster} instead.
+#' @return A numeric scalar, the ARI of the clustering result indicated by
+#' \code{useCluster} compared to \code{trueCluster}.
+#' @export
+#' @references L. Hubert and P. Arabie (1985) Comparing Partitions, Journal of
+#' the Classification, 2, pp. 193-218.
+#' @examples
+#' # Assume the true cluster in `pbmcPlot` is "leiden_cluster"
+#' # generate fake new labeling
+#' fake <- sample(1:7, ncol(pbmcPlot), replace = TRUE)
+#' # Insert into cellMeta
+#' pbmcPlot$new <- factor(fake)
+#' calcARI(pbmcPlot, trueCluster = "leiden_cluster", useCluster = "new")
+#'
+#' # Now assume we got existing base line annotation only for "stim" dataset
+#' nStim <- ncol(dataset(pbmcPlot, "stim"))
+#' stimTrueLabel <- factor(fake[1:nStim])
+#' # Insert into cellMeta
+#' cellMeta(pbmcPlot, "stim_true_label", useDatasets = "stim") <- stimTrueLabel
+#' # Assume "leiden_cluster" is the clustering result we got and need to be
+#' # evaluated
+#' calcARI(pbmcPlot, trueCluster = "stim_true_label",
+#'         useCluster = "leiden_cluster", useDatasets = "stim")
+calcARI <- function(
+        object,
+        trueCluster,
+        useCluster = NULL,
+        useDatasets = NULL,
+        verbose = getOption("ligerVerbose", TRUE),
+        classes.compare = trueCluster
+) {
+    .deprecateArgs(replace = list(classes.compare = "trueCluster"))
+    cellIdx <- rownames(cellMeta(object, useDatasets = useDatasets))
+    # Ensure that trueCluster is a factor object, as long as `cellIdx`, named
+    # by `cellIdx`
+    if (length(trueCluster) == 1) {
+        trueCluster <- cellMeta(object, trueCluster, useDatasets = useDatasets)
+    } else {
+        if (length(trueCluster) != length(cellIdx)) {
+            if (is.null(names(trueCluster))) {
+                cli::cli_abort("Longer/shorter {.var trueCluster} than cells considered requires {.fn names()} to identify matching.")
+            }
+        } else {
+            if (is.null(names(trueCluster))) {
+                cli::cli_alert_warning(
+                    "Assuming unnamed {.var trueCluster} matches with the cells represented by {.code rownames(cellMeta(object, useDatasets = useDatasets))}."
+                )
+                names(trueCluster) <- cellIdx
+            }
+        }
+        trueCluster <- trueCluster[cellIdx]
+    }
+
+    useCluster <- useCluster %||% defaultCluster(object)
+    useCluster <- cellMeta(object, useCluster, useDatasets = useDatasets)
+
+    # Copied from mclust package
+    useCluster <- as.vector(useCluster)
+    trueCluster <- as.vector(trueCluster)
+    tab <- table(useCluster, trueCluster)
+    if (all(dim(tab) == c(1, 1)))
+        return(1)
+    a <- sum(choose(tab, 2))
+    b <- sum(choose(rowSums(tab), 2)) - a
+    c <- sum(choose(colSums(tab), 2)) - a
+    d <- choose(sum(tab), 2) - a - b - c
+    ARI <-
+        (a - (a + b) * (a + c)/(a + b + c + d)) /
+        ((a + b + a + c)/2 - (a + b) * (a + c)/(a + b + c + d))
+    return(ARI)
+}
+
+
+
