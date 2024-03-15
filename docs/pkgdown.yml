@@ -4,7 +4,6 @@ pkgdown_sha: ~
 articles:
   Integrating_multi_scRNA_data: Integrating_multi_scRNA_data.html
   Integrating_scRNA_and_scATAC_data: Integrating_scRNA_and_scATAC_data.html
-  Parameter_selection: Parameter_selection.html
   SNAREseq_walkthrough: SNAREseq_walkthrough.html
   STARmap_dropviz_vig: STARmap_dropviz_vig.html
   UINMF_vignette: UINMF_vignette.html
@@ -16,5 +15,5 @@ articles:
   rna_methylation: rna_methylation.html
   walkthrough_pbmc: walkthrough_pbmc.html
   liger-vignette: liger-vignette.html
-last_built: 2024-03-14T15:26Z
+last_built: 2024-03-15T18:57Z
 

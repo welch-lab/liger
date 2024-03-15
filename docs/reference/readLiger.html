@@ -22,7 +22,7 @@ structure by default."><!-- mathjax --><script src="https://cdnjs.cloudflare.com
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rliger</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.1</span>
       </span>
     </div>
 
@@ -60,9 +60,6 @@ structure by default."><!-- mathjax --><script src="https://cdnjs.cloudflare.com
     <li>
       <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
     </li>
-    <li>
-      <a href="../articles/Parameter_selection.html">Parameter selection</a>
-    </li>
   </ul></li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -87,8 +84,17 @@ structure by default."><!-- mathjax --><script src="https://cdnjs.cloudflare.com
   <a href="../news/index.html">NEWS</a>
 </li>
       </ul><ul class="nav navbar-nav navbar-right"><li>
+  <a href="https://welch-lab.github.io/" class="external-link">Welch Lab</a>
+</li>
+<li>
   <a href="https://github.com/welch-lab/liger" class="external-link">
     <span class="fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
+<li>
+  <a href="https://twitter.com/LabWelch" class="external-link">
+    <span class="fab fa-twitter fa-lg"></span>
      
   </a>
 </li>
@@ -171,12 +177,6 @@ to the currect version of structure. Default <code>TRUE</code>.</p></dd>
 <span class="r-in"><span><span class="co"># Save and read H5-based liger object</span></span></span>
 <span class="r-in"><span><span class="va">h5Path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata/ctrl.h5"</span>, package <span class="op">=</span> <span class="st">"rliger"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="createLiger.html">createLiger</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>ctrl <span class="op">=</span> <span class="va">h5Path</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Found more than one class "H5D" in cache; using the first, from namespace 'rliger'</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Also defined by ‘hdf5r’</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Found more than one class "H5D" in cache; using the first, from namespace 'rliger'</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Also defined by ‘hdf5r’</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Found more than one class "H5D" in cache; using the first, from namespace 'rliger'</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Also defined by ‘hdf5r’</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span> ... done</span>
@@ -185,8 +185,6 @@ to the currect version of structure. Default <code>TRUE</code>.</p></dd>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">lig</span>, <span class="va">tempPath</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu">readLiger</span><span class="op">(</span><span class="va">tempPath</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Restoring dataset <span style="color: #0000BB;">"ctrl"</span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Found more than one class "H5D" in cache; using the first, from namespace 'rliger'</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Also defined by ‘hdf5r’</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Restoring dataset <span style="color: #0000BB;">"ctrl"</span> ... done</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>

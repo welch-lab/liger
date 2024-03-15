@@ -26,7 +26,7 @@ Contains one scRNAseq dataset and one DNA methylation data.
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rliger</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.1</span>
       </span>
     </div>
 
@@ -64,9 +64,6 @@ Contains one scRNAseq dataset and one DNA methylation data.
     <li>
       <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
     </li>
-    <li>
-      <a href="../articles/Parameter_selection.html">Parameter selection</a>
-    </li>
   </ul></li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -91,8 +88,17 @@ Contains one scRNAseq dataset and one DNA methylation data.
   <a href="../news/index.html">NEWS</a>
 </li>
       </ul><ul class="nav navbar-nav navbar-right"><li>
+  <a href="https://welch-lab.github.io/" class="external-link">Welch Lab</a>
+</li>
+<li>
   <a href="https://github.com/welch-lab/liger" class="external-link">
     <span class="fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
+<li>
+  <a href="https://twitter.com/LabWelch" class="external-link">
+    <span class="fab fa-twitter fa-lg"></span>
      
   </a>
 </li>
@@ -184,13 +190,45 @@ data removed.</p>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># interactive()</span></span></span>
-<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># \donttest{</span></span></span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu">importPBMC</span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Downloading from <span style="color: #0000BB; font-style: italic;">&lt;https://figshare.com/ndownloader/files/40054042&gt;</span> to <span style="color: #0000BB;">/Users/wangych/work/Welch_Lab/LIGER/liger/docs/reference/liger_PBMCs_ctrl.rds</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Downloading from <span style="color: #0000BB; font-style: italic;">&lt;https://figshare.com/ndownloader/files/40054048&gt;</span> to <span style="color: #0000BB;">/Users/wangych/work/Welch_Lab/LIGER/liger/docs/reference/liger_PBMCs_stim.rds</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span> ... done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"stim"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"stim"</span> ... done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Removing missing in dataset: <span style="color: #0000BB;">"ctrl"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Removing missing in dataset: <span style="color: #0000BB;">"stim"</span></span>
 <span class="r-in"><span><span class="va">bmmc</span> <span class="op">&lt;-</span> <span class="fu">importBMMC</span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Downloading from <span style="color: #0000BB; font-style: italic;">&lt;https://figshare.com/ndownloader/files/40054858&gt;</span> to <span style="color: #0000BB;">/Users/wangych/work/Welch_Lab/LIGER/liger/docs/reference/liger_BMMC_rna_D1T1.rds</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Downloading from <span style="color: #0000BB; font-style: italic;">&lt;https://figshare.com/ndownloader/files/40054861&gt;</span> to <span style="color: #0000BB;">/Users/wangych/work/Welch_Lab/LIGER/liger/docs/reference/liger_BMMC_rna_D1T2.rds</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Downloading from <span style="color: #0000BB; font-style: italic;">&lt;https://figshare.com/ndownloader/files/40054891&gt;</span> to <span style="color: #0000BB;">/Users/wangych/work/Welch_Lab/LIGER/liger/docs/reference/liger_BMMC_atac_D5T1.rds</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Downloading from <span style="color: #0000BB; font-style: italic;">&lt;https://figshare.com/ndownloader/files/40054864&gt;</span> to <span style="color: #0000BB;">/Users/wangych/work/Welch_Lab/LIGER/liger/docs/reference/liger_BMMC_atac_D5T1_peak.rds</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"rna_D1T1"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"rna_D1T1"</span> ... done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"rna_D1T2"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"rna_D1T2"</span> ... done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"atac_D5T1"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"atac_D5T1"</span> ... done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Removing missing in dataset: <span style="color: #0000BB;">"rna_D1T1"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Removing missing in dataset: <span style="color: #0000BB;">"rna_D1T2"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Removing missing in dataset: <span style="color: #0000BB;">"atac_D5T1"</span></span>
 <span class="r-in"><span><span class="va">cge</span> <span class="op">&lt;-</span> <span class="fu">importCGE</span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Downloading from <span style="color: #0000BB; font-style: italic;">&lt;https://figshare.com/ndownloader/files/40222699&gt;</span> to <span style="color: #0000BB;">/Users/wangych/work/Welch_Lab/LIGER/liger/docs/reference/liger_CGE_rna.rds</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Downloading from <span style="color: #0000BB; font-style: italic;">&lt;https://figshare.com/ndownloader/files/40222702&gt;</span> to <span style="color: #0000BB;">/Users/wangych/work/Welch_Lab/LIGER/liger/docs/reference/liger_CGE_met.rds</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"rna"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"rna"</span> ... done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"met"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"met"</span> ... done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
 </code></pre></div>
     </div>
   </div>

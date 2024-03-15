@@ -18,7 +18,7 @@ each metagene (factor) might belongs to."><!-- mathjax --><script src="https://c
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rliger</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.1</span>
       </span>
     </div>
 
@@ -56,9 +56,6 @@ each metagene (factor) might belongs to."><!-- mathjax --><script src="https://c
     <li>
       <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
     </li>
-    <li>
-      <a href="../articles/Parameter_selection.html">Parameter selection</a>
-    </li>
   </ul></li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -83,8 +80,17 @@ each metagene (factor) might belongs to."><!-- mathjax --><script src="https://c
   <a href="../news/index.html">NEWS</a>
 </li>
       </ul><ul class="nav navbar-nav navbar-right"><li>
+  <a href="https://welch-lab.github.io/" class="external-link">Welch Lab</a>
+</li>
+<li>
   <a href="https://github.com/welch-lab/liger" class="external-link">
     <span class="fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
+<li>
+  <a href="https://twitter.com/LabWelch" class="external-link">
+    <span class="fab fa-twitter fa-lg"></span>
      
   </a>
 </li>
@@ -112,11 +118,11 @@ each metagene (factor) might belongs to.</p>
 <span>  <span class="va">object</span>,</span>
 <span>  genesets <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  useW <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  useDatasets <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  useV <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  customGenesets <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  gene_sets <span class="op">=</span> <span class="va">genesets</span>,</span>
 <span>  mat_w <span class="op">=</span> <span class="va">useW</span>,</span>
-<span>  mat_v <span class="op">=</span> <span class="va">useDatasets</span>,</span>
+<span>  mat_v <span class="op">=</span> <span class="va">useV</span>,</span>
 <span>  custom_gene_sets <span class="op">=</span> <span class="va">customGenesets</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -137,7 +143,7 @@ tested. Default <code>NULL</code> uses all the gene sets from the Reactome.</p><
 Default <code>TRUE</code>.</p></dd>
 
 
-<dt>useDatasets</dt>
+<dt>useV</dt>
 <dd><p>A character vector of the names, a numeric or logical
 vector of the index of the datasets where the \(V\) matrices will be
 included for analysis. Default <code>NULL</code> uses all datasets.</p></dd>

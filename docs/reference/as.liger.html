@@ -21,7 +21,7 @@ createLiger instead."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rliger</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.1</span>
       </span>
     </div>
 
@@ -59,9 +59,6 @@ createLiger instead."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/
     <li>
       <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
     </li>
-    <li>
-      <a href="../articles/Parameter_selection.html">Parameter selection</a>
-    </li>
   </ul></li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -86,8 +83,17 @@ createLiger instead."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/
   <a href="../news/index.html">NEWS</a>
 </li>
       </ul><ul class="nav navbar-nav navbar-right"><li>
+  <a href="https://welch-lab.github.io/" class="external-link">Welch Lab</a>
+</li>
+<li>
   <a href="https://github.com/welch-lab/liger" class="external-link">
     <span class="fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
+<li>
+  <a href="https://twitter.com/LabWelch" class="external-link">
+    <span class="fab fa-twitter fa-lg"></span>
      
   </a>
 </li>
@@ -193,6 +199,7 @@ used.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> datasets(2): ctrl (300 cells), stim (300 cells) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> cellMeta(7): dataset, barcode, nUMI, ..., hemo </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> varFeatures(0):  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> dimReds(0):  </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># \donttest{</span></span></span>
 <span class="r-in"><span><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu">SingleCellExperiment</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/SingleCellExperiment.html" class="external-link">SingleCellExperiment</a></span><span class="op">(</span></span></span>
@@ -211,6 +218,7 @@ used.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> datasets(2): ctrl (300 cells), stim (300 cells) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> cellMeta(8): dataset, barcode, nUMI, ..., sample </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> varFeatures(0):  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> dimReds(0):  </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">seu</span> <span class="op">&lt;-</span> <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SeuratObject/man/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span><span class="va">multiSampleMatrix</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># Seurat creates variable "orig.ident" by identifying the cell barcode</span></span></span>
@@ -230,6 +238,7 @@ used.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> datasets(2): ctrl (300 cells), stim (300 cells) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> cellMeta(10): dataset, barcode, nUMI, ..., nFeature_RNA </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> varFeatures(0):  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> dimReds(0):  </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># As per Seurat V5 updates with layered data, specifically helpful udner the</span></span></span>
 <span class="r-in"><span><span class="co"># scenario of dataset integration. "counts" and etc for each datasets can be</span></span></span>

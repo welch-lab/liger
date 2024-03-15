@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rliger</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.1</span>
       </span>
     </div>
 
@@ -55,9 +55,6 @@
     <li>
       <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
     </li>
-    <li>
-      <a href="../articles/Parameter_selection.html">Parameter selection</a>
-    </li>
   </ul></li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -82,8 +79,17 @@
   <a href="../news/index.html">NEWS</a>
 </li>
       </ul><ul class="nav navbar-nav navbar-right"><li>
+  <a href="https://welch-lab.github.io/" class="external-link">Welch Lab</a>
+</li>
+<li>
   <a href="https://github.com/welch-lab/liger" class="external-link">
     <span class="fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
+<li>
+  <a href="https://twitter.com/LabWelch" class="external-link">
+    <span class="fab fa-twitter fa-lg"></span>
      
   </a>
 </li>
@@ -124,13 +130,9 @@
         </td>
         <td><p>Load in data from 10X</p></td>
       </tr><tr><td>
-          <p><code><a href="restoreH5Liger.html">restoreH5Liger()</a></code> <code><a href="restoreH5Liger.html">restoreOnlineLiger()</a></code> </p>
-        </td>
-        <td><p>Restore links (to HDF5 files) for reloaded liger/ligerDataset object</p></td>
-      </tr><tr><td>
           <p><code><a href="as.ligerDataset.html">as.ligerDataset()</a></code> </p>
         </td>
-        <td><p>Converting other classes of data to a as.ligerDataset object</p></td>
+        <td><p>Converting other classes of data to a ligerDataset object</p></td>
       </tr><tr><td>
           <p><code><a href="as.liger.html">seuratToLiger()</a></code> <code><a href="as.liger.html">as.liger()</a></code> </p>
         </td>
@@ -164,6 +166,10 @@
         </td>
         <td><p>General QC for liger object</p></td>
       </tr><tr><td>
+          <p><code><a href="runDoubletFinder.html">runDoubletFinder()</a></code> </p>
+        </td>
+        <td><p>Doublet detection with DoubletFinder</p></td>
+      </tr><tr><td>
           <p><code><a href="removeMissing.html">removeMissing()</a></code> <code><a href="removeMissing.html">removeMissingObs()</a></code> </p>
         </td>
         <td><p>Remove missing cells or features from liger object</p></td>
@@ -195,14 +201,14 @@
           <h2 id="integration">Integration <a href="#integration" class="anchor" aria-hidden="true"></a></h2>
           <p class="section-desc"></p>
         </th>
+      </tr></tbody><tbody><tr><th colspan="2">
+          <h3 id="perform-inmf-and-variants">Perform iNMF and Variants <a href="#perform-inmf-and-variants" class="anchor" aria-hidden="true"></a></h3>
+          <p class="section-desc"></p>
+        </th>
       </tr></tbody><tbody><tr><td>
           <p><code><a href="runIntegration.html">runIntegration()</a></code> </p>
         </td>
         <td><p>Integrate scaled datasets with iNMF or variant methods</p></td>
-      </tr><tr><td>
-          <p><code><a href="quantileNorm.html">quantileNorm()</a></code> </p>
-        </td>
-        <td><p>Quantile Align (Normalize) Factor Loadings</p></td>
       </tr><tr><td>
           <p><code><a href="runINMF.html">runINMF()</a></code> </p>
         </td>
@@ -219,7 +225,35 @@
           <p><code><a href="runCINMF.html">runCINMF()</a></code> </p>
         </td>
         <td><p>Perform consensus iNMF on scaled datasets</p></td>
+      </tr></tbody><tbody><tr><th colspan="2">
+          <h3 id="post-factorization-alignment">Post-Factorization Alignment <a href="#post-factorization-alignment" class="anchor" aria-hidden="true"></a></h3>
+          <p class="section-desc"></p>
+        </th>
+      </tr></tbody><tbody><tr><td>
+          <p><code><a href="quantileNorm.html">quantileNorm()</a></code> </p>
+        </td>
+        <td><p>Quantile Align (Normalize) Factor Loadings</p></td>
+      </tr></tbody><tbody><tr><th colspan="2">
+          <h3 id="evaluation">Evaluation <a href="#evaluation" class="anchor" aria-hidden="true"></a></h3>
+          <p class="section-desc"></p>
+        </th>
+      </tr></tbody><tbody><tr><td>
+          <p><code><a href="calcAlignment.html">calcAlignment()</a></code> </p>
+        </td>
+        <td><p>Calculate alignment metric after integration</p></td>
       </tr><tr><td>
+          <p><code><a href="calcAgreement.html">calcAgreement()</a></code> </p>
+        </td>
+        <td><p>Calculate agreement metric after integration</p></td>
+      </tr><tr><td>
+          <p><code><a href="calcDatasetSpecificity.html">calcDatasetSpecificity()</a></code> </p>
+        </td>
+        <td><p>Calculate a dataset-specificity score for each factor</p></td>
+      </tr></tbody><tbody><tr><th colspan="2">
+          <h3 id="optimization-with-new-parameter">Optimization with New Parameter <a href="#optimization-with-new-parameter" class="anchor" aria-hidden="true"></a></h3>
+          <p class="section-desc"></p>
+        </th>
+      </tr></tbody><tbody><tr><td>
           <p><code><a href="optimizeNewData.html">optimizeNewData()</a></code> </p>
         </td>
         <td><p>Perform factorization for new data</p></td>
@@ -239,6 +273,10 @@
           <h2 id="downstream-analysis">Downstream Analysis <a href="#downstream-analysis" class="anchor" aria-hidden="true"></a></h2>
           <p class="section-desc"></p>
         </th>
+      </tr></tbody><tbody><tr><th colspan="2">
+          <h3 id="dimensionality-reduction">Dimensionality Reduction <a href="#dimensionality-reduction" class="anchor" aria-hidden="true"></a></h3>
+          <p class="section-desc"></p>
+        </th>
       </tr></tbody><tbody><tr><td>
           <p><code><a href="runUMAP.html">runUMAP()</a></code> </p>
         </td>
@@ -247,7 +285,11 @@
           <p><code><a href="runTSNE.html">runTSNE()</a></code> </p>
         </td>
         <td><p>Perform t-SNE dimensionality reduction</p></td>
-      </tr><tr><td>
+      </tr></tbody><tbody><tr><th colspan="2">
+          <h3 id="clustering">Clustering <a href="#clustering" class="anchor" aria-hidden="true"></a></h3>
+          <p class="section-desc"></p>
+        </th>
+      </tr></tbody><tbody><tr><td>
           <p><code><a href="runCluster.html">runCluster()</a></code> </p>
         </td>
         <td><p>SNN Graph Based Community Detection</p></td>
@@ -256,6 +298,18 @@
         </td>
         <td><p>Create new variable from categories in cellMeta</p></td>
       </tr><tr><td>
+          <p><code><a href="calcARI.html">calcARI()</a></code> </p>
+        </td>
+        <td><p>Calculate adjusted Rand index (ARI) by comparing two cluster labeling variables</p></td>
+      </tr><tr><td>
+          <p><code><a href="calcPurity.html">calcPurity()</a></code> </p>
+        </td>
+        <td><p>Calculate purity by comparing two cluster labeling variables</p></td>
+      </tr></tbody><tbody><tr><th colspan="2">
+          <h3 id="differential-expression">Differential Expression <a href="#differential-expression" class="anchor" aria-hidden="true"></a></h3>
+          <p class="section-desc"></p>
+        </th>
+      </tr></tbody><tbody><tr><td>
           <p><code><a href="liger-DEG.html">runPairwiseDEG()</a></code> <code><a href="liger-DEG.html">runMarkerDEG()</a></code> <code><a href="liger-DEG.html">runWilcoxon()</a></code> </p>
         </td>
         <td><p>Find DEG between two groups</p></td>
@@ -263,26 +317,27 @@
           <p><code><a href="getFactorMarkers.html">getFactorMarkers()</a></code> </p>
         </td>
         <td><p>Find shared and dataset-specific markers</p></td>
-      </tr><tr><td>
-          <p><code><a href="runDoubletFinder.html">runDoubletFinder()</a></code> </p>
+      </tr></tbody><tbody><tr><th colspan="2">
+          <h3 id="go-and-gsea">GO and GSEA <a href="#go-and-gsea" class="anchor" aria-hidden="true"></a></h3>
+          <p class="section-desc"></p>
+        </th>
+      </tr></tbody><tbody><tr><td>
+          <p><code><a href="runGOEnrich.html">runGOEnrich()</a></code> </p>
         </td>
-        <td><p>Doublet detection with DoubletFinder</p></td>
+        <td><p>Run Gene Ontology enrichment analysis on differentially expressed genes.</p></td>
       </tr><tr><td>
           <p><code><a href="runGSEA.html">runGSEA()</a></code> </p>
         </td>
         <td><p>Analyze biological interpretations of metagene</p></td>
-      </tr><tr><td>
-          <p><code><a href="runGOEnrich.html">runGOEnrich()</a></code> </p>
-        </td>
-        <td><p>Run Gene Ontology enrichment analysis on differentially expressed genes.</p></td>
       </tr></tbody><tbody><tr><th colspan="2">
-          <h2 id="atac-specific-analysis">ATAC Specific Analysis <a href="#atac-specific-analysis" class="anchor" aria-hidden="true"></a></h2>
+          <h3 id="atac-specific-analysis">ATAC Specific Analysis <a href="#atac-specific-analysis" class="anchor" aria-hidden="true"></a></h3>
           <p class="section-desc"></p>
         </th>
       </tr></tbody><tbody><tr><td>
           <p><code><a href="imputeKNN.html">imputeKNN()</a></code> </p>
         </td>
-        <td><p>Impute the query cell expression matrix</p></td>
+        <td><p>Impute the peak counts from gene expression data referring to an ATAC dataset
+after integration</p></td>
       </tr><tr><td>
           <p><code><a href="linkGenesAndPeaks.html">linkGenesAndPeaks()</a></code> </p>
         </td>
@@ -296,10 +351,6 @@
           <p class="section-desc"></p>
         </th>
       </tr></tbody><tbody><tr><td>
-          <p><code><a href="plotCellScatter.html">plotCellScatter()</a></code> </p>
-        </td>
-        <td><p>Generate scatter plot(s) using liger object</p></td>
-      </tr><tr><td>
           <p><code><a href="plotCellViolin.html">plotCellViolin()</a></code> </p>
         </td>
         <td><p>Generate violin/box plot(s) using liger object</p></td>
@@ -316,9 +367,9 @@
         </td>
         <td><p>Create density plot basing on specified coordinates</p></td>
       </tr><tr><td>
-          <p><code><a href="plotDimRed.html">plotClusterDimRed()</a></code> <code><a href="plotDimRed.html">plotDatasetDimRed()</a></code> <code><a href="plotDimRed.html">plotByDatasetAndCluster()</a></code> <code><a href="plotDimRed.html">plotGeneDimRed()</a></code> <code><a href="plotDimRed.html">plotPeakDimRed()</a></code> <code><a href="plotDimRed.html">plotFactorDimRed()</a></code> </p>
+          <p><code><a href="plotDimRed.html">plotDimRed()</a></code> <code><a href="plotDimRed.html">plotClusterDimRed()</a></code> <code><a href="plotDimRed.html">plotDatasetDimRed()</a></code> <code><a href="plotDimRed.html">plotByDatasetAndCluster()</a></code> <code><a href="plotDimRed.html">plotGeneDimRed()</a></code> <code><a href="plotDimRed.html">plotPeakDimRed()</a></code> <code><a href="plotDimRed.html">plotFactorDimRed()</a></code> </p>
         </td>
-        <td><p>Generate Dimensionality Reduction Plot with Coloring</p></td>
+        <td><p>Generate scatter plot(s) using liger object</p></td>
       </tr><tr><td>
           <p><code><a href="plotGeneLoadings.html">plotGeneLoadings()</a></code> <code><a href="plotGeneLoadings.html">plotGeneLoadingRank()</a></code> </p>
         </td>
@@ -385,19 +436,11 @@ proportion</p></td>
         </td>
         <td><p>Generate dot plot from input matrix with ComplexHeatmap</p></td>
       </tr></tbody><tbody><tr><th colspan="2">
-          <h2 id="evaluation-metrics">Evaluation Metrics <a href="#evaluation-metrics" class="anchor" aria-hidden="true"></a></h2>
-          <p class="section-desc"></p>
-        </th>
-      </tr></tbody><tbody><tr><td>
-          <p><code><a href="calcDatasetSpecificity.html">calcDatasetSpecificity()</a></code> </p>
-        </td>
-        <td><p>Calculate a dataset-specificity score for each factor</p></td>
-      </tr></tbody><tbody><tr><th colspan="2">
           <h2 id="object-class">Object Class <a href="#object-class" class="anchor" aria-hidden="true"></a></h2>
           <p class="section-desc"></p>
         </th>
       </tr></tbody><tbody><tr><td>
-          <p><code><a href="liger-class.html">datasets()</a></code> <code><a href="liger-class.html">`datasets&lt;-`()</a></code> <code><a href="liger-class.html">dataset()</a></code> <code><a href="liger-class.html">`dataset&lt;-`()</a></code> <code><a href="liger-class.html">cellMeta()</a></code> <code><a href="liger-class.html">`cellMeta&lt;-`()</a></code> <code><a href="liger-class.html">defaultCluster()</a></code> <code><a href="liger-class.html">`defaultCluster&lt;-`()</a></code> <code><a href="liger-class.html">dimRed()</a></code> <code><a href="liger-class.html">`dimRed&lt;-`()</a></code> <code><a href="liger-class.html">defaultDimRed()</a></code> <code><a href="liger-class.html">`defaultDimRed&lt;-`()</a></code> <code><a href="liger-class.html">varFeatures()</a></code> <code><a href="liger-class.html">`varFeatures&lt;-`()</a></code> <code><a href="liger-class.html">varUnsharedFeatures()</a></code> <code><a href="liger-class.html">`varUnsharedFeatures&lt;-`()</a></code> <code><a href="liger-class.html">commands()</a></code> <code><a href="liger-class.html">show(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">dim(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">dimnames(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">`dimnames&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;list&gt;</i>)</a></code> <code><a href="liger-class.html">names(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">`names&lt;-`(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">length(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">lengths(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">rawData(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">`rawData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;matrixLike_OR_NULL&gt;</i>)</a></code> <code><a href="liger-class.html">`rawData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;H5D&gt;</i>)</a></code> <code><a href="liger-class.html">normData(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">`normData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;matrixLike_OR_NULL&gt;</i>)</a></code> <code><a href="liger-class.html">`normData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;H5D&gt;</i>)</a></code> <code><a href="liger-class.html">scaleData(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>)</a></code> <code><a href="liger-class.html">`scaleData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;matrixLike_OR_NULL&gt;</i>)</a></code> <code><a href="liger-class.html">`scaleData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;H5D&gt;</i>)</a></code> <code><a href="liger-class.html">`scaleData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="liger-class.html">scaleUnsharedData(<i>&lt;liger&gt;</i>,<i>&lt;character&gt;</i>)</a></code> <code><a href="liger-class.html">scaleUnsharedData(<i>&lt;liger&gt;</i>,<i>&lt;numeric&gt;</i>)</a></code> <code><a href="liger-class.html">`scaleUnsharedData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;matrixLike_OR_NULL&gt;</i>)</a></code> <code><a href="liger-class.html">`scaleUnsharedData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;H5D&gt;</i>)</a></code> <code><a href="liger-class.html">`scaleUnsharedData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="liger-class.html">getMatrix(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>)</a></code> <code><a href="liger-class.html">getH5File(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>)</a></code> <code><a href="liger-class.html">`[[&lt;-`(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">`$`(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">`$&lt;-`(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">fortify(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">c(<i>&lt;liger&gt;</i>)</a></code> </p>
+          <p><code><a href="liger-class.html">datasets()</a></code> <code><a href="liger-class.html">`datasets&lt;-`()</a></code> <code><a href="liger-class.html">dataset()</a></code> <code><a href="liger-class.html">`dataset&lt;-`()</a></code> <code><a href="liger-class.html">cellMeta()</a></code> <code><a href="liger-class.html">`cellMeta&lt;-`()</a></code> <code><a href="liger-class.html">defaultCluster()</a></code> <code><a href="liger-class.html">`defaultCluster&lt;-`()</a></code> <code><a href="liger-class.html">dimReds()</a></code> <code><a href="liger-class.html">`dimReds&lt;-`()</a></code> <code><a href="liger-class.html">dimRed()</a></code> <code><a href="liger-class.html">`dimRed&lt;-`()</a></code> <code><a href="liger-class.html">defaultDimRed()</a></code> <code><a href="liger-class.html">`defaultDimRed&lt;-`()</a></code> <code><a href="liger-class.html">varFeatures()</a></code> <code><a href="liger-class.html">`varFeatures&lt;-`()</a></code> <code><a href="liger-class.html">varUnsharedFeatures()</a></code> <code><a href="liger-class.html">`varUnsharedFeatures&lt;-`()</a></code> <code><a href="liger-class.html">commands()</a></code> <code><a href="liger-class.html">show(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">dim(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">dimnames(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">`dimnames&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;list&gt;</i>)</a></code> <code><a href="liger-class.html">names(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">`names&lt;-`(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">length(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">lengths(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">rawData(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">`rawData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;matrixLike_OR_NULL&gt;</i>)</a></code> <code><a href="liger-class.html">`rawData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;H5D&gt;</i>)</a></code> <code><a href="liger-class.html">normData(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">`normData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;matrixLike_OR_NULL&gt;</i>)</a></code> <code><a href="liger-class.html">`normData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;H5D&gt;</i>)</a></code> <code><a href="liger-class.html">scaleData(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>)</a></code> <code><a href="liger-class.html">`scaleData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;matrixLike_OR_NULL&gt;</i>)</a></code> <code><a href="liger-class.html">`scaleData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;H5D&gt;</i>)</a></code> <code><a href="liger-class.html">`scaleData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="liger-class.html">scaleUnsharedData(<i>&lt;liger&gt;</i>,<i>&lt;character&gt;</i>)</a></code> <code><a href="liger-class.html">scaleUnsharedData(<i>&lt;liger&gt;</i>,<i>&lt;numeric&gt;</i>)</a></code> <code><a href="liger-class.html">`scaleUnsharedData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;matrixLike_OR_NULL&gt;</i>)</a></code> <code><a href="liger-class.html">`scaleUnsharedData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;H5D&gt;</i>)</a></code> <code><a href="liger-class.html">`scaleUnsharedData&lt;-`(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="liger-class.html">getMatrix(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>,<i>&lt;ANY&gt;</i>)</a></code> <code><a href="liger-class.html">getH5File(<i>&lt;liger&gt;</i>,<i>&lt;ANY&gt;</i>)</a></code> <code><a href="liger-class.html">`[[&lt;-`(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">`$`(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">`$&lt;-`(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">fortify(<i>&lt;liger&gt;</i>)</a></code> <code><a href="liger-class.html">c(<i>&lt;liger&gt;</i>)</a></code> </p>
         </td>
         <td><p>liger class</p></td>
       </tr><tr><td>
@@ -468,6 +511,23 @@ proportion</p></td>
           <p><code><a href="is.newLiger.html">is.newLiger()</a></code> </p>
         </td>
         <td><p>Check if given liger object if under new implementation</p></td>
+      </tr><tr><td>
+          <p><code><a href="modalOf.html">modalOf()</a></code> </p>
+        </td>
+        <td><p>Return preset modality of a ligerDataset object or that of all datasets in a
+liger object</p></td>
+      </tr><tr><td>
+          <p><code><a href="isH5Liger.html">isH5Liger()</a></code> </p>
+        </td>
+        <td><p>Check if a liger or ligerDataset object is made of HDF5 file</p></td>
+      </tr><tr><td>
+          <p><code><a href="restoreH5Liger.html">restoreH5Liger()</a></code> <code><a href="restoreH5Liger.html">restoreOnlineLiger()</a></code> </p>
+        </td>
+        <td><p>Restore links (to HDF5 files) for reloaded liger/ligerDataset object</p></td>
+      </tr><tr><td>
+          <p><code><a href="closeAllH5.html">closeAllH5()</a></code> </p>
+        </td>
+        <td><p>Close all links (to HDF5 files) of a liger object</p></td>
       </tr></tbody><tbody><tr><th colspan="2">
           <h2 id="misc">Misc <a href="#misc" class="anchor" aria-hidden="true"></a></h2>
           <p class="section-desc"></p>
@@ -481,10 +541,6 @@ proportion</p></td>
         </td>
         <td><p>Check difference of two liger command</p></td>
       </tr><tr><td>
-          <p><code><a href="isH5Liger.html">isH5Liger()</a></code> </p>
-        </td>
-        <td><p>Check if a liger or ligerDataset object is made of HDF5 file</p></td>
-      </tr><tr><td>
           <p><code><a href="makeFeatureMatrix.html">makeFeatureMatrix()</a></code> </p>
         </td>
         <td><p>Fast calculation of feature count matrix</p></td>
@@ -496,15 +552,6 @@ proportion</p></td>
           <p><code><a href="mergeSparseAll.html">mergeSparseAll()</a></code> <code><a href="mergeSparseAll.html">mergeDenseAll()</a></code> </p>
         </td>
         <td><p>Merge matrices while keeping the union of rows</p></td>
-      </tr><tr><td>
-          <p><code><a href="modalOf.html">modalOf()</a></code> </p>
-        </td>
-        <td><p>Return preset modality of a ligerDataset object or that of all datasets in a
-liger object</p></td>
-      </tr><tr><td>
-          <p><code><a href="closeAllH5.html">closeAllH5()</a></code> </p>
-        </td>
-        <td><p>Close all links (to HDF5 files) of a liger object</p></td>
       </tr></tbody><tbody><tr><th colspan="2">
           <h2 id="deprecated">Deprecated <a href="#deprecated" class="anchor" aria-hidden="true"></a></h2>
           <p class="section-desc"></p>
@@ -536,7 +583,7 @@ liger object</p></td>
       </tr><tr><td>
           <p><code><a href="readSubset.html">readSubset()</a></code> </p>
         </td>
-        <td><p>[Deprecated] See <code>downsample</code></p></td>
+        <td><p>[Deprecated] See <code><a href="https://rdrr.io/pkg/rliger/man/downsample.html" class="external-link">downsample</a></code></p></td>
       </tr><tr><td>
           <p><code><a href="quantileAlignSNF.html">quantileAlignSNF()</a></code> </p>
         </td>

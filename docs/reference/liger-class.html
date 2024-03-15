@@ -28,7 +28,7 @@ convertOldLiger."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rliger</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.1</span>
       </span>
     </div>
 
@@ -66,9 +66,6 @@ convertOldLiger."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax
     <li>
       <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
     </li>
-    <li>
-      <a href="../articles/Parameter_selection.html">Parameter selection</a>
-    </li>
   </ul></li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -93,8 +90,17 @@ convertOldLiger."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax
   <a href="../news/index.html">NEWS</a>
 </li>
       </ul><ul class="nav navbar-nav navbar-right"><li>
+  <a href="https://welch-lab.github.io/" class="external-link">Welch Lab</a>
+</li>
+<li>
   <a href="https://github.com/welch-lab/liger" class="external-link">
     <span class="fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
+<li>
+  <a href="https://twitter.com/LabWelch" class="external-link">
+    <span class="fab fa-twitter fa-lg"></span>
      
   </a>
 </li>
@@ -158,13 +164,17 @@ defaultCluster(x, useDatasets = NULL, ...)
 
 defaultCluster(x, name = NULL, useDatasets = NULL, ...) &lt;- value
 
-dimRed(x, name = NULL, useDatasets = NULL, ...)
+dimReds(x)
 
-dimRed(x, name = NULL, useDatasets = NULL, ...) &lt;- value
+dimReds(x) &lt;- value
 
-defaultDimRed(x, useDatasets = NULL)
+dimRed(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...)
 
-defaultDimRed(x, name, useDatasets = NULL) &lt;- value
+dimRed(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...) &lt;- value
+
+defaultDimRed(x, useDatasets = NULL, cellIdx = NULL)
+
+defaultDimRed(x) &lt;- value
 
 varFeatures(x)
 
@@ -348,23 +358,37 @@ defaultCluster(x, name = NULL, useDatasets = NULL, droplevels = TRUE, ...) &lt;-
 # S4 method for liger,ANY,ANY,NULL
 defaultCluster(x, name = NULL, useDatasets = NULL, ...) &lt;- value
 
-# S4 method for liger,missing
-dimRed(x, name = NULL, useDatasets = NULL, ...)
+# S4 method for liger
+dimReds(x)
 
-# S4 method for liger,character
-dimRed(x, name = NULL, useDatasets = NULL, ...)
+# S4 method for liger,list
+dimReds(x) &lt;- value
 
-# S4 method for liger,character,ANY,matrixLike
-dimRed(x, name = NULL, useDatasets = NULL, asDefault = NULL, ...) &lt;- value
+# S4 method for liger,missing_OR_NULL
+dimRed(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...)
+
+# S4 method for liger,index
+dimRed(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...)
+
+# S4 method for liger,index,ANY,ANY,NULL
+dimRed(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...) &lt;- value
+
+# S4 method for liger,character,ANY,ANY,matrixLike
+dimRed(
+  x,
+  name = NULL,
+  useDatasets = NULL,
+  cellIdx = NULL,
+  asDefault = NULL,
+  inplace = FALSE,
+  ...
+) &lt;- value
 
 # S4 method for liger
-defaultDimRed(x, useDatasets = NULL)
+defaultDimRed(x, useDatasets = NULL, cellIdx = cellIdx)
 
-# S4 method for liger,missing,ANY,character
-defaultDimRed(x, name = NULL, useDatasets = NULL) &lt;- value
-
-# S4 method for liger,character,ANY,matrixLike
-defaultDimRed(x, name, useDatasets = NULL) &lt;- value
+# S4 method for liger,character
+defaultDimRed(x) &lt;- value
 
 # S4 method for liger
 varFeatures(x)
@@ -636,15 +660,13 @@ utilizes both clustering information and the dataset source information.</p>
     
 
 <p>Currently, low-dimensional representaion of cells, presented as dense
-matrices, are all stored in <code>cellMeta</code> slot, and can totally be accessed
-with generics <code>cellMeta</code> and <code>cellMeta&lt;-</code>. In addition to that,
-we provide specific generics <code>dimRed</code> and <code>dimRed&lt;-</code> for getting
-and setting matrix like cell metadata, respectively. Adding a matrix to the
+matrices, are all stored in <code>dimReds</code> slot, and can totally be accessed
+with generics <code>dimRed</code> and <code>dimRed&lt;-</code>. Adding a dimRed to the
 object looks as simple as <code>dimRed(obj, "name") &lt;- matrixLike</code>. It can
-be retrived back with <code>dimRed(obj, "name")</code>. Similar to having a default
-cluster labeling, we also constructed the feature of default dimRed. It can
-be set with <code>defaultDimRed(obj) &lt;- "existingMatLikeVar"</code> and the matrix
-can be retrieved with <code>defaultDimRed(obj)</code>.</p>
+be retrieved back with <code>dimRed(obj, "name")</code>. Similar to having a
+default cluster labeling, we also constructed the feature of default dimRed.
+It can be set with <code>defaultDimRed(obj) &lt;- "existingMatLikeVar"</code> and the
+matrix can be retrieved with <code>defaultDimRed(obj)</code>.</p>
     </div>
     <div id="variable-feature-access">
     <h2>Variable feature access</h2>
@@ -720,13 +742,15 @@ account for now.</p>
 <span class="r-in"><span><span class="va">pbmcPlot</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> An object of class liger with 600 cells</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> datasets(2): ctrl (300 cells), stim (300 cells) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> cellMeta(4): dataset, nUMI, leiden_cluster, UMAP </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> cellMeta(3): dataset, nUMI, leiden_cluster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> varFeatures(50): ISG15, ID3, RPL11, ..., HIST1H2AC </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> dimReds(1): UMAP </span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> An object of class liger with 600 cells</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> datasets(2): ctrl (300 cells), stim (300 cells) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> cellMeta(4): dataset, nUMI, leiden_cluster, UMAP </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> cellMeta(3): dataset, nUMI, leiden_cluster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> varFeatures(50): ISG15, ID3, RPL11, ..., HIST1H2AC </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> dimReds(1): UMAP </span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1]  NA 600</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span></span></span>
@@ -740,8 +764,9 @@ account for now.</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> An object of class liger with 10 cells</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> datasets(1): ctrl (10 cells) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> cellMeta(4): dataset, nUMI, leiden_cluster, UMAP </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> cellMeta(3): dataset, nUMI, leiden_cluster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> varFeatures(10): ISG15, ID3, RPL11, ..., S100A8 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> dimReds(1): UMAP </span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "ctrl" "stim"</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span></span></span>
@@ -767,30 +792,24 @@ account for now.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## Retrieving cell metadata, replacement methods available</span></span></span>
 <span class="r-in"><span><span class="fu">cellMeta</span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> DataFrame with 600 rows and 4 columns</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                        dataset      nUMI leiden_cluster                UMAP</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                       &lt;factor&gt; &lt;numeric&gt;       &lt;factor&gt;            &lt;matrix&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACATACCTCGCT.1     ctrl      2151              0 -10.81667:-0.267170</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACGGCTCTTCGC.1     ctrl      1916              0 -12.13574:-1.250376</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACACTCTAAGTAG.1     ctrl      1869              0  -8.49136:-0.379593</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACCGCCTCAGGAG.1     ctrl       733              3   9.25915:-2.194184</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACGTTCTTCCGTC.1     ctrl       573              1  11.01452: 1.011377</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ...                        ...       ...            ...                 ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCATGACTTATCC.1     stim      1091              0   -9.09448:-1.64488</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCATGACTTCAGG.1     stim       431              1   11.06921: 1.90540</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCGGAGATTTCAC.1     stim      1344              7   -9.19272:-5.79065</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTGACACTTCCTGC.1     stim      1423              7   -8.98261:-6.10248</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTTGCATGAACGAA.1     stim      2818              6  -11.76853:-2.50135</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> DataFrame with 600 rows and 3 columns</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                        dataset      nUMI leiden_cluster</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                       &lt;factor&gt; &lt;numeric&gt;       &lt;factor&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACATACCTCGCT.1     ctrl      2151              0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACGGCTCTTCGC.1     ctrl      1916              0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACACTCTAAGTAG.1     ctrl      1869              0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACCGCCTCAGGAG.1     ctrl       733              3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACGTTCTTCCGTC.1     ctrl       573              1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ...                        ...       ...            ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCATGACTTATCC.1     stim      1091              0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCATGACTTCAGG.1     stim       431              1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTCGGAGATTTCAC.1     stim      1344              7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTGACACTTCCTGC.1     stim      1423              7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> stim_TTTGCATGAACGAA.1     stim      2818              6</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">[[</span><span class="st">"nUMI"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2151 1916 1869  733  573 1872</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">$</span><span class="va">UMAP</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                                1          2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACATACCTCGCT.1 -10.816668 -0.2671702</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACGGCTCTTCGC.1 -12.135740 -1.2503758</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACACTCTAAGTAG.1  -8.491358 -0.3795932</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACCGCCTCAGGAG.1   9.259152 -2.1941839</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AACGTTCTTCCGTC.1  11.014518  1.0113766</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAGAACGAAACGAA.1  -9.361416 -5.3618426</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## Retrieving variable features, replacement methods available</span></span></span>
 <span class="r-in"><span><span class="fu">varFeatures</span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">)</span></span></span>
@@ -816,7 +835,7 @@ account for now.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "normalize.liger_741028558e"      "selectGenes.liger_c7a9432654"   </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [3] "scaleNotCenter.liger_fbb78f6b9e" "runINMF.liger_2b7a03d986"       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [5] "quantileNorm.liger_3d42d49bd9"   "runCluster_8c80b11e91"          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [7] "runUMAP_51304eca8d"              "scaleNotCenter.liger_c0902901ab"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [7] "runUMAP_51304eca8d"              "scaleNotCenter.liger_34e18a2db6"</span>
 <span class="r-in"><span><span class="fu">commands</span><span class="op">(</span><span class="va">pbmcPlot</span>, funcName <span class="op">=</span> <span class="st">"scaleNotCenter"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $scaleNotCenter.liger_fbb78f6b9e</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> A liger command record, performed at 02-29-2024 23:33:43 EST </span>
@@ -826,8 +845,8 @@ account for now.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     features : "Long character with 173 elements: ISG15, ID3, RPL11, ..., CCNH" </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     verbose : TRUE </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $scaleNotCenter.liger_c0902901ab</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> A liger command record, performed at 03-14-2024 11:26:40 EDT </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $scaleNotCenter.liger_34e18a2db6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> A liger command record, performed at 03-15-2024 15:49:50 EDT </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Call: scaleNotCenter.liger(pbmcPlot) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Parameters:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     useDatasets : "ctrl", "stim" </span>
@@ -841,11 +860,12 @@ account for now.</p>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">pbmcPlot</span>, <span class="va">pbmcPlot2</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> An object of class liger with 1200 cells</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> datasets(4): ctrl (300 cells), stim (300 cells), ctrl2 (300 cells), stim2 (300 cells) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> cellMeta(4): dataset, nUMI, leiden_cluster, UMAP </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> cellMeta(3): dataset, nUMI, leiden_cluster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> varFeatures(50): ISG15, ID3, RPL11, ..., HIST1H2AC </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> dimReds(0):  </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">pbmcPlot</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">UMAP.1</span>, y <span class="op">=</span> <span class="va">UMAP.2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">pbmcPlot</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">UMAP_1</span>, y <span class="op">=</span> <span class="va">UMAP_2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="liger-class-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="fu">cellMeta</span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> DataFrame with 600 rows and 7 columns</span>

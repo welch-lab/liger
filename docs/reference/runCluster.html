@@ -24,7 +24,7 @@ the former is not available."><!-- mathjax --><script src="https://cdnjs.cloudfl
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rliger</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.99.1</span>
       </span>
     </div>
 
@@ -62,9 +62,6 @@ the former is not available."><!-- mathjax --><script src="https://cdnjs.cloudfl
     <li>
       <a href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
     </li>
-    <li>
-      <a href="../articles/Parameter_selection.html">Parameter selection</a>
-    </li>
   </ul></li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -89,8 +86,17 @@ the former is not available."><!-- mathjax --><script src="https://cdnjs.cloudfl
   <a href="../news/index.html">NEWS</a>
 </li>
       </ul><ul class="nav navbar-nav navbar-right"><li>
+  <a href="https://welch-lab.github.io/" class="external-link">Welch Lab</a>
+</li>
+<li>
   <a href="https://github.com/welch-lab/liger" class="external-link">
     <span class="fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
+<li>
+  <a href="https://twitter.com/LabWelch" class="external-link">
+    <span class="fab fa-twitter fa-lg"></span>
      
   </a>
 </li>
@@ -233,7 +239,7 @@ with <code>object[[clusterName]]</code></p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> leiden clustering on quantile normalized cell factor loadings</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> leiden clustering on quantile normalized cell factor loadings ... Found 8 clu…</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> cellMeta variable <span style="color: #00BB00;">leiden_cluster</span> is now set as default.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> <span style="color: #00BB00;">cellMeta</span> variable <span style="color: #0000BB;">"leiden_cluster"</span> is now set as default.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">$</span><span class="va">leiden_cluster</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACATACCTCGCT.1 ctrl_AAACGGCTCTTCGC.1 ctrl_AACACTCTAAGTAG.1 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                     0                     0                     0 </span>
@@ -255,7 +261,7 @@ with <code>object[[clusterName]]</code></p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Elapsed time: 0 seconds</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> louvain clustering on quantile normalized cell factor loadings ... Found 8 cl…</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> cellMeta variable <span style="color: #00BB00;">louvain_cluster</span> is now set as default.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> <span style="color: #00BB00;">cellMeta</span> variable <span style="color: #0000BB;">"louvain_cluster"</span> is now set as default.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pbmcPlot</span><span class="op">$</span><span class="va">louvain_cluster</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ctrl_AAACATACCTCGCT.1 ctrl_AAACGGCTCTTCGC.1 ctrl_AACACTCTAAGTAG.1 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                     0                     0                     0 </span>
