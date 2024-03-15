@@ -277,6 +277,20 @@ setGeneric(
 #' It can be set with \code{defaultDimRed(obj) <- "existingMatLikeVar"} and the
 #' matrix can be retrieved with \code{defaultDimRed(obj)}.
 setGeneric(
+    "dimReds",
+    function(x) standardGeneric("dimReds")
+)
+
+#' @export
+#' @rdname liger-class
+setGeneric(
+    "dimReds<-",
+    function(x, value) standardGeneric("dimReds<-")
+)
+
+#' @export
+#' @rdname liger-class
+setGeneric(
     "dimRed",
     function(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...) {
         standardGeneric("dimRed")
