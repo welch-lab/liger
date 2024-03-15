@@ -250,7 +250,10 @@ calcDatasetSpecificity <- function(
         do.plot = doPlot
 ) {
     .deprecateArgs(list(do.plot = "doPlot"))
-    H1 <- getMatrix(object, slot = "H", dataset = 1)
+    H1 <- getMatrix(object, slot = "H", dataset = dataset1)
+    if (is.null(H1)) {
+        cli::cli_abort("No {.field H} matrix found for dataset {.val {dataset1}}.")
+    }
     # V: List of two g x k matrices
     V <- getMatrix(object, slot = "V", dataset = c(dataset1, dataset2))
     W <- getMatrix(object, slot = "W")

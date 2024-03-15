@@ -6,7 +6,7 @@
 \usage{
 convertOldLiger(
   object,
-  dimredName = "tsne.coords",
+  dimredName,
   clusterName = "clusters",
   h5FilePath = NULL
 )

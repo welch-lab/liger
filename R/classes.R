@@ -14,6 +14,7 @@ setClassUnion("index",
               members = c("logical", "numeric", "character"))
 setClassUnion("Number_or_NULL", c("integer", "numeric", "NULL"))
 setClassUnion("dataframe", c("data.frame", "DataFrame", "NULL", "missing"))
+setClassUnion("missing_OR_NULL", c("missing", "NULL"))
 
 #' @importClassesFrom Matrix dgCMatrix dgTMatrix dgeMatrix
 NULL
@@ -185,6 +186,7 @@ liger <- setClass(
         varFeatures = "character_OR_NULL",
         W = "matrix_OR_NULL",
         H.norm = "matrix_OR_NULL",
+        dimReds = "list",
         uns = "list",
         commands = "list",
         version = "ANY"
@@ -211,6 +213,21 @@ liger <- setClass(
     ds_ds <- names(x@datasets)
     if (!identical(ds_cm, ds_ds)) {
         return("`levels(x$dataset)` does not match `names(x)`.")
+    }
+    return(NULL)
+}
+
+.checkDimReds <- function(x) {
+    barcodes <- rownames(x@cellMeta)
+    for (i in seq_along(x@dimReds)) {
+        dr <- x@dimReds[[i]]
+        drName <- names(x@dimReds[i])
+        if (is.null(drName))
+            return(paste("Unnamed dimReds at index", i))
+        if (!inherits(dr, "matrix"))
+            return(paste("DimReds", drName, "is not of matrix class"))
+        if (!identical(rownames(dr), barcodes))
+            return(paste("DimReds", drName, "does not match barcodes"))
     }
     return(NULL)
 }
@@ -284,6 +301,8 @@ liger <- setClass(
 
 .valid.liger <- function(object) {
     res <- .checkAllDatasets(object)
+    if (!is.null(res)) return(res)
+    res <- .checkDimReds(object)
     if (!is.null(res)) return(res)
     res <- .checkDatasetVar(object)
     if (!is.null(res)) return(res)

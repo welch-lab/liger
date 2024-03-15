@@ -37,7 +37,9 @@ instead of the average for all datasets. Default \code{FALSE}.}
 
 \item{dr.method}{[defunct] We no longer support other methods but just NMF.}
 
-\item{use.aligned, rand.seed, by.dataset}{[Deprecated] Use \code{useRaw} instead.}
+\item{k, rand.seed, by.dataset}{[Deprecated] See Usage for replacement.}
+
+\item{use.aligned}{[defunct] Use \code{useRaw} instead.}
 }
 \value{
 A numeric vector of agreement metric. A single value if

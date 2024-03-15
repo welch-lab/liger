@@ -36,8 +36,7 @@ features.
 \description{
 Only retrieve data from specific slot to reduce memory used by
 a whole \linkS4class{liger} object of the subset. Useful for plotting.
-Internally used by \code{\link{plotCellScatter}} and
-\code{\link{plotCellViolin}}.
+Internally used by \code{\link{plotDimRed}} and \code{\link{plotCellViolin}}.
 }
 \examples{
 S100A8Exp <- retrieveCellFeature(pbmc, "S100A8")

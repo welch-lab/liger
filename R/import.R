@@ -378,7 +378,8 @@ readLiger <- function(
         if (isH5Liger(obj)) obj <- restoreH5Liger(obj)
         return(obj)
     }
-    cli::cli_alert_info("Older version ({.val {ver}}) of {.cls liger} object detected.")
+    if (ver < package_version("1.99.1"))
+        cli::cli_alert_info("Older version ({.val {ver}}) of {.cls liger} object detected.")
     if (isTRUE(update)) {
         cli::cli_alert_info(
             "Updating the object structure to make it compatible with current version {.val {utils::packageVersion('rliger')}}"

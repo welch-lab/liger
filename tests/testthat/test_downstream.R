@@ -117,13 +117,13 @@ test_that("dimensionality reduction", {
                    "Generating UMAP on unnormalized")
     expect_message(pbmc <- runUMAP(pbmc, useRaw = FALSE),
                    "Generating UMAP on quantile normalized")
-    expect_equal(dim(pbmc$UMAP), c(ncol(pbmc), 2))
+    expect_equal(dim(dimRed(pbmc, "UMAP")), c(ncol(pbmc), 2))
 
     expect_message(runTSNE(pbmc, useRaw = TRUE),
                    "Generating TSNE \\(Rtsne\\) on unnormalized")
     expect_message(pbmc <- runTSNE(pbmc, useRaw = FALSE),
                    "Generating TSNE \\(Rtsne\\) on quantile normalized")
-    expect_equal(dim(pbmc$TSNE), c(ncol(pbmc), 2))
+    expect_equal(dim(dimRed(pbmc, "TSNE")), c(ncol(pbmc), 2))
 
     expect_error(runTSNE(pbmc, method = "fft"),
                  "Please pass in path to FIt-SNE directory as fitsne.path.")

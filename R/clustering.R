@@ -125,7 +125,7 @@ runCluster <- function(
         cli::cli_process_done(msg_done = "{method} clustering on {type} cell factor loadings ... Found {nlevels(clusts)} clusters.")
     object@uns$defaultCluster <- object@uns$defaultCluster %||% clusterName
     if (isTRUE(verbose))
-        cli::cli_alert_info("cellMeta variable {.field {clusterName}} is now set as default.")
+        cli::cli_alert_info("{.field cellMeta} variable {.val {clusterName}} is now set as default.")
     return(object)
 }
 

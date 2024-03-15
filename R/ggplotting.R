@@ -26,8 +26,6 @@
 #' rliger package. These are based on the nature of \code{as.data.frame} method
 #' on a \code{\link[S4Vectors]{DataFrame}} object.
 #' @param object A \linkS4class{liger} object
-#' @param x,y Available variable name in \code{cellMeta} slot to look for
-#' the dot coordinates. See details.
 #' @param colorBy Available variable name in specified \code{slot} to look for
 #' color annotation information. See details. Default \code{NULL} generates
 #' all-black dots.
@@ -57,21 +55,16 @@
 #' objects.
 #' @export
 #' @examples
-#' plotCellScatter(pbmcPlot, x = "UMAP.1", y = "UMAP.2",
-#'                 colorBy = "dataset", slot = "cellMeta",
-#'                 labelText = FALSE)
-#' plotCellScatter(pbmcPlot, x = "UMAP.1", y = "UMAP.2",
-#'                 colorBy = "S100A8", slot = "normData",
-#'                 dotOrder = "ascending", dotSize = 2)
-#' plotCellScatter(pbmcPlot, x = "UMAP.1", y = "UMAP.2",
-#'                 colorBy = 2, slot = "H.norm",
-#'                 dotOrder = "ascending", dotSize = 2,
-#'                 colorPalette = "viridis")
-plotCellScatter <- function(
+#' plotDimRed(pbmcPlot, colorBy = "dataset", slot = "cellMeta",
+#'            labelText = FALSE)
+#' plotDimRed(pbmcPlot, colorBy = "S100A8", slot = "normData",
+#'            dotOrder = "ascending", dotSize = 2)
+#' plotDimRed(pbmcPlot, colorBy = 2, slot = "H.norm",
+#'            dotOrder = "ascending", dotSize = 2, colorPalette = "viridis")
+plotDimRed <- function(
         object,
-        x,
-        y,
         colorBy = NULL,
+        useDimRed = NULL,
         slot = c("cellMeta", "rawData", "normData",
                  "scaleData", "H.norm", "H",
                  "normPeak", "rawPeak"),
@@ -83,8 +76,12 @@ plotCellScatter <- function(
         ...
 ) {
     slot <- match.arg(slot)
-    plotDF <- cellMeta(object, c(x, y), cellIdx = cellIdx,
-                       as.data.frame = TRUE)
+    # useDimRed <- useDimRed %||% object@uns$defaultDimRed
+    # useDimRed <- .findDimRedName(object, useDimRed, stopOnNull = TRUE, returnFirst = TRUE)
+    plotDF <- as.data.frame(dimRed(object, useDimRed, cellIdx = cellIdx))
+    x <- colnames(plotDF)[1]
+    y <- colnames(plotDF)[2]
+
     ann <- .fetchCellMetaVar(object, variables = c(shapeBy, splitBy),
                              checkCategorical = TRUE, cellIdx = cellIdx,
                              drop = FALSE, droplevels = TRUE)
@@ -95,7 +92,7 @@ plotCellScatter <- function(
     plotDFList <- list()
     colorByParam <- list()
     if (!is.null(colorBy)) {
-        colorDF <- retrieveCellFeature(object, feature =  colorBy,
+        colorDF <- retrieveCellFeature(object, feature = colorBy,
                                        slot = slot, cellIdx = cellIdx,
                                        verbose = FALSE)
         # When retrieving H/H.norm, exact colname might not be what `colorBy` is
@@ -165,7 +162,9 @@ plotCellScatter <- function(
 #' labels on the scatter plot.
 #' @param plotDF Data frame like object (fortifiable) that contains all
 #' necessary information to make the plot.
-#' @param x,y,colorBy,shapeBy See \code{\link{plotCellScatter}}.
+#' @param x,y Available variable name in \code{cellMeta} slot to look for
+#' the dot coordinates. See details.
+#' @param colorBy,shapeBy See \code{\link{plotDimRed}}.
 #' @param dotOrder Controls the order that each dot is added to the plot. Choose
 #' from \code{"shuffle"}, \code{"ascending"}, or \code{"descending"}. Default
 #' \code{"shuffle"}, useful when coloring by categories that overlaps (e.g.

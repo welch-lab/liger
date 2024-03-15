@@ -26,6 +26,10 @@ calcAlignment(
 \item{object}{A \linkS4class{liger} object, with \code{\link{quantileNorm}}
 already run.}
 
+\item{clustersUse}{The clusters to consider for calculating the alignment.
+Should be a vector of existing levels in \code{clusterVar}. Default
+\code{NULL}. See Details.}
+
 \item{clusterVar}{The name of one variable in \code{cellMeta(object)}.
 Default \code{NULL} uses default clusters.}
 
@@ -46,10 +50,6 @@ On which level should the mean alignment be calculated. Default \code{"all"}.}
 see Usage for replacement.}
 
 \item{by.cell, by.dataset}{[Defunct] Use \code{resultBy} instead.}
-
-\item{clusterUse}{The clusters to consider for calculating the alignment.
-Should be a vector of existing levels in \code{clusterVar}. Default
-\code{NULL}. See Details.}
 }
 \value{
 The alignment metric.

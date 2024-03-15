@@ -1619,7 +1619,8 @@ quantile_norm <- function( # nocov start
 #' @param byDataset Whether to return agreement calculated for each dataset
 #' instead of the average for all datasets. Default \code{FALSE}.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
-#' @param use.aligned,rand.seed,by.dataset [Deprecated] Use \code{useRaw} instead.
+#' @param k,rand.seed,by.dataset [Deprecated] See Usage for replacement.
+#' @param use.aligned [defunct] Use \code{useRaw} instead.
 #' @param dr.method [defunct] We no longer support other methods but just NMF.
 #' @return A numeric vector of agreement metric. A single value if
 #' \code{byDataset = FALSE} or each dataset a value otherwise.
@@ -1745,7 +1746,7 @@ calcAgreement <- function(
 #' }
 #' @param object A \linkS4class{liger} object, with \code{\link{quantileNorm}}
 #' already run.
-#' @param clusterUse The clusters to consider for calculating the alignment.
+#' @param clustersUse The clusters to consider for calculating the alignment.
 #' Should be a vector of existing levels in \code{clusterVar}. Default
 #' \code{NULL}. See Details.
 #' @param clusterVar The name of one variable in \code{cellMeta(object)}.
