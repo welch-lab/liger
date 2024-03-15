@@ -1,10 +1,17 @@
-#' Impute the query cell expression matrix
-#' @description Impute query features from a reference dataset using KNN.
+#' Impute the peak counts from gene expression data referring to an ATAC dataset
+#' after integration
+#' @description
+#' This function is designed for creating peak data for a dataset with only gene
+#' expression. This function uses quantile normalized cell factor loading to
+#' find nearest neighbors between cells from the queried dataset (without peak)
+#' and cells from reference dataset (with peak). And then impute the peak for
+#' the former basing on the weight. Therefore, the reference dataset selected
+#' must be of "atac" modality setting.
 #' @param object \linkS4class{liger} object with aligned factor loading computed
 #' in advance.
 #' @param nNeighbors The maximum number of nearest neighbors to search. Default
 #' \code{20}.
-#' @param reference Name of a dataset containing values to impute into query
+#' @param reference Name of a dataset containing peak data to impute into query
 #' dataset(s).
 #' @param queries Names of datasets to be augmented by imputation. Should not
 #' include \code{reference}. Default \code{NULL} uses all datasets except the

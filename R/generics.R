@@ -491,7 +491,7 @@ setGeneric("normPeak<-", function(x, dataset, check = TRUE, value) standardGener
 #' }
 as.liger <- function(object, ...) UseMethod("as.liger", object)
 
-#' Converting other classes of data to a as.ligerDataset object
+#' Converting other classes of data to a ligerDataset object
 #' @description
 #' Works for converting a matrix or container object to a single ligerDataset,
 #' and can also convert the modality preset of a ligerDataset. When used with
