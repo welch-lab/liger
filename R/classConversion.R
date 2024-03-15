@@ -137,7 +137,7 @@ as.liger.Seurat <- function(
     for (rd in SeuratObject::Reductions(object)) {
         mat <- object[[rd]][[]]
         colnames(mat) <- seq_len(ncol(mat))
-        cellMeta(lig, rd) <- mat
+        dimRed(lig, rd) <- mat
     }
     return(lig)
 }
@@ -341,29 +341,14 @@ ligerToSeurat <- function(
     }
 
     # Split normal data.frame compatible info and dimReds
-    metadata <- data.frame(row.names = colnames(object))
-    dimReds <- list()
-    for (i in seq_along(cellMeta(object))) {
-        varname <- names(cellMeta(object))[i]
-        var <- cellMeta(object)[[i]]
-        if (is.null(dim(var))) metadata[[varname]] <- var
-        else dimReds[[varname]] <- var
-    }
+    metadata <- .DataFrame.as.data.frame(cellMeta(object))
+    dimReds <- dimReds(object)
     srt <- Seurat::CreateSeuratObject(counts = Assay, assay = assay,
                                       meta.data = metadata)
 
     srt$orig.ident <- orig.ident
     Seurat::Idents(srt) <- idents
 
-    # if (!is.null(data)) {
-    #     srt <- .setSeuratData(srt, layer = "ligerNormData", slot = "data",
-    #                           value = data, assay = assay, denseIfNeeded = FALSE)
-    # }
-    # if (!is.null(scale.data)) {
-    #     srt <- .setSeuratData(srt, layer = "ligerScaleData", slot = "scale.data",
-    #                           value = scale.data, assay = assay,
-    #                           denseIfNeeded = TRUE)
-    # }
     # Attempt to get H.norm primarily. If it is NULL, then turn to H
     h <- getMatrix(object, "H.norm") %||%
         getMatrix(object, "H", returnList = TRUE)

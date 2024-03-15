@@ -685,7 +685,7 @@ searchH <- function(object, useRaw = NULL) {
 # use when you have objects created when this package was named by `rliger2`
 # now we rename the package back to `rliger` and you'll need to have the objects
 # compatible with "new" package name.
-rliger2_to_rliger_namespace <- function(obj, dimredName = NULL) {
+rliger2_to_rliger_namespace <- function(obj, dimredName) {
     cm <- obj@cellMeta
     drList <- list()
     for (i in dimredName) {

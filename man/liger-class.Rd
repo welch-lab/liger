@@ -13,6 +13,8 @@
 \alias{cellMeta<-}
 \alias{defaultCluster}
 \alias{defaultCluster<-}
+\alias{dimReds}
+\alias{dimReds<-}
 \alias{dimRed}
 \alias{dimRed<-}
 \alias{defaultDimRed}
@@ -68,6 +70,8 @@
 \alias{defaultCluster<-,liger,ANY,ANY,character-method}
 \alias{defaultCluster<-,liger,ANY,ANY,factor-method}
 \alias{defaultCluster<-,liger,ANY,ANY,NULL-method}
+\alias{dimReds,liger-method}
+\alias{dimReds<-,liger,list-method}
 \alias{dimRed,liger,missing_OR_NULL-method}
 \alias{dimRed,liger,index-method}
 \alias{dimRed<-,liger,index,ANY,ANY,NULL-method}
@@ -114,6 +118,10 @@ cellMeta(
 defaultCluster(x, useDatasets = NULL, ...)
 
 defaultCluster(x, name = NULL, useDatasets = NULL, ...) <- value
+
+dimReds(x)
+
+dimReds(x) <- value
 
 dimRed(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...)
 
@@ -258,6 +266,10 @@ commands(x, funcName = NULL, arg = NULL)
 \S4method{defaultCluster}{liger,ANY,ANY,factor}(x, name = NULL, useDatasets = NULL, droplevels = TRUE, ...) <- value
 
 \S4method{defaultCluster}{liger,ANY,ANY,NULL}(x, name = NULL, useDatasets = NULL, ...) <- value
+
+\S4method{dimReds}{liger}(x)
+
+\S4method{dimReds}{liger,list}(x) <- value
 
 \S4method{dimRed}{liger,missing_OR_NULL}(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...)
 

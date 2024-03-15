@@ -1128,6 +1128,26 @@ setReplaceMethod(
 #' @export
 #' @rdname liger-class
 setMethod(
+    "dimReds",
+    signature = c(x = "liger"),
+    function(x) x@dimReds
+)
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "dimReds",
+    signature(x = "liger", value = "list"),
+    function(x, value) {
+        x@dimReds <- value
+        validObject(x)
+        return(x)
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setMethod(
     "dimRed",
     signature = c(x = "liger", name = "missing_OR_NULL"),
     function(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...) {
