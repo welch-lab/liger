@@ -1,15 +1,13 @@
 template:
   bootstrap: 5
-  theme: flatly
   bslib:
-    bg: "#202123"
-    fg: "#B8BCC2"
-    primary: "#306cc9"
-    border-radius: 0.5rem
-    btn-border-radius: 0.25rem
-  includes:
-    in_header:
-      <script defer data-domain="welch-lab.github.io/liger" src="https://plausible.io/js/plausible.js"></script>
+    info: "#E6F2FD"
+    base_font:
+      google: {family: "Atkinson Hyperlegible", wght: [300, 400, 700], ital: [0, 1]}
+    headings-color: "#206B72"
+    link-color: "#216B73"
+    link-color-dark: "#cef4f9"
+    link-decoration: underline dotted
 
 reference:
 - title: "Read Data"
