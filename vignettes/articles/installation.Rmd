@@ -33,7 +33,7 @@ devtools::install_github("welch-lab/liger@newObj")
 
 If you encounter issues when building from source, please see below sections for details about some dependencies.
 
-**Please note that the latest version (>=1.9.9) is massively updated compared to prior versions, and functions are not directly compatible with the old version objects which users might possess. Please use `readLiger()` to load old RDS files or `convertOldLiger()` to convert a loaded object into the up-to-date structure. You might need to be careful when overwriting existing analysis because we don't provide methods to convert new the structure backwards.**
+**Please note that the latest version (>=1.99.0) is massively updated compared to prior versions, and functions are not directly compatible with the old version objects which users might possess. Please use `readLiger()` to load old RDS files or `convertOldLiger()` to convert a loaded object into the up-to-date structure. You might need to be careful when overwriting existing analysis because we don't provide methods to convert new the structure backwards.**
 
 ### Compiler setup
 

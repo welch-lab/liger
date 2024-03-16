@@ -1,6 +1,15 @@
 template:
-  params:
-    bootswatch: flatly
+  bootstrap: 5
+  theme: flatly
+  bslib:
+    bg: "#202123"
+    fg: "#B8BCC2"
+    primary: "#306cc9"
+    border-radius: 0.5rem
+    btn-border-radius: 0.25rem
+  includes:
+    in_header:
+      <script defer data-domain="welch-lab.github.io/liger" src="https://plausible.io/js/plausible.js"></script>
 
 reference:
 - title: "Read Data"

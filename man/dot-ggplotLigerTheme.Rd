@@ -32,7 +32,7 @@
   legendNRow = NULL,
   legendNCol = NULL,
   colorLabels = NULL,
-  colorValues = scPalette,
+  colorValues = NULL,
   colorPalette = "magma",
   colorDirection = -1,
   naColor = "#DEDEDE",
@@ -88,8 +88,9 @@ automatically split to \code{ceiling(levels(variable)/10)} columns.}
 \item{colorLabels, colorValues}{Each a vector with as many values as the
 number of categories for the categorical coloring aesthetics. Labels will be
 the shown text and values will be the color code. These are passed to
-\code{\link[ggplot2]{scale_color_manual}}. Default uses \code{scPalette} and
-plot original labels (levels of the factor).}
+\code{\link[ggplot2]{scale_color_manual}}. Default uses an internal selected
+palette if there are <= 26 colors needed, or ggplot hues otherwise, and plot
+original labels (levels of the factor).}
 
 \item{colorPalette}{For continuous coloring, an index or a palette name to
 select from available options from ggplot

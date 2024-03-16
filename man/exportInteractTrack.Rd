@@ -34,6 +34,7 @@ which is compatible with \href{https://genome.ucsc.edu/cgi-bin/hgCustom}{UCSC
 Genome Browser}.
 }
 \examples{
+\donttest{
 bmmc <- normalize(bmmc)
 bmmc <- selectGenes(bmmc)
 bmmc <- scaleNotCenter(bmmc)
@@ -53,5 +54,6 @@ if (requireNamespace("RcppPlanc", quietly = TRUE)) {
         outputPath = resultPath
     )
     head(read.table(resultPath, skip = 1))
+}
 }
 }

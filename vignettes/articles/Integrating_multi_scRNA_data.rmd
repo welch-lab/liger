@@ -10,7 +10,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, cache = TRUE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 
 This guide will demonstrate the usage of the Liger package in the style of the R Console, which can be accessed through an R development environment (e.g., RStudio) or directly from the R command line.

@@ -408,6 +408,15 @@ setReplaceMethod(
     function(x, check = TRUE, value) {
         if (isH5Liger(x))
             cli::cli_abort("Cannot replace slot with in-memory data for H5 based object.")
+        if (!is.null(value)) {
+            bc <- x@colnames
+            if (!all(endsWith(bc, colnames(value)))) {
+                cli::cli_abort(
+                    "Column names of {.var value} do not match to those of the object."
+                )
+            }
+            colnames(value) <- bc
+        }
         x@scaleUnsharedData <- value
         if (isTRUE(check)) methods::validObject(x)
         x

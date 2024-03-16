@@ -16,12 +16,14 @@ Unshared integrative non-negative matrix factorization (UINMF) [[Kriebel and Wel
 3. UINMF can utilize all of the information present in single-cell multimodal datasets when integrating with single-modality datasets. 
 4. UINMF can accommodate non-orthologous genes in cross-species integration analyses.
 
-For this tutorial, we prepared example osmFISH dataset (33 genes by 5,219 cells) from the mouse somatosensory cortex, and a downsampled single-cell RNA-seq dataset (29,463 genes by 15,000 cells) from the frontal cortex. The datasets can be downloaded at https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0
+For this tutorial, we prepared example input data which can be found in the [Dropbox folder](https://www.dropbox.com/scl/fo/npj3x6ygp5bkl702gycnu/h?rlkey=llaana00wg81tgzp3oodhhe7p&dl=0)
 
+- osmFISH dataset `OSMFISH.vin.RDS`, 33 genes by 5,219 cells, in dense matrix form, rom the mouse somatosensory cortex
+- A downsampled single-cell RNA-seq dataset `DROPVIZ.vin.RDS`, 29,463 genes by 15,000 cells, from the frontal cortex. 
 
 ## Step 1: Preprocessing and Normalization
 
-### 1. Loading the data
+### 1.1 Loading the data
 
 The prepared RDS files can be directly loaded into the R environment. They are presented in dense matrix (R default) form. We recommend converting them to sparse matrix form ("dgCMatrix" class supported by "Matrix" package) in order to reduce memory usage and speed up downstream analysis.
 
@@ -36,11 +38,10 @@ options(ligerDotSize = 0.5)
 osmFISH <- readRDS("uinmf_vignette_data/OSMFISH.vin.RDS")
 osmFISH <- as(osmFISH, "CsparseMatrix")
 rna <- readRDS("uinmf_vignette_data/DROPVIZ.vin.RDS")
-rna <- as(rna, "CsparseMatrix")
 lig <- createLiger(list(osmFISH = osmFISH, rna = rna))
 ```
 
-### 2. Preprocess the datasets
+### 1.2 Preprocess the datasets
 
 The normalization is applied to the datasets in their entirety.
 
@@ -67,16 +68,15 @@ The scaled matrix for shared features can be accessed with `scaleData()`. The sc
 
 ## Step 2: Joint Matrix Factorization
 
-### 3. Run UINMF
-
 We provide function `runIntegration()` for a general wrapper of all integration method we developed. Users can do `runIntegration(..., method = "UINMF")` to perform the analysis. Alternatively, stand-alone function `runUINMF()` is also provided with more specific parameter setitng guide. 
 
 ```{r factorization}
 lig <- runIntegration(lig, k = 30, method = "UINMF")
 ```
+
 ## Step 3: Quantile Normalization and Joint Clustering
 
-### 4. Quantile normalize the factor loading
+### 3.1 Quantile normalize the factor loading
 
 After factorization, the resulting liger object can be used in all downstream LIGER functions without adjustment. The default reference dataset for quantile normalization is the larger dataset, but the user should select the higher quality dataset as the reference dataset, even if it is the smaller dataset.
 
@@ -84,7 +84,7 @@ After factorization, the resulting liger object can be used in all downstream LI
 lig <- quantileNorm(lig, reference = "rna")
 ```
 
-### 5. Leiden clustering
+### 3.2 Leiden clustering
 
 With the quantile normalized cell factor loading, we can then apply Leiden graph-based community detection method on it. 
 
@@ -94,13 +94,13 @@ lig <- runCluster(lig)
 
 ## Step 4: Visualizations and Downstream processing
 
-### 6. Create dimension reduction embedding
+### 4.1 Create dimension reduction embedding
 
 ```{r runumap}
 lig <- runUMAP(lig)
 ```
 
-### 7. Visualize
+### 4.2 Visualize
 
 Next, we can visualize our returned factorized object by dataset to check the alignment between datasets, as well as by cluster determined in the factorization.
 

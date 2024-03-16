@@ -424,7 +424,7 @@ test_that("as.liger methods", {
         expect_message(lig <- as.liger(seu))
         expect_true(all.equal(sapply(datasets(lig), ncol), c(a = 150, b = 150)))
 
-        expect_in(paste0("pca.", 1:10), colnames(cellMeta(lig, as.data.frame = TRUE)))
+        expect_in("pca", names(dimReds(lig)))
     }
 })
 
