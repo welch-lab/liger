@@ -356,6 +356,7 @@ linkGenesAndPeaks <- function(
 #' @return No return value. A file located at \code{outputPath} will be created.
 #' @export
 #' @examples
+#' \donttest{
 #' bmmc <- normalize(bmmc)
 #' bmmc <- selectGenes(bmmc)
 #' bmmc <- scaleNotCenter(bmmc)
@@ -375,6 +376,7 @@ linkGenesAndPeaks <- function(
 #'         outputPath = resultPath
 #'     )
 #'     head(read.table(resultPath, skip = 1))
+#' }
 #' }
 exportInteractTrack <- function(
         corrMat,

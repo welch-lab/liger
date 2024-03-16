@@ -320,9 +320,6 @@ subsetH5LigerDataset <- function(
             path <- dirname(oldFN)
             filename <- tempfile(pattern = paste0(bn, ".subset_"),
                                  fileext = ".h5", tmpdir = path)
-            # filename <- paste0(oldFN, ".subset_",
-            #                    format(Sys.time(), "%y%m%d_%H%M%S"),
-            #                    ".h5")
         } else if (is.null(filename) && !is.null(filenameSuffix)) {
             oldFN <- h5fileInfo(object, "filename")
             filename <- paste0(oldFN, ".", filenameSuffix, ".h5")
@@ -374,6 +371,8 @@ subsetH5LigerDatasetToMem <- function(
     }
     modal <- modalOf(object)
     cellIdx <- .idxCheck(object, cellIdx, "cell")
+    if (is.null(featureIdx)) noFeatureIdx <- TRUE
+    else noFeatureIdx <- FALSE
     featureIdx <- .idxCheck(object, featureIdx, "feature")
     # Having `useSlot` as a record of user specification, to know whether it's
     # a `NULL` but involve everything, or just a few slots.
@@ -418,9 +417,16 @@ subsetH5LigerDatasetToMem <- function(
     # Process scaled data ####
     secondIdx <- NULL
     if (!is.null(scaleData(object))) {
-        # See comments in h5ToH5 for what the following two mean
+        # scaledFeatureIdx indicates where each feature in scaled data is from
+        # the dataset.
         scaledFeatureIdx <- scaleData(object)[["featureIdx"]][]
-        secondIdx <- as.numeric(stats::na.omit(match(featureIdx, scaledFeatureIdx)))
+        # `secondIdx` is used to subscribe scaleData and V, so that result
+        # after subset match with the order requested by `featureIdx`
+        if (noFeatureIdx) {
+            secondIdx <- seq_along(scaledFeatureIdx)
+        } else {
+            secondIdx <- as.numeric(stats::na.omit(match(featureIdx, scaledFeatureIdx)))
+        }
     }
     if ("scaleData" %in% slotInvolved & !is.null(scaleData(object))) {
         if (isTRUE(verbose))
@@ -538,6 +544,8 @@ subsetH5LigerDatasetToH5 <- function(
     }
     modal <- modalOf(object)
     cellIdx <- .idxCheck(object, cellIdx, "cell")
+    if (is.null(featureIdx)) noFeatureIdx <- TRUE
+    else noFeatureIdx <- FALSE
     featureIdx <- .idxCheck(object, featureIdx, "feature")
     useSlot <- .checkLDSlot(object, useSlot)
 
@@ -672,26 +680,17 @@ subsetH5LigerDatasetToH5 <- function(
     }
     # Process Scaled Data ####
     secondIdx <- NULL
-    # if (getH5File(object)$exists("scaleData.featureIdx")) {
-    #     scaledFeatureIdx <- getH5File(object)[["scaleData.featureIdx"]][]
-    # } else if ("selected" %in% names(featureMeta(object))) {
-    #     scaledFeatureIdx <- which(featureMeta(object)$selected)
-    # } else if (!is.null(object@V)) {
-    #     scaleFeatureIdx <- rownames(object@V) %in% rownames(object)[featureIdx]
-    # } else {
-    #     if ("scaleData" %in% useSlot & !is.null(scaleData(object))) {
-    #         warning("Unable to know what features are included scaled data. ",
-    #                 "Skipped.")
-    #     }
-    # }
     if (!is.null(scaleData(object))) {
-        # This asserts that
-        # identical(rownames(object)[scaledFeatureIdx], rownames(scaleData))
+        # scaledFeatureIdx indicates where each feature in scaled data is from
+        # the dataset.
         scaledFeatureIdx <- scaleData(object)[["featureIdx"]][]
-        # This asserts that
-        # rownames(scaleData)[secondIdx] returns a subset that follows the order
-        # specified by featureIdx
-        secondIdx <- as.numeric(stats::na.omit(match(featureIdx, scaledFeatureIdx)))
+        # `secondIdx` is used to subscribe scaleData and V, so that result
+        # after subset match with the order requested by `featureIdx`
+        if (noFeatureIdx) {
+            secondIdx <- seq_along(scaledFeatureIdx)
+        } else {
+            secondIdx <- as.numeric(stats::na.omit(match(featureIdx, scaledFeatureIdx)))
+        }
     }
     if ("scaleData" %in% useSlot & !is.null(scaleData(object))) {
         scaledFeatureIdxNew <- which(featureIdx %in% scaledFeatureIdx)

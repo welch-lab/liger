@@ -588,8 +588,9 @@ plotCellViolin <- function(
 #' @param colorLabels,colorValues Each a vector with as many values as the
 #' number of categories for the categorical coloring aesthetics. Labels will be
 #' the shown text and values will be the color code. These are passed to
-#' \code{\link[ggplot2]{scale_color_manual}}. Default uses \code{scPalette} and
-#' plot original labels (levels of the factor).
+#' \code{\link[ggplot2]{scale_color_manual}}. Default uses an internal selected
+#' palette if there are <= 26 colors needed, or ggplot hues otherwise, and plot
+#' original labels (levels of the factor).
 #' @param legendNRow,legendNCol Integer, when too many categories in one
 #' variable, arranges number of rows or columns. Default \code{NULL},
 #' automatically split to \code{ceiling(levels(variable)/10)} columns.
@@ -641,7 +642,7 @@ plotCellViolin <- function(
         legendNCol = NULL,
         # Coloring
         colorLabels = NULL,
-        colorValues = scPalette,
+        colorValues = NULL,
         colorPalette = "magma",
         colorDirection = -1,
         naColor = "#DEDEDE",
@@ -741,9 +742,13 @@ plotCellViolin <- function(
                 colorLabels <- levels(plot$data[[varName]])
             }
             if (is.null(colorValues)) {
-                colorValues <- scales::hue_pal()(
-                    length(levels(plot$data[[varName]]))
-                )
+                if (nlevels(plot$data[[varName]]) <= length(scPalette))
+                    colorValues <- scPalette[seq_len(nlevels(plot$data[[varName]]))]
+                else {
+                    colorValues <- scales::hue_pal()(
+                        length(levels(plot$data[[varName]]))
+                    )
+                }
             }
             if (a %in% c("colour", "fill")) {
                 plot <- plot +

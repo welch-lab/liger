@@ -595,14 +595,14 @@ setReplaceMethod(
                 # No name matching, require exact length
                 value <- .checkArgLen(value, n = length(cellIdx), class = c("vector", "factor"))
             } else {
-                if (!all(barcodes %in% names(value))) {
+                if (!all(endsWith(barcodes, names(value)))) {
                     cli::cli_abort(
-                        c("{.code names(value)} do not contain all cells selected. ",
-                          "These are not involved: ",
-                          "{.val {barcodes[!barcodes %in% names(value)]}}")
+                        c("x" = "{.code names(value)} do match to cells selected. ",
+                          "i" = "The first three given names: {.val {names(value)[1:3]}}",
+                          "i" = "The first three selected names: {.val {barocdes[1:3]}}")
                     )
                 }
-                value <- value[barcodes]
+                names(value) <- barcodes
             }
         } else {
             # matrix like
@@ -873,9 +873,9 @@ setReplaceMethod(
     function(x, dataset = NULL, check = TRUE, value) {
         dataset <- .checkUseDatasets(x, dataset)
         if (length(dataset) != 1) cli::cli_abort("Need to specify one dataset to insert.")
-        if (isH5Liger(x, dataset))
-            cli::cli_abort("Cannot replace slot with in-memory data for H5 based object.")
-        x@datasets[[dataset]]@scaleUnsharedData <- value
+        ld <- dataset(x, dataset)
+        scaleUnsharedData(ld) <- value
+        x@datasets[[dataset]] <- ld
         if (isTRUE(check)) methods::validObject(x)
         x
     }
@@ -889,9 +889,9 @@ setReplaceMethod(
     function(x, dataset = NULL, check = TRUE, value) {
         dataset <- .checkUseDatasets(x, dataset)
         if (length(dataset) != 1) cli::cli_abort("Need to specify one dataset to insert.")
-        if (!isH5Liger(x, dataset))
-            cli::cli_abort("Cannot replace slot with on-disk data for in-memory object.")
-        x@datasets[[dataset]]@scaleUnsharedData <- value
+        ld <- dataset(x, dataset)
+        scaleUnsharedData(ld) <- value
+        x@datasets[[dataset]] <- ld
         if (isTRUE(check)) methods::validObject(x)
         x
     }
@@ -907,7 +907,9 @@ setReplaceMethod(
         if (length(dataset) != 1) cli::cli_abort("Need to specify one dataset to insert.")
         if (!isH5Liger(x, dataset))
             cli::cli_abort("Cannot replace slot with on-disk data for in-memory object.")
-        x@datasets[[dataset]]@scaleUnsharedData <- value
+        ld <- dataset(x, dataset)
+        scaleUnsharedData(ld) <- value
+        x@datasets[[dataset]] <- ld
         if (isTRUE(check)) methods::validObject(x)
         x
     }
@@ -1140,7 +1142,7 @@ setReplaceMethod(
     signature(x = "liger", value = "list"),
     function(x, value) {
         x@dimReds <- value
-        validObject(x)
+        methods::validObject(x)
         return(x)
     }
 )

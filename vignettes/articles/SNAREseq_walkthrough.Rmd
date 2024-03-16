@@ -10,7 +10,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
-Here we integrate the scATAC and scRNA reads from the dual-omics dataset SNARE-seq as an illustration of how UINMF can be used to integrate cross-modality data. For this tutorial, we will use three matrices, which can all be downloaded at https://www.dropbox.com/sh/y9kjoum8u469nj1/AADik2b2-Qo3os2QSWXdIAbna?dl=0
+Here we integrate the scATAC and scRNA reads from the dual-omics dataset SNARE-seq as an illustration of how UINMF can be used to integrate cross-modality data. For this tutorial, we will use three matrices, which can all be downloaded from our [Dropbox folder](https://www.dropbox.com/scl/fo/ea666n049h762lla8c5iz/h?rlkey=796slf2ybnv2kmcxxbwluvv2b&dl=0)
 
 - The transcriptomic measures `SNAREseq_RNA.RDS` is the SNARE-seq scRNA dataset (31,367 genes by 10,309 cells).
 - For the shared epigenomic features `SNARE_seq_shared_chromatin_features.RDS`, we create a gene-centric matrix, such that we sum of the number of accessibiltiy peaks that occur over the gene body and promoter regions for each gene. For a detailed walkthough of how to generate such a matrix, please see our [Integrating scRNA and scATAC data vignette](Integrating_scRNA_and_scATAC_data.html). The resulting matrix of gene-centric chromatin accessibility is 22,379 genes by 10,309 cells
@@ -24,20 +24,19 @@ library(rliger)
 rna <- readRDS("SNAREseq_data/SNAREseq_RNA.RDS")
 atac_shared <- readRDS("SNAREseq_data/SNAREseq_chromatin_accessibility_shared.RDS")
 atac_unshared <- readRDS("SNAREseq_data/SNARE_seq_unshared_chromatin_features.RDS")
-atac_unshared <- as(atac_unshared, "CsparseMatrix")
 ```
 
 ## Step 2: Preprocessing
 
 Integrative non-negative matrix factorization with unshared features (UINMF) performs factorization using shared feature matrix of all datasets and includes unshared features from dataset(s) with such information. In this tutorial, we plan to use the variable feature selected from the scRNA dataset. Since we prepared the gene-centric matrix from the scATAC dataset, these genes can be accounted as the shared features. For the unshared features, normally we select variable genes that are out of the intersection of gene sets from all datasets. In this tutorial, we directly use the peaks that are identified variable. Therefore, special processing will be needed compared to the other UINMF tutorials. 
 
-### 1. Create liger object for shared genes
+### 2.1: Create liger object for shared genes
 
 ```{r create}
 lig <- createLiger(list(rna = rna, atac = atac_shared))
 ```
 
-### 2. Normalize and select shared variable features
+### 2.2: Normalize and select shared variable features
 
 ```{r norm}
 lig <- normalize(lig) %>%
@@ -45,7 +44,7 @@ lig <- normalize(lig) %>%
     scaleNotCenter()
 ```
 
-## 3. Selecting the unshared features
+## Step 3: Selecting the unshared features
 
 When selecting unshared features for the UINMF integration, it is critical to consider the type of data you are working with. For unshared features that gene-centric, the user should follow the feature selection process outlined in the ['Integrating unshared features with UINMF' tutorial](UINMF_vignette.html).
 
@@ -77,12 +76,10 @@ Add the unshared features that have been properly selected, such that they are a
 
 ```{r addunshared}
 varUnsharedFeatures(lig, "atac") <- top2000
-scaleUnsharedData(lig, "atac", check = FALSE) <- unshareScaled
+scaleUnsharedData(lig, "atac") <- unshareScaled
 ```
 
->The latest version of rliger package is equipped with strict checkpoints on object validity, including the matching of features and cells between matrices belonging to the same dataset. Given that the special processing method we are introducing in this vignette, that we use the intergenic bins as unshared features, we have to turn the checks off with `check = FALSE` when inserting the scaled unshared features into the object.
-
-## 4. Joint Matrix Factorization
+## Step 4: Joint Matrix Factorization
 
 To factorize the datasets and include the unshared datasets, set `useUnshared = TRUE`. 
 
@@ -90,7 +87,7 @@ To factorize the datasets and include the unshared datasets, set `useUnshared = 
 lig <- runUINMF(lig, k = 30, nIteration = 30)
 ```
 
-## 5. Quantile Normalization and Joint Clustering
+## Step 5: Quantile Normalization and Joint Clustering
 
 After factorization, the resulting Liger object can be used in all downstream LIGER functions without adjustment. The default reference dataset for quantile normalization is the larger dataset, but the user should select the higher quality dataset as the reference dataset, even if it is the smaller dataset.
 
@@ -100,7 +97,7 @@ lig <- quantileNorm(lig)
 lig <- runCluster(lig, resolution = 0.8, nNeighbors = 30)
 ```
 
-## 6. Visualizations and Downstream processing
+## Step 6: Visualizations and Downstream processing
 
 ```{r runumap}
 lig <- runUMAP(lig, nNeighbors = 30)
