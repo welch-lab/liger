@@ -87,7 +87,7 @@ To visualize the clustering of cells graphically, we can project the normalized 
 pbmcLiger <- runUMAP(pbmcLiger, n_neighbors = 30, min_dist = 0.3)
 ```
 
->Starting from rliger 2.0.0, dimensionality reduction matrices will be stored in cell metadata, which can be accessed with `cellMeta(pbmcLiger)`. Use argument `dimredName` to specify unique variable names for the result can enable storing multiple low-dimensional representation matrices as variables at the same time.
+>Starting from rliger 2.0.0, the slot for storing dimensionality reduction matrices will be renamed to "dimReds". It will be a list that can hold multiple low dimensional matrices that match to the dataset by cell identifiers. Users can access individual matrix with `dimRed(object, "name")`. Use argument `dimredName` to specify unique  names for the UMAP result so that it allows storing multiple low-dimensional representation matrices at the same time.
 
 ### 7. Create plots 
 
