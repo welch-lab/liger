@@ -149,9 +149,9 @@ same variance. Note that because nonnegative matrix factorization
 requires positive values, we do not center the data by subtracting the
 mean. We also do not log transform the data.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmcLiger</span> <span class="op">&lt;-</span> <span class="va">pbmcLiger</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>    <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>    <span class="fu"><a href="../reference/selectGenes.html">selectGenes</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<code class="sourceCode R"><span><span class="va">pbmcLiger</span> <span class="op">&lt;-</span> <span class="va">pbmcLiger</span> <span class="op"><a href="https://rdrr.io/pkg/magrittr/man/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/pkg/magrittr/man/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="../reference/selectGenes.html">selectGenes</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/pkg/magrittr/man/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>    <span class="fu"><a href="../reference/scaleNotCenter.html">scaleNotCenter</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
@@ -240,12 +240,14 @@ UMAP and t-SNE for this purpose.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmcLiger</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runUMAP.html">runUMAP</a></span><span class="op">(</span><span class="va">pbmcLiger</span>, n_neighbors <span class="op">=</span> <span class="fl">30</span>, min_dist <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span></code></pre></div>
 <blockquote>
-<p>Starting from rliger 2.0.0, dimensionality reduction matrices will be
-stored in cell metadata, which can be accessed with
-<code>cellMeta(pbmcLiger)</code>. Use argument <code>dimredName</code>
-to specify unique variable names for the result can enable storing
-multiple low-dimensional representation matrices as variables at the
-same time.</p>
+<p>Starting from rliger 2.0.0, the slot for storing dimensionality
+reduction matrices will be renamed to “dimReds”. It will be a list that
+can hold multiple low dimensional matrices that match to the dataset by
+cell identifiers. Users can access individual matrix with
+<code>dimRed(object, "name")</code>. Use argument
+<code>dimredName</code> to specify unique names for the UMAP result so
+that it allows storing multiple low-dimensional representation matrices
+at the same time.</p>
 </blockquote>
 </div>
 <div class="section level3">
@@ -343,14 +345,14 @@ tying on this metric, we then sort the markers by logFC in descending
 order. Finally, we select the top 20 markers for each cluster.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
-<span><span class="va">cluster.results.sort</span> <span class="op">&lt;-</span> <span class="va">cluster.results</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">padj</span> <span class="op">&lt;</span> <span class="fl">0.05</span>, <span class="va">logFC</span> <span class="op">&gt;</span> <span class="fl">3</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">group</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">padj</span>, <span class="op">-</span><span class="va">logFC</span>, .by_group <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/top_n.html" class="external-link">top_n</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span><span class="co"># rank by logFC from high to low</span></span>
+<span><span class="va">cluster.results.sort</span> <span class="op">&lt;-</span> <span class="va">cluster.results</span> <span class="op"><a href="https://rdrr.io/pkg/magrittr/man/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">padj</span> <span class="op">&lt;</span> <span class="fl">0.05</span>, <span class="va">logFC</span> <span class="op">&gt;</span> <span class="fl">3</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/pkg/magrittr/man/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">group</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/pkg/magrittr/man/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">padj</span>, <span class="op">-</span><span class="va">logFC</span>, .by_group <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/pkg/magrittr/man/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/top_n.html" class="external-link">top_n</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span><span class="co"># rank by logFC from high to low</span></span>
 <span></span>
 <span><span class="co"># Show the markers for cluster 3</span></span>
-<span><span class="va">cluster.results.sort</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">group</span> <span class="op">==</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">cluster.results.sort</span> <span class="op"><a href="https://rdrr.io/pkg/magrittr/man/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">group</span> <span class="op">==</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 20 × 10</span></span></span>
 <span><span class="co">## <span style="color: #949494;"># Groups:   group [1]</span></span></span>
 <span><span class="co">##    feature  group avgExpr logFC statistic   auc      pval      padj pct_in</span></span>
@@ -388,14 +390,14 @@ each dataset.</p>
 <p>We can also plot the gene expression by dataset.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">prf1List</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotGeneDimRed</a></span><span class="op">(</span><span class="va">pbmcLiger</span>, <span class="st">"PRF1"</span>, splitBy <span class="op">=</span> <span class="st">"dataset"</span><span class="op">)</span></span>
-<span><span class="fu">cowplot</span><span class="fu">::</span><span class="fu"><a href="https://wilkelab.org/cowplot/reference/plot_grid.html" class="external-link">plot_grid</a></span><span class="op">(</span>plotlist <span class="op">=</span> <span class="va">prf1List</span>, labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">prf1List</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">cowplot</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/cowplot/man/plot_grid.html" class="external-link">plot_grid</a></span><span class="op">(</span>plotlist <span class="op">=</span> <span class="va">prf1List</span>, labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">prf1List</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="Integrating_multi_scRNA_data_files/figure-html/unnamed-chunk-5-1.png" width="960" style="display: block; margin: auto;"></p>
 <p>We can also use <code><a href="../reference/plotDimRed.html">plotGeneDimRed()</a></code> to compare the loading
 of cluster markers within and between datasets.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">IFIT3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotGeneDimRed</a></span><span class="op">(</span><span class="va">pbmcLiger</span>, <span class="st">"IFIT3"</span>, splitBy <span class="op">=</span> <span class="st">"dataset"</span><span class="op">)</span></span>
 <span><span class="va">IFITM3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotDimRed.html">plotGeneDimRed</a></span><span class="op">(</span><span class="va">pbmcLiger</span>, <span class="st">"IFITM3"</span>, splitBy <span class="op">=</span> <span class="st">"dataset"</span><span class="op">)</span></span>
-<span><span class="fu">cowplot</span><span class="fu">::</span><span class="fu"><a href="https://wilkelab.org/cowplot/reference/plot_grid.html" class="external-link">plot_grid</a></span><span class="op">(</span><span class="va">IFIT3</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, <span class="va">IFIT3</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span>, <span class="va">IFITM3</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, <span class="va">IFITM3</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">2</span>, labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ctrl"</span>, <span class="st">"stim"</span>, <span class="st">"ctrl"</span>, <span class="st">"stim"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">cowplot</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/cowplot/man/plot_grid.html" class="external-link">plot_grid</a></span><span class="op">(</span><span class="va">IFIT3</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, <span class="va">IFIT3</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span>, <span class="va">IFITM3</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, <span class="va">IFITM3</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">2</span>, labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ctrl"</span>, <span class="st">"stim"</span>, <span class="st">"ctrl"</span>, <span class="st">"stim"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="Integrating_multi_scRNA_data_files/figure-html/unnamed-chunk-6-1.png" width="864" style="display: block; margin: auto;"></p>
 </div>
 </div>
