@@ -22,6 +22,8 @@
 #' options are \code{"10X"} and \code{"AnnData"}. Can be either a single
 #' specification for all datasets or a character vector that match with each
 #' dataset.
+#' @param anndataX The HDF5 path to the raw count data in an H5AD file. See
+#' \code{\link{createH5LigerDataset}} Details. Default \code{"X"}.
 #' @param dataName,indicesName,indptrName The path in a H5 file for the raw
 #' sparse matrix data. These three types of data stands for the \code{x},
 #' \code{i}, and \code{p} slots of a \code{\link[Matrix]{dgCMatrix-class}}
@@ -61,6 +63,7 @@ createLiger <- function(
         removeMissing = TRUE,
         addPrefix = "auto",
         formatType = "10X",
+        anndataX = "X",
         dataName = NULL,
         indicesName = NULL,
         indptrName = NULL,
@@ -99,9 +102,10 @@ createLiger <- function(
         data <- rawData[[i]]
         if (is.character(data)) {
             # Assuming character input is a filename
-            datasets[[dname]] <- createH5LigerDataset(
+             ld <- createH5LigerDataset(
                 h5file = data,
                 formatType = formatType,
+                anndataX = anndataX,
                 rawData = dataName,
                 barcodesName = barcodesName,
                 genesName = genesName,
@@ -110,9 +114,10 @@ createLiger <- function(
                 modal = modal[i]
             )
         } else {
-            datasets[[dname]] <- as.ligerDataset(data, modal = modal[i])
+            ld <- as.ligerDataset(data, modal = modal[i])
         }
-        colnameOrig <- colnames(datasets[[dname]])
+        if (is.null(ld)) next
+        colnameOrig <- colnames(ld)
         prefix <- paste0(dname, "_")
         .addPrefix <- FALSE
         if (addPrefix == "auto") {
@@ -121,8 +126,9 @@ createLiger <- function(
         }
         barcodesOrig <- c(barcodesOrig, colnameOrig)
         if (.addPrefix) {
-            colnames(datasets[[dname]]) <- paste0(prefix, colnameOrig)
+            colnames(ld) <- paste0(prefix, colnameOrig)
         }
+        datasets[[dname]] <- ld
     }
 
     datasets <- lapply(datasets, function(ld) {
@@ -230,25 +236,53 @@ createLigerDataset <- function(
 }
 
 #' Create on-disk ligerDataset Object
+#' @description
+#' For convenience, the default \code{formatType = "10x"} directly fits the
+#' structure of cellranger output. \code{formatType = "anndata"} works for
+#' current AnnData H5AD file specification (see Details). If there a customized
+#' H5 file  structure is presented, any of the \code{rawData},
+#' \code{indicesName}, \code{indptrName}, \code{genesName}, \code{barcodesName}
+#' should be specified accordingly to override the \code{formatType} preset.
+#' @details
+#' For H5AD file written from an AnnData object, we allow using
+#' \code{formatType = "anndata"} for the function to infer the proper structure.
+#' However, while a typical AnnData-based analysis tends to in-place update the
+#' \code{adata.X} attribute and there is no standard/forced convention for where
+#' the raw count data, as needed from LIGER, is stored. Therefore, we expose
+#' argument \code{anndataX} for specifying this information. The default value
+#' \code{"X"} looks for \code{adata.X}. If the raw data is stored in a layer,
+#' e.g. \code{adata.layers['count']}, then \code{anndataX = "layers/count"}.
+#' If it is stored to \code{adata.raw.X}, then \code{anndataX = "raw/X"}. If
+#' your AnnData object does not have the raw count retained, you will have to
+#' go back to the Python work flow to have it inserted at desired object space
+#' and re-write the H5AD file, or just go from upstream source files with which
+#' the AnnData was originally created.
 #' @param h5file Filename of an H5 file
 #' @param formatType Select preset of H5 file structure. Default \code{"10X"}.
-#' Current available options are \code{"10X"} and \code{"AnnData"}.
+#' Current available option is only \code{"10X"}.
 #' @param rawData,indicesName,indptrName The path in a H5 file for the raw
 #' sparse matrix data. These three types of data stands for the \code{x},
 #' \code{i}, and \code{p} slots of a \code{\link[Matrix]{dgCMatrix-class}}
 #' object. Default \code{NULL} uses \code{formatType} preset.
 #' @param normData The path in a H5 file for the "x" vector of the normalized
 #' sparse matrix. Default \code{NULL}.
-#' @param scaleData The path in a H5 file for the dense 2D scaled matrix.
-#' Default \code{NULL}.
+#' @param scaleData The path in a H5 file for the Group that contains the sparse
+#' matrix constructing information for the scaled data. Default \code{NULL}.
 #' @param genesName,barcodesName The path in a H5 file for the gene names and
 #' cell barcodes. Default \code{NULL} uses \code{formatType} preset.
+#' @param anndataX The HDF5 path to the raw count data in an H5AD file. See
+#' Details. Default \code{"X"}.
 #' @param modal Name of modality for this dataset. Currently options of
 #' \code{"default"}, \code{"rna"}, \code{"atac"}, \code{"spatial"} and
 #' \code{"meth"} are supported. Default \code{"default"}.
 #' @param featureMeta Data frame for feature metadata. Default \code{NULL}.
 #' @param ... Additional slot data. See \linkS4class{ligerDataset} for detail.
 #' Given values will be directly placed at corresponding slots.
+#' @export
+#' @return H5-based \linkS4class{ligerDataset} object
+#' @examples
+#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
+#' ld <- createH5LigerDataset(h5Path)
 createH5LigerDataset <- function(
         h5file,
         formatType = "10X",
@@ -259,6 +293,7 @@ createH5LigerDataset <- function(
         genesName = NULL,
         indicesName = NULL,
         indptrName = NULL,
+        anndataX = "X",
         modal = c("default", "rna", "atac", "spatial", "meth"),
         featureMeta = NULL,
         ...
@@ -272,61 +307,94 @@ createH5LigerDataset <- function(
     modal <- match.arg(modal)
     additional <- list(...)
     h5file <- hdf5r::H5File$new(h5file, mode = "r+")
-    if (!is.null(formatType)) {
-        if (formatType == "10X") {
-            barcodesName <- "matrix/barcodes"
-            barcodes <- h5file[[barcodesName]][]
-            rawData <- "matrix/data"
-            indicesName <- "matrix/indices"
-            indptrName <- "matrix/indptr"
-            genesName <- "matrix/features/name"
-            genes <- h5file[[genesName]][]
-        } else if (formatType == "AnnData") {
-            barcodesName <- "obs"
-            barcodes <- h5file[[barcodesName]][]$cell
-            rawData <- "raw.X/data"
-            indicesName <- "raw.X/indices"
-            indptrName <- "raw.X/indptr"
-            genesName <- "raw.var"
-            genes <- h5file[[genesName]][]
-        } else {
-            cli::cli_abort("Specified {.var formatType} ({.val {formatType}}) is not supported for now.")
+    tryCatch(
+        {
+            if (!is.null(formatType)) {
+                formatType <- tolower(formatType)
+                if (formatType == "10x") {
+                    barcodesName <- barcodesName %||% "matrix/barcodes"
+                    barcodes <- h5file[[barcodesName]][]
+                    rawData <- rawData %||% "matrix/data"
+                    indicesName <- indicesName %||% "matrix/indices"
+                    indptrName <- indptrName %||% "matrix/indptr"
+                    genesName <- genesName %||% "matrix/features/name"
+                    genes <- h5file[[genesName]][]
+                } else if (formatType == "anndata") {
+                    # AnnData specs changed around 0.7.0
+                    if (inherits(h5file[["obs"]], "H5Group")) {
+                        barcodesName <- paste0("obs/", hdf5r::h5attr(h5file[["obs"]], "_index"))
+                        barcodes <- h5file[[barcodesName]][]
+                        genesName <- paste0("var/", hdf5r::h5attr(h5file[["var"]], "_index"))
+                        genes <- h5file[[genesName]][]
+                    } else if (inherits(h5file[["obs"]], "H5D")) {
+                        barcodesName <- "obs"
+                        barcodes <- h5file[["obs"]][]$cell
+                        genesName <- genesName %||% "raw.var"
+                        genes <- h5file[[genesName]][]
+                    }
+                    rawData <- rawData %||% paste0(anndataX, "/data")
+                    indicesName <- indicesName %||% paste0(anndataX, "/indices")
+                    indptrName <- indptrName %||% paste0(anndataX, "/indptr")
+                    if (!inherits(h5file[[rawData]]$key_info$type, "H5T_INTEGER")) {
+                        cli::cli_alert_warning(
+                            "Warning: H5AD matrix data detected is not of integer dtype while {.pkg rliger} requires raw counts input."
+                        )
+                        cli::cli_alert_warning(
+                            "Use caution when using this dataset if the data really does not have integer values."
+                        )
+                        cli::cli_alert_info(
+                            "A different matrix can be selected using argument {.var anndataX}."
+                        )
+                        cli::cli_alert_info(
+                            "See {.code ?createH5LigerDataset} {.emph Details} for more information."
+                        )
+                    }
+                } else {
+                    cli::cli_abort("Specified {.var formatType} ({.val {formatType}}) is not supported for now.")
+                }
+            } else {
+                barcodes <- h5file[[barcodesName]][]
+                genes <- h5file[[genesName]][]
+            }
+            # The order of list elements matters. Put "paths" together so easier for
+            # checking link existence.
+            h5.meta <- list(
+                H5File = h5file,
+                filename = h5file$filename,
+                formatType = formatType,
+                indicesName = indicesName,
+                indptrName = indptrName,
+                barcodesName = barcodesName,
+                genesName = genesName,
+                rawData = rawData,
+                normData = normData,
+                scaleData = scaleData
+            )
+            if (!is.null(rawData)) rawData <- h5file[[rawData]]
+            if (!is.null(normData)) normData <- h5file[[normData]]
+            if (!is.null(scaleData)) scaleData <- h5file[[scaleData]]
+            if (is.null(featureMeta))
+                featureMeta <- S4Vectors::DataFrame(row.names = genes)
+            else if (!inherits(featureMeta, "DFrame"))
+                featureMeta <- S4Vectors::DataFrame(featureMeta)
+            allData <- list(Class = .modalClassDict[[modal]],
+                            rawData = rawData,
+                            normData = normData,
+                            scaleData = scaleData,
+                            #H = H, V = V, A = A, B = B, U = U,
+                            h5fileInfo = h5.meta, featureMeta = featureMeta,
+                            colnames = barcodes, rownames = genes)
+            allData <- c(allData, additional)
+            x <- do.call("new", allData)
+            return(x)
+        },
+        error = function(e) {
+            message(format(e))
+            cli::cli_alert_warning("Closing all linking to H5 file: {.file {h5file$filename}}")
+            h5file$close_all()
+            return(invisible(NULL))
         }
-    } else {
-        barcodes <- h5file[[barcodesName]][]
-        genes <- h5file[[genesName]][]
-    }
-    # The order of list elements matters. Put "paths" together so easier for
-    # checking link existence.
-    h5.meta <- list(
-        H5File = h5file,
-        filename = h5file$filename,
-        formatType = formatType,
-        indicesName = indicesName,
-        indptrName = indptrName,
-        barcodesName = barcodesName,
-        genesName = genesName,
-        rawData = rawData,
-        normData = normData,
-        scaleData = scaleData
     )
-    if (!is.null(rawData)) rawData <- h5file[[rawData]]
-    if (!is.null(normData)) normData <- h5file[[normData]]
-    if (!is.null(scaleData)) scaleData <- h5file[[scaleData]]
-    if (is.null(featureMeta))
-        featureMeta <- S4Vectors::DataFrame(row.names = genes)
-    else if (!inherits(featureMeta, "DFrame"))
-        featureMeta <- S4Vectors::DataFrame(featureMeta)
-    allData <- list(.modalClassDict[[modal]],
-                    rawData = rawData,
-                    normData = normData,
-                    scaleData = scaleData,
-                    #H = H, V = V, A = A, B = B, U = U,
-                    h5fileInfo = h5.meta, featureMeta = featureMeta,
-                    colnames = barcodes, rownames = genes)
-    allData <- c(allData, additional)
-    x <- do.call("new", allData)
-    x
 }
 
 

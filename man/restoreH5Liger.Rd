@@ -37,6 +37,6 @@ h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
 lig <- createLiger(list(ctrl = h5Path))
 # Now it is actually an invalid object! which is equivalent to what users
 # will get with `saveRDS(lig, "object.rds"); lig <- readRDS("object.rds")``
-lig <- closeAllH5(lig)
+closeAllH5(lig)
 lig <- restoreH5Liger(lig)
 }

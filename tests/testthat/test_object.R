@@ -82,7 +82,7 @@ test_that("liger object creation - in memory", {
 test_that("liger object creation - on disk", {
     withNewH5Copy(
         function(rawList) {
-            expect_error(createLiger(rawList, formatType = "Hello"),
+            expect_message(createLiger(rawList, formatType = "Hello"),
                          "Specified `formatType`")
 
             # Customized paths
@@ -358,7 +358,7 @@ test_that("H5 ligerDataset methods", {
                          "Cannot replace slot with in-memory")
 
             expect_is(h5fileInfo(ctrl), "list")
-            expect_identical(h5fileInfo(ctrl, "formatType"), "10X")
+            expect_identical(h5fileInfo(ctrl, "formatType"), "10x")
             expect_identical(h5fileInfo(ctrl, c("indicesName", "indptrName")),
                              list(indicesName = "matrix/indices",
                                   indptrName = "matrix/indptr"))

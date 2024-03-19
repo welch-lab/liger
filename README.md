@@ -1,7 +1,7 @@
 <img src="https://github.com/welch-lab/liger/raw/newObj/inst/extdata/logo.png" width="120" style="display: inline;">
 
 <a href="https://github.com/welch-lab/liger/actions/workflows/r.yml"><img src="https://github.com/welch-lab/liger/actions/workflows/r.yml/badge.svg?branch=newObj" alt="R" style="display: inline;"></a>
-<a href="https://codecov.io/gh/mvfki/liger"><img src="https://codecov.io/gh/mvfki/liger/graph/badge.svg?token=77TTU4GY8" alt="codecov" style="display: inline;"></a>
+<a href="https://app.codecov.io/gh/mvfki/liger"><img src="https://codecov.io/gh/mvfki/liger/graph/badge.svg?token=77TTU4GY8" alt="codecov" style="display: inline;"></a>
 <a href="https://cran.r-project.org/package=rliger"><img src="https://cranlogs.r-pkg.org/badges/rliger" alt="cran" style="display: inline;"></a>
 
 # LIGER (Linked Inference of Genomic Experimental Relationships)
@@ -66,4 +66,4 @@ data("bmmc")
 ```
 
 We also provide a set of datasets for real-world style demos, including scRNAseq, scATACseq, spatial transcriptomics and DNA methylation data.
-They are described in detail in the articles that use of them. Please check them out from the links above.
+They are described in detail in the articles that make use of them. Please check them out from the links above.

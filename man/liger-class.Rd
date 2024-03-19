@@ -597,7 +597,9 @@ dataset(pbmcPlot, 2)
 ## Retrieving cell metadata, replacement methods available
 cellMeta(pbmcPlot)
 head(pbmcPlot[["nUMI"]])
-head(pbmcPlot$UMAP)
+
+## Retrieving dimemtion reduction matrix
+head(dimRed(pbmcPlot, "UMAP"))
 
 ## Retrieving variable features, replacement methods available
 varFeatures(pbmcPlot)

@@ -14,6 +14,7 @@ createH5LigerDataset(
   genesName = NULL,
   indicesName = NULL,
   indptrName = NULL,
+  anndataX = "X",
   modal = c("default", "rna", "atac", "spatial", "meth"),
   featureMeta = NULL,
   ...
@@ -23,7 +24,7 @@ createH5LigerDataset(
 \item{h5file}{Filename of an H5 file}
 
 \item{formatType}{Select preset of H5 file structure. Default \code{"10X"}.
-Current available options are \code{"10X"} and \code{"AnnData"}.}
+Current available option is only \code{"10X"}.}
 
 \item{rawData, indicesName, indptrName}{The path in a H5 file for the raw
 sparse matrix data. These three types of data stands for the \code{x},
@@ -33,11 +34,14 @@ object. Default \code{NULL} uses \code{formatType} preset.}
 \item{normData}{The path in a H5 file for the "x" vector of the normalized
 sparse matrix. Default \code{NULL}.}
 
-\item{scaleData}{The path in a H5 file for the dense 2D scaled matrix.
-Default \code{NULL}.}
+\item{scaleData}{The path in a H5 file for the Group that contains the sparse
+matrix constructing information for the scaled data. Default \code{NULL}.}
 
 \item{genesName, barcodesName}{The path in a H5 file for the gene names and
 cell barcodes. Default \code{NULL} uses \code{formatType} preset.}
+
+\item{anndataX}{The HDF5 path to the raw count data in an H5AD file. See
+Details. Default \code{"X"}.}
 
 \item{modal}{Name of modality for this dataset. Currently options of
 \code{"default"}, \code{"rna"}, \code{"atac"}, \code{"spatial"} and
@@ -48,6 +52,33 @@ cell barcodes. Default \code{NULL} uses \code{formatType} preset.}
 \item{...}{Additional slot data. See \linkS4class{ligerDataset} for detail.
 Given values will be directly placed at corresponding slots.}
 }
+\value{
+H5-based \linkS4class{ligerDataset} object
+}
 \description{
-Create on-disk ligerDataset Object
+For convenience, the default \code{formatType = "10x"} directly fits the
+structure of cellranger output. \code{formatType = "anndata"} works for
+current AnnData H5AD file specification (see Details). If there a customized
+H5 file  structure is presented, any of the \code{rawData},
+\code{indicesName}, \code{indptrName}, \code{genesName}, \code{barcodesName}
+should be specified accordingly to override the \code{formatType} preset.
+}
+\details{
+For H5AD file written from an AnnData object, we allow using
+\code{formatType = "anndata"} for the function to infer the proper structure.
+However, while a typical AnnData-based analysis tends to in-place update the
+\code{adata.X} attribute and there is no standard/forced convention for where
+the raw count data, as needed from LIGER, is stored. Therefore, we expose
+argument \code{anndataX} for specifying this information. The default value
+\code{"X"} looks for \code{adata.X}. If the raw data is stored in a layer,
+e.g. \code{adata.layers['count']}, then \code{anndataX = "layers/count"}.
+If it is stored to \code{adata.raw.X}, then \code{anndataX = "raw/X"}. If
+your AnnData object does not have the raw count retained, you will have to
+go back to the Python work flow to have it inserted at desired object space
+and re-write the H5AD file, or just go from upstream source files with which
+the AnnData was originally created.
+}
+\examples{
+h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
+ld <- createH5LigerDataset(h5Path)
 }
