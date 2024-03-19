@@ -206,13 +206,22 @@ liger <- setClass(
 }
 
 .checkDatasetVar <- function(x) {
+    if (!"dataset" %in% names(cellMeta(x))) {
+        return("`datasets` variable missing in cellMeta(x)")
+    }
     if (!is.factor(x@cellMeta$dataset)) {
         return("\"dataset\" variable in cellMeta is not a factor")
     }
-    ds_cm <- levels(droplevels(x@cellMeta[["dataset"]]))
-    ds_ds <- names(x@datasets)
+    ds_cm <- as.character(levels(droplevels(x@cellMeta[["dataset"]])))
+    ds_ds <- as.character(names(x@datasets))
     if (!identical(ds_cm, ds_ds)) {
         return("`levels(x$dataset)` does not match `names(x)`.")
+    }
+
+    datasetNamesFromDatasets <- as.character(rep(names(x), lapply(datasets(x), ncol)))
+    names(datasetNamesFromDatasets) <- NULL
+    if (!identical(datasetNamesFromDatasets, as.character(x$dataset))) {
+        return("names of datasets do not match \"datasets\" variable in cellMeta")
     }
     return(NULL)
 }
@@ -242,16 +251,7 @@ liger <- setClass(
             return("H.norm barcodes do not match to barcodes in datasets.")
         }
     }
-    if (!"dataset" %in% names(cellMeta(x))) {
-        return("`datasets` variable missing in cellMeta(x)")
-    }
-    datasetNamesFromDatasets <- rep(names(x), lapply(datasets(x), ncol))
-    names(datasetNamesFromDatasets) <- NULL
 
-    if (!identical(datasetNamesFromDatasets, as.character(x$dataset))) {
-        return("names of datasets do not match
-               `datasets` variable in cellMeta")
-    }
     return(NULL)
 }
 

@@ -11,6 +11,7 @@ createLiger(
   removeMissing = TRUE,
   addPrefix = "auto",
   formatType = "10X",
+  anndataX = "X",
   dataName = NULL,
   indicesName = NULL,
   indptrName = NULL,
@@ -55,6 +56,9 @@ already has the exact prefix or not. Logical value forces the action.}
 options are \code{"10X"} and \code{"AnnData"}. Can be either a single
 specification for all datasets or a character vector that match with each
 dataset.}
+
+\item{anndataX}{The HDF5 path to the raw count data in an H5AD file. See
+\code{\link{createH5LigerDataset}} Details. Default \code{"X"}.}
 
 \item{dataName, indicesName, indptrName}{The path in a H5 file for the raw
 sparse matrix data. These three types of data stands for the \code{x},

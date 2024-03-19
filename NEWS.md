@@ -1,16 +1,17 @@
-## rliger 1.9.9
+## rliger 2.0.0
 
 - Added `ligerDataset` class for per-dataset information storage, with inheritance for specific modalities
 - Added a number of plotting functions with clear function names and useful functionality
 - Added Leiden clustering method, now as default rather than Louvain
 - Added pseudo-bulk DEG method
+- Added DEG analysis with one-vs-rest marker detection in `runMarkerDEG()` and pairwise comparison in `runPairwiseDEG()`
 - Added gene name pattern for expression percentage QC metric
 - Added native Seurat object support for the core integration workflow
 - Added a documentation website built with pkgdown
+- Added new iNMF variant method, consensus iNMF (c-iNMF), in `runCINMF()`
 - Changed `liger` object class structure
-- Changed iNMF (previously `optimizeALS()`), UINMF (previously `optimizeALS(unshared = TRUE)`) and online iNMF (previously `online_iNMF()`) implementation with vastly improved performance.
-Now named by `runINMF()`, `runUINMF()` and `runOnlineINMF()` respectively, and wrapped in 
-`runIntegration()`.
+- Changed iNMF (previously `optimizeALS()`), UINMF (previously `optimizeALS(unshared = TRUE)`) and online iNMF (previously `online_iNMF()`) implementation with vastly improved performance. Now named by `runINMF()`, `runUINMF()` and `runOnlineINMF()` respectively, and wrapped in `runIntegration()`.
+- Updated H5AD support to match up with Python anndata package 0.8.0 specs
 
 ## rliger 1.0.1
 

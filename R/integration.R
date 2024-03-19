@@ -390,6 +390,13 @@ runINMF.Seurat <- function(
     allFeatures <- lapply(object, rownames)
     features <- Reduce(.same, allFeatures)
 
+    if (min(lengths(barcodeList)) < k) {
+        cli::cli_abort("Number of factors (k={k}) should be less than the number of cells in the smallest dataset ({min(lengths(barcodeList))}).")
+    }
+    if (length(features) < k) {
+        cli::cli_abort("Number of factors (k={k}) should be less than the number of shared features ({length(features)}).")
+    }
+
     bestResult <- list()
     bestObj <- Inf
     bestSeed <- seed
@@ -751,7 +758,7 @@ runOnlineINMF.liger <- function(
             }
         }
     }
-    object <- closeAllH5(object)
+    closeAllH5(object)
     res <- .runOnlineINMF.list(Es, newDatasets = newDatasets,
                                projection = projection, k = k, lambda = lambda,
                                maxEpochs = maxEpochs,
@@ -821,6 +828,17 @@ runOnlineINMF.liger <- function(
     names(barcodeList) <- c(names(object), names(newDatasets))
     allFeatures <- c(lapply(object, rownames), lapply(newDatasets, rownames))
     features <- Reduce(.same, allFeatures)
+
+    # In the case for H5 liger, we don't have dimnames associated with input
+    # NOTE: RcppPlanc got dim method for the H5SpMat class.
+    ncellPerDataset <- unlist(c(sapply(object, ncol), sapply(newDatasets, ncol)))
+    nFeaturePerDataset <- unlist(c(sapply(object, nrow), sapply(newDatasets, nrow)))
+    if (min(ncellPerDataset) < k) {
+        cli::cli_abort("Number of factors (k={k}) should be less than the number of cells in the smallest dataset ({min(ncellPerDataset)}).")
+    }
+    if (nFeaturePerDataset[1] < k) {
+        cli::cli_abort("Number of factors (k={k}) should be less than the number of shared features ({nFeaturePerDataset}).")
+    }
 
     if (!is.null(seed)) set.seed(seed)
 
@@ -1193,6 +1211,13 @@ runUINMF.liger <- function(
     barcodeList <- lapply(object, colnames)
     allFeatures <- lapply(object, rownames)
     features <- Reduce(.same, allFeatures)
+
+    if (min(lengths(barcodeList)) < k) {
+        cli::cli_abort("Number of factors (k={k}) should be less than the number of cells in the smallest dataset ({min(lengths(barcodeList))}).")
+    }
+    if (length(features) < k) {
+        cli::cli_abort("Number of factors (k={k}) should be less than the number of shared features ({length(features)}).")
+    }
 
     bestObj <- Inf
     bestRes <- NULL

@@ -2,15 +2,21 @@
 % Please edit documentation in R/h5Utility.R
 \name{closeAllH5}
 \alias{closeAllH5}
+\alias{closeAllH5.liger}
+\alias{closeAllH5.ligerDataset}
 \title{Close all links (to HDF5 files) of a liger object}
 \usage{
 closeAllH5(object)
+
+\method{closeAllH5}{liger}(object)
+
+\method{closeAllH5}{ligerDataset}(object)
 }
 \arguments{
 \item{object}{liger object.}
 }
 \value{
-\code{object} with links closed.
+Nothing is returned.
 }
 \description{
 When need to interact with the data embedded in HDF5 files out

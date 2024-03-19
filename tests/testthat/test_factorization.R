@@ -60,7 +60,7 @@ test_that("iNMF - in-memory", {
                  "Scaled data not available. ")
     pbmc <- scaleNotCenter(pbmc)
     expect_error(pbmc <- runINMF(pbmc, k = 5000),
-                 "k must be <= m")
+                 "Number of factors")
     pbmc <- runIntegration(pbmc, k = 10, nIteration = 2)
     expect_no_error(.checkValidFactorResult(pbmc))
 

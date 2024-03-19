@@ -331,7 +331,7 @@ subsetH5LigerDataset <- function(
                     featureIdx = featureIdx,
                     useSlot = useSlot, chunkSize = chunkSize, verbose = verbose
                 )
-            }, error=function(e) {
+            }, error = function(e) {
                 cli::cli_alert_danger(
                     "An error occurred during subseting from H5 to H5."
                 )
@@ -340,13 +340,15 @@ subsetH5LigerDataset <- function(
                 stop(e)
             }
         )
-
     } else if (isFALSE(newH5)) {
         newObj <- subsetH5LigerDatasetToMem(
             object, cellIdx = cellIdx, featureIdx = featureIdx,
             useSlot = useSlot, chunkSize = chunkSize, verbose = verbose,
             returnObject = returnObject)
     }
+    cli::cli_alert_warning(
+        "The original H5 file is not modified and stays open. Use {.fn gc} to close."
+    )
     newObj
 }
 
