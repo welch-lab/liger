@@ -60,11 +60,13 @@ greater the agreement in general. Although agreement can theoretically
 approach 1, in practice it is usually no higher than 0.2-0.3.
 }
 \examples{
-pbmc <- pbmc \%>\%
-  normalize \%>\%
-  selectGenes \%>\%
-  scaleNotCenter \%>\%
-  runINMF \%>\%
-  quantileNorm
-calcAgreement(pbmc)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    pbmc <- pbmc \%>\%
+    normalize \%>\%
+    selectGenes \%>\%
+    scaleNotCenter \%>\%
+    runINMF \%>\%
+    quantileNorm
+    calcAgreement(pbmc)
+}
 }

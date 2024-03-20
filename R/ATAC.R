@@ -168,6 +168,7 @@ imputeKNN <- function(
 #' @seealso \code{\link{imputeKNN}}
 #' @export
 #' @examples
+#' \donttest{
 #' bmmc <- normalize(bmmc)
 #' bmmc <- selectGenes(bmmc)
 #' bmmc <- scaleNotCenter(bmmc)
@@ -180,6 +181,7 @@ imputeKNN <- function(
 #'         bmmc, useDataset = "rna",
 #'         pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger")
 #'     )
+#' }
 #' }
 linkGenesAndPeaks <- function(
         object,

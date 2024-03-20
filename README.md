@@ -55,6 +55,8 @@ Meanwhile, since version 2.0.0, LIGER is massively updated for usability and int
 * [Introduction to new liger object and other related classes](https://welch-lab.github.io/liger/articles/liger_object.html)
 * [Running Liger directly on Seurat objects](https://welch-lab.github.io/liger/articles/liger_with_seurat.html)
 
+If you need to refer to the tutorials for the old version of rliger, please check the [GitHub archive v1.0.1](https://github.com/welch-lab/liger/tree/v1.0.1/vignettes), download the desired rendered HTML files and open them in your browser.
+
 ## Sample Datasets
 
 The `rliger` package provides different types of small toy dataset for basic demos of the functions. After attaching the package in an R session, you can load them with:

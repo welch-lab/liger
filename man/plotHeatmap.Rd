@@ -86,6 +86,7 @@ value and lower value limits the minimum value. Default \code{c(0, 0.03)}.}
 Plot Heatmap of Gene Expression or Factor Loading
 }
 \examples{
+\donttest{
 plotGeneHeatmap(pbmcPlot, varFeatures(pbmcPlot))
 plotGeneHeatmap(pbmcPlot, varFeatures(pbmcPlot),
                 useCellMeta = c("leiden_cluster", "dataset"),
@@ -95,4 +96,5 @@ plotFactorHeatmap(pbmcPlot)
 plotFactorHeatmap(pbmcPlot, cellIdx = pbmcPlot$leiden_cluster \%in\% 1:3,
                   useCellMeta = c("leiden_cluster", "dataset"),
                   cellSplitBy = "leiden_cluster")
+}
 }
