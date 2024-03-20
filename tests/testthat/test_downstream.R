@@ -70,12 +70,14 @@ test_that("clustering", {
     pbmc <- runOnlineINMF(pbmc, k = 20, minibatchSize = 100)
     expect_message(runCluster(pbmc, nRandomStarts = 1),
                    "leiden clustering on unnormalized")
+
     expect_message(runCluster(pbmc, nRandomStarts = 1, method = "louvain"),
                    "louvain clustering on unnormalized")
 
     pbmc <- quantileNorm(pbmc)
-    expect_message(runCluster(pbmc, nRandomStarts = 1),
+    expect_message(pbmc <- runCluster(pbmc, nRandomStarts = 1, saveSNN = TRUE),
                    "leiden clustering on quantile normalized")
+    expect_is(pbmc@uns$snn, "dgCMatrix")
     expect_message(runCluster(pbmc, nRandomStarts = 1, method = "louvain"),
                    "louvain clustering on quantile normalized")
 

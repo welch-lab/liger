@@ -388,8 +388,7 @@ closeAllH5.ligerDataset <- function(object) {
 #' @return Nothing is returned. H5 file will be created on disk.
 #' @examples
 #' raw <- rawData(pbmc, "ctrl")
-#' writeH5(raw, "ctrl.h5")
-#' unlink("ctrl.h5")
+#' writeH5(raw, tempfile(pattern = "ctrl_", fileext = ".h5"))
 writeH5 <- function(x, file, ...) {
     UseMethod("writeH5", x)
 }

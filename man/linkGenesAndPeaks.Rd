@@ -56,6 +56,7 @@ without the modality originally (i.e. applied to \code{\link{imputeKNN}}
 result).
 }
 \examples{
+\donttest{
 bmmc <- normalize(bmmc)
 bmmc <- selectGenes(bmmc)
 bmmc <- scaleNotCenter(bmmc)
@@ -68,6 +69,7 @@ if (requireNamespace("RcppPlanc", quietly = TRUE)) {
         bmmc, useDataset = "rna",
         pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger")
     )
+}
 }
 }
 \seealso{

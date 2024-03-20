@@ -1651,13 +1651,15 @@ quantile_norm <- function( # nocov start
 #' \code{byDataset = FALSE} or each dataset a value otherwise.
 #' @export
 #' @examples
-#' pbmc <- pbmc %>%
-#'   normalize %>%
-#'   selectGenes %>%
-#'   scaleNotCenter %>%
-#'   runINMF %>%
-#'   quantileNorm
-#' calcAgreement(pbmc)
+#' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+#'     pbmc <- pbmc %>%
+#'     normalize %>%
+#'     selectGenes %>%
+#'     scaleNotCenter %>%
+#'     runINMF %>%
+#'     quantileNorm
+#'     calcAgreement(pbmc)
+#' }
 calcAgreement <- function(
         object,
         ndims = 40,
@@ -1777,7 +1779,7 @@ calcAgreement <- function(
 #' @param clusterVar The name of one variable in \code{cellMeta(object)}.
 #' Default \code{NULL} uses default clusters.
 #' @param nNeighbors Number of neighbors to use in calculating alignment.
-#' Default \code{NULL} uses code{floor(0.01 * ncol(object))}, with a lower bound
+#' Default \code{NULL} uses \code{floor(0.01*ncol(object))}, with a lower bound
 #' of 10 in all cases except where the total number of sampled cells is less
 #' than 10.
 #' @param cellIdx,cellComp Character, logical or numeric index that can
@@ -1791,13 +1793,15 @@ calcAgreement <- function(
 #' @return The alignment metric.
 #' @export
 #' @examples
-#' pbmc <- pbmc %>%
-#'   normalize %>%
-#'   selectGenes %>%
-#'   scaleNotCenter %>%
-#'   runINMF %>%
-#'   quantileNorm
-#' calcAlignment(pbmc)
+#' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+#'     pbmc <- pbmc %>%
+#'     normalize %>%
+#'     selectGenes %>%
+#'     scaleNotCenter %>%
+#'     runINMF %>%
+#'     quantileNorm
+#'     calcAlignment(pbmc)
+#' }
 calcAlignment <- function(
         object,
         clustersUse = NULL,

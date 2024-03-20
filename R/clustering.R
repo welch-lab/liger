@@ -37,15 +37,18 @@
 #' @param groupSingletons Whether to group single cells that make up their own
 #' cluster in with the cluster they are most connected to. Default \code{TRUE},
 #' if \code{FALSE}, assign all singletons to a \code{"singleton"} group.
+#' @param saveSNN Logical, whether to store the SNN graph, as a dgCMatrix
+#' object, in the object. Default \code{FALSE}.
 #' @param clusterName Name of the variable that will store the clustering result
 #' in \code{cellMeta} slot of \code{object}. Default \code{"leiden_cluster"} and
 #' \code{"louvain_cluster"}.
 #' @param seed Seed of the random number generator. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
-#' @return \code{object} with refined cluster assignment updated in
-#' \code{clusterName} variable in \code{cellMeta} slot. Can be fetched
-#' with \code{object[[clusterName]]}
+#' @return \code{object} with cluster assignment updated in \code{clusterName}
+#' variable in \code{cellMeta} slot. Can be fetched with
+#' \code{object[[clusterName]]}. If \code{saveSNN = TRUE}, the SNN graph will
+#' be stored at \code{object@uns$snn}.
 #' @rdname runCluster
 #' @export
 #' @examples
@@ -65,6 +68,7 @@ runCluster <- function(
         useRaw = NULL,
         useDims = NULL,
         groupSingletons = TRUE,
+        saveSNN = FALSE,
         clusterName = paste0(method, "_cluster"),
         seed = 1,
         verbose = getOption("ligerVerbose", TRUE)
@@ -121,8 +125,11 @@ runCluster <- function(
                               groupSingletons = groupSingletons,
                               verbose = verbose)
     cellMeta(object, clusterName, check = FALSE) <- clusts
+    if (isTRUE(saveSNN)) object@uns$snn <- snn
     if (isTRUE(verbose))
-        cli::cli_process_done(msg_done = "{method} clustering on {type} cell factor loadings ... Found {nlevels(clusts)} clusters.")
+        cli::cli_process_done(
+            msg_done = "{method} clustering on {type} cell factor loadings ... Found {nlevels(clusts)} cluster{?s}."
+        )
     object@uns$defaultCluster <- object@uns$defaultCluster %||% clusterName
     if (isTRUE(verbose))
         cli::cli_alert_info("{.field cellMeta} variable {.val {clusterName}} is now set as default.")

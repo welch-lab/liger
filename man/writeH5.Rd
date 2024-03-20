@@ -79,8 +79,7 @@ default method.
 }
 \examples{
 raw <- rawData(pbmc, "ctrl")
-writeH5(raw, "ctrl.h5")
-unlink("ctrl.h5")
+writeH5(raw, tempfile(pattern = "ctrl_", fileext = ".h5"))
 }
 \seealso{
 \href{https://www.10xgenomics.com/cn/support/software/cell-ranger/latest/analysis/outputs/cr-outputs-h5-matrices}{10X cellranger H5 matrix detail}

@@ -16,6 +16,7 @@ runCluster(
   useRaw = NULL,
   useDims = NULL,
   groupSingletons = TRUE,
+  saveSNN = FALSE,
   clusterName = paste0(method, "_cluster"),
   seed = 1,
   verbose = getOption("ligerVerbose", TRUE)
@@ -61,6 +62,9 @@ uses all available factors.}
 cluster in with the cluster they are most connected to. Default \code{TRUE},
 if \code{FALSE}, assign all singletons to a \code{"singleton"} group.}
 
+\item{saveSNN}{Logical, whether to store the SNN graph, as a dgCMatrix
+object, in the object. Default \code{FALSE}.}
+
 \item{clusterName}{Name of the variable that will store the clustering result
 in \code{cellMeta} slot of \code{object}. Default \code{"leiden_cluster"} and
 \code{"louvain_cluster"}.}
@@ -71,9 +75,10 @@ in \code{cellMeta} slot of \code{object}. Default \code{"leiden_cluster"} and
 \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 }
 \value{
-\code{object} with refined cluster assignment updated in
-\code{clusterName} variable in \code{cellMeta} slot. Can be fetched
-with \code{object[[clusterName]]}
+\code{object} with cluster assignment updated in \code{clusterName}
+variable in \code{cellMeta} slot. Can be fetched with
+\code{object[[clusterName]]}. If \code{saveSNN = TRUE}, the SNN graph will
+be stored at \code{object@uns$snn}.
 }
 \description{
 After quantile normalization, users can additionally run the Leiden or

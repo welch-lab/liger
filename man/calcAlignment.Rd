@@ -34,7 +34,7 @@ Should be a vector of existing levels in \code{clusterVar}. Default
 Default \code{NULL} uses default clusters.}
 
 \item{nNeighbors}{Number of neighbors to use in calculating alignment.
-Default \code{NULL} uses code{floor(0.01 * ncol(object))}, with a lower bound
+Default \code{NULL} uses \code{floor(0.01*ncol(object))}, with a lower bound
 of 10 in all cases except where the total number of sampled cells is less
 than 10.}
 
@@ -88,11 +88,13 @@ cells already specified in \code{cellIdx}.}
 }
 }
 \examples{
-pbmc <- pbmc \%>\%
-  normalize \%>\%
-  selectGenes \%>\%
-  scaleNotCenter \%>\%
-  runINMF \%>\%
-  quantileNorm
-calcAlignment(pbmc)
+if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+    pbmc <- pbmc \%>\%
+    normalize \%>\%
+    selectGenes \%>\%
+    scaleNotCenter \%>\%
+    runINMF \%>\%
+    quantileNorm
+    calcAlignment(pbmc)
+}
 }
