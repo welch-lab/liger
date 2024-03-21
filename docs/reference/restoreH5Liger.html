@@ -14,7 +14,7 @@ the restoration of those links so that new analyses can be carried out."><!-- ma
     
     <a class="navbar-brand me-2" href="../index.html">rliger</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.99.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -141,7 +141,8 @@ for data structure.</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="co"># Now it is actually an invalid object! which is equivalent to what users</span></span></span>
 <span class="r-in"><span><span class="co"># will get with `saveRDS(lig, "object.rds"); lig &lt;- readRDS("object.rds")``</span></span></span>
-<span class="r-in"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu"><a href="closeAllH5.html">closeAllH5</a></span><span class="op">(</span><span class="va">lig</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="closeAllH5.html">closeAllH5</a></span><span class="op">(</span><span class="va">lig</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Closing H5 file: <span style="color: #0000BB;">/private/var/folders/k9/nwtr_c_57kd43cmbtz82ywlr0000gn/T/RtmpoGuK8A/temp_libpath7dcd483cb0a6/rliger/extdata/ctrl.h5</span></span>
 <span class="r-in"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu">restoreH5Liger</span><span class="op">(</span><span class="va">lig</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Restoring dataset <span style="color: #0000BB;">"ctrl"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Found more than one class "H5D" in cache; using the first, from namespace 'rliger'</span>

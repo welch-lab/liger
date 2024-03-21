@@ -28,7 +28,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">rliger</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.99.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -161,7 +161,7 @@ the study conducted in Hyun Min Kang and et. al., Nature Biotechnology,
 data. We quickly process it here so that we can show how to retrieve all
 kinds of data in sections below.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/welch-lab/liger" class="external-link">rliger</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://welch-lab.github.io/liger/" class="external-link">rliger</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pbmc"</span><span class="op">)</span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="va">pbmc</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>    <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
@@ -561,10 +561,10 @@ of what functions are called and what parameters are used.</p>
 </ul>
 <div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/liger-class.html">commands</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## [1] "normalize.liger_14e6077ce8"      "selectGenes.liger_5e95d93621"   </span></span>
-<span><span class="co">## [3] "scaleNotCenter.liger_af6ce74ea4" "runINMF.liger_e174922df1"       </span></span>
-<span><span class="co">## [5] "quantileNorm.liger_192a85fe37"   "runCluster_7ab2199e62"          </span></span>
-<span><span class="co">## [7] "runUMAP_0870bae906"</span></span></code></pre>
+<pre><code><span><span class="co">## [1] "normalize.liger_529ce71751"      "selectGenes.liger_87e420e1b4"   </span></span>
+<span><span class="co">## [3] "scaleNotCenter.liger_761c95553b" "runINMF.liger_af62dba6a0"       </span></span>
+<span><span class="co">## [5] "quantileNorm.liger_a5d27596ea"   "runCluster_0a48e494ef"          </span></span>
+<span><span class="co">## [7] "runUMAP_219b57097c"</span></span></code></pre>
 <p>A unique suffix is added to each function name to keep track of calls
 of the same function with different parameters.</p>
 <ul>
@@ -573,7 +573,7 @@ matching.</li>
 </ul>
 <div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/liger-class.html">commands</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"runINMF"</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## A liger command record, performed at 03-16-2024 00:55:38 EDT </span></span>
+<pre><code><span><span class="co">## A liger command record, performed at 03-20-2024 21:00:14 EDT </span></span>
 <span><span class="co">## Call: runINMF.liger(object, k = k, lambda = lambda, seed = seed, verbose = verbose,      ...) </span></span>
 <span><span class="co">## Parameters:</span></span>
 <span><span class="co">##     k : 20 </span></span>
@@ -598,8 +598,8 @@ such. For another example, given that <code><a href="../reference/runCluster.htm
 would be returned if we do matching with only <code>"run"</code></p>
 <div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/liger-class.html">commands</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"run"</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## $runINMF.liger_e174922df1</span></span>
-<span><span class="co">## A liger command record, performed at 03-16-2024 00:55:38 EDT </span></span>
+<pre><code><span><span class="co">## $runINMF.liger_af62dba6a0</span></span>
+<span><span class="co">## A liger command record, performed at 03-20-2024 21:00:14 EDT </span></span>
 <span><span class="co">## Call: runINMF.liger(object, k = k, lambda = lambda, seed = seed, verbose = verbose,      ...) </span></span>
 <span><span class="co">## Parameters:</span></span>
 <span><span class="co">##     k : 20 </span></span>
@@ -613,8 +613,8 @@ would be returned if we do matching with only <code>"run"</code></p>
 <span><span class="co">##     nCores : 2 </span></span>
 <span><span class="co">##     verbose : TRUE </span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## $runCluster_7ab2199e62</span></span>
-<span><span class="co">## A liger command record, performed at 03-16-2024 00:55:38 EDT </span></span>
+<span><span class="co">## $runCluster_0a48e494ef</span></span>
+<span><span class="co">## A liger command record, performed at 03-20-2024 21:00:13 EDT </span></span>
 <span><span class="co">## Call: runCluster(.) </span></span>
 <span><span class="co">## Parameters:</span></span>
 <span><span class="co">##     resolution : 1 </span></span>
@@ -627,12 +627,13 @@ would be returned if we do matching with only <code>"run"</code></p>
 <span><span class="co">##     useRaw : NULL </span></span>
 <span><span class="co">##     useDims : NULL </span></span>
 <span><span class="co">##     groupSingletons : TRUE </span></span>
+<span><span class="co">##     saveSNN : FALSE </span></span>
 <span><span class="co">##     clusterName : "leiden_cluster" </span></span>
 <span><span class="co">##     seed : 1 </span></span>
 <span><span class="co">##     verbose : TRUE </span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## $runUMAP_0870bae906</span></span>
-<span><span class="co">## A liger command record, performed at 03-16-2024 00:55:38 EDT </span></span>
+<span><span class="co">## $runUMAP_219b57097c</span></span>
+<span><span class="co">## A liger command record, performed at 03-20-2024 21:00:13 EDT </span></span>
 <span><span class="co">## Call: runUMAP(.) </span></span>
 <span><span class="co">## Parameters:</span></span>
 <span><span class="co">##     useRaw : NULL </span></span>

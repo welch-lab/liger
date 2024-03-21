@@ -25,6 +25,9 @@
     <loc>/articles/cross_species_vig.html</loc>
   </url>
   <url>
+    <loc>/articles/import_data.html</loc>
+  </url>
+  <url>
     <loc>/articles/index.html</loc>
   </url>
   <url>
@@ -368,5 +371,8 @@
   </url>
   <url>
     <loc>/reference/subsetLigerDataset.html</loc>
+  </url>
+  <url>
+    <loc>/reference/writeH5.html</loc>
   </url>
 </urlset>

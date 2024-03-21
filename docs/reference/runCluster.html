@@ -24,7 +24,7 @@ the former is not available."><!-- mathjax --><script src="https://cdnjs.cloudfl
     
     <a class="navbar-brand me-2" href="../index.html">rliger</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.99.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -117,6 +117,7 @@ the former is not available.</p>
 <span>  useRaw <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  useDims <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  groupSingletons <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  saveSNN <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  clusterName <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">method</span>, <span class="st">"_cluster"</span><span class="op">)</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"ligerVerbose"</span>, <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -186,6 +187,11 @@ cluster in with the cluster they are most connected to. Default <code>TRUE</code
 if <code>FALSE</code>, assign all singletons to a <code>"singleton"</code> group.</p></dd>
 
 
+<dt>saveSNN</dt>
+<dd><p>Logical, whether to store the SNN graph, as a dgCMatrix
+object, in the object. Default <code>FALSE</code>.</p></dd>
+
+
 <dt>clusterName</dt>
 <dd><p>Name of the variable that will store the clustering result
 in <code>cellMeta</code> slot of <code>object</code>. Default <code>"leiden_cluster"</code> and
@@ -205,11 +211,12 @@ in <code>cellMeta</code> slot of <code>object</code>. Default <code>"leiden_clus
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     
 
-<p><code>object</code> with refined cluster assignment updated in
-<code>clusterName</code> variable in <code>cellMeta</code> slot. Can be fetched
-with <code>object[[clusterName]]</code></p>
+<p><code>object</code> with cluster assignment updated in <code>clusterName</code></p>
 
 
+<p>variable in <code>cellMeta</code> slot. Can be fetched with
+<code>object[[clusterName]]</code>. If <code>saveSNN = TRUE</code>, the SNN graph will
+be stored at <code>object@uns$snn</code>.</p>
     </div>
 
     <div class="section level2">

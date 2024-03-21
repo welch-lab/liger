@@ -12,7 +12,7 @@ multiple datasets of various forms (See rawData)."><!-- mathjax --><script src="
     
     <a class="navbar-brand me-2" href="../index.html">rliger</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.99.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -94,6 +94,7 @@ multiple datasets of various forms (See <code>rawData</code>).</p>
 <span>  removeMissing <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  addPrefix <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  formatType <span class="op">=</span> <span class="st">"10X"</span>,</span>
+<span>  anndataX <span class="op">=</span> <span class="st">"X"</span>,</span>
 <span>  dataName <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  indicesName <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  indptrName <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -153,6 +154,11 @@ specification for all datasets or a character vector that match with each
 dataset.</p></dd>
 
 
+<dt>anndataX</dt>
+<dd><p>The HDF5 path to the raw count data in an H5AD file. See
+<code><a href="createH5LigerDataset.html">createH5LigerDataset</a></code> Details. Default <code>"X"</code>.</p></dd>
+
+
 <dt>dataName, indicesName, indptrName</dt>
 <dd><p>The path in a H5 file for the raw
 sparse matrix data. These three types of data stands for the <code>x</code>,
@@ -206,12 +212,8 @@ can be dangerous for large scale analysis.</p></dd>
 <span class="r-in"><span><span class="co"># Create from H5 files</span></span></span>
 <span class="r-in"><span><span class="va">h5Path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata/ctrl.h5"</span>, package <span class="op">=</span> <span class="st">"rliger"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">h5Path</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/private/var/folders/k9/nwtr_c_57kd43cmbtz82ywlr0000gn/T/RtmpLAVIoJ/temp_libpath1279e50325aa8/rliger/extdata/ctrl.h5"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/private/var/folders/k9/nwtr_c_57kd43cmbtz82ywlr0000gn/T/RtmpoGuK8A/temp_libpath7dcd483cb0a6/rliger/extdata/ctrl.h5"</span>
 <span class="r-in"><span><span class="va">lig</span> <span class="op">&lt;-</span> <span class="fu">createLiger</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>ctrl <span class="op">=</span> <span class="va">h5Path</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Found more than one class "H5D" in cache; using the first, from namespace 'rliger'</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Also defined by ‘hdf5r’</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Found more than one class "H5D" in cache; using the first, from namespace 'rliger'</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Also defined by ‘hdf5r’</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Found more than one class "H5D" in cache; using the first, from namespace 'rliger'</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Also defined by ‘hdf5r’</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Found more than one class "H5D" in cache; using the first, from namespace 'rliger'</span>

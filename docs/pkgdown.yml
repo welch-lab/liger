@@ -8,11 +8,12 @@ articles:
   STARmap_dropviz_vig: STARmap_dropviz_vig.html
   UINMF_vignette: UINMF_vignette.html
   cross_species_vig: cross_species_vig.html
+  import_data: import_data.html
   installation: installation.html
   liger_object: liger_object.html
   liger_with_seurat: liger_with_seurat.html
   online_iNMF_tutorial: online_iNMF_tutorial.html
   rna_methylation: rna_methylation.html
   liger-vignette: liger-vignette.html
-last_built: 2024-03-16T04:41Z
+last_built: 2024-03-21T00:46Z
 

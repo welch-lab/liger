@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">rliger</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.99.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,16 +78,21 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.9.9" id="rliger-199">rliger 1.9.9<a class="anchor" aria-label="anchor" href="#rliger-199"></a></h2>
+<h2 class="pkg-version" data-toc-text="2.0.0" id="rliger-200">rliger 2.0.0<a class="anchor" aria-label="anchor" href="#rliger-200"></a></h2><p class="text-muted">CRAN release: 2024-03-20</p>
 <ul><li>Added <code>ligerDataset</code> class for per-dataset information storage, with inheritance for specific modalities</li>
 <li>Added a number of plotting functions with clear function names and useful functionality</li>
 <li>Added Leiden clustering method, now as default rather than Louvain</li>
 <li>Added pseudo-bulk DEG method</li>
+<li>Added DEG analysis with one-vs-rest marker detection in <code><a href="../reference/liger-DEG.html">runMarkerDEG()</a></code> and pairwise comparison in <code><a href="../reference/liger-DEG.html">runPairwiseDEG()</a></code>
+</li>
 <li>Added gene name pattern for expression percentage QC metric</li>
 <li>Added native Seurat object support for the core integration workflow</li>
 <li>Added a documentation website built with pkgdown</li>
+<li>Added new iNMF variant method, consensus iNMF (c-iNMF), in <code><a href="../reference/runCINMF.html">runCINMF()</a></code>. Not stable.</li>
 <li>Changed <code>liger</code> object class structure</li>
-<li>Changed iNMF (previously <code><a href="../reference/rliger-deprecated.html">optimizeALS()</a></code>), UINMF (previously <code>optimizeALS(unshared = TRUE)</code>) and online iNMF (previously <code><a href="../reference/rliger-deprecated.html">online_iNMF()</a></code>) implementation with vastly improved performance. Now named by <code><a href="../reference/runINMF.html">runINMF()</a></code>, <code><a href="../reference/runUINMF.html">runUINMF()</a></code> and <code><a href="../reference/runOnlineINMF.html">runOnlineINMF()</a></code> respectively, and wrapped in <code><a href="../reference/runIntegration.html">runIntegration()</a></code>.</li>
+<li>Moved iNMF (previously <code><a href="../reference/rliger-deprecated.html">optimizeALS()</a></code>), UINMF (previously <code>optimizeALS(unshared = TRUE)</code>) and online iNMF (previously <code><a href="../reference/rliger-deprecated.html">online_iNMF()</a></code>) implementation to new package <em>RcppPlanc</em> with vastly improved performance. Now wrapped in <code><a href="../reference/runINMF.html">runINMF()</a></code>, <code><a href="../reference/runUINMF.html">runUINMF()</a></code> and <code><a href="../reference/runOnlineINMF.html">runOnlineINMF()</a></code> respectively, and all can be invoked with <code><a href="../reference/runIntegration.html">runIntegration()</a></code>.</li>
+<li>Updated H5AD support to match up with Python anndata package 0.8.0 specs</li>
+<li>Renamed many function/argument names to follow camelCase style, original names are still available while deprecation warnings are issued</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.1" id="rliger-101">rliger 1.0.1<a class="anchor" aria-label="anchor" href="#rliger-101"></a></h2><p class="text-muted">CRAN release: 2023-11-08</p>

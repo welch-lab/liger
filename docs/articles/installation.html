@@ -28,7 +28,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">rliger</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.99.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -104,7 +104,7 @@
                         <h4 data-toc-skip class="author">Yichen
 Wang</h4>
             
-            <h4 data-toc-skip class="date">2023-11-05</h4>
+            <h4 data-toc-skip class="date">2024-03-20</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/welch-lab/liger/blob/HEAD/vignettes/articles/installation.Rmd" class="external-link"><code>vignettes/articles/installation.Rmd</code></a></small>
       <div class="d-none name"><code>installation.Rmd</code></div>
@@ -120,25 +120,33 @@ Wang</h4>
 command in R console:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"rliger"</span><span class="op">)</span></span></code></pre></div>
+<p>Besides, we now move the core implementation of iNMF related
+algorithms to a separate package <a href="https://github.com/welch-lab/RcppPlanc" class="external-link">RcppPlanc</a>, with decent
+performance improvement. It <strong>must</strong> be installed for
+performing integration analysis. We currently host it on <a href="https://welch-lab.r-universe.dev/RcppPlanc" class="external-link">R-universe</a> as we
+are actively submitting it to CRAN. Please run the following command in
+R console to install it.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"RcppPlanc"</span>, repos <span class="op">=</span> <span class="st">"https://welch-lab.r-universe.dev"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="building-from-source">Building from source<a class="anchor" aria-label="anchor" href="#building-from-source"></a>
 </h2>
 <p>The developmental versions as well as source version of the previous
-versions are accessible from GitHub. We are currently contributing to
-the repository <code>welch-lab/liger</code> in branch
-<code>newObj</code> for the latest developmental version. To install the
-latest version from GitHub, please run the following command in R
-console:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+versions are accessible from GitHub. To install the latest version from
+GitHub, please run the following command in R console:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"welch-lab/liger@newObj"</span><span class="op">)</span></span></code></pre></div>
+<span>    <span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"welch-lab/liger"</span><span class="op">)</span></span></code></pre></div>
+<p>If you still need to work with the previous version (1.0.1):</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"welch-lab/liger"</span>, ref <span class="op">=</span> <span class="st">"v1.0.1"</span><span class="op">)</span></span></code></pre></div>
 <p>If you encounter issues when building from source, please see below
 sections for details about some dependencies.</p>
-<p><strong>Please note that the latest version (&gt;=1.99.0) is
-massively updated compared to prior versions, and functions are not
-directly compatible with the old version objects which users might
-possess. Please use <code><a href="../reference/readLiger.html">readLiger()</a></code> to load old RDS files or
+<p><strong>Please note that version 2.0.0 is massively updated compared
+to prior versions, and functions are not directly compatible with liger
+objects created with the old versions which users might possess. Please
+use <code><a href="../reference/readLiger.html">readLiger()</a></code> to load old RDS files or
 <code><a href="../reference/convertOldLiger.html">convertOldLiger()</a></code> to convert a loaded object into the
 up-to-date structure. You might need to be careful when overwriting
 existing analysis because we don’t provide methods to convert new the
@@ -168,7 +176,7 @@ installed via the following commands.</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">OS X (using Homebrew or Conda)</td>
+<td align="left">macOS (using Homebrew or Conda)</td>
 <td align="left">
 <code>brew install hdf5</code> or
 <code>conda install -c anaconda hdf5</code>
@@ -196,8 +204,8 @@ download the proper installer</td>
 <p><a href="https://github.com/welch-lab/RcppPlanc" class="external-link">RcppPlanc</a> is an
 extension R package built basing on <a href="https://github.com/ramkikannan/planc" class="external-link">Planc</a>. We implemented
 highly optimized iNMF algorithm and its variants here for the new
-version upgrade. It is currently only available via GitHub.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+version upgrade. To install it from source:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"welch-lab/RcppPlanc"</span><span class="op">)</span></span></code></pre></div>
 <p>Please refer to <a href="https://github.com/welch-lab/RcppPlanc" class="external-link">RcppPlanc GitHub
 repository</a> for detail and more support.</p>
@@ -215,8 +223,8 @@ following steps below.</p>
 <div class="section level4">
 <h4 id="create-a-directory-fo-organizing-the-source-code">1. Create a directory fo organizing the source code<a class="anchor" aria-label="anchor" href="#create-a-directory-fo-organizing-the-source-code"></a>
 </h4>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="bu">cd</span> path/you/need</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">mkdir</span> FItSNE_local</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="bu">cd</span> path/you/need</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">mkdir</span> FItSNE_local</span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="install-fftw-library-">1. Install FFTW library.<a class="anchor" aria-label="anchor" href="#install-fftw-library-"></a>
@@ -228,13 +236,13 @@ commands in terminal show how to locally install the library of version
 website out if an update is available. You can simply replace the
 version number in the URL and the file name to update the
 installation.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="bu">cd</span> FItSNE_local</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="ex">curl</span> ftp://ftp.fftw.org/pub/fftw/fftw-3.3.10.tar.gz <span class="at">-o</span> fftw-3.3.10.tar.gz</span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">tar</span> <span class="at">-xvzf</span>  fftw-3.3.10.tar.gz</span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="bu">cd</span> fftw-3.3.10</span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="ex">./configure</span> <span class="at">--prefix</span><span class="op">=</span><span class="kw">`</span><span class="bu">pwd</span><span class="kw">`</span></span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="fu">make</span></span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="fu">make</span> install prefix=<span class="kw">`</span><span class="bu">pwd</span><span class="kw">`</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="bu">cd</span> FItSNE_local</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="ex">curl</span> ftp://ftp.fftw.org/pub/fftw/fftw-3.3.10.tar.gz <span class="at">-o</span> fftw-3.3.10.tar.gz</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">tar</span> <span class="at">-xvzf</span>  fftw-3.3.10.tar.gz</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="bu">cd</span> fftw-3.3.10</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="ex">./configure</span> <span class="at">--prefix</span><span class="op">=</span><span class="kw">`</span><span class="bu">pwd</span><span class="kw">`</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="fu">make</span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="fu">make</span> install prefix=<span class="kw">`</span><span class="bu">pwd</span><span class="kw">`</span></span></code></pre></div>
 <p>Here the FFTW library is installed in the directory where the source
 code is located. You can change the part <code>pwd</code> to any other
 path (no quotes needed) or even remove the <code>--prefix</code> token
@@ -247,11 +255,11 @@ presented at current location.</p>
 </h4>
 <p>We next download FIt-SNE from GitHub and compile the part we need for
 the R wrapper functionality.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="bu">cd</span> ../ <span class="co"># back to FItSNE_local</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/KlugerLab/FIt-SNE.git</span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="bu">cd</span> FIt-SNE</span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="ex">g++</span> <span class="at">-std</span><span class="op">=</span>c++11 <span class="at">-O3</span>  src/sptree.cpp src/tsne.cpp src/nbodyfft.cpp <span class="at">-o</span> bin/fast_tsne <span class="at">-pthread</span> <span class="at">-L..</span>/fftw-3.3.10/lib <span class="at">-lfftw3</span> <span class="at">-lm</span></span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="bu">pwd</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="bu">cd</span> ../ <span class="co"># back to FItSNE_local</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/KlugerLab/FIt-SNE.git</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="bu">cd</span> FIt-SNE</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="ex">g++</span> <span class="at">-std</span><span class="op">=</span>c++11 <span class="at">-O3</span>  src/sptree.cpp src/tsne.cpp src/nbodyfft.cpp <span class="at">-o</span> bin/fast_tsne <span class="at">-pthread</span> <span class="at">-L..</span>/fftw-3.3.10/lib <span class="at">-lfftw3</span> <span class="at">-lm</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="bu">pwd</span></span></code></pre></div>
 <p>A folder <code>bin</code> with a file named <code>fast_tsne</code>
 must be presented at current location. The command <code>pwd</code>
 shows the location to the binary and you will need the printed path for
@@ -266,7 +274,7 @@ following command can be used to invoke the binary. Just simply pass a
 string containing what <code>pwd</code> shows to the argument
 <code>fitsnePath</code> in <code><a href="../reference/runTSNE.html">runTSNE()</a></code> function and switch
 <code>method = "fftRtsne"</code>.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ligerObj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runTSNE.html">runTSNE</a></span><span class="op">(</span><span class="va">ligerObj</span>, method <span class="op">=</span> <span class="st">"fftRtsne"</span>, fitsnePath <span class="op">=</span> <span class="st">"path/you/need/FItSNE_local/FIt-SNE"</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
