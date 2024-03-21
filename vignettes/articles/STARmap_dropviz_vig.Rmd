@@ -66,10 +66,8 @@ Unshared Integrative Non-negative Matrix Factorization (UINMF) can be applied wi
 
 In this tutorial, we set dataset specific lambda (regularization parameter) values to penalize the dataset specific effect differently. 
 
-Another noteworthy advantage of UINMF is that we are able to use a larger number of factors than there are shared features. We captilize on this by changing the default value of `k` to 40. 
-
 ```{r factorization}
-lig <- runUINMF(lig, k = 40, lambda = c(10, 1))
+lig <- runUINMF(lig, k = 25, lambda = c(10, 1))
 ```
 
 ## Step 4: Quantile Normalization and Joint Clustering

@@ -9,6 +9,8 @@
 - Ability to do downstream analysis on H5 data
   - Pseudo-bulk should be easy because we are just aggregating cells.
   - Wilcoxon might be a bit harder because ranks are calculated per gene but the H5 sparse data is column majored. Might need to find a fast on-disk transposition method.
+- Fix runUINMF aborting criteria
+  - UINMF is capable of running with k > number of shared genes. Don't have to abort on it.
 
 ## rliger 2.0.0
 
