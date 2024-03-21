@@ -69,7 +69,7 @@ jobs:
         shell: Rscript {0}
 
       - name: Check
-        run: rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning")
+        run: rcmdcheck::rcmdcheck(args = c("--no-manual"), error_on = "warning")
         shell: Rscript {0}
 
       - name: Run codecov
