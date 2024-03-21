@@ -1,7 +1,7 @@
 ---
 title: "Install LIGER with R"
 author: "Yichen Wang"
-date: "2023-11-05"
+date: "2024-03-20"
 output: 
   html_document:
     toc: 3
@@ -22,18 +22,30 @@ To install the latest stable release, please run the following command in R cons
 install.packages("rliger")
 ```
 
+Besides, we now move the core implementation of iNMF related algorithms to a separate package [RcppPlanc](https://github.com/welch-lab/RcppPlanc), with decent performance improvement. It **must** be installed for performing integration analysis. We currently host it on [R-universe](https://welch-lab.r-universe.dev/RcppPlanc) as we are actively submitting it to CRAN. Please run the following command in R console to install it.
+
+```{R}
+install.packages("RcppPlanc", repos = "https://welch-lab.r-universe.dev")
+```
+
 ## Building from source
 
-The developmental versions as well as source version of the previous versions are accessible from GitHub. We are currently contributing to the repository `welch-lab/liger` in branch `newObj` for the latest developmental version. To install the latest version from GitHub, please run the following command in R console:
+The developmental versions as well as source version of the previous versions are accessible from GitHub. To install the latest version from GitHub, please run the following command in R console:
 
 ```{R}
 if (!requireNamespace("devtools")) install.packages("devtools")
-devtools::install_github("welch-lab/liger@newObj")
+    devtools::install_github("welch-lab/liger")
+```
+
+If you still need to work with the previous version (1.0.1):
+
+```{R}
+devtools::install_github("welch-lab/liger", ref = "v1.0.1")
 ```
 
 If you encounter issues when building from source, please see below sections for details about some dependencies.
 
-**Please note that the latest version (>=1.99.0) is massively updated compared to prior versions, and functions are not directly compatible with the old version objects which users might possess. Please use `readLiger()` to load old RDS files or `convertOldLiger()` to convert a loaded object into the up-to-date structure. You might need to be careful when overwriting existing analysis because we don't provide methods to convert new the structure backwards.**
+**Please note that version 2.0.0 is massively updated compared to prior versions, and functions are not directly compatible with liger objects created with the old versions which users might possess. Please use `readLiger()` to load old RDS files or `convertOldLiger()` to convert a loaded object into the up-to-date structure. You might need to be careful when overwriting existing analysis because we don't provide methods to convert new the structure backwards.**
 
 ### Compiler setup
 
@@ -47,14 +59,14 @@ HDF5 library is required for interacting with H5 files. It can be installed via 
 
 | System                                    | Command
 |:------------------------------------------|:---------------------------------|
-|OS X (using Homebrew or Conda)         | `brew install hdf5` or `conda install -c anaconda hdf5`
+|macOS (using Homebrew or Conda)         | `brew install hdf5` or `conda install -c anaconda hdf5`
 |Debian-based systems (including Ubuntu) | `sudo apt-get install libhdf5-dev`
 |Systems supporting yum and RPMs        | `sudo yum install hdf5-devel`
 |Windows | Go to [HDF5 website](https://www.hdfgroup.org/downloads/hdf5/) and download the proper installer
 
 ### Installing RcppPlanc
 
-[RcppPlanc](https://github.com/welch-lab/RcppPlanc) is an extension R package built basing on [Planc](https://github.com/ramkikannan/planc). We implemented highly optimized iNMF algorithm and its variants here for the new version upgrade. It is currently only available via GitHub.
+[RcppPlanc](https://github.com/welch-lab/RcppPlanc) is an extension R package built basing on [Planc](https://github.com/ramkikannan/planc). We implemented highly optimized iNMF algorithm and its variants here for the new version upgrade. To install it from source:
 
 ```{R}
 devtools::install_github("welch-lab/RcppPlanc")

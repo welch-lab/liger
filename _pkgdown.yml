@@ -116,6 +116,7 @@ reference:
   - makeFeatureMatrix
   - mergeH5
   - mergeSparseAll
+  - writeH5
 - title: "Deprecated"
 - contents:
   - ends_with("deprecated")
