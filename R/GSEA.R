@@ -17,7 +17,12 @@
 #' @export
 #' @examples
 #' \donttest{
-#' runGSEA(pbmcPlot)
+#' if (requireNamespace("org.Hs.eg.db", quietly = TRUE) &&
+#'     requireNamespace("reactome.db", quietly = TRUE) &&
+#'     requireNamespace("fgsea", quietly = TRUE) &&
+#'     requireNamespace("AnnotationDbi", quietly = TRUE)) {
+#'     runGSEA(pbmcPlot)
+#' }
 #' }
 runGSEA <- function(
         object,
@@ -47,7 +52,13 @@ runGSEA <- function(
         cli::cli_abort(
             "Package {.pkg fgsea} is needed for this function to work.
             Please install it by command:
-            {.code BiocManager::install('fgsea')}") # nocov end
+            {.code BiocManager::install('fgsea')}")
+
+    if (!requireNamespace("AnnotationDbi", quietly = TRUE))
+        cli::cli_abort(
+            "Package {.pkg AnnotationDbi} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('AnnotationDbi')}")  # nocov end
 
     .deprecateArgs(list(gene_sets = "genesets",
                         mat_w = "useW",
@@ -151,7 +162,9 @@ runGSEA <- function(
 #' # Setting `significant = FALSE` because it's hard for a gene list obtained
 #' # from small test dataset to represent real-life biology.
 #' \donttest{
-#' go <- runGOEnrich(res, group = 0, significant = FALSE)
+#' if (requireNamespace("gprofiler2", quietly = TRUE)) {
+#'     go <- runGOEnrich(res, group = 0, significant = FALSE)
+#' }
 #' }
 runGOEnrich <- function(
         result,

@@ -4,13 +4,19 @@
   - Currently we allow analysis with 10X cellranger output H5 file and H5AD file from anndata>=0.8.0
   - Writing to H5AD file should follow anndata specification otherwise the file cannot be read back to a Python seesion.
   - Writing to 10X H5 file should be carefully investigated.
+  - Consider using object backend to store information instead of active H5 binding, which cannot be serialized to RDS.
+  - Investigate whether to use existing backend implementation like HDF5Array, DelayedArray.
 - Ability to reorganize datasets
   - Allow doing something like `reorganize(ligerObj, variable = "somethingNotDataset")` and resulting in a new liger object with different ligerDataset grouping.
 - Ability to do downstream analysis on H5 data
   - Pseudo-bulk should be easy because we are just aggregating cells.
   - Wilcoxon might be a bit harder because ranks are calculated per gene but the H5 sparse data is column majored. Might need to find a fast on-disk transposition method.
-- Fix runUINMF aborting criteria
-  - UINMF is capable of running with k > number of shared genes. Don't have to abort on it.
+
+## rliger 2.0.1
+
+- Fixed wrong UINMF aborting criteria
+- Fixed example/test skipping criteria for nonexisting dependencies
+- Fixed file access issue when checking package on CRAN
 
 ## rliger 2.0.0
 
@@ -23,6 +29,7 @@
 - Added native Seurat object support for the core integration workflow
 - Added a documentation website built with pkgdown
 - Added new iNMF variant method, consensus iNMF (c-iNMF), in `runCINMF()`. Not stable.
+- Added GO enrichment dowsntream analysis in `runGOEnrich()`
 - Changed `liger` object class structure
 - Moved iNMF (previously `optimizeALS()`), UINMF (previously `optimizeALS(unshared = TRUE)`) and online iNMF (previously `online_iNMF()`) implementation to new package *RcppPlanc* with vastly improved performance. Now wrapped in `runINMF()`, `runUINMF()` and `runOnlineINMF()` respectively, and all can be invoked with `runIntegration()`.
 - Updated H5AD support to match up with Python anndata package 0.8.0 specs

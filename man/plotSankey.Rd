@@ -91,7 +91,9 @@ cellMeta(pbmcPlot, "ctrl_cluster", "ctrl") <-
     cellMeta(pbmcPlot, "leiden_cluster", "ctrl")
 cellMeta(pbmcPlot, "stim_cluster", "stim") <-
     cellMeta(pbmcPlot, "leiden_cluster", "stim")
-plotSankey(pbmcPlot, "ctrl_cluster", "stim_cluster",
-           titles = c("control", "LIGER", "stim"),
-           prefixes = c("c", NA, "s"))
+if (requireNamespace("sankey", quietly = TRUE)) {
+    plotSankey(pbmcPlot, "ctrl_cluster", "stim_cluster",
+               titles = c("control", "LIGER", "stim"),
+               prefixes = c("c", NA, "s"))
+}
 }

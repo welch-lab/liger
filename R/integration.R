@@ -384,7 +384,7 @@ runINMF.Seurat <- function(
         cli::cli_abort(
         "Package {.pkg RcppPlanc} is required for iNMF integration.
         Please install it by command:
-        {.code devtools::install_github('welch-lab/RcppPlanc')}") # nocov end
+        {.code install.packages('RcppPlanc', repos = 'https:/welch-lab.r-universe.dev')}") # nocov end
 
     barcodeList <- lapply(object, colnames)
     allFeatures <- lapply(object, rownames)
@@ -822,7 +822,7 @@ runOnlineINMF.liger <- function(
         cli::cli_abort(
             "Package {.pkg RcppPlanc} is required for online iNMF integration.
         Please install it by command:
-        {.code devtools::install_github('welch-lab/RcppPlanc')}") # nocov end
+        {.code install.packages('RcppPlanc', repos = 'https:/welch-lab.r-universe.dev')}") # nocov end
     nDatasets <- length(object) + length(newDatasets)
     barcodeList <- c(lapply(object, colnames), lapply(newDatasets, colnames))
     names(barcodeList) <- c(names(object), names(newDatasets))
@@ -1207,16 +1207,13 @@ runUINMF.liger <- function(
         cli::cli_abort(
         "Package {.pkg RcppPlanc} is required for mosaic iNMF integration with unshared features.
         Please install it by command:
-        {.code devtools::install_github('welch-lab/RcppPlanc')}")# nocov end
+        {.code install.packages('RcppPlanc', repos = 'https:/welch-lab.r-universe.dev')}")# nocov end
     barcodeList <- lapply(object, colnames)
     allFeatures <- lapply(object, rownames)
     features <- Reduce(.same, allFeatures)
 
     if (min(lengths(barcodeList)) < k) {
         cli::cli_abort("Number of factors (k={k}) should be less than the number of cells in the smallest dataset ({min(lengths(barcodeList))}).")
-    }
-    if (length(features) < k) {
-        cli::cli_abort("Number of factors (k={k}) should be less than the number of shared features ({length(features)}).")
     }
 
     bestObj <- Inf
@@ -1685,12 +1682,6 @@ calcAgreement <- function(
               "i" = "e.g. {.code memCopy <- subsetLiger(object, useSlot = 'scaleData', newH5 = FALSE)}")
         )
     }
-    if (!requireNamespace("RcppPlanc", quietly = TRUE))
-        cli::cli_abort(
-            "Package {.pkg RcppPlanc} is needed for this function to work.
-            Please install it by command:
-            {.code devtools::install_github('RcppPlanc')}")
-
 
     scaled <- getMatrix(object, "scaleData", returnList = TRUE)
     scaleDataIsNull <- sapply(scaled, is.null)

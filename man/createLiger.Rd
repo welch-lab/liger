@@ -83,6 +83,10 @@ can be dangerous for large scale analysis.}
 \description{
 This function allows creating \linkS4class{liger} object from
 multiple datasets of various forms (See \code{rawData}).
+
+\bold{DO} make a copy of the H5AD files because rliger functions write to
+the files and they will not be able to be read back to Python. This will be
+fixed in the future.
 }
 \examples{
 # Create from raw count matrices

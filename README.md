@@ -33,6 +33,26 @@ analysis, and visualization. Users can:
 We have also designed LIGER to interface with existing single-cell analysis packages, including
 [Seurat](https://satijalab.org/seurat/).
 
+## Citation
+
+If you use LIGER in your research please cite our paper correspondingly:
+
+* Generally the *Cell* paper should be cited:
+
+>Joshua D. Welch and et al., Single-Cell Multi-omic Integration Compares and Contrasts Features of Brain Cell Identity, Cell, VOLUME 177, ISSUE 7, P1873-1887.E17 (2019), [https://doi.org/10.1016/j.cell.2019.05.006](https://doi.org/10.1016/j.cell.2019.05.006)
+
+* For the *rliger* package:
+
+>Liu, J., Gao, C., Sodicoff, J. et al. Jointly defining cell types from multiple single-cell datasets using LIGER. Nat Protoc 15, 3632–3662 (2020), [https://doi.org/10.1038/s41596-020-0391-8](https://doi.org/10.1038/s41596-020-0391-8)
+
+* For online iNMF integration method:
+
+>Gao, C., Liu, J., Kriebel, A.R. et al. Iterative single-cell multi-omic integration using online learning. Nat Biotechnol 39, 1000–1007 (2021), [https://doi.org/10.1038/s41587-021-00867-x](https://doi.org/10.1038/s41587-021-00867-x)
+
+* For UINMF integration method:
+
+>Kriebel, A.R., Welch, J.D. UINMF performs mosaic integration of single-cell multi-omic datasets using nonnegative matrix factorization. Nat Commun 13, 780 (2022), [https://doi.org/10.1038/s41467-022-28431-4](https://doi.org/10.1038/s41467-022-28431-4)
+
 ## Feedback
 
 If you have any questions, comments, or suggestions, you are welcomed to [open an Issue](https://github.com/welch-lab/liger/issues)!

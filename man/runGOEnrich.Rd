@@ -65,7 +65,9 @@ res <- runMarkerDEG(pbmcPlot)
 # Setting `significant = FALSE` because it's hard for a gene list obtained
 # from small test dataset to represent real-life biology.
 \donttest{
-go <- runGOEnrich(res, group = 0, significant = FALSE)
+if (requireNamespace("gprofiler2", quietly = TRUE)) {
+    go <- runGOEnrich(res, group = 0, significant = FALSE)
+}
 }
 }
 \references{

@@ -1,4 +1,3 @@
-has_RcppPlanc <- requireNamespace("RcppPlanc", quietly = TRUE)
 data("pbmc", package = "rliger")
 rawDataList <- getMatrix(pbmc, "rawData")
 
@@ -7,23 +6,27 @@ withNewH5Copy <- function(fun) {
     stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
     if (!file.exists(ctrlpath.orig))
         stop("Cannot find original h5 file at: ", ctrlpath.orig)
-    if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
-    if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
-    pwd <- getwd()
-    # Temp setting for GitHub Actions
-    fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
-    if (Sys.info()["sysname"] == "Windows") {
-        pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
-    }
+    # if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
+    # if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
+    # pwd <- getwd()
+    # # Temp setting for GitHub Actions
+    # fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
+    # if (Sys.info()["sysname"] == "Windows") {
+    #     pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
+    # }
 
-    ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
-    stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
+    # ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
+    # stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
+    ctrlpath <- tempfile(pattern = "ctrltest_", fileext = ".h5")
+    stimpath <- tempfile(pattern = "stimtest_", fileext = ".h5")
     cat("Working ctrl H5 file path: ", ctrlpath, "\n")
     cat("Working stim H5 file path: ", stimpath, "\n")
     file.copy(ctrlpath.orig, ctrlpath, copy.mode = TRUE)
     file.copy(stimpath.orig, stimpath, copy.mode = TRUE)
     if (!file.exists(ctrlpath))
         stop("Cannot find copied h5 file at: ", ctrlpath)
+    if (!file.exists(stimpath))
+        stop("Cannot find copied h5 file at: ", stimpath)
 
     fun(list(ctrl = ctrlpath, stim = stimpath))
 
@@ -52,7 +55,7 @@ process <- function(object) {
 
 context("iNMF")
 test_that("iNMF - in-memory", {
-    skip_if_not(has_RcppPlanc)
+    skip_if_not_installed("RcppPlanc")
     pbmc <- normalize(pbmc)
     pbmc <- selectGenes(pbmc)
 
@@ -88,11 +91,11 @@ test_that("iNMF - in-memory", {
 # })
 
 test_that("UINMF", {
-    skip_if_not(has_RcppPlanc)
+    skip_if_not_installed("RcppPlanc")
     # Need to fake the situation because test dataset doesn't have real
     # unshared var feature
     pbmc <- normalize(pbmc)
-    pbmc <- selectGenes(pbmc, 0.8)
+    pbmc <- selectGenes(pbmc, 1.2) # Should found 22 shared var features
     allFeature <- union(rownames(pbmc@datasets$ctrl), rownames(pbmc@datasets$stim))
     unshare <- setdiff(allFeature, varFeatures(pbmc))
     expect_error(runUINMF(pbmc),
@@ -101,15 +104,21 @@ test_that("UINMF", {
     expect_error(runUINMF(pbmc),
                  "No scaled data for unshared feature found. ")
     varUnsharedFeatures(pbmc, "ctrl") <- unshare[1:10]
-    varUnsharedFeatures(pbmc, "stim") <- unshare[11:20]
+
 
     pbmc <- scaleNotCenter(pbmc)
-    pbmc <- runUINMF(pbmc, k = 10, nIteration = 2, nRandomStarts = 2)
+    # This aims at testing nVarFeature < k but we have enough unshared var feature
+    pbmc <- runUINMF(pbmc, k = 30, nIteration = 2, nRandomStarts = 2)
     expect_no_error(rliger:::.checkValidFactorResult(pbmc))
+
+    varUnsharedFeatures(pbmc, "stim") <- unshare[11:20]
+    pbmc <- scaleNotCenter(pbmc, useDatasets = "stim")
+    # Normal case
+    expect_no_error(pbmc <- runUINMF(pbmc, k = 10, nIteration = 2))
 })
 
 test_that("Optimize new parameters", {
-    skip_if_not(has_RcppPlanc)
+    skip_if_not_installed("RcppPlanc")
     pbmc <- process(pbmc)
     pbmc <- runOnlineINMF(pbmc, k = 10, minibatchSize = 100)
     pbmc0 <- optimizeNewK(pbmc, kNew = 10, nIteration = 2)
@@ -142,7 +151,7 @@ test_that("Optimize new parameters", {
 })
 
 test_that("Online iNMF - in-memory", {
-    skip_if_not(has_RcppPlanc)
+    skip_if_not_installed("RcppPlanc")
     expect_error(runOnlineINMF(pbmc, k = 20, minibatchSize = 100),
                  "Scaled data not available. ")
     pbmc <- process(pbmc)
@@ -185,7 +194,7 @@ test_that("Online iNMF - in-memory", {
 })
 
 test_that("quantileNorm", {
-    skip_if_not(has_RcppPlanc)
+    skip_if_not_installed("RcppPlanc")
     pbmc <- process(pbmc)
     pbmc <- runOnlineINMF(pbmc, k = 20, minibatchSize = 100)
 
@@ -226,8 +235,9 @@ test_that("quantileNorm", {
 
 context("Seurat iNMF wrapper")
 test_that("Seurat wrapper", {
-    skip_if_not(has_RcppPlanc)
-    skip_if_not(requireNamespace("Seurat", quietly = TRUE))
+    skip_if_not_installed("RcppPlanc")
+    skip_if_not_installed("Seurat")
+    skip_if_not_installed("SeuratObject")
     seu <- ligerToSeurat(pbmc)
     seu <- normalize(seu)
     seu <- selectGenes(seu)

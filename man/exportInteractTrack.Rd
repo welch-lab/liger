@@ -38,7 +38,10 @@ Genome Browser}.
 bmmc <- normalize(bmmc)
 bmmc <- selectGenes(bmmc)
 bmmc <- scaleNotCenter(bmmc)
-if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+if (requireNamespace("RcppPlanc", quietly = TRUE) &&
+    requireNamespace("GenomicRanges", quietly = TRUE) &&
+    requireNamespace("IRanges", quietly = TRUE) &&
+    requireNamespace("psych", quietly = TRUE)) {
     bmmc <- runINMF(bmmc)
     bmmc <- quantileNorm(bmmc)
     bmmc <- normalizePeak(bmmc)

@@ -1,6 +1,10 @@
 #' Create liger object
 #' @description This function allows creating \linkS4class{liger} object from
 #' multiple datasets of various forms (See \code{rawData}).
+#'
+#' \bold{DO} make a copy of the H5AD files because rliger functions write to
+#' the files and they will not be able to be read back to Python. This will be
+#' fixed in the future.
 #' @param rawData Named list of datasets. Required. Elements allowed include a
 #' matrix, a \code{Seurat} object, a \code{SingleCellExperiment} object, an
 #' \code{AnnData} object, a \linkS4class{ligerDataset} object or a filename to
@@ -239,10 +243,14 @@ createLigerDataset <- function(
 #' @description
 #' For convenience, the default \code{formatType = "10x"} directly fits the
 #' structure of cellranger output. \code{formatType = "anndata"} works for
-#' current AnnData H5AD file specification (see Details). If there a customized
-#' H5 file  structure is presented, any of the \code{rawData},
+#' current AnnData H5AD file specification (see Details). If a customized H5
+#' file structure is presented, any of the \code{rawData},
 #' \code{indicesName}, \code{indptrName}, \code{genesName}, \code{barcodesName}
 #' should be specified accordingly to override the \code{formatType} preset.
+#'
+#' \bold{DO} make a copy of the H5AD files because rliger functions write to
+#' the files and they will not be able to be read back to Python. This will be
+#' fixed in the future.
 #' @details
 #' For H5AD file written from an AnnData object, we allow using
 #' \code{formatType = "anndata"} for the function to infer the proper structure.
@@ -282,7 +290,9 @@ createLigerDataset <- function(
 #' @return H5-based \linkS4class{ligerDataset} object
 #' @examples
 #' h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
-#' ld <- createH5LigerDataset(h5Path)
+#' tempPath <- tempfile(fileext = ".h5")
+#' file.copy(from = h5Path, to = tempPath)
+#' ld <- createH5LigerDataset(tempPath)
 createH5LigerDataset <- function(
         h5file,
         formatType = "10X",
