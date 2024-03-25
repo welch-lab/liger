@@ -72,7 +72,7 @@ by \code{baseSize + 2}.}
 Default \code{0}.}
 
 \item{viridisOption, viridisDirection}{See argument \code{option} and
-\code{direction} of \code{\link[viridisLite]{viridis}}. Default \code{"A"}
+\code{direction} of \code{\link[viridis]{viridis}}. Default \code{"A"}
 and \code{-1}.}
 
 \item{...}{Additional arguments passed to

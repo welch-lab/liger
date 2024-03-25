@@ -93,7 +93,7 @@ quantileAlignSNF <- function(
     msg = paste(
       "This is a deprecated function. Calling 'quantileNorm' instead.",
       "Note that not all parameters can be passed to 'quantileNorm'.",
-      "It's suggested to run 'louvainCluster' subsequently as well."
+      "It's suggested to run 'runCluster()' subsequently as well."
     )
   )
   quantileNorm(object, quantiles = quantiles, reference = ref_dataset,
