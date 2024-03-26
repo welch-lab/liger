@@ -61,7 +61,6 @@ H5Apply <- function(
                                        total = numChunks, clear = FALSE)
         # pb <- utils::txtProgressBar(0, numChunks, style = 3)
     for (i in seq(numChunks)) {
-        Sys.sleep(0.1)
         start <- (i - 1)*chunkSize + 1
         end <- if (i*chunkSize > ncol(object)) ncol(object) else i*chunkSize
         colptrStart <- start

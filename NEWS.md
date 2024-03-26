@@ -1,11 +1,12 @@
 ## rliger Next
 
-- Standardized H5 writing specification that can be shared with other platforms.
-  - Currently we allow analysis with 10X cellranger output H5 file and H5AD file from anndata>=0.8.0
-  - Writing to H5AD file should follow anndata specification otherwise the file cannot be read back to a Python seesion.
-  - Writing to 10X H5 file should be carefully investigated.
-  - Consider using object backend to store information instead of active H5 binding, which cannot be serialized to RDS.
-  - Investigate whether to use existing backend implementation like HDF5Array, DelayedArray.
+- Standardized H5 IO specification that can be shared with other platforms.
+  - Will move to use HDF5Array (TENxMatrix, H5ADMatrix)/ or BPCells for backed data representation.
+  - Read feature metadata (e.g. id, name, ...) if available; Allow setting "id" as rownames, "name" for visualization.
+  - rawData - coming from the original input, read only (qc filtering should be just stored in the object, no IO)
+  - preprocessing metrics - nUMI, nGene and etc, still go "chunkApply" so the file is read only once
+  - normData - delayed computed data from rawData, no on disk representation
+  - scaleData - new on-disk file and then create object back, because RcppPlanc won't be able to handle delayed computation
 - Ability to reorganize datasets
   - Allow doing something like `reorganize(ligerObj, variable = "somethingNotDataset")` and resulting in a new liger object with different ligerDataset grouping.
 - Ability to do downstream analysis on H5 data
@@ -15,8 +16,11 @@
 ## rliger 2.0.1
 
 - Fixed wrong UINMF aborting criteria
-- Fixed example/test skipping criteria for nonexisting dependencies
+- Fixed example/test skipping criteria for non-existing dependencies
 - Fixed file access issue when checking package on CRAN
+- Updated installed data file `system.file("extdata/ctrl.h5", "extdata/stim.h5")` to be of standard 10X H5 format
+- Updated `quantileNorm()` automatic reference selection according to #297
+- Other minor fixes
 
 ## rliger 2.0.0
 

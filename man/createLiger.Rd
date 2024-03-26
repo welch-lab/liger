@@ -20,6 +20,8 @@ createLiger(
   newH5 = TRUE,
   verbose = getOption("ligerVerbose", TRUE),
   ...,
+  raw.data = rawData,
+  take.gene.union = NULL,
   remove.missing = removeMissing,
   format.type = formatType,
   data.name = dataName,
@@ -78,7 +80,9 @@ can be dangerous for large scale analysis.}
 
 \item{...}{Additional slot values that should be directly placed in object.}
 
-\item{remove.missing, format.type, data.name, indices.name, indptr.name, genes.name, barcodes.name}{\bold{Deprecated.} See Usage section for replacement.}
+\item{raw.data, remove.missing, format.type, data.name, indices.name, indptr.name, genes.name, barcodes.name}{\bold{Deprecated.} See Usage section for replacement.}
+
+\item{take.gene.union}{Defuncted. Will be ignored.}
 }
 \description{
 This function allows creating \linkS4class{liger} object from
@@ -96,8 +100,9 @@ pbmc1 <- createLiger(list(ctrl = ctrl.raw, stim = stim.raw))
 
 # Create from H5 files
 h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
-print(h5Path)
-lig <- createLiger(list(ctrl = h5Path))
+tempPath <- tempfile(fileext = ".h5")
+file.copy(from = h5Path, to = tempPath)
+lig <- createLiger(list(ctrl = tempPath))
 
 # Create from other container object
 ctrl.seu <- SeuratObject::CreateSeuratObject(ctrl.raw)

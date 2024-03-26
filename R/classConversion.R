@@ -512,7 +512,7 @@ convertOldLiger.mem <- function(object) {
         if (!is.null(dataList$rawData)) features <- rownames(dataList$rawData)
         else features <- rownames(dataList$normData)
         if (is.null(features)) {
-            cli::cli_alert_abort(
+            cli::cli_abort(
                 "Cannot detect feature names for dataset {.val {d}}."
             )
         }

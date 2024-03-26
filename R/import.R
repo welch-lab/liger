@@ -41,8 +41,9 @@
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Additional slot values that should be directly placed in object.
-#' @param remove.missing,format.type,data.name,indices.name,indptr.name,genes.name,barcodes.name
+#' @param raw.data,remove.missing,format.type,data.name,indices.name,indptr.name,genes.name,barcodes.name
 #' \bold{Deprecated.} See Usage section for replacement.
+#' @param take.gene.union Defuncted. Will be ignored.
 #' @export
 #' @seealso \code{\link{createLigerDataset}}, \code{\link{createH5LigerDataset}}
 #' @examples
@@ -78,6 +79,8 @@ createLiger <- function(
         verbose = getOption("ligerVerbose", TRUE),
         ...,
         # Deprecated coding style
+        raw.data = rawData,
+        take.gene.union = NULL,
         remove.missing = removeMissing,
         format.type = formatType,
         data.name = dataName,
@@ -86,12 +89,17 @@ createLiger <- function(
         genes.name = genesName,
         barcodes.name = barcodesName
 ) {
-    .deprecateArgs(list(remove.missing = "removeMissing",
+    .deprecateArgs(list(raw.data = "rawData", remove.missing = "removeMissing",
                         format.type = "formatType", data.name = "dataName",
                         indices.name = "indicesName",
                         indptr.name = "indptrName", genes.name = "genesName",
-                        barcodes.name = "barcodesName"))
-    if (!is.list(rawData)) cli::cli_abort("{.var rawData} has to be a named list.")
+                        barcodes.name = "barcodesName"),
+                   defunct = "take.gene.union")
+    if (!is.list(rawData) ||
+        is.null(names(rawData)) ||
+        any(nchar(names(rawData)) == 0)) {
+        cli::cli_abort("{.var rawData} has to be a named list.")
+    }
 
     nData <- length(rawData)
     if (missing(modal) || is.null(modal)) modal <- "default"

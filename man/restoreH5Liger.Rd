@@ -34,7 +34,9 @@ for data structure.
 }
 \examples{
 h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
-lig <- createLiger(list(ctrl = h5Path))
+tempPath <- tempfile(fileext = ".h5")
+file.copy(from = h5Path, to = tempPath)
+lig <- createLiger(list(ctrl = tempPath))
 # Now it is actually an invalid object! which is equivalent to what users
 # will get with `saveRDS(lig, "object.rds"); lig <- readRDS("object.rds")``
 closeAllH5(lig)

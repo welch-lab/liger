@@ -54,8 +54,9 @@ Default \code{50}.}
 
 \item{reference}{Character, numeric or logical selection of one dataset, out
 of all available datasets in \code{object}, to use as a "reference" for
-normalization. Default \code{NULL} use the dataset with the largest number of
-cells.}
+quantile normalization. Default \code{NULL} tries to find an RNA dataset with
+the largest number of cells; if no RNA dataset available, use the globally
+largest dataset.}
 
 \item{minCells}{Minimum number of cells to consider a cluster shared across
 datasets. Default \code{20}.}

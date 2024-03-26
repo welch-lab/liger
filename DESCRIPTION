@@ -43,7 +43,7 @@ Depends:
     methods,
     stats,
     utils,
-    R (>= 3.4)
+    R (>= 3.5)
 Imports:
     circlize,
     cli,
