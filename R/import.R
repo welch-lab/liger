@@ -23,7 +23,7 @@
 #' common with 10X data). Default \code{"auto"} detects if matrix columns
 #' already has the exact prefix or not. Logical value forces the action.
 #' @param formatType Select preset of H5 file structure. Current available
-#' options are \code{"10X"} and \code{"AnnData"}. Can be either a single
+#' options are \code{"10x"} and \code{"anndata"}. Can be either a single
 #' specification for all datasets or a character vector that match with each
 #' dataset.
 #' @param anndataX The HDF5 path to the raw count data in an H5AD file. See
@@ -59,9 +59,11 @@
 #' lig <- createLiger(list(ctrl = tempPath))
 #'
 #' # Create from other container object
-#' ctrl.seu <- SeuratObject::CreateSeuratObject(ctrl.raw)
-#' stim.seu <- SeuratObject::CreateSeuratObject(stim.raw)
-#' pbmc2 <- createLiger(list(ctrl = ctrl.seu, stim = stim.seu))
+#' if (requireNamespace("SeuratObject", quietly = TRUE)) {
+#'     ctrl.seu <- SeuratObject::CreateSeuratObject(ctrl.raw)
+#'     stim.seu <- SeuratObject::CreateSeuratObject(stim.raw)
+#'     pbmc2 <- createLiger(list(ctrl = ctrl.seu, stim = stim.seu))
+#' }
 createLiger <- function(
         rawData,
         modal = NULL,
@@ -276,7 +278,7 @@ createLigerDataset <- function(
 #' the AnnData was originally created.
 #' @param h5file Filename of an H5 file
 #' @param formatType Select preset of H5 file structure. Default \code{"10X"}.
-#' Current available option is only \code{"10X"}.
+#' Alternatively, we also support \code{"anndata"} for H5AD files.
 #' @param rawData,indicesName,indptrName The path in a H5 file for the raw
 #' sparse matrix data. These three types of data stands for the \code{x},
 #' \code{i}, and \code{p} slots of a \code{\link[Matrix]{dgCMatrix-class}}
@@ -304,7 +306,7 @@ createLigerDataset <- function(
 #' ld <- createH5LigerDataset(tempPath)
 createH5LigerDataset <- function(
         h5file,
-        formatType = "10X",
+        formatType = "10x",
         rawData = NULL,
         normData = NULL,
         scaleData = NULL,
@@ -453,6 +455,18 @@ createH5LigerDataset <- function(
 #' tempPath <- tempfile(fileext = ".rds")
 #' saveRDS(lig, tempPath)
 #' lig <- readLiger(tempPath)
+#'
+#' \dontrun{
+#' # Read a old liger object <= 1.0.1
+#' # Assume the dimensionality reduction method applied was UMAP
+#' # Assume the clustering was derived with Louvain method
+#' lig <- readLiger(
+#'     filename = "path/to/oldLiger.rds",
+#'     dimredName = "UMAP",
+#'     clusterName = "louvain",
+#'     update = TRUE
+#' )
+#' }
 readLiger <- function(
         filename,
         dimredName = "tsne_coords",

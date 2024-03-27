@@ -280,15 +280,18 @@ test_that("Plot spatial coordinates", {
 
 context("Sankey")
 test_that("PlotSankey", {
+    skip_if_not_installed("sankey")
     cellMeta(pbmcPlot, "ctrl_cluster", "ctrl") <-
         cellMeta(pbmcPlot, "leiden_cluster", "ctrl")
     cellMeta(pbmcPlot, "stim_cluster", "stim") <-
         cellMeta(pbmcPlot, "leiden_cluster", "stim")
-    grDevices::pdf(file = tempfile(pattern = "fig_", fileext = ".pdf"))
+    pdfName <- tempfile(pattern = "fig_", fileext = ".pdf")
+    grDevices::pdf(file = pdfName)
     expect_no_error({
         plotSankey(pbmcPlot, "ctrl_cluster", "stim_cluster",
                    titles = c("control", "LIGER", "stim"),
                    prefixes = c("c", NA, "s"))
     })
     grDevices::dev.off()
+    if (file.exists(pdfName)) unlink(pdfName)
 })

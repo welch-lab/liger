@@ -55,4 +55,16 @@ lig <- createLiger(list(ctrl = h5tempPath))
 tempPath <- tempfile(fileext = ".rds")
 saveRDS(lig, tempPath)
 lig <- readLiger(tempPath)
+
+\dontrun{
+# Read a old liger object <= 1.0.1
+# Assume the dimensionality reduction method applied was UMAP
+# Assume the clustering was derived with Louvain method
+lig <- readLiger(
+    filename = "path/to/oldLiger.rds",
+    dimredName = "UMAP",
+    clusterName = "louvain",
+    update = TRUE
+)
+}
 }

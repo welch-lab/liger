@@ -6,7 +6,7 @@
 \usage{
 createH5LigerDataset(
   h5file,
-  formatType = "10X",
+  formatType = "10x",
   rawData = NULL,
   normData = NULL,
   scaleData = NULL,
@@ -24,7 +24,7 @@ createH5LigerDataset(
 \item{h5file}{Filename of an H5 file}
 
 \item{formatType}{Select preset of H5 file structure. Default \code{"10X"}.
-Current available option is only \code{"10X"}.}
+Alternatively, we also support \code{"anndata"} for H5AD files.}
 
 \item{rawData, indicesName, indptrName}{The path in a H5 file for the raw
 sparse matrix data. These three types of data stands for the \code{x},

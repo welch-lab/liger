@@ -55,7 +55,7 @@ common with 10X data). Default \code{"auto"} detects if matrix columns
 already has the exact prefix or not. Logical value forces the action.}
 
 \item{formatType}{Select preset of H5 file structure. Current available
-options are \code{"10X"} and \code{"AnnData"}. Can be either a single
+options are \code{"10x"} and \code{"anndata"}. Can be either a single
 specification for all datasets or a character vector that match with each
 dataset.}
 
@@ -105,9 +105,11 @@ file.copy(from = h5Path, to = tempPath)
 lig <- createLiger(list(ctrl = tempPath))
 
 # Create from other container object
-ctrl.seu <- SeuratObject::CreateSeuratObject(ctrl.raw)
-stim.seu <- SeuratObject::CreateSeuratObject(stim.raw)
-pbmc2 <- createLiger(list(ctrl = ctrl.seu, stim = stim.seu))
+if (requireNamespace("SeuratObject", quietly = TRUE)) {
+    ctrl.seu <- SeuratObject::CreateSeuratObject(ctrl.raw)
+    stim.seu <- SeuratObject::CreateSeuratObject(stim.raw)
+    pbmc2 <- createLiger(list(ctrl = ctrl.seu, stim = stim.seu))
+}
 }
 \seealso{
 \code{\link{createLigerDataset}}, \code{\link{createH5LigerDataset}}
