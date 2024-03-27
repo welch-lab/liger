@@ -1,7 +1,7 @@
 <img src="https://github.com/welch-lab/liger/raw/newObj/inst/extdata/logo.png" width="120" style="display: inline;">
 
-<a href="https://github.com/welch-lab/liger/actions/workflows/r.yml"><img src="https://github.com/welch-lab/liger/actions/workflows/r.yml/badge.svg?branch=newObj" alt="R" style="display: inline;"></a>
-<a href="https://app.codecov.io/gh/mvfki/liger"><img src="https://codecov.io/gh/mvfki/liger/graph/badge.svg?token=77TTU4GY8" alt="codecov" style="display: inline;"></a>
+<a href="https://github.com/welch-lab/liger/actions/workflows/r.yml"><img src="https://github.com/welch-lab/liger/actions/workflows/r.yml/badge.svg?branch=master" alt="R" style="display: inline;"></a>
+<a href="https://app.codecov.io/gh/welch-lab/liger"><img src="https://codecov.io/gh/welch-lab/liger/graph/badge.svg?token=chxwVaVsGp" alt="codecov" style="display: inline;"></a>
 <a href="https://cran.r-project.org/package=rliger"><img src="https://cranlogs.r-pkg.org/badges/rliger" alt="cran" style="display: inline;"></a>
 
 # LIGER (Linked Inference of Genomic Experimental Relationships)

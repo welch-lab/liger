@@ -387,7 +387,7 @@ cli_or <- function(x) cli::cli_vec(x, list("vec-last" = " or "))
     call <- match.call(definition = sys.function(-1),
                        call = sys.call(-1), envir = parent.frame(2))
     callArgs <- rlang::call_args(call)
-    parentFuncName <- as.list(call)[[1]]
+    parentFuncName <- rlang::call_name(call)
     # This gives access to variable in the function operation environment
     p <- parent.frame()
     for (old in names(replace)) {

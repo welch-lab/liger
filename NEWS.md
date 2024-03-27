@@ -20,7 +20,7 @@
 - Fixed file access issue when checking package on CRAN
 - Updated installed data file `system.file("extdata/ctrl.h5", "extdata/stim.h5")` to be of standard 10X H5 format
 - Updated `quantileNorm()` automatic reference selection according to #297
-- Other minor fixes
+- Other minor fixes (including #308)
 
 ## rliger 2.0.0
 
