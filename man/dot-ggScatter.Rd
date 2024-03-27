@@ -28,7 +28,10 @@
 \item{plotDF}{Data frame like object (fortifiable) that contains all
 necessary information to make the plot.}
 
-\item{x, y, colorBy, shapeBy}{See \code{\link{plotCellScatter}}.}
+\item{x, y}{Available variable name in \code{cellMeta} slot to look for
+the dot coordinates. See details.}
+
+\item{colorBy, shapeBy}{See \code{\link{plotDimRed}}.}
 
 \item{dotOrder}{Controls the order that each dot is added to the plot. Choose
 from \code{"shuffle"}, \code{"ascending"}, or \code{"descending"}. Default

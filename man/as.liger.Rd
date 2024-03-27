@@ -65,26 +65,31 @@ pbmc2 <- as.liger(multiSampleMatrix, datasetVar = pbmc$dataset)
 pbmc2
 
 \donttest{
-sce <- SingleCellExperiment::SingleCellExperiment(
-    assays = list(counts = multiSampleMatrix)
-)
-sce$sample <- pbmc$dataset
-pbmc3 <- as.liger(sce, datasetVar = "sample")
-pbmc3
+if (requireNamespace("SingleCellExperiment", quietly = TRUE)) {
+    sce <- SingleCellExperiment::SingleCellExperiment(
+        assays = list(counts = multiSampleMatrix)
+    )
+    sce$sample <- pbmc$dataset
+    pbmc3 <- as.liger(sce, datasetVar = "sample")
+    pbmc3
+}
 
-seu <- SeuratObject::CreateSeuratObject(multiSampleMatrix)
-# Seurat creates variable "orig.ident" by identifying the cell barcode
-# prefixes, which is indeed what we need in this case. Users might need
-# to be careful and have it confirmed first.
-pbmc4 <- as.liger(seu, datasetVar = "orig.ident")
-pbmc4
+if (requireNamespace("Seurat", quietly = TRUE)) {
+    seu <- SeuratObject::CreateSeuratObject(multiSampleMatrix)
+    # Seurat creates variable "orig.ident" by identifying the cell barcode
+    # prefixes, which is indeed what we need in this case. Users might need
+    # to be careful and have it confirmed first.
+    pbmc4 <- as.liger(seu, datasetVar = "orig.ident")
+    pbmc4
 
-# As per Seurat V5 updates with layered data, specifically helpful udner the
-# scenario of dataset integration. "counts" and etc for each datasets can be
-# split into layers.
-seu5 <- seu
-seu5[["RNA"]] <- split(seu5[["RNA"]], pbmc$dataset)
-print(SeuratObject::Layers(seu5))
-pbmc5 <- as.liger(seu5)
+    # As per Seurat V5 updates with layered data, specifically helpful udner the
+    # scenario of dataset integration. "counts" and etc for each datasets can be
+    # split into layers.
+    seu5 <- seu
+    seu5[["RNA"]] <- split(seu5[["RNA"]], pbmc$dataset)
+    print(SeuratObject::Layers(seu5))
+    pbmc5 <- as.liger(seu5)
+    pbmc5
+}
 }
 }

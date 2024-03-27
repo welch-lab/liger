@@ -1,10 +1,12 @@
-<img src="https://github.com/mvfki/liger/raw/newObj/inst/extdata/logo.png" width="120">
+<img src="https://github.com/welch-lab/liger/raw/newObj/inst/extdata/logo.png" width="120" style="display: inline;">
 
-[![R](https://github.com/mvfki/liger/actions/workflows/r.yml/badge.svg?branch=newObj)](https://github.com/mvfki/liger/actions/workflows/r.yml)[![codecov](https://codecov.io/gh/mvfki/liger/graph/badge.svg?token=77TTU4GY8A)](https://codecov.io/gh/mvfki/liger)
+<a href="https://github.com/welch-lab/liger/actions/workflows/r.yml"><img src="https://github.com/welch-lab/liger/actions/workflows/r.yml/badge.svg?branch=master" alt="R" style="display: inline;"></a>
+<a href="https://app.codecov.io/gh/welch-lab/liger"><img src="https://codecov.io/gh/welch-lab/liger/graph/badge.svg?token=chxwVaVsGp" alt="codecov" style="display: inline;"></a>
+<a href="https://cran.r-project.org/package=rliger"><img src="https://cranlogs.r-pkg.org/badges/rliger" alt="cran" style="display: inline;"></a>
 
 # LIGER (Linked Inference of Genomic Experimental Relationships)
 
-### Now we have a comprehensive documentation site for the latest version of [rliger (2.0)](https://mvfki.github.io/liger/index.html)!
+>**Now we have a comprehensive documentation site for the latest version of [rliger (2.0)](https://welch-lab.github.io/liger/index.html)!**
 
 LIGER (installed as `rliger` ) is a package for integrating and analyzing multiple single-cell datasets, developed by the Macosko lab and maintained/extended by the Welch lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors.
 
@@ -31,48 +33,59 @@ analysis, and visualization. Users can:
 We have also designed LIGER to interface with existing single-cell analysis packages, including
 [Seurat](https://satijalab.org/seurat/).
 
+## Citation
+
+If you use LIGER in your research please cite our paper correspondingly:
+
+* Generally the *Cell* paper should be cited:
+
+>Joshua D. Welch and et al., Single-Cell Multi-omic Integration Compares and Contrasts Features of Brain Cell Identity, Cell, VOLUME 177, ISSUE 7, P1873-1887.E17 (2019), [https://doi.org/10.1016/j.cell.2019.05.006](https://doi.org/10.1016/j.cell.2019.05.006)
+
+* For the *rliger* package:
+
+>Liu, J., Gao, C., Sodicoff, J. et al. Jointly defining cell types from multiple single-cell datasets using LIGER. Nat Protoc 15, 3632–3662 (2020), [https://doi.org/10.1038/s41596-020-0391-8](https://doi.org/10.1038/s41596-020-0391-8)
+
+* For online iNMF integration method:
+
+>Gao, C., Liu, J., Kriebel, A.R. et al. Iterative single-cell multi-omic integration using online learning. Nat Biotechnol 39, 1000–1007 (2021), [https://doi.org/10.1038/s41587-021-00867-x](https://doi.org/10.1038/s41587-021-00867-x)
+
+* For UINMF integration method:
+
+>Kriebel, A.R., Welch, J.D. UINMF performs mosaic integration of single-cell multi-omic datasets using nonnegative matrix factorization. Nat Commun 13, 780 (2022), [https://doi.org/10.1038/s41467-022-28431-4](https://doi.org/10.1038/s41467-022-28431-4)
+
 ## Feedback
 
-Consider filling out our [feedback form](https://forms.gle/bhvp3K6tiHwf976r8) to help us improve the functionality and accessibility of LIGER.
+If you have any questions, comments, or suggestions, you are welcomed to [open an Issue](https://github.com/welch-lab/liger/issues)!
 
 ## Usage
 
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo.
 
-* [Integrating Multiple Single-Cell RNA-seq Datasets](https://mvfki.github.io/liger/articles/Integrating_multi_scRNA_data.html)
-* [Jointly Defining Cell Types from scRNA-seq and scATAC-seq](https://mvfki.github.io/liger/articles/Integrating_scRNA_and_scATAC_data.html)
-* [Iterative Single-Cell Multi-Omic Integration Using Online iNMF](https://mvfki.github.io/liger/articles/online_iNMF_tutorial.html)
-* [Integrating unshared features with UINMF](https://mvfki.github.io/liger/articles/UINMF_vignette.html)
-* [Integrating spatial transcriptomic and transcriptomic datasets using UINMF](https://mvfki.github.io/liger/articles/STARmap_dropviz_vig.html)
-* [scATAC and scRNA Integration using unshared features (UINMF)](https://mvfki.github.io/liger/articles/SNAREseq_walkthrough.html)
-* [Cross-species Analysis with UINMF](https://mvfki.github.io/liger/articles/cross_species_vig.html)
-* [Jointly Defining Cell Types from Single-Cell RNA-seq and DNA Methylation](https://mvfki.github.io/liger/articles/rna_methylation.html)
+* [Integrating Multiple Single-Cell RNA-seq Datasets](https://welch-lab.github.io/liger/articles/Integrating_multi_scRNA_data.html)
+* [Jointly Defining Cell Types from scRNA-seq and scATAC-seq](https://welch-lab.github.io/liger/articles/Integrating_scRNA_and_scATAC_data.html)
+* [Iterative Single-Cell Multi-Omic Integration Using Online iNMF](https://welch-lab.github.io/liger/articles/online_iNMF_tutorial.html)
+* [Integrating unshared features with UINMF](https://welch-lab.github.io/liger/articles/UINMF_vignette.html)
+* [Integrating spatial transcriptomic and transcriptomic datasets using UINMF](https://welch-lab.github.io/liger/articles/STARmap_dropviz_vig.html)
+* [scATAC and scRNA Integration using unshared features (UINMF)](https://welch-lab.github.io/liger/articles/SNAREseq_walkthrough.html)
+* [Cross-species Analysis with UINMF](https://welch-lab.github.io/liger/articles/cross_species_vig.html)
+* [Jointly Defining Cell Types from Single-Cell RNA-seq and DNA Methylation](https://welch-lab.github.io/liger/articles/rna_methylation.html)
 
 Meanwhile, since version 2.0.0, LIGER is massively updated for usability and interoperability with other packages. Below are links to the introduction of new features.
 
-* [Introduction to new liger object and other related classes](https://mvfki.github.io/liger/articles/liger_object.html)
-* [Running Liger directly on Seurat objects](https://mvfki.github.io/liger/articles/liger_with_seurat.html)
+* [Introduction to new liger object and other related classes](https://welch-lab.github.io/liger/articles/liger_object.html)
+* [Running Liger directly on Seurat objects](https://welch-lab.github.io/liger/articles/liger_with_seurat.html)
+
+If you need to refer to the tutorials for the old version of rliger, please check the [GitHub archive v1.0.1](https://github.com/welch-lab/liger/tree/v1.0.1/vignettes), download the desired rendered HTML files and open them in your browser.
 
 ## Sample Datasets
 
-The `rliger` package provides a small sample dataset for basic demos of the functions. You can find it in folder `liger/tests/testdata/small_pbmc_data.RDS`.
+The `rliger` package provides different types of small toy dataset for basic demos of the functions. After attaching the package in an R session, you can load them with:
 
-We also provide a set of scRNA-seq and scATAC-seq datasets for real-world style demos. These datasets are as follows:
+```R
+data("pbmc")
+data("pbmcPlot")
+data("bmmc")
+```
 
-* scRNA data from control and interferon-stimulated PBMCs. Raw data provided by [Kang, et.al., 2017](https://www.nature.com/articles/nbt.4042); The datasets were downsampled by applying the sample function without replacement yield 3000 cells for each matrix. You can download downsampled data from [here](https://www.dropbox.com/sh/u94ib3dkf9pb6nd/AABemvnxDgKDGRs8Ek5QGlXWa?dl=0):
-     + `PBMC_control.RDS`;
-     + `PBMC_interferon-stimulated.RDS`.
-
-* scRNA data composed of two datasets of interneurons and oligodendrocytes from the mouse frontal cortex, two distinct cell types that should not align if integrated. Provided by [Saunders, A. et.al., 2018](https://doi.org/10.1016/j.cell.2018.07.028); you can access the pre-processed data from [here](https://www.dropbox.com/sh/u94ib3dkf9pb6nd/AABemvnxDgKDGRs8Ek5QGlXWa?dl=0):
-     + `interneurons_and_oligo.RDS`;
-
-* scATAC and scRNA data provided by [GreenleafLab](https://github.com/GreenleafLab/MPAL-Single-Cell-2019); you can access the pre-processed data from [here](https://www.dropbox.com/sh/5e9cy4qabs89kc8/AADy3jDxHx94j6A57t7A42u3a?dl=0):
-     + `GSM4138872_scRNA_BMMC_D1T1.RDS`;
-     + `GSM4138873_scRNA_BMMC_D1T2.RDS`;
-     + `GSM4138888_scATAC_BMMC_D5T1_peak_counts.RDS`;
-     + `GSM4138888_scATAC_BMMC_D5T1.RDS`.
-
-<!-- * scATAC and scRNA data provided by 10X Genomics, access the pre-processed data from [here](https://umich.app.box.com/s/5hkhpou4inrulo570yhc38ay8g3ont5b). The data sources are: -->
-* scATAC and scRNA data provided by 10X Genomics. The data sources are:
-    + `pbmc.atac.expression.mat.RDS`: raw data can be accessed [here](https://support.10xgenomics.com/single-cell-atac/datasets/1.1.0/atac_v1_pbmc_10k), created by Cell Ranger ATAC 1.1.0;
-    + `pbmc.rna.expression.mat.RDS`: raw data can be accessed [here](https://support.10xgenomics.com/single-cell-gene-expression/datasets/3.0.0/pbmc_10k_v3), created by Cell Ranger 3.0.0.
+We also provide a set of datasets for real-world style demos, including scRNAseq, scATACseq, spatial transcriptomics and DNA methylation data.
+They are described in detail in the articles that make use of them. Please check them out from the links above.

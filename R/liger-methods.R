@@ -1,9 +1,14 @@
 #' Check if given liger object if under new implementation
 #' @param object A liger object
 #' @return \code{TRUE} if the version of \code{object} is later than or equal to
-#' 1.99.0. Otherwise \code{FALSE}
-#' @noRd
+#' 1.99.0. Otherwise \code{FALSE}. It raises an error if input object is not of
+#' \linkS4class{liger} class.
+#' @export
+#' @examples
+#' is.newLiger(pbmc) # TRUE
 is.newLiger <- function(object) {
+    if (!inherits(object, "liger"))
+        cli::cli_abort("{.var object} is not even of {.cls liger} class.")
     v <- object@version
     v1990 <- package_version("1.99.0")
     if (v >= v1990) TRUE
@@ -54,7 +59,7 @@ is.newLiger <- function(object) {
 #' names(pbmcPlot)
 #' length(pbmcPlot)
 #'
-#' # rliger2 generics
+#' # rliger generics
 #' ## Retrieving dataset(s), replacement methods available
 #' datasets(pbmcPlot)
 #' dataset(pbmcPlot, "ctrl")
@@ -63,7 +68,9 @@ is.newLiger <- function(object) {
 #' ## Retrieving cell metadata, replacement methods available
 #' cellMeta(pbmcPlot)
 #' head(pbmcPlot[["nUMI"]])
-#' head(pbmcPlot$UMAP)
+#'
+#' ## Retrieving dimemtion reduction matrix
+#' head(dimRed(pbmcPlot, "UMAP"))
 #'
 #' ## Retrieving variable features, replacement methods available
 #' varFeatures(pbmcPlot)
@@ -74,10 +81,12 @@ is.newLiger <- function(object) {
 #' commands(pbmcPlot, funcName = "scaleNotCenter")
 #'
 #' # S3 methods
-#' c(pbmcPlot, pbmcPlot)
+#' pbmcPlot2 <- pbmcPlot
+#' names(pbmcPlot2) <- paste0(names(pbmcPlot), 2)
+#' c(pbmcPlot, pbmcPlot2)
 #'
 #' library(ggplot2)
-#' ggplot(pbmcPlot, aes(x = UMAP.1, y = UMAP.2)) + geom_point()
+#' ggplot(pbmcPlot, aes(x = UMAP_1, y = UMAP_2)) + geom_point()
 setMethod(
     f = "show",
     signature(object = "liger"),
@@ -93,6 +102,8 @@ setMethod(
         cat(.collapseLongNames(colnames(cellMeta(object))), "\n")
         cat(paste0("varFeatures(", length(varFeatures(object)), "): "))
         cat(.collapseLongNames(varFeatures(object)), "\n")
+        cat(paste0("dimReds(", length(object@dimReds), "): "))
+        cat(.collapseLongNames(names(object@dimReds)), "\n")
         invisible(x = NULL)
     }
 )
@@ -343,11 +354,21 @@ setReplaceMethod("dataset", signature(x = "liger", dataset = "character",
                      x@cellMeta <- cm
                      # x@W is genes x k, no need to worry
                      if (!is.null(x@H.norm)) {
-                         cli::cli_alert_info("Finning in NAs to H.norm matrix")
+                         cli::cli_alert_info("Filling in NAs to {.field H.norm} matrix")
                          H.normNew <- matrix(
                              NA, ncol(value), ncol(x@H.norm),
                              dimnames = list(colnames(value), NULL))
                          x@H.norm <- rbind(x@H.norm, H.normNew)
+                     }
+                     if (length(x@dimReds) != 0) {
+                         cli::cli_alert_info("Filling in NAs to {.field dimReds}")
+                         for (dr in names(x@dimReds)) {
+                             x@dimReds[[dr]] <- rbind(
+                                 x@dimReds[[dr]],
+                                 matrix(NA, ncol(value), ncol(x@dimReds[[dr]]),
+                                        dimnames = list(colnames(value), NULL))
+                             )
+                         }
                      }
                      methods::validObject(x)
                      if (qc) x <- runGeneralQC(x, useDatasets = dataset,
@@ -361,17 +382,21 @@ setReplaceMethod("dataset", signature(x = "liger", dataset = "character",
                                       type = "ANY", qc = "ANY",
                                       value = "matrixLike"),
                  function(x, dataset,
-                          type = c("rawData", "normData", "scaleData"),
+                          type = c("rawData", "normData"),
                           qc = FALSE,
                           value) {
                      type <- match.arg(type)
+                     if (!all(startsWith(colnames(value), paste0(dataset, "_")))) {
+                         cli::cli_alert_warning(
+                             "Colnames of {.var value} do not all start with {.val {dataset}_}.
+                                  Prefix added."
+                         )
+                         colnames(value) <- paste0(dataset, "_", colnames(value))
+                     }
                      if (type == "rawData") {
                          ld <- createLigerDataset(rawData = value)
-                         colnames(ld) <- paste0(dataset, "_", colnames(ld))
-                     } else if (type == "normData") {
+                     } else {
                          ld <- createLigerDataset(normData = value)
-                     } else if (type == "scaleData") {
-                         ld <- createLigerDataset(scaleData = value)
                      }
                      dataset(x, dataset, qc = qc) <- ld
                      x
@@ -393,6 +418,9 @@ setReplaceMethod(
             x@cellMeta <- x@cellMeta[!idxToRemove, , drop = FALSE]
             x@H.norm <- x@H.norm[!idxToRemove, , drop = FALSE]
             x@cellMeta$dataset <- droplevels(x@cellMeta$dataset)
+            for (i in seq_along(x@dimReds)) {
+                x@dimReds[[i]] <- x@dimReds[[i]][!idxToRemove, , drop = FALSE]
+            }
         }
         x
     }
@@ -400,37 +428,51 @@ setReplaceMethod(
 
 #' @rdname liger-class
 #' @export
-setMethod("names", signature(x = "liger"), function(x) {
-    names(datasets(x))
-})
+#' @method names liger
+names.liger <- function(x) {
+    names(x@datasets)
+}
 
 #' @rdname liger-class
 #' @export
-setReplaceMethod(
-    "names",
-    signature(x = "liger", value = "character"),
-    function(x, value) {
-        originalNames <- names(x)
-        if (!identical(value, originalNames)) {
-            dataset.idx <- lapply(originalNames, function(n) {
-                x$dataset == n
-            })
-            x@cellMeta$dataset <- as.character(x@cellMeta$dataset)
-            for (i in seq_along(value)) {
-                x@cellMeta$dataset[dataset.idx[[i]]] <- value[i]
-            }
-            x@cellMeta$dataset <- factor(x@cellMeta$dataset, levels = value)
-            names(x@datasets) <- value
-        }
-        x
+#' @method names<- liger
+`names<-.liger` <- function(x, value) {
+    originalNames <- names(x)
+    if (identical(value, originalNames)) return(x)
+    if (any(duplicated(value)))
+        cli::cli_abort("Duplicated dataset names are not allowed.")
+
+    dataset.idx <- lapply(originalNames, function(n) {
+        x$dataset == n
     })
+    x@cellMeta$dataset <- as.character(x@cellMeta$dataset)
+    for (i in seq_along(value)) {
+        x@cellMeta$dataset[dataset.idx[[i]]] <- value[i]
+    }
+    x@cellMeta$dataset <- factor(x@cellMeta$dataset, levels = value)
+    names(x@datasets) <- value
+    x
+}
 
 #' @rdname liger-class
 #' @export
-setMethod("length", signature(x = "liger"), function(x) {
+#' @method length liger
+length.liger <- function(x) {
     .checkObjVersion(x)
-    length(datasets(x))
-})
+    length(x@datasets)
+}
+
+#' @rdname liger-class
+#' @export
+#' @param use.names Whether returned vector should be named with dataset names.
+#' @method lengths liger
+lengths.liger <- function(x, use.names = TRUE) {
+    .checkObjVersion(x)
+    len <- sapply(x@datasets, ncol)
+    if (isTRUE(use.names)) names(len) <- names(x@datasets)
+    else names(len) <- NULL
+    return(len)
+}
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Cell metadata ####
@@ -555,14 +597,14 @@ setReplaceMethod(
                 # No name matching, require exact length
                 value <- .checkArgLen(value, n = length(cellIdx), class = c("vector", "factor"))
             } else {
-                if (!all(barcodes %in% names(value))) {
+                if (!all(endsWith(barcodes, names(value)))) {
                     cli::cli_abort(
-                        c("{.code names(value)} do not contain all cells selected. ",
-                          "These are not involved: ",
-                          "{.val {barcodes[!barcodes %in% names(value)]}}")
+                        c("x" = "{.code names(value)} do match to cells selected. ",
+                          "i" = "The first three given names: {.val {names(value)[1:3]}}",
+                          "i" = "The first three selected names: {.val {barocdes[1:3]}}")
                     )
                 }
-                value <- value[barcodes]
+                names(value) <- barcodes
             }
         } else {
             # matrix like
@@ -833,9 +875,9 @@ setReplaceMethod(
     function(x, dataset = NULL, check = TRUE, value) {
         dataset <- .checkUseDatasets(x, dataset)
         if (length(dataset) != 1) cli::cli_abort("Need to specify one dataset to insert.")
-        if (isH5Liger(x, dataset))
-            cli::cli_abort("Cannot replace slot with in-memory data for H5 based object.")
-        x@datasets[[dataset]]@scaleUnsharedData <- value
+        ld <- dataset(x, dataset)
+        scaleUnsharedData(ld) <- value
+        x@datasets[[dataset]] <- ld
         if (isTRUE(check)) methods::validObject(x)
         x
     }
@@ -849,9 +891,9 @@ setReplaceMethod(
     function(x, dataset = NULL, check = TRUE, value) {
         dataset <- .checkUseDatasets(x, dataset)
         if (length(dataset) != 1) cli::cli_abort("Need to specify one dataset to insert.")
-        if (!isH5Liger(x, dataset))
-            cli::cli_abort("Cannot replace slot with on-disk data for in-memory object.")
-        x@datasets[[dataset]]@scaleUnsharedData <- value
+        ld <- dataset(x, dataset)
+        scaleUnsharedData(ld) <- value
+        x@datasets[[dataset]] <- ld
         if (isTRUE(check)) methods::validObject(x)
         x
     }
@@ -867,7 +909,9 @@ setReplaceMethod(
         if (length(dataset) != 1) cli::cli_abort("Need to specify one dataset to insert.")
         if (!isH5Liger(x, dataset))
             cli::cli_abort("Cannot replace slot with on-disk data for in-memory object.")
-        x@datasets[[dataset]]@scaleUnsharedData <- value
+        ld <- dataset(x, dataset)
+        scaleUnsharedData(ld) <- value
+        x@datasets[[dataset]] <- ld
         if (isTRUE(check)) methods::validObject(x)
         x
     }
@@ -940,16 +984,13 @@ setMethod("getH5File",
 }
 
 #' Set cell metadata variable
-#' @rdname sub-subset-.liger
-#' @param x A \linkS4class{liger} object
-#' @param i Name or numeric index of cell meta to be replaced
-#' @param j Ignored
-#' @param ... Other argument that might be applied to [[<-,S4Vectors::DataFrame
+#' @rdname liger-class
+#' @param i Name or numeric index of cell meta variable to be replaced
 #' @param value Metadata value to be inserted
-#' @aliases [[<-,liger,ANY,missing-method
-#' @aliases [[<-,liger-method
 #' @return Input liger object updated with replaced/new variable in
 #' \code{cellMeta(x)}.
+#' @export
+#' @method [[<- liger
 #' @examples
 #' cellMeta(pbmc)
 #' # Add new variable
@@ -958,14 +999,18 @@ setMethod("getH5File",
 #' # Change existing variable
 #' pbmc[["newVar"]][1:3] <- 1:3
 #' cellMeta(pbmc)
-setMethod(
-    f = '[[<-',
-    signature = c(x = 'liger', i = 'ANY', j = 'missing', value = 'ANY'),
-    definition = function(x, i, ..., value) {
-        x@cellMeta[[i, ...]] <- value
-        return(x)
+`[[<-.liger` <- function(x, i, value) {
+    name <- if (is.character(i)) i else colnames(x@cellMeta)[i]
+    if (name == "dataset") {
+        cli::cli_abort(
+            c("x" = "Cannot directly modify {.var dataset} variable in {.cls liger} object.",
+              "i" = "Please use {.code names(x) <- value} instead.")
+        )
     }
-)
+    x@cellMeta[[i]] <- value
+    methods::validObject(x)
+    return(x)
+}
 
 #' @export
 #' @method .DollarNames liger
@@ -976,22 +1021,19 @@ setMethod(
 
 #' @export
 #' @rdname liger-class
-setMethod(
-    "$",
-    signature(x = "liger"),
-    function(x, name) {
-        if (!name %in% colnames(cellMeta(x))) NULL
-        else cellMeta(x, columns = name)
-    }
-)
+#' @method $ liger
+`$.liger` <- function(x, name) {
+    if (!name %in% colnames(cellMeta(x))) NULL
+    else cellMeta(x, columns = name)
+}
 
 #' @export
 #' @rdname liger-class
-setReplaceMethod("$", signature(x = "liger"),
-                 function(x, name, value) {
-                     cellMeta(x, columns = name) <- value
-                     return(x)
-                 })
+#' @method $<- liger
+`$<-.liger` <- function(x, name, value) {
+    cellMeta(x, columns = name) <- value
+    return(x)
+}
 
 #' @export
 #' @rdname liger-class
@@ -1090,31 +1132,47 @@ setReplaceMethod(
 #' @export
 #' @rdname liger-class
 setMethod(
+    "dimReds",
+    signature = c(x = "liger"),
+    function(x) x@dimReds
+)
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "dimReds",
+    signature(x = "liger", value = "list"),
+    function(x, value) {
+        x@dimReds <- value
+        methods::validObject(x)
+        return(x)
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setMethod(
     "dimRed",
-    signature = c(x = "liger", name = "missing", useDatasets = "ANY"),
-    function(x, name = NULL, useDatasets = NULL, ...) {
-        # No name given, retrieve default
-        useDatasets <- .checkUseDatasets(x, useDatasets)
+    signature = c(x = "liger", name = "missing_OR_NULL"),
+    function(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...) {
         name <- x@uns$defaultDimRed
         dimred <- NULL
         if (is.null(name)) {
-            for (i in seq_along(cellMeta(x))) {
-                if (!is.null(dim(cellMeta(x)[[i]]))) {
-                    cli::cli_alert_warning(
-                        "No default dimRed recorded. Returning the first matrix alike in {.code cellMeta(object)}.")
-                    dimred <- cellMeta(x)[[i]]
-                    break
-                }
-            }
-            if (is.null(dimred)) {
-                cli::cli_abort("No possible dimRed can be found in this {.cls liger} object.")
+            if (length(x@dimReds) > 0) {
+                cli::cli_alert_warning(
+                    "No default {.field dimRed} recorded. Returning the first available."
+                )
+                dimred <- dimRed(x, name = 1, useDatasets = useDatasets,
+                                 cellIdx = cellIdx, ...)
+            } else {
+                cli::cli_abort(
+                    "No {.field dimRed} available in this {.cls liger} object."
+                )
             }
         } else {
-            dimred <- cellMeta(x, name, x$dataset %in% useDatasets)
+            dimred <- dimRed(x, name = name, useDatasets = useDatasets,
+                             cellIdx = cellIdx, ...)
         }
-        dimred <- as.matrix(dimred)
-        rownames(dimred) <- colnames(x)[x$dataset %in% useDatasets]
-        colnames(dimred) <- paste0(name, "_", seq_len(ncol(dimred)))
         return(dimred)
     }
 )
@@ -1123,18 +1181,36 @@ setMethod(
 #' @rdname liger-class
 setMethod(
     "dimRed",
-    signature = c(x = "liger", name = "character", useDatasets = "ANY"),
-    function(x, name, useDatasets = NULL, ...) {
-        # No name given, retrieve default
-        useDatasets <- .checkUseDatasets(x, useDatasets)
-        dimred <- cellMeta(x, name, x$dataset %in% useDatasets)
-        if (is.null(dim(dimred))) {
-            cli::cli_abort("Retrieved data for {.val {name}} is not a matrix.")
+    signature = c(x = "liger", name = "index"),
+    function(x, name, useDatasets = NULL, cellIdx = NULL, ...) {
+        if (is.null(useDatasets) && is.null(cellIdx)) {
+            cellIdx <- seq_len(ncol(x))
+        } else if (!is.null(cellIdx)) {
+            cellIdx <- .idxCheck(x, cellIdx, "cell")
+        } else if (!is.null(useDatasets)) {
+            useDatasets <- .checkUseDatasets(x, useDatasets)
+            cellIdx <- which(x$dataset %in% useDatasets)
         }
-        dimred <- as.matrix(dimred)
-        rownames(dimred) <- colnames(x)[x$dataset %in% useDatasets]
+
+        name <- .findDimRedName(x, name, stopOnNull = TRUE)
+        dimred <- x@dimReds[[name]]
+        dimred <- dimred[cellIdx, , drop = FALSE]
+        rownames(dimred) <- colnames(x)[cellIdx]
         colnames(dimred) <- paste0(name, "_", seq_len(ncol(dimred)))
         return(dimred)
+    }
+)
+
+#' @export
+#' @rdname liger-class
+setReplaceMethod(
+    "dimRed",
+    signature(x = "liger", name = "index", value = "NULL"),
+    function(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ..., value = NULL) {
+        name <- .findDimRedName(x, name, stopOnNull = TRUE, returnFirst = FALSE)
+        x@dimReds[[name]] <- NULL
+        if (name %in% x@uns$defaultDimRed) x@uns$defaultDimRed <- NULL
+        return(x)
     }
 )
 
@@ -1146,17 +1222,61 @@ setMethod(
 setReplaceMethod(
     "dimRed",
     signature(x = "liger", name = "character", value = "matrixLike"),
-    function(x, name = NULL, useDatasets = NULL, asDefault = NULL, ..., value) {
-        useDatasets <- .checkUseDatasets(x, useDatasets)
-        cellIdx <- x$dataset %in% useDatasets
+    function(x, name = NULL, useDatasets = NULL, cellIdx = NULL, asDefault = NULL, inplace = FALSE, ..., value) {
+        if (is.null(useDatasets) && is.null(cellIdx)) {
+            cellIdx <- seq_len(ncol(x))
+        } else if (!is.null(cellIdx)) {
+            cellIdx <- .idxCheck(x, cellIdx, "cell")
+        } else if (!is.null(useDatasets)) {
+            useDatasets <- .checkUseDatasets(x, useDatasets)
+            cellIdx <- which(x$dataset %in% useDatasets)
+        }
+
+        if (!name %in% names(x@dimReds) || isFALSE(inplace)) {
+            # Totally new thing or just replace
+            init <- matrix(
+                data = NA,
+                nrow = ncol(x), ncol = ncol(value),
+                dimnames = list(
+                    colnames(x),
+                    paste0(name, "_", seq_len(ncol(value)))
+                )
+            )
+        } else {
+            # Partial insertion
+            init <- dimRed(x, name = name)
+            if (ncol(init) != ncol(value)) {
+                cli::cli_abort(
+                    "Cannot partially insert {ncol(value)} columns to {ncol(init)} columns inplace, at {.field dimReds}: {.val {name}}"
+                )
+            }
+        }
+
         value <- as.matrix(value)
+        if (nrow(value) != length(cellIdx)) {
+            cli::cli_abort(
+                "{.code nrow(value)} does not match with the number of cells selected."
+            )
+        }
+        if (is.null(rownames(value))) {
+            cli::cli_alert_warning(
+                "No rownames detected. Assume cells match to the same order as in the object."
+            )
+        } else {
+            if (!all(endsWith(colnames(x)[cellIdx], rownames(value)))) {
+                cli::cli_abort(
+                    "Cell identifiers in {.var value} do not match to those in the object"
+                )
+            }
+        }
+        rownames(value) <- colnames(x)[cellIdx]
+        colnames(value) <- paste0(name, "_", seq_len(ncol(value)))
+        init[rownames(value), ] <- value
+        x@dimReds[[name]] <- init
         if (is.null(asDefault)) {
             if (!is.null(x@uns$defaultDimRed)) asDefault <- FALSE
             else asDefault <- TRUE
         }
-        colnames(value) <- seq_len(ncol(value))
-        rownames(value) <- colnames(x)[cellIdx]
-        cellMeta(x, name, cellIdx) <- value
         if (isTRUE(asDefault)) defaultDimRed(x) <- name
         return(x)
     }
@@ -1167,10 +1287,10 @@ setReplaceMethod(
 setMethod(
     "defaultDimRed",
     signature(x = "liger", useDatasets = "ANY"),
-    function(x, useDatasets = NULL) {
+    function(x, useDatasets = NULL, cellIdx = cellIdx) {
         name <- x@uns$defaultDimRed
         if (is.null(name)) return(NULL)
-        else dimRed(x, name = name, useDatasets = useDatasets)
+        else dimRed(x, name = name, useDatasets = useDatasets, cellIdx = cellIdx)
     }
 )
 
@@ -1178,33 +1298,13 @@ setMethod(
 #' @rdname liger-class
 setReplaceMethod(
     "defaultDimRed",
-    signature(x = "liger", name = "missing", value = "character"),
-    function(x, name = NULL, useDatasets = NULL, value) {
-        value <- value[1]
-        dimred <- cellMeta(x, value)
-        if (is.null(dim(dimred))) {
-            cli::cli_abort("Specified variable is not a matrix alike.")
+    signature(x = "liger", value = "character"),
+    function(x, value) {
+        if (length(value) != 1) {
+            cli::cli_abort("Can only set one {.field dimRed} as default.")
         }
-        if (ncol(dimred) == 0) {
-            cli::cli_abort("Cannot set unexisting variable as default dimRed.")
-        }
+        value <- .findDimRedName(x, value, stopOnNull = TRUE)
         x@uns$defaultDimRed <- value
-        return(x)
-    }
-)
-
-#' @export
-#' @rdname liger-class
-setReplaceMethod(
-    "defaultDimRed",
-    signature(x = "liger", name = "character", value = "matrixLike"),
-    function(x, name, useDatasets = NULL, value) {
-        useDatasets <- .checkUseDatasets(x, useDatasets)
-        cellIdx <- x$dataset %in% useDatasets
-        colnames(value) <- seq_len(ncol(value))
-        rownames(value) <- colnames(x)[cellIdx]
-        cellMeta(x, name, cellIdx) <- value
-        x@uns$defaultDimRed <- name
         return(x)
     }
 )
@@ -1283,6 +1383,8 @@ setReplaceMethod(
 fortify.liger <- function(model, data, ...) {
     df <- cellMeta(model, as.data.frame = TRUE)
     if (!is.null(model@H.norm)) df <- cbind(df, model@H.norm)
+    drs <- Reduce(cbind, model@dimReds)
+    if (!is.null(drs)) df <- cbind(df, drs)
     df
 }
 
@@ -1298,6 +1400,13 @@ c.liger <- function(...) {
     objList <- list(...)
     if (any(sapply(objList, function(obj) !inherits(obj, "liger"))))
         cli::cli_abort("Can only combine {.cls liger} objects with {.fn c} method for now.")
+    allNames <- unlist(lapply(objList, names))
+    if (any(duplicated(allNames)))
+        cli::cli_abort(
+            c("x" = "Cannot combine {.cls liger} objects with duplicated dataset names.",
+              "i" = "Dataset names of an individual {.cls liger} object can be modified with {.code names(x) <- value}.")
+        )
+
     objList[[length(objList)]] <- recordCommand(objList[[length(objList)]])
     allDatasets <- list()
     allCellMeta <- NULL
@@ -1312,7 +1421,7 @@ c.liger <- function(...) {
     }
     methods::new("liger", datasets = allDatasets, cellMeta = allCellMeta,
                  varFeatures = varFeatures, commands = allCommands,
-                 version = utils::packageVersion("rliger2"))
+                 version = utils::packageVersion("rliger"))
 }
 
 
@@ -1345,14 +1454,14 @@ setMethod(
 
 #' @rdname peak
 #' @export
-setMethod("rawPeak", signature(x = "liger", dataset = "character"),
-          function(x, dataset) {
-              atac <- dataset(x, dataset)
-              if (!inherits(atac, "ligerATACDataset")) {
-                  cli::cli_abort("Specified dataset is not of {.cls ligerATACDataset} class.")
-              }
-              atac@rawPeak
-          })
+setMethod(
+    "rawPeak",
+    signature(x = "liger", dataset = "character"),
+    function(x, dataset) {
+        atac <- dataset(x, dataset)
+        rawPeak(atac)
+    }
+)
 
 #' @rdname peak
 #' @export
@@ -1360,23 +1469,23 @@ setReplaceMethod(
     "rawPeak",
     signature(x = "liger", dataset = "character"),
     function(x, dataset, check = TRUE, value) {
-        if (!inherits(dataset(x, dataset), "ligerATACDataset"))
-            cli::cli_abort("Specified dataset is not of {.cls ligerATACDataset} class.")
-        x@datasets[[dataset]]@rawPeak <- value
-        if (isTRUE(check)) methods::validObject(dataset(x, dataset))
+        ld <- dataset(x, dataset)
+        rawPeak(ld, check = check) <- value
+        x@datasets[[dataset]] <- ld
         x
-    })
+    }
+)
 
 #' @rdname peak
 #' @export
-setMethod("normPeak", signature(x = "liger", dataset = "character"),
-          function(x, dataset) {
-              atac <- dataset(x, dataset)
-              if (!inherits(atac, "ligerATACDataset")) {
-                  cli::cli_abort("Specified dataset is not of {.cls ligerATACDataset} class.")
-              }
-              atac@normPeak
-          })
+setMethod(
+    "normPeak",
+    signature(x = "liger", dataset = "character"),
+    function(x, dataset) {
+        atac <- dataset(x, dataset)
+        normPeak(atac)
+    }
+)
 
 #' @rdname peak
 #' @export
@@ -1384,24 +1493,24 @@ setReplaceMethod(
     "normPeak",
     signature(x = "liger", dataset = "character"),
     function(x, dataset, check = TRUE, value) {
-        if (!inherits(dataset(x, dataset), "ligerATACDataset"))
-            cli::cli_abort("Specified dataset is not of {.cls ligerATACDataset} class.")
-        x@datasets[[dataset]]@normPeak <- value
-        if (isTRUE(check)) methods::validObject(dataset(x, dataset))
+        ld <- dataset(x, dataset)
+        normPeak(ld, check = check) <- value
+        x@datasets[[dataset]] <- ld
         x
-    })
+    }
+)
 
 
 #' @rdname coordinate
 #' @export
-setMethod("coordinate", signature(x = "liger", dataset = "character"),
-          function(x, dataset) {
-              spatial <- dataset(x, dataset)
-              if (!inherits(spatial, "ligerSpatialDataset")) {
-                  cli::cli_abort("Specified dataset is not of {.cls ligerSpatialDataset} class.")
-              }
-              spatial@coordinate
-          })
+setMethod(
+    "coordinate",
+    signature(x = "liger", dataset = "character"),
+    function(x, dataset) {
+        spatial <- dataset(x, dataset)
+        coordinate(spatial)
+    }
+)
 
 #' @rdname coordinate
 #' @export
@@ -1409,10 +1518,9 @@ setReplaceMethod(
     "coordinate",
     signature(x = "liger", dataset = "character"),
     function(x, dataset, check = TRUE, value) {
-        if (!inherits(dataset(x, dataset), "ligerSpatialDataset"))
-            cli::cli_abort("Specified dataset is not of {.cls ligerSpatialDataset} class.")
-        value <- .checkCoords(ld = dataset(x, dataset), value = value)
-        x@datasets[[dataset]]@coordinate <- value
-        if (isTRUE(check)) methods::validObject(dataset(x, dataset))
+        ld <- dataset(x, dataset)
+        coordinate(ld, check = check) <- value
+        x@datasets[[dataset]] <- ld
         x
-    })
+    }
+)

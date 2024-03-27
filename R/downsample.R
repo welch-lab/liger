@@ -104,7 +104,7 @@ downsample <- function(
 #' Default \code{NULL} does not subset features.
 #' @param rand.seed Random seed for reproducibility. Default \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @return Subset of \linkS4class{liger} \code{object}.
 #' @seealso \code{\link{downsample}}, \code{\link{subsetLiger}},
 #' \code{\link{subsetLigerDataset}}
@@ -118,7 +118,7 @@ readSubset <- function(
         datasets.use = NULL,
         genes.use = NULL,
         rand.seed = 1,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     .Deprecated("downsample") # nocov start
     if (!is.null(balance)) balance <- match.arg(balance)

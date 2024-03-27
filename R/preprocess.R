@@ -292,8 +292,10 @@ removeMissing <- function(
         rmCellDataset <- length(cellIdx) != ncol(ld)
         subsetted <- c(subsetted, any(c(rmFeatureDataset, rmCellDataset)))
         if (any(c(rmFeatureDataset, rmCellDataset))) {
-            if (isTRUE(verbose))
+            if (isTRUE(verbose)) {
                 cli::cli_alert_info("Removing missing in dataset: {.val {d}}")
+            }
+
             datasets.new[[d]] <- subsetLigerDataset(
                 ld,
                 featureIdx = featureIdx,
@@ -309,7 +311,7 @@ removeMissing <- function(
     }
     if (any(subsetted)) {
         allCells <- unlist(lapply(datasets.new, colnames), use.names = FALSE)
-        methods::new(
+        object <- methods::new(
             "liger",
             datasets = datasets.new,
             cellMeta = cellMeta(object, cellIdx = allCells,
@@ -317,9 +319,8 @@ removeMissing <- function(
             varFeatures = character(),
             H.norm = object@H.norm[allCells, , drop = FALSE]
         )
-    } else {
-        object
     }
+    return(object)
 }
 
 #' @rdname removeMissing
@@ -435,11 +436,6 @@ normalize.ligerDataset <- function(
         safeH5Create(object = object, dataPath = resultH5Path,
                      dims = rawData(object)$dims, dtype = "double",
                      chunkSize = rawData(object)$chunk_dims)
-        ## These are for feature level metadata, to be used in downstream steps
-        safeH5Create(object = object, dataPath = "gene_means",
-                     dims = nrow(object), dtype = "double")
-        safeH5Create(object = object, dataPath = "gene_sum_sq",
-                     dims = nrow(object), dtype = "double")
         # Chunk run
         results <- H5Apply(
             object,
@@ -456,9 +452,7 @@ normalize.ligerDataset <- function(
             chunkSize = chunk, verbose = verbose
         )
         results$geneMeans <- results$geneMeans / ncol(object)
-        h5file[["gene_means"]][seq_along(results$geneMeans)] <- results$geneMeans
         featureMeta(object, check = FALSE)$geneMeans <- results$geneMeans
-        h5file[["gene_sum_sq"]][seq_along(results$geneSumSq)] <- results$geneSumSq
         featureMeta(object, check = FALSE)$geneSumSq <- results$geneSumSq
         normData(object, check = FALSE) <- h5file[[resultH5Path]]
         h5fileInfo(object, "normData", check = FALSE) <- resultH5Path
@@ -780,11 +774,8 @@ selectGenes.liger <- function(
 #' @noRd
 calcGeneVars.H5 <- function(object, chunkSize = 1000,
                             verbose = getOption("ligerVerbose", TRUE)) {
-    h5file <- getH5File(object)
     geneVars <- rep(0, nrow(object))
-    geneMeans <- h5file[["gene_means"]][]
-    safeH5Create(object = object, dataPath = "gene_vars",
-                 dims = nrow(object), dtype = "double")
+    geneMeans <- featureMeta(object)$geneMeans
     geneVars <- H5Apply(
         object,
         function(chunk, sparseXIdx, cellIdx, values) {
@@ -796,7 +787,6 @@ calcGeneVars.H5 <- function(object, chunkSize = 1000,
         verbose = verbose
     )
     geneVars <- geneVars / (ncol(object) - 1)
-    h5file[["gene_vars"]][seq_along(geneVars)] <- geneVars
     featureMeta(object, check = FALSE)$geneVars <- geneVars
     object
 }
@@ -828,13 +818,16 @@ selectGenes.Seurat <- function(
     assay <- assay %||% SeuratObject::DefaultAssay(object)
     matList <- .getSeuratData(object, layer = layer, slot = "data",
                               assay = assay)
-
-    datasetVar <- object[[datasetVar, drop = TRUE]]
-    if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
-    datasetVar <- droplevels(datasetVar)
-    if (!is.list(matList)) matList <- splitRmMiss(matList, datasetVar)
-    else {
+    if (is.list(matList)) {
+        # object contain split layers
         names(matList) <- gsub(paste0(layer, "."), "", names(matList))
+        datasetVar <- factor(rep(names(matList), sapply(matList, ncol)),
+                             levels = names(matList))
+    } else {
+        datasetVar <- object[[datasetVar, drop = TRUE]]
+        if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
+        datasetVar <- droplevels(datasetVar)
+        matList <- splitRmMiss(matList, datasetVar)
     }
     useDatasets <- useDatasets %||% levels(datasetVar)
     matList <- matList[unique(useDatasets)]
@@ -1181,7 +1174,7 @@ scaleNotCenter.dgCMatrix <- function(
 #' feature to be scaled. "liger" method by default uses
 #' \code{\link{varFeatures}(object)}. "ligerDataset" method by default uses all
 #' features. "Seurat" method by default uses
-#' \code{\link[SeuratObject]{VariableFeatures}(object)}.
+#' \code{Seurat::VariableFeatures(object)}.
 #' @param chunk Integer. Number of maximum number of cells in each chunk, when
 #' scaling is applied to any HDF5 based dataset. Default \code{1000}.
 #' @param verbose Logical. Whether to show information of the progress. Default

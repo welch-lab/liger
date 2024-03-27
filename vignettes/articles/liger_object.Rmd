@@ -24,15 +24,16 @@ On the left hand side of the figure, we briefly illustrate how the old structure
 In the new version, on the right side, we first introduce another new class, [ligerDataset](../reference/ligerDataset-class.html), to serve as a container for all matrices belonging to the same specific dataset. In this way, we have easy and safe control on data matching thanks to a number of object oriented accessor methods and validity checks. As for the [liger](../reference/liger-class.html) class, there are some main differences:
 
 - Feature (gene expression) matrices are now wrapped in ligerDataset objects, and all put in the `datasets(obj)` slot. Click here for how to [access the raw counts, normalized counts, scaled data](#access-feature-matrices).
-- Cell metadata including dataset belonging, study design conditions, quality control (QC) metrics are now stored in slot `cellMeta(obj)`. Meanwhile, we moved cluster labeling result also to this slot, in order to have multiple cluster variables existing at the same time. Additionally, by introducing `S4Vectors::DataFrame` class for the metadata, we are now storing low-dimensional representation (e.g. UMAP, t-SNE) in the cell metadata. Click here for how to [access cell metadata](#access-cell-metadata).
+- Cell metadata including dataset belonging, study design conditions, quality control (QC) metrics are now stored in slot `cellMeta(obj)`. Meanwhile, we moved cluster labeling result also to this slot, in order to have multiple cluster variables existing at the same time. Additionally, by introducing `S4Vectors::DataFrame` class for the metadata for flexibility and tidy display. Click here for how to [access cell metadata](#access-cell-metadata).
+- Dimensionality reductions are now expanded to a list of low-dimensional representation (e.g. UMAP, t-SNE) in slot `dimReds(obj)`. Click here for how to [access dimensionality reductions](#access-dimensionality-reductions).
 - Variable features identified are now stored in `varFeatures(obj)`, with no structural change.
-- A new slot `@uns` is added for storing miscellaneous unstructured information.
-- We also added the feature to record the commands applied to the liger object and allow retrieving the records with `commands(obj)`. See more about liger command recording and retrieving.
+- A new slot `@uns` is added for storing miscellaneous unstructured information, including default setting for cluster labeling and dimension reduction, for faster visualization calls.
+- We also added the feature to record the commands applied to the liger object and allow retrieving the records with `commands(obj)`. See more about liger [command recording and retrieving](#check-the-records-of-run-commands).
 
 We demonstrate examples below with example dataset "[pbmc](../reference/pbmc.html)", which is a minimal subset from the study conducted in Hyun Min Kang and et. al., Nature Biotechnology, 2018. The data is a ready to use (new) liger object with only raw counts data. We quickly process it here so that we can show how to retrieve all kinds of data in sections below.
 
 ```{R, message=FALSE, warning=FALSE, results="hide"}
-library(rliger2)
+library(rliger)
 data("pbmc")
 pbmc <- pbmc %>%
     normalize() %>%
@@ -60,6 +61,12 @@ names(pbmc)
 length(pbmc)
 ```
 
+- To list out number of cells in each dataset
+
+```{R}
+lengths(pbmc)
+```
+
 - To access the [ligerDataset](../reference/ligerDataset-class.html) object for a specific dataset
 
 ```{R}
@@ -68,7 +75,7 @@ ctrlLD <- dataset(pbmc, dataset = "ctrl")
 ctrlLD <- dataset(pbmc, 1)
 ```
 
-In other LIGER functions where the argument `useDatasets` is allowed, users can always use the exact character name(s) or the numeric index to specify the datasets to be involved in the analysis. Moreoever, a logical vector of index is also allowed and could ease the usage in some cases.
+In any other *rliger* functions where the argument `useDatasets` is exposed, users can always use the exact character name(s) or the numeric index to specify the datasets to be involved in the analysis. Moreoever, a logical vector of index is also allowed and could ease the usage in some cases.
 
 ```{R, eval = FALSE}
 # Not run, just for example, assuming we've got the clustering for such an object
@@ -89,7 +96,7 @@ ldList <- datasets(pbmc)
 
 ## Access feature matrices
 
-We have three main generics for accessing feature matrices, namingly `rawData()`, `normData()` and `scaleData()`. For scaled unshared features, used for UINMF, we also have `scaleUnsharedData()`. The logistics of the accessor to all these feature matrices are the same, so we only present the case for raw counts.
+We have three main generics for accessing feature matrices, namingly `rawData()`, `normData()` and `scaleData()`. For scaled unshared features, used for UINMF, we also have `scaleUnsharedData()`. Additionally, we provide `rawPeak()` and `normPeak()` for accessing the peak counts in a ATACseq dataset. The logistics of the accessor to all these feature matrices are the same, so we only present the case for raw counts.
 
 - To get a list of the raw counts from all datasets:
 
@@ -141,7 +148,7 @@ dim(pbmc)
 
 ## Access cell metadata
 
-As previously descibed at the top of this page, cell metadata including dataset origin, QC metrics, cluster labeling and dimension reduction are all stored in `cellMeta(obj)`.
+As previously descibed at the top of this page, cell metadata including dataset origin, study metadata, QC metrics and cluster labeling are all stored in `cellMeta(obj)`.
 
 - To have a look at the full metadata table:
 
@@ -166,22 +173,11 @@ nUMI <- pbmc[["nUMI"]]
 cellMeta(pbmc, c("nUMI", "nGene"))
 ```
 
-- To retrieve the matrix of a dimension reduction result
+- To get a variable for only a subset of cells (e.g. from a specific dataset), use the argument `useDatasets`, or alternatively `cellIdx` that subscribes cells explicitly:
 
 ```{R}
-umap <- pbmc$UMAP
-class(umap)
-dim(umap)
-# Alternatively
-umap <- cellMeta(pbmc, "UMAP")
-```
-
-- To get a variable for only a subset of cells (e.g. from a specific dataset), use the argument `cellIdx` with any valid indexing value (numerics, barcodes, logicals) that applies to all cells:
-
-```{R}
-umapCtrl <- cellMeta(pbmc, "UMAP", useDataset = "ctrl")
-class(umapCtrl)
-dim(umapCtrl)
+nUMI <- cellMeta(pbmc, "nUMI", useDatasets = "ctrl")
+length(nUMI)
 ```
 
 - Add or replace a variable. If the new variable being added has a matching size (`length()` or `nrow()`) with the number of all cells (`ncol(pbmc)`):
@@ -198,6 +194,58 @@ If the new variable is only for a subset of cells (e.g. the original clustering 
 ```{R}
 ctrlBar <- seq_len(ncol(dataset(pbmc, "ctrl")))
 cellMeta(pbmc, "ctrl_bar", useDataset = "ctrl") <- ctrlBar
+```
+
+## Access dimensionality reductions
+
+- To get a list of all dimensionality reductions:
+
+```{R}
+allDimReds <- dimReds(pbmc)
+class(allDimReds)
+length(allDimReds)
+```
+
+- To get a specific dimensionality reduction:
+
+```{R}
+umap <- dimRed(pbmc, "UMAP")
+class(umap)
+dim(umap)
+```
+
+- To get a specific dimensionality reduction for a specific dataset, again, use the argument `useDatasets`.
+
+```{R}
+ctrlUMAP <- dimRed(pbmc, "UMAP", useDatasets = "ctrl")
+dim(ctrlUMAP)
+```
+
+- Setting an existing dimensionality reduction as the default for visualization
+
+```{R}
+defaultDimRed(pbmc) <- "UMAP"
+```
+
+Every time when `runUMAP()` or `runTSNE()` is called, the new result will be set as default. When default dimensionality reduction is set, any plotting function that shall work with it will use it by default without the need to specify it explicitly. And the dimensionality reduction accessor function also returns the default one if no specific one is requested.
+
+```{R}
+umap <- dimRed(pbmc)
+```
+
+- Add a new matrix into the object
+
+```{R}
+dimRed(pbmc, "newUMAP") <- umap
+```
+
+Cell identifiers on `rownames(value)` will be checked for matching is present. The check is aware of that a dataset name prefix is added to the object cell IDs.
+
+- Adding a dimensionality reduction matrix for only one certain dataset
+
+```{R}
+ctrlUMAP <- dimRed(pbmc, "UMAP", useDatasets = "ctrl")
+dimRed(pbmc, "ctrlUMAP", useDatasets = "ctrl") <- ctrlUMAP
 ```
 
 ## Access factorization result

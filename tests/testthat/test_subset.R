@@ -1,24 +1,31 @@
-has_RcppPlanc <- requireNamespace("RcppPlanc", quietly = TRUE)
-data("pbmc", package = "rliger2")
+data("pbmc", package = "rliger")
 
 withNewH5Copy <- function(fun) {
-    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger2")
-    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger2")
+    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger")
+    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
     if (!file.exists(ctrlpath.orig))
         stop("Cannot find original h5 file at: ", ctrlpath.orig)
-    if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
-    if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
-    pwd <- tempdir()
-    fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
+    # if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
+    # if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
+    # pwd <- getwd()
+    # # Temp setting for GitHub Actions
+    # fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
+    # if (Sys.info()["sysname"] == "Windows") {
+    #     pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
+    # }
 
-    ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
-    stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
+    # ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
+    # stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
+    ctrlpath <- tempfile(pattern = "ctrltest_", fileext = ".h5")
+    stimpath <- tempfile(pattern = "stimtest_", fileext = ".h5")
     cat("Working ctrl H5 file path: ", ctrlpath, "\n")
     cat("Working stim H5 file path: ", stimpath, "\n")
     file.copy(ctrlpath.orig, ctrlpath, copy.mode = TRUE)
     file.copy(stimpath.orig, stimpath, copy.mode = TRUE)
     if (!file.exists(ctrlpath))
         stop("Cannot find copied h5 file at: ", ctrlpath)
+    if (!file.exists(stimpath))
+        stop("Cannot find copied h5 file at: ", stimpath)
 
     fun(list(ctrl = ctrlpath, stim = stimpath))
 
@@ -52,7 +59,7 @@ context("subset liger object")
 test_that("subsetLiger", {
     expect_message(a <- subsetLiger("a"), "`object` is not a ")
     expect_identical(a, "a")
-    skip_if_not(has_RcppPlanc)
+    skip_if_not_installed("RcppPlanc")
     pbmc <- process(pbmc)
     expect_error(subsetLiger(pbmc, featureIdx = 1:3),
                  "Feature subscription from a")
@@ -67,9 +74,11 @@ test_that("subsetLiger", {
 
 context("subset ligerDataset object")
 test_that("subsetH5LigerDataset", {
-    skip_if_not(has_RcppPlanc)
+    skip_if_not_installed("RcppPlanc")
     withNewH5Copy(
         function(rawList, arg1, arg2) {
+            ctrlfile <- rawList$ctrl
+            stimfile <- rawList$stim
             pbmcH5 <- createLiger(rawList)
             #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             # Then whatever test with pbmc. For example:
@@ -89,42 +98,42 @@ test_that("subsetH5LigerDataset", {
             expect_true(file.exists(newName))
             unlink(newName)
             expect_message(
-                rliger2:::subsetH5LigerDatasetToMem(letters),
+                rliger:::subsetH5LigerDatasetToMem(letters),
                 "`object` is not a "
             )
             expect_message(
-                rliger2:::subsetH5LigerDatasetToMem(dataset(pbmc, "ctrl")),
+                rliger:::subsetH5LigerDatasetToMem(dataset(pbmc, "ctrl")),
                 "`object` is not HDF5 based."
             )
-            valueList <- rliger2:::subsetH5LigerDatasetToMem(
+            valueList <- rliger:::subsetH5LigerDatasetToMem(
                 ctrl, 1:20, 1:20, returnObject = FALSE
             )
             expect_is(valueList, "list")
 
             expect_message(
-                rliger2:::subsetH5LigerDatasetToH5(letters),
+                rliger:::subsetH5LigerDatasetToH5(letters),
                 "`object` is not a"
             )
             expect_message(
-                rliger2:::subsetH5LigerDatasetToH5(dataset(pbmc, "ctrl")),
+                rliger:::subsetH5LigerDatasetToH5(dataset(pbmc, "ctrl")),
                 "`object` is not HDF5 based."
             )
             expect_no_error(
                 subsetH5LigerDataset(ctrl, 1:20, 1:20)
             )
 
-            ctrlSmallH5 <- rliger2:::subsetH5LigerDataset(
+            ctrlSmallH5 <- rliger:::subsetH5LigerDataset(
                 ctrl, 1:20, 1:20, filenameSuffix = "small2"
             )
-            newPath <- file.path(path, "ctrltest.h5.small2.h5")
+            newPath <- paste0(ctrlfile, ".small2.h5")
             expect_true(file.exists(newPath))
             unlink(newPath)
             expect_no_error(
-                rliger2:::subsetH5LigerDataset(ctrl, 1:20, 1:20, newH5 = TRUE,
+                rliger:::subsetH5LigerDataset(ctrl, 1:20, 1:20, newH5 = TRUE,
                                                useSlot = "normData",
                                                filenameSuffix = "small3")
             )
-            newPath <- file.path(path, "ctrltest.h5.small3.h5")
+            newPath <- paste0(ctrlfile, ".small3.h5")
             expect_true(file.exists(newPath))
             unlink(newPath)
             expect_no_error(

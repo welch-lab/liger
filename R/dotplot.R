@@ -255,7 +255,7 @@ plotClusterFactorDot <- function(
 #' @param featureGrpRot Number of degree to rotate the feature grouping label.
 #' Default \code{0}.
 #' @param viridisOption,viridisDirection See argument \code{option} and
-#' \code{direction} of \code{\link[viridisLite]{viridis}}. Default \code{"A"}
+#' \code{direction} of \code{\link[viridis]{viridis}}. Default \code{"A"}
 #' and \code{-1}.
 #' @param ... Additional arguments passed to
 #' \code{\link[ComplexHeatmap]{Heatmap}}.

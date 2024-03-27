@@ -1,9 +1,9 @@
-#' @title Deprecated functions in package \pkg{rliger2}.
+#' @title Deprecated functions in package \pkg{rliger}.
 #' @description The functions listed below are deprecated and will be defunct in
 #'   the near future. When possible, alternative functions with similar
 #'   functionality or a replacement are also mentioned. Help pages for
 #'   deprecated functions are available at \code{help("<function>-deprecated")}.
-#' @name rliger2-deprecated
+#' @name rliger-deprecated
 #' @keywords internal
 NULL
 
@@ -93,7 +93,7 @@ quantileAlignSNF <- function(
     msg = paste(
       "This is a deprecated function. Calling 'quantileNorm' instead.",
       "Note that not all parameters can be passed to 'quantileNorm'.",
-      "It's suggested to run 'louvainCluster' subsequently as well."
+      "It's suggested to run 'runCluster()' subsequently as well."
     )
   )
   quantileNorm(object, quantiles = quantiles, reference = ref_dataset,
@@ -237,7 +237,7 @@ SLMCluster <-
       # NULL random.seed disallowed for this program.
       random.seed = 0
     }
-    liger.dir <- "."#system.file(package = "rliger2")
+    liger.dir <- "."#system.file(package = "rliger")
     ModularityJarFile <-
       paste0(liger.dir, "/java/ModularityOptimizer.jar")
     command <-

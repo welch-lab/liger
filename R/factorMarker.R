@@ -21,7 +21,7 @@
 #' @param printGenes Logical. Whether to print ordered markers passing logFC,
 #' UMI and frac thresholds, when \code{verbose = TRUE}. Default \code{FALSE}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param factor.share.thresh,dataset.specificity,log.fc.thresh,pval.thresh,num.genes,print.genes
 #' \bold{Deprecated}. See Usage section for replacement.
 #' @return A list object consisting of the following entries:
@@ -49,7 +49,7 @@ getFactorMarkers <- function(
         pvalThresh = 0.05,
         nGenes = 30,
         printGenes = FALSE,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         # Deprecated coding style
         factor.share.thresh = factorShareThresh,
         dataset.specificity = datasetSpecificity,
@@ -250,7 +250,10 @@ calcDatasetSpecificity <- function(
         do.plot = doPlot
 ) {
     .deprecateArgs(list(do.plot = "doPlot"))
-    H1 <- getMatrix(object, slot = "H", dataset = 1)
+    H1 <- getMatrix(object, slot = "H", dataset = dataset1)
+    if (is.null(H1)) {
+        cli::cli_abort("No {.field H} matrix found for dataset {.val {dataset1}}.")
+    }
     # V: List of two g x k matrices
     V <- getMatrix(object, slot = "V", dataset = c(dataset1, dataset2))
     W <- getMatrix(object, slot = "W")

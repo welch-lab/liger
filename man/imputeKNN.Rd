@@ -2,7 +2,8 @@
 % Please edit documentation in R/ATAC.R
 \name{imputeKNN}
 \alias{imputeKNN}
-\title{Impute the query cell expression matrix}
+\title{Impute the peak counts from gene expression data referring to an ATAC dataset
+after integration}
 \usage{
 imputeKNN(
   object,
@@ -12,7 +13,7 @@ imputeKNN(
   weight = TRUE,
   norm = TRUE,
   scale = FALSE,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...,
   knn_k = nNeighbors
 )
@@ -21,7 +22,7 @@ imputeKNN(
 \item{object}{\linkS4class{liger} object with aligned factor loading computed
 in advance.}
 
-\item{reference}{Name of a dataset containing values to impute into query
+\item{reference}{Name of a dataset containing peak data to impute into query
 dataset(s).}
 
 \item{queries}{Names of datasets to be augmented by imputation. Should not
@@ -41,7 +42,7 @@ reference.}
 Default \code{TRUE}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{...}{Optional arguments to be passed to \code{\link{normalize}} when
 \code{norm = TRUE}.}
@@ -56,7 +57,12 @@ converted to \linkS4class{ligerATACDataset} class with an additional slot
 normalized imputed peak counts if \code{norm = TRUE}.
 }
 \description{
-Impute query features from a reference dataset using KNN.
+This function is designed for creating peak data for a dataset with only gene
+expression. This function uses quantile normalized cell factor loading to
+find nearest neighbors between cells from the queried dataset (without peak)
+and cells from reference dataset (with peak). And then impute the peak for
+the former basing on the weight. Therefore, the reference dataset selected
+must be of "atac" modality setting.
 }
 \examples{
 bmmc <- normalize(bmmc)

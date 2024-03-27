@@ -87,6 +87,61 @@ cli_or <- function(x) cli::cli_vec(x, list("vec-last" = " or "))
     useDatasets
 }
 
+.findDimRedName <- function(
+        object,
+        name,
+        returnFirst = FALSE,
+        stopOnNull = TRUE) {
+    if (length(names(object@dimReds)) == 0) {
+        cli::cli_abort("No {.field dimRed} available")
+    }
+    if (is.null(name)) {
+        if (returnFirst) return(names(object@dimReds)[1])
+        if (stopOnNull) {
+            cli::cli_abort("No {.field dimRed} name specified.")
+        } else {
+            return(NULL)
+        }
+    }
+    if (length(name) == 0) {
+        if (stopOnNull) {
+            cli::cli_abort("No {.field dimRed} name specified.")
+        } else {
+            return(NULL)
+        }
+    }
+    if (is.character(name) || is.numeric(name)) {
+        if (length(name) != 1) {
+            cli::cli_abort("Only one {.field dimRed} can be retrieved at a time.")
+        }
+        if (is.character(name) && !name %in% names(object@dimReds)) {
+            cli::cli_abort("Specified {.field dimRed} {.val {name}} does not exist in the object.")
+        }
+        if (is.numeric(name)) {
+            if (name > length(object@dimReds)) {
+                cli::cli_abort("Specified {.field dimRed} index {.val {name}} is out of range.")
+            }
+            name <- names(object@dimReds)[name]
+        }
+    } else {
+        if (length(name) != length(object@dimReds)) {
+            cli::cli_abort(
+                c("x" = "{.cls logical} {.var name} specification has wrong length.",
+                  "i" = "Should be of length {length(x@dimReds)}")
+            )
+        }
+        name <- names(object@dimReds)[name]
+        if (length(name) == 0) {
+            if (stopOnNull) {
+                cli::cli_abort("No {.field dimRed} name specified.")
+            } else {
+                return(NULL)
+            }
+        }
+    }
+    return(name)
+}
+
 # Check if the selection of cellMeta variable is valid, in terms of existence
 # and class and return all result
 .fetchCellMetaVar <- function(
@@ -295,10 +350,17 @@ cli_or <- function(x) cli::cli_vec(x, list("vec-last" = " or "))
             }
         }
     }
-    if (k != object@uns$factorization$k)
-        cli::cli_alert_danger(
-            "Number of factors does not match with recorded parameter."
-        )
+    if (is.null(object@uns$factorization)) {
+        rlang::warn("No recorded factorization parameter found in object.",
+                    .frequency = "once", .frequency_id = "inmf_param",
+                    use_cli_format = TRUE)
+    } else {
+        if (k != object@uns$factorization$k)
+            cli::cli_alert_danger(
+                "Number of factors does not match with recorded parameter."
+            )
+    }
+
     if (isFALSE(result))
         cli::cli_abort(
             c(x = "Cannot detect valid existing factorization result. ",
@@ -325,7 +387,7 @@ cli_or <- function(x) cli::cli_vec(x, list("vec-last" = " or "))
     call <- match.call(definition = sys.function(-1),
                        call = sys.call(-1), envir = parent.frame(2))
     callArgs <- rlang::call_args(call)
-    parentFuncName <- as.list(call)[[1]]
+    parentFuncName <- rlang::call_name(call)
     # This gives access to variable in the function operation environment
     p <- parent.frame()
     for (old in names(replace)) {
@@ -561,13 +623,14 @@ cli_or <- function(x) cli::cli_vec(x, list("vec-last" = " or "))
 }
 
 
-splitRmMiss <- function(x, y) {
+splitRmMiss <- function(x, y, rmMiss = TRUE) {
     y <- factor(y)
     y <- droplevels(y)
     matList <- lapply(levels(y), function(lvl) {
         idx <- y == lvl
         xsub <- x[, idx, drop = FALSE]
-        xsub[rowSums(xsub) > 0, , drop = FALSE]
+        if (rmMiss) xsub[rowSums(xsub) > 0, , drop = FALSE]
+        else xsub
     })
     names(matList) <- levels(y)
     return(matList)
@@ -616,4 +679,89 @@ searchH <- function(object, useRaw = NULL) {
         }
     }
     return(list(H = H, useRaw = useRaw))
+}
+
+# Internal development use only
+# use when you have objects created when this package was named by `rliger2`
+# now we rename the package back to `rliger` and you'll need to have the objects
+# compatible with "new" package name.
+rliger2_to_rliger_namespace <- function(obj, dimredName) {
+    cm <- obj@cellMeta
+    drList <- list()
+    for (i in dimredName) {
+        drList[[i]] <- cm[[i]]
+        cm[[i]] <- NULL
+    }
+    new <- methods::new(
+        "liger",
+        datasets = obj@datasets,
+        cellMeta = cm,
+        varFeatures = obj@varFeatures,
+        W = obj@W,
+        H.norm = obj@H.norm,
+        uns = obj@uns,
+        commands = obj@commands,
+        version = obj@version
+    )
+    for (i in dimredName) {
+        dimRed(new, i) <- drList[[i]]
+    }
+    for (i in seq_along(obj)) {
+        ld <- obj@datasets[[i]]
+        basics <- list(
+            rawData = ld@rawData,
+            normData = ld@normData,
+            scaleData = ld@scaleData,
+            H = ld@H,
+            V = ld@V,
+            A = ld@A,
+            B = ld@B,
+            varUnsharedFeatures = ld@varUnsharedFeatures,
+            scaleUnsharedData = ld@scaleUnsharedData,
+            U = ld@U,
+            h5fileInfo = ld@h5fileInfo,
+            featureMeta = ld@featureMeta,
+            colnames = ld@colnames,
+            rownames = ld@rownames
+        )
+        if (inherits(ld, "ligerATACDataset")) {
+            basics <- c(basics, list(
+                Class = "ligerATACDataset",
+                rawPeak = ld@rawPeak,
+                normPeak = ld@normPeak
+            ))
+        } else if (inherits(ld, "ligerRNADataset")) {
+            basics <- c(basics, list(
+                Class = "ligerRNADataset"
+            ))
+        } else if (inherits(ld, "ligerMethDataset")) {
+            basics <- c(basics, list(
+                Class = "ligerMethDataset"
+            ))
+        } else if (inherits(ld, "ligerSpatialDataset")) {
+            basics <- c(basics, list(
+                Class = "ligerSpatialDataset",
+                coordinate = ld@coordinate
+            ))
+        } else {
+            basics <- c(basics, list(
+                Class = "ligerDataset"
+            ))
+        }
+        new@datasets[[i]] <- do.call("new", basics)
+    }
+    for (i in seq_along(new@commands)) {
+        cmd <- new@commands[[i]]
+        new@commands[[i]] <- methods::new(
+            "ligerCommand",
+            funcName = cmd@funcName,
+            time = cmd@time,
+            call = cmd@call,
+            parameters = cmd@parameters,
+            objSummary = cmd@objSummary,
+            ligerVersion = cmd@ligerVersion,
+            dependencyVersion = cmd@dependencyVersion
+        )
+    }
+    new
 }

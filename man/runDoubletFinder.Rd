@@ -10,7 +10,7 @@ runDoubletFinder(
   PCs = 1:10,
   nNeighbors = 20,
   nExp = NULL,
-  verbose = getOption("ligerVerbose"),
+  verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 }
@@ -32,7 +32,7 @@ See "See Also". Scalar for all used datasets or vector for each. Default
 used datasets or vector for each. Default \code{NULL} sets a 0.15 proportion.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
-\code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.}
+\code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{...}{Additional arguments passed to
 \code{DoubletFinder::doubletFinder}.}

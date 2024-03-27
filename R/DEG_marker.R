@@ -40,7 +40,7 @@
 #' @param seed Random seed to use for pseudo-replicate generation. Default
 #' \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @return A data.frame with DEG information
 #' @rdname liger-DEG
 #' @export
@@ -65,7 +65,7 @@ runPairwiseDEG <- function(
         nPsdRep = 5,
         minCellPerRep = 10,
         seed = 1,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     method <- match.arg(method)
     if (is.null(variable1) && is.null(variable2)) {
@@ -155,7 +155,7 @@ runMarkerDEG <- function(
         nPsdRep = 5,
         minCellPerRep = 10,
         seed = 1,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     useDatasets <- .checkUseDatasets(object, useDatasets)
     allCellIdx <- seq(ncol(object))[object$dataset %in% useDatasets]
@@ -237,7 +237,7 @@ runWilcoxon <- function(
         nPsdRep = 5,
         minCellPerRep = 10,
         seed = 1,
-        verbose = getOption("ligerVerbose")
+        verbose = getOption("ligerVerbose", TRUE)
 ) {
     method <- match.arg(method)
     allCellIdx <- unlist(groups)
@@ -381,7 +381,7 @@ makePseudoBulk <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {
 }
 
 .callDESeq2 <- function(pseudoBulks, groups,
-                         verbose = getOption("ligerVerbose")) {
+                         verbose = getOption("ligerVerbose", TRUE)) {
     # DESeq2 workflow
     if (isTRUE(verbose)) cliID <- cli::cli_process_start("Calling DESeq2 Wald test")
     ## NOTE: DESeq2 wishes that the contrast/control group is the first level

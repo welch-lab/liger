@@ -28,11 +28,9 @@
 #' @param colorPalette Name of viridis palette. See
 #' \code{\link[viridisLite]{viridis}} for options. Default \code{"C"} ("plasma")
 #' for gene expression and \code{"D"} ("viridis") for factor loading.
-#' @param ... Additional graphic setting arguments passed to
-#' \code{\link{plotCellScatter}}.
 #' @return ggplot object when only one feature (e.g. cluster variable, gene,
 #' factor) is set. List object when multiple of those are specified.
-#' @seealso Please refer to \code{\link{plotCellScatter}},
+#' @seealso Please refer to \code{\link{plotDimRed}},
 #' \code{\link{.ggScatter}}, \code{\link{.ggplotLigerTheme}} for additional
 #' graphic setting
 #' @rdname plotDimRed
@@ -48,19 +46,9 @@ plotClusterDimRed <- function(
         useCluster = NULL,
         useDimRed = NULL,
         ...) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
-    if (is.null(useDimRed)) {
-        cli::cli_abort(
-            c(x = "No {.var useDimRed} given or default dimRed not set.",
-              i = "Run {.fn runUMAP} or {.fn runTSNE} to create one. Or see {.fn dimRed} and {.fn defaultDimRed}.")
-        )
-    }
     useCluster <- useCluster %||% object@uns$defaultCluster
-    xVar <- paste0(useDimRed, ".1")
-    yVar <- paste0(useDimRed, ".2")
-    plotCellScatter(object, x = xVar, y = yVar,
-                    colorBy = useCluster,
-                    slot = "cellMeta", dotOrder = "shuffle", ...)
+    plotDimRed(object, colorBy = useCluster, useDimRed = useDimRed,
+               slot = "cellMeta", dotOrder = "shuffle", ...)
 }
 
 #' @rdname plotDimRed
@@ -69,18 +57,9 @@ plotDatasetDimRed <- function(
         object,
         useDimRed = NULL,
         ...) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
-    if (is.null(useDimRed)) {
-        cli::cli_abort(
-            c(x = "No {.var useDimRed} given or default dimRed not set.",
-              i = "Run {.fn runUMAP} or {.fn runTSNE} to create one. Or see {.fn dimRed} and {.fn defaultDimRed}.")
-        )
-    }
-    xVar <- paste0(useDimRed, ".1")
-    yVar <- paste0(useDimRed, ".2")
-    plotCellScatter(object, x = xVar, y = yVar, colorBy = "dataset",
-                    slot = "cellMeta", labelText = FALSE,
-                    dotOrder = "shuffle", ...)
+    plotDimRed(object, colorBy = "dataset", slot = "cellMeta",
+               useDimRed = useDimRed, labelText = FALSE,
+               dotOrder = "shuffle", ...)
 }
 
 #' @rdname plotDimRed
@@ -92,12 +71,13 @@ plotByDatasetAndCluster <- function(
         combinePlots = TRUE,
         ...
 ) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
-    useCluster <- useCluster %||% object@uns$defaultCluster
     plot <- list(
-        dataset = plotDatasetDimRed(object, useDimRed = useDimRed, ...),
-        cluster = plotClusterDimRed(object, useCluster = useCluster,
-                                    useDimRed = useDimRed, ...)
+        dataset = plotDatasetDimRed(
+            object, useDimRed = useDimRed, ...
+        ),
+        cluster = plotClusterDimRed(
+            object, useCluster = useCluster, useDimRed = useDimRed, ...
+        )
     )
     if (isTRUE(combinePlots)) {
         plot <- cowplot::plot_grid(plotlist = plot, nrow = 1,
@@ -118,18 +98,15 @@ plotGeneDimRed <- function(
         colorPalette = "C",
         ...
 ) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
-    xVar <- paste0(useDimRed, ".1")
-    yVar <- paste0(useDimRed, ".2")
     scaleFunc <- function(x) {
         if (!is.null(scaleFactor)) x <- scaleFactor*x
         if (isTRUE(log)) x <- log2(x + 1)
         x
     }
-    plotCellScatter(object, x = xVar, y = yVar, colorBy = features,
-                    slot = "normData", colorByFunc = scaleFunc,
-                    dotOrder = "ascending", zeroAsNA = zeroAsNA,
-                    colorPalette = colorPalette, ...)
+    plotDimRed(object, colorBy = features, useDimRed = useDimRed,
+               slot = "normData", colorByFunc = scaleFunc,
+               dotOrder = "ascending", zeroAsNA = zeroAsNA,
+               colorPalette = colorPalette, ...)
 }
 
 #' @rdname plotDimRed
@@ -144,18 +121,16 @@ plotPeakDimRed <- function(
         colorPalette = "C",
         ...
 ) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
-    xVar <- paste0(useDimRed, ".1")
-    yVar <- paste0(useDimRed, ".2")
     scaleFunc <- function(x) {
         if (!is.null(scaleFactor)) x <- scaleFactor*x
         if (isTRUE(log)) x <- log2(x + 1)
         x
     }
-    plotCellScatter(object, x = xVar, y = yVar, colorBy = features,
-                    slot = "normPeak", colorByFunc = scaleFunc,
-                    dotOrder = "ascending", zeroAsNA = zeroAsNA,
-                    colorPalette = colorPalette, ...)
+    plotDimRed(
+        object, useDimRed = useDimRed, colorBy = features, slot = "normPeak",
+        colorByFunc = scaleFunc, dotOrder = "ascending", zeroAsNA = zeroAsNA,
+        colorPalette = colorPalette, ...
+    )
 }
 
 #' @rdname plotDimRed
@@ -169,13 +144,10 @@ plotFactorDimRed <- function(
         colorPalette = "D",
         ...
 ) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
-    xVar <- paste0(useDimRed, ".1")
-    yVar <- paste0(useDimRed, ".2")
-    plotCellScatter(object, x = xVar, y = yVar, colorBy = factors,
-                    slot = "H.norm", dotOrder = "ascending",
-                    trimHigh = trimHigh, zeroAsNA = zeroAsNA,
-                    colorPalette = colorPalette, ...)
+    plotDimRed(object, colorBy = factors, useDimRed = useDimRed,
+               slot = "H.norm", dotOrder = "ascending",
+               trimHigh = trimHigh, zeroAsNA = zeroAsNA,
+               colorPalette = colorPalette, ...)
 }
 
 #' Comprehensive group splited cluster plot on dimension reduction with
@@ -211,10 +183,10 @@ plotFactorDimRed <- function(
 #' @param legendNRow Arrangement of the legend, number of rows. Default
 #' \code{1}.
 #' @param ... Additional graphic setting arguments passed to
-#' \code{\link{plotCellScatter}}.
+#' \code{\link{plotDimRed}}.
 #' @return ggplot object when only one feature (e.g. cluster variable, gene,
 #' factor) is set. List object when multiple of those are specified.
-#' @seealso Please refer to \code{\link{plotCellScatter}},
+#' @seealso Please refer to \code{\link{plotDimRed}},
 #' \code{\link{.ggScatter}}, \code{\link{.ggplotLigerTheme}} for additional
 #' graphic setting
 #' @export
@@ -234,11 +206,8 @@ plotGroupClusterDimRed <- function(
         legendNRow = 1,
         ...
 ) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
     useCluster <- useCluster %||% object@uns$defaultCluster
     clusterVar <- cellMeta(object, useCluster)
-    xVar <- paste0(useDimRed, ".1")
-    yVar <- paste0(useDimRed, ".2")
     groupVar <- .fetchCellMetaVar(object, useGroup, checkCategorical = TRUE,
                                   droplevels = droplevels)
     plotList <- list()
@@ -250,18 +219,19 @@ plotGroupClusterDimRed <- function(
         clusterVarMasked <- droplevels(clusterVarMasked)
         tempVarName <- paste0(useCluster, "_", lvl)
         cellMeta(object, tempVarName) <- clusterVarMasked
-        plotList[[lvl]] <- plotCellScatter(object, x = xVar, y = yVar,
-                                           colorBy = tempVarName,
-                                           dotOrder = "shuffle", titles = lvl,
-                                           legendColorTitle = "",
-                                           legendPosition = "bottom",
-                                           legendNRow = legendNRow,
-                                           ...) +
-            ggplot2::theme(line = ggplot2::element_blank(),
-                           axis.text.x = ggplot2::element_blank(),
-                           axis.text.y = ggplot2::element_blank(),
-                           axis.title.x = ggplot2::element_blank(),
-                           axis.title.y = ggplot2::element_blank())
+        plotList[[lvl]] <- plotDimRed(
+            object, colorBy = tempVarName, useDimRed = useDimRed,
+            slot = "cellMeta", dotOrder = "shuffle", titles = lvl,
+            legendColorTitle = "", legendPosition = "bottom",
+            legendNRow = legendNRow, ...
+        ) +
+            ggplot2::theme(
+                line = ggplot2::element_blank(),
+                axis.text.x = ggplot2::element_blank(),
+                axis.text.y = ggplot2::element_blank(),
+                axis.title.x = ggplot2::element_blank(),
+                axis.title.y = ggplot2::element_blank()
+            )
         proportions <- table(clusterVarMasked) / sum(table(clusterVarMasked))
         propDF <- data.frame(group = lvl, proportions)
         # propDF$clusterVarMasked <- as.character()
@@ -604,7 +574,7 @@ plotProportionPie <- function(
 #' @description \code{plotVolcano} is a simple implementation and shares
 #' most of arguments with other rliger plotting functions.
 #' \code{plotEnhancedVolcano} is a wrapper function of
-#' \code{\link[EnhancedVolcano]{EnhancedVolcano}}, which has provides
+#' \code{EnhancedVolcano::EnhancedVolcano()}, which has provides
 #' substantial amount of arguments for graphical control. However, that requires
 #' the installation of package "EnhancedVolcano".
 #' @rdname plotVolcano
@@ -625,7 +595,7 @@ plotProportionPie <- function(
 #' \code{4}.
 #' @param ... For \code{plotVolcano}, more theme setting arguments passed to
 #' \code{\link{.ggplotLigerTheme}}. For \code{plotEnhancedVolcano}, arguments
-#' passed to \code{\link[EnhancedVolcano]{EnhancedVolcano}}.
+#' passed to \code{EnhancedVolcano::EnhancedVolcano()}.
 #' @return ggplot
 #' @export
 #' @examples
@@ -803,10 +773,7 @@ plotDensityDimRed <- function(
         colorDirection = -1,
         ...
 ) {
-    useDimRed <- useDimRed %||% object@uns$defaultDimRed
-    xVar <- paste0(useDimRed, ".1")
-    yVar <- paste0(useDimRed, ".2")
-    dr <- .fetchCellMetaVar(object, c(xVar, yVar))
+    dr <- as.data.frame(dimRed(object, useDimRed))
     splitVar <- .fetchCellMetaVar(object, splitBy, checkCategorical = TRUE,
                                   drop = FALSE)
 
@@ -946,16 +913,14 @@ plotGeneLoadings <- function(
         object,
         markerTable,
         useFactor,
-        useDimRed = "UMAP",
+        useDimRed = NULL,
         nLabel = 15,
         nPlot = 30,
         ...
 ) {
-    p1 <- plotCellScatter(
-        object,
-        x = paste0(useDimRed, ".1"), y = paste0(useDimRed, ".2"),
-        colorBy = useFactor, slot = "H.norm", zeroAsNA = TRUE, dotOrder = "asc",
-        splitBy = NULL, shapeBy = NULL, colorByFunc = NULL, ...
+    p1 <- plotDimRed(
+        object, colorBy = useFactor, useDimRed = useDimRed, slot = "H.norm",
+        zeroAsNA = TRUE, dotOrder = "asc", splitBy = NULL, ...
     )
     bottom <- plotGeneLoadingRank(object, markerTable, useFactor,
                                   nLabel, nPlot, ...)
@@ -1103,9 +1068,11 @@ plotGeneLoadingRank <- function(
 #'     cellMeta(pbmcPlot, "leiden_cluster", "ctrl")
 #' cellMeta(pbmcPlot, "stim_cluster", "stim") <-
 #'     cellMeta(pbmcPlot, "leiden_cluster", "stim")
-#' plotSankey(pbmcPlot, "ctrl_cluster", "stim_cluster",
-#'            titles = c("control", "LIGER", "stim"),
-#'            prefixes = c("c", NA, "s"))
+#' if (requireNamespace("sankey", quietly = TRUE)) {
+#'     plotSankey(pbmcPlot, "ctrl_cluster", "stim_cluster",
+#'                titles = c("control", "LIGER", "stim"),
+#'                prefixes = c("c", NA, "s"))
+#' }
 plotSankey <- function(
         object,
         cluster1,
@@ -1200,15 +1167,54 @@ plotSankey <- function(
     graphics::mtext(titles[3], side = 3, adj = 0.95, cex = titleCex, font = 2)
 }
 
-#' @rdname plotSankey
+#' [Deprecated] Generate a river (Sankey) plot
+#' @description
+#' Creates a riverplot to show how separate cluster assignments from two
+#' datasets map onto a joint clustering. The joint clustering is by default the
+#' object clustering, but an external one can also be passed in. Uses the
+#' riverplot package to construct riverplot object and then plot.
+#' @param object \code{liger} object. Should run quantileAlignSNF before calling.
+#' @param cluster1 Cluster assignments for dataset 1. Note that cluster names
+#' should be distinct across datasets.
+#' @param cluster2 Cluster assignments for dataset 2. Note that cluster names
+#' should be distinct across datasets.
+#' @param cluster_consensus Optional external consensus clustering (to use
+#' instead of object clusters)
+#' @param min.frac Minimum fraction of cluster for edge to be shown (default
+#' 0.05).
+#' @param min.cells Minumum number of cells for edge to be shown (default 10).
+#' @param river.yscale y-scale to pass to riverplot -- scales the edge with
+#' values by this factor, can be used to squeeze vertically (default 1).
+#' @param river.lty Line style to pass to riverplot (default 0).
+#' @param river.node_margin Node_margin to pass to riverplot -- how much
+#' vertical space to keep between the nodes (default 0.1).
+#' @param label.cex Size of text labels (default 1).
+#' @param label.col Color of text labels (defualt "black").
+#' @param lab.srt Angle of text labels (default 0).
+#' @param river.usr Coordinates at which to draw the plot in form (x0, x1, y0,
+#' y1).
+#' @param node.order Order of clusters in each set (list with three vectors of
+#' ordinal numbers). By default will try to automatically order them
+#' appropriately.
+#' @return \code{object} with refined cluster assignment updated in
+#' \code{"louvain_cluster"} variable in \code{cellMeta} slot. Can be fetched
+#' with \code{object$louvain_cluster}
+#' @name makeRiverplot-deprecated
+#' @seealso \code{\link{rliger-deprecated}}
+NULL
+
+#' @rdname rliger-deprecated
+#' @section \code{makeRiverplot}:
+#' For \code{makeRiverplot}, use \code{\link{plotSankey}} as the replacement.
 #' @export
-makeRiverplot <- function(object, cluster1, cluster2) {
+makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL,
+                          min.frac = 0.05, min.cells = 10, river.yscale = 1,
+                          river.lty = 0, river.node_margin = 0.1, label.cex = 1,
+                          label.col = "black", lab.srt = 0, river.usr = NULL,
+                          node.order = "auto") {
     lifecycle::deprecate_stop("1.99.0", "makeRiverplot()",
                               "plotSankey()")
 }
-
-
-
 
 
 #' Visualize a spatial dataset

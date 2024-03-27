@@ -1,27 +1,31 @@
-data("pbmcPlot", package = "rliger2")
+data("pbmcPlot", package = "rliger")
 
 withNewH5Copy <- function(fun) {
-    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger2")
-    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger2")
+    ctrlpath.orig <- system.file("extdata/ctrl.h5", package = "rliger")
+    stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
     if (!file.exists(ctrlpath.orig))
         stop("Cannot find original h5 file at: ", ctrlpath.orig)
-    if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
-    if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
-    pwd <- getwd()
-    # Temp setting for GitHub Actions
-    fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
-    if (Sys.info()["sysname"] == "Windows") {
-        pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
-    }
+    # if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
+    # if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
+    # pwd <- getwd()
+    # # Temp setting for GitHub Actions
+    # fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
+    # if (Sys.info()["sysname"] == "Windows") {
+    #     pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
+    # }
 
-    ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
-    stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
+    # ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
+    # stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
+    ctrlpath <- tempfile(pattern = "ctrltest_", fileext = ".h5")
+    stimpath <- tempfile(pattern = "stimtest_", fileext = ".h5")
     cat("Working ctrl H5 file path: ", ctrlpath, "\n")
     cat("Working stim H5 file path: ", stimpath, "\n")
     file.copy(ctrlpath.orig, ctrlpath, copy.mode = TRUE)
     file.copy(stimpath.orig, stimpath, copy.mode = TRUE)
     if (!file.exists(ctrlpath))
         stop("Cannot find copied h5 file at: ", ctrlpath)
+    if (!file.exists(stimpath))
+        stop("Cannot find copied h5 file at: ", stimpath)
 
     fun(list(ctrl = ctrlpath, stim = stimpath))
 
@@ -62,27 +66,26 @@ test_that("scatter plots", {
 
     # General
     expect_is(
-        plotCellScatter(pbmcPlot, "UMAP.1", "UMAP.2", splitBy = "dataset"),
+        plotDimRed(pbmcPlot, splitBy = "dataset"),
         "list"
     )
     expect_is(
-        plotCellScatter(pbmcPlot, "UMAP.1", "UMAP.2", colorBy = "dataset",
+        plotDimRed(pbmcPlot, colorBy = "dataset",
                         splitBy = "dataset"),
         "list"
     )
     for (o in c("shuffle", "ascending", "descending")) {
-        expect_gg(plotCellScatter(pbmcPlot, "UMAP.1", "UMAP.2",
-                                  colorBy = "dataset", dotOrder = o))
+        expect_gg(plotDimRed(pbmcPlot, colorBy = "dataset", dotOrder = o))
     }
     expect_gg(
-        plotCellScatter(pbmcPlot, "UMAP.1", "UMAP.2", colorBy = "S100A8",
-                        slot = "normData", trimHigh = 5, trimLow = 0),
-        plotCellScatter(pbmcPlot, "UMAP.1", "UMAP.2",
-                        colorBy = "leiden_cluster", shapeBy = "dataset"),
-        plotCellScatter(pbmcPlot, "UMAP.1", "UMAP.2", colorBy = NULL,
-                        shapeBy = "dataset"),
-        plotCellScatter(pbmcPlot, "UMAP.1", "UMAP.2",
-                        colorBy = "leiden_cluster", raster = TRUE)
+        plotDimRed(pbmcPlot, colorBy = "S100A8", slot = "normData",
+                   trimHigh = 5, trimLow = 0),
+        plotDimRed(pbmcPlot, colorBy = "leiden_cluster", shapeBy = "dataset"),
+        plotDimRed(pbmcPlot, colorBy = NULL, shapeBy = "dataset")
+    )
+    skip_if_not_installed("scattermore")
+    expect_gg(
+        plotDimRed(pbmcPlot, colorBy = "leiden_cluster", raster = TRUE)
     )
 })
 
@@ -98,15 +101,17 @@ test_that("Violin plots", {
                              dotColor = NULL), "list")
     expect_gg(
         plotGeneViolin(pbmcPlot, "S100A8", byDataset = FALSE),
-        plotTotalCountViolin(pbmc, dot = TRUE),
-        plotGeneDetectedViolin(pbmc, dot = TRUE, dotColor = NULL,
-                               raster = TRUE)
+        plotTotalCountViolin(pbmc, dot = TRUE)
     )
 
     # General
-    expect_gg(plotCellViolin(pbmcPlot, "nUMI", groupBy = NULL,
-                             colorBy = "leiden_cluster", box = TRUE, dot = TRUE,
-                             raster = TRUE))
+    skip_if_not_installed("scattermore")
+    expect_gg(
+        plotGeneDetectedViolin(pbmc, dot = TRUE, dotColor = NULL, raster = TRUE),
+        plotCellViolin(pbmcPlot, "nUMI", groupBy = NULL,
+                       colorBy = "leiden_cluster", box = TRUE, dot = TRUE,
+                       raster = TRUE)
+    )
 })
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -271,4 +276,22 @@ test_that("Plot spatial coordinates", {
     dataset(pbmc, "ctrl") <- ctrl.fake.spatial
     expect_gg(plotSpatial2D(pbmc, dataset = "ctrl"))
     expect_gg(plotSpatial2D(pbmc, dataset = "ctrl", useCluster = "dataset"))
+})
+
+context("Sankey")
+test_that("PlotSankey", {
+    skip_if_not_installed("sankey")
+    cellMeta(pbmcPlot, "ctrl_cluster", "ctrl") <-
+        cellMeta(pbmcPlot, "leiden_cluster", "ctrl")
+    cellMeta(pbmcPlot, "stim_cluster", "stim") <-
+        cellMeta(pbmcPlot, "leiden_cluster", "stim")
+    pdfName <- tempfile(pattern = "fig_", fileext = ".pdf")
+    grDevices::pdf(file = pdfName)
+    expect_no_error({
+        plotSankey(pbmcPlot, "ctrl_cluster", "stim_cluster",
+                   titles = c("control", "LIGER", "stim"),
+                   prefixes = c("c", NA, "s"))
+    })
+    grDevices::dev.off()
+    if (file.exists(pdfName)) unlink(pdfName)
 })

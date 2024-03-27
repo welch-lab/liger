@@ -13,6 +13,8 @@
 \alias{cellMeta<-}
 \alias{defaultCluster}
 \alias{defaultCluster<-}
+\alias{dimReds}
+\alias{dimReds<-}
 \alias{dimRed}
 \alias{dimRed<-}
 \alias{defaultDimRed}
@@ -35,9 +37,10 @@
 \alias{dataset<-,liger,character,missing,ANY,ligerDataset-method}
 \alias{dataset<-,liger,character,ANY,ANY,matrixLike-method}
 \alias{dataset<-,liger,character,missing,ANY,NULL-method}
-\alias{names,liger-method}
-\alias{names<-,liger,character-method}
-\alias{length,liger-method}
+\alias{names.liger}
+\alias{names<-.liger}
+\alias{length.liger}
+\alias{lengths.liger}
 \alias{cellMeta,liger,NULL-method}
 \alias{cellMeta,liger,character-method}
 \alias{cellMeta,liger,missing-method}
@@ -60,18 +63,21 @@
 \alias{scaleUnsharedData<-,liger,ANY,ANY,H5Group-method}
 \alias{getMatrix,liger,ANY,ANY,ANY-method}
 \alias{getH5File,liger,ANY-method}
-\alias{$,liger-method}
-\alias{$<-,liger-method}
+\alias{[[<-.liger}
+\alias{$.liger}
+\alias{$<-.liger}
 \alias{defaultCluster,liger-method}
 \alias{defaultCluster<-,liger,ANY,ANY,character-method}
 \alias{defaultCluster<-,liger,ANY,ANY,factor-method}
 \alias{defaultCluster<-,liger,ANY,ANY,NULL-method}
-\alias{dimRed,liger,missing-method}
-\alias{dimRed,liger,character-method}
-\alias{dimRed<-,liger,character,ANY,matrixLike-method}
+\alias{dimReds,liger-method}
+\alias{dimReds<-,liger,list-method}
+\alias{dimRed,liger,missing_OR_NULL-method}
+\alias{dimRed,liger,index-method}
+\alias{dimRed<-,liger,index,ANY,ANY,NULL-method}
+\alias{dimRed<-,liger,character,ANY,ANY,matrixLike-method}
 \alias{defaultDimRed,liger-method}
-\alias{defaultDimRed<-,liger,missing,ANY,character-method}
-\alias{defaultDimRed<-,liger,character,ANY,matrixLike-method}
+\alias{defaultDimRed<-,liger,character-method}
 \alias{varFeatures,liger-method}
 \alias{varFeatures<-,liger,ANY,character-method}
 \alias{varUnsharedFeatures,liger,ANY-method}
@@ -113,13 +119,17 @@ defaultCluster(x, useDatasets = NULL, ...)
 
 defaultCluster(x, name = NULL, useDatasets = NULL, ...) <- value
 
-dimRed(x, name = NULL, useDatasets = NULL, ...)
+dimReds(x)
 
-dimRed(x, name = NULL, useDatasets = NULL, ...) <- value
+dimReds(x) <- value
 
-defaultDimRed(x, useDatasets = NULL)
+dimRed(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...)
 
-defaultDimRed(x, name, useDatasets = NULL) <- value
+dimRed(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...) <- value
+
+defaultDimRed(x, useDatasets = NULL, cellIdx = NULL)
+
+defaultDimRed(x) <- value
 
 varFeatures(x)
 
@@ -153,15 +163,17 @@ commands(x, funcName = NULL, arg = NULL)
 
 \S4method{dataset}{liger,character,missing,ANY,ligerDataset}(x, dataset, type = NULL, qc = TRUE) <- value
 
-\S4method{dataset}{liger,character,ANY,ANY,matrixLike}(x, dataset, type = c("rawData", "normData", "scaleData"), qc = FALSE) <- value
+\S4method{dataset}{liger,character,ANY,ANY,matrixLike}(x, dataset, type = c("rawData", "normData"), qc = FALSE) <- value
 
 \S4method{dataset}{liger,character,missing,ANY,NULL}(x, dataset, type = NULL, qc = TRUE) <- value
 
-\S4method{names}{liger}(x)
+\method{names}{liger}(x)
 
-\S4method{names}{liger,character}(x) <- value
+\method{names}{liger}(x) <- value
 
-\S4method{length}{liger}(x)
+\method{length}{liger}(x)
+
+\method{lengths}{liger}(x, use.names = TRUE)
 
 \S4method{cellMeta}{liger,NULL}(
   x,
@@ -241,9 +253,11 @@ commands(x, funcName = NULL, arg = NULL)
 
 \S4method{getH5File}{liger,ANY}(x, dataset = NULL)
 
-\S4method{$}{liger}(x, name)
+\method{[[}{liger}(x, i) <- value
 
-\S4method{$}{liger}(x, name) <- value
+\method{$}{liger}(x, name)
+
+\method{$}{liger}(x, name) <- value
 
 \S4method{defaultCluster}{liger}(x, useDatasets = NULL, droplevels = FALSE, ...)
 
@@ -253,17 +267,29 @@ commands(x, funcName = NULL, arg = NULL)
 
 \S4method{defaultCluster}{liger,ANY,ANY,NULL}(x, name = NULL, useDatasets = NULL, ...) <- value
 
-\S4method{dimRed}{liger,missing}(x, name = NULL, useDatasets = NULL, ...)
+\S4method{dimReds}{liger}(x)
 
-\S4method{dimRed}{liger,character}(x, name = NULL, useDatasets = NULL, ...)
+\S4method{dimReds}{liger,list}(x) <- value
 
-\S4method{dimRed}{liger,character,ANY,matrixLike}(x, name = NULL, useDatasets = NULL, asDefault = NULL, ...) <- value
+\S4method{dimRed}{liger,missing_OR_NULL}(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...)
 
-\S4method{defaultDimRed}{liger}(x, useDatasets = NULL)
+\S4method{dimRed}{liger,index}(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...)
 
-\S4method{defaultDimRed}{liger,missing,ANY,character}(x, name = NULL, useDatasets = NULL) <- value
+\S4method{dimRed}{liger,index,ANY,ANY,NULL}(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...) <- value
 
-\S4method{defaultDimRed}{liger,character,ANY,matrixLike}(x, name, useDatasets = NULL) <- value
+\S4method{dimRed}{liger,character,ANY,ANY,matrixLike}(
+  x,
+  name = NULL,
+  useDatasets = NULL,
+  cellIdx = NULL,
+  asDefault = NULL,
+  inplace = FALSE,
+  ...
+) <- value
+
+\S4method{defaultDimRed}{liger}(x, useDatasets = NULL, cellIdx = cellIdx)
+
+\S4method{defaultDimRed}{liger,character}(x) <- value
 
 \S4method{varFeatures}{liger}(x)
 
@@ -289,7 +315,7 @@ commands(x, funcName = NULL, arg = NULL)
 \item{check}{Logical, whether to perform object validity check on setting new
 value. Users are not supposed to set \code{FALSE} here.}
 
-\item{value}{Check detail sections for requirements.}
+\item{value}{Metadata value to be inserted}
 
 \item{dataset}{Name or numeric index of a dataset}
 
@@ -325,11 +351,15 @@ name of a new variable to store.}
 
 \item{funcName, arg}{See Command records section.}
 
+\item{use.names}{Whether returned vector should be named with dataset names.}
+
 \item{slot}{Name of slot to retrieve matrix from. Options shown in Usage.}
 
 \item{returnList}{Logical, whether to force return a list even when only one
 dataset-specific matrix (i.e. expression matrices, H, V or U) is requested.
 Default \code{FALSE}.}
+
+\item{i}{Name or numeric index of cell meta variable to be replaced}
 
 \item{droplevels}{Whether to remove unused cluster levels from the factor
 object fetched by \code{defaultCluster()}. Default \code{FALSE}.}
@@ -342,6 +372,9 @@ default has been set yet, otherwise does not change current default.}
 }
 \value{
 See detailed sections for explanetion.
+
+Input liger object updated with replaced/new variable in
+\code{cellMeta(x)}.
 }
 \description{
 \code{liger} object is the main data container for LIGER
@@ -388,7 +421,7 @@ accordingly.}
 
 \item{\code{uns}}{List for unstructured meta-info of analyses or presets.}
 
-\item{\code{version}}{Record of version of rliger2 package}
+\item{\code{version}}{Record of version of rliger package}
 }}
 
 \section{Dataset access}{
@@ -470,15 +503,13 @@ utilizes both clustering information and the dataset source information.
 \section{Dimension reduction access}{
 
 Currently, low-dimensional representaion of cells, presented as dense
-matrices, are all stored in \code{cellMeta} slot, and can totally be accessed
-with generics \code{cellMeta} and \code{cellMeta<-}. In addition to that,
-we provide specific generics \code{dimRed} and \code{dimRed<-} for getting
-and setting matrix like cell metadata, respectively. Adding a matrix to the
+matrices, are all stored in \code{dimReds} slot, and can totally be accessed
+with generics \code{dimRed} and \code{dimRed<-}. Adding a dimRed to the
 object looks as simple as \code{dimRed(obj, "name") <- matrixLike}. It can
-be retrived back with \code{dimRed(obj, "name")}. Similar to having a default
-cluster labeling, we also constructed the feature of default dimRed. It can
-be set with \code{defaultDimRed(obj) <- "existingMatLikeVar"} and the matrix
-can be retrieved with \code{defaultDimRed(obj)}.
+be retrieved back with \code{dimRed(obj, "name")}. Similar to having a
+default cluster labeling, we also constructed the feature of default dimRed.
+It can be set with \code{defaultDimRed(obj) <- "existingMatLikeVar"} and the
+matrix can be retrieved with \code{defaultDimRed(obj)}.
 }
 
 \section{Variable feature access}{
@@ -557,7 +588,7 @@ pbmcPlot[varFeatures(pbmcPlot)[1:10], 1:10]
 names(pbmcPlot)
 length(pbmcPlot)
 
-# rliger2 generics
+# rliger generics
 ## Retrieving dataset(s), replacement methods available
 datasets(pbmcPlot)
 dataset(pbmcPlot, "ctrl")
@@ -566,7 +597,9 @@ dataset(pbmcPlot, 2)
 ## Retrieving cell metadata, replacement methods available
 cellMeta(pbmcPlot)
 head(pbmcPlot[["nUMI"]])
-head(pbmcPlot$UMAP)
+
+## Retrieving dimemtion reduction matrix
+head(dimRed(pbmcPlot, "UMAP"))
 
 ## Retrieving variable features, replacement methods available
 varFeatures(pbmcPlot)
@@ -577,8 +610,17 @@ commands(pbmcPlot)
 commands(pbmcPlot, funcName = "scaleNotCenter")
 
 # S3 methods
-c(pbmcPlot, pbmcPlot)
+pbmcPlot2 <- pbmcPlot
+names(pbmcPlot2) <- paste0(names(pbmcPlot), 2)
+c(pbmcPlot, pbmcPlot2)
 
 library(ggplot2)
-ggplot(pbmcPlot, aes(x = UMAP.1, y = UMAP.2)) + geom_point()
+ggplot(pbmcPlot, aes(x = UMAP_1, y = UMAP_2)) + geom_point()
+cellMeta(pbmc)
+# Add new variable
+pbmc[["newVar"]] <- 1
+cellMeta(pbmc)
+# Change existing variable
+pbmc[["newVar"]][1:3] <- 1:3
+cellMeta(pbmc)
 }

@@ -9,7 +9,7 @@ plotGeneLoadings(
   object,
   markerTable,
   useFactor,
-  useDimRed = "UMAP",
+  useDimRed = NULL,
   nLabel = 15,
   nPlot = 30,
   ...

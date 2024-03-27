@@ -8,11 +8,11 @@ runGSEA(
   object,
   genesets = NULL,
   useW = TRUE,
-  useDatasets = NULL,
+  useV = NULL,
   customGenesets = NULL,
   gene_sets = genesets,
   mat_w = useW,
-  mat_v = useDatasets,
+  mat_v = useV,
   custom_gene_sets = customGenesets
 )
 }
@@ -25,7 +25,7 @@ tested. Default \code{NULL} uses all the gene sets from the Reactome.}
 \item{useW}{Logical, whether to use the shared factor loadings (\eqn{W}).
 Default \code{TRUE}.}
 
-\item{useDatasets}{A character vector of the names, a numeric or logical
+\item{useV}{A character vector of the names, a numeric or logical
 vector of the index of the datasets where the \eqn{V} matrices will be
 included for analysis. Default \code{NULL} uses all datasets.}
 
@@ -44,6 +44,11 @@ each metagene (factor) might belongs to.
 }
 \examples{
 \donttest{
-runGSEA(pbmcPlot)
+if (requireNamespace("org.Hs.eg.db", quietly = TRUE) &&
+    requireNamespace("reactome.db", quietly = TRUE) &&
+    requireNamespace("fgsea", quietly = TRUE) &&
+    requireNamespace("AnnotationDbi", quietly = TRUE)) {
+    runGSEA(pbmcPlot)
+}
 }
 }

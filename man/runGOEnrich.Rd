@@ -42,11 +42,10 @@ up-regulated genes and should be preferred when \code{result} comes from
 marker detection test. When \code{result} comes from group-to-group DE test,
 it is recommended to set \code{splitReg = TRUE}.}
 
-\item{...}{Additional arguments passed to
-\code{gprofiler2::\link[gprofiler2]{gost}}. Arguments \code{query},
-\code{custom_bg}, \code{domain_scope}, and \code{ordered_query} are
-pre-specified by this wrapper function. Users must set
-\code{organism = "mmusculus"} when working on mouse data.}
+\item{...}{Additional arguments passed to \code{gprofiler2::gost()}.
+Arguments \code{query}, \code{custom_bg}, \code{domain_scope}, and
+\code{ordered_query} are pre-specified by this wrapper function. Users must
+set \code{organism = "mmusculus"} when working on mouse data.}
 }
 \value{
 A list object where each element is a result list for a group. Each
@@ -54,7 +53,7 @@ result list contains two elements:
 \item{result}{data.frame of main GO analysis result.}
 \item{meta}{Meta information for the query.}
 
-See \code{\link[gprofiler2]{gost}}. for detailed explanation.
+See \code{gprofiler2::gost()}. for detailed explanation.
 }
 \description{
 This function forms genesets basing on the differential expression result,
@@ -65,7 +64,9 @@ res <- runMarkerDEG(pbmcPlot)
 # Setting `significant = FALSE` because it's hard for a gene list obtained
 # from small test dataset to represent real-life biology.
 \donttest{
-go <- runGOEnrich(res, group = 0, significant = FALSE)
+if (requireNamespace("gprofiler2", quietly = TRUE)) {
+    go <- runGOEnrich(res, group = 0, significant = FALSE)
+}
 }
 }
 \references{

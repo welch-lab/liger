@@ -269,18 +269,30 @@ setGeneric(
 #' @rdname liger-class
 #' @section Dimension reduction access:
 #' Currently, low-dimensional representaion of cells, presented as dense
-#' matrices, are all stored in \code{cellMeta} slot, and can totally be accessed
-#' with generics \code{cellMeta} and \code{cellMeta<-}. In addition to that,
-#' we provide specific generics \code{dimRed} and \code{dimRed<-} for getting
-#' and setting matrix like cell metadata, respectively. Adding a matrix to the
+#' matrices, are all stored in \code{dimReds} slot, and can totally be accessed
+#' with generics \code{dimRed} and \code{dimRed<-}. Adding a dimRed to the
 #' object looks as simple as \code{dimRed(obj, "name") <- matrixLike}. It can
-#' be retrived back with \code{dimRed(obj, "name")}. Similar to having a default
-#' cluster labeling, we also constructed the feature of default dimRed. It can
-#' be set with \code{defaultDimRed(obj) <- "existingMatLikeVar"} and the matrix
-#' can be retrieved with \code{defaultDimRed(obj)}.
+#' be retrieved back with \code{dimRed(obj, "name")}. Similar to having a
+#' default cluster labeling, we also constructed the feature of default dimRed.
+#' It can be set with \code{defaultDimRed(obj) <- "existingMatLikeVar"} and the
+#' matrix can be retrieved with \code{defaultDimRed(obj)}.
+setGeneric(
+    "dimReds",
+    function(x) standardGeneric("dimReds")
+)
+
+#' @export
+#' @rdname liger-class
+setGeneric(
+    "dimReds<-",
+    function(x, value) standardGeneric("dimReds<-")
+)
+
+#' @export
+#' @rdname liger-class
 setGeneric(
     "dimRed",
-    function(x, name = NULL, useDatasets = NULL, ...) {
+    function(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ...) {
         standardGeneric("dimRed")
     }
 )
@@ -289,7 +301,7 @@ setGeneric(
 #' @rdname liger-class
 setGeneric(
     "dimRed<-",
-    function(x, name = NULL, useDatasets = NULL, ..., value) {
+    function(x, name = NULL, useDatasets = NULL, cellIdx = NULL, ..., value) {
         standardGeneric("dimRed<-")
     }
 )
@@ -298,7 +310,7 @@ setGeneric(
 #' @rdname liger-class
 setGeneric(
     "defaultDimRed",
-    function(x, useDatasets = NULL) {
+    function(x, useDatasets = NULL, cellIdx = NULL) {
         standardGeneric("defaultDimRed")
     }
 )
@@ -307,7 +319,7 @@ setGeneric(
 #' @rdname liger-class
 setGeneric(
     "defaultDimRed<-",
-    function(x, name, useDatasets = NULL, value) {
+    function(x, value) {
         standardGeneric("defaultDimRed<-")
     }
 )
@@ -467,31 +479,36 @@ setGeneric("normPeak<-", function(x, dataset, check = TRUE, value) standardGener
 #' pbmc2
 #'
 #' \donttest{
-#' sce <- SingleCellExperiment::SingleCellExperiment(
-#'     assays = list(counts = multiSampleMatrix)
-#' )
-#' sce$sample <- pbmc$dataset
-#' pbmc3 <- as.liger(sce, datasetVar = "sample")
-#' pbmc3
+#' if (requireNamespace("SingleCellExperiment", quietly = TRUE)) {
+#'     sce <- SingleCellExperiment::SingleCellExperiment(
+#'         assays = list(counts = multiSampleMatrix)
+#'     )
+#'     sce$sample <- pbmc$dataset
+#'     pbmc3 <- as.liger(sce, datasetVar = "sample")
+#'     pbmc3
+#' }
 #'
-#' seu <- SeuratObject::CreateSeuratObject(multiSampleMatrix)
-#' # Seurat creates variable "orig.ident" by identifying the cell barcode
-#' # prefixes, which is indeed what we need in this case. Users might need
-#' # to be careful and have it confirmed first.
-#' pbmc4 <- as.liger(seu, datasetVar = "orig.ident")
-#' pbmc4
+#' if (requireNamespace("Seurat", quietly = TRUE)) {
+#'     seu <- SeuratObject::CreateSeuratObject(multiSampleMatrix)
+#'     # Seurat creates variable "orig.ident" by identifying the cell barcode
+#'     # prefixes, which is indeed what we need in this case. Users might need
+#'     # to be careful and have it confirmed first.
+#'     pbmc4 <- as.liger(seu, datasetVar = "orig.ident")
+#'     pbmc4
 #'
-#' # As per Seurat V5 updates with layered data, specifically helpful udner the
-#' # scenario of dataset integration. "counts" and etc for each datasets can be
-#' # split into layers.
-#' seu5 <- seu
-#' seu5[["RNA"]] <- split(seu5[["RNA"]], pbmc$dataset)
-#' print(SeuratObject::Layers(seu5))
-#' pbmc5 <- as.liger(seu5)
+#'     # As per Seurat V5 updates with layered data, specifically helpful udner the
+#'     # scenario of dataset integration. "counts" and etc for each datasets can be
+#'     # split into layers.
+#'     seu5 <- seu
+#'     seu5[["RNA"]] <- split(seu5[["RNA"]], pbmc$dataset)
+#'     print(SeuratObject::Layers(seu5))
+#'     pbmc5 <- as.liger(seu5)
+#'     pbmc5
+#' }
 #' }
 as.liger <- function(object, ...) UseMethod("as.liger", object)
 
-#' Converting other classes of data to a as.ligerDataset object
+#' Converting other classes of data to a ligerDataset object
 #' @description
 #' Works for converting a matrix or container object to a single ligerDataset,
 #' and can also convert the modality preset of a ligerDataset. When used with

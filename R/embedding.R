@@ -34,7 +34,7 @@
 #' result matrix. Default \code{"UMAP"}.
 #' @param seed Random seed for reproducibility. Default \code{42}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param k,use.raw,dims.use,n_neighbors,min_dist,rand.seed \bold{Deprecated}.
 #' See Usage section for replacement.
 #' @return The \code{object} where a \code{"UMAP"} variable is updated in the
@@ -53,7 +53,7 @@ runUMAP <- function(
         minDist = 0.1,
         dimredName = "UMAP",
         seed = 42,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         # Deprecated coding style
         k = nDims,
         use.raw = useRaw,
@@ -83,7 +83,7 @@ runUMAP <- function(
     if (isTRUE(verbose)) cli::cli_process_done()
     dimRed(object, dimredName) <- umap
     if (isTRUE(verbose))
-        cli::cli_alert_info("cellMeta variable {.field {dimredName}} is now set as default.")
+        cli::cli_alert_info("{.field DimRed} {.val {dimredName}} is now set as default.")
     return(object)
 }
 
@@ -95,15 +95,12 @@ runUMAP <- function(
 #' By default \code{\link[Rtsne]{Rtsne}} (Barnes-Hut implementation of t-SNE)
 #' method is invoked, while alternative "fftRtsne" method (FFT-accelerated
 #' Interpolation-based t-SNE, using Kluger Lab implementation) is also
-#' supported.
+#' supported. For very large datasets, it is recommended to use
+#' \code{method = "fftRtsne"} due to its efficiency and scalability.
 #'
-#' In order to run fftRtsne (recommended for large datasets), FIt-SNE must be
-#' installed as instructed in detailed
-#' \href{https://github.com/KlugerLab/FIt-SNE}{here}. Include the path to the
-#' cloned FIt-SNE directory as the \code{fitsne.path} parameter, though this is
-#' only necessary for the first call to run \code{runTSNE}. For more detailed
-#' FIt-SNE installation instructions, see the liger repo
-#' \href{https://github.com/welch-lab/liger#readme}{README}.
+#' Extra external installation steps are required for using "fftRtsne" method.
+#' Please consult
+#' \href{https://welch-lab.github.io/liger/articles/installation.html}{detailed guide}.
 #' @param object \linkS4class{liger} object with factorization results.
 #' @param useRaw Whether to use un-aligned cell factor loadings (\eqn{H}
 #' matrices). Default \code{NULL} search for quantile-normalized loadings first
@@ -126,7 +123,7 @@ runUMAP <- function(
 #' \code{runTSNE} with \code{method = "fftRtsne"}. Default \code{NULL}.
 #' @param seed Random seed for reproducibility. Default \code{42}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param use.raw,dims.use,k,use.pca,fitsne.path,rand.seed \bold{Deprecated}.
 #' See Usage section for replacement.
 #' @return The \code{object} where a \code{"TSNE"} variable is updated in the
@@ -147,7 +144,7 @@ runTSNE <- function(
         dimredName = "TSNE",
         fitsnePath = NULL,
         seed = 42,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         # Deprecated coding styles
         k = nDims,
         use.raw = useRaw,
@@ -189,7 +186,7 @@ runTSNE <- function(
     dimRed(object, dimredName) <- tsne
     object@uns$TSNE <- list(method = method)
     if (isTRUE(verbose))
-        cli::cli_alert_info("cellMeta variable {.field {dimredName}} is now set as default.")
+        cli::cli_alert_info("{.field DimRed} {.val {dimredName}} is now set as default.")
     return(object)
 }
 

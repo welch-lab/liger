@@ -1,10 +1,17 @@
-#' Impute the query cell expression matrix
-#' @description Impute query features from a reference dataset using KNN.
+#' Impute the peak counts from gene expression data referring to an ATAC dataset
+#' after integration
+#' @description
+#' This function is designed for creating peak data for a dataset with only gene
+#' expression. This function uses quantile normalized cell factor loading to
+#' find nearest neighbors between cells from the queried dataset (without peak)
+#' and cells from reference dataset (with peak). And then impute the peak for
+#' the former basing on the weight. Therefore, the reference dataset selected
+#' must be of "atac" modality setting.
 #' @param object \linkS4class{liger} object with aligned factor loading computed
 #' in advance.
 #' @param nNeighbors The maximum number of nearest neighbors to search. Default
 #' \code{20}.
-#' @param reference Name of a dataset containing values to impute into query
+#' @param reference Name of a dataset containing peak data to impute into query
 #' dataset(s).
 #' @param queries Names of datasets to be augmented by imputation. Should not
 #' include \code{reference}. Default \code{NULL} uses all datasets except the
@@ -16,7 +23,7 @@
 #' @param scale Logical. Whether to scale but not center the imputed data.
 #' Default \code{TRUE}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Optional arguments to be passed to \code{\link{normalize}} when
 #' \code{norm = TRUE}.
 #' @param knn_k \bold{Deprecated}. See Usage section for replacement.
@@ -44,7 +51,7 @@ imputeKNN <- function(
         weight = TRUE,
         norm = TRUE,
         scale = FALSE,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         ...,
         # Deprecated coding style,
         knn_k = nNeighbors
@@ -152,7 +159,7 @@ imputeKNN <- function(
 #' Peak-gene correlations with p-values below this threshold are considered
 #' significant. Default \code{0.05}.
 #' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
+#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param path_to_coords,genes.list,dist \bold{Deprecated}. See Usage section
 #' for replacement.
 #' @return A sparse matrix with peak names as rows and gene names as columns,
@@ -161,18 +168,23 @@ imputeKNN <- function(
 #' @seealso \code{\link{imputeKNN}}
 #' @export
 #' @examples
-#' bmmc <- normalize(bmmc)
-#' bmmc <- selectGenes(bmmc)
-#' bmmc <- scaleNotCenter(bmmc)
-#' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+#' \donttest{
+#' if (requireNamespace("RcppPlanc", quietly = TRUE) &&
+#'     requireNamespace("GenomicRanges", quietly = TRUE) &&
+#'     requireNamespace("IRanges", quietly = TRUE) &&
+#'     requireNamespace("psych", quietly = TRUE)) {
+#'     bmmc <- normalize(bmmc)
+#'     bmmc <- selectGenes(bmmc)
+#'     bmmc <- scaleNotCenter(bmmc)
 #'     bmmc <- runINMF(bmmc, miniBatchSize = 100)
 #'     bmmc <- quantileNorm(bmmc)
 #'     bmmc <- normalizePeak(bmmc)
 #'     bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
 #'     corr <- linkGenesAndPeaks(
 #'         bmmc, useDataset = "rna",
-#'         pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2")
+#'         pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger")
 #'     )
+#' }
 #' }
 linkGenesAndPeaks <- function(
         object,
@@ -181,7 +193,7 @@ linkGenesAndPeaks <- function(
         useGenes = NULL,
         method = c("spearman", "pearson", "kendall"),
         alpha = 0.05,
-        verbose = getOption("ligerVerbose"),
+        verbose = getOption("ligerVerbose", TRUE),
         # Deprecated coding style
         path_to_coords = pathToCoords,
         genes.list = useGenes,
@@ -349,25 +361,30 @@ linkGenesAndPeaks <- function(
 #' @return No return value. A file located at \code{outputPath} will be created.
 #' @export
 #' @examples
+#' \donttest{
 #' bmmc <- normalize(bmmc)
 #' bmmc <- selectGenes(bmmc)
 #' bmmc <- scaleNotCenter(bmmc)
-#' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+#' if (requireNamespace("RcppPlanc", quietly = TRUE) &&
+#'     requireNamespace("GenomicRanges", quietly = TRUE) &&
+#'     requireNamespace("IRanges", quietly = TRUE) &&
+#'     requireNamespace("psych", quietly = TRUE)) {
 #'     bmmc <- runINMF(bmmc)
 #'     bmmc <- quantileNorm(bmmc)
 #'     bmmc <- normalizePeak(bmmc)
 #'     bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
 #'     corr <- linkGenesAndPeaks(
 #'         bmmc, useDataset = "rna",
-#'         pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2")
+#'         pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger")
 #'     )
 #'     resultPath <- tempfile()
 #'     exportInteractTrack(
 #'         corrMat = corr,
-#'         pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2"),
+#'         pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger"),
 #'         outputPath = resultPath
 #'     )
 #'     head(read.table(resultPath, skip = 1))
+#' }
 #' }
 exportInteractTrack <- function(
         corrMat,
@@ -478,10 +495,10 @@ exportInteractTrack <- function(
 #' current working directory.
 #' @return No return value. A file located at \code{outputPath} will be created.
 #' @name makeInteractTrack-deprecated
-#' @seealso \code{\link{rliger2-deprecated}}, \code{\link{exportInteractTrack}}
+#' @seealso \code{\link{rliger-deprecated}}, \code{\link{exportInteractTrack}}
 NULL
 
-#' @rdname rliger2-deprecated
+#' @rdname rliger-deprecated
 #' @section \code{makeInteractTrack}:
 #' For \code{makeInteractTrack}, use \code{\link{exportInteractTrack}}.
 #' @export

@@ -113,7 +113,7 @@ as.liger.Seurat <- function(
                                    class = c("factor", "character"))
         if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
         datasetVar <- droplevels(datasetVar)
-        raw <- splitRmMiss(raw, datasetVar)
+        raw <- splitRmMiss(raw, datasetVar, rmMiss = FALSE)
     } else {
         names(raw) <- gsub("counts.", "", names(raw))
     }
@@ -137,7 +137,7 @@ as.liger.Seurat <- function(
     for (rd in SeuratObject::Reductions(object)) {
         mat <- object[[rd]][[]]
         colnames(mat) <- seq_len(ncol(mat))
-        cellMeta(lig, rd) <- mat
+        dimRed(lig, rd) <- mat
     }
     return(lig)
 }
@@ -341,29 +341,14 @@ ligerToSeurat <- function(
     }
 
     # Split normal data.frame compatible info and dimReds
-    metadata <- data.frame(row.names = colnames(object))
-    dimReds <- list()
-    for (i in seq_along(cellMeta(object))) {
-        varname <- names(cellMeta(object))[i]
-        var <- cellMeta(object)[[i]]
-        if (is.null(dim(var))) metadata[[varname]] <- var
-        else dimReds[[varname]] <- var
-    }
+    metadata <- .DataFrame.as.data.frame(cellMeta(object))
+    dimReds <- dimReds(object)
     srt <- Seurat::CreateSeuratObject(counts = Assay, assay = assay,
                                       meta.data = metadata)
 
     srt$orig.ident <- orig.ident
     Seurat::Idents(srt) <- idents
 
-    # if (!is.null(data)) {
-    #     srt <- .setSeuratData(srt, layer = "ligerNormData", slot = "data",
-    #                           value = data, assay = assay, denseIfNeeded = FALSE)
-    # }
-    # if (!is.null(scale.data)) {
-    #     srt <- .setSeuratData(srt, layer = "ligerScaleData", slot = "scale.data",
-    #                           value = scale.data, assay = assay,
-    #                           denseIfNeeded = TRUE)
-    # }
     # Attempt to get H.norm primarily. If it is NULL, then turn to H
     h <- getMatrix(object, "H.norm") %||%
         getMatrix(object, "H", returnList = TRUE)
@@ -424,26 +409,47 @@ seuratToLiger <- as.liger.Seurat
 #' }
 convertOldLiger <- function( # nocov start
         object,
-        dimredName = "tsne.coords",
+        dimredName,
         clusterName = "clusters",
         h5FilePath = NULL
 ) {
-    ver120 <- package_version("1.99.0")
-    if (object@version >= ver120) return(object)
-    if (inherits(object@raw.data[[1]], "H5File")) {
-        ldList <- convertOldLiger.H5(object, h5FilePath = h5FilePath)
-    } else {
-        ldList <- convertOldLiger.mem(object)
+    ver1990 <- package_version("1.99.0")
+    if (object@version == ver1990) {
+        return(rliger2_to_rliger_namespace(object, dimredName = dimredName))
     }
+    if (object@version > ver1990) return(object)
+    tryCatch(
+        {
+            if (inherits(object@raw.data[[1]], "H5File")) {
+                ldList <- convertOldLiger.H5(object, h5FilePath = h5FilePath)
+            } else {
+                ldList <- convertOldLiger.mem(object)
+            }
+        },
+        error = function(e) {
+            print(e)
+            cli::cli_alert_danger(
+                "Conversion failed. Please check the error message above."
+            )
+            cli::cli_alert_info(
+                "For 'inconsistent ID' error, please use an old version of {.pkg rliger} and manually fix the rownames/colnames matching."
+            )
+            cli::cli_alert("{.code dimnames()} of raw.data and norm.data must be identical for each dataset.")
+            cli::cli_alert("{.code rownames()} of scale.data and H must be identical to the colnames of raw.data, for each dataset.")
+            cli::cli_alert("{.code colnames()} of scale.data, V and U (if available) must be identical to the var.genes.")
+        }
+    )
+
     cellMeta <- object@cell.data
     varFeatures <- object@var.genes
     cellID <- unlist(lapply(ldList, colnames), use.names = FALSE)
     # 4. Wrap up liger object
     cellMeta <- S4Vectors::DataFrame(cellMeta)
+    oldID <- rownames(cellMeta)
     # TODO: check default prototype of tsne.coords and clusters.
-    dimred <- object@tsne.coords[rownames(cellMeta), , drop = FALSE]
-    colnames(dimred) <- seq_len(ncol(dimred))
-    cellMeta[[dimredName]] <- dimred
+    dimred <- object@tsne.coords[oldID, , drop = FALSE]
+    colnames(dimred) <- paste0(dimredName, "_", seq_len(ncol(dimred)))
+    cellMeta$barcode <- oldID
     cellMeta[[clusterName]] <- object@clusters[rownames(cellMeta)]
     rownames(cellMeta) <- cellID
     hnorm <- object@H.norm
@@ -451,6 +457,9 @@ convertOldLiger <- function( # nocov start
     newObj <- createLiger(ldList, W = t(object@W), H.norm = hnorm,
                           varFeatures = varFeatures, cellMeta = cellMeta,
                           addPrefix = FALSE, removeMissing = FALSE)
+    dimRed(newObj, dimredName) <- dimred
+    defaultCluster(newObj) <- clusterName
+    defaultDimRed(newObj) <- dimredName
     return(newObj)
 }
 
@@ -503,9 +512,9 @@ convertOldLiger.mem <- function(object) {
         if (!is.null(dataList$rawData)) features <- rownames(dataList$rawData)
         else features <- rownames(dataList$normData)
         if (is.null(features)) {
-            cli::cli_alert_danger(
-                "Cannot detect feature names for dataset {.val {d}}. Skipped.")
-            next
+            cli::cli_abort(
+                "Cannot detect feature names for dataset {.val {d}}."
+            )
         }
         ftPassing <- .checkIDIdentical(
             ref = features,
@@ -536,7 +545,8 @@ convertOldLiger.mem <- function(object) {
         }
         # 3. Construct ligerDataset objects for each dataset
         ldList[[d]] <- do.call(createLigerDataset, dataList)
-        colnames(ldList[[d]]) <- paste0(d, "_", colnames(ldList[[d]]))
+        if (!all(startsWith(colnames(ldList[[d]]), d)))
+            colnames(ldList[[d]]) <- paste0(d, "_", colnames(ldList[[d]]))
     }
     return(ldList)
 }
@@ -679,7 +689,7 @@ convertOldLiger.H5 <- function(object, h5FilePath = NULL) {
             rowPassing[slot] <- FALSE
         }
     }
-    return(unlist(list(colPassing, rowPassing)))
+    return(c(colPassing, rowPassing))
 }
 
 .combinePassingSignal <- function(slotNames, ...) {
@@ -700,7 +710,7 @@ convertOldLiger.H5 <- function(object, h5FilePath = NULL) {
             return(TRUE)
         },
         error = function(e) {
-            cli::cli_alert_warning("Skipped slot {name} which is not available.")
+            cli::cli_alert_info("Skipped slot {name} which is not available.")
             return(FALSE)
         },
         warining = function(w) {

@@ -31,7 +31,7 @@ Large object are summarized to short string.}
 snapshot when command is operated.}
 
 \item{\code{ligerVersion}}{Character string converted from
-\code{packageVersion("rliger2")}.}
+\code{packageVersion("rliger")}.}
 
 \item{\code{dependencyVersion}}{Named character vector of version number, if any
 dependency library has a chance to be included by the function. A

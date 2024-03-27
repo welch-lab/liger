@@ -61,7 +61,6 @@ H5Apply <- function(
                                        total = numChunks, clear = FALSE)
         # pb <- utils::txtProgressBar(0, numChunks, style = 3)
     for (i in seq(numChunks)) {
-        Sys.sleep(0.1)
         start <- (i - 1)*chunkSize + 1
         end <- if (i*chunkSize > ncol(object)) ncol(object) else i*chunkSize
         colptrStart <- start
@@ -179,11 +178,13 @@ safeH5Create <- function(object,
 #' @rdname restoreH5Liger
 #' @export
 #' @examples
-#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger2")
-#' lig <- createLiger(list(ctrl = h5Path))
+#' h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
+#' tempPath <- tempfile(fileext = ".h5")
+#' file.copy(from = h5Path, to = tempPath)
+#' lig <- createLiger(list(ctrl = tempPath))
 #' # Now it is actually an invalid object! which is equivalent to what users
 #' # will get with `saveRDS(lig, "object.rds"); lig <- readRDS("object.rds")``
-#' lig <- closeAllH5(lig)
+#' closeAllH5(lig)
 #' lig <- restoreH5Liger(lig)
 restoreH5Liger <- function(object, filePath = NULL) {
     if (!inherits(object, "liger") && !inherits(object, "ligerDataset")) {
@@ -298,16 +299,34 @@ restoreOnlineLiger <- function(object, file.path = NULL) {
 #' of the currect R session, the HDF5 files has to be closed in order to be
 #' available to other processes.
 #' @param object liger object.
-#' @return \code{object} with links closed.
+#' @return Nothing is returned.
 #' @export
+#' @rdname closeAllH5
 closeAllH5 <- function(object) {
-    if (!isH5Liger(object)) return(object)
+    UseMethod("closeAllH5", object)
+}
+
+#' @rdname closeAllH5
+#' @export
+#' @method closeAllH5 liger
+closeAllH5.liger <- function(object) {
     for (dn in names(object)) {
-        if (!isH5Liger(object, dn)) next
-        h5f <- getH5File(object, dn)
-        h5f$close_all()
+        ld <- dataset(object, dn)
+        closeAllH5(ld)
     }
-    return(object)
+}
+
+#' @rdname closeAllH5
+#' @export
+#' @method closeAllH5 ligerDataset
+closeAllH5.ligerDataset <- function(object) {
+    h5file <- getH5File(object)
+    if (!is.null(h5file)) {
+        path <- h5file$filename
+        cli::cli_alert_info("Closing H5 file: {.file {path}}")
+        h5file$close_all()
+    }
+    return(invisible(NULL))
 }
 
 .H5GroupToH5SpMat <- function(obj, dims) {
@@ -323,3 +342,197 @@ closeAllH5 <- function(object) {
 #     RcppPlanc::H5Mat(filename = obj$get_filename(),
 #                      dataPath = obj$get_obj_name())
 # }
+
+
+
+
+
+#' Write in-memory data into H5 file
+#' @rdname writeH5
+#' @description
+#' This function writes in-memory data into H5 file by default in 10x cellranger
+#' HDF5 output format. The main goal of this function is to allow users to
+#' integrate large H5-based dataset, that cannot be fully loaded into memory,
+#' with other data already loaded in memory using \code{\link{runOnlineINMF}}.
+#' In this case, users can write the smaller in-memory data to H5 file instead
+#' of loading subset of the large H5-based dataset into memory, where
+#' information might be lost.
+#'
+#' Basing on the goal of the whole workflow, the data will always be written
+#' in a CSC matrix format and colnames/rownames are always required.
+#'
+#' The default method coerces the input to a \linkS4class{dgCMatrix}. Methods
+#' for other container classes tries to extract proper data and calls the
+#' default method.
+#' @param x An object with in-memory data to be written into H5 file.
+#' @param file A character string of the file path to be written.
+#' @param overwrite Logical, whether to overwrite the file if it already exists.
+#' Default \code{FALSE}.
+#' @param indicesPath,indptrPath,dataPath The paths inside the H5 file where
+#' the \linkS4class{dgCMatrix} constructor \code{i}, \code{p}, and \code{x} will
+#' be written to, respectively. Default using cellranger convention
+#' \code{"matrix/indices"}, \code{"matrix/indptr"}, and \code{"matrix/data"}.
+#' @param shapePath The path inside the H5 file where the shape of the matrix
+#' will be written to. Default \code{"matrix/shape"}.
+#' @param barcodesPath The path inside the H5 file where the barcodes/colnames
+#' will be written to. Default \code{"matrix/barcodes"}. Skipped if the object
+#' does not have colnames.
+#' @param featuresPath The path inside the H5 file where the features/rownames
+#' will be written to. Default \code{"matrix/features/name"}. Skipped if the
+#' object does not have rownames.
+#' @param useDatasets For liger method. Names or indices of datasets to be
+#' written to H5 files. Required.
+#' @param ... Arguments passed to other S3 methods.
+#' @export
+#' @seealso
+#' \href{https://www.10xgenomics.com/cn/support/software/cell-ranger/latest/analysis/outputs/cr-outputs-h5-matrices}{10X cellranger H5 matrix detail}
+#' @return Nothing is returned. H5 file will be created on disk.
+#' @examples
+#' raw <- rawData(pbmc, "ctrl")
+#' writeH5(raw, tempfile(pattern = "ctrl_", fileext = ".h5"))
+writeH5 <- function(x, file, ...) {
+    UseMethod("writeH5", x)
+}
+
+#' @rdname writeH5
+#' @export
+#' @method writeH5 default
+writeH5.default <- function(x, file, ...) {
+    x <- methods::as(x, "CsparseMatrix")
+    writeH5(x, file, ...)
+}
+
+#' @rdname writeH5
+#' @export
+#' @method writeH5 dgCMatrix
+writeH5.dgCMatrix <- function(
+        x,
+        file,
+        overwrite = FALSE,
+        indicesPath = "matrix/indices",
+        indptrPath = "matrix/indptr",
+        dataPath = "matrix/data",
+        shapePath = "matrix/shape",
+        barcodesPath = "matrix/barcodes",
+        featuresPath = "matrix/features/name",
+        ...
+) {
+    if (file.exists(file)) {
+        if (isFALSE(overwrite)) {
+            cli::cli_abort(
+                c("x" = "File already exists at: {.file {normalizePath(file)}}.",
+                  "i" = "Use {.code overwrite = TRUE} to overwrite.")
+            )
+        } else {
+            file.remove(file)
+        }
+    }
+
+    if (any(sapply(dimnames(x), is.null))) {
+        cli::cli_abort("Both rownames and colnames are required.")
+    }
+
+    dataType <- typeof(x@x)
+    dataDtype <- switch(
+        dataType,
+        double = "double",
+        integer = "uint32_t",
+        cli::cli_abort(
+            "Unsupported data type in the sparse matrix: {.val {dataType}}"
+        )
+    )
+    h5file <- hdf5r::H5File$new(file, mode = "w")
+    safeH5Create(
+        object = h5file,
+        dataPath = indicesPath,
+        dims = length(x@i),
+        dtype = "uint32_t",
+        chunkSize = 4096
+    )
+    safeH5Create(
+        object = h5file,
+        dataPath = indptrPath,
+        dims = length(x@p),
+        dtype = "uint32_t",
+        chunkSize = 2048
+    )
+    safeH5Create(
+        object = h5file,
+        dataPath = dataPath,
+        dims = length(x@x),
+        dtype = dataDtype,
+        chunkSize = 4096
+    )
+    safeH5Create(
+        object = h5file,
+        dataPath = shapePath,
+        dims = 2,
+        dtype = "uint64_t"
+    )
+    h5file[[indicesPath]][] <- x@i
+    h5file[[indptrPath]][] <- x@p
+    h5file[[dataPath]][] <- x@x
+    h5file[[shapePath]][] <- dim(x)
+
+    safeH5Create(
+        object = h5file,
+        dataPath = barcodesPath,
+        dims = ncol(x),
+        dtype = "char"
+    )
+    h5file[[barcodesPath]][] <- colnames(x)
+
+    safeH5Create(
+        object = h5file,
+        dataPath = featuresPath,
+        dims = nrow(x),
+        dtype = "char"
+    )
+    h5file[[featuresPath]][] <- rownames(x)
+
+    h5file$close()
+    invisible(NULL)
+}
+
+#' @rdname writeH5
+#' @export
+#' @method writeH5 ligerDataset
+writeH5.ligerDataset <- function(x, file, ...) {
+    raw <- rawData(x)
+    if (is.null(raw)) {
+        cli::cli_abort("No {.code rawData(x)} available.")
+    }
+    writeH5(raw, file, ...)
+}
+
+#' @rdname writeH5
+#' @export
+#' @method writeH5 liger
+writeH5.liger <- function(x, file, useDatasets, ...) {
+    useDatasets <- .checkUseDatasets(x, useDatasets)
+    file <- .checkArgLen(file, n = length(useDatasets), repN = FALSE,
+                         class = "character", .stop = TRUE)
+    for (i in seq_along(useDatasets)) {
+        if (isH5Liger(x, i)) {
+            cli::cli_alert_warning(
+                "Dataset {.val {useDatasets[i]}} is H5 based, file located at: {.file {getH5File(x, useDatasets[i])$filename}}. Skipped."
+            )
+            next
+        }
+        raw <- rawData(x, useDatasets[i])
+        if (is.null(raw)) {
+            cli::cli_abort("No {.code rawData(x, '{useDatasets[i]}')} available.")
+        }
+        tryCatch(
+            expr = {
+                writeH5(raw, file[i], ...)
+            },
+            error = function(e) {
+                cli::cli_alert_danger("Failed to write dataset {.val {useDatasets[i]}} to H5 file at {.file {file[i]}}. Continuing with the others.")
+                msg <- format(e)
+                cli::cli_alert_danger("Call {.code {msg[['call']]}}: {msg[['message']]}")
+            }
+        )
+    }
+    invisible(NULL)
+}

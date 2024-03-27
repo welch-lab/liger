@@ -1,10 +1,14 @@
 #' Perform consensus iNMF on scaled datasets
 #' @description
+#' \bold{NOT STABLE} - This is an experimental function and is subject to change.
+#'
 #' Performs consensus integrative non-negative matrix factorization (c-iNMF)
-#' to return factorized \eqn{H}, \eqn{W}, and \eqn{V} matrices. We run the
-#' regular iNMF multiple times with different random starts, and then take the
-#' consensus of frequently appearing factors from gene loading matrices, \eqn{W}
-#' and \eqn{V}. The cell factor loading \eqn{H} matrices are eventually solved
+#' to return factorized \eqn{H}, \eqn{W}, and \eqn{V} matrices. In order to
+#' address the non-convex nature of NMF, we built on the cNMF method proposed by
+#' D. Kotliar, 2019. We run the regular iNMF multiple times with different
+#' random starts, and cluster the pool of all the factors in \eqn{W} and
+#' \eqn{V}s and take the consensus of the clusters of the largest population.
+#' The cell factor loading \eqn{H} matrices are eventually solved
 #' with the consensus \eqn{W} and \eqn{V} matrices.
 #'
 #' Please see \code{\link{runINMF}} for detailed introduction to the regular
@@ -74,11 +78,13 @@
 #' Dylan Kotliar and et al., Identifying gene expression programs of cell-type
 #' identity and cellular activity with single-cell RNA-Seq, eLife, 2019
 #' @examples
+#' \donttest{
 #' pbmc <- normalize(pbmc)
 #' pbmc <- selectGenes(pbmc)
 #' pbmc <- scaleNotCenter(pbmc)
 #' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
 #'     pbmc <- runCINMF(pbmc)
+#' }
 #' }
 runCINMF <- function(
         object,
@@ -255,7 +261,7 @@ runCINMF.Seurat <- function(
         cli::cli_abort(
             "Package {.pkg RcppPlanc} is required for c-iNMF integration.
         Please install it by command:
-        {.code devtools::install_github('welch-lab/RcppPlanc')}") # nocov end
+        {.code install.packages('RcppPlanc', repos = 'https:/welch-lab.r-universe.dev')}") # nocov end
     if (nRandomStarts <= 1) {
         cli::cli_abort("{.var nRandomStarts} must be greater than 1 for taking the consensus.")
     }
@@ -332,6 +338,26 @@ runCINMF.Seurat <- function(
     # }
 
     # Attempt 4 ####
+    # nNeighbor <- round(rho * nRandomStarts)
+    # geneLoadings <- list(Reduce(cbind, Ws))
+    # for (i in seq_along(object)) {
+    #     geneLoadings[[i + 1]] <- Reduce(cbind, Vs[[i]])
+    # }
+    # geneLoadings <- lapply(geneLoadings, colNormalize_dense_cpp, L = 2)
+    # # geneLoadings is a list, each element is a ngene by (nFactor * nRandomStart) matrix
+    # # The first is for W, the rest are for Vs
+    # selection <- factor_cluster_sel(geneLoadings, nNeighbor = nNeighbor,
+    #                                 minWeight = 0.6, k = k, resolution = 0.2)
+    # W <- geneLoadings[[1]][, selection$idx]
+    # W <- colAggregateMedian_dense_cpp(W, group = selection$cluster, n = k)
+    # W <- colNormalize_dense_cpp(W, L = 1)
+    # for (i in seq_along(Vs)) {
+    #     V <- geneLoadings[[i + 1]][, selection$idx]
+    #     V <- colAggregateMedian_dense_cpp(V, group = selection$cluster, n = k)
+    #     Vs[[i]] <- colNormalize_dense_cpp(V, L = 1)
+    # }
+
+    # Attempt 5
     nNeighbor <- round(rho * nRandomStarts)
     geneLoadings <- list(Reduce(cbind, Ws))
     for (i in seq_along(object)) {
@@ -350,81 +376,53 @@ runCINMF.Seurat <- function(
         V <- colAggregateMedian_dense_cpp(V, group = selection$cluster, n = k)
         Vs[[i]] <- colNormalize_dense_cpp(V, L = 1)
     }
+    # Vs <- lapply(seq_along(object), function(i) {
+    #     matrix(stats::runif(nrow(W) * k, 0, 2), nrow(W), k)
+    # })
+    Hs <- lapply(seq_along(object), function(i) {
+        matrix(stats::runif(ncol(object[[i]]) * k, 0, 2), ncol(object[[i]]), k)
+    })
 
     if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
 
-    msg <- "Solving the last ANLS iterations"
+    msg <- "ANLS optimization with consensus fixed"
     if (isTRUE(verbose)) cliID <- cli::cli_process_start(msg = msg)
-    for (i in seq_along(object)) {
-        Hs[[i]] <- inmf_solveH(NULL, W, Vs[[i]], object[[i]], lambda, nCores = nCores)
+    for (iter in seq_len(nIteration*2)) {
+        for (i in seq_along(object)) {
+            Hs[[i]] <- inmf_solveH(NULL, W, Vs[[i]], object[[i]], lambda, nCores = nCores)
+        }
+        for (i in seq_along(object)) {
+            Vs[[i]] <- inmf_solveV(Hs[[i]], W, NULL, object[[i]], lambda, nCores = nCores)
+        }
     }
+
     # for (i in seq_along(object)) {
     #     Vs[[i]] <- inmf_solveV(Hs[[i]], W, NULL, object[[i]], lambda, nCores = nCores)
     # }
-    # objErr <- sum(sapply(seq_along(object), function(i)
-    #     inmf_objErr_i(H = Hs[[i]], W = W, V = Vs[[i]], E = object[[i]],
-    #                   lambda = lambda)
-    # ))
-    # if (isTRUE(verbose))
-    #     cli::cli_process_done(id = cliID, msg_done = paste(msg, " ... objective error: {objErr}"))
-
-    # factors <- paste0("Factor_", seq(k))
-    # dimnames(W) <- list(features, factors)
-    # for (i in seq_along(object)) {
-    #     dimnames(Hs[[i]]) <- list(barcodeList[[i]], factors)
-    #     Hs[[i]] <- t(Hs[[i]])
-    #     dimnames(Vs[[i]]) <- list(features, factors)
-    # }
-    # names(Hs) <- names(Vs) <- names(object)
-    # result <- list(W = W, H = Hs, V = Vs, objErr = objErr)
-    # return(result)
-
-    out <- .runINMF.list(object, k = k, lambda = lambda, nIteration = 1,
-                         HInit = Hs, WInit = W, VInit = Vs, verbose = FALSE)
+    objErr <- sum(sapply(seq_along(object), function(i)
+        inmf_objErr_i(H = Hs[[i]], W = W, V = Vs[[i]], E = object[[i]],
+                      lambda = lambda)
+    ))
     if (isTRUE(verbose))
-        cli::cli_process_done(id = cliID, msg_done = paste(msg, " ... objective error: {out$objErr}"))
-    return(out)
+        cli::cli_process_done(id = cliID, msg_done = paste(msg, " ... objective error: {objErr}"))
+
+    factors <- paste0("Factor_", seq(k))
+    dimnames(W) <- list(features, factors)
+    for (i in seq_along(object)) {
+        dimnames(Hs[[i]]) <- list(barcodeList[[i]], factors)
+        Hs[[i]] <- t(Hs[[i]])
+        dimnames(Vs[[i]]) <- list(features, factors)
+    }
+    names(Hs) <- names(Vs) <- names(object)
+    result <- list(W = W, H = Hs, V = Vs, objErr = objErr)
+    return(result)
+
+    # out <- .runINMF.list(object, k = k, lambda = lambda, nIteration = 1,
+    #                      HInit = Hs, WInit = W, VInit = Vs, verbose = FALSE)
+    # if (isTRUE(verbose))
+    #     cli::cli_process_done(id = cliID, msg_done = paste(msg, " ... objective error: {out$objErr}"))
+    # return(out)
 }
-
-
-# takeConsensus <- function(matList, rho = 0.3, tao = 0.1) {
-#     ## According to cNMF method.
-#     ## G - The program matrix. what we call W or V
-#     ## rho - fraction parameter to set number of nearest neighbors to look at
-#     ## tao - distance threshold to filter out factors
-#
-#     ## matList are matrices of dimensionality gene x factor
-#     # Step 1: Concatenate and l2 normalize
-#     ## R - a number of replicates
-#     G_R <- Reduce(cbind, matList) # ngene by (nFactor * nRandomStart)
-#     G_R <- colNormalize_dense_cpp(G_R, L = 2)
-#
-#     # Step 2: Find kNN matching for each component (factor)
-#     # and filter by mean distance against the kNN of each
-#     nNeighbor <- round(rho * length(matList))
-#     knn <- RANN::nn2(t(G_R), k = nNeighbor + 1)
-#
-#     # `select_factor_cpp` is a C++ function that returns the indices of the
-#     # factors that are selected by examining whether the mean euclidean distance
-#     # to its NNs is less than the threshold `tao`.
-#     selectedIdx <- rowMeans(knn$nn.dist[,2:(nNeighbor + 1)]) < tal
-#     # selectedIdx <- select_factor_cpp(all_data = G_R,
-#     #                                  knn = knn$nn.idx - 1,
-#     #                                  threshold = tao)
-#
-#     G_R <- G_R[, selectedIdx] # genes by selected factors
-#     if (ncol(G_R) < ncol(matList[[1]])) {
-#         cli::cli_abort(c("Too few factors are selected from the pool to take the consensus.",
-#                          "i" = "Please try: ",
-#                          "*" = "a larger {.var tao} for loosen threshold",
-#                          "*" = "a larger {.var nRandomStarts} for more replicates to be used."))
-#     }
-#     # Step 3: Kmeans clustering to get the k consensus
-#     cluster <- stats::kmeans(t(G_R), centers = ncol(matList[[1]]))$cluster
-#     G_consensus <- colAggregateMedian_dense_cpp(x = G_R, group = cluster - 1, n = ncol(matList[[1]]))
-#     G_consensus <- colNormalize_dense_cpp(G_consensus, L = 1)
-#     return(G_consensus)
-# }
 
 # takeConsensus2 <- function(matList, rho = 0.3, tao = 0.1) {
 #     # 2nd attempt of methods
@@ -480,13 +478,13 @@ inmf_solveH <- function(H, W, V, E, lambda, nCores = 2L) {
     return(t(H)) # return cell x factor
 }
 
-# inmf_solveV <- function(H, W, V, E, lambda, nCores = 2L) {
-#     HtH <- t(H) %*% H
-#     CtC <- (1 + lambda) * HtH
-#     CtB <- t(H) %*% t(E) - HtH %*% t(W)
-#     V <- RcppPlanc::bppnnls_prod(CtC, as.matrix(CtB), nCores = nCores)
-#     return(t(V))
-# }
+inmf_solveV <- function(H, W, V, E, lambda, nCores = 2L) {
+    HtH <- t(H) %*% H
+    CtC <- (1 + lambda) * HtH
+    CtB <- t(H) %*% t(E) - HtH %*% t(W)
+    V <- RcppPlanc::bppnnls_prod(CtC, as.matrix(CtB), nCores = nCores)
+    return(t(V))
+}
 
 # inmf_solveW <- function(Hs, W, Vs, Es, lambda, nCores = 2L) {
 #     CtC <- matrix(0, ncol(Vs[[1]]), ncol(Vs[[1]]))
@@ -500,73 +498,31 @@ inmf_solveH <- function(H, W, V, E, lambda, nCores = 2L) {
 #     return(t(W))
 # }
 
-# inmf_objErr_i <- function(H, W, V, E, lambda) {
-#     # Objective error function was originally stated as:
-#     # obj_i = ||E_i - (W + V_i)*H_i||_F^2 + lambda * ||V_i*H_i||_F^2
-#     # (Use caution with the matrix dimensionality, as we might transpose them
-#     # occasionally in different implementation.)
-#     #
-#     # Let L = W + V
-#     # ||E - LH||_F^2 = ||E||_F^2 - 2*Tr(Ht*(Et*L)) + Tr((Lt*L)*(Ht*H))
-#     # ||V*H||_F^2 = Tr((Vt*V)*(Ht*H))
-#     # This improves the performance in both speed and memory usage.
-#     L <- W + V
-#     sqnormE <- Matrix::norm(E, "F")^2
-#     LtL <- t(L) %*% L
-#     HtH <- t(H) %*% H
-#     TrLtLHtH <- sum(diag(LtL %*% HtH))
-#     EtL <- t(E) %*% L
-#     TrHtEtL <- sum(Matrix::diag(t(H) %*% EtL))
-#     VtV <- t(V) %*% V
-#     TrVtVHtH <- sum(diag(VtV %*% HtH))
-#     obj <- sqnormE - 2 * TrHtEtL + TrLtLHtH + lambda * TrVtVHtH
-#     return(obj)
-# }
+inmf_objErr_i <- function(H, W, V, E, lambda) {
+    # Objective error function was originally stated as:
+    # obj_i = ||E_i - (W + V_i)*H_i||_F^2 + lambda * ||V_i*H_i||_F^2
+    # (Use caution with the matrix dimensionality, as we might transpose them
+    # occasionally in different implementation.)
+    #
+    # Let L = W + V
+    # ||E - LH||_F^2 = ||E||_F^2 - 2*Tr(Ht*(Et*L)) + Tr((Lt*L)*(Ht*H))
+    # ||V*H||_F^2 = Tr((Vt*V)*(Ht*H))
+    # This improves the performance in both speed and memory usage.
+    L <- W + V
+    sqnormE <- Matrix::norm(E, "F")^2
+    LtL <- t(L) %*% L
+    HtH <- t(H) %*% H
+    TrLtLHtH <- sum(diag(LtL %*% HtH))
+    EtL <- t(E) %*% L
+    TrHtEtL <- sum(Matrix::diag(t(H) %*% EtL))
+    VtV <- t(V) %*% V
+    TrVtVHtH <- sum(diag(VtV %*% HtH))
+    obj <- sqnormE - 2 * TrHtEtL + TrLtLHtH + lambda * TrVtVHtH
+    return(obj)
+}
 
-
-# cluster_sel <- function(
-#         W,
-#         nNeighbor = 3,
-#         k = 20,
-#         resolution = 0.8
-# ) {
-#     knn <- RANN::nn2(t(W), k = nNeighbor + 1)
-#     edges <- numeric()
-#     for (i in 1:nrow(knn$nn.idx)) {
-#         for (j in 2:(nNeighbor + 1)) {
-#             edges <- c(edges, i, knn$nn.idx[i, j])
-#         }
-#     }
-#     weights <- numeric()
-#     for (i in 1:nrow(knn$nn.idx)) {
-#         for (j in 2:(nNeighbor + 1)) {
-#             weights <- c(weights, knn$nn.dist[i, j])
-#         }
-#     }
-#     weights <- exp(-weights/0.5)
-#     graph <- igraph::graph(edges, directed = FALSE)
-#     cluster <- clusterGraph(graph, weights, resolution, k)
-#     select <- names(sort(table(cluster), decreasing = TRUE))[1:k]
-#     idx <- cluster %in% select
-#     cluster <- cluster[cluster %in% select]
-#     cluster <- as.integer(factor(cluster)) - 1L
-#     return(list(idx = idx, cluster = cluster))
-# }
-
-# clusterGraph <- function(graph, weights, resolution, minCluster) {
-#     cluster <- igraph::cluster_leiden(graph, resolution_parameter = resolution,
-#                                       weights = weights, objective_function = "mod")
-#     cluster <- cluster$membership
-#     if (length(unique(cluster)) <= minCluster) {
-#         cluster <- clusterGraph(graph, weights, resolution + 0.1, minCluster)
-#     }
-#     return(cluster)
-# }
-
-
-
-factor_cluster_sel <- function(geneLoadings, nNeighbor = 3, minWeight = 0.6, k = 20,
-                               resolution = 0.2) {
+factor_cluster_sel <- function(geneLoadings, nNeighbor = 3, minWeight = 0.6,
+                               k = 20, resolution = 0.2) {
     graphList <- lapply(geneLoadings, function(w) {
         knn <- RANN::nn2(t(w), k = nNeighbor + 1)
         target <- as.integer(t(knn$nn.idx))

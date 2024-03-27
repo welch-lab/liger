@@ -3,7 +3,7 @@
 #' @importFrom rlang .data %||%
 #' @importFrom methods new show
 #' @importFrom utils .DollarNames
-#' @useDynLib rliger2, .registration = TRUE
+#' @useDynLib rliger, .registration = TRUE
 NULL
 
 #' @importFrom magrittr %>%
@@ -75,6 +75,6 @@ scPalette <- c('#E41A1C', '#377EB8', '#4DAF4A', '#FFCF00', '#aa47b9', '#e67c14',
 }
 
 .onUnload <- function(libpath) {
-    library.dynam.unload("rliger2", libpath)
+    library.dynam.unload("rliger", libpath)
     return(invisible(NULL))
 }

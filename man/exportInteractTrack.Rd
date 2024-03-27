@@ -34,24 +34,29 @@ which is compatible with \href{https://genome.ucsc.edu/cgi-bin/hgCustom}{UCSC
 Genome Browser}.
 }
 \examples{
+\donttest{
 bmmc <- normalize(bmmc)
 bmmc <- selectGenes(bmmc)
 bmmc <- scaleNotCenter(bmmc)
-if (requireNamespace("RcppPlanc", quietly = TRUE)) {
+if (requireNamespace("RcppPlanc", quietly = TRUE) &&
+    requireNamespace("GenomicRanges", quietly = TRUE) &&
+    requireNamespace("IRanges", quietly = TRUE) &&
+    requireNamespace("psych", quietly = TRUE)) {
     bmmc <- runINMF(bmmc)
     bmmc <- quantileNorm(bmmc)
     bmmc <- normalizePeak(bmmc)
     bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
     corr <- linkGenesAndPeaks(
         bmmc, useDataset = "rna",
-        pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2")
+        pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger")
     )
     resultPath <- tempfile()
     exportInteractTrack(
         corrMat = corr,
-        pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger2"),
+        pathToCoords = system.file("extdata/hg19_genes.bed", package = "rliger"),
         outputPath = resultPath
     )
     head(read.table(resultPath, skip = 1))
+}
 }
 }

@@ -1,7 +1,7 @@
 ---
 title: "Install LIGER with R"
 author: "Yichen Wang"
-date: "2023-11-05"
+date: "2024-03-20"
 output: 
   html_document:
     toc: 3
@@ -22,22 +22,32 @@ To install the latest stable release, please run the following command in R cons
 install.packages("rliger")
 ```
 
-## Lastest developmental version
+Besides, we now move the core implementation of iNMF related algorithms to a separate package [RcppPlanc](https://github.com/welch-lab/RcppPlanc), with decent performance improvement. It **must** be installed for performing integration analysis. We currently host it on [R-universe](https://welch-lab.r-universe.dev/RcppPlanc) as we are actively submitting it to CRAN. Please run the following command in R console to install it.
 
-The developmental versions are accessible from GitHub. We are currently contributing to the repository "mvfki/liger" in branch "newObj".
+```{R}
+install.packages("RcppPlanc", repos = "https://welch-lab.r-universe.dev")
+```
+
+## Building from source
+
+The developmental versions as well as source version of the previous versions are accessible from GitHub. To install the latest version from GitHub, please run the following command in R console:
 
 ```{R}
 if (!requireNamespace("devtools")) install.packages("devtools")
-devtools::install_github("mvfki/liger@newObj")
+    devtools::install_github("welch-lab/liger")
 ```
 
-If you encounter issues when building from GitHub (source), please see below sections for details about some dependencies.
+If you still need to work with the previous version (1.0.1):
 
-**Please note that the latest version (>=1.9.9) is massively updated compared to prior versions, and functions are not directly compatible with the old version objects which users might possess. Please use `readLiger()` to load old RDS files or `convertOldLiger()` to convert a loaded object into the up-to-date structure. You might need to be careful when overwriting existing analysis because we don't provide methods to convert new the structure backwards.**
+```{R}
+devtools::install_github("welch-lab/liger", ref = "v1.0.1")
+```
+
+If you encounter issues when building from source, please see below sections for details about some dependencies.
+
+**Please note that version 2.0.0 is massively updated compared to prior versions, and functions are not directly compatible with liger objects created with the old versions which users might possess. Please use `readLiger()` to load old RDS files or `convertOldLiger()` to convert a loaded object into the up-to-date structure. You might need to be careful when overwriting existing analysis because we don't provide methods to convert new the structure backwards.**
 
 ### Compiler setup
-
-Installation from CRAN is easy because pre-compiled binaries are available for Windows and MacOS. However, a few additional steps are required to install from source on MacOS/Windows.
 
 Windows users will need to install [Rtools](https://cran.r-project.org/bin/windows/Rtools/) which can be downloaded from CRAN. After downloading it, open the file and follow the prompt to install.
 
@@ -49,52 +59,66 @@ HDF5 library is required for interacting with H5 files. It can be installed via 
 
 | System                                    | Command
 |:------------------------------------------|:---------------------------------|
-|OS X (using Homebrew or Conda)         | `brew install hdf5` or `conda install -c anaconda hdf5`
+|macOS (using Homebrew or Conda)         | `brew install hdf5` or `conda install -c anaconda hdf5`
 |Debian-based systems (including Ubuntu) | `sudo apt-get install libhdf5-dev`
 |Systems supporting yum and RPMs        | `sudo yum install hdf5-devel`
 |Windows | Go to [HDF5 website](https://www.hdfgroup.org/downloads/hdf5/) and download the proper installer
 
 ### Installing RcppPlanc
 
-[RcppPlanc](https://github.com/welch-lab/RcppPlanc) is an extension R package built basing on [Planc](https://github.com/ramkikannan/planc). We implemented highly optimized iNMF algorithm and its variants here for the new version upgrade. It can be obtained also from CRAN with:
+[RcppPlanc](https://github.com/welch-lab/RcppPlanc) is an extension R package built basing on [Planc](https://github.com/ramkikannan/planc). We implemented highly optimized iNMF algorithm and its variants here for the new version upgrade. To install it from source:
 
 ```{R}
-install.packages("RcppPlanc")
+devtools::install_github("welch-lab/RcppPlanc")
 ```
 
-For latest developmental version, please refer to [RcppPlanc GitHub repository](https://github.com/welch-lab/RcppPlanc) for detail.
+Please refer to [RcppPlanc GitHub repository](https://github.com/welch-lab/RcppPlanc) for detail and more support.
 
-### Installing Flt-SNE
+### Installing FIt-SNE
 
-For dimensionality reduction, we have options of UMAP and t-SNE. For UMAP, we depend on "uwot" which is readily scalable with large datasets. For t-SNE, we by default use "Rtsne", which is not scalable for large datasets. We allow using another implementation of t-SNE, namingly Flt-SNE, for efficient computation. Flt-SNE is not distributed with the package or CRAN, thus users need to install it following steps below.
+For dimensionality reduction, we have options of UMAP and t-SNE. For UMAP, we depend on *uwot* which is readily scalable with large datasets. For t-SNE, we by default use *Rtsne*, which is not scalable for large datasets. We allow using another implementation of t-SNE, namingly FIt-SNE, for efficient computation. FIt-SNE is not distributed with the package or CRAN, thus users need to install it following steps below.
+
+#### 1. Create a directory fo organizing the source code
+
+```{bash}
+cd path/you/need
+mkdir FItSNE_local
+```
 
 #### 1. Install FFTW library.
 
-Download FFTW from [here](http://www.fftw.org/). For UNIX like users, run the following command in terminal.
+Download FFTW from [here](http://www.fftw.org/). For UNIX like users, run the following command in terminal. The following commands in terminal show how to locally install the library of version 3.3.10 as this tutorial is written down. You can check their official website out if an update is available. You can simply replace the version number in the URL and the file name to update the installation.
 
 ```{bash}
-tar -xvzf  fftw-x.x.x.tar.gz
-cd fftw-x.x.x.tar.gz
-./configure
+cd FItSNE_local
+curl ftp://ftp.fftw.org/pub/fftw/fftw-3.3.10.tar.gz -o fftw-3.3.10.tar.gz
+tar -xvzf  fftw-3.3.10.tar.gz
+cd fftw-3.3.10
+./configure --prefix=`pwd`
 make
-make install
+make install prefix=`pwd`
 ```
 
-#### 2. Install Flt-SNE
+Here the FFTW library is installed in the directory where the source code is located. You can change the part ``pwd`` to any other path (no quotes needed) or even remove the `--prefix` token to globally install the library if you do have the root access. A folder `lib` with files named by `libfftw3*` must be presented at current location.
 
-`cd` to a desired location, and run
+#### 2. Install FIt-SNE
+
+We next download FIt-SNE from GitHub and compile the part we need for the R wrapper functionality.
 
 ```{bash}
+cd ../ # back to FItSNE_local
 git clone https://github.com/KlugerLab/FIt-SNE.git
 cd FIt-SNE
-g++ -std=c++11 -O3  src/sptree.cpp src/tsne.cpp src/nbodyfft.cpp  -o bin/fast_tsne -pthread -lfftw3 -lm
+g++ -std=c++11 -O3  src/sptree.cpp src/tsne.cpp src/nbodyfft.cpp -o bin/fast_tsne -pthread -L../fftw-3.3.10/lib -lfftw3 -lm
 pwd
 ```
 
+A folder `bin` with a file named `fast_tsne` must be presented at current location. The command `pwd` shows the location to the binary and you will need the printed path for the next step.
+
 #### 3. Run t-SNE with Flt-SNE
 
-Now, we've had the binary compiled, and command `pwd` shows the location to the binary. Then back to an R LIGER analysis, the following command can be used to invoke the binary.
+Now, we've had the binary compiled, and command `pwd` shows the location to the binary. Then back to an R LIGER analysis, the following command can be used to invoke the binary. Just simply pass a string containing what `pwd` shows to the argument `fitsnePath` in `runTSNE()` function and switch `method = "fftRtsne"`.
 
 ```{R}
-ligerObj <- runTSNE(ligerObj, method = "fftRtsne", fitsnePath = "whatPWDShows")
+ligerObj <- runTSNE(ligerObj, method = "fftRtsne", fitsnePath = "path/you/need/FItSNE_local/FIt-SNE")
 ```

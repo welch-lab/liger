@@ -48,9 +48,23 @@ saveRDS(pbmc, tempPath)
 pbmc <- readLiger(tempPath)
 
 # Save and read H5-based liger object
-h5Path <- system.file("extdata/ctrl.h5", package = "rliger2")
-lig <- createLiger(list(ctrl = h5Path))
+h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
+h5tempPath <- tempfile(fileext = ".h5")
+file.copy(from = h5Path, to = h5tempPath)
+lig <- createLiger(list(ctrl = h5tempPath))
 tempPath <- tempfile(fileext = ".rds")
 saveRDS(lig, tempPath)
 lig <- readLiger(tempPath)
+
+\dontrun{
+# Read a old liger object <= 1.0.1
+# Assume the dimensionality reduction method applied was UMAP
+# Assume the clustering was derived with Louvain method
+lig <- readLiger(
+    filename = "path/to/oldLiger.rds",
+    dimredName = "UMAP",
+    clusterName = "louvain",
+    update = TRUE
+)
+}
 }
