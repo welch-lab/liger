@@ -477,6 +477,9 @@ readLiger <- function(
     if (!inherits(obj, "liger")) # nocov start
         cli::cli_abort("Object is not of class {.cls liger}.") # nocov end
     ver <- obj@version
+    if (ver == package_version("1.99.0")) {
+        obj <- rliger2_to_rliger_namespace(obj, dimredName = dimredName)
+    }
     if (ver >= package_version("1.99.0")) {
         if (isH5Liger(obj)) obj <- restoreH5Liger(obj)
         return(obj)
