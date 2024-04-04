@@ -368,13 +368,16 @@ runCINMF.Seurat <- function(
     # The first is for W, the rest are for Vs
     selection <- factor_cluster_sel(geneLoadings, nNeighbor = nNeighbor,
                                     minWeight = 0.6, k = k, resolution = 0.2)
-    W <- geneLoadings[[1]][, selection$idx]
+    W <- Reduce(cbind, Ws)[, selection$idx]
+    # W <- geneLoadings[[1]][, selection$idx]
     W <- colAggregateMedian_dense_cpp(W, group = selection$cluster, n = k)
-    W <- colNormalize_dense_cpp(W, L = 1)
+    # W <- colNormalize_dense_cpp(W, L = 1)
     for (i in seq_along(Vs)) {
-        V <- geneLoadings[[i + 1]][, selection$idx]
+        V <- Reduce(cbind, Vs[[i]])[, selection$idx]
+        # V <- geneLoadings[[i + 1]][, selection$idx]
         V <- colAggregateMedian_dense_cpp(V, group = selection$cluster, n = k)
-        Vs[[i]] <- colNormalize_dense_cpp(V, L = 1)
+        # Vs[[i]] <- colNormalize_dense_cpp(V, L = 1)
+        Vs[[i]] <- V
     }
     # Vs <- lapply(seq_along(object), function(i) {
     #     matrix(stats::runif(nrow(W) * k, 0, 2), nrow(W), k)
@@ -486,17 +489,17 @@ inmf_solveV <- function(H, W, V, E, lambda, nCores = 2L) {
     return(t(V))
 }
 
-# inmf_solveW <- function(Hs, W, Vs, Es, lambda, nCores = 2L) {
-#     CtC <- matrix(0, ncol(Vs[[1]]), ncol(Vs[[1]]))
-#     CtB <- matrix(0, ncol(Vs[[1]]), nrow(Vs[[1]]))
-#     for (i in seq_along(Es)) {
-#         HtH <- t(Hs[[i]]) %*% Hs[[i]]
-#         CtC <- CtC + HtH
-#         CtB <- CtB + as.matrix(t(Hs[[i]]) %*% t(Es[[i]])) - HtH %*% t(Vs[[i]])
-#     }
-#     W <- RcppPlanc::bppnnls_prod(CtC, CtB, nCores = nCores)
-#     return(t(W))
-# }
+inmf_solveW <- function(Hs, W, Vs, Es, lambda, nCores = 2L) {
+    CtC <- matrix(0, ncol(Vs[[1]]), ncol(Vs[[1]]))
+    CtB <- matrix(0, ncol(Vs[[1]]), nrow(Vs[[1]]))
+    for (i in seq_along(Es)) {
+        HtH <- t(Hs[[i]]) %*% Hs[[i]]
+        CtC <- CtC + HtH
+        CtB <- CtB + as.matrix(t(Hs[[i]]) %*% t(Es[[i]])) - HtH %*% t(Vs[[i]])
+    }
+    W <- RcppPlanc::bppnnls_prod(CtC, CtB, nCores = nCores)
+    return(t(W))
+}
 
 inmf_objErr_i <- function(H, W, V, E, lambda) {
     # Objective error function was originally stated as:
