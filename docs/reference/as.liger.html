@@ -3,7 +3,7 @@
 object or a merged sparse matrix (dgCMatrix) into a liger object. This is
 designed for a container object or matrix that already contains multiple
 datasets to be integerated with LIGER. For individual datasets, please use
-createLiger instead."><title>Converting other classes of data to a liger object — as.liger.dgCMatrix • rliger</title><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.8/font.css" rel="stylesheet"><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous"><!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet"><meta property="og:title" content="Converting other classes of data to a liger object — as.liger.dgCMatrix"><meta property="og:description" content="This function converts data stored in SingleCellExperiment (SCE), Seurat
+createLiger instead."><title>Converting other classes of data to a liger object — as.liger.dgCMatrix • rliger</title><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.9/font.css" rel="stylesheet"><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous"><!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet"><meta property="og:title" content="Converting other classes of data to a liger object — as.liger.dgCMatrix"><meta property="og:description" content="This function converts data stored in SingleCellExperiment (SCE), Seurat
 object or a merged sparse matrix (dgCMatrix) into a liger object. This is
 designed for a container object or matrix that already contains multiple
 datasets to be integerated with LIGER. For individual datasets, please use
@@ -18,7 +18,7 @@ createLiger instead."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/
     
     <a class="navbar-brand me-2" href="../index.html">rliger</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -178,29 +178,43 @@ used.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimReds(0):  </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># \donttest{</span></span></span>
-<span class="r-in"><span><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu">SingleCellExperiment</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/SingleCellExperiment.html" class="external-link">SingleCellExperiment</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>    assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="va">multiSampleMatrix</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">sce</span><span class="op">$</span><span class="va">sample</span> <span class="op">&lt;-</span> <span class="va">pbmc</span><span class="op">$</span><span class="va">dataset</span></span></span>
-<span class="r-in"><span><span class="va">pbmc3</span> <span class="op">&lt;-</span> <span class="fu">as.liger</span><span class="op">(</span><span class="va">sce</span>, datasetVar <span class="op">=</span> <span class="st">"sample"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SingleCellExperiment"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>    <span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu">SingleCellExperiment</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/SingleCellExperiment.html" class="external-link">SingleCellExperiment</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>        assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="va">multiSampleMatrix</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">sce</span><span class="op">$</span><span class="va">sample</span> <span class="op">&lt;-</span> <span class="va">pbmc</span><span class="op">$</span><span class="va">dataset</span></span></span>
+<span class="r-in"><span>    <span class="va">pbmc3</span> <span class="op">&lt;-</span> <span class="fu">as.liger</span><span class="op">(</span><span class="va">sce</span>, datasetVar <span class="op">=</span> <span class="st">"sample"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">pbmc3</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span> ... done</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"stim"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"stim"</span> ... done</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-in"><span><span class="va">pbmc3</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> An object of class liger with 600 cells</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> datasets(2): ctrl (300 cells), stim (300 cells) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> cellMeta(8): dataset, barcode, nUMI, ..., sample </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> varFeatures(0):  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimReds(0):  </span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">seu</span> <span class="op">&lt;-</span> <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SeuratObject/man/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span><span class="va">multiSampleMatrix</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="co"># Seurat creates variable "orig.ident" by identifying the cell barcode</span></span></span>
-<span class="r-in"><span><span class="co"># prefixes, which is indeed what we need in this case. Users might need</span></span></span>
-<span class="r-in"><span><span class="co"># to be careful and have it confirmed first.</span></span></span>
-<span class="r-in"><span><span class="va">pbmc4</span> <span class="op">&lt;-</span> <span class="fu">as.liger</span><span class="op">(</span><span class="va">seu</span>, datasetVar <span class="op">=</span> <span class="st">"orig.ident"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"Seurat"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>    <span class="va">seu</span> <span class="op">&lt;-</span> <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SeuratObject/man/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span><span class="va">multiSampleMatrix</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="co"># Seurat creates variable "orig.ident" by identifying the cell barcode</span></span></span>
+<span class="r-in"><span>    <span class="co"># prefixes, which is indeed what we need in this case. Users might need</span></span></span>
+<span class="r-in"><span>    <span class="co"># to be careful and have it confirmed first.</span></span></span>
+<span class="r-in"><span>    <span class="va">pbmc4</span> <span class="op">&lt;-</span> <span class="fu">as.liger</span><span class="op">(</span><span class="va">seu</span>, datasetVar <span class="op">=</span> <span class="st">"orig.ident"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">pbmc4</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>    <span class="co"># As per Seurat V5 updates with layered data, specifically helpful udner the</span></span></span>
+<span class="r-in"><span>    <span class="co"># scenario of dataset integration. "counts" and etc for each datasets can be</span></span></span>
+<span class="r-in"><span>    <span class="co"># split into layers.</span></span></span>
+<span class="r-in"><span>    <span class="va">seu5</span> <span class="op">&lt;-</span> <span class="va">seu</span></span></span>
+<span class="r-in"><span>    <span class="va">seu5</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/split.html" class="external-link">split</a></span><span class="op">(</span><span class="va">seu5</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span>, <span class="va">pbmc</span><span class="op">$</span><span class="va">dataset</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SeuratObject/man/Layers.html" class="external-link">Layers</a></span><span class="op">(</span><span class="va">seu5</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">pbmc5</span> <span class="op">&lt;-</span> <span class="fu">as.liger</span><span class="op">(</span><span class="va">seu5</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">pbmc5</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span> ... done</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
@@ -209,29 +223,20 @@ used.</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Removing missing in dataset: <span style="color: #0000BB;">"ctrl"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Removing missing in dataset: <span style="color: #0000BB;">"stim"</span></span>
-<span class="r-in"><span><span class="va">pbmc4</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "counts.ctrl" "counts.stim"</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span> ... done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"stim"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"stim"</span> ... done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Removing missing in dataset: <span style="color: #0000BB;">"ctrl"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Removing missing in dataset: <span style="color: #0000BB;">"stim"</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> An object of class liger with 600 cells</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> datasets(2): ctrl (300 cells), stim (300 cells) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> cellMeta(10): dataset, barcode, nUMI, ..., nFeature_RNA </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> varFeatures(0):  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimReds(0):  </span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># As per Seurat V5 updates with layered data, specifically helpful udner the</span></span></span>
-<span class="r-in"><span><span class="co"># scenario of dataset integration. "counts" and etc for each datasets can be</span></span></span>
-<span class="r-in"><span><span class="co"># split into layers.</span></span></span>
-<span class="r-in"><span><span class="va">seu5</span> <span class="op">&lt;-</span> <span class="va">seu</span></span></span>
-<span class="r-in"><span><span class="va">seu5</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/split.html" class="external-link">split</a></span><span class="op">(</span><span class="va">seu5</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span>, <span class="va">pbmc</span><span class="op">$</span><span class="va">dataset</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SeuratObject/man/Layers.html" class="external-link">Layers</a></span><span class="op">(</span><span class="va">seu5</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "counts.ctrl" "counts.stim"</span>
-<span class="r-in"><span><span class="va">pbmc5</span> <span class="op">&lt;-</span> <span class="fu">as.liger</span><span class="op">(</span><span class="va">seu5</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span> ... done</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"stim"</span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"stim"</span> ... done</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Removing missing in dataset: <span style="color: #0000BB;">"ctrl"</span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Removing missing in dataset: <span style="color: #0000BB;">"stim"</span></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
