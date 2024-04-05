@@ -1,6 +1,10 @@
 #' Create liger object
 #' @description This function allows creating \linkS4class{liger} object from
 #' multiple datasets of various forms (See \code{rawData}).
+#'
+#' \bold{DO} make a copy of the H5AD files because rliger functions write to
+#' the files and they will not be able to be read back to Python. This will be
+#' fixed in the future.
 #' @param rawData Named list of datasets. Required. Elements allowed include a
 #' matrix, a \code{Seurat} object, a \code{SingleCellExperiment} object, an
 #' \code{AnnData} object, a \linkS4class{ligerDataset} object or a filename to
@@ -19,7 +23,7 @@
 #' common with 10X data). Default \code{"auto"} detects if matrix columns
 #' already has the exact prefix or not. Logical value forces the action.
 #' @param formatType Select preset of H5 file structure. Current available
-#' options are \code{"10X"} and \code{"AnnData"}. Can be either a single
+#' options are \code{"10x"} and \code{"anndata"}. Can be either a single
 #' specification for all datasets or a character vector that match with each
 #' dataset.
 #' @param anndataX The HDF5 path to the raw count data in an H5AD file. See
@@ -37,8 +41,9 @@
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Additional slot values that should be directly placed in object.
-#' @param remove.missing,format.type,data.name,indices.name,indptr.name,genes.name,barcodes.name
+#' @param raw.data,remove.missing,format.type,data.name,indices.name,indptr.name,genes.name,barcodes.name
 #' \bold{Deprecated.} See Usage section for replacement.
+#' @param take.gene.union Defuncted. Will be ignored.
 #' @export
 #' @seealso \code{\link{createLigerDataset}}, \code{\link{createH5LigerDataset}}
 #' @examples
@@ -49,13 +54,16 @@
 #'
 #' # Create from H5 files
 #' h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
-#' print(h5Path)
-#' lig <- createLiger(list(ctrl = h5Path))
+#' tempPath <- tempfile(fileext = ".h5")
+#' file.copy(from = h5Path, to = tempPath)
+#' lig <- createLiger(list(ctrl = tempPath))
 #'
 #' # Create from other container object
-#' ctrl.seu <- SeuratObject::CreateSeuratObject(ctrl.raw)
-#' stim.seu <- SeuratObject::CreateSeuratObject(stim.raw)
-#' pbmc2 <- createLiger(list(ctrl = ctrl.seu, stim = stim.seu))
+#' if (requireNamespace("SeuratObject", quietly = TRUE)) {
+#'     ctrl.seu <- SeuratObject::CreateSeuratObject(ctrl.raw)
+#'     stim.seu <- SeuratObject::CreateSeuratObject(stim.raw)
+#'     pbmc2 <- createLiger(list(ctrl = ctrl.seu, stim = stim.seu))
+#' }
 createLiger <- function(
         rawData,
         modal = NULL,
@@ -73,6 +81,8 @@ createLiger <- function(
         verbose = getOption("ligerVerbose", TRUE),
         ...,
         # Deprecated coding style
+        raw.data = rawData,
+        take.gene.union = NULL,
         remove.missing = removeMissing,
         format.type = formatType,
         data.name = dataName,
@@ -81,12 +91,17 @@ createLiger <- function(
         genes.name = genesName,
         barcodes.name = barcodesName
 ) {
-    .deprecateArgs(list(remove.missing = "removeMissing",
+    .deprecateArgs(list(raw.data = "rawData", remove.missing = "removeMissing",
                         format.type = "formatType", data.name = "dataName",
                         indices.name = "indicesName",
                         indptr.name = "indptrName", genes.name = "genesName",
-                        barcodes.name = "barcodesName"))
-    if (!is.list(rawData)) cli::cli_abort("{.var rawData} has to be a named list.")
+                        barcodes.name = "barcodesName"),
+                   defunct = "take.gene.union")
+    if (!is.list(rawData) ||
+        is.null(names(rawData)) ||
+        any(nchar(names(rawData)) == 0)) {
+        cli::cli_abort("{.var rawData} has to be a named list.")
+    }
 
     nData <- length(rawData)
     if (missing(modal) || is.null(modal)) modal <- "default"
@@ -239,10 +254,14 @@ createLigerDataset <- function(
 #' @description
 #' For convenience, the default \code{formatType = "10x"} directly fits the
 #' structure of cellranger output. \code{formatType = "anndata"} works for
-#' current AnnData H5AD file specification (see Details). If there a customized
-#' H5 file  structure is presented, any of the \code{rawData},
+#' current AnnData H5AD file specification (see Details). If a customized H5
+#' file structure is presented, any of the \code{rawData},
 #' \code{indicesName}, \code{indptrName}, \code{genesName}, \code{barcodesName}
 #' should be specified accordingly to override the \code{formatType} preset.
+#'
+#' \bold{DO} make a copy of the H5AD files because rliger functions write to
+#' the files and they will not be able to be read back to Python. This will be
+#' fixed in the future.
 #' @details
 #' For H5AD file written from an AnnData object, we allow using
 #' \code{formatType = "anndata"} for the function to infer the proper structure.
@@ -259,7 +278,7 @@ createLigerDataset <- function(
 #' the AnnData was originally created.
 #' @param h5file Filename of an H5 file
 #' @param formatType Select preset of H5 file structure. Default \code{"10X"}.
-#' Current available option is only \code{"10X"}.
+#' Alternatively, we also support \code{"anndata"} for H5AD files.
 #' @param rawData,indicesName,indptrName The path in a H5 file for the raw
 #' sparse matrix data. These three types of data stands for the \code{x},
 #' \code{i}, and \code{p} slots of a \code{\link[Matrix]{dgCMatrix-class}}
@@ -282,10 +301,12 @@ createLigerDataset <- function(
 #' @return H5-based \linkS4class{ligerDataset} object
 #' @examples
 #' h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
-#' ld <- createH5LigerDataset(h5Path)
+#' tempPath <- tempfile(fileext = ".h5")
+#' file.copy(from = h5Path, to = tempPath)
+#' ld <- createH5LigerDataset(tempPath)
 createH5LigerDataset <- function(
         h5file,
-        formatType = "10X",
+        formatType = "10x",
         rawData = NULL,
         normData = NULL,
         scaleData = NULL,
@@ -424,14 +445,28 @@ createH5LigerDataset <- function(
 #' # Save and read regular current-version liger object
 #' tempPath <- tempfile(fileext = ".rds")
 #' saveRDS(pbmc, tempPath)
-#' pbmc <- readLiger(tempPath)
+#' pbmc <- readLiger(tempPath, dimredName = NULL)
 #'
 #' # Save and read H5-based liger object
 #' h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
-#' lig <- createLiger(list(ctrl = h5Path))
+#' h5tempPath <- tempfile(fileext = ".h5")
+#' file.copy(from = h5Path, to = h5tempPath)
+#' lig <- createLiger(list(ctrl = h5tempPath))
 #' tempPath <- tempfile(fileext = ".rds")
 #' saveRDS(lig, tempPath)
 #' lig <- readLiger(tempPath)
+#'
+#' \dontrun{
+#' # Read a old liger object <= 1.0.1
+#' # Assume the dimensionality reduction method applied was UMAP
+#' # Assume the clustering was derived with Louvain method
+#' lig <- readLiger(
+#'     filename = "path/to/oldLiger.rds",
+#'     dimredName = "UMAP",
+#'     clusterName = "louvain",
+#'     update = TRUE
+#' )
+#' }
 readLiger <- function(
         filename,
         dimredName = "tsne_coords",
@@ -442,6 +477,9 @@ readLiger <- function(
     if (!inherits(obj, "liger")) # nocov start
         cli::cli_abort("Object is not of class {.cls liger}.") # nocov end
     ver <- obj@version
+    if (ver == package_version("1.99.0")) {
+        obj <- rliger2_to_rliger_namespace(obj, dimredName = dimredName)
+    }
     if (ver >= package_version("1.99.0")) {
         if (isH5Liger(obj)) obj <- restoreH5Liger(obj)
         return(obj)

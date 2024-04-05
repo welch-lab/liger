@@ -61,7 +61,6 @@ H5Apply <- function(
                                        total = numChunks, clear = FALSE)
         # pb <- utils::txtProgressBar(0, numChunks, style = 3)
     for (i in seq(numChunks)) {
-        Sys.sleep(0.1)
         start <- (i - 1)*chunkSize + 1
         end <- if (i*chunkSize > ncol(object)) ncol(object) else i*chunkSize
         colptrStart <- start
@@ -180,7 +179,9 @@ safeH5Create <- function(object,
 #' @export
 #' @examples
 #' h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
-#' lig <- createLiger(list(ctrl = h5Path))
+#' tempPath <- tempfile(fileext = ".h5")
+#' file.copy(from = h5Path, to = tempPath)
+#' lig <- createLiger(list(ctrl = tempPath))
 #' # Now it is actually an invalid object! which is equivalent to what users
 #' # will get with `saveRDS(lig, "object.rds"); lig <- readRDS("object.rds")``
 #' closeAllH5(lig)

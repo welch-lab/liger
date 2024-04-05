@@ -387,7 +387,7 @@ cli_or <- function(x) cli::cli_vec(x, list("vec-last" = " or "))
     call <- match.call(definition = sys.function(-1),
                        call = sys.call(-1), envir = parent.frame(2))
     callArgs <- rlang::call_args(call)
-    parentFuncName <- as.list(call)[[1]]
+    parentFuncName <- rlang::call_name(call)
     # This gives access to variable in the function operation environment
     p <- parent.frame()
     for (old in names(replace)) {
@@ -686,27 +686,18 @@ searchH <- function(object, useRaw = NULL) {
 # now we rename the package back to `rliger` and you'll need to have the objects
 # compatible with "new" package name.
 rliger2_to_rliger_namespace <- function(obj, dimredName) {
-    cm <- obj@cellMeta
+    # Slots that contain things of rliger2 namespace
+    datasetList <- list()
     drList <- list()
+    commandList <- list()
+
+    cm <- obj@cellMeta
     for (i in dimredName) {
         drList[[i]] <- cm[[i]]
         cm[[i]] <- NULL
     }
-    new <- methods::new(
-        "liger",
-        datasets = obj@datasets,
-        cellMeta = cm,
-        varFeatures = obj@varFeatures,
-        W = obj@W,
-        H.norm = obj@H.norm,
-        uns = obj@uns,
-        commands = obj@commands,
-        version = obj@version
-    )
-    for (i in dimredName) {
-        dimRed(new, i) <- drList[[i]]
-    }
-    for (i in seq_along(obj)) {
+
+    for (i in names(obj@datasets)) {
         ld <- obj@datasets[[i]]
         basics <- list(
             rawData = ld@rawData,
@@ -748,11 +739,12 @@ rliger2_to_rliger_namespace <- function(obj, dimredName) {
                 Class = "ligerDataset"
             ))
         }
-        new@datasets[[i]] <- do.call("new", basics)
+        datasetList[[i]] <- do.call("new", basics)
     }
-    for (i in seq_along(new@commands)) {
-        cmd <- new@commands[[i]]
-        new@commands[[i]] <- methods::new(
+
+    for (i in names(obj@commands)) {
+        cmd <- obj@commands[[i]]
+        commandList[[i]] <- methods::new(
             "ligerCommand",
             funcName = cmd@funcName,
             time = cmd@time,
@@ -763,5 +755,22 @@ rliger2_to_rliger_namespace <- function(obj, dimredName) {
             dependencyVersion = cmd@dependencyVersion
         )
     }
+
+    new <- methods::new(
+        "liger",
+        datasets = datasetList,
+        cellMeta = cm,
+        varFeatures = obj@varFeatures,
+        W = obj@W,
+        H.norm = obj@H.norm,
+        uns = obj@uns,
+        commands = commandList,
+        version = obj@version
+    )
+
+    for (i in dimredName) {
+        dimRed(new, i) <- drList[[i]]
+    }
+
     new
 }

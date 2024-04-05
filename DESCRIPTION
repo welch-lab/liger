@@ -1,6 +1,6 @@
 Package: rliger
-Version: 2.0.0
-Date: 2024-03-20
+Version: 2.0.1
+Date: 2024-04-04
 Type: Package
 Title: Linked Inference of Genomic Experimental Relationships
 Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors. See Welch J, Kozareva V, et al (2019) <doi:10.1016/j.cell.2019.05.006>, and Liu J, Gao C, Sodicoff J, et al (2020) <doi:10.1038/s41596-020-0391-8> for more details.
@@ -37,13 +37,13 @@ LazyData: true
 RoxygenNote: 7.3.1
 VignetteBuilder: knitr
 Encoding: UTF-8
-Additional_repositories: https:/welch-lab.r-universe.dev, https://blaserlab.r-universe.dev
+Additional_repositories: https://welch-lab.r-universe.dev, https://blaserlab.r-universe.dev
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 Depends:
     methods,
     stats,
     utils,
-    R (>= 3.4)
+    R (>= 3.5)
 Imports:
     circlize,
     cli,

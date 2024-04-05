@@ -6,7 +6,7 @@
 \usage{
 createH5LigerDataset(
   h5file,
-  formatType = "10X",
+  formatType = "10x",
   rawData = NULL,
   normData = NULL,
   scaleData = NULL,
@@ -24,7 +24,7 @@ createH5LigerDataset(
 \item{h5file}{Filename of an H5 file}
 
 \item{formatType}{Select preset of H5 file structure. Default \code{"10X"}.
-Current available option is only \code{"10X"}.}
+Alternatively, we also support \code{"anndata"} for H5AD files.}
 
 \item{rawData, indicesName, indptrName}{The path in a H5 file for the raw
 sparse matrix data. These three types of data stands for the \code{x},
@@ -58,10 +58,14 @@ H5-based \linkS4class{ligerDataset} object
 \description{
 For convenience, the default \code{formatType = "10x"} directly fits the
 structure of cellranger output. \code{formatType = "anndata"} works for
-current AnnData H5AD file specification (see Details). If there a customized
-H5 file  structure is presented, any of the \code{rawData},
+current AnnData H5AD file specification (see Details). If a customized H5
+file structure is presented, any of the \code{rawData},
 \code{indicesName}, \code{indptrName}, \code{genesName}, \code{barcodesName}
 should be specified accordingly to override the \code{formatType} preset.
+
+\bold{DO} make a copy of the H5AD files because rliger functions write to
+the files and they will not be able to be read back to Python. This will be
+fixed in the future.
 }
 \details{
 For H5AD file written from an AnnData object, we allow using
@@ -80,5 +84,7 @@ the AnnData was originally created.
 }
 \examples{
 h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
-ld <- createH5LigerDataset(h5Path)
+tempPath <- tempfile(fileext = ".h5")
+file.copy(from = h5Path, to = tempPath)
+ld <- createH5LigerDataset(tempPath)
 }

@@ -17,7 +17,12 @@
 #' @export
 #' @examples
 #' \donttest{
-#' runGSEA(pbmcPlot)
+#' if (requireNamespace("org.Hs.eg.db", quietly = TRUE) &&
+#'     requireNamespace("reactome.db", quietly = TRUE) &&
+#'     requireNamespace("fgsea", quietly = TRUE) &&
+#'     requireNamespace("AnnotationDbi", quietly = TRUE)) {
+#'     runGSEA(pbmcPlot)
+#' }
 #' }
 runGSEA <- function(
         object,
@@ -47,7 +52,13 @@ runGSEA <- function(
         cli::cli_abort(
             "Package {.pkg fgsea} is needed for this function to work.
             Please install it by command:
-            {.code BiocManager::install('fgsea')}") # nocov end
+            {.code BiocManager::install('fgsea')}")
+
+    if (!requireNamespace("AnnotationDbi", quietly = TRUE))
+        cli::cli_abort(
+            "Package {.pkg AnnotationDbi} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('AnnotationDbi')}")  # nocov end
 
     .deprecateArgs(list(gene_sets = "genesets",
                         mat_w = "useW",
@@ -133,25 +144,26 @@ runGSEA <- function(
 #' up-regulated genes and should be preferred when \code{result} comes from
 #' marker detection test. When \code{result} comes from group-to-group DE test,
 #' it is recommended to set \code{splitReg = TRUE}.
-#' @param ... Additional arguments passed to
-#' \code{gprofiler2::\link[gprofiler2]{gost}}. Arguments \code{query},
-#' \code{custom_bg}, \code{domain_scope}, and \code{ordered_query} are
-#' pre-specified by this wrapper function. Users must set
-#' \code{organism = "mmusculus"} when working on mouse data.
+#' @param ... Additional arguments passed to \code{gprofiler2::gost()}.
+#' Arguments \code{query}, \code{custom_bg}, \code{domain_scope}, and
+#' \code{ordered_query} are pre-specified by this wrapper function. Users must
+#' set \code{organism = "mmusculus"} when working on mouse data.
 #' @references Kolberg, L. et al, 2020 and Raudvere, U. et al, 2019
 #' @return A list object where each element is a result list for a group. Each
 #' result list contains two elements:
 #' \item{result}{data.frame of main GO analysis result.}
 #' \item{meta}{Meta information for the query.}
 #'
-#' See \code{\link[gprofiler2]{gost}}. for detailed explanation.
+#' See \code{gprofiler2::gost()}. for detailed explanation.
 #' @export
 #' @examples
 #' res <- runMarkerDEG(pbmcPlot)
 #' # Setting `significant = FALSE` because it's hard for a gene list obtained
 #' # from small test dataset to represent real-life biology.
 #' \donttest{
-#' go <- runGOEnrich(res, group = 0, significant = FALSE)
+#' if (requireNamespace("gprofiler2", quietly = TRUE)) {
+#'     go <- runGOEnrich(res, group = 0, significant = FALSE)
+#' }
 #' }
 runGOEnrich <- function(
         result,

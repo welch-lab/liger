@@ -1,10 +1,14 @@
 #' Perform consensus iNMF on scaled datasets
 #' @description
+#' \bold{NOT STABLE} - This is an experimental function and is subject to change.
+#'
 #' Performs consensus integrative non-negative matrix factorization (c-iNMF)
-#' to return factorized \eqn{H}, \eqn{W}, and \eqn{V} matrices. We run the
-#' regular iNMF multiple times with different random starts, and then take the
-#' consensus of frequently appearing factors from gene loading matrices, \eqn{W}
-#' and \eqn{V}. The cell factor loading \eqn{H} matrices are eventually solved
+#' to return factorized \eqn{H}, \eqn{W}, and \eqn{V} matrices. In order to
+#' address the non-convex nature of NMF, we built on the cNMF method proposed by
+#' D. Kotliar, 2019. We run the regular iNMF multiple times with different
+#' random starts, and cluster the pool of all the factors in \eqn{W} and
+#' \eqn{V}s and take the consensus of the clusters of the largest population.
+#' The cell factor loading \eqn{H} matrices are eventually solved
 #' with the consensus \eqn{W} and \eqn{V} matrices.
 #'
 #' Please see \code{\link{runINMF}} for detailed introduction to the regular
@@ -257,7 +261,7 @@ runCINMF.Seurat <- function(
         cli::cli_abort(
             "Package {.pkg RcppPlanc} is required for c-iNMF integration.
         Please install it by command:
-        {.code devtools::install_github('welch-lab/RcppPlanc')}") # nocov end
+        {.code install.packages('RcppPlanc', repos = 'https:/welch-lab.r-universe.dev')}") # nocov end
     if (nRandomStarts <= 1) {
         cli::cli_abort("{.var nRandomStarts} must be greater than 1 for taking the consensus.")
     }
@@ -364,13 +368,16 @@ runCINMF.Seurat <- function(
     # The first is for W, the rest are for Vs
     selection <- factor_cluster_sel(geneLoadings, nNeighbor = nNeighbor,
                                     minWeight = 0.6, k = k, resolution = 0.2)
-    W <- geneLoadings[[1]][, selection$idx]
+    W <- Reduce(cbind, Ws)[, selection$idx]
+    # W <- geneLoadings[[1]][, selection$idx]
     W <- colAggregateMedian_dense_cpp(W, group = selection$cluster, n = k)
-    W <- colNormalize_dense_cpp(W, L = 1)
+    # W <- colNormalize_dense_cpp(W, L = 1)
     for (i in seq_along(Vs)) {
-        V <- geneLoadings[[i + 1]][, selection$idx]
+        V <- Reduce(cbind, Vs[[i]])[, selection$idx]
+        # V <- geneLoadings[[i + 1]][, selection$idx]
         V <- colAggregateMedian_dense_cpp(V, group = selection$cluster, n = k)
-        Vs[[i]] <- colNormalize_dense_cpp(V, L = 1)
+        # Vs[[i]] <- colNormalize_dense_cpp(V, L = 1)
+        Vs[[i]] <- V
     }
     # Vs <- lapply(seq_along(object), function(i) {
     #     matrix(stats::runif(nrow(W) * k, 0, 2), nrow(W), k)
@@ -482,17 +489,17 @@ inmf_solveV <- function(H, W, V, E, lambda, nCores = 2L) {
     return(t(V))
 }
 
-# inmf_solveW <- function(Hs, W, Vs, Es, lambda, nCores = 2L) {
-#     CtC <- matrix(0, ncol(Vs[[1]]), ncol(Vs[[1]]))
-#     CtB <- matrix(0, ncol(Vs[[1]]), nrow(Vs[[1]]))
-#     for (i in seq_along(Es)) {
-#         HtH <- t(Hs[[i]]) %*% Hs[[i]]
-#         CtC <- CtC + HtH
-#         CtB <- CtB + as.matrix(t(Hs[[i]]) %*% t(Es[[i]])) - HtH %*% t(Vs[[i]])
-#     }
-#     W <- RcppPlanc::bppnnls_prod(CtC, CtB, nCores = nCores)
-#     return(t(W))
-# }
+inmf_solveW <- function(Hs, W, Vs, Es, lambda, nCores = 2L) {
+    CtC <- matrix(0, ncol(Vs[[1]]), ncol(Vs[[1]]))
+    CtB <- matrix(0, ncol(Vs[[1]]), nrow(Vs[[1]]))
+    for (i in seq_along(Es)) {
+        HtH <- t(Hs[[i]]) %*% Hs[[i]]
+        CtC <- CtC + HtH
+        CtB <- CtB + as.matrix(t(Hs[[i]]) %*% t(Es[[i]])) - HtH %*% t(Vs[[i]])
+    }
+    W <- RcppPlanc::bppnnls_prod(CtC, CtB, nCores = nCores)
+    return(t(W))
+}
 
 inmf_objErr_i <- function(H, W, V, E, lambda) {
     # Objective error function was originally stated as:

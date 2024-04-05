@@ -574,7 +574,7 @@ plotProportionPie <- function(
 #' @description \code{plotVolcano} is a simple implementation and shares
 #' most of arguments with other rliger plotting functions.
 #' \code{plotEnhancedVolcano} is a wrapper function of
-#' \code{\link[EnhancedVolcano]{EnhancedVolcano}}, which has provides
+#' \code{EnhancedVolcano::EnhancedVolcano()}, which has provides
 #' substantial amount of arguments for graphical control. However, that requires
 #' the installation of package "EnhancedVolcano".
 #' @rdname plotVolcano
@@ -595,7 +595,7 @@ plotProportionPie <- function(
 #' \code{4}.
 #' @param ... For \code{plotVolcano}, more theme setting arguments passed to
 #' \code{\link{.ggplotLigerTheme}}. For \code{plotEnhancedVolcano}, arguments
-#' passed to \code{\link[EnhancedVolcano]{EnhancedVolcano}}.
+#' passed to \code{EnhancedVolcano::EnhancedVolcano()}.
 #' @return ggplot
 #' @export
 #' @examples
@@ -1068,9 +1068,11 @@ plotGeneLoadingRank <- function(
 #'     cellMeta(pbmcPlot, "leiden_cluster", "ctrl")
 #' cellMeta(pbmcPlot, "stim_cluster", "stim") <-
 #'     cellMeta(pbmcPlot, "leiden_cluster", "stim")
-#' plotSankey(pbmcPlot, "ctrl_cluster", "stim_cluster",
-#'            titles = c("control", "LIGER", "stim"),
-#'            prefixes = c("c", NA, "s"))
+#' if (requireNamespace("sankey", quietly = TRUE)) {
+#'     plotSankey(pbmcPlot, "ctrl_cluster", "stim_cluster",
+#'                titles = c("control", "LIGER", "stim"),
+#'                prefixes = c("c", NA, "s"))
+#' }
 plotSankey <- function(
         object,
         cluster1,

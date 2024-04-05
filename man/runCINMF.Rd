@@ -126,11 +126,15 @@ feature key. Default \code{"cinmf"}.}
 }
 }
 \description{
+\bold{NOT STABLE} - This is an experimental function and is subject to change.
+
 Performs consensus integrative non-negative matrix factorization (c-iNMF)
-to return factorized \eqn{H}, \eqn{W}, and \eqn{V} matrices. We run the
-regular iNMF multiple times with different random starts, and then take the
-consensus of frequently appearing factors from gene loading matrices, \eqn{W}
-and \eqn{V}. The cell factor loading \eqn{H} matrices are eventually solved
+to return factorized \eqn{H}, \eqn{W}, and \eqn{V} matrices. In order to
+address the non-convex nature of NMF, we built on the cNMF method proposed by
+D. Kotliar, 2019. We run the regular iNMF multiple times with different
+random starts, and cluster the pool of all the factors in \eqn{W} and
+\eqn{V}s and take the consensus of the clusters of the largest population.
+The cell factor loading \eqn{H} matrices are eventually solved
 with the consensus \eqn{W} and \eqn{V} matrices.
 
 Please see \code{\link{runINMF}} for detailed introduction to the regular

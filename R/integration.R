@@ -384,7 +384,7 @@ runINMF.Seurat <- function(
         cli::cli_abort(
         "Package {.pkg RcppPlanc} is required for iNMF integration.
         Please install it by command:
-        {.code devtools::install_github('welch-lab/RcppPlanc')}") # nocov end
+        {.code install.packages('RcppPlanc', repos = 'https:/welch-lab.r-universe.dev')}") # nocov end
 
     barcodeList <- lapply(object, colnames)
     allFeatures <- lapply(object, rownames)
@@ -822,7 +822,7 @@ runOnlineINMF.liger <- function(
         cli::cli_abort(
             "Package {.pkg RcppPlanc} is required for online iNMF integration.
         Please install it by command:
-        {.code devtools::install_github('welch-lab/RcppPlanc')}") # nocov end
+        {.code install.packages('RcppPlanc', repos = 'https:/welch-lab.r-universe.dev')}") # nocov end
     nDatasets <- length(object) + length(newDatasets)
     barcodeList <- c(lapply(object, colnames), lapply(newDatasets, colnames))
     names(barcodeList) <- c(names(object), names(newDatasets))
@@ -1207,16 +1207,13 @@ runUINMF.liger <- function(
         cli::cli_abort(
         "Package {.pkg RcppPlanc} is required for mosaic iNMF integration with unshared features.
         Please install it by command:
-        {.code devtools::install_github('welch-lab/RcppPlanc')}")# nocov end
+        {.code install.packages('RcppPlanc', repos = 'https:/welch-lab.r-universe.dev')}")# nocov end
     barcodeList <- lapply(object, colnames)
     allFeatures <- lapply(object, rownames)
     features <- Reduce(.same, allFeatures)
 
     if (min(lengths(barcodeList)) < k) {
         cli::cli_abort("Number of factors (k={k}) should be less than the number of cells in the smallest dataset ({min(lengths(barcodeList))}).")
-    }
-    if (length(features) < k) {
-        cli::cli_abort("Number of factors (k={k}) should be less than the number of shared features ({length(features)}).")
     }
 
     bestObj <- Inf
@@ -1278,8 +1275,9 @@ runUINMF.liger <- function(
 #' Default \code{50}.
 #' @param reference Character, numeric or logical selection of one dataset, out
 #' of all available datasets in \code{object}, to use as a "reference" for
-#' normalization. Default \code{NULL} use the dataset with the largest number of
-#' cells.
+#' quantile normalization. Default \code{NULL} tries to find an RNA dataset with
+#' the largest number of cells; if no RNA dataset available, use the globally
+#' largest dataset.
 #' @param minCells Minimum number of cells to consider a cluster shared across
 #' datasets. Default \code{20}.
 #' @param nNeighbors Number of nearest neighbors for within-dataset knn graph.
@@ -1353,12 +1351,23 @@ quantileNorm.liger <- function(
 ) {
     .checkObjVersion(object)
     .checkValidFactorResult(object, checkV = FALSE)
-    reference <- reference %||% names(which.max(sapply(datasets(object), ncol)))
-    reference <- .checkUseDatasets(object, useDatasets = reference)
-    if (length(reference) != 1) {
-        cli::cli_abort("Should specify only one reference dataset.")
+    # Choose largest RNA dataset as default if possible, as per Issue #297
+    if (is.null(reference)) {
+        reference <- .autoFindRef_qn(object)
+    } else {
+        reference <- .checkUseDatasets(object, useDatasets = reference)
+        if (length(reference) != 1) {
+            cli::cli_abort("Should specify only one reference dataset.")
+        }
+        if (inherits(dataset(object, reference), c("ligerATACDataset", "ligerSpatialDataset", "ligerMethDataset"))) {
+            cli::cli_alert_warning(
+                "Dataset of {.val {modalOf(dataset(pbmc, reference))}} modality is not recommended to be set as reference."
+            )
+        }
     }
+
     object <- recordCommand(object, ..., dependencies = "RANN")
+
     out <- .quantileNorm.HList(
         object = getMatrix(object, "H"),
         quantiles = quantiles,
@@ -1524,6 +1533,26 @@ quantileNorm.Seurat <- function(
     return(list('H.norm' = Reduce(rbind, Hs), 'clusters' = clusterAssign))
 }
 
+.autoFindRef_qn <- function(object) {
+    notRecom <- c("ligerATACDataset", "ligerSpatialDataset", "ligerMethDataset")
+    recom <- !sapply(datasets(object), inherits, what = notRecom)
+    if (sum(recom) == 0) {
+        cli::cli_alert_warning(
+            "Auto selecting reference, dataset of recommended type not found."
+        )
+        ref <- names(which.max(sapply(datasets(object), ncol)))
+        cli::cli_alert_info(
+            "Using globally largest dataset as reference: {.val {ref}} with {lengths(object)[ref]} cells"
+        )
+    } else {
+        ref <- names(which.max(sapply(datasets(object)[recom], ncol)))
+        cli::cli_alert_info(
+            "Using largest dataset of recommended type as reference: {.val {ref}} with {lengths(object)[ref]} cells"
+        )
+    }
+    return(ref)
+}
+
 #' [Deprecated] Quantile align (normalize) factor loading
 #' @description
 #' \bold{Please turn to \code{\link{quantileNorm}}.}
@@ -1685,12 +1714,6 @@ calcAgreement <- function(
               "i" = "e.g. {.code memCopy <- subsetLiger(object, useSlot = 'scaleData', newH5 = FALSE)}")
         )
     }
-    if (!requireNamespace("RcppPlanc", quietly = TRUE))
-        cli::cli_abort(
-            "Package {.pkg RcppPlanc} is needed for this function to work.
-            Please install it by command:
-            {.code devtools::install_github('RcppPlanc')}")
-
 
     scaled <- getMatrix(object, "scaleData", returnList = TRUE)
     scaleDataIsNull <- sapply(scaled, is.null)

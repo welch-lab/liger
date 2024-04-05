@@ -8,23 +8,27 @@ withNewH5Copy <- function(fun) {
   stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
   if (!file.exists(ctrlpath.orig))
     stop("Cannot find original h5 file at: ", ctrlpath.orig)
-  if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
-  if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
-  pwd <- getwd()
-  # Temp setting for GitHub Actions
-  fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
-  if (Sys.info()["sysname"] == "Windows") {
-    pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
-  }
+  # if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
+  # if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
+  # pwd <- getwd()
+  # # Temp setting for GitHub Actions
+  # fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
+  # if (Sys.info()["sysname"] == "Windows") {
+  #     pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
+  # }
 
-  ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
-  stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
+  # ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
+  # stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
+  ctrlpath <- tempfile(pattern = "ctrltest_", fileext = ".h5")
+  stimpath <- tempfile(pattern = "stimtest_", fileext = ".h5")
   cat("Working ctrl H5 file path: ", ctrlpath, "\n")
   cat("Working stim H5 file path: ", stimpath, "\n")
   file.copy(ctrlpath.orig, ctrlpath, copy.mode = TRUE)
   file.copy(stimpath.orig, stimpath, copy.mode = TRUE)
   if (!file.exists(ctrlpath))
     stop("Cannot find copied h5 file at: ", ctrlpath)
+  if (!file.exists(stimpath))
+    stop("Cannot find copied h5 file at: ", stimpath)
 
   fun(list(ctrl = ctrlpath, stim = stimpath))
 
@@ -105,15 +109,14 @@ test_that("QC", {
     pbmc <- removeMissing(pbmc, orient = "feature")
     expect_equal(ncol(pbmc), 600)
 
-    if (requireNamespace("DoubletFinder", quietly = TRUE)) {
-        pbmc.df1 <- runDoubletFinder(pbmc)
-        expect_is(pbmc.df1$DoubletFinder_classification, "character")
-        expect_is(pbmc.df1$DoubletFinder_pANN, "numeric")
+    skip_if_not_installed("DoubletFinder")
+    pbmc.df1 <- runDoubletFinder(pbmc)
+    expect_is(pbmc.df1$DoubletFinder_classification, "character")
+    expect_is(pbmc.df1$DoubletFinder_pANN, "numeric")
 
-        pbmc.df2 <- runDoubletFinder(pbmc, nExp = 0.1)
-        expect_false(identical(pbmc.df1$DoubletFinder_classification,
-                              pbmc.df2$DoubletFinder_classification))
-    }
+    pbmc.df2 <- runDoubletFinder(pbmc, nExp = 0.1)
+    expect_false(identical(pbmc.df1$DoubletFinder_classification,
+                          pbmc.df2$DoubletFinder_classification))
 })
 
 context("normalization")
@@ -156,6 +159,8 @@ test_that("Normalization - in-memory", {
                           setNames(rep(1, ncol(fakeNorm)), colnames(fakeNorm))))
 
     # Seurat method
+    skip_if_not_installed("Seurat")
+    skip_if_not_installed("SeuratObject")
     seu <- ligerToSeurat(pbmc, assay = "RNA")
     expect_no_error(normalize(seu))
 })
@@ -208,9 +213,12 @@ test_that("selectGenes", {
     expect_is(g, "ggplot")
 
     # Seurat method
-    seu <- ligerToSeurat(pbmc, assay = "RNA")
-    seu <- normalize(seu)
-    expect_no_error(selectGenes(seu, nGenes = 100))
+    if (requireNamespace("Seurat", quietly = TRUE) &&
+        requireNamespace("SeuratObject", quietly = TRUE)) {
+        seu <- ligerToSeurat(pbmc, assay = "RNA")
+        seu <- normalize(seu)
+        expect_no_error(selectGenes(seu, nGenes = 100))
+    }
 
     pbmc <- selectGenesVST(pbmc, useDataset = "ctrl", n = 50)
     expect_equal(length(varFeatures(pbmc)), 50)
@@ -266,6 +274,8 @@ test_that("scaleNotCenter - in-memory", {
     pbmc.rev <- reverseMethData(pbmc, useDatasets = "ctrl")
     expect_true(identical(scaleData(ctrl.meth), scaleData(pbmc.rev, "ctrl")))
 
+    skip_if_not_installed("Seurat")
+    skip_if_not_installed("SeuratObject")
     seu <- ligerToSeurat(pbmc, assay = "RNA")
     seu <- normalize(seu)
     seu <- selectGenes(seu, datasetVar = "orig.ident")

@@ -1,4 +1,3 @@
-has_RcppPlanc <- requireNamespace("RcppPlanc", quietly = TRUE)
 data("pbmc", package = "rliger")
 rawDataList <- getMatrix(pbmc, "rawData")
 
@@ -7,23 +6,27 @@ withNewH5Copy <- function(fun) {
     stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
     if (!file.exists(ctrlpath.orig))
         stop("Cannot find original h5 file at: ", ctrlpath.orig)
-    if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
-    if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
-    pwd <- tempdir()
-    # Temp setting for GitHub Actions
-    fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
-    if (Sys.info()["sysname"] == "Windows") {
-        pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
-    }
+    # if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
+    # if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
+    # pwd <- getwd()
+    # # Temp setting for GitHub Actions
+    # fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
+    # if (Sys.info()["sysname"] == "Windows") {
+    #     pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
+    # }
 
-    ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
-    stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
+    # ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
+    # stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
+    ctrlpath <- tempfile(pattern = "ctrltest_", fileext = ".h5")
+    stimpath <- tempfile(pattern = "stimtest_", fileext = ".h5")
     cat("Working ctrl H5 file path: ", ctrlpath, "\n")
     cat("Working stim H5 file path: ", stimpath, "\n")
     file.copy(ctrlpath.orig, ctrlpath, copy.mode = TRUE)
     file.copy(stimpath.orig, stimpath, copy.mode = TRUE)
     if (!file.exists(ctrlpath))
         stop("Cannot find copied h5 file at: ", ctrlpath)
+    if (!file.exists(stimpath))
+        stop("Cannot find copied h5 file at: ", stimpath)
 
     fun(list(ctrl = ctrlpath, stim = stimpath))
 
@@ -122,7 +125,7 @@ test_that("liger object creation - on disk", {
 context("liger object S3/S4 methods")
 
 test_that("liger S3/S4 methods", {
-    skip_if_not(has_RcppPlanc)
+    skip_if_not_installed("RcppPlanc")
     pbmc <- process(pbmc)
     expect_output(show(pbmc), "An object of class liger with 600 cells")
     expect_equal(dim(pbmc), c(NA, 600))
@@ -224,7 +227,7 @@ test_that("ligerDataset (in memory) object creation", {
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 test_that("ligerDataset methods", {
-    skip_if_not(has_RcppPlanc)
+    skip_if_not_installed("RcppPlanc")
     pbmc <- process(pbmc)
     expect_false(isH5Liger(pbmc))
     ctrl <- dataset(pbmc, "ctrl")
@@ -328,7 +331,7 @@ test_that("ligerDataset methods", {
 })
 
 test_that("H5 ligerDataset methods", {
-    skip_if_not(has_RcppPlanc)
+    skip_if_not_installed("RcppPlanc")
     withNewH5Copy(
         function(rawList) {
             pbmc <- createLiger(rawList)
@@ -372,7 +375,8 @@ test_that("H5 ligerDataset methods", {
             expect_no_error(h5fileInfo(ctrl, "barcodesName") <-
                                 "matrix/barcodes")
 
-            ctrl.h5$close()
+            # ctrl.h5$close()
+            closeAllH5(ctrl)
             expect_message(show(ctrl), "Link to HDF5 file fails.")
         }
     )
@@ -408,24 +412,24 @@ test_that("as.liger methods", {
         expect_true(all.equal(sapply(datasets(lig), ncol), c(a = 150, b = 150)))
     }
 
-    if (requireNamespace("Seurat", quietly = TRUE)) {
-        # Seurat
-        seu <- SeuratObject::CreateSeuratObject(
-            ctrlRaw,
-            meta.data = data.frame(orig.ident = factor(rep(c("a", "b"), each = 150)),
-                                   nUMI = 0,
-                                   row.names = colnames(ctrlRaw))
-        )
+    skip_if_not_installed("Seurat")
+    skip_if_not_installed("SeuratObject")
+    # Seurat
+    seu <- SeuratObject::CreateSeuratObject(
+        ctrlRaw,
+        meta.data = data.frame(orig.ident = factor(rep(c("a", "b"), each = 150)),
+                               nUMI = 0,
+                               row.names = colnames(ctrlRaw))
+    )
 
-        seu <- Seurat::NormalizeData(seu) %>%
-            Seurat::FindVariableFeatures() %>%
-            Seurat::ScaleData() %>%
-            Seurat::RunPCA()
-        expect_message(lig <- as.liger(seu))
-        expect_true(all.equal(sapply(datasets(lig), ncol), c(a = 150, b = 150)))
+    seu <- Seurat::NormalizeData(seu) %>%
+        Seurat::FindVariableFeatures() %>%
+        Seurat::ScaleData() %>%
+        Seurat::RunPCA()
+    expect_message(lig <- as.liger(seu))
+    expect_true(all.equal(sapply(datasets(lig), ncol), c(a = 150, b = 150)))
 
-        expect_in("pca", names(dimReds(lig)))
-    }
+    expect_in("pca", names(dimReds(lig)))
 })
 
 test_that("as.ligerDataset methods", {
@@ -464,23 +468,23 @@ test_that("as.ligerDataset methods", {
 })
 
 test_that("ligerToSeurat", {
-    if (requireNamespace("Seurat", quietly = TRUE)) {
-        seu <- ligerToSeurat(pbmc)
-        expect_equal(SeuratObject::Assays(seu), "RNA")
+    skip_if_not_installed("Seurat")
+    skip_if_not_installed("SeuratObject")
+    seu <- ligerToSeurat(pbmc)
+    expect_equal(SeuratObject::Assays(seu), "RNA")
 
-        pbmc@datasets$stim <- as.ligerDataset(pbmc@datasets$stim, modal = "atac")
-        pbmc <- normalize(pbmc, useDatasets = "ctrl")
-        seu <- ligerToSeurat(pbmc)
-        expect_equal(SeuratObject::Assays(seu), "LIGER")
-        expect_true(all.equal(SeuratObject::Layers(seu),
-                              c("counts.ctrl", "counts.stim", "ligerNormData.ctrl")))
+    pbmc@datasets$stim <- as.ligerDataset(pbmc@datasets$stim, modal = "atac")
+    pbmc <- normalize(pbmc, useDatasets = "ctrl")
+    seu <- ligerToSeurat(pbmc)
+    expect_equal(SeuratObject::Assays(seu), "LIGER")
+    expect_true(all.equal(SeuratObject::Layers(seu),
+                          c("counts.ctrl", "counts.stim", "ligerNormData.ctrl")))
 
-        expect_error(seu <- ligerToSeurat(pbmcPlot), "rawData not found")
+    expect_error(seu <- ligerToSeurat(pbmcPlot), "rawData not found")
 
-        rawData(pbmcPlot, "ctrl") <- rawData(pbmc, "ctrl")
-        rawData(pbmcPlot, "stim") <- rawData(pbmc, "stim")
-        seu <- ligerToSeurat(pbmcPlot, identByDataset = TRUE)
-    }
+    rawData(pbmcPlot, "ctrl") <- rawData(pbmc, "ctrl")
+    rawData(pbmcPlot, "stim") <- rawData(pbmc, "stim")
+    seu <- ligerToSeurat(pbmcPlot, identByDataset = TRUE)
 })
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Importing data

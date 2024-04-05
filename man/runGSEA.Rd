@@ -44,6 +44,11 @@ each metagene (factor) might belongs to.
 }
 \examples{
 \donttest{
-runGSEA(pbmcPlot)
+if (requireNamespace("org.Hs.eg.db", quietly = TRUE) &&
+    requireNamespace("reactome.db", quietly = TRUE) &&
+    requireNamespace("fgsea", quietly = TRUE) &&
+    requireNamespace("AnnotationDbi", quietly = TRUE)) {
+    runGSEA(pbmcPlot)
+}
 }
 }

@@ -9,6 +9,9 @@ arma::mat colNormalize_dense_cpp(arma::mat& x, const arma::uword L) {
     arma::mat result(x);
     for (int j = 0; j < x.n_cols; ++j) {
         double norm = arma::norm(x.col(j), L);
+        if (norm == 0) {
+            continue;
+        }
         for (int i = 0; i < x.n_rows; ++i) {
             result(i, j) /= norm;
         }

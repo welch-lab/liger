@@ -10,6 +10,10 @@ NULL
 #' @export
 magrittr::`%>%`
 
+#' @importFrom magrittr %<>%
+#' @export
+magrittr::`%<>%`
+
 scPalette <- c('#E41A1C', '#377EB8', '#4DAF4A', '#FFCF00', '#aa47b9', '#e67c14',
                '#e7a2b4', '#54B0E4', '#9a5831', '#BC9DCC', '#222F75', '#1B9E77',
                '#B2DF8A', '#E3BE00', '#FF6699', '#8f3c4d', '#01e1e6', '#591cc5',

@@ -1174,7 +1174,7 @@ scaleNotCenter.dgCMatrix <- function(
 #' feature to be scaled. "liger" method by default uses
 #' \code{\link{varFeatures}(object)}. "ligerDataset" method by default uses all
 #' features. "Seurat" method by default uses
-#' \code{\link[SeuratObject]{VariableFeatures}(object)}.
+#' \code{Seurat::VariableFeatures(object)}.
 #' @param chunk Integer. Number of maximum number of cells in each chunk, when
 #' scaling is applied to any HDF5 based dataset. Default \code{1000}.
 #' @param verbose Logical. Whether to show information of the progress. Default

@@ -414,12 +414,32 @@ convertOldLiger <- function( # nocov start
         h5FilePath = NULL
 ) {
     ver1990 <- package_version("1.99.0")
-    if (object@version >= ver1990) return(object)
-    if (inherits(object@raw.data[[1]], "H5File")) {
-        ldList <- convertOldLiger.H5(object, h5FilePath = h5FilePath)
-    } else {
-        ldList <- convertOldLiger.mem(object)
+    if (object@version == ver1990) {
+        return(rliger2_to_rliger_namespace(object, dimredName = dimredName))
     }
+    if (object@version > ver1990) return(object)
+    tryCatch(
+        {
+            if (inherits(object@raw.data[[1]], "H5File")) {
+                ldList <- convertOldLiger.H5(object, h5FilePath = h5FilePath)
+            } else {
+                ldList <- convertOldLiger.mem(object)
+            }
+        },
+        error = function(e) {
+            print(e)
+            cli::cli_alert_danger(
+                "Conversion failed. Please check the error message above."
+            )
+            cli::cli_alert_info(
+                "For 'inconsistent ID' error, please use an old version of {.pkg rliger} and manually fix the rownames/colnames matching."
+            )
+            cli::cli_alert("{.code dimnames()} of raw.data and norm.data must be identical for each dataset.")
+            cli::cli_alert("{.code rownames()} of scale.data and H must be identical to the colnames of raw.data, for each dataset.")
+            cli::cli_alert("{.code colnames()} of scale.data, V and U (if available) must be identical to the var.genes.")
+        }
+    )
+
     cellMeta <- object@cell.data
     varFeatures <- object@var.genes
     cellID <- unlist(lapply(ldList, colnames), use.names = FALSE)
@@ -492,9 +512,9 @@ convertOldLiger.mem <- function(object) {
         if (!is.null(dataList$rawData)) features <- rownames(dataList$rawData)
         else features <- rownames(dataList$normData)
         if (is.null(features)) {
-            cli::cli_alert_danger(
-                "Cannot detect feature names for dataset {.val {d}}. Skipped.")
-            next
+            cli::cli_abort(
+                "Cannot detect feature names for dataset {.val {d}}."
+            )
         }
         ftPassing <- .checkIDIdentical(
             ref = features,
@@ -669,7 +689,7 @@ convertOldLiger.H5 <- function(object, h5FilePath = NULL) {
             rowPassing[slot] <- FALSE
         }
     }
-    return(unlist(list(colPassing, rowPassing)))
+    return(c(colPassing, rowPassing))
 }
 
 .combinePassingSignal <- function(slotNames, ...) {
@@ -690,7 +710,7 @@ convertOldLiger.H5 <- function(object, h5FilePath = NULL) {
             return(TRUE)
         },
         error = function(e) {
-            cli::cli_alert_warning("Skipped slot {name} which is not available.")
+            cli::cli_alert_info("Skipped slot {name} which is not available.")
             return(FALSE)
         },
         warining = function(w) {
