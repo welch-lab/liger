@@ -17,7 +17,7 @@
 
 - Fixed wrong UINMF aborting criteria
 - Fixed example/test skipping criteria for non-existing dependencies
-- Fixed file access issue when checking package on CRAN
+- Fixed file access issue when checking on CRAN
 - Updated installed data file `system.file("extdata/ctrl.h5", "extdata/stim.h5")` to be of standard 10X H5 format
 - Updated `quantileNorm()` automatic reference selection according to #297
 - Other minor fixes (including #308)

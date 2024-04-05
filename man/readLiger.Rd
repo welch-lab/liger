@@ -45,7 +45,7 @@ structure by default.
 # Save and read regular current-version liger object
 tempPath <- tempfile(fileext = ".rds")
 saveRDS(pbmc, tempPath)
-pbmc <- readLiger(tempPath)
+pbmc <- readLiger(tempPath, dimredName = NULL)
 
 # Save and read H5-based liger object
 h5Path <- system.file("extdata/ctrl.h5", package = "rliger")
