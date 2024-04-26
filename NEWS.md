@@ -13,6 +13,11 @@
   - Pseudo-bulk should be easy because we are just aggregating cells.
   - Wilcoxon might be a bit harder because ranks are calculated per gene but the H5 sparse data is column majored. Might need to find a fast on-disk transposition method.
 
+## rliger 2.0.2
+
+- Added `plotProportionBox()` for visualizing compositional analysis
+- Added `plotBarcodeRank()` for basic QC visualization
+
 ## rliger 2.0.1
 
 - Fixed wrong UINMF aborting criteria

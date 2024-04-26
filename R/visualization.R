@@ -332,6 +332,38 @@ plotGeneDetectedViolin <- function(
                    ylab = "Number of Genes Detected", ...)
 }
 
+#' Create barcode-rank plot for each dataset
+#' @description
+#' This function ranks the total count of each cell within each dataset and make
+#' line plot. This function is simply for examining the input raw count data
+#' and does not infer any recommended cutoff for removing non-cell barcodes.
+#' @param object A \linkS4class{liger} object.
+#' @inheritDotParams .ggScatter dotSize dotAlpha raster
+#' @inheritDotParams .ggplotLigerTheme title subtitle xlab ylab baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize panelBorder plotly
+#' @export
+#' @return A list object of ggplot for each dataset
+#' @examples
+#' plotBarcodeRank(pbmc)
+plotBarcodeRank <- function(
+        object,
+        ...
+) {
+    pl <- list()
+    for (d in names(object)) {
+        df <- data.frame(
+            rank = seq_len(lengths(object)[d]),
+            nUMI = sort(
+                cellMeta(object, columns = "nUMI", useDatasets = d),
+                decreasing = TRUE
+            )
+        )
+        pl[[d]] <- .ggScatter(df, x = "rank", y = "nUMI", ...) +
+            ggplot2::scale_y_log10() +
+            ggplot2::scale_x_log10() +
+            ggplot2::geom_line()
+    }
+    pl
+}
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Proportion #####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -564,6 +596,119 @@ plotProportionPie <- function(
             axis.text.y = ggplot2::element_blank(),
             axis.ticks.y = ggplot2::element_blank()
         )
+}
+
+#' Box plot of cluster proportion in each dataset, grouped by condition
+#' @description
+#' This function calculate the proportion of each category (e.g. cluster, cell
+#' type) within each dataset, and then make box plot grouped by condition. The
+#' proportion of all categories within one dataset sums up to 1. The condition
+#' variable must be a variable of dataset, i.e. each dataset must belong to only
+#' one condition.
+#'
+#' @param object A \linkS4class{liger} object.
+#' @param useCluster Name of variable in \code{cellMeta(object)}. Default
+#' \code{NULL} uses default cluster.
+#' @param conditionBy Name of the variable in \code{cellMeta(object)} that
+#' represents the condition. Must be a high level variable of the datasets, i.e.
+#' each dataset must belong to only one condition. Default \code{NULL} does not
+#' group by condition.
+#' @param dot Logical, whether to add dot plot on top of the box plot. Default
+#' \code{FALSE}.
+#' @param dotSize Size of the dot. Default uses user option "ligerDotSize", or
+#' \code{1} if not set.
+#' @param dotJitter Logical, whether to jitter the dot to avoid overlapping
+#' within a box when many dots are presented. Default \code{FALSE}.
+#' @inheritDotParams .ggplotLigerTheme title subtitle xlab ylab legendColorTitle legendFillTitle legendShapeTitle legendSizeTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize panelBorder legendNRow legendNCol colorLabels colorValues colorPalette colorDirection naColor colorLow colorMid colorHigh colorMidPoint plotly
+#' @export
+#' @return A ggplot object
+#' @examples
+#' plotProportionBox(pbmcPlot)
+plotProportionBox <- function(
+        object,
+        useCluster = NULL,
+        conditionBy = NULL,
+        dot = FALSE,
+        dotSize = getOption("ligerDotSize", 1),
+        dotJitter = FALSE,
+        ...
+) {
+    useCluster <- useCluster %||% object@uns$defaultCluster
+    if (is.null(useCluster)) {
+        cli::cli_abort("No cluster specified nor default set.")
+    }
+    clusterVar <- .fetchCellMetaVar(object, useCluster, checkCategorical = TRUE)
+    datasetVar <- object$dataset
+    compositionTable <- table(datasetVar, clusterVar)
+    dfLong <- data.frame(compositionTable)
+    names(dfLong) <- c("dataset", useCluster, "Count")
+
+    if (!is.null(conditionBy)) {
+        conditionVar <- .fetchCellMetaVar(
+            object = object, variables = conditionBy, checkCategorical = TRUE
+        )
+        # Check that condition variable is strictly a high level variable of dataset
+        if (!all(rowSums(table(datasetVar, conditionVar) > 0) == 1)) {
+            cli::cli_abort("Condition variable must be a high level variable of the datasets, i.e. each dataset must belong to only one condition.")
+        }
+
+        conditionTable <- table(datasetVar, conditionVar)
+        conditionMap <- apply(
+            conditionTable,
+            MARGIN = 1,
+            function(row) colnames(conditionTable)[row > 0]
+        )
+        conditionVar <- .fetchCellMetaVar(
+            object = object, variables = conditionBy, checkCategorical = TRUE
+        )
+        # Check that condition variable is strictly a high level variable of dataset
+        if (!all(rowSums(table(datasetVar, conditionVar) > 0) == 1)) {
+            cli::cli_abort("Condition variable must be a high level variable of the datasets, i.e. each dataset must belong to only one condition.")
+        }
+
+        conditionTable <- table(datasetVar, conditionVar)
+        conditionMap <- apply(
+            conditionTable,
+            MARGIN = 1,
+            function(row) colnames(conditionTable)[row > 0]
+        )
+        dfLong[[conditionBy]] <- factor(
+            conditionMap[dfLong$dataset],
+            levels = levels(conditionVar)
+        )
+    }
+
+    p <- dfLong %>%
+        dplyr::group_by(dataset) %>%
+        dplyr::mutate(
+            Proportion = .data[["Count"]] / sum(.data[["Count"]])#,
+        ) %>%
+        ggplot2::ggplot(
+            mapping = (
+                if (!is.null(conditionBy))
+                    ggplot2::aes(
+                        x = .data[[useCluster]],
+                        y = .data[["Proportion"]],
+                        fill = .data[[conditionBy]]
+                    )
+                else ggplot2::aes(
+                    x = .data[[useCluster]],
+                    y = .data[["Proportion"]]
+                )
+            )
+        ) +
+        (if (isTRUE(dot))
+            ggplot2::geom_point(
+                size = dotSize,
+                color = "black",
+                position =
+                    if (isTRUE(dotJitter)) ggplot2::position_jitter()
+                    else "identity"
+            )
+         else
+             NULL) +
+        ggplot2::geom_boxplot()
+    .ggplotLigerTheme(p, ...)
 }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
