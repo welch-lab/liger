@@ -761,7 +761,7 @@ plotVolcano <- function(
     if (!group %in% result$group) {
         cli::cli_abort(
             c("Selected group does not exist in {.code result$group}",
-              i = "Available ones: {.val {levels(droplevels(result$group))}}")
+              i = "Available ones: {.val {unique(result$group)}}")
         )
     }
     result <- result[result$group == group, ]
@@ -795,13 +795,20 @@ plotVolcano <- function(
     hlineLab <- data.frame(
         Y = c(-log10(padjThresh))
     )
+    halfWidth <- max(abs(result$logFC), na.rm = TRUE)
+    height <- max(result$padj, na.rm = TRUE)
+    lfcVertDrift <- height * 0.03
+    lfcHorizDrift <- halfWidth * 0.02
+    padjVertDrift <- height * 0.02
+    padjHorizDrift <- halfWidth * 0.001
     p <- .ggScatter(result, x = "logFC", y = "padj",
                     colorBy = "Significance", zeroAsNA = FALSE,
                     labelBy = "label",
                     xlab = "Log2 Fold Change",
                     ylab = "-log10 Adjusted P-value",
                     colorValues = c("black", "#ef2301", "#416ae1", "#238b22"),
-                    legendPosition = legendPosition, ...) +
+                    legendPosition = legendPosition,
+                    dotSize = dotSize, dotAlpha = dotAlpha, ...) +
         ggplot2::xlim(-max(abs(result$logFC)), max(abs(result$logFC))) +
         ggplot2::geom_vline(data = vlineLab,
                             mapping = ggplot2::aes(xintercept = .data[["X"]]),
@@ -810,16 +817,17 @@ plotVolcano <- function(
                             ggplot2::aes(yintercept = .data[["Y"]]),
                             linetype = "longdash") +
         ggplot2::annotate("text",
-                          x = -logFCThresh - 0.5, y = -10,
+                          x = -logFCThresh - lfcHorizDrift, y = -lfcVertDrift,
                           label = paste0("lower log2FC cutoff: ", -logFCThresh),
-                          size = labelSize, hjust = 1) +
+                          size = labelSize, hjust = 1, vjust = 1) +
         ggplot2::annotate("text",
-                          x = logFCThresh + 0.5, y = -10,
+                          x = logFCThresh + lfcHorizDrift, y = -lfcVertDrift,
                           label = paste0("higher log2FC cutoff: ", logFCThresh),
-                          size = labelSize, hjust = 0) +
-        ggplot2::annotate("text",
-                          x = -max(abs(result$logFC)) + 2,
-                          y = 10,
+                          size = labelSize, hjust = 0, vjust = 1) +
+        ggplot2::annotate("text", angle = 90,
+                          x = - halfWidth + padjHorizDrift,
+                          y = -log10(padjThresh) + padjVertDrift,
+                          hjust = 0, vjust = 1,
                           label = paste("p-adj cutoff:", padjThresh),
                           size = labelSize)
     return(p)

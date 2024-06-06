@@ -601,7 +601,7 @@ setReplaceMethod(
                     cli::cli_abort(
                         c("x" = "{.code names(value)} do match to cells selected. ",
                           "i" = "The first three given names: {.val {names(value)[1:3]}}",
-                          "i" = "The first three selected names: {.val {barocdes[1:3]}}")
+                          "i" = "The first three selected names: {.val {barcodes[1:3]}}")
                     )
                 }
                 names(value) <- barcodes

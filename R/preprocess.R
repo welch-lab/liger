@@ -384,6 +384,26 @@ normalize <- function(object, ...) {
 
 #' @rdname normalize
 #' @export
+#' @method normalize matrix
+normalize.matrix <- function(
+        object,
+        log = FALSE,
+        scaleFactor = NULL,
+        ...
+) {
+    scaleFactor <- .checkArgLen(scaleFactor, ncol(object), repN = TRUE, class = "numeric")
+    if (!is.null(scaleFactor) && any(scaleFactor <= 0)) {
+        cli::cli_alert_danger("Invalid {.code scaleFactor} given. Setting to {.code NULL}.")
+        scaleFactor <- NULL
+    }
+    normed <- normalize_byCol_dense_rcpp(object)
+    if (!is.null(scaleFactor)) normed <- normed * scaleFactor
+    if (isTRUE(log)) normed <- log1p(normed)
+    return(normed)
+}
+
+#' @rdname normalize
+#' @export
 #' @method normalize dgCMatrix
 #' @param log Logical. Whether to do a \code{log(x + 1)} transform on the
 #' normalized data. Default \code{TRUE}.

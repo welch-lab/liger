@@ -26,8 +26,8 @@
 #' @param object A \linkS4class{liger} object, with normalized data available
 #' @param groupTest,groupCtrl,variable1,variable2 Condition specification. See
 #' \code{?runPairwiseDEG} section \bold{Pairwise DEG Scenarios} for detail.
-#' @param method DEG test method to use. Choose from \code{"wilcoxon"} or
-#' \code{"pseudoBulk"}. Default \code{"wilcoxon"}
+#' @param method DEG test method to use. Choose from \code{"pseudoBulk"} or
+#' \code{"wilcoxon"}. Default \code{"pseudoBulk"}
 #' @param usePeak Logical. Whether to use peak count instead of gene count.
 #' Only supported when ATAC datasets are involved. Default \code{FALSE}.
 #' @param useReplicate \code{cellMeta} variable of biological replicate
@@ -59,7 +59,7 @@ runPairwiseDEG <- function(
         groupCtrl,
         variable1 = NULL,
         variable2 = NULL,
-        method = c("wilcoxon", "pseudoBulk"),
+        method = c("pseudoBulk", "wilcoxon"),
         usePeak = FALSE,
         useReplicate = NULL,
         nPsdRep = 5,
@@ -139,16 +139,18 @@ runPairwiseDEG <- function(
 #' @examples
 #' # Identify markers for each cluster. Equivalent to old version
 #' # `runWilcoxon(method = "cluster")`
-#' markerStats <- runMarkerDEG(pbmcPlot, conditionBy = "leiden_cluster")
+#' pbmc$leiden_cluster <- pbmcPlot$leiden_cluster
+#' markerStats <- runMarkerDEG(pbmc, conditionBy = "leiden_cluster")
 #' # Identify dataset markers within each cluster. Equivalent to old version
 #' # `runWilcoxon(method = "dataset")`.
-#' markerStatsList <- runMarkerDEG(pbmcPlot, conditionBy = "dataset",
-#'                                 splitBy = "leiden_cluster")
+#' markerStatsList <- runMarkerDEG(pbmc, conditionBy = "dataset",
+#'                                 splitBy = "leiden_cluster",
+#'                                 minCellPerRep = 2)
 runMarkerDEG <- function(
         object,
         conditionBy = NULL,
         splitBy = NULL, # The previous by dataset strategy
-        method = c("wilcoxon", "pseudoBulk"),
+        method = c("pseudoBulk", "wilcoxon"),
         useDatasets = NULL,
         usePeak = FALSE,
         useReplicate = NULL,
@@ -230,7 +232,7 @@ runWilcoxon <- function(
 .runDEG <- function(
         object,
         groups,
-        method = c("wilcoxon", "pseudoBulk"),
+        method = c("pseudoBulk", "wilcoxon"),
         # byDataset = FALSE,
         usePeak = FALSE,
         useReplicate = NULL,

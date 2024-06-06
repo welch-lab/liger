@@ -2,6 +2,7 @@
 % Please edit documentation in R/preprocess.R
 \name{normalize}
 \alias{normalize}
+\alias{normalize.matrix}
 \alias{normalize.dgCMatrix}
 \alias{normalize.ligerDataset}
 \alias{normalize.liger}
@@ -10,6 +11,8 @@
 \title{Normalize raw counts data}
 \usage{
 normalize(object, ...)
+
+\method{normalize}{matrix}(object, log = FALSE, scaleFactor = NULL, ...)
 
 \method{normalize}{dgCMatrix}(object, log = FALSE, scaleFactor = NULL, ...)
 

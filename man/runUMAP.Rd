@@ -13,6 +13,7 @@ runUMAP(
   nNeighbors = 20,
   minDist = 0.1,
   dimredName = "UMAP",
+  asDefault = NULL,
   seed = 42,
   verbose = getOption("ligerVerbose", TRUE),
   k = nDims,
@@ -30,7 +31,7 @@ runUMAP(
 matrices). Default \code{NULL} search for quantile-normalized loadings first
 and un-aligned loadings then.}
 
-\item{useDims}{Index of factors to use for computing UMAP embedding. Default
+\item{useDims}{Index of factors to use for computing the embedding. Default
 \code{NULL} uses all factors.}
 
 \item{nDims}{Number of dimensions to reduce to. Default \code{2}.}
@@ -47,6 +48,9 @@ compress points together. Default \code{0.1}.}
 
 \item{dimredName}{Name of the variable in \code{cellMeta} slot to store the
 result matrix. Default \code{"UMAP"}.}
+
+\item{asDefault}{Logical, whether to set the resulting dimRed as default for
+visualization. Default \code{NULL} will set it when no default is set.}
 
 \item{seed}{Random seed for reproducibility. Default \code{42}.}
 

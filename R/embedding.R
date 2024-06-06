@@ -20,7 +20,7 @@
 #' @param useRaw Whether to use un-aligned cell factor loadings (\eqn{H}
 #' matrices). Default \code{NULL} search for quantile-normalized loadings first
 #' and un-aligned loadings then.
-#' @param useDims Index of factors to use for computing UMAP embedding. Default
+#' @param useDims Index of factors to use for computing the embedding. Default
 #' \code{NULL} uses all factors.
 #' @param nDims Number of dimensions to reduce to. Default \code{2}.
 #' @param distance Character. Metric used to measure distance in the input
@@ -32,6 +32,8 @@
 #' compress points together. Default \code{0.1}.
 #' @param dimredName Name of the variable in \code{cellMeta} slot to store the
 #' result matrix. Default \code{"UMAP"}.
+#' @param asDefault Logical, whether to set the resulting dimRed as default for
+#' visualization. Default \code{NULL} will set it when no default is set.
 #' @param seed Random seed for reproducibility. Default \code{42}.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
@@ -52,6 +54,7 @@ runUMAP <- function(
         nNeighbors = 20,
         minDist = 0.1,
         dimredName = "UMAP",
+        asDefault = NULL,
         seed = 42,
         verbose = getOption("ligerVerbose", TRUE),
         # Deprecated coding style
@@ -81,9 +84,14 @@ runUMAP <- function(
                        n_neighbors = as.integer(nNeighbors),
                        min_dist = minDist)
     if (isTRUE(verbose)) cli::cli_process_done()
+    asDefault <- asDefault %||% is.null(object@uns$defaultDimRed)
+
     dimRed(object, dimredName) <- umap
-    if (isTRUE(verbose))
-        cli::cli_alert_info("{.field DimRed} {.val {dimredName}} is now set as default.")
+    if (isTRUE(asDefault)) {
+        defaultDimRed(object) <- dimredName
+        if (isTRUE(verbose))
+            cli::cli_alert_info("{.field DimRed} {.val {dimredName}} is now set as default.")
+    }
     return(object)
 }
 
@@ -101,13 +109,7 @@ runUMAP <- function(
 #' Extra external installation steps are required for using "fftRtsne" method.
 #' Please consult
 #' \href{https://welch-lab.github.io/liger/articles/installation.html}{detailed guide}.
-#' @param object \linkS4class{liger} object with factorization results.
-#' @param useRaw Whether to use un-aligned cell factor loadings (\eqn{H}
-#' matrices). Default \code{NULL} search for quantile-normalized loadings first
-#' and un-aligned loadings then.
-#' @param useDims Index of factors to use for computing UMAP embedding. Default
-#' \code{NULL} uses all factors.
-#' @param nDims Number of dimensions to reduce to. Default \code{2}.
+#' @inheritParams runUMAP
 #' @param usePCA Whether to perform initial PCA step for Rtsne. Default
 #' \code{FALSE}.
 #' @param perplexity Numeric parameter to pass to Rtsne (expected number of
@@ -121,9 +123,6 @@ runUMAP <- function(
 #' @param fitsnePath Path to the cloned FIt-SNE directory (i.e.
 #' \code{'/path/to/dir/FIt-SNE'}). Required only when first time using
 #' \code{runTSNE} with \code{method = "fftRtsne"}. Default \code{NULL}.
-#' @param seed Random seed for reproducibility. Default \code{42}.
-#' @param verbose Logical. Whether to show information of the progress. Default
-#' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param use.raw,dims.use,k,use.pca,fitsne.path,rand.seed \bold{Deprecated}.
 #' See Usage section for replacement.
 #' @return The \code{object} where a \code{"TSNE"} variable is updated in the
@@ -142,6 +141,7 @@ runTSNE <- function(
         theta = 0.5,
         method = c("Rtsne", "fftRtsne"),
         dimredName = "TSNE",
+        asDefault = NULL,
         fitsnePath = NULL,
         seed = 42,
         verbose = getOption("ligerVerbose", TRUE),
@@ -183,10 +183,16 @@ runTSNE <- function(
                           perplexity = perplexity)
     }
     if (isTRUE(verbose)) cli::cli_process_done()
+    asDefault <- asDefault %||% is.null(object@uns$defaultDimRed)
+
     dimRed(object, dimredName) <- tsne
     object@uns$TSNE <- list(method = method)
-    if (isTRUE(verbose))
-        cli::cli_alert_info("{.field DimRed} {.val {dimredName}} is now set as default.")
+
+    if (isTRUE(asDefault)) {
+        defaultDimRed(object) <- dimredName
+        if (isTRUE(verbose))
+            cli::cli_alert_info("{.field DimRed} {.val {dimredName}} is now set as default.")
+    }
     return(object)
 }
 

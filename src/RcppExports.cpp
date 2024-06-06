@@ -30,6 +30,33 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// normalize_dense_cpp
+arma::mat normalize_dense_cpp(const arma::mat& x, const arma::uword MARGIN, const arma::uword L);
+RcppExport SEXP _rliger_normalize_dense_cpp(SEXP xSEXP, SEXP MARGINSEXP, SEXP LSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::uword >::type MARGIN(MARGINSEXP);
+    Rcpp::traits::input_parameter< const arma::uword >::type L(LSEXP);
+    rcpp_result_gen = Rcpp::wrap(normalize_dense_cpp(x, MARGIN, L));
+    return rcpp_result_gen;
+END_RCPP
+}
+// scale_dense_cpp
+arma::mat scale_dense_cpp(const arma::mat& x, const arma::uword MARGIN, const bool center, const bool scale);
+RcppExport SEXP _rliger_scale_dense_cpp(SEXP xSEXP, SEXP MARGINSEXP, SEXP centerSEXP, SEXP scaleSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::uword >::type MARGIN(MARGINSEXP);
+    Rcpp::traits::input_parameter< const bool >::type center(centerSEXP);
+    Rcpp::traits::input_parameter< const bool >::type scale(scaleSEXP);
+    rcpp_result_gen = Rcpp::wrap(scale_dense_cpp(x, MARGIN, center, scale));
+    return rcpp_result_gen;
+END_RCPP
+}
 // colNormalize_dense_cpp
 arma::mat colNormalize_dense_cpp(arma::mat& x, const arma::uword L);
 RcppExport SEXP _rliger_colNormalize_dense_cpp(SEXP xSEXP, SEXP LSEXP) {
@@ -55,6 +82,33 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// harmony_moe_correct_ridge_cpp
+arma::mat harmony_moe_correct_ridge_cpp(const arma::mat& Z_orig, const arma::mat& R, const arma::colvec& lambda, const arma::sp_mat& Phi, const unsigned int B, const unsigned int N);
+RcppExport SEXP _rliger_harmony_moe_correct_ridge_cpp(SEXP Z_origSEXP, SEXP RSEXP, SEXP lambdaSEXP, SEXP PhiSEXP, SEXP BSEXP, SEXP NSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type Z_orig(Z_origSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type R(RSEXP);
+    Rcpp::traits::input_parameter< const arma::colvec& >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type Phi(PhiSEXP);
+    Rcpp::traits::input_parameter< const unsigned int >::type B(BSEXP);
+    Rcpp::traits::input_parameter< const unsigned int >::type N(NSEXP);
+    rcpp_result_gen = Rcpp::wrap(harmony_moe_correct_ridge_cpp(Z_orig, R, lambda, Phi, B, N));
+    return rcpp_result_gen;
+END_RCPP
+}
+// normalize_byCol_dense_rcpp
+arma::mat normalize_byCol_dense_rcpp(arma::mat x);
+RcppExport SEXP _rliger_normalize_byCol_dense_rcpp(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(normalize_byCol_dense_rcpp(x));
+    return rcpp_result_gen;
+END_RCPP
+}
 // scaleNotCenter_byRow_rcpp
 arma::sp_mat scaleNotCenter_byRow_rcpp(arma::sp_mat x);
 RcppExport SEXP _rliger_scaleNotCenter_byRow_rcpp(SEXP xSEXP) {
@@ -63,6 +117,30 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::sp_mat >::type x(xSEXP);
     rcpp_result_gen = Rcpp::wrap(scaleNotCenter_byRow_rcpp(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// safe_scale
+arma::mat safe_scale(arma::mat x, bool center, bool scale);
+RcppExport SEXP _rliger_safe_scale(SEXP xSEXP, SEXP centerSEXP, SEXP scaleSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< bool >::type center(centerSEXP);
+    Rcpp::traits::input_parameter< bool >::type scale(scaleSEXP);
+    rcpp_result_gen = Rcpp::wrap(safe_scale(x, center, scale));
+    return rcpp_result_gen;
+END_RCPP
+}
+// scaleNotCenter_byCol_dense_rcpp
+arma::mat scaleNotCenter_byCol_dense_rcpp(arma::mat x);
+RcppExport SEXP _rliger_scaleNotCenter_byCol_dense_rcpp(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(scaleNotCenter_byCol_dense_rcpp(x));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -321,9 +399,15 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_rliger_RunModularityClusteringCpp", (DL_FUNC) &_rliger_RunModularityClusteringCpp, 9},
+    {"_rliger_normalize_dense_cpp", (DL_FUNC) &_rliger_normalize_dense_cpp, 3},
+    {"_rliger_scale_dense_cpp", (DL_FUNC) &_rliger_scale_dense_cpp, 4},
     {"_rliger_colNormalize_dense_cpp", (DL_FUNC) &_rliger_colNormalize_dense_cpp, 2},
     {"_rliger_colAggregateMedian_dense_cpp", (DL_FUNC) &_rliger_colAggregateMedian_dense_cpp, 3},
+    {"_rliger_harmony_moe_correct_ridge_cpp", (DL_FUNC) &_rliger_harmony_moe_correct_ridge_cpp, 6},
+    {"_rliger_normalize_byCol_dense_rcpp", (DL_FUNC) &_rliger_normalize_byCol_dense_rcpp, 1},
     {"_rliger_scaleNotCenter_byRow_rcpp", (DL_FUNC) &_rliger_scaleNotCenter_byRow_rcpp, 1},
+    {"_rliger_safe_scale", (DL_FUNC) &_rliger_safe_scale, 3},
+    {"_rliger_scaleNotCenter_byCol_dense_rcpp", (DL_FUNC) &_rliger_scaleNotCenter_byCol_dense_rcpp, 1},
     {"_rliger_scaleNotCenter_byRow_perDataset_rcpp", (DL_FUNC) &_rliger_scaleNotCenter_byRow_perDataset_rcpp, 3},
     {"_rliger_rowVars_sparse_rcpp", (DL_FUNC) &_rliger_rowVars_sparse_rcpp, 2},
     {"_rliger_rowDivide_rcpp", (DL_FUNC) &_rliger_rowDivide_rcpp, 2},

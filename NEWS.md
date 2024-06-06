@@ -17,6 +17,9 @@
 
 - Added `plotProportionBox()` for visualizing compositional analysis
 - Added `plotBarcodeRank()` for basic QC visualization
+- Fixed bug in `calcAlignment()`, `subsetMemLigerDataset()`, `cellMeta()`
+- Optimized `plotVolcano()` text annotation positioning
+- Changed `runMarkerDEG()` and `runPairwiseDEG()` default method from `"wilcoxon"` to `"pseudoBulk"`
 
 ## rliger 2.0.1
 

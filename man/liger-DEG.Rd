@@ -12,7 +12,7 @@ runPairwiseDEG(
   groupCtrl,
   variable1 = NULL,
   variable2 = NULL,
-  method = c("wilcoxon", "pseudoBulk"),
+  method = c("pseudoBulk", "wilcoxon"),
   usePeak = FALSE,
   useReplicate = NULL,
   nPsdRep = 5,
@@ -25,7 +25,7 @@ runMarkerDEG(
   object,
   conditionBy = NULL,
   splitBy = NULL,
-  method = c("wilcoxon", "pseudoBulk"),
+  method = c("pseudoBulk", "wilcoxon"),
   useDatasets = NULL,
   usePeak = FALSE,
   useReplicate = NULL,
@@ -47,8 +47,8 @@ runWilcoxon(
 \item{groupTest, groupCtrl, variable1, variable2}{Condition specification. See
 \code{?runPairwiseDEG} section \bold{Pairwise DEG Scenarios} for detail.}
 
-\item{method}{DEG test method to use. Choose from \code{"wilcoxon"} or
-\code{"pseudoBulk"}. Default \code{"wilcoxon"}}
+\item{method}{DEG test method to use. Choose from \code{"pseudoBulk"} or
+\code{"wilcoxon"}. Default \code{"pseudoBulk"}}
 
 \item{usePeak}{Logical. Whether to use peak count instead of gene count.
 Only supported when ATAC datasets are involved. Default \code{FALSE}.}
@@ -146,9 +146,11 @@ degStats <- runPairwiseDEG(pbmcPlot, groupTest = "5", groupCtrl = "stim",
                            variable2 = "dataset")
 # Identify markers for each cluster. Equivalent to old version
 # `runWilcoxon(method = "cluster")`
-markerStats <- runMarkerDEG(pbmcPlot, conditionBy = "leiden_cluster")
+pbmc$leiden_cluster <- pbmcPlot$leiden_cluster
+markerStats <- runMarkerDEG(pbmc, conditionBy = "leiden_cluster")
 # Identify dataset markers within each cluster. Equivalent to old version
 # `runWilcoxon(method = "dataset")`.
-markerStatsList <- runMarkerDEG(pbmcPlot, conditionBy = "dataset",
-                                splitBy = "leiden_cluster")
+markerStatsList <- runMarkerDEG(pbmc, conditionBy = "dataset",
+                                splitBy = "leiden_cluster",
+                                minCellPerRep = 2)
 }

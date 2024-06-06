@@ -6,6 +6,20 @@
 using namespace Rcpp;
 using namespace arma;
 
+// [[Rcpp::export]]
+arma::mat normalize_byCol_dense_rcpp(arma::mat x) {
+  arma::vec sums = arma::sum(x, 0).t();
+  for (arma::uword i = 0; i < x.n_cols; ++i) {
+    if (sums[i] == 0) {
+      x.col(i).fill(0);
+    } else {
+      x.col(i) /= sums[i];
+    }
+  }
+  return x;
+}
+
+
 // ========================= Used for scaleNotCenter ===========================
 
 // [[Rcpp::export]]
@@ -22,6 +36,59 @@ arma::sp_mat scaleNotCenter_byRow_rcpp(arma::sp_mat x) {
       *i = 0;
     } else {
       *i /= sum_of_squares[i.row()];
+    }
+  }
+  return x;
+}
+
+// [[Rcpp::export]]
+arma::mat safe_scale(arma::mat x, bool center, bool scale) {
+  arma::vec means = arma::mean(x, 0).t();
+  if (center) {
+    for (arma::uword i = 0; i < x.n_cols; ++i) {
+      x.col(i) -= means[i];
+    }
+  }
+
+  if (scale) {
+    arma::vec sds = arma::zeros<arma::vec>(x.n_cols);
+    for (arma::uword i = 0; i < x.n_cols; ++i) {
+      for (arma::uword j = 0; j < x.n_rows; ++j) {
+        sds[i] += x(j, i) * x(j, i);
+      }
+      sds[i] = std::sqrt(sds[i] / (x.n_rows - 1));
+
+      if (sds[i] == 0) {
+        x.col(i).fill(0);
+      } else {
+        x.col(i) /= sds[i];
+      }
+    }
+  }
+  return x;
+}
+
+
+// [[Rcpp::export]]
+arma::mat scaleNotCenter_byCol_dense_rcpp(
+  arma::mat x
+) {
+  arma::uword nrow = x.n_rows, ncol = x.n_cols;
+  arma::vec sum_of_squares(ncol);
+  for (arma::uword i = 0; i < nrow; ++i) {
+    for (arma::uword j = 0; j < ncol; ++j) {
+      sum_of_squares[j] += x(i, j) * x(i, j);
+    }
+  }
+  sum_of_squares /= (nrow - 1);
+  sum_of_squares = arma::sqrt(sum_of_squares);
+  for (arma::uword i = 0; i < nrow; ++i) {
+    for (arma::uword j = 0; j < ncol; ++j) {
+      if (sum_of_squares[j] == 0) {
+        x(i, j) = 0;
+      } else {
+        x(i, j) /= sum_of_squares[j];
+      }
     }
   }
   return x;

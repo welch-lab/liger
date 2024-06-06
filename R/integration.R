@@ -1889,6 +1889,7 @@ calcAlignment <- function(
     set.seed(seed)
     minCells <- min(table(datasetVar))
     sampledCells <- lapply(split(cellIdx, datasetVar), sample, size = minCells)
+    sampledCells <- unlist(sampledCells)
     nSampled <- nlevels(datasetVar)*minCells
     maxNNeighbors <- nSampled - 1
     if (is.null(nNeighbors)) {
@@ -1899,9 +1900,10 @@ calcAlignment <- function(
     # RANN::nn2 always consider the query itself as the nearest nearest neighbor
     # So we have to find one more neighbor than we need and remove the first one
     knn <- RANN::nn2(
-        hnorm[unlist(sampledCells), , drop = FALSE],
+        hnorm[sampledCells, , drop = FALSE],
         k = nNeighbors + 1
     )
+    datasetVar <- datasetVar[sampledCells]
     knnIdx <- knn$nn.idx[, -1]
     kOverN <- nNeighbors/nlevels(datasetVar)
     nSameDataset <- sapply(seq_len(nSampled), function(i) {
