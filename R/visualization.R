@@ -613,6 +613,8 @@ plotProportionPie <- function(
 #' represents the condition. Must be a high level variable of the datasets, i.e.
 #' each dataset must belong to only one condition. Default \code{NULL} does not
 #' group by condition.
+#' @param splitByCluster Logical, whether to split the wide grouped box plot by
+#' cluster, into a list of boxplots for each cluster. Default \code{FALSE}.
 #' @param dot Logical, whether to add dot plot on top of the box plot. Default
 #' \code{FALSE}.
 #' @param dotSize Size of the dot. Default uses user option "ligerDotSize", or
@@ -621,13 +623,18 @@ plotProportionPie <- function(
 #' within a box when many dots are presented. Default \code{FALSE}.
 #' @inheritDotParams .ggplotLigerTheme title subtitle xlab ylab legendColorTitle legendFillTitle legendShapeTitle legendSizeTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize panelBorder legendNRow legendNCol colorLabels colorValues colorPalette colorDirection naColor colorLow colorMid colorHigh colorMidPoint plotly
 #' @export
-#' @return A ggplot object
+#' @return A ggplot object or a list of ggplot objects if
+#' \code{splitByCluster = TRUE}.
 #' @examples
-#' plotProportionBox(pbmcPlot)
+#' # "boxes" are expected to appear as horizontal lines, because there's no
+#' "condition" variable that groups the datasets in the example object, and thus
+#' only one value exists for each "box".
+#' plotProportionBox(pbmcPlot, conditionBy = "dataset")
 plotProportionBox <- function(
         object,
         useCluster = NULL,
         conditionBy = NULL,
+        splitByCluster = FALSE,
         dot = FALSE,
         dotSize = getOption("ligerDotSize", 1),
         dotJitter = FALSE,
@@ -678,12 +685,46 @@ plotProportionBox <- function(
         )
     }
 
-    p <- dfLong %>%
+    dfLong %<>%
         dplyr::group_by(dataset) %>%
         dplyr::mutate(
-            Proportion = .data[["Count"]] / sum(.data[["Count"]])#,
-        ) %>%
-        ggplot2::ggplot(
+            Proportion = .data[["Count"]] / sum(.data[["Count"]]),
+        )
+    if (isTRUE(splitByCluster)) {
+        plist <- lapply(levels(clusterVar), function(cluster) {
+            p <- ggplot2::ggplot(
+                data = dfLong[dfLong[[useCluster]] == cluster, ],
+                mapping = (
+                    if (!is.null(conditionBy))
+                        ggplot2::aes(
+                            x = .data[[conditionBy]],
+                            y = .data[["Proportion"]],
+                            fill = .data[[conditionBy]]
+                        )
+                    else ggplot2::aes(
+                        x = .data[[conditionBy]],
+                        y = .data[["Proportion"]]
+                    )
+                )
+            ) +
+                (if (isTRUE(dot))
+                    ggplot2::geom_point(
+                        size = dotSize,
+                        color = "black",
+                        position =
+                            if (isTRUE(dotJitter)) ggplot2::position_jitter()
+                        else "identity"
+                    )
+                 else
+                     NULL) +
+                ggplot2::geom_boxplot()
+            return(.ggplotLigerTheme(p, ...))
+        })
+        names(plist) <- levels(clusterVar)
+        return(plist)
+    } else {
+        p <- ggplot2::ggplot(
+            data = dfLong,
             mapping = (
                 if (!is.null(conditionBy))
                     ggplot2::aes(
@@ -697,18 +738,20 @@ plotProportionBox <- function(
                 )
             )
         ) +
-        (if (isTRUE(dot))
-            ggplot2::geom_point(
-                size = dotSize,
-                color = "black",
-                position =
-                    if (isTRUE(dotJitter)) ggplot2::position_jitter()
+            (if (isTRUE(dot))
+                ggplot2::geom_point(
+                    size = dotSize,
+                    color = "black",
+                    position =
+                        if (isTRUE(dotJitter)) ggplot2::position_jitter()
                     else "identity"
-            )
-         else
-             NULL) +
-        ggplot2::geom_boxplot()
-    .ggplotLigerTheme(p, ...)
+                )
+             else
+                 NULL) +
+            ggplot2::geom_boxplot()
+        return(.ggplotLigerTheme(p, ...))
+    }
+
 }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

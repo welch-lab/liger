@@ -8,6 +8,7 @@ plotProportionBox(
   object,
   useCluster = NULL,
   conditionBy = NULL,
+  splitByCluster = FALSE,
   dot = FALSE,
   dotSize = getOption("ligerDotSize", 1),
   dotJitter = FALSE,
@@ -24,6 +25,9 @@ plotProportionBox(
 represents the condition. Must be a high level variable of the datasets, i.e.
 each dataset must belong to only one condition. Default \code{NULL} does not
 group by condition.}
+
+\item{splitByCluster}{Logical, whether to split the wide grouped box plot by
+cluster, into a list of boxplots for each cluster. Default \code{FALSE}.}
 
 \item{dot}{Logical, whether to add dot plot on top of the box plot. Default
 \code{FALSE}.}
@@ -84,7 +88,8 @@ for the plot. Requires installation of package "plotly". Default
   }}
 }
 \value{
-A ggplot object
+A ggplot object or a list of ggplot objects if
+\code{splitByCluster = TRUE}.
 }
 \description{
 This function calculate the proportion of each category (e.g. cluster, cell
@@ -94,5 +99,8 @@ variable must be a variable of dataset, i.e. each dataset must belong to only
 one condition.
 }
 \examples{
-plotProportionBox(pbmcPlot)
+# "boxes" are expected to appear as horizontal lines, because there's no
+"condition" variable that groups the datasets in the example object, and thus
+only one value exists for each "box".
+plotProportionBox(pbmcPlot, conditionBy = "dataset")
 }
