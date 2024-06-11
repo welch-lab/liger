@@ -702,12 +702,12 @@ plotProportionBox <- function(
                             fill = .data[[conditionBy]]
                         )
                     else ggplot2::aes(
-                        x = .data[[conditionBy]],
+                        x = .data[[useCluster]],
                         y = .data[["Proportion"]]
                     )
                 )
-            ) +
-                (if (isTRUE(dot))
+            ) + (
+                if (isTRUE(dot))
                     ggplot2::geom_point(
                         size = dotSize,
                         color = "black",
@@ -715,9 +715,11 @@ plotProportionBox <- function(
                             if (isTRUE(dotJitter)) ggplot2::position_jitter()
                         else "identity"
                     )
-                 else
-                     NULL) +
-                ggplot2::geom_boxplot()
+                else
+                    NULL
+            ) +
+                ggplot2::geom_boxplot() +
+                ggplot2::ggtitle(paste0(useCluster, ": ", cluster))
             return(.ggplotLigerTheme(p, ...))
         })
         names(plist) <- levels(clusterVar)

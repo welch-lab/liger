@@ -185,13 +185,33 @@ runMarkerDEG <- function(
     } else {
         result <- list()
         for (i in seq_along(levels(splitBy))) {
+            if (isTRUE(verbose)) {
+                cli::cli_alert_info(
+                    "Running psuedo-bulk DEG on: {.val {levels(splitBy)[i]}}"
+                )
+            }
+
             subIdx <- splitBy == levels(splitBy)[i]
             subCellIdx <- allCellIdx[subIdx]
             groups <- split(subCellIdx, conditionBy[subIdx])
-            result[[levels(splitBy)[i]]] <- .runDEG(
-                object, groups = groups, method = method, usePeak = usePeak,
-                useReplicate = useReplicate, nPsdRep = nPsdRep,
-                minCellPerRep = minCellPerRep, seed = seed, verbose = verbose
+            result[[levels(splitBy)[i]]] <- tryCatch(
+                {
+                    .runDEG(
+                        object, groups = groups, method = method,
+                        usePeak = usePeak, useReplicate = useReplicate,
+                        nPsdRep = nPsdRep, minCellPerRep = minCellPerRep,
+                        seed = seed, verbose = verbose
+                    )
+                },
+                error = function(e) {
+                    cli::cli_alert_danger(
+                        "Error when computing on {.val {levels(splitBy)[i]}}: {e$message}"
+                    )
+                    cli::cli_alert_warning(
+                        "Empty result (NULL) returned for this test."
+                    )
+                    return(NULL)
+                }
             )
         }
     }
