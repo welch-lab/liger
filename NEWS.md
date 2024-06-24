@@ -1,7 +1,7 @@
 ## rliger Next
 
 - Standardized H5 IO specification that can be shared with other platforms.
-  - Will move to use HDF5Array (TENxMatrix, H5ADMatrix)/ or BPCells for backed data representation.
+  - Will move to use HDF5Array (TENxMatrix, H5ADMatrix)/ or BPCells for backed data representation, depending on easiness, cleanliness and future-sustainability of the implementation and cross-platform interoperability.
   - Read feature metadata (e.g. id, name, ...) if available; Allow setting "id" as rownames, "name" for visualization.
   - rawData - coming from the original input, read only (qc filtering should be just stored in the object, no IO)
   - preprocessing metrics - nUMI, nGene and etc, still go "chunkApply" so the file is read only once
@@ -11,15 +11,18 @@
   - Allow doing something like `reorganize(ligerObj, variable = "somethingNotDataset")` and resulting in a new liger object with different ligerDataset grouping.
 - Ability to do downstream analysis on H5 data
   - Pseudo-bulk should be easy because we are just aggregating cells.
-  - Wilcoxon might be a bit harder because ranks are calculated per gene but the H5 sparse data is column majored. Might need to find a fast on-disk transposition method.
+  - Wilcoxon might be a bit harder because ranks are calculated per gene but the H5 sparse data is column majored. Might need to find a fast on-disk transposition method, which would also enhance RcppPlanc performance when running ANLS on H5 data.
 
-## rliger 2.0.2
+## rliger 2.0.1.9001
 
+- Added `ligerToH5AD()` allowing reticulate/Python free export of liger object to H5AD format
+- Changed `runMarkerDEG()` and `runPairwiseDEG()` default method from `"wilcoxon"` to `"pseudoBulk"`
+- Fixed `runMarkerDEG(method = "pseudobulk")` bug in creating pseudo-bulk for "the rest of cells" , and optimized error signaling.
 - Added `plotProportionBox()` for visualizing compositional analysis
 - Added `plotBarcodeRank()` for basic QC visualization
+- Added `calcNMI()` for evaluating clustering results against ground truth
 - Fixed bug in `calcAlignment()`, `subsetMemLigerDataset()`, `cellMeta()`
 - Optimized `plotVolcano()` text annotation positioning
-- Changed `runMarkerDEG()` and `runPairwiseDEG()` default method from `"wilcoxon"` to `"pseudoBulk"`
 
 ## rliger 2.0.1
 

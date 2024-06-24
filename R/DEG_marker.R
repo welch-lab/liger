@@ -1,11 +1,78 @@
 #' @title Find DEG between two groups
 #' @description Find DEG between two groups. Two methods are supported:
-#' \code{"wilcoxon"} and \code{"pseudoBulk"}. Wilcoxon rank sum test is
-#' performed on single-cell level, while pseudo-bulk method aggregates cells
-#' basing on biological replicates and calls bulk RNAseq DE methods, DESeq2 wald
-#' test. When real biological replicates are not available, pseudo replicates
-#' can be generated. Please see below for detailed scenario usage.
-#' @section Pairwise DEG Scenarios:
+#' \code{"pseudoBulk"} and \code{"wilcoxon"}. Pseudo-bulk method aggregates
+#' cells basing on biological replicates and calls bulk RNAseq DE methods,
+#' DESeq2 wald test, while Wilcoxon rank sum test is performed on single-cell
+#' level.
+#'
+#' While using pseudo-bulk method, it is generally recommended that you have
+#' these variables available in your object:
+#'
+#' \enumerate{
+#'   \item{The cell type or cluster labeling, dividing the cells by
+#'   functionality. This can be obtained from prior study or computed with
+#'   \code{\link{runCluster}}}
+#'   \item{The biological replicate labeling, most of the time the
+#'   \code{"dataset"} variable automatically generated when the
+#'   \linkS4class{liger} object is created. }
+#'   \item{The condition labeling that reflects the study design, such as the
+#'   treatment or disease status for each sample/dataset.}
+#' }
+#'
+#' Please see below for detailed scenarios.
+#'
+#' @section Using Wilcoxon rank-sum test:
+#' Wilcoxon rank-sum test works for each gene and is based on the rank of the
+#' expression in each cell. LIGER provides dataset integration but does not
+#' "correct" the expression values. Projects with strong batch effects or
+#' integrate drastically different modalities should be cautious when using
+#' this method.
+#'
+#' @section Comparing difference between/across cell types:
+#' Most of times, people would want to know what cell types are for each cluster
+#' after clustering. This can be done with a marker detection method that test
+#' each cluster against all the other cells. This can be done with a command
+#' like \code{runMarkerDEG(object, conditionBy = "cluster_var")}. When using
+#' default pseudo-bulk method, users should additionaly determine the
+#' pseudo-bulk setup parameters. If the real biological replicate variable is
+#' available, it should be supplied to argument \code{useReplicate}, otherwise,
+#' set \code{useReplicate = NULL} and use pseudo-replicate setup.
+#'
+#' @section Compare between conditions:
+#' It is frequently needed to identify the difference between conditions. Users
+#' can simply set \code{conditionBy = "condition_var"}. However, most of time,
+#' such comparisons should be ideally done in a per-cluster manner. This can be
+#' done by setting \code{splitBy = "cluster_var"}. This will run a loop for each
+#' cluster, and within the group of cells, compare each condition against all
+#' other cells in the cluster.
+#'
+#' In the scenario when users only need to compare two conditions for each
+#' cluster, running \code{runPairwiseDEG(object, groupTest = "condition1",
+#' groupCtrl = "condition2", variable1 = "condition_var",
+#' splitBy = "cluster_var")} would address the need.
+#'
+#' For both use case, if pseudo-bulk (default) method is used, users should
+#' determine the pseudo-bulk setup parameters as mentioned in the previous
+#' section.
+#'
+#' @section Detailed \code{runMarkerDEG} usage:
+#' Marker detection is generally performed in a one vs. rest manner. The
+#' grouping of such condition is specified by \code{conditionBy}, which should
+#' be a column name in \code{cellMeta}. When \code{splitBy} is specified as
+#' another variable name in \code{cellMeta}, the marker detection will be
+#' iteratively done for within each level of \code{splitBy} variable.
+#'
+#' For example, when \code{conditionBy = "celltype"} and \code{splitBy = NULL},
+#' marker detection will be performed by comparing all cells of "celltype_i"
+#' against all other cells, and etc. This is analogous to the old version when
+#' running \code{runWilcoxon(method = "cluster")}.
+#'
+#' When \code{conditionBy = "gender"} and \code{splitBy = "leiden_cluster"},
+#' marker detection will be performed by comparing "gender_i" cells from "cluster_j"
+#' against other cells from "cluster_j", and etc. This is analogous to the old
+#' version when running \code{runWilcoxon(method = "dataset")}.
+#'
+#' @section Detailed \code{runPairwiseDEG} usage:
 #' Users can select classes of cells from a variable in \code{cellMeta}.
 #' \code{variable1} and \code{variable2} are used to specify a column in
 #' \code{cellMeta}, and \code{groupTest} and \code{groupCtrl} are used to specify
@@ -26,6 +93,8 @@
 #' @param object A \linkS4class{liger} object, with normalized data available
 #' @param groupTest,groupCtrl,variable1,variable2 Condition specification. See
 #' \code{?runPairwiseDEG} section \bold{Pairwise DEG Scenarios} for detail.
+#' @param splitBy Name(s) of the variable(s) in \code{cellMeta} to split the
+#' comparison. See Details. Default \code{NULL}.
 #' @param method DEG test method to use. Choose from \code{"pseudoBulk"} or
 #' \code{"wilcoxon"}. Default \code{"pseudoBulk"}
 #' @param usePeak Logical. Whether to use peak count instead of gene count.
@@ -37,37 +106,94 @@
 #' \code{method = "pseudoBulk", useReplicate = NULL}. Default \code{5}.
 #' @param minCellPerRep Numeric, will not make pseudo-bulk for replicate with
 #' less than this number of cells. Default \code{10}.
+#' @param printDisgnostic Logical. Whether to show more detail when
+#' \code{verbose = TRUE}. Default \code{FALSE}.
 #' @param seed Random seed to use for pseudo-replicate generation. Default
 #' \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
-#' @return A data.frame with DEG information
+#' @return A data.frame with DEG information with the following field:
+#' \enumerate{
+#'  \item{feature - Gene names}
+#'  \item{group - Test group name. Multiple tests might be present for each
+#'    function call. This is the main variable to distinguish the tests. For a
+#'    pairwise test, a row with a certain group name represents the test result
+#'    between the this group against the other control group; When split by a
+#'    variable, it would be presented in "split.group" format, meaning the stats
+#'    is by comparing the group in the split level against the control group in
+#'    the same split level. When running marker detection without splitting,
+#'    a row with group "a" represents the stats of the gene in group "a" against
+#'    all other cells. When running split marker detection, the group name would
+#'    be in "split.group" format, meaning the stats is by comparing the group in
+#'    the split level against all other cells in the same split level.}
+#'  \item{logFC - Log fold change}
+#'  \item{pval - P-value}
+#'  \item{padj - Adjusted p-value}
+#'  \item{avgExpr - Mean expression in the test group indicated by the "group"
+#'    field. Only available for wilcoxon tests.}
+#'  \item{statistic - Wilcoxon rank-sum test statistic. Only available for
+#'    wilcoxon tests.}
+#'  \item{auc - Area under the ROC curve. Only available for wilcoxon tests.}
+#'  \item{pct_in - Percentage of cells in the test group, indicated by the
+#'    "group" field, that express the feature. Only available for wilcoxon
+#'    tests.}
+#'  \item{pct_out - Percentage of cells in the control group or other cells, as
+#'    explained for the "group" field, that express the feature. Only available
+#'    for wilcoxon tests.}
+#' }
 #' @rdname liger-DEG
 #' @export
 #' @examples
+#' pbmc$leiden_cluster <- pbmcPlot$leiden_cluster
+#'
+#' # Identify cluster markers
+#' degStats1 <- runMarkerDEG(pbmc, conditionBy = "leiden_cluster",
+#'                           minCellPerRep = 5)
+#'
 #' # Compare between cluster "0" and cluster "1"
-#' degStats <- runPairwiseDEG(pbmcPlot, groupTest = 0, groupCtrl = 1,
-#'                            variable1 = "leiden_cluster")
-#' # Compare between all cells from cluster "5" and
-#' # all cells from dataset "stim"
-#' degStats <- runPairwiseDEG(pbmcPlot, groupTest = "5", groupCtrl = "stim",
-#'                            variable1 = "leiden_cluster",
-#'                            variable2 = "dataset")
+#' degStats2 <- runPairwiseDEG(pbmc, groupTest = 0, groupCtrl = 1,
+#'                             variable1 = "leiden_cluster")
+#'
+#' # Compare "stim" data against "ctrl" data within each cluster
+#' degStats3 <- runPairwiseDEG(pbmc, groupTest = "stim", groupCtrl = "ctrl",
+#'                             variable1 = "dataset",
+#'                             splitBy = "leiden_cluster",
+#'                             nPsdRep = 2, minCellPerRep = 4)
+#'
+#' # Identify dataset markers within each cluster.
+#' degStats4 <- runMarkerDEG(pbmc, conditionBy = "dataset",
+#'                           splitBy = "leiden_cluster", nPsdRep = 2,
+#'                           minCellPerRep = 4)
 runPairwiseDEG <- function(
         object,
         groupTest,
         groupCtrl,
         variable1 = NULL,
         variable2 = NULL,
+        splitBy = NULL,
         method = c("pseudoBulk", "wilcoxon"),
         usePeak = FALSE,
         useReplicate = NULL,
         nPsdRep = 5,
         minCellPerRep = 10,
+        printDisgnostic = FALSE,
         seed = 1,
         verbose = getOption("ligerVerbose", TRUE)
 ) {
     method <- match.arg(method)
+    if (!is.null(splitBy)) {
+        splitVar <- .fetchCellMetaVar(object, splitBy,
+                                      checkCategorical = TRUE, drop = TRUE,
+                                      droplevels = TRUE)
+        splitVar <- interaction(splitVar, drop = TRUE)
+        splitGroup <- lapply(levels(splitVar), function(x) {
+            which(splitVar == x)
+        })
+        names(splitGroup) <- levels(splitVar)
+    } else {
+        splitGroup <- list(seq(ncol(object)))
+    }
+
     if (is.null(variable1) && is.null(variable2)) {
         # Directly using cell index
         groups <- list(
@@ -88,8 +214,8 @@ runPairwiseDEG <- function(
             var2 <- var1
         } else {
             var2 <- .fetchCellMetaVar(object, variable2,
-                                           checkCategorical = TRUE, drop = TRUE,
-                                           droplevels = TRUE)
+                                      checkCategorical = TRUE, drop = TRUE,
+                                      droplevels = TRUE)
         }
         group2Idx <- which(var2 %in% groupCtrl)
         group2Name <- paste(groupCtrl, collapse = ".")
@@ -98,19 +224,52 @@ runPairwiseDEG <- function(
     } else {
         cli::cli_abort("Please see {.code ?runPairwiseDEG} for usage.")
     }
-    result <- .runDEG(object, groups = groups, method = method,
-                      usePeak = usePeak, useReplicate = useReplicate,
-                      nPsdRep = nPsdRep,
-                      minCellPerRep = minCellPerRep, seed = seed,
-                      verbose = verbose)
-    result <- result[result$group == group1Name,]
-    attributes(result)$meta <- list(
-        groupTest = groupTest,
-        variable1 = variable1,
-        groupCtrl = groupCtrl,
-        variable2 = variable2
-    )
-    return(result)
+    resultList <- list()
+    for (i in seq_along(splitGroup)) {
+        splitName <- names(splitGroup)[i]
+        splitIdx <- splitGroup[[i]]
+
+        if (isTRUE(verbose)) {
+            if (length(splitGroup) > 1) {
+                cli::cli_alert_info(
+                    "Running DEG within: {.val {splitName}}"
+                )
+            }
+        }
+
+        groups.sub <- lapply(groups, function(x) {
+            intersect(x, splitIdx)
+        })
+        names(groups.sub) <- sapply(names(groups), function(x) {
+            paste(c(splitName, x), collapse = ".")
+        })
+        if (length(groups.sub[[1]]) == 0) {
+            cli::cli_alert_warning("No cell selected for group {.val {names(groups.sub)[1]}} when split by {.val {splitBy}} in level {.val {splitName}}. Skipping.")
+            next
+        }
+        if (length(groups.sub[[2]]) == 0) {
+            cli::cli_alert_warning("No cell selected for group {.val {names(groups.sub)[1]}} when split by {.val {splitBy}} in level {.val {splitName}}. Skipping.")
+            next
+        }
+        result <- .runDEG(object, groups = groups.sub, method = method,
+                          usePeak = usePeak, useReplicate = useReplicate,
+                          nPsdRep = nPsdRep,
+                          minCellPerRep = minCellPerRep, seed = seed,
+                          printDisgnostic = printDisgnostic,
+                          skipTwoGroup = TRUE,
+                          verbose = verbose)
+        result <- result[result$group == names(groups.sub)[1],]
+
+        # attributes(result)$meta <- list(
+        #     groupTest = groupTest,
+        #     variable1 = variable1,
+        #     groupCtrl = groupCtrl,
+        #     variable2 = variable2
+        # )
+        resultList[[i]] <- result
+    }
+    resultList <- Reduce(rbind, resultList)
+    return(resultList)
 }
 
 #' @rdname liger-DEG
@@ -118,34 +277,8 @@ runPairwiseDEG <- function(
 #' @param conditionBy \code{cellMeta} variable(s). Marker detection will be
 #' performed for each level of this variable. Multiple variables will be
 #' combined. Default \code{NULL} uses default cluster.
-#' @param splitBy Split data by \code{cellMeta} variable(s) here and identify
-#' markers for \code{conditionBy} within each chunk. Default \code{NULL}.
 #' @param useDatasets Datasets to perform marker detection within. Default
 #' \code{NULL} will use all datasets.
-#' @section Marker Detection Scenarios:
-#' Marker detection is generally performed in a one vs. rest manner. The
-#' grouping of such condition is specified by \code{conditionBy}, which should
-#' be a column name in \code{cellMeta}. When \code{splitBy} is specified as
-#' another variable name in \code{cellMeta}, the marker detection will be
-#' iteratively done for within each level of \code{splitBy} variable.
-#'
-#' For example, when \code{conditionBy = "celltype"} and \code{splitBy = NULL},
-#' marker detection will be performed by comparing all cells of "celltype_i"
-#' against all other cells, and etc.
-#'
-#' When \code{conditionBy = "celltype"} and \code{splitBy = "gender"}, marker
-#' detection will be performed by comparing "celltype_i" cells from "gender_j"
-#' against other cells from "gender_j", and etc.
-#' @examples
-#' # Identify markers for each cluster. Equivalent to old version
-#' # `runWilcoxon(method = "cluster")`
-#' pbmc$leiden_cluster <- pbmcPlot$leiden_cluster
-#' markerStats <- runMarkerDEG(pbmc, conditionBy = "leiden_cluster")
-#' # Identify dataset markers within each cluster. Equivalent to old version
-#' # `runWilcoxon(method = "dataset")`.
-#' markerStatsList <- runMarkerDEG(pbmc, conditionBy = "dataset",
-#'                                 splitBy = "leiden_cluster",
-#'                                 minCellPerRep = 2)
 runMarkerDEG <- function(
         object,
         conditionBy = NULL,
@@ -156,6 +289,7 @@ runMarkerDEG <- function(
         useReplicate = NULL,
         nPsdRep = 5,
         minCellPerRep = 10,
+        printDisgnostic = FALSE,
         seed = 1,
         verbose = getOption("ligerVerbose", TRUE)
 ) {
@@ -175,45 +309,35 @@ runMarkerDEG <- function(
         checkCategorical = TRUE, drop = FALSE, droplevels = TRUE
     )
     splitBy <- interaction(splitBy, drop = TRUE)
+    groups <- split(allCellIdx, conditionBy)
     if (nlevels(splitBy) <= 1) {
-        groups <- split(allCellIdx, conditionBy)
         result <- .runDEG(object, groups = groups, method = method,
                           usePeak = usePeak, useReplicate = useReplicate,
                           nPsdRep = nPsdRep,
                           minCellPerRep = minCellPerRep,
+                          printDisgnostic = printDisgnostic,
+                          skipTwoGroup = FALSE,
                           seed = seed, verbose = verbose)
     } else {
-        result <- list()
+        resultList <- list()
         for (i in seq_along(levels(splitBy))) {
             if (isTRUE(verbose)) {
                 cli::cli_alert_info(
-                    "Running psuedo-bulk DEG on: {.val {levels(splitBy)[i]}}"
+                    "Running DEG within: {.val {levels(splitBy)[i]}}"
                 )
             }
-
-            subIdx <- splitBy == levels(splitBy)[i]
-            subCellIdx <- allCellIdx[subIdx]
-            groups <- split(subCellIdx, conditionBy[subIdx])
-            result[[levels(splitBy)[i]]] <- tryCatch(
-                {
-                    .runDEG(
-                        object, groups = groups, method = method,
-                        usePeak = usePeak, useReplicate = useReplicate,
-                        nPsdRep = nPsdRep, minCellPerRep = minCellPerRep,
-                        seed = seed, verbose = verbose
-                    )
-                },
-                error = function(e) {
-                    cli::cli_alert_danger(
-                        "Error when computing on {.val {levels(splitBy)[i]}}: {e$message}"
-                    )
-                    cli::cli_alert_warning(
-                        "Empty result (NULL) returned for this test."
-                    )
-                    return(NULL)
-                }
+            subIdx <- which(splitBy == levels(splitBy)[i])
+            subGroups <- lapply(groups, intersect, subIdx)
+            names(subGroups) <- paste0(levels(splitBy)[i], '.', names(groups))
+            resultList[[levels(splitBy)[i]]] <- .runDEG(
+                object, groups = subGroups, method = method,
+                usePeak = usePeak, useReplicate = useReplicate,
+                nPsdRep = nPsdRep, minCellPerRep = minCellPerRep,
+                printDisgnostic = printDisgnostic, skipTwoGroup = FALSE,
+                seed = seed, verbose = verbose
             )
         }
+        result <- Reduce(rbind, resultList)
     }
 
     return(result)
@@ -258,6 +382,8 @@ runWilcoxon <- function(
         useReplicate = NULL,
         nPsdRep = 5,
         minCellPerRep = 10,
+        printDisgnostic = FALSE,
+        skipTwoGroup = TRUE,
         seed = 1,
         verbose = getOption("ligerVerbose", TRUE)
 ) {
@@ -276,10 +402,12 @@ runWilcoxon <- function(
     }
     slot <- .DE.checkDataAvail(object, datasetInvolve, method, usePeak)
     dataList <- getMatrix(object, slot, datasetInvolve, returnList = TRUE)
-    features <- Reduce(intersect, lapply(dataList, rownames))
-    dataList <- lapply(dataList, function(x) x[features, , drop = FALSE])
+    mat <- mergeSparseAll(dataList, mode = "intersection")
+    # features <- Reduce(intersect, lapply(dataList, rownames))
+    # dataList <- lapply(dataList, function(x) x[features, , drop = FALSE])
 
-    mat <- Reduce(cbind, dataList)
+    # mat <- Reduce(cbind, dataList)
+
     mat <- mat[, allCellBC, drop = FALSE]
     if (method == "wilcoxon") {
         cliID <- cli::cli_process_start("Running Wilcoxon rank-sum test")
@@ -287,31 +415,93 @@ runWilcoxon <- function(
         result <- wilcoxauc(mat, var)
         cli::cli_process_done(id = cliID)
     } else if (method == "pseudoBulk") {
-        if (is.null(useReplicate)) {
-            replicateAnn <- setupPseudoRep(var, nRep = nPsdRep,
-                                            seed = seed)
-        } else {
-            replicateAnn <- .fetchCellMetaVar(
-                object, useReplicate,
-                cellIdx = allCellIdx,
-                drop = FALSE,
-                checkCategorical = TRUE,
-                droplevels = TRUE
-            )
-            replicateAnn$groups <- var
+        resultList <- list()
+        if (isTRUE(verbose)) {
+            if (nlevels(var) == 2) {
+                cliID <- cli::cli_process_start("Calling pairwise DESeq2 Wald test")
+            } else if (nlevels(var) > 2) {
+                if (isFALSE(printDisgnostic)) {
+                    cliID_pb <- cli::cli_progress_bar(name = "DESeq2 Wald test",
+                                                      total = nlevels(var))
+                }
+            }
         }
 
-        pbs <- makePseudoBulk(mat, replicateAnn,
-                               minCellPerRep = minCellPerRep,
-                               verbose = verbose)
-        pb <- pbs[[1]]
-        replicateAnn <- pbs[[2]]
-        var <- sapply(levels(replicateAnn$groups), function(x) {
-            nlevels(interaction(replicateAnn[replicateAnn$groups == x, , drop = FALSE],
-                                drop = TRUE))
-        })
-        var <- factor(rep(names(var), var), levels = names(var))
-        result <- .callDESeq2(pb, var, verbose)
+        for (i in seq_along(levels(var))) {
+            testName <- levels(var)[i]
+            if (isTRUE(verbose) &&
+                isTRUE(printDisgnostic) &&
+                nlevels(var) > 2) {
+                cliID_perLevel <- cli::cli_process_start("Working on {.val {testName}}")
+            }
+            tryCatch({
+                subVar <- factor(ifelse(var == testName, testName, "others"),
+                                 levels = c(testName, "others"))
+                if (is.null(useReplicate)) {
+                    replicateAnn <- setupPseudoRep(subVar, nRep = nPsdRep,
+                                                   seed = seed)
+                } else {
+                    replicateAnn <- .fetchCellMetaVar(
+                        object, useReplicate,
+                        cellIdx = allCellIdx,
+                        drop = FALSE,
+                        checkCategorical = TRUE,
+                        droplevels = TRUE
+                    )
+                    replicateAnn$groups <- subVar
+                }
+
+                pbs <- makePseudoBulk(mat, replicateAnn,
+                                      minCellPerRep = minCellPerRep,
+                                      verbose = printDisgnostic)
+                pb <- pbs[[1]]
+                replicateAnn <- pbs[[2]]
+                subVar <- sapply(levels(replicateAnn$groups), function(x) {
+                    nlevels(interaction(replicateAnn[replicateAnn$groups == x, , drop = FALSE],
+                                        drop = TRUE))
+                })
+                subVar <- factor(rep(names(subVar), subVar), levels = names(subVar))
+                resultList[[testName]] <- .callDESeq2(pb, subVar, printDisgnostic)
+                if (length(levels(var)) <= 2) {
+                    if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
+                } else {
+                    if (isTRUE(verbose)) {
+                        if (isTRUE(printDisgnostic)) {
+                            cli::cli_process_done(id = cliID_perLevel)
+                        } else {
+                            cli::cli_progress_update(set = i)
+                        }
+                    }
+                }
+            }, error = function(e) {
+                cli::cli_alert_danger(
+                    "Error when computing on {.val {testName}}: {e$message}"
+                )
+                cli::cli_alert_warning(
+                    "Empty result returned for this test."
+                )
+                if (length(levels(var)) <= 2) {
+                    if (isTRUE(verbose)) cli::cli_process_failed(id = cliID)
+                } else {
+                    if (isTRUE(verbose)) {
+                        if (isTRUE(printDisgnostic)) {
+                            cli::cli_process_failed(id = cliID_perLevel)
+                        } else {
+                            cli::cli_progress_update(set = i, id = cliID_pb)
+                        }
+                    }
+                }
+                resultList[[testName]] <- data.frame(
+                    feature = character(0),
+                    group = character(0),
+                    logFC = numeric(0),
+                    pval = numeric(0),
+                    padj = numeric(0)
+                )
+            })
+            if (length(levels(var)) <= 2 && isTRUE(skipTwoGroup)) break
+        }
+        result <- Reduce(rbind, resultList)
     }
     return(result)
 }
@@ -351,11 +541,11 @@ runWilcoxon <- function(
 setupPseudoRep <- function(groups, nRep = 3, seed = 1) {
     # The output data.frame should be cell per row by variable per col
     set.seed(seed)
-    psdRep <- c()
+    psdRep <- rep(NA, length(groups))
     for (i in seq_along(levels(groups))) {
         groupSize <- sum(groups == levels(groups)[i])
         repVar <- sample(seq_len(groupSize) %% nRep) + 1 + (i - 1)*nRep
-        psdRep <- c(psdRep, repVar)
+        psdRep[groups == levels(groups)[i]] <- repVar
     }
     return(data.frame(
         groups = groups,
@@ -382,19 +572,27 @@ makePseudoBulk <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {
         }
     }
     splitLabel <- interaction(replicateAnn, drop = TRUE)
-
+    repSizeTab <- table(splitLabel)
+    if (verbose) {
+        cli::cli_alert_info("Replicate sizes:")
+        print(repSizeTab)
+    }
     labelCounts <- table(splitLabel)
     ignored <- names(labelCounts)[labelCounts < minCellPerRep]
+    if (length(ignored) > 0) {
+        cli::cli_alert_warning(
+            "Ignoring replicates (size in bracket) with too few cells: {.val {paste0(ignored, ' (', repSizeTab[ignored], ')')}}"
+        )
+        cli::cli_alert_info(
+            "Consider increase {.field minCellPerRep} to exclude less replicates or/and lower {.field nPsdRep} to generate larger pseudo-replicates."
+        )
+    }
     keep <- names(labelCounts)[labelCounts >= minCellPerRep]
     idx <- splitLabel %in% keep
     splitLabel <- splitLabel[idx, drop = TRUE]
     mat <- mat[, idx, drop = FALSE]
     replicateAnn <- replicateAnn[idx, , drop = FALSE]
-    if (verbose) {
-        if (length(ignored) > 0) cli::cli_alert_warning("Ignoring replicates with too few cells: {.val {ignored}}")
-        cli::cli_alert_info("Replicate sizes:")
-        print(table(splitLabel))
-    }
+
     pseudoBulks <- colAggregateSums_sparse(mat, as.integer(splitLabel) - 1,
                                            nlevels(splitLabel))
     dimnames(pseudoBulks) <- list(rownames(mat), levels(splitLabel))
@@ -405,18 +603,24 @@ makePseudoBulk <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {
 .callDESeq2 <- function(pseudoBulks, groups,
                          verbose = getOption("ligerVerbose", TRUE)) {
     # DESeq2 workflow
-    if (isTRUE(verbose)) cliID <- cli::cli_process_start("Calling DESeq2 Wald test")
+
     ## NOTE: DESeq2 wishes that the contrast/control group is the first level
     ## whereas we required it as the second in upstream input. So we need to
     ## reverse it here.
     groups <- stats::relevel(groups, ref = levels(groups)[2])
+    groupsDropped <- droplevels(groups)
+    if (nlevels(groupsDropped) < 2) {
+        cli::cli_abort("No enough replicates for conditions being compared.")
+    }
     ## Now levels(groups)[1] becomes control and levels(groups)[2] becomes
     ## the test group
-    des <- DESeq2::DESeqDataSetFromMatrix(
-        countData = pseudoBulks,
-        colData = data.frame(groups = groups),
-        design = stats::formula("~groups")
-    )
+    suppressMessages({
+        des <- DESeq2::DESeqDataSetFromMatrix(
+            countData = pseudoBulks,
+            colData = data.frame(groups = groups),
+            design = stats::formula("~groups")
+        )
+    })
     des <- DESeq2::DESeq(des, test = "Wald", quiet = !verbose)
     res <- DESeq2::results(des, contrast = c("groups", levels(groups)[2],
                                              levels(groups)[1]))
@@ -426,7 +630,7 @@ makePseudoBulk <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {
     res$group <- levels(groups)[2]
     res <- res[, c(7, 8, 2, 5, 6)]
     colnames(res) <- c("feature", "group", "logFC", "pval", "padj")
-    if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
+
     return(res)
 }
 

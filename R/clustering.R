@@ -442,6 +442,7 @@ calcPurity <- function(
 #' @export
 #' @references L. Hubert and P. Arabie (1985) Comparing Partitions, Journal of
 #' the Classification, 2, pp. 193-218.
+#' @returns A numeric scalar of the ARI value
 #' @examples
 #' # Assume the true cluster in `pbmcPlot` is "leiden_cluster"
 #' # generate fake new labeling
@@ -459,6 +460,9 @@ calcPurity <- function(
 #' # evaluated
 #' calcARI(pbmcPlot, trueCluster = "stim_true_label",
 #'         useCluster = "leiden_cluster", useDatasets = "stim")
+#'
+#' # Comparison of the same labeling should always yield 1.
+#' calcARI(pbmcPlot, trueCluster = "leiden_cluster", useCluster = "leiden_cluster")
 calcARI <- function(
         object,
         trueCluster,
@@ -472,7 +476,10 @@ calcARI <- function(
     # Ensure that trueCluster is a factor object, as long as `cellIdx`, named
     # by `cellIdx`
     if (length(trueCluster) == 1) {
-        trueCluster <- cellMeta(object, trueCluster, useDatasets = useDatasets)
+        trueCluster <- .fetchCellMetaVar(
+            object, trueCluster, cellIdx = cellIdx, checkCategorical = TRUE,
+            drop = TRUE, droplevels = TRUE, returnList = FALSE
+        )
     } else {
         if (length(trueCluster) != length(cellIdx)) {
             if (is.null(names(trueCluster))) {
@@ -490,7 +497,10 @@ calcARI <- function(
     }
 
     useCluster <- useCluster %||% defaultCluster(object)
-    useCluster <- cellMeta(object, useCluster, useDatasets = useDatasets)
+    useCluster <- .fetchCellMetaVar(
+        object, useCluster, cellIdx = cellIdx, checkCategorical = TRUE,
+        drop = TRUE, droplevels = TRUE, returnList = FALSE
+    )
 
     # Copied from mclust package
     useCluster <- as.vector(useCluster)
@@ -508,5 +518,129 @@ calcARI <- function(
     return(ARI)
 }
 
+#' Calculate Normalized Mutual Information (NMI) by comparing two cluster
+#' labeling variables
+#' @description
+#' This function aims at calculating the Normalized Mutual Information for the
+#' clustering result obtained with LIGER and the external clustering (existing
+#' "true" annotation). NMI ranges from 0 to 1, with a score of 0 indicating no
+#' agreement between clusterings and 1 indicating perfect agreement. The
+#' mathematical definition of NMI is as follows:
+#'
+#' \deqn{
+#' H(X) = -\sum_{x \in X}P(X=x)\log_2 P(X=x)
+#' }
+#' \deqn{
+#' H(X|Y) = -\sum_{y \in Y}P(Y=y)\sum_{x \in X}P(X=x|Y=y)\log_2 P(X=x|Y=y)
+#' }
+#' \deqn{
+#' I(X;Y) = H(X) - H(X|Y)
+#' }
+#' \deqn{
+#' NMI(X;Y) = \frac{I(X;Y)}{\sqrt{H(X)H(Y)}}
+#' }
+#'
+#' Where \eqn{X} is the cluster variable to be evaluated and \eqn{Y} is the true
+#' cluster variable. \eqn{x} and \eqn{y} are the cluster labels in \eqn{X} and
+#' \eqn{Y} respectively. \eqn{H} is the entropy and \eqn{I} is the mutual
+#' information.
+#'
+#' The true clustering annotation must be specified as the base line. We suggest
+#' setting it to the object cellMeta so that it can be easily used for many
+#' other visualization and evaluation functions.
+#'
+#' The NMI can be calculated for only specified datasets, since true annotation
+#' might not be available for all datasets. Evaluation for only one or a few
+#' datasets can be done by specifying \code{useDatasets}. If \code{useDatasets}
+#' is specified, the argument checking for \code{trueCluster} and
+#' \code{useCluster} will be enforced to match the cells in the specified
+#' datasets.
+#' @inheritParams calcARI
+#' @export
+#' @return A numeric scalar of the NMI value
+#' @examples
+#' # Assume the true cluster in `pbmcPlot` is "leiden_cluster"
+#' # generate fake new labeling
+#' fake <- sample(1:7, ncol(pbmcPlot), replace = TRUE)
+#' # Insert into cellMeta
+#' pbmcPlot$new <- factor(fake)
+#' calcNMI(pbmcPlot, trueCluster = "leiden_cluster", useCluster = "new")
+#'
+#' # Now assume we got existing base line annotation only for "stim" dataset
+#' nStim <- ncol(dataset(pbmcPlot, "stim"))
+#' stimTrueLabel <- factor(fake[1:nStim])
+#' # Insert into cellMeta
+#' cellMeta(pbmcPlot, "stim_true_label", useDatasets = "stim") <- stimTrueLabel
+#' # Assume "leiden_cluster" is the clustering result we got and need to be
+#' # evaluated
+#' calcNMI(pbmcPlot, trueCluster = "stim_true_label",
+#'         useCluster = "leiden_cluster", useDatasets = "stim")
+#'
+#' # Comparison of the same labeling should always yield 1.
+#' calcNMI(pbmcPlot, trueCluster = "leiden_cluster", useCluster = "leiden_cluster")
+calcNMI <- function(
+        object,
+        trueCluster,
+        useCluster = NULL,
+        useDatasets = NULL,
+        verbose = getOption("ligerVerbose", TRUE)
+) {
+    cellIdx <- rownames(cellMeta(object, useDatasets = useDatasets))
+    # Ensure that trueCluster is a factor object, as long as `cellIdx`, named
+    # by `cellIdx`
+    if (length(trueCluster) == 1) {
+        trueCluster <- .fetchCellMetaVar(
+            object, trueCluster, cellIdx = cellIdx, checkCategorical = TRUE,
+            drop = TRUE, droplevels = TRUE, returnList = FALSE
+        )
+    } else {
+        if (length(trueCluster) != length(cellIdx)) {
+            if (is.null(names(trueCluster))) {
+                cli::cli_abort("Longer/shorter {.var trueCluster} than cells considered requires {.fn names()} to identify matching.")
+            }
+        } else {
+            if (is.null(names(trueCluster))) {
+                cli::cli_alert_warning(
+                    "Assuming unnamed {.var trueCluster} matches with the cells represented by {.code rownames(cellMeta(object, useDatasets = useDatasets))}."
+                )
+                names(trueCluster) <- cellIdx
+            }
+        }
+        trueCluster <- trueCluster[cellIdx]
+    }
 
+    useCluster <- useCluster %||% defaultCluster(object)
+    useCluster <- .fetchCellMetaVar(
+        object, useCluster, cellIdx = cellIdx, checkCategorical = TRUE,
+        drop = TRUE, droplevels = TRUE, returnList = FALSE
+    )
 
+    # H(X)
+    H_X <- .calcEntropy(useCluster)
+    # H(Y)
+    H_Y <- .calcEntropy(trueCluster)
+
+    overlap <- as.matrix(table(useCluster, trueCluster))
+    # H(X|Y = y), returned a vector for each Y = y
+    H_X_Yy <- apply(overlap, 2, function(x) {
+        probs <- x / sum(x)
+        probs <- probs[probs > 0]
+        -sum(probs * log2(probs))
+    })
+    # P(Y = y), a vector for each Y = y
+    PY <- table(trueCluster) / length(trueCluster)
+    # H(X|Y), a scalar
+    H_X_Y <- sum(PY * H_X_Yy)
+    # I(X;Y)
+    I_X_Y <- H_X - H_X_Y
+    NMI <- I_X_Y / sqrt(H_X*H_Y)
+    return(NMI)
+}
+
+# x - A categorical variable
+.calcEntropy <- function(x) {
+    if (is.factor(x)) x <- droplevels(x)
+    count <- table(x)
+    prob <- count / sum(count)
+    -sum(prob * log2(prob))
+}
