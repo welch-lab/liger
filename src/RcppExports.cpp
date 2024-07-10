@@ -255,6 +255,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// updatePseudoBulkRcpp
+void updatePseudoBulkRcpp(Rcpp::NumericMatrix& psdBulk, const arma::sp_mat& sparseRaw, const Rcpp::IntegerVector& featureIdx, const Rcpp::IntegerVector& repIdx);
+RcppExport SEXP _rliger_updatePseudoBulkRcpp(SEXP psdBulkSEXP, SEXP sparseRawSEXP, SEXP featureIdxSEXP, SEXP repIdxSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix& >::type psdBulk(psdBulkSEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type sparseRaw(sparseRawSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type featureIdx(featureIdxSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type repIdx(repIdxSEXP);
+    updatePseudoBulkRcpp(psdBulk, sparseRaw, featureIdx, repIdx);
+    return R_NilValue;
+END_RCPP
+}
 // makeFeatureMatrix
 NumericMatrix makeFeatureMatrix(DataFrame& bedmat, StringVector& barcodes);
 RcppExport SEXP _rliger_makeFeatureMatrix(SEXP bedmatSEXP, SEXP barcodesSEXP) {
@@ -417,6 +430,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rliger_SparseRowVarStd", (DL_FUNC) &_rliger_SparseRowVarStd, 4},
     {"_rliger_colAggregateSums_sparse", (DL_FUNC) &_rliger_colAggregateSums_sparse, 3},
     {"_rliger_sample_cpp", (DL_FUNC) &_rliger_sample_cpp, 2},
+    {"_rliger_updatePseudoBulkRcpp", (DL_FUNC) &_rliger_updatePseudoBulkRcpp, 4},
     {"_rliger_makeFeatureMatrix", (DL_FUNC) &_rliger_makeFeatureMatrix, 2},
     {"_rliger_cluster_vote_rcpp", (DL_FUNC) &_rliger_cluster_vote_rcpp, 2},
     {"_rliger_max_factor_rcpp", (DL_FUNC) &_rliger_max_factor_rcpp, 3},

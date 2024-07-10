@@ -21,7 +21,8 @@ plotVolcano(
 plotEnhancedVolcano(result, group, ...)
 }
 \arguments{
-\item{result}{Data frame table returned by \code{\link{runWilcoxon}}}
+\item{result}{Data frame table returned by \code{\link{runMarkerDEG}} or
+\code{\link{runPairwiseDEG}}.}
 
 \item{group}{Selection of one group available from \code{result$group}}
 
@@ -60,6 +61,16 @@ substantial amount of arguments for graphical control. However, that requires
 the installation of package "EnhancedVolcano".
 }
 \examples{
-result <- runMarkerDEG(pbmcPlot)
-plotVolcano(result, 1)
+defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
+# Test the DEG between "stim" and "ctrl", within each cluster
+result <- runPairwiseDEG(
+    pbmc,
+    groupTest = "stim",
+    groupCtrl = "ctrl",
+    variable1 = "dataset",
+    splitBy = "defaultCluster",
+    nPsdRep = 3,
+    minCellPerRep = 3
+)
+plotVolcano(result, "0.stim")
 }

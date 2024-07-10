@@ -4,7 +4,7 @@
 \alias{runPairwiseDEG}
 \alias{runMarkerDEG}
 \alias{runWilcoxon}
-\title{Find DEG between two groups}
+\title{Find DEG between groups}
 \usage{
 runPairwiseDEG(
   object,
@@ -15,10 +15,11 @@ runPairwiseDEG(
   splitBy = NULL,
   method = c("pseudoBulk", "wilcoxon"),
   usePeak = FALSE,
-  useReplicate = NULL,
-  nPsdRep = 5,
-  minCellPerRep = 10,
-  printDisgnostic = FALSE,
+  useReplicate = "dataset",
+  nPsdRep = NULL,
+  minCellPerRep = 3,
+  printDiagnostic = FALSE,
+  chunk = NULL,
   seed = 1,
   verbose = getOption("ligerVerbose", TRUE)
 )
@@ -30,10 +31,11 @@ runMarkerDEG(
   method = c("pseudoBulk", "wilcoxon"),
   useDatasets = NULL,
   usePeak = FALSE,
-  useReplicate = NULL,
-  nPsdRep = 5,
-  minCellPerRep = 10,
-  printDisgnostic = FALSE,
+  useReplicate = "dataset",
+  nPsdRep = NULL,
+  minCellPerRep = 3,
+  printDiagnostic = FALSE,
+  chunk = NULL,
   seed = 1,
   verbose = getOption("ligerVerbose", TRUE)
 )
@@ -60,17 +62,21 @@ comparison. See Details. Default \code{NULL}.}
 Only supported when ATAC datasets are involved. Default \code{FALSE}.}
 
 \item{useReplicate}{\code{cellMeta} variable of biological replicate
-annotation. Only used with \code{method = "pseudoBulk"}. Default \code{NULL}
-will create \code{nPsdRep} pseudo replicates per group.}
+annotation. Only used with \code{method = "pseudoBulk"}. Default
+\code{"dataset"}.}
 
-\item{nPsdRep}{Number of pseudo replicates to create. Only used when
-\code{method = "pseudoBulk", useReplicate = NULL}. Default \code{5}.}
+\item{nPsdRep}{Number of pseudo-replicates to create. Only used when
+\code{method = "pseudoBulk"}. Default \code{NULL}. See Details.}
 
 \item{minCellPerRep}{Numeric, will not make pseudo-bulk for replicate with
-less than this number of cells. Default \code{10}.}
+less than this number of cells. Default \code{3}.}
 
-\item{printDisgnostic}{Logical. Whether to show more detail when
+\item{printDiagnostic}{Logical. Whether to show more detail when
 \code{verbose = TRUE}. Default \code{FALSE}.}
+
+\item{chunk}{Number of features to process at a time during Wilcoxon test.
+Useful when memory is limited. Default \code{NULL} will process all features
+at once.}
 
 \item{seed}{Random seed to use for pseudo-replicate generation. Default
 \code{1}.}
@@ -124,22 +130,24 @@ A data.frame with DEG information with the following field:
 }
 }
 \description{
-Find DEG between two groups. Two methods are supported:
-\code{"pseudoBulk"} and \code{"wilcoxon"}. Pseudo-bulk method aggregates
-cells basing on biological replicates and calls bulk RNAseq DE methods,
-DESeq2 wald test, while Wilcoxon rank sum test is performed on single-cell
-level.
+Two methods are supported: \code{"pseudoBulk"} and
+\code{"wilcoxon"}. Pseudo-bulk method aggregates cells basing on biological
+replicates and calls bulk RNAseq DE methods, DESeq2 wald test, while
+Wilcoxon rank sum test is performed on single-cell level.
+\code{runPairwiseDEG()} is generally used for flexibly comparing two specific
+groups of cells, while \code{runMarkerDEG()} is used for a one-vs-rest marker
+test strategy.
 
 While using pseudo-bulk method, it is generally recommended that you have
 these variables available in your object:
 
 \enumerate{
-  \item{The cell type or cluster labeling, dividing the cells by
-  functionality. This can be obtained from prior study or computed with
-  \code{\link{runCluster}}}
+  \item{The cell type or cluster labeling. This can be obtained from prior
+  study or computed with \code{\link{runCluster}}}
   \item{The biological replicate labeling, most of the time the
   \code{"dataset"} variable automatically generated when the
-  \linkS4class{liger} object is created. }
+  \linkS4class{liger} object is created. Users may use other variables if
+  a "dataset" is merged from multiple replicates.}
   \item{The condition labeling that reflects the study design, such as the
   treatment or disease status for each sample/dataset.}
 }
@@ -164,7 +172,7 @@ like \code{runMarkerDEG(object, conditionBy = "cluster_var")}. When using
 default pseudo-bulk method, users should additionaly determine the
 pseudo-bulk setup parameters. If the real biological replicate variable is
 available, it should be supplied to argument \code{useReplicate}, otherwise,
-set \code{useReplicate = NULL} and use pseudo-replicate setup.
+pseudo-replicates should be created. See "Pseudo-Replicate" section for more.
 }
 
 \section{Compare between conditions}{
@@ -188,11 +196,11 @@ section.
 
 \section{Detailed \code{runMarkerDEG} usage}{
 
-Marker detection is generally performed in a one vs. rest manner. The
-grouping of such condition is specified by \code{conditionBy}, which should
-be a column name in \code{cellMeta}. When \code{splitBy} is specified as
-another variable name in \code{cellMeta}, the marker detection will be
-iteratively done for within each level of \code{splitBy} variable.
+Marker detection is performed in a one vs. rest manner. The grouping of such
+condition is specified by \code{conditionBy}, which should be a column name
+in \code{cellMeta}. When \code{splitBy} is specified as another variable
+name in \code{cellMeta}, the marker detection will be iteratively done for
+within each level of \code{splitBy} variable.
 
 For example, when \code{conditionBy = "celltype"} and \code{splitBy = NULL},
 marker detection will be performed by comparing all cells of "celltype_i"
@@ -226,25 +234,31 @@ When both \code{variable1} and \code{variable2} are missing, \code{groupTest}
 and \code{groupCtrl} should be valid index of cells in \code{object}.
 }
 
+\section{Pseudo-Replicate}{
+
+Pseudo-replicate assignment is a technique to complement the lack of real
+biological replicates when using pseudo-bulk DE methods. LIGER's pseudo-bulk
+method generally requires that each comparison group has at least 3
+replicates each composed of at least 3 cells, in order to ensure the
+statistic power. When less than 3 real replicates are found for a comparison,
+the default setting (\code{nPsdRep = NULL}) splits each into 3
+pseudo-replicates, otherwise no pseudo-replicates are automatically
+generated. When \code{nPsdRep} is given a number, LIGER will always go
+through each comparison group and split each real replicate into the given
+number of pseudo-replicates.
+}
+
 \examples{
+\donttest{
 pbmc$leiden_cluster <- pbmcPlot$leiden_cluster
 
 # Identify cluster markers
-degStats1 <- runMarkerDEG(pbmc, conditionBy = "leiden_cluster",
-                          minCellPerRep = 5)
-
-# Compare between cluster "0" and cluster "1"
-degStats2 <- runPairwiseDEG(pbmc, groupTest = 0, groupCtrl = 1,
-                            variable1 = "leiden_cluster")
+degStats1 <- runMarkerDEG(pbmc, conditionBy = "leiden_cluster")
 
 # Compare "stim" data against "ctrl" data within each cluster
 degStats3 <- runPairwiseDEG(pbmc, groupTest = "stim", groupCtrl = "ctrl",
                             variable1 = "dataset",
                             splitBy = "leiden_cluster",
-                            nPsdRep = 2, minCellPerRep = 4)
-
-# Identify dataset markers within each cluster.
-degStats4 <- runMarkerDEG(pbmc, conditionBy = "dataset",
-                          splitBy = "leiden_cluster", nPsdRep = 2,
-                          minCellPerRep = 4)
+                            minCellPerRep = 4)
+}
 }

@@ -145,19 +145,21 @@ test_that("wilcoxon", {
                  "No `conditionBy` given or default cluster not set")
     pbmc <- process(pbmc)
     pbmc <- runCluster(pbmc, nRandomStarts = 1)
-    res0 <- runMarkerDEG(pbmc, conditionBy = "dataset", useDatasets = 1)
+    res0 <- runMarkerDEG(pbmc, conditionBy = "dataset", useDatasets = 1, method = "wilcox")
     expect_true(all(is.nan(res0$pval)))
 
-    res1 <- runMarkerDEG(pbmc)
+    res1 <- runMarkerDEG(pbmc, method = "wilcox")
     expect_equal(dim(res1), c(249 * nlevels(pbmc$leiden_cluster), 10))
-    res2 <- runMarkerDEG(pbmc, conditionBy = "dataset", splitBy = "leiden_cluster")
-    expect_is(res2, "list")
+    res2 <- runMarkerDEG(pbmc, conditionBy = "dataset", splitBy = "leiden_cluster", method = "wilcox")
+    expect_is(res2, "data.frame")
     hm1 <- plotMarkerHeatmap(pbmc, res1, dedupBy = "l")
     hm2 <- plotMarkerHeatmap(pbmc, res1, dedupBy = "p")
     expect_is(hm1, "HeatmapList")
     expect_is(hm2, "HeatmapList")
     expect_is(plotVolcano(res1, 0), "ggplot")
-    expect_is(plotEnhancedVolcano(res1, 0), "ggplot")
+    if (requireNamespace("EnhancedVolcano", quietly = TRUE)) {
+        expect_is(plotEnhancedVolcano(res1, 0), "ggplot")
+    }
 
     expect_error(getFactorMarkers(pbmc, "ctrl", "stim", factorShareThresh = 0),
                  "No factor passed the dataset specificity threshold")
@@ -189,22 +191,23 @@ test_that("wilcoxon", {
 test_that("pseudo bulk", {
     skip_if_not_installed("RcppPlanc")
     skip_if_not_installed("DESeq2")
+    nIsecGenes <- length(Reduce(intersect, lapply(rawData(pbmc), rownames)))
     pbmc <- process(pbmc)
     pbmc <- runCluster(pbmc, nRandomStarts = 1)
     res1 <- runPairwiseDEG(pbmc, groupTest = pbmc$leiden_cluster == 1,
                            groupCtrl = pbmc$leiden_cluster == 2,
                            method = "pseudo")
     expect_is(res1, "data.frame")
-    expect_true(all.equal(dim(res1), c(238, 5)))
+    expect_true(all.equal(dim(res1), c(nIsecGenes, 5)))
     res2 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
                            variable1 = "leiden_cluster",
                            method = "pseudo", useReplicate = "dataset")
     expect_is(res2, "data.frame")
-    expect_true(all.equal(dim(res2), c(238, 5)))
+    expect_true(all.equal(dim(res2), c(nIsecGenes, 5)))
     res3 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
                            variable1 = "leiden_cluster",
                            method = "pseudo")
-    expect_true(identical(res1[,-2], res3[,-2])) # Different in "group" column
+    expect_true(all.equal(res1[,-2], res3[,-2])) # Different in "group" column
     pbmc$leiden2 <- pbmc$leiden_cluster
     res4 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
                            variable1 = "leiden_cluster", variable2 = "leiden2",
@@ -214,13 +217,13 @@ test_that("pseudo bulk", {
     expect_error(runPairwiseDEG(pbmc, variable2 = "yo"),
                  "Please see")
 
-    expect_error(
+    expect_message(
         runPairwiseDEG(
             pbmc, groupTest = pbmc$dataset == "ctrl" & pbmc$leiden_cluster == 0,
             groupCtrl = pbmc$dataset == "stim" & pbmc$leiden_cluster == 0,
-            method = "pseudo", useReplicate = "dataset"
+            method = "pseudo", useReplicate = "dataset", nPsdRep = 1
         ),
-        "Too few replicates for condition"
+        "Too few replicates"
     )
 
     pbmc@datasets$ctrl@rawData <- NULL

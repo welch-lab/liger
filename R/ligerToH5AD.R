@@ -1,6 +1,12 @@
 #' Write liger object to H5AD files
 #' @param object A \linkS4class{liger} object
 #' @param filename A character string, the path to the H5AD file to be written
+#' @param useSlot Character scalar, which type of data is going to be stored
+#' to \code{adata.X}. Default \code{"scaleData"}, choose from
+#' \code{"scaleData"}, \code{"normData"}, or \code{"rawData"}.
+#' @param saveRaw Logical, whether to save rawData to \code{adata.raw.X}.
+#' Default \code{TRUE} when \code{useSlot} is not \code{"rawData"}, otherwise
+#' \code{FALSE}.
 #' @param overwrite Logical, whether to overwrite the file if it exists.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} which is \code{TRUE} if users have not set.
@@ -11,8 +17,8 @@
 ligerToH5AD <- function(
         object,
         filename,
-        # X = c("scaleData", "normData", "rawData"),
-        # merge = TRUE,
+        useSlot = c("scaleData", "normData", "rawData"),
+        saveRaw = useSlot != "rawData",
         overwrite = FALSE,
         verbose = getOption("ligerVerbose", TRUE)
 ) {
@@ -23,7 +29,8 @@ ligerToH5AD <- function(
             cli::cli_abort("H5AD file exists at {.file {normalizePath(filename)}}")
         }
     }
-
+    useSlotCheckOrder <- c("scaleData", "normData", "rawData")
+    useSlot <- match.arg(useSlot)
     rownames <- "_index"
     dfile <- hdf5r::H5File$new(
         filename = filename,
@@ -32,25 +39,32 @@ ligerToH5AD <- function(
 
     # Work on expression matrices
     Xslot <- NULL
-    rawSlot <- NULL
-    if (all(!sapply(scaleData(object), is.null))) {
-        Xslot <- "scaleData"
-        Xmat <- mergeSparseAll(scaleData(object))
+    if (all(!sapply(getMatrix(object, useSlot), is.null))) {
+        # If the specified slot is all available, use it
+        Xslot <- useSlot
+        Xmat <- mergeSparseAll(getMatrix(object, useSlot))
+    } else {
+        cli::cli_alert_warning(
+            "Requested {.field {useSlot}} is not available, trying other slots."
+        )
+        # Otherwise, check by priority order
+        for (i in useSlotCheckOrder) {
+            if (all(!sapply(getMatrix(object, i), is.null))) {
+                # If the specified slot is all available, use it
+                Xslot <- i
+                Xmat <- mergeSparseAll(getMatrix(object, i))
+                break
+            }
+        }
     }
-    else if (all(!sapply(normData(object), is.null))) {
-        Xslot <- "normData"
-        Xmat <- mergeSparseAll(normData(object))
-    }
-    else if (all(!sapply(rawData(object), is.null))) {
-        Xslot <- "rawData"
-        Xmat <- mergeSparseAll(rawData(object))
-    }
-    else {
+    if (is.null(Xslot)) {
         cli::cli_abort("No data available to be added to {.field X}")
     }
-    if (all(!sapply(rawData(object), is.null)) &&
-        Xslot != "rawData") {
+
+    if (isTRUE(saveRaw) && Xslot != "rawData") {
         rawSlot <- "rawData"
+    } else {
+        rawSlot <- NULL
     }
 
     if (isTRUE(verbose)) {
@@ -68,7 +82,7 @@ ligerToH5AD <- function(
     if (isTRUE(verbose)) cli::cli_process_done(cliID)
 
     # Add raw
-    if (!is.null(rawSlot)) {
+    if (!is.null(rawSlot) && isTRUE(saveRaw)) {
         if (isTRUE(verbose)) {
             cliID <- cli::cli_process_start(sprintf("Adding %s to raw", rawSlot))
         }

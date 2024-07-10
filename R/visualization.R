@@ -610,9 +610,11 @@ plotProportionPie <- function(
 #' @param useCluster Name of variable in \code{cellMeta(object)}. Default
 #' \code{NULL} uses default cluster.
 #' @param conditionBy Name of the variable in \code{cellMeta(object)} that
-#' represents the condition. Must be a high level variable of the datasets, i.e.
-#' each dataset must belong to only one condition. Default \code{NULL} does not
-#' group by condition.
+#' represents the condition. Must be a high level variable of the
+#' \code{sampleBy} variable, i.e. each sample must belong to only one condition.
+#' Default \code{NULL} does not group samples by condition.
+#' @param sampleBy Name of the variable in \code{cellMeta(object)} that
+#' represents individual samples. Default \code{"dataset"}.
 #' @param splitByCluster Logical, whether to split the wide grouped box plot by
 #' cluster, into a list of boxplots for each cluster. Default \code{FALSE}.
 #' @param dot Logical, whether to add dot plot on top of the box plot. Default
@@ -627,13 +629,14 @@ plotProportionPie <- function(
 #' \code{splitByCluster = TRUE}.
 #' @examples
 #' # "boxes" are expected to appear as horizontal lines, because there's no
-#' "condition" variable that groups the datasets in the example object, and thus
-#' only one value exists for each "box".
+#' # "condition" variable that groups the datasets in the example object, and
+#' # thus only one value exists for each "box".
 #' plotProportionBox(pbmcPlot, conditionBy = "dataset")
 plotProportionBox <- function(
         object,
         useCluster = NULL,
         conditionBy = NULL,
+        sampleBy = "dataset",
         splitByCluster = FALSE,
         dot = FALSE,
         dotSize = getOption("ligerDotSize", 1),
@@ -645,10 +648,10 @@ plotProportionBox <- function(
         cli::cli_abort("No cluster specified nor default set.")
     }
     clusterVar <- .fetchCellMetaVar(object, useCluster, checkCategorical = TRUE)
-    datasetVar <- object$dataset
+    datasetVar <- .fetchCellMetaVar(object, sampleBy, checkCategorical = TRUE)
     compositionTable <- table(datasetVar, clusterVar)
     dfLong <- data.frame(compositionTable)
-    names(dfLong) <- c("dataset", useCluster, "Count")
+    names(dfLong) <- c(sampleBy, useCluster, "Count")
 
     if (!is.null(conditionBy)) {
         conditionVar <- .fetchCellMetaVar(
@@ -680,7 +683,7 @@ plotProportionBox <- function(
             function(row) colnames(conditionTable)[row > 0]
         )
         dfLong[[conditionBy]] <- factor(
-            conditionMap[dfLong$dataset],
+            conditionMap[dfLong[[sampleBy]]],
             levels = levels(conditionVar)
         )
     }
@@ -768,7 +771,8 @@ plotProportionBox <- function(
 #' substantial amount of arguments for graphical control. However, that requires
 #' the installation of package "EnhancedVolcano".
 #' @rdname plotVolcano
-#' @param result Data frame table returned by \code{\link{runWilcoxon}}
+#' @param result Data frame table returned by \code{\link{runMarkerDEG}} or
+#' \code{\link{runPairwiseDEG}}.
 #' @param group Selection of one group available from \code{result$group}
 #' @param logFCThresh Number for the threshold on the absolute value of the log2
 #' fold change statistics. Default \code{1}.
@@ -789,8 +793,18 @@ plotProportionBox <- function(
 #' @return ggplot
 #' @export
 #' @examples
-#' result <- runMarkerDEG(pbmcPlot)
-#' plotVolcano(result, 1)
+#' defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
+#' # Test the DEG between "stim" and "ctrl", within each cluster
+#' result <- runPairwiseDEG(
+#'     pbmc,
+#'     groupTest = "stim",
+#'     groupCtrl = "ctrl",
+#'     variable1 = "dataset",
+#'     splitBy = "defaultCluster",
+#'     nPsdRep = 3,
+#'     minCellPerRep = 3
+#' )
+#' plotVolcano(result, "0.stim")
 plotVolcano <- function(
         result,
         group,

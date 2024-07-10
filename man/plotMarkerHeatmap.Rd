@@ -35,7 +35,8 @@ to annotate available.}
 \item{pctInThresh, pctOutThresh}{Threshold on expression percentage. These
 mean that a feature will only pass the filter if it is expressed in more than
 \code{pctInThresh} percent of cells in the corresponding cluster. Similarly
-for \code{pctOutThresh}. Default \code{50} percent for both.}
+for \code{pctOutThresh}. Only applied when these metrics are available.
+Default \code{50} percent for both.}
 
 \item{dedupBy}{When ranking by padj and logFC and a feature is ranked as top
 for multiple clusters, assign this feature as the marker of a cluster when
@@ -43,8 +44,8 @@ it has the largest \code{"logFC"} in the cluster or has the lowest
 \code{"padj"}. Default \code{"logFC"}.}
 
 \item{groupBy}{Cell metadata variable names for cell grouping. Downsample
-balancing will also be aware of this. Default \code{c("dataset",
-"leiden_cluster")}.}
+balancing will also be aware of this. Default \code{"dataset"} and the
+default cluster.}
 
 \item{groupSize}{Maximum number of cells in each group to be downsampled for
 plotting. Default \code{50}.}
@@ -55,10 +56,18 @@ plotting. Default \code{50}.}
 \code{\link{plotGeneHeatmap}}, \code{\link{.plotHeatmap}},
 \code{ComplexHeatmap::\link[ComplexHeatmap]{Heatmap}}}
 }
+\value{
+A \linkS4class{HeatmapList} object.
+}
 \description{
 Create heatmap for showing top marker expression in conditions
 }
 \examples{
-markerTable <- runMarkerDEG(pbmcPlot)
-plotMarkerHeatmap(pbmcPlot, markerTable)
+defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
+markerTable <- runMarkerDEG(
+    pbmc,
+    minCellPerRep = 5
+)
+pbmc <- normalize(pbmc)
+plotMarkerHeatmap(pbmc, markerTable)
 }

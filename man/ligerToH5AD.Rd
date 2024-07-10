@@ -7,6 +7,8 @@
 ligerToH5AD(
   object,
   filename,
+  useSlot = c("scaleData", "normData", "rawData"),
+  saveRaw = useSlot != "rawData",
   overwrite = FALSE,
   verbose = getOption("ligerVerbose", TRUE)
 )
@@ -15,6 +17,14 @@ ligerToH5AD(
 \item{object}{A \linkS4class{liger} object}
 
 \item{filename}{A character string, the path to the H5AD file to be written}
+
+\item{useSlot}{Character scalar, which type of data is going to be stored
+to \code{adata.X}. Default \code{"scaleData"}, choose from
+\code{"scaleData"}, \code{"normData"}, or \code{"rawData"}.}
+
+\item{saveRaw}{Logical, whether to save rawData to \code{adata.raw.X}.
+Default \code{TRUE} when \code{useSlot} is not \code{"rawData"}, otherwise
+\code{FALSE}.}
 
 \item{overwrite}{Logical, whether to overwrite the file if it exists.}
 

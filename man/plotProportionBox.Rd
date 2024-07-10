@@ -8,6 +8,7 @@ plotProportionBox(
   object,
   useCluster = NULL,
   conditionBy = NULL,
+  sampleBy = "dataset",
   splitByCluster = FALSE,
   dot = FALSE,
   dotSize = getOption("ligerDotSize", 1),
@@ -22,9 +23,12 @@ plotProportionBox(
 \code{NULL} uses default cluster.}
 
 \item{conditionBy}{Name of the variable in \code{cellMeta(object)} that
-represents the condition. Must be a high level variable of the datasets, i.e.
-each dataset must belong to only one condition. Default \code{NULL} does not
-group by condition.}
+represents the condition. Must be a high level variable of the
+\code{sampleBy} variable, i.e. each sample must belong to only one condition.
+Default \code{NULL} does not group samples by condition.}
+
+\item{sampleBy}{Name of the variable in \code{cellMeta(object)} that
+represents individual samples. Default \code{"dataset"}.}
 
 \item{splitByCluster}{Logical, whether to split the wide grouped box plot by
 cluster, into a list of boxplots for each cluster. Default \code{FALSE}.}
@@ -100,7 +104,7 @@ one condition.
 }
 \examples{
 # "boxes" are expected to appear as horizontal lines, because there's no
-"condition" variable that groups the datasets in the example object, and thus
-only one value exists for each "box".
+# "condition" variable that groups the datasets in the example object, and
+# thus only one value exists for each "box".
 plotProportionBox(pbmcPlot, conditionBy = "dataset")
 }

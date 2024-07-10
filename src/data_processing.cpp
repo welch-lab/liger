@@ -271,3 +271,26 @@ Rcpp::NumericVector sample_cpp(const int x, const int size) {
     arma::uvec head = rand.head(size) + 1; // 0-base to R's 1-base
     return Rcpp::NumericVector(head.begin(), head.end());
 }
+
+
+// psdBulk - the pseudo-bulk matrix to be updated
+// sparseRaw - the raw expression data to be collapsed
+// featureIdx - integer vector with NAs, length equals to nrow(sparseRaw),
+//   indicating which row of `psdBulk` the current `it.row()` should be added
+//   to. Zero-based before invoking
+// repIdx - Integer vector with NAs, length equals to nrow(sparseRaw),
+//   indicating which col of `psdBulk` the current `it.col()` should be added
+//   to/ Zero-based before invoking
+// [[Rcpp::export()]]
+void updatePseudoBulkRcpp(
+  Rcpp::NumericMatrix& psdBulk,
+  const arma::sp_mat& sparseRaw,
+  const Rcpp::IntegerVector& featureIdx,
+  const Rcpp::IntegerVector& repIdx
+) {
+  for (arma::sp_mat::const_iterator it = sparseRaw.begin(); it != sparseRaw.end(); ++it) {
+    if (featureIdx[it.row()] != NA_INTEGER && repIdx[it.col()] != NA_INTEGER) {
+      psdBulk(featureIdx[it.row()], repIdx[it.col()]) += *it;
+    }
+  }
+}

@@ -404,7 +404,11 @@ plotFactorHeatmap <- function(
                 } else {
                     # Automatic generate with ggplot2 strategy,
                     # with level awareness
-                    annCol[[var]] <- scales::hue_pal()(length(levels(df[[var]])))
+                    if (nlevels(df[[var]]) > length(scPalette)) {
+                        annCol[[var]] <- scales::hue_pal()(nlevels(df[[var]]))
+                    } else {
+                        annCol[[var]] <- scPalette[1:nlevels(df[[var]])]
+                    }
                     names(annCol[[var]]) <- levels(df[[var]])
                     df[[var]] <- droplevels(df[[var]])
                 }

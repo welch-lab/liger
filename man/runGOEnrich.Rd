@@ -60,12 +60,22 @@ This function forms genesets basing on the differential expression result,
 and calls gene ontology (GO) analysis method provided by gprofiler2.
 }
 \examples{
-res <- runMarkerDEG(pbmcPlot)
+defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
+# Test the DEG between "stim" and "ctrl", within each cluster
+result <- runPairwiseDEG(
+    pbmc,
+    groupTest = "stim",
+    groupCtrl = "ctrl",
+    variable1 = "dataset",
+    splitBy = "defaultCluster",
+    nPsdRep = 3,
+    minCellPerRep = 3
+)
 # Setting `significant = FALSE` because it's hard for a gene list obtained
 # from small test dataset to represent real-life biology.
 \donttest{
 if (requireNamespace("gprofiler2", quietly = TRUE)) {
-    go <- runGOEnrich(res, group = 0, significant = FALSE)
+    go <- runGOEnrich(result, group = "0.stim", significant = FALSE)
 }
 }
 }
