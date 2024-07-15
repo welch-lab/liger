@@ -2,8 +2,7 @@
 # Scatter Plots of DimRed ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#' Generate Dimensionality Reduction Plot with Coloring
-#' @description some text
+#' @rdname plotDimRed
 #' @param object A \linkS4class{liger} object.
 #' @param useCluster Name of variable in \code{cellMeta(object)}. Default
 #' \code{NULL} uses default cluster.
@@ -30,10 +29,6 @@
 #' for gene expression and \code{"D"} ("viridis") for factor loading.
 #' @return ggplot object when only one feature (e.g. cluster variable, gene,
 #' factor) is set. List object when multiple of those are specified.
-#' @seealso Please refer to \code{\link{plotDimRed}},
-#' \code{\link{.ggScatter}}, \code{\link{.ggplotLigerTheme}} for additional
-#' graphic setting
-#' @rdname plotDimRed
 #' @export
 #' @examples
 #' plotClusterDimRed(pbmcPlot)
@@ -182,13 +177,10 @@ plotFactorDimRed <- function(
 #' \code{\link[cowplot]{plot_grid}}.
 #' @param legendNRow Arrangement of the legend, number of rows. Default
 #' \code{1}.
-#' @param ... Additional graphic setting arguments passed to
-#' \code{\link{plotDimRed}}.
+#' @inheritDotParams .ggScatter shapeBy dotOrder dotSize dotAlpha raster labelText labelTextSize seed
+#' @inheritDotParams .ggplotLigerTheme subtitle baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize panelBorder colorValues naColor plotly
 #' @return ggplot object when only one feature (e.g. cluster variable, gene,
 #' factor) is set. List object when multiple of those are specified.
-#' @seealso Please refer to \code{\link{plotDimRed}},
-#' \code{\link{.ggScatter}}, \code{\link{.ggplotLigerTheme}} for additional
-#' graphic setting
 #' @export
 #' @examples
 #' plotGroupClusterDimRed(pbmcPlot)
@@ -274,6 +266,9 @@ plotGroupClusterDimRed <- function(
 #' @param groupBy Names of available categorical variable in \code{cellMeta}
 #' slot. Use \code{FALSE} for no grouping. Default \code{NULL} looks clustering
 #' result but will not group if no clustering found.
+#' @inheritDotParams plotCellViolin slot yFunc cellIdx titles
+#' @inheritDotParams .ggCellViolin violin violinAlpha violinWidth box boxAlpha boxWidth dot dotColor dotSize raster seed
+#' @inheritDotParams .ggplotLigerTheme subtitle xlab ylab legendFillTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize legendNRow legendNCol colorLabels colorValues panelBorder plotly
 #' @param ... Additional arguments passed to \code{\link{plotCellViolin}}.
 #' @return ggplot if using a single gene and not splitting by dataset.
 #' Otherwise, list of ggplot.
@@ -623,7 +618,7 @@ plotProportionPie <- function(
 #' \code{1} if not set.
 #' @param dotJitter Logical, whether to jitter the dot to avoid overlapping
 #' within a box when many dots are presented. Default \code{FALSE}.
-#' @inheritDotParams .ggplotLigerTheme title subtitle xlab ylab legendColorTitle legendFillTitle legendShapeTitle legendSizeTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize panelBorder legendNRow legendNCol colorLabels colorValues colorPalette colorDirection naColor colorLow colorMid colorHigh colorMidPoint plotly
+#' @inheritDotParams .ggplotLigerTheme title subtitle xlab ylab legendFillTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize panelBorder legendNRow legendNCol colorLabels colorValues colorPalette colorDirection naColor colorLow colorMid colorHigh colorMidPoint plotly
 #' @export
 #' @return A ggplot object or a list of ggplot objects if
 #' \code{splitByCluster = TRUE}.
@@ -770,10 +765,10 @@ plotProportionBox <- function(
 #' \code{EnhancedVolcano::EnhancedVolcano()}, which has provides
 #' substantial amount of arguments for graphical control. However, that requires
 #' the installation of package "EnhancedVolcano".
-#' @rdname plotVolcano
 #' @param result Data frame table returned by \code{\link{runMarkerDEG}} or
 #' \code{\link{runPairwiseDEG}}.
-#' @param group Selection of one group available from \code{result$group}
+#' @param group Selection of one group available from \code{result$group}. If
+#' only one group is available from \code{result}, default \code{NULL} uses it.
 #' @param logFCThresh Number for the threshold on the absolute value of the log2
 #' fold change statistics. Default \code{1}.
 #' @param padjThresh Number for the threshold on the adjusted p-value
@@ -787,9 +782,8 @@ plotProportionBox <- function(
 #' \code{"top"}.
 #' @param labelSize Size of labeled top features and line annotations. Default
 #' \code{4}.
-#' @param ... For \code{plotVolcano}, more theme setting arguments passed to
-#' \code{\link{.ggplotLigerTheme}}. For \code{plotEnhancedVolcano}, arguments
-#' passed to \code{EnhancedVolcano::EnhancedVolcano()}.
+#' @inheritDotParams .ggScatter dotOrder raster labelText labelTextSize seed
+#' @inheritDotParams .ggplotLigerTheme title subtitle legendColorTitle showLegend baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize panelBorder
 #' @return ggplot
 #' @export
 #' @examples
@@ -800,14 +794,12 @@ plotProportionBox <- function(
 #'     groupTest = "stim",
 #'     groupCtrl = "ctrl",
 #'     variable1 = "dataset",
-#'     splitBy = "defaultCluster",
-#'     nPsdRep = 3,
-#'     minCellPerRep = 3
+#'     splitBy = "defaultCluster"
 #' )
 #' plotVolcano(result, "0.stim")
 plotVolcano <- function(
         result,
-        group,
+        group = NULL,
         logFCThresh = 1,
         padjThresh = 0.01,
         labelTopN = 20,
@@ -817,9 +809,20 @@ plotVolcano <- function(
         labelSize = 4,
         ...
 ) {
-    if (!group %in% result$group) {
+    if (!is.factor(result$group)) result$group <- factor(result$group)
+    result$group <- droplevels(result$group)
+    if (is.null(group)) {
+        if (nlevels(result$group) == 1) group <- levels(result$group)
+        else {
+            cli::cli_abort(
+                c("Please specify one group to visualize",
+                  i = "Available ones: {.val {levels(result$group)}}")
+            )
+        }
+    } else if (length(group) != 1 ||
+        !group %in% result$group) {
         cli::cli_abort(
-            c("Selected group does not exist in {.code result$group}",
+            c("Please specify one available group to visualize",
               i = "Available ones: {.val {unique(result$group)}}")
         )
     }
@@ -892,8 +895,26 @@ plotVolcano <- function(
     return(p)
 }
 
-#' @rdname plotVolcano
+#' Create volcano plot with EnhancedVolcano
+#' @inheritParams plotVolcano
+#' @param ... Arguments passed to EnhancedVolcano::EnhancedVolcano(), except
+#' that \code{toptable}, \code{lab}, \code{x} and \code{y} are prefilled by this
+#' wrapper.
+#' @returns ggplot
 #' @export
+#' @examples
+#' if (requireNamespace("EnhancedVolcano", quietly = TRUE)) {
+#'     defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
+#'     # Test the DEG between "stim" and "ctrl", within each cluster
+#'     result <- runPairwiseDEG(
+#'         pbmc,
+#'         groupTest = "stim",
+#'         groupCtrl = "ctrl",
+#'         variable1 = "dataset",
+#'         splitBy = "defaultCluster"
+#'     )
+#'     plotEnhancedVolcano(result, "0.stim")
+#' }
 plotEnhancedVolcano <- function(
         result,
         group,
@@ -955,8 +976,7 @@ plotEnhancedVolcano <- function(
 #' \code{\link[ggplot2]{scale_fill_viridis_c}}. Default \code{"magma"}.
 #' @param colorDirection Color gradient direction for
 #' \code{\link[ggplot2]{scale_fill_viridis_c}}. Default \code{-1}.
-#' @param ... More theme setting arguments passed to
-#' \code{\link{.ggplotLigerTheme}}.
+#' @inheritDotParams .ggplotLigerTheme title subtitle xlab ylab showLegend legendPosition baseSize titleSize xTitleSize yTitleSize legendTitleSize subtitleSize xTextSize yTextSize legendTextSize panelBorder plotly
 #' @return A ggplot object when only one plot is generated, A ggplot object
 #' combined with \code{\link[cowplot]{plot_grid}} when multiple plots and
 #' \code{combinePlot = TRUE}. A list of ggplot when multiple plots and
@@ -1115,8 +1135,9 @@ plotDensityDimRed <- function(
 #' Default \code{15}.
 #' @param nPlot Integer, number of top genes to be shown in the loading rank
 #' plot. Default \code{30}.
-#' @param ... Additional plot theme setting arguments passed to
-#' \code{\link{.ggScatter}} and \code{\link{.ggplotLigerTheme}}.
+#' @inheritDotParams plotDimRed colorByFunc cellIdx shapeBy titles
+#' @inheritDotParams .ggScatter dotSize dotAlpha trimHigh trimLow raster
+#' @inheritDotParams .ggplotLigerTheme xlab ylab legendColorTitle legendShapeTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize colorPalette colorDirection naColor panelBorder
 #' @export
 #' @examples
 #' result <- getFactorMarkers(pbmcPlot, "ctrl", "stim")
@@ -1130,12 +1151,42 @@ plotGeneLoadings <- function(
         nPlot = 30,
         ...
 ) {
-    p1 <- plotDimRed(
-        object, colorBy = useFactor, useDimRed = useDimRed, slot = "H.norm",
-        zeroAsNA = TRUE, dotOrder = "asc", splitBy = NULL, ...
+    allDotArgs <- list(...)
+    pdrArgs <- names(as.list(args(plotDimRed)))
+    pglrArgs <- names(as.list(args(plotGeneLoadingRank)))
+    pdrDotArgs <- intersect(names(allDotArgs), pdrArgs)
+    pglrDotArgs <- intersect(names(allDotArgs), pglrArgs)
+    otherDotArgs <- setdiff(names(allDotArgs), c(pdrDotArgs, pglrDotArgs))
+    p1 <- do.call(
+        what = plotDimRed,
+        args = c(
+            list(
+                object = object,
+                colorBy = useFactor,
+                useDimRed = useDimRed,
+                slot = "H.norm",
+                zeroAsNA = TRUE,
+                dotOrder = "asc",
+                splitBy = NULL
+            ),
+            allDotArgs[pdrDotArgs],
+            allDotArgs[otherDotArgs]
+        )
     )
-    bottom <- plotGeneLoadingRank(object, markerTable, useFactor,
-                                  nLabel, nPlot, ...)
+    bottom <- do.call(
+        what = plotGeneLoadingRank,
+        args = c(
+            list(
+                object = object,
+                markerTable = markerTable,
+                useFactor = useFactor,
+                nLabel = nLabel,
+                nPlot = nPlot
+            ),
+            allDotArgs[pglrDotArgs],
+            allDotArgs[otherDotArgs]
+        )
+    )
     bottom <- bottom[c(1, 3, 2)]
     bottomComb <- cowplot::plot_grid(plotlist = bottom, nrow = 1)
     cowplot::plot_grid(p1, bottomComb, nrow = 2)
@@ -1430,21 +1481,23 @@ makeRiverplot <- function(object, cluster1, cluster2, cluster_consensus = NULL,
 
 
 #' Visualize a spatial dataset
+#' @description
+#' Simple visualization of spatial coordinates. See example code for how to have
+#' information preset in the object. Arguments to the liger object method are
+#' passed down to ligerDataset method.
 #' @export
 #' @rdname plotSpatial
 #' @param object Either a \linkS4class{liger} object containing a spatial
 #' dataset or a \linkS4class{ligerSpatialDataset} object.
-#' @param ... Arguments passed to other methods. \code{.liger} method passes
-#' everything to \code{.ligerSpatialDataset} method, and the latter passes
-#' everything to \code{\link{.ggScatter}} and then
-#' \code{\link{.ggplotLigerTheme}}.
+#' @inheritDotParams .ggScatter dotOrder dotSize dotAlpha raster labelTextSize seed
+#' @inheritDotParams .ggplotLigerTheme title subtitle showLegend legendPosition baseSize titleSize xTitleSize yTitleSize legendTitleSize subtitleSize xTextSize yTextSize legendTextSize legendDotSize legendNRow legendNCol colorLabels colorValues naColor
 #' @return A ggplot object
 #' @examples
 #' ctrl.fake.spatial <- as.ligerDataset(dataset(pbmc, "ctrl"), modal = "spatial")
 #' fake.coords <- matrix(rnorm(2 * ncol(ctrl.fake.spatial)), ncol = 2)
-#' dimnames(fake.coords) <- list(colnames(ctrl.fake.spatial), c("x", "y"))
 #' coordinate(ctrl.fake.spatial) <- fake.coords
 #' dataset(pbmc, "ctrl") <- ctrl.fake.spatial
+#' defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
 #' plotSpatial2D(pbmc, dataset = "ctrl")
 plotSpatial2D <- function(object, ...) {
     UseMethod("plotSpatial2D", object)
@@ -1493,6 +1546,8 @@ plotSpatial2D.liger <- function(
 #' it.
 #' @param labelText Logical, whether to label annotation onto the scatter plot.
 #' Default \code{FALSE}.
+#' @param panelBorder Whether to show rectangle border of the panel instead of
+#' using ggplot classic bottom and left axis lines. Default \code{TRUE}.
 plotSpatial2D.ligerSpatialDataset <- function(
         object,
         useCluster = NULL,
@@ -1501,6 +1556,7 @@ plotSpatial2D.ligerSpatialDataset <- function(
         xlab = NULL,
         ylab = NULL,
         labelText = FALSE,
+        panelBorder = TRUE,
         ...)
 {
     .checkArgLen(useCluster, ncol(object), repN = FALSE, class = "factor")
@@ -1516,21 +1572,20 @@ plotSpatial2D.ligerSpatialDataset <- function(
 
     if (is.null(useCluster)) {
         .ggScatter(plotDF = plotDF, x = "x", y = "y",
-                   xlab = xlab, ylab = ylab, ...) +
-            ggplot2::theme_bw() +
-            ggplot2::theme(panel.grid = ggplot2::element_blank(),
-                           axis.ticks = ggplot2::element_blank(),
-                           axis.text = ggplot2::element_blank()) +
+                   xlab = xlab, ylab = ylab, panelBorder = panelBorder, ...) +
+            ggplot2::theme(axis.ticks = ggplot2::element_blank(),
+                           axis.text.x = ggplot2::element_blank(),
+                           axis.text.y = ggplot2::element_blank()) +
             ggplot2::coord_fixed(xlim = xRange, ylim = yRange)
     } else {
         plotDF[[legendColorTitle]] <- factor(useCluster)
         .ggScatter(plotDF = plotDF, x = "x", y = "y", colorBy = legendColorTitle,
                    xlab = xlab, ylab = ylab, labelText = labelText,
-                   legendColorTitle = legendColorTitle, ...) +
-            ggplot2::theme_bw() +
-            ggplot2::theme(panel.grid = ggplot2::element_blank(),
-                           axis.ticks = ggplot2::element_blank(),
-                           axis.text = ggplot2::element_blank()) +
+                   legendColorTitle = legendColorTitle,
+                   panelBorder = panelBorder, ...) +
+            ggplot2::theme(axis.ticks = ggplot2::element_blank(),
+                           axis.text.x = ggplot2::element_blank(),
+                           axis.text.y = ggplot2::element_blank()) +
             ggplot2::coord_fixed(xlim = xRange, ylim = yRange)
     }
 }

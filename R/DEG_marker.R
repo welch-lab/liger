@@ -1115,6 +1115,7 @@ plotMarkerHeatmap <- function(
 #' @param useCellMeta Cell metadata variable names for cell grouping. Default
 #' \code{NULL} includes dataset source and the default cluster.
 #' @param column_title Title on the column. Default \code{NULL}.
+#' @param seed Random seed for reproducibility. Default \code{1}.
 #' @param ... Parameter passed to wrapped functions in the inheritance order:
 #' \code{\link{plotGeneHeatmap}}, \code{\link{.plotHeatmap}},
 #' \code{ComplexHeatmap::\link[ComplexHeatmap]{Heatmap}}

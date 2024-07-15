@@ -50,7 +50,7 @@ continuous \code{colorBy} variable. Default \code{NULL}.}
 \code{colorBy} variable to \code{NA} so the color of these value.}
 
 \item{raster}{Logical, whether to rasterize the plot. Default \code{NULL}
-automatically rasterize the plot when number of total cells to be plotted
+automatically rasterize the plot when number of total dots to be plotted
 exceeds 100,000.}
 
 \item{labelBy}{A variable name available in \code{plotDF}. If the variable is

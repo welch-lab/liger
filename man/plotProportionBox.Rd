@@ -49,9 +49,8 @@ within a box when many dots are presented. Default \code{FALSE}.}
 By default, no main title or subtitle will be set, and X/Y axis title will be
 the names of variables used for plotting. Use \code{NULL} to hide elements.
 \code{TRUE} for \code{xlab} or \code{ylab} shows default values.}
-    \item{\code{legendColorTitle,legendFillTitle,legendShapeTitle,legendSizeTitle}}{Set
-alternative title text for legend on aes of color, fill, shape and size,
-respectively. Default \code{NULL} shows the original variable name.}
+    \item{\code{legendFillTitle}}{Legend title text for fill aesthetics, often used for
+violin, box, bar plots. Default \code{NULL} shows the original variable name.}
     \item{\code{showLegend}}{Whether to show the legend. Default \code{TRUE}.}
     \item{\code{legendPosition}}{Text indicating where to place the legend. Choose from
 \code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. Default
@@ -66,12 +65,13 @@ axis titles and legend title. Default \code{NULL} controls by
 axis texts and legend text. Default \code{NULL} controls by \code{baseSize}.}
     \item{\code{panelBorder}}{Whether to show rectangle border of the panel instead of
 using ggplot classic bottom and left axis lines. Default \code{FALSE}.}
-    \item{\code{colorLabels,colorValues}}{Each a vector with as many values as the
-number of categories for the categorical coloring aesthetics. Labels will be
-the shown text and values will be the color code. These are passed to
-\code{\link[ggplot2]{scale_color_manual}}. Default uses an internal selected
-palette if there are <= 26 colors needed, or ggplot hues otherwise, and plot
-original labels (levels of the factor).}
+    \item{\code{colorLabels}}{Character vector for modifying category names in a
+color legend. Passed to \code{ggplot2::scale_color_manual(labels)}. Default
+\code{NULL} uses original levels of the factor.}
+    \item{\code{colorValues}}{Character vector of colors for modifying category colors
+in a color legend. Passed to \code{ggplot2::scale_color_manual(values)}.
+Default \code{NULL} uses internal selected palette when <= 26 categories are
+presented, otherwise ggplot hues.}
     \item{\code{legendNRow,legendNCol}}{Integer, when too many categories in one
 variable, arranges number of rows or columns. Default \code{NULL},
 automatically split to \code{ceiling(levels(variable)/10)} columns.}

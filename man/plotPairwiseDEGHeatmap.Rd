@@ -53,6 +53,8 @@ specified. Default \code{200}.}
 
 \item{column_title}{Title on the column. Default \code{NULL}.}
 
+\item{seed}{Random seed for reproducibility. Default \code{1}.}
+
 \item{...}{Parameter passed to wrapped functions in the inheritance order:
 \code{\link{plotGeneHeatmap}}, \code{\link{.plotHeatmap}},
 \code{ComplexHeatmap::\link[ComplexHeatmap]{Heatmap}}}

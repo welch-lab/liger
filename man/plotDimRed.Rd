@@ -102,8 +102,79 @@ categorical annotation to be reflected by dot shapes. Default \code{NULL}.}
 many elements as multiple plots are supposed to be generated. Default
 \code{NULL}.}
 
-\item{...}{More plot setting arguments. See \code{\link{.ggScatter}} and
-\code{\link{.ggplotLigerTheme}}.}
+\item{...}{
+  Arguments passed on to \code{\link[=.ggScatter]{.ggScatter}}, \code{\link[=.ggplotLigerTheme]{.ggplotLigerTheme}}
+  \describe{
+    \item{\code{dotOrder}}{Controls the order that each dot is added to the plot. Choose
+from \code{"shuffle"}, \code{"ascending"}, or \code{"descending"}. Default
+\code{"shuffle"}, useful when coloring by categories that overlaps (e.g.
+"dataset"), \code{"ascending"} can be useful when coloring by a continuous
+variable (e.g. gene expression) where high values needs more
+highlight. \code{NULL} use default order.}
+    \item{\code{dotSize,dotAlpha}}{Numeric, controls the size or transparency of all
+dots. Default \code{getOption("ligerDotSize")} (1) and \code{0.9}.}
+    \item{\code{trimHigh,trimLow}}{Numeric, limit the largest or smallest value of
+continuous \code{colorBy} variable. Default \code{NULL}.}
+    \item{\code{raster}}{Logical, whether to rasterize the plot. Default \code{NULL}
+automatically rasterize the plot when number of total dots to be plotted
+exceeds 100,000.}
+    \item{\code{labelBy}}{A variable name available in \code{plotDF}. If the variable is
+categorical (a factor), the label position will be the median coordinates of
+all dots within the same group. Unique labeling in character vector for each
+dot is also acceptable. Default \code{colorBy}.}
+    \item{\code{labelText}}{Logical, whether to show text label at the median position
+of each categorical group specified by \code{colorBy}. Default \code{TRUE}.
+Does not work when continuous coloring is specified.}
+    \item{\code{labelTextSize}}{Numeric, controls the size of label size when
+\code{labelText = TRUE}. Default \code{4}.}
+    \item{\code{seed}}{Random seed for reproducibility. Default \code{1}.}
+    \item{\code{title,subtitle,xlab,ylab}}{Main title, subtitle or X/Y axis title text.
+By default, no main title or subtitle will be set, and X/Y axis title will be
+the names of variables used for plotting. Use \code{NULL} to hide elements.
+\code{TRUE} for \code{xlab} or \code{ylab} shows default values.}
+    \item{\code{legendColorTitle}}{Legend title text for color aesthetics, often used
+for categorical or continuous coloring of dots. Default \code{NULL} shows the
+original variable name.}
+    \item{\code{legendShapeTitle}}{Legend title text for shape aesthetics, often used
+for shaping dots by categorical variable. Default \code{NULL} shows the
+original variable name.}
+    \item{\code{showLegend}}{Whether to show the legend. Default \code{TRUE}.}
+    \item{\code{legendPosition}}{Text indicating where to place the legend. Choose from
+\code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. Default
+\code{"right"}.}
+    \item{\code{baseSize}}{One-parameter control of all text sizes. Individual text
+element sizes can be controlled by other size arguments. "Title" sizes are
+2 points larger than "text" sizes when being controlled by this.}
+    \item{\code{titleSize,xTitleSize,yTitleSize,legendTitleSize}}{Size of main title,
+axis titles and legend title. Default \code{NULL} controls by
+\code{baseSize + 2}.}
+    \item{\code{subtitleSize,xTextSize,yTextSize,legendTextSize}}{Size of subtitle text,
+axis texts and legend text. Default \code{NULL} controls by \code{baseSize}.}
+    \item{\code{legendDotSize}}{Allow dots in legend region to be large enough to see
+the colors/shapes clearly. Default \code{4}.}
+    \item{\code{panelBorder}}{Whether to show rectangle border of the panel instead of
+using ggplot classic bottom and left axis lines. Default \code{FALSE}.}
+    \item{\code{colorLabels}}{Character vector for modifying category names in a
+color legend. Passed to \code{ggplot2::scale_color_manual(labels)}. Default
+\code{NULL} uses original levels of the factor.}
+    \item{\code{colorValues}}{Character vector of colors for modifying category colors
+in a color legend. Passed to \code{ggplot2::scale_color_manual(values)}.
+Default \code{NULL} uses internal selected palette when <= 26 categories are
+presented, otherwise ggplot hues.}
+    \item{\code{legendNRow,legendNCol}}{Integer, when too many categories in one
+variable, arranges number of rows or columns. Default \code{NULL},
+automatically split to \code{ceiling(levels(variable)/10)} columns.}
+    \item{\code{colorDirection}}{Choose \code{1} or \code{-1}. Applied when
+\code{colorPalette} is from Viridis options. Default \code{-1} use darker
+color for higher value, while \code{1} reverses this direction.}
+    \item{\code{colorLow,colorMid,colorHigh,colorMidPoint}}{All four of these must be
+specified to customize palette with}
+    \item{\code{naColor}}{The color code for \code{NA} values. Default \code{"#DEDEDE"}.
+\code{\link[ggplot2]{scale_colour_gradient2}}. Default \code{NULL}.}
+    \item{\code{plotly}}{Whether to use plotly to enable web based interactive browsing
+for the plot. Requires installation of package "plotly". Default
+\code{FALSE}.}
+  }}
 
 \item{useCluster}{Name of variable in \code{cellMeta(object)}. Default
 \code{NULL} uses default cluster.}
@@ -151,8 +222,6 @@ unnormalized or aligned factor loading. Multiple coloring variable is allowed
 from the same specification of \code{slot}, and this returns a list of plots
 with different coloring values. Users can further split the plot(s) by
 grouping on cells (e.g. datasets).
-
-some text
 }
 \details{
 Available option for \code{slot} include: \code{"cellMeta"},
@@ -187,9 +256,4 @@ plotDatasetDimRed(pbmcPlot)
 plotByDatasetAndCluster(pbmcPlot)
 plotGeneDimRed(pbmcPlot, varFeatures(pbmcPlot)[1])
 plotFactorDimRed(pbmcPlot, 2)
-}
-\seealso{
-Please refer to \code{\link{plotDimRed}},
-\code{\link{.ggScatter}}, \code{\link{.ggplotLigerTheme}} for additional
-graphic setting
 }

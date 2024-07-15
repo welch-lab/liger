@@ -40,8 +40,58 @@ Default \code{15}.}
 \item{nPlot}{Integer, number of top genes to be shown in the loading rank
 plot. Default \code{30}.}
 
-\item{...}{Additional plot theme setting arguments passed to
-\code{\link{.ggScatter}} and \code{\link{.ggplotLigerTheme}}.}
+\item{...}{
+  Arguments passed on to \code{\link[=plotDimRed]{plotDimRed}}, \code{\link[=.ggScatter]{.ggScatter}}, \code{\link[=.ggplotLigerTheme]{.ggplotLigerTheme}}
+  \describe{
+    \item{\code{colorByFunc}}{Default \code{NULL}. A function object that expects a
+vector/factor/data.frame retrieved by \code{colorBy} as the only input, and
+returns an object of the same size, so that the all color "aes" are replaced
+by this output. Useful when, for example, users need to scale the gene
+expression shown on plot.}
+    \item{\code{cellIdx}}{Character, logical or numeric index that can subscribe cells.
+Missing or \code{NULL} for all cells.}
+    \item{\code{shapeBy}}{Available variable name in \code{cellMeta} slot to look for
+categorical annotation to be reflected by dot shapes. Default \code{NULL}.}
+    \item{\code{titles}}{Title text. A character scalar or a character vector with as
+many elements as multiple plots are supposed to be generated. Default
+\code{NULL}.}
+    \item{\code{dotSize,dotAlpha}}{Numeric, controls the size or transparency of all
+dots. Default \code{getOption("ligerDotSize")} (1) and \code{0.9}.}
+    \item{\code{trimHigh,trimLow}}{Numeric, limit the largest or smallest value of
+continuous \code{colorBy} variable. Default \code{NULL}.}
+    \item{\code{raster}}{Logical, whether to rasterize the plot. Default \code{NULL}
+automatically rasterize the plot when number of total dots to be plotted
+exceeds 100,000.}
+    \item{\code{legendColorTitle}}{Legend title text for color aesthetics, often used
+for categorical or continuous coloring of dots. Default \code{NULL} shows the
+original variable name.}
+    \item{\code{legendShapeTitle}}{Legend title text for shape aesthetics, often used
+for shaping dots by categorical variable. Default \code{NULL} shows the
+original variable name.}
+    \item{\code{showLegend}}{Whether to show the legend. Default \code{TRUE}.}
+    \item{\code{legendPosition}}{Text indicating where to place the legend. Choose from
+\code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. Default
+\code{"right"}.}
+    \item{\code{baseSize}}{One-parameter control of all text sizes. Individual text
+element sizes can be controlled by other size arguments. "Title" sizes are
+2 points larger than "text" sizes when being controlled by this.}
+    \item{\code{titleSize,xTitleSize,yTitleSize,legendTitleSize}}{Size of main title,
+axis titles and legend title. Default \code{NULL} controls by
+\code{baseSize + 2}.}
+    \item{\code{subtitleSize,xTextSize,yTextSize,legendTextSize}}{Size of subtitle text,
+axis texts and legend text. Default \code{NULL} controls by \code{baseSize}.}
+    \item{\code{panelBorder}}{Whether to show rectangle border of the panel instead of
+using ggplot classic bottom and left axis lines. Default \code{FALSE}.}
+    \item{\code{colorPalette}}{For continuous coloring, an index or a palette name to
+select from available options from ggplot
+\code{\link[ggplot2]{scale_brewer}} or \code{\link[viridisLite]{viridis}}.
+Default \code{"magma"}.}
+    \item{\code{colorDirection}}{Choose \code{1} or \code{-1}. Applied when
+\code{colorPalette} is from Viridis options. Default \code{-1} use darker
+color for higher value, while \code{1} reverses this direction.}
+    \item{\code{naColor}}{The color code for \code{NA} values. Default \code{"#DEDEDE"}.
+\code{\link[ggplot2]{scale_colour_gradient2}}. Default \code{NULL}.}
+  }}
 }
 \description{
 Visualize factor expression and gene loading

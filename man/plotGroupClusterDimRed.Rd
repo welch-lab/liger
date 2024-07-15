@@ -55,8 +55,41 @@ of rows and columns. Default \code{NULL} will be automatically handled by
 \item{legendNRow}{Arrangement of the legend, number of rows. Default
 \code{1}.}
 
-\item{...}{Additional graphic setting arguments passed to
-\code{\link{plotDimRed}}.}
+\item{...}{
+  Arguments passed on to \code{\link[=.ggScatter]{.ggScatter}}, \code{\link[=.ggplotLigerTheme]{.ggplotLigerTheme}}
+  \describe{
+    \item{\code{dotOrder}}{Controls the order that each dot is added to the plot. Choose
+from \code{"shuffle"}, \code{"ascending"}, or \code{"descending"}. Default
+\code{"shuffle"}, useful when coloring by categories that overlaps (e.g.
+"dataset"), \code{"ascending"} can be useful when coloring by a continuous
+variable (e.g. gene expression) where high values needs more
+highlight. \code{NULL} use default order.}
+    \item{\code{dotSize,dotAlpha}}{Numeric, controls the size or transparency of all
+dots. Default \code{getOption("ligerDotSize")} (1) and \code{0.9}.}
+    \item{\code{raster}}{Logical, whether to rasterize the plot. Default \code{NULL}
+automatically rasterize the plot when number of total dots to be plotted
+exceeds 100,000.}
+    \item{\code{labelText}}{Logical, whether to show text label at the median position
+of each categorical group specified by \code{colorBy}. Default \code{TRUE}.
+Does not work when continuous coloring is specified.}
+    \item{\code{labelTextSize}}{Numeric, controls the size of label size when
+\code{labelText = TRUE}. Default \code{4}.}
+    \item{\code{seed}}{Random seed for reproducibility. Default \code{1}.}
+    \item{\code{baseSize}}{One-parameter control of all text sizes. Individual text
+element sizes can be controlled by other size arguments. "Title" sizes are
+2 points larger than "text" sizes when being controlled by this.}
+    \item{\code{panelBorder}}{Whether to show rectangle border of the panel instead of
+using ggplot classic bottom and left axis lines. Default \code{FALSE}.}
+    \item{\code{colorValues}}{Character vector of colors for modifying category colors
+in a color legend. Passed to \code{ggplot2::scale_color_manual(values)}.
+Default \code{NULL} uses internal selected palette when <= 26 categories are
+presented, otherwise ggplot hues.}
+    \item{\code{naColor}}{The color code for \code{NA} values. Default \code{"#DEDEDE"}.
+\code{\link[ggplot2]{scale_colour_gradient2}}. Default \code{NULL}.}
+    \item{\code{plotly}}{Whether to use plotly to enable web based interactive browsing
+for the plot. Requires installation of package "plotly". Default
+\code{FALSE}.}
+  }}
 }
 \value{
 ggplot object when only one feature (e.g. cluster variable, gene,
@@ -71,9 +104,4 @@ subplot of each group.
 }
 \examples{
 plotGroupClusterDimRed(pbmcPlot)
-}
-\seealso{
-Please refer to \code{\link{plotDimRed}},
-\code{\link{.ggScatter}}, \code{\link{.ggplotLigerTheme}} for additional
-graphic setting
 }

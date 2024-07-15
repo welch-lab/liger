@@ -41,6 +41,12 @@ considered as significant. Default \code{0.05}.}
 \item{...}{
   Arguments passed on to \code{\link[=.ggplotLigerTheme]{.ggplotLigerTheme}}
   \describe{
+    \item{\code{legendColorTitle}}{Legend title text for color aesthetics, often used
+for categorical or continuous coloring of dots. Default \code{NULL} shows the
+original variable name.}
+    \item{\code{legendSizeTitle}}{Legend title text for size aesthetics, often used for
+sizing dots by continuous variable. Default \code{NULL} shows the original
+variable name.}
     \item{\code{showLegend}}{Whether to show the legend. Default \code{TRUE}.}
     \item{\code{legendPosition}}{Text indicating where to place the legend. Choose from
 \code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. Default

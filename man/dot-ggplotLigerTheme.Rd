@@ -51,9 +51,20 @@ By default, no main title or subtitle will be set, and X/Y axis title will be
 the names of variables used for plotting. Use \code{NULL} to hide elements.
 \code{TRUE} for \code{xlab} or \code{ylab} shows default values.}
 
-\item{legendColorTitle, legendFillTitle, legendShapeTitle, legendSizeTitle}{Set
-alternative title text for legend on aes of color, fill, shape and size,
-respectively. Default \code{NULL} shows the original variable name.}
+\item{legendColorTitle}{Legend title text for color aesthetics, often used
+for categorical or continuous coloring of dots. Default \code{NULL} shows the
+original variable name.}
+
+\item{legendFillTitle}{Legend title text for fill aesthetics, often used for
+violin, box, bar plots. Default \code{NULL} shows the original variable name.}
+
+\item{legendShapeTitle}{Legend title text for shape aesthetics, often used
+for shaping dots by categorical variable. Default \code{NULL} shows the
+original variable name.}
+
+\item{legendSizeTitle}{Legend title text for size aesthetics, often used for
+sizing dots by continuous variable. Default \code{NULL} shows the original
+variable name.}
 
 \item{showLegend}{Whether to show the legend. Default \code{TRUE}.}
 
@@ -85,12 +96,14 @@ using ggplot classic bottom and left axis lines. Default \code{FALSE}.}
 variable, arranges number of rows or columns. Default \code{NULL},
 automatically split to \code{ceiling(levels(variable)/10)} columns.}
 
-\item{colorLabels, colorValues}{Each a vector with as many values as the
-number of categories for the categorical coloring aesthetics. Labels will be
-the shown text and values will be the color code. These are passed to
-\code{\link[ggplot2]{scale_color_manual}}. Default uses an internal selected
-palette if there are <= 26 colors needed, or ggplot hues otherwise, and plot
-original labels (levels of the factor).}
+\item{colorLabels}{Character vector for modifying category names in a
+color legend. Passed to \code{ggplot2::scale_color_manual(labels)}. Default
+\code{NULL} uses original levels of the factor.}
+
+\item{colorValues}{Character vector of colors for modifying category colors
+in a color legend. Passed to \code{ggplot2::scale_color_manual(values)}.
+Default \code{NULL} uses internal selected palette when <= 26 categories are
+presented, otherwise ggplot hues.}
 
 \item{colorPalette}{For continuous coloring, an index or a palette name to
 select from available options from ggplot

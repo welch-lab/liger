@@ -47,6 +47,8 @@
 #' @param titles Title text. A character scalar or a character vector with as
 #' many elements as multiple plots are supposed to be generated. Default
 #' \code{NULL}.
+#' @inheritDotParams .ggScatter dotOrder dotSize dotAlpha trimHigh trimLow zeroAsNA raster labelBy labelText labelTextSize seed
+#' @inheritDotParams .ggplotLigerTheme title subtitle xlab ylab legendColorTitle legendShapeTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize legendDotSize panelBorder legendNRow legendNCol colorLabels colorValues colorPalette colorDirection naColor colorLow colorMid colorHigh colorMidPoint plotly
 #' @param ... More plot setting arguments. See \code{\link{.ggScatter}} and
 #' \code{\link{.ggplotLigerTheme}}.
 #' @return A ggplot object when a single plot is intended. A list of ggplot
@@ -178,7 +180,7 @@ plotDimRed <- function(
 #' @param zeroAsNA Logical, whether to set zero values in continuous
 #' \code{colorBy} variable to \code{NA} so the color of these value.
 #' @param raster Logical, whether to rasterize the plot. Default \code{NULL}
-#' automatically rasterize the plot when number of total cells to be plotted
+#' automatically rasterize the plot when number of total dots to be plotted
 #' exceeds 100,000.
 #' @param labelBy A variable name available in \code{plotDF}. If the variable is
 #' categorical (a factor), the label position will be the median coordinates of
@@ -564,9 +566,17 @@ plotCellViolin <- function(
 #' By default, no main title or subtitle will be set, and X/Y axis title will be
 #' the names of variables used for plotting. Use \code{NULL} to hide elements.
 #' \code{TRUE} for \code{xlab} or \code{ylab} shows default values.
-#' @param legendColorTitle,legendFillTitle,legendShapeTitle,legendSizeTitle Set
-#' alternative title text for legend on aes of color, fill, shape and size,
-#' respectively. Default \code{NULL} shows the original variable name.
+#' @param legendColorTitle Legend title text for color aesthetics, often used
+#' for categorical or continuous coloring of dots. Default \code{NULL} shows the
+#' original variable name.
+#' @param legendFillTitle Legend title text for fill aesthetics, often used for
+#' violin, box, bar plots. Default \code{NULL} shows the original variable name.
+#' @param legendShapeTitle Legend title text for shape aesthetics, often used
+#' for shaping dots by categorical variable. Default \code{NULL} shows the
+#' original variable name.
+#' @param legendSizeTitle Legend title text for size aesthetics, often used for
+#' sizing dots by continuous variable. Default \code{NULL} shows the original
+#' variable name.
 #' @param showLegend Whether to show the legend. Default \code{TRUE}.
 #' @param legendPosition Text indicating where to place the legend. Choose from
 #' \code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. Default
@@ -585,12 +595,13 @@ plotCellViolin <- function(
 #' the colors/shapes clearly. Default \code{4}.
 #' @param panelBorder Whether to show rectangle border of the panel instead of
 #' using ggplot classic bottom and left axis lines. Default \code{FALSE}.
-#' @param colorLabels,colorValues Each a vector with as many values as the
-#' number of categories for the categorical coloring aesthetics. Labels will be
-#' the shown text and values will be the color code. These are passed to
-#' \code{\link[ggplot2]{scale_color_manual}}. Default uses an internal selected
-#' palette if there are <= 26 colors needed, or ggplot hues otherwise, and plot
-#' original labels (levels of the factor).
+#' @param colorLabels Character vector for modifying category names in a
+#' color legend. Passed to \code{ggplot2::scale_color_manual(labels)}. Default
+#' \code{NULL} uses original levels of the factor.
+#' @param colorValues Character vector of colors for modifying category colors
+#' in a color legend. Passed to \code{ggplot2::scale_color_manual(values)}.
+#' Default \code{NULL} uses internal selected palette when <= 26 categories are
+#' presented, otherwise ggplot hues.
 #' @param legendNRow,legendNCol Integer, when too many categories in one
 #' variable, arranges number of rows or columns. Default \code{NULL},
 #' automatically split to \code{ceiling(levels(variable)/10)} columns.
@@ -656,20 +667,16 @@ plotCellViolin <- function(
         plot <- plot + ggplot2::ggtitle(title, subtitle = subtitle)
 
     # Broadcast one-param setting to each
-    Subtitle <- xText <- yText <- legendText <- baseSize
-    Title <- xTitle <- yTitle <- legendTitle <- baseSize + 2
-    xFacet <- yFacet <- baseSize - 2
-    # And set specific ones if specified
-    if (!is.null(titleSize)) Title <- titleSize
-    if (!is.null(subtitleSize)) Subtitle <- subtitleSize
-    if (!is.null(xTextSize)) xText <- xTextSize
-    if (!is.null(xFacetSize)) xFacet <- xFacetSize
-    if (!is.null(xTitleSize)) xTitle <- xTitleSize
-    if (!is.null(yTextSize)) yText <- yTextSize
-    if (!is.null(yFacetSize)) yFacet <- yFacetSize
-    if (!is.null(yTitleSize)) yTitle <- yTitleSize
-    if (!is.null(legendTextSize)) legendText <- legendTextSize
-    if (!is.null(legendTitleSize)) legendTitle <- legendTitleSize
+    titleSize <- titleSize %||% baseSize + 2
+    subtitleSize <- subtitleSize %||% baseSize
+    xTextSize <- xTextSize %||% baseSize
+    xFacetSize <- xFacetSize %||% baseSize - 2
+    xTitleSize <- xTitleSize %||% baseSize + 2
+    yTextSize <- yTextSize %||% baseSize
+    yFacetSize <- yFacetSize %||% baseSize - 2
+    yTitleSize <- yTitleSize %||% baseSize + 2
+    legendTextSize <- legendTextSize %||% baseSize
+    legendTitleSize <- legendTitleSize %||% baseSize + 2
 
     # Set x/y axis titles
     if (!isTRUE(xlab)) {
@@ -689,16 +696,16 @@ plotCellViolin <- function(
     plot <- plot +
         ggplot2::theme_classic() +
         ggplot2::theme(
-            plot.title = ggplot2::element_text(size = Title),
-            plot.subtitle = ggplot2::element_text(size = Subtitle),
-            axis.text.x = ggplot2::element_text(size = xText),
-            axis.title.x = ggplot2::element_text(size = xTitle),
-            axis.text.y = ggplot2::element_text(size = yText),
-            axis.title.y = ggplot2::element_text(size = yTitle),
-            strip.text.x = ggplot2::element_text(size = xFacet),
-            strip.text.y = ggplot2::element_text(size = yFacet),
-            legend.text = ggplot2::element_text(size = legendText),
-            legend.title = ggplot2::element_text(size = legendTitle)
+            plot.title = ggplot2::element_text(size = titleSize),
+            plot.subtitle = ggplot2::element_text(size = subtitleSize),
+            axis.text.x = ggplot2::element_text(size = xTextSize),
+            axis.title.x = ggplot2::element_text(size = xTitleSize),
+            axis.text.y = ggplot2::element_text(size = yTextSize),
+            axis.title.y = ggplot2::element_text(size = yTitleSize),
+            strip.text.x = ggplot2::element_text(size = xFacetSize),
+            strip.text.y = ggplot2::element_text(size = yFacetSize),
+            legend.text = ggplot2::element_text(size = legendTextSize),
+            legend.title = ggplot2::element_text(size = legendTitleSize)
         )
 
     if (isTRUE(panelBorder)) {

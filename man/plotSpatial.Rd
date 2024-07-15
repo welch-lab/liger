@@ -18,6 +18,7 @@ plotSpatial2D(object, ...)
   xlab = NULL,
   ylab = NULL,
   labelText = FALSE,
+  panelBorder = TRUE,
   ...
 )
 }
@@ -25,10 +26,50 @@ plotSpatial2D(object, ...)
 \item{object}{Either a \linkS4class{liger} object containing a spatial
 dataset or a \linkS4class{ligerSpatialDataset} object.}
 
-\item{...}{Arguments passed to other methods. \code{.liger} method passes
-everything to \code{.ligerSpatialDataset} method, and the latter passes
-everything to \code{\link{.ggScatter}} and then
-\code{\link{.ggplotLigerTheme}}.}
+\item{...}{
+  Arguments passed on to \code{\link[=.ggScatter]{.ggScatter}}, \code{\link[=.ggplotLigerTheme]{.ggplotLigerTheme}}
+  \describe{
+    \item{\code{dotOrder}}{Controls the order that each dot is added to the plot. Choose
+from \code{"shuffle"}, \code{"ascending"}, or \code{"descending"}. Default
+\code{"shuffle"}, useful when coloring by categories that overlaps (e.g.
+"dataset"), \code{"ascending"} can be useful when coloring by a continuous
+variable (e.g. gene expression) where high values needs more
+highlight. \code{NULL} use default order.}
+    \item{\code{dotSize,dotAlpha}}{Numeric, controls the size or transparency of all
+dots. Default \code{getOption("ligerDotSize")} (1) and \code{0.9}.}
+    \item{\code{raster}}{Logical, whether to rasterize the plot. Default \code{NULL}
+automatically rasterize the plot when number of total dots to be plotted
+exceeds 100,000.}
+    \item{\code{labelTextSize}}{Numeric, controls the size of label size when
+\code{labelText = TRUE}. Default \code{4}.}
+    \item{\code{seed}}{Random seed for reproducibility. Default \code{1}.}
+    \item{\code{showLegend}}{Whether to show the legend. Default \code{TRUE}.}
+    \item{\code{legendPosition}}{Text indicating where to place the legend. Choose from
+\code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. Default
+\code{"right"}.}
+    \item{\code{baseSize}}{One-parameter control of all text sizes. Individual text
+element sizes can be controlled by other size arguments. "Title" sizes are
+2 points larger than "text" sizes when being controlled by this.}
+    \item{\code{titleSize,xTitleSize,yTitleSize,legendTitleSize}}{Size of main title,
+axis titles and legend title. Default \code{NULL} controls by
+\code{baseSize + 2}.}
+    \item{\code{subtitleSize,xTextSize,yTextSize,legendTextSize}}{Size of subtitle text,
+axis texts and legend text. Default \code{NULL} controls by \code{baseSize}.}
+    \item{\code{legendDotSize}}{Allow dots in legend region to be large enough to see
+the colors/shapes clearly. Default \code{4}.}
+    \item{\code{colorLabels}}{Character vector for modifying category names in a
+color legend. Passed to \code{ggplot2::scale_color_manual(labels)}. Default
+\code{NULL} uses original levels of the factor.}
+    \item{\code{colorValues}}{Character vector of colors for modifying category colors
+in a color legend. Passed to \code{ggplot2::scale_color_manual(values)}.
+Default \code{NULL} uses internal selected palette when <= 26 categories are
+presented, otherwise ggplot hues.}
+    \item{\code{legendNRow,legendNCol}}{Integer, when too many categories in one
+variable, arranges number of rows or columns. Default \code{NULL},
+automatically split to \code{ceiling(levels(variable)/10)} columns.}
+    \item{\code{naColor}}{The color code for \code{NA} values. Default \code{"#DEDEDE"}.
+\code{\link[ggplot2]{scale_colour_gradient2}}. Default \code{NULL}.}
+  }}
 
 \item{dataset}{Name of one spatial dataset.}
 
@@ -48,18 +89,23 @@ it.}
 
 \item{labelText}{Logical, whether to label annotation onto the scatter plot.
 Default \code{FALSE}.}
+
+\item{panelBorder}{Whether to show rectangle border of the panel instead of
+using ggplot classic bottom and left axis lines. Default \code{TRUE}.}
 }
 \value{
 A ggplot object
 }
 \description{
-Visualize a spatial dataset
+Simple visualization of spatial coordinates. See example code for how to have
+information preset in the object. Arguments to the liger object method are
+passed down to ligerDataset method.
 }
 \examples{
 ctrl.fake.spatial <- as.ligerDataset(dataset(pbmc, "ctrl"), modal = "spatial")
 fake.coords <- matrix(rnorm(2 * ncol(ctrl.fake.spatial)), ncol = 2)
-dimnames(fake.coords) <- list(colnames(ctrl.fake.spatial), c("x", "y"))
 coordinate(ctrl.fake.spatial) <- fake.coords
 dataset(pbmc, "ctrl") <- ctrl.fake.spatial
+defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
 plotSpatial2D(pbmc, dataset = "ctrl")
 }

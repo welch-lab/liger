@@ -15,7 +15,7 @@ plotBarcodeRank(object, ...)
     \item{\code{dotSize,dotAlpha}}{Numeric, controls the size or transparency of all
 dots. Default \code{getOption("ligerDotSize")} (1) and \code{0.9}.}
     \item{\code{raster}}{Logical, whether to rasterize the plot. Default \code{NULL}
-automatically rasterize the plot when number of total cells to be plotted
+automatically rasterize the plot when number of total dots to be plotted
 exceeds 100,000.}
     \item{\code{title,subtitle,xlab,ylab}}{Main title, subtitle or X/Y axis title text.
 By default, no main title or subtitle will be set, and X/Y axis title will be

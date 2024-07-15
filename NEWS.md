@@ -18,14 +18,17 @@
 - Added `ligerToH5AD()` allowing reticulate/Python free export of liger object to H5AD format. This might not be releasable due to the need of calling non-exported functions from *hdf5r* library.
 - Changed `runMarkerDEG()` and `runPairwiseDEG()` default method from `"wilcoxon"` to `"pseudoBulk"`
 - Fixed `runMarkerDEG(method = "pseudobulk")` bug in assigning pseudo-replicates, and optimized error/warning signaling.
+- Optimized DE test memory usage scalability for both pseudo-bulk method and wilcoxon test
 - Added `plotProportionBox()` for visualizing compositional analysis
 - Added `plotBarcodeRank()` for basic QC visualization
 - Added `plotPairwiseDEGHeatmap()` for visualizing pairwise DEG results
 - Added `plotGODot()` for visualizing GO enrichment results
+- Optimized `plotVolcano()` text annotation positioning
+- Optimized visualization function additional argument documentation
 - Added `calcNMI()` for evaluating clustering results against ground truth
 - Fixed bug in `calcAlignment()`, `subsetMemLigerDataset()`, `cellMeta()`
-- Optimized `plotVolcano()` text annotation positioning
-- Optimized DE test memory usage scalability for both pseudo-bulk method and wilcoxon test
+
+
 
 ## rliger 2.0.1
 
