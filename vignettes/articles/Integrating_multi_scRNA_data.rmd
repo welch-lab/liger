@@ -17,26 +17,66 @@ This article is an general walkthrough of all main LIGER functionalities. We dem
 
 LIGER relies on iNMF (integrative Non-negative Matrix Factorization, [Welch, JD 2019](https://doi.org/10.1016/j.cell.2019.05.006)) to jointly factorize single-cell data into interpretable low-dimensional representations, and integrated clustering can be obtained upon aligned cell factor loading. The package also provides a variety of utilities for visualization and analysis of clustering, gene expression across datasets, comparisons of cluster assignments and etc.
 
+First, load the necessary libraries that will be used for performing all the analyses. [*dplyr*](https://dplyr.tidyverse.org/) has been widely used for data table manupulation and is famous for its unique user-friendly syntax. [*cowplot*](https://wilkelab.org/cowplot/index.html) is a package that provides a simple and consistent way to combine multiple plots into a single figure.
+
+```{r, results='hide'}
+library(rliger)
+library(dplyr)
+library(cowplot)
+```
+
 ## Preprocessing and Normalization
 
 ### Loading data
 
-For the first portion of this protocol, we will be integrating data from control and interferon-stimulated PBMCs from [Kang et al, 2017](https://www.nature.com/articles/nbt.4042). The data can be found in the Gene Expression Omnibus, [Series GSE96583](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE96583). This dataset was originally in the form of output from the 10X Cellranger pipeline, though we will directly load downsampled versions of the control and stimulated DGEs here.
+For the first portion of this protocol, we will be integrating data from control and interferon-stimulated PBMCs from [Kang et al, 2017](https://www.nature.com/articles/nbt.4042). The data can be found in the Gene Expression Omnibus, [Series GSE96583](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE96583). This dataset was originally in the form of output from the 10X Cellranger pipeline. In this tutorial, we prepared a downsampled version of the data.
 
-**For convenience, we have prepared the pre-processed data which are ready to use.** There are two datasets: PBMC control and PBMC interferon-stimulated. We provided ready-to-use liger object, which can be easily loaded with `importPBMC()`. 
+- [**Click to download `pbmc_ifnb_example.tar.gz`**](https://figshare.com/ndownloader/files/47748940)
 
-```{r, results='hide'}
-library(rliger)
-# Together load other necessary libraries
-# `dplyr` is a nice package for data table manipulation
-library(dplyr)
-# `cowplot` is a common package for arranging multiple plots
-library(cowplot)
+After downloading the archive file to your working directory, we need to extract the content to a folder. You can use any unzip tool available on your computer to extract the content. For platform without a graphical UI, operate the following command in its terminal.
 
+```bash
+tar -xvzf pbmc_ifnb_example.tar.gz
+```
+
+This will result you a folder called `pbmc_ifnb_example` in your working directory, with inner structure like below:
+
+```
+pbmc_ifnb_example
+├── ctrl
+│   └── outs
+│       └── filtered_feature_bc_matrix
+│           ├── barcodes.tsv.gz
+│           ├── features.tsv.gz
+│           └── matrix.mtx.gz
+└── stim
+    └── outs
+        └── filtered_feature_bc_matrix
+            ├── barcodes.tsv.gz
+            ├── features.tsv.gz
+            └── matrix.mtx.gz
+```
+
+Now we can start to work in R to have the two datasets loaded. When doing your own hands on, **make sure to replace the path to the folder with the actual path on your machine**.
+
+```{r}
+# Make sure to modify the following path to reflect the exact location of the folder
+pathToFolder <- "pbmc_ifnb_example"
+rawList <- read10XRNA(pathToFolder)
+pbmcLiger <- createLiger(rawList)
+pbmcLiger
+```
+
+The loaded raw data `rawList` is a list object containing two matrices for the "ctrl" and "stim" datasets. Then `createLiger()` will take the list of all datasets to be integrated as an input and construct the [liger object](liger_object.html).
+
+For convenience, we have prepared the pre-processed data which are ready to use, easily loaded with `importPBMC()`. 
+
+```{r, eval=FALSE}
+# This is not run at rendering time.
 pbmcLiger <- importPBMC()
 ```
 
-For creating a liger object from raw counts data or any other types of source, please refer to the [detailed tutorial for importing data](import_data.html).
+For creating a liger object from raw counts data or any other types of source (e.g. import cellranger H5 files, convert from Seurat, SingleCellExperiment, or even H5AD file), please refer to the [detailed tutorial for importing data](import_data.html).
 
 ### Preprocess
 

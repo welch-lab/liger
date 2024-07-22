@@ -9,6 +9,7 @@
 read10X(
   path,
   sampleNames = NULL,
+  addPrefix = FALSE,
   useFiltered = NULL,
   reference = NULL,
   geneCol = 2,
@@ -27,6 +28,7 @@ read10X(
 read10XRNA(
   path,
   sampleNames = NULL,
+  addPrefix = FALSE,
   useFiltered = NULL,
   reference = NULL,
   returnList = FALSE,
@@ -36,6 +38,7 @@ read10XRNA(
 read10XATAC(
   path,
   sampleNames = NULL,
+  addPrefix = FALSE,
   useFiltered = NULL,
   pipeline = c("atac", "arc"),
   arcFeatureType = "Peaks",
@@ -56,6 +59,9 @@ the vector, list or subfolders.}
 \item{sampleNames}{A vector of names to override the detected or set sample
 names for what is given to \code{path}. Default \code{NULL}. If no name
 detected at all and multiple samples are given, will name them by numbers.}
+
+\item{addPrefix}{Logical, whether to add sample names as a prefix to the
+barcodes. Default \code{FALSE}.}
 
 \item{useFiltered}{Logical, if \code{path} is given as case B, whether to use
 the filtered feature barcode matrix instead of raw (unfiltered). Default

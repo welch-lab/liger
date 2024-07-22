@@ -740,8 +740,8 @@ plotCellViolin <- function(
                 # arrangement to limit max nrow to 10 but still evenly
                 # distribute the columns.
                 nCategory <- length(levels(plot$data[[varName]]))
-                if (nCategory > 10)
-                    legendNCol <- ceiling(nCategory/10)
+                if (nCategory > 15)
+                    legendNCol <- ceiling(nCategory/15)
             }
             guide[[a]]$nrow <- legendNRow
             guide[[a]]$ncol <- legendNCol
