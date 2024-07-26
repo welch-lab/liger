@@ -18,6 +18,7 @@
   dot = FALSE,
   dotColor = "black",
   dotSize = getOption("ligerDotSize"),
+  xlabAngle = 45,
   raster = NULL,
   seed = 1,
   ...
@@ -41,6 +42,9 @@ bounding box. Default \code{0.9} and \code{0.4}.}
 
 \item{dotColor, dotSize}{Numeric, globally controls the appearance of all
 dots. Default \code{"black"} and \code{getOption("ligerDotSize")} (1).}
+
+\item{xlabAngle}{Numeric, counter-clockwise rotation angle of X axis label
+text. Default \code{45}.}
 
 \item{raster}{Logical, whether to rasterize the dot plot. Default \code{NULL}
 automatically rasterizes the dot plot when number of total cells to be

@@ -363,8 +363,8 @@ plotDimRed <- function(
 #' @param titles Title text. A character scalar or a character vector with as
 #' many elements as multiple plots are supposed to be generated. Default
 #' \code{NULL}.
-#' @param ... More plot setting arguments. See \code{\link{.ggCellViolin}} and
-#' \code{\link{.ggplotLigerTheme}}.
+#' @inheritDotParams .ggCellViolin violin violinAlpha violinWidth box boxAlpha boxWidth dot dotColor dotSize xlabAngle raster seed
+#' @inheritDotParams .ggplotLigerTheme title subtitle xlab ylab legendFillTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize panelBorder legendNRow legendNCol colorLabels colorValues plotly
 #' @return A ggplot object when a single plot is intended. A list of ggplot
 #' objects, when multiple \code{y} variables and/or \code{splitBy} are set. When
 #' \code{plotly = TRUE}, all ggplot objects become plotly (htmlwidget) objects.
@@ -480,6 +480,8 @@ plotCellViolin <- function(
 #' bounding box. Default \code{0.9} and \code{0.4}.
 #' @param dotColor,dotSize Numeric, globally controls the appearance of all
 #' dots. Default \code{"black"} and \code{getOption("ligerDotSize")} (1).
+#' @param xlabAngle Numeric, counter-clockwise rotation angle of X axis label
+#' text. Default \code{45}.
 #' @param raster Logical, whether to rasterize the dot plot. Default \code{NULL}
 #' automatically rasterizes the dot plot when number of total cells to be
 #' plotted exceeds 100,000.
@@ -502,6 +504,7 @@ plotCellViolin <- function(
         dot = FALSE,
         dotColor = "black",
         dotSize = getOption("ligerDotSize"),
+        xlabAngle = 45,
         raster = NULL,
         seed = 1,
         ...
@@ -515,7 +518,6 @@ plotCellViolin <- function(
         plot <- ggplot2::ggplot(plotDF,
                                 ggplot2::aes(x = .data[[groupBy]],
                                              y = .data[[y]],
-                                             colour = .data[[colorBy]],
                                              fill = .data[[colorBy]]))
         if (!identical(colorBy, groupBy)) boxWidth <- violinWidth
     }
@@ -543,6 +545,7 @@ plotCellViolin <- function(
     }
     if (isTRUE(violin))
         plot <- plot + ggplot2::geom_violin(alpha = violinAlpha,
+                                            color = "black",
                                             position = "dodge",
                                             width = violinWidth)
     if (isTRUE(box))
@@ -550,7 +553,7 @@ plotCellViolin <- function(
                                              position = "dodge",
                                              width = boxWidth)
 
-    plot <- .ggplotLigerTheme(plot, ...)
+    plot <- .ggplotLigerTheme(plot, xlabAngle = xlabAngle, ...)
     if (groupBy == "All Cells") {
         plot <- plot + ggplot2::theme(axis.text.x = ggplot2::element_blank(),
                                       axis.ticks.x = ggplot2::element_blank(),
@@ -566,6 +569,8 @@ plotCellViolin <- function(
 #' By default, no main title or subtitle will be set, and X/Y axis title will be
 #' the names of variables used for plotting. Use \code{NULL} to hide elements.
 #' \code{TRUE} for \code{xlab} or \code{ylab} shows default values.
+#' @param xlabAngle Numeric, counter-clockwise rotation angle of X axis label
+#' text. Default \code{0} shows horizontal text.
 #' @param legendColorTitle Legend title text for color aesthetics, often used
 #' for categorical or continuous coloring of dots. Default \code{NULL} shows the
 #' original variable name.
@@ -628,6 +633,7 @@ plotCellViolin <- function(
         subtitle = NULL,
         xlab = TRUE,
         ylab = TRUE,
+        xlabAngle = 0,
         legendColorTitle = NULL,
         legendFillTitle = NULL,
         legendShapeTitle = NULL,
@@ -698,7 +704,7 @@ plotCellViolin <- function(
         ggplot2::theme(
             plot.title = ggplot2::element_text(size = titleSize),
             plot.subtitle = ggplot2::element_text(size = subtitleSize),
-            axis.text.x = ggplot2::element_text(size = xTextSize),
+            axis.text.x = ggplot2::element_text(size = xTextSize, hjust = ifelse(xlabAngle == 0, 0.5, 1), angle = xlabAngle),
             axis.title.x = ggplot2::element_text(size = xTitleSize),
             axis.text.y = ggplot2::element_text(size = yTextSize),
             axis.title.y = ggplot2::element_text(size = yTitleSize),

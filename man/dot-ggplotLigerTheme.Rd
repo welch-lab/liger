@@ -10,6 +10,7 @@
   subtitle = NULL,
   xlab = TRUE,
   ylab = TRUE,
+  xlabAngle = 0,
   legendColorTitle = NULL,
   legendFillTitle = NULL,
   legendShapeTitle = NULL,
@@ -50,6 +51,9 @@
 By default, no main title or subtitle will be set, and X/Y axis title will be
 the names of variables used for plotting. Use \code{NULL} to hide elements.
 \code{TRUE} for \code{xlab} or \code{ylab} shows default values.}
+
+\item{xlabAngle}{Numeric, counter-clockwise rotation angle of X axis label
+text. Default \code{0} shows horizontal text.}
 
 \item{legendColorTitle}{Legend title text for color aesthetics, often used
 for categorical or continuous coloring of dots. Default \code{NULL} shows the

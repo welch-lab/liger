@@ -56,25 +56,24 @@
 #' head(pbmcPlot$leiden_cluster)
 #' pbmcPlot <- runCluster(pbmcPlot, method = "louvain")
 #' head(pbmcPlot$louvain_cluster)
-runCluster <- function(
-        object,
-        resolution = 1.0,
-        nNeighbors = 20,
-        prune = 1 / 15,
-        eps = 0.1,
-        nRandomStarts = 10,
-        nIterations = 5,
-        method = c("leiden", "louvain"),
-        useRaw = NULL,
-        useDims = NULL,
-        groupSingletons = TRUE,
-        saveSNN = FALSE,
-        clusterName = paste0(method, "_cluster"),
-        seed = 1,
-        verbose = getOption("ligerVerbose", TRUE)
-) {
+runCluster <- function(object,
+                       resolution = 1.0,
+                       nNeighbors = 20,
+                       prune = 1 / 15,
+                       eps = 0.1,
+                       nRandomStarts = 10,
+                       nIterations = 5,
+                       method = c("leiden", "louvain"),
+                       useRaw = NULL,
+                       useDims = NULL,
+                       groupSingletons = TRUE,
+                       saveSNN = FALSE,
+                       clusterName = paste0(method, "_cluster"),
+                       seed = 1,
+                       verbose = getOption("ligerVerbose", TRUE)) {
     method <- match.arg(method)
-    object <- switch(method,
+    object <- switch(
+        method,
         leiden = recordCommand(object, dependencies = c("RANN", "leidenAlg")),
         louvain = recordCommand(object, dependencies = c("RANN"))
     )
@@ -83,23 +82,29 @@ runCluster <- function(
     useRaw <- Hsearch$useRaw
     type <- ifelse(useRaw, "unnormalized", "quantile normalized")
 
-    if (!is.null(useDims)) H <- H[, useDims, drop = FALSE]
+    if (!is.null(useDims))
+        H <- H[, useDims, drop = FALSE]
 
     if (isTRUE(verbose))
         cli::cli_process_start("{method} clustering on {type} cell factor loadings")
     knn <- RANN::nn2(H, k = nNeighbors, eps = eps)
     snn <- ComputeSNN(knn$nn.idx, prune = prune)
-    if (!is.null(seed)) set.seed(seed)
+    if (!is.null(seed))
+        set.seed(seed)
     if (method == "leiden") {
         snnSummary <- summary(snn)
         edgelist <- as.vector(t(snnSummary[, c(2, 1)])) - 1
         edgelist_length <- length(edgelist)
-        edge_weights <- snnSummary[,3]
+        edge_weights <- snnSummary[, 3]
         clusts <- leidenAlg::find_partition_with_rep_rcpp(
-            edgelist = edgelist, edgelist_length = edgelist_length,
-            num_vertices = nrow(H), direction = FALSE,
-            edge_weights = edge_weights, resolution = resolution,
-            niter = nIterations, nrep = nRandomStarts
+            edgelist = edgelist,
+            edgelist_length = edgelist_length,
+            num_vertices = nrow(H),
+            direction = FALSE,
+            edge_weights = edge_weights,
+            resolution = resolution,
+            niter = nIterations,
+            nrep = nRandomStarts
         )
     } else {
         edgeOutPath <- tempfile(pattern = "edge_", fileext = ".txt")
@@ -121,15 +126,17 @@ runCluster <- function(
     names(clusts) <- colnames(object)
     rownames(snn) <- colnames(object)
     colnames(snn) <- colnames(object)
-    clusts <- groupSingletons(ids = clusts, SNN = snn,
-                              groupSingletons = groupSingletons,
-                              verbose = verbose)
+    clusts <- groupSingletons(
+        ids = clusts,
+        SNN = snn,
+        groupSingletons = groupSingletons,
+        verbose = verbose
+    )
     cellMeta(object, clusterName, check = FALSE) <- clusts
-    if (isTRUE(saveSNN)) object@uns$snn <- snn
+    if (isTRUE(saveSNN))
+        object@uns$snn <- snn
     if (isTRUE(verbose))
-        cli::cli_process_done(
-            msg_done = "{method} clustering on {type} cell factor loadings ... Found {nlevels(clusts)} cluster{?s}."
-        )
+        cli::cli_process_done(msg_done = "{method} clustering on {type} cell factor loadings ... Found {nlevels(clusts)} cluster{?s}.")
     if (is.null(object@uns$defaultCluster)) {
         # If no default set yet
         object@uns$defaultCluster <- clusterName
@@ -177,26 +184,32 @@ NULL
 #' as the replacement, while \code{\link{runCluster}} with default
 #' \code{method = "leiden"} is more recommended.
 #' @export
-louvainCluster <- function( # nocov start
-        object,
-        resolution = 1.0,
-        k = 20,
-        prune = 1 / 15,
-        eps = 0.1,
-        nRandomStarts = 10,
-        nIterations = 100,
-        random.seed = 1,
-        verbose = getOption("ligerVerbose", TRUE),
-        dims.use = NULL
-) {
-    lifecycle::deprecate_warn(
-        "1.99.0", "louvainCluster()",
-        details = "Please use `runCluster()` with `method = 'louvain'` instead.")
+louvainCluster <- function(# nocov start
+    object,
+    resolution = 1.0,
+    k = 20,
+    prune = 1 / 15,
+    eps = 0.1,
+    nRandomStarts = 10,
+    nIterations = 100,
+    random.seed = 1,
+    verbose = getOption("ligerVerbose", TRUE),
+    dims.use = NULL) {
+    lifecycle::deprecate_warn("1.99.0", "louvainCluster()", details = "Please use `runCluster()` with `method = 'louvain'` instead.")
     runCluster(
-        object, method = "louvain", resolution = resolution, nNeighbors = k,
-        prune = prune, eps = eps, nRandomStarts = nRandomStarts,
-        nIterations = nIterations, useDims = dims.use, groupSingletons = TRUE,
-        clusterName = "louvain_cluster", seed = random.seed, verbose = verbose
+        object,
+        method = "louvain",
+        resolution = resolution,
+        nNeighbors = k,
+        prune = prune,
+        eps = eps,
+        nRandomStarts = nRandomStarts,
+        nIterations = nIterations,
+        useDims = dims.use,
+        groupSingletons = TRUE,
+        clusterName = "louvain_cluster",
+        seed = random.seed,
+        verbose = verbose
     )
 } # nocov end
 
@@ -210,12 +223,10 @@ louvainCluster <- function( # nocov start
 # @param verbose Print message
 # @return Returns updated cluster assignment (vector) with all singletons merged
 # with most connected cluster
-groupSingletons <- function(
-        ids,
-        SNN,
-        groupSingletons = TRUE,
-        verbose = FALSE
-) {
+groupSingletons <- function(ids,
+                            SNN,
+                            groupSingletons = TRUE,
+                            verbose = FALSE) {
     # identify singletons
     ids <- droplevels(ids)
     singletons <- names(which(table(ids) == 1))
@@ -264,7 +275,7 @@ groupSingletons <- function(
 .labelClustBySize <- function(clusts) {
     clusts <- as.character(clusts)
     count <- data.frame(table(clusts))
-    count <- count[order(count$Freq, decreasing = TRUE),]
+    count <- count[order(count$Freq, decreasing = TRUE), ]
     map <- seq(0, nrow(count) - 1)
     names(map) <- count[[1]]
     newClusts <- map[clusts]
@@ -292,12 +303,7 @@ groupSingletons <- function(
 #' @examples
 #' pbmc <- mapCellMeta(pbmc, from = "dataset", newTo = "modal",
 #'                     ctrl = "rna", stim = "rna")
-mapCellMeta <- function(
-        object,
-        from,
-        newTo = NULL,
-        ...
-) {
+mapCellMeta <- function(object, from, newTo = NULL, ...) {
     object <- recordCommand(object, ...)
     from <- cellMeta(object, from)
     if (!is.factor(from))
@@ -306,17 +312,21 @@ mapCellMeta <- function(
     fromCats <- names(mapping)
     notFound <- fromCats[!fromCats %in% levels(from)]
     if (length(notFound) > 0) {
-        cli::cli_abort("{length(notFound)} categor{?y is/ies are} requested but not found: {.val {notFound}}")
+        cli::cli_abort(
+            "{length(notFound)} categor{?y is/ies are} requested but not found: {.val {notFound}}"
+        )
     }
 
     toCats <- unlist(mapping)
     unchangedCats <- levels(from)
     unchangedCats <- unchangedCats[!unchangedCats %in% fromCats]
     names(unchangedCats) <- unchangedCats
-    if (length(unchangedCats) > 0) toCats <- c(toCats, unchangedCats)
+    if (length(unchangedCats) > 0)
+        toCats <- c(toCats, unchangedCats)
     to <- toCats[as.character(from)]
     to <- factor(unname(to), levels = unique(toCats))
-    if (is.null(newTo)) return(to)
+    if (is.null(newTo))
+        return(to)
     cellMeta(object, newTo) <- to
     return(object)
 }
@@ -373,14 +383,12 @@ mapCellMeta <- function(
 #' # evaluated
 #' calcPurity(pbmcPlot, trueCluster = "stim_true_label",
 #'            useCluster = "leiden_cluster", useDatasets = "stim")
-calcPurity <- function(
-        object,
-        trueCluster,
-        useCluster = NULL,
-        useDatasets = NULL,
-        verbose = getOption("ligerVerbose", TRUE),
-        classes.compare = trueCluster
-) {
+calcPurity <- function(object,
+                       trueCluster,
+                       useCluster = NULL,
+                       useDatasets = NULL,
+                       verbose = getOption("ligerVerbose", TRUE),
+                       classes.compare = trueCluster) {
     .deprecateArgs(replace = list(classes.compare = "trueCluster"))
     cellIdx <- rownames(cellMeta(object, useDatasets = useDatasets))
     # Ensure that trueCluster is a factor object, as long as `cellIdx`, named
@@ -390,7 +398,9 @@ calcPurity <- function(
     } else {
         if (length(trueCluster) != length(cellIdx)) {
             if (is.null(names(trueCluster))) {
-                cli::cli_abort("Longer/shorter {.var trueCluster} than cells considered requires {.fn names()} to identify matching.")
+                cli::cli_abort(
+                    "Longer/shorter {.var trueCluster} than cells considered requires {.fn names()} to identify matching."
+                )
             }
         } else {
             if (is.null(names(trueCluster))) {
@@ -468,27 +478,32 @@ calcPurity <- function(
 #'
 #' # Comparison of the same labeling should always yield 1.
 #' calcARI(pbmcPlot, trueCluster = "leiden_cluster", useCluster = "leiden_cluster")
-calcARI <- function(
-        object,
-        trueCluster,
-        useCluster = NULL,
-        useDatasets = NULL,
-        verbose = getOption("ligerVerbose", TRUE),
-        classes.compare = trueCluster
-) {
+calcARI <- function(object,
+                    trueCluster,
+                    useCluster = NULL,
+                    useDatasets = NULL,
+                    verbose = getOption("ligerVerbose", TRUE),
+                    classes.compare = trueCluster) {
     .deprecateArgs(replace = list(classes.compare = "trueCluster"))
     cellIdx <- rownames(cellMeta(object, useDatasets = useDatasets))
     # Ensure that trueCluster is a factor object, as long as `cellIdx`, named
     # by `cellIdx`
     if (length(trueCluster) == 1) {
         trueCluster <- .fetchCellMetaVar(
-            object, trueCluster, cellIdx = cellIdx, checkCategorical = TRUE,
-            drop = TRUE, droplevels = TRUE, returnList = FALSE
+            object,
+            trueCluster,
+            cellIdx = cellIdx,
+            checkCategorical = TRUE,
+            drop = TRUE,
+            droplevels = TRUE,
+            returnList = FALSE
         )
     } else {
         if (length(trueCluster) != length(cellIdx)) {
             if (is.null(names(trueCluster))) {
-                cli::cli_abort("Longer/shorter {.var trueCluster} than cells considered requires {.fn names()} to identify matching.")
+                cli::cli_abort(
+                    "Longer/shorter {.var trueCluster} than cells considered requires {.fn names()} to identify matching."
+                )
             }
         } else {
             if (is.null(names(trueCluster))) {
@@ -503,8 +518,13 @@ calcARI <- function(
 
     useCluster <- useCluster %||% defaultCluster(object)
     useCluster <- .fetchCellMetaVar(
-        object, useCluster, cellIdx = cellIdx, checkCategorical = TRUE,
-        drop = TRUE, droplevels = TRUE, returnList = FALSE
+        object,
+        useCluster,
+        cellIdx = cellIdx,
+        checkCategorical = TRUE,
+        drop = TRUE,
+        droplevels = TRUE,
+        returnList = FALSE
     )
 
     # Copied from mclust package
@@ -518,8 +538,8 @@ calcARI <- function(
     c <- sum(choose(colSums(tab), 2)) - a
     d <- choose(sum(tab), 2) - a - b - c
     ARI <-
-        (a - (a + b) * (a + c)/(a + b + c + d)) /
-        ((a + b + a + c)/2 - (a + b) * (a + c)/(a + b + c + d))
+        (a - (a + b) * (a + c) / (a + b + c + d)) /
+        ((a + b + a + c) / 2 - (a + b) * (a + c) / (a + b + c + d))
     return(ARI)
 }
 
@@ -583,25 +603,30 @@ calcARI <- function(
 #'
 #' # Comparison of the same labeling should always yield 1.
 #' calcNMI(pbmcPlot, trueCluster = "leiden_cluster", useCluster = "leiden_cluster")
-calcNMI <- function(
-        object,
-        trueCluster,
-        useCluster = NULL,
-        useDatasets = NULL,
-        verbose = getOption("ligerVerbose", TRUE)
-) {
+calcNMI <- function(object,
+                    trueCluster,
+                    useCluster = NULL,
+                    useDatasets = NULL,
+                    verbose = getOption("ligerVerbose", TRUE)) {
     cellIdx <- rownames(cellMeta(object, useDatasets = useDatasets))
     # Ensure that trueCluster is a factor object, as long as `cellIdx`, named
     # by `cellIdx`
     if (length(trueCluster) == 1) {
         trueCluster <- .fetchCellMetaVar(
-            object, trueCluster, cellIdx = cellIdx, checkCategorical = TRUE,
-            drop = TRUE, droplevels = TRUE, returnList = FALSE
+            object,
+            trueCluster,
+            cellIdx = cellIdx,
+            checkCategorical = TRUE,
+            drop = TRUE,
+            droplevels = TRUE,
+            returnList = FALSE
         )
     } else {
         if (length(trueCluster) != length(cellIdx)) {
             if (is.null(names(trueCluster))) {
-                cli::cli_abort("Longer/shorter {.var trueCluster} than cells considered requires {.fn names()} to identify matching.")
+                cli::cli_abort(
+                    "Longer/shorter {.var trueCluster} than cells considered requires {.fn names()} to identify matching."
+                )
             }
         } else {
             if (is.null(names(trueCluster))) {
@@ -616,8 +641,13 @@ calcNMI <- function(
 
     useCluster <- useCluster %||% defaultCluster(object)
     useCluster <- .fetchCellMetaVar(
-        object, useCluster, cellIdx = cellIdx, checkCategorical = TRUE,
-        drop = TRUE, droplevels = TRUE, returnList = FALSE
+        object,
+        useCluster,
+        cellIdx = cellIdx,
+        checkCategorical = TRUE,
+        drop = TRUE,
+        droplevels = TRUE,
+        returnList = FALSE
     )
 
     # H(X)
@@ -630,7 +660,7 @@ calcNMI <- function(
     H_X_Yy <- apply(overlap, 2, function(x) {
         probs <- x / sum(x)
         probs <- probs[probs > 0]
-        -sum(probs * log2(probs))
+        - sum(probs * log2(probs))
     })
     # P(Y = y), a vector for each Y = y
     PY <- table(trueCluster) / length(trueCluster)
@@ -638,14 +668,15 @@ calcNMI <- function(
     H_X_Y <- sum(PY * H_X_Yy)
     # I(X;Y)
     I_X_Y <- H_X - H_X_Y
-    NMI <- I_X_Y / sqrt(H_X*H_Y)
+    NMI <- I_X_Y / sqrt(H_X * H_Y)
     return(NMI)
 }
 
 # x - A categorical variable
 .calcEntropy <- function(x) {
-    if (is.factor(x)) x <- droplevels(x)
+    if (is.factor(x))
+        x <- droplevels(x)
     count <- table(x)
     prob <- count / sum(count)
-    -sum(prob * log2(prob))
+    - sum(prob * log2(prob))
 }

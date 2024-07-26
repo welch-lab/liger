@@ -469,34 +469,40 @@ createH5LigerDataset <- function(
 #' }
 readLiger <- function(
         filename,
-        dimredName = "tsne_coords",
+        dimredName,
         clusterName = "clusters",
         h5FilePath = NULL,
         update = TRUE) {
-    obj <- readRDS(filename)
-    if (!inherits(obj, "liger")) # nocov start
-        cli::cli_abort("Object is not of class {.cls liger}.") # nocov end
-    ver <- obj@version
-    if (ver == package_version("1.99.0")) {
-        obj <- rliger2_to_rliger_namespace(obj, dimredName = dimredName)
-    }
-    if (ver >= package_version("1.99.0")) {
-        if (isH5Liger(obj)) obj <- restoreH5Liger(obj)
-        return(obj)
-    }
-    if (ver < package_version("1.99.1"))
-        cli::cli_alert_info("Older version ({.val {ver}}) of {.cls liger} object detected.")
+    object <- readRDS(filename)
     if (isTRUE(update)) {
-        cli::cli_alert_info(
-            "Updating the object structure to make it compatible with current version {.val {utils::packageVersion('rliger')}}"
-        )
-        return(convertOldLiger(obj, dimredName = dimredName,
-                               clusterName = clusterName,
-                               h5FilePath = h5FilePath))
-    } else {
-        cli::cli_alert_info("{.code update = FALSE} specified. Returning the original object.")
-        return(obj)
+        object <- updateLigerObject(object, dimredName, clusterName, h5FilePath)
     }
+    return(object)
+    #
+    # obj <- readRDS(filename)
+    # if (!inherits(obj, "liger")) # nocov start
+    #     cli::cli_abort("Object is not of class {.cls liger}.") # nocov end
+    # ver <- obj@version
+    # if (ver == package_version("1.99.0")) {
+    #     obj <- rliger2_to_rliger_namespace(obj, dimredName = dimredName)
+    # }
+    # if (ver >= package_version("1.99.0")) {
+    #     if (isH5Liger(obj)) obj <- restoreH5Liger(obj)
+    #     return(obj)
+    # }
+    # if (ver < package_version("1.99.1"))
+    #     cli::cli_alert_info("Older version ({.val {ver}}) of {.cls liger} object detected.")
+    # if (isTRUE(update)) {
+    #     cli::cli_alert_info(
+    #         "Updating the object structure to make it compatible with current version {.val {utils::packageVersion('rliger')}}"
+    #     )
+    #     return(convertOldLiger(obj, dimredName = dimredName,
+    #                            clusterName = clusterName,
+    #                            h5FilePath = h5FilePath))
+    # } else {
+    #     cli::cli_alert_info("{.code update = FALSE} specified. Returning the original object.")
+    #     return(obj)
+    # }
 }
 
 # nocov start

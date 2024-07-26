@@ -13,7 +13,7 @@
   - Pseudo-bulk should be easy because we are just aggregating cells.
   - Wilcoxon might be a bit harder because ranks are calculated per gene but the H5 sparse data is column majored. Might need to find a fast on-disk transposition method, which would also enhance RcppPlanc performance when running ANLS on H5 data.
 
-## rliger 2.0.1.9002
+## rliger 2.0.1.9003
 
 - Added `ligerToH5AD()` allowing reticulate/Python free export of liger object to H5AD format. This might not be releasable due to the need of calling non-exported functions from *hdf5r* library.
 - Changed `runMarkerDEG()` and `runPairwiseDEG()` default method from `"wilcoxon"` to `"pseudoBulk"`
@@ -27,8 +27,7 @@
 - Optimized visualization function additional argument documentation
 - Added `calcNMI()` for evaluating clustering results against ground truth
 - Fixed bug in `calcAlignment()`, `subsetMemLigerDataset()`, `cellMeta()`
-
-
+- Fixed bug in old version updating functions
 
 ## rliger 2.0.1
 

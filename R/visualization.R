@@ -267,7 +267,7 @@ plotGroupClusterDimRed <- function(
 #' slot. Use \code{FALSE} for no grouping. Default \code{NULL} looks clustering
 #' result but will not group if no clustering found.
 #' @inheritDotParams plotCellViolin slot yFunc cellIdx titles
-#' @inheritDotParams .ggCellViolin violin violinAlpha violinWidth box boxAlpha boxWidth dot dotColor dotSize raster seed
+#' @inheritDotParams .ggCellViolin violin violinAlpha violinWidth box boxAlpha boxWidth dot dotColor dotSize xlabAngle raster seed
 #' @inheritDotParams .ggplotLigerTheme subtitle xlab ylab legendFillTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize legendNRow legendNCol colorLabels colorValues panelBorder plotly
 #' @param ... Additional arguments passed to \code{\link{plotCellViolin}}.
 #' @return ggplot if using a single gene and not splitting by dataset.

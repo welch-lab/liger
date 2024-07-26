@@ -6,7 +6,7 @@
 \usage{
 readLiger(
   filename,
-  dimredName = "tsne_coords",
+  dimredName,
   clusterName = "clusters",
   h5FilePath = NULL,
   update = TRUE

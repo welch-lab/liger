@@ -47,6 +47,8 @@ Default \code{0.8}, \code{0.6}, respectively.}
 bounding box. Default \code{0.9} and \code{0.4}.}
     \item{\code{dotColor,dotSize}}{Numeric, globally controls the appearance of all
 dots. Default \code{"black"} and \code{getOption("ligerDotSize")} (1).}
+    \item{\code{xlabAngle}}{Numeric, counter-clockwise rotation angle of X axis label
+text. Default \code{45}.}
     \item{\code{raster}}{Logical, whether to rasterize the dot plot. Default \code{NULL}
 automatically rasterizes the dot plot when number of total cells to be
 plotted exceeds 100,000.}
