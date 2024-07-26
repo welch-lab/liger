@@ -258,42 +258,47 @@ liger <- setClass(
 .checkLigerVarFeature <- function(x) {
     if (!is.null(varFeatures(x)) &&
         length(varFeatures(x)) > 0) {
-        if (!is.null(x@W))
-            if (!identical(rownames(x@W), varFeatures(x)))
-                return("Variable features do not match dimension of W matrix")
+        # if (!is.null(x@W))
+        #     if (!identical(rownames(x@W), varFeatures(x)))
+        #         return("Variable features do not match dimension of W matrix")
         for (d in names(x)) {
             ld <- dataset(x, d)
-            if (!is.null(ld@V)) {
-                if (!identical(rownames(ld@V), varFeatures(x)))
-                    return(paste("Variable features do not match dimension",
-                                 "of V matrix in dataset", d))
+            # if (!is.null(ld@V)) {
+            #     if (!identical(rownames(ld@V), varFeatures(x)))
+            #         return(paste("Variable features do not match dimension",
+            #                      "of V matrix in dataset", d))
+            # }
+            if (any(!varFeatures(x) %in% rownames(ld))) {
+                nf <- setdiff(varFeatures(x), rownames(ld))
+                return(cli::format_error(
+                    "{length(nf)} variable feature{?s} do not exist in dataset {.val {d}}: {.val {nf}}"
+                ))
             }
-
-            if (!is.null(scaleData(ld))) {
-                if (!isH5Liger(ld)) {
-                    if (!identical(rownames(scaleData(ld)), varFeatures(x)))
-                        return(paste("Variable features do not match dimension",
-                                     "of scaleData in dataset", d))
-                } else {
-                    if (inherits(scaleData(ld), "H5D")) {
-                        if (scaleData(ld)$dims[1] != length(varFeatures(x)))
-                            return(paste("Variable features do not match ",
-                                         "dimension of scaleData in dataset ",
-                                         "(H5)", d))
-                    } else if (inherits(scaleData(ld), "H5Group")) {
-                        if (scaleData(ld)[["featureIdx"]]$dims != length(varFeatures(x))) {
-                            return(paste("Variable features do not match ",
-                                         "dimension of scaleData in dataset ",
-                                         "(H5)", d))
-                        }
-                        scaleDataIdx <- scaleData(ld)[["featureIdx"]][]
-                        if (!identical(rownames(ld)[scaleDataIdx], varFeatures(x))) {
-                            return("HDF5 scaled data feature index does not ",
-                                   "match variable features")
-                        }
-                    }
-                }
-            }
+            # if (!is.null(scaleData(ld))) {
+            #     if (!isH5Liger(ld)) {
+            #         if (!identical(rownames(scaleData(ld)), varFeatures(x)))
+            #             return(paste("Variable features do not match dimension",
+            #                          "of scaleData in dataset", d))
+            #     } else {
+            #         if (inherits(scaleData(ld), "H5D")) {
+            #             if (scaleData(ld)$dims[1] != length(varFeatures(x)))
+            #                 return(paste("Variable features do not match ",
+            #                              "dimension of scaleData in dataset ",
+            #                              "(H5)", d))
+            #         } else if (inherits(scaleData(ld), "H5Group")) {
+            #             if (scaleData(ld)[["featureIdx"]]$dims != length(varFeatures(x))) {
+            #                 return(paste("Variable features do not match ",
+            #                              "dimension of scaleData in dataset ",
+            #                              "(H5)", d))
+            #             }
+            #             scaleDataIdx <- scaleData(ld)[["featureIdx"]][]
+            #             if (!identical(rownames(ld)[scaleDataIdx], varFeatures(x))) {
+            #                 return("HDF5 scaled data feature index does not ",
+            #                        "match variable features")
+            #             }
+            #         }
+            #     }
+            # }
         }
     }
     return(NULL)

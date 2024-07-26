@@ -486,6 +486,7 @@ updateOldLiger <- function(
     ))
 
     ldList <- list()
+    ldmiscList <- list()
     for (i in seq_along(datasetNames)) {
         dn <- datasetNames[i]
         cli::cli_alert_info("Constructing dataset {.val {dn}}")
@@ -556,6 +557,7 @@ updateOldLiger <- function(
                 next
         } else {
             # in-memory mode
+            ldmiscList[[dn]] <- list()
             components$rawData <- methods::slot(object, "raw.data")[[dn]]
             components$normData <- methods::slot(object, "norm.data")[[dn]]
             if (!is.null(components$rawData)) {
@@ -574,7 +576,11 @@ updateOldLiger <- function(
             # Transpose and sparsify scale data
             ldScaleData <- methods::slot(object, "scale.data")[[dn]]
             if (!.skip(ldScaleData, "scaled data")) {
-                components$scaleData <- t(methods::as(ldScaleData, "CsparseMatrix"))
+                ldScaleData <- t(methods::as(ldScaleData, "CsparseMatrix"))
+                if (!all(rownames(ldScaleData) %in% rn)) {
+                    cli::cli_alert_warning("Scaled data contains features that do not exist in raw data. Including into unstructured misc data.")
+                    ldmiscList[[dn]]$scaleData <- ldScaleData
+                }
             }
 
             if (methods::.hasSlot(object, "scale.unshared.data")) {
@@ -600,7 +606,14 @@ updateOldLiger <- function(
 
         ldV <- methods::slot(object, "V")[[dn]]
         if (!.skip(ldV, "factorized V matrix")) {
-            components$V <- t(ldV)
+            ldV <- t(ldV)
+            if (is.null(rownames(ldV)) ||
+                !all(rownames(ldV) %in% rn)) {
+                cli::cli_alert_warning("Invalid feature names in factorized V matrix. Including into unstructured misc data.")
+                ldmiscList[[dn]]$V <- ldV
+            } else {
+                components$V <- ldV
+            }
         }
 
         if (methods::.hasSlot(object, "A")) {
@@ -629,12 +642,20 @@ updateOldLiger <- function(
     ligerComp <- list(Class = "liger",
                       datasets = ldList,
                       uns = list(defaultCluster = clusterName,
-                                 defaultDimRed = dimredName),
+                                 defaultDimRed = dimredName,
+                                 datasetMist = ldmiscList),
                       version = utils::packageVersion("rliger"))
     # All other all-cell individual elements
     vg <- methods::slot(object, "var.genes")
     if (!.skip(vg, "variable genes")) {
-        ligerComp$varFeatures <- vg
+        allisec <- Reduce(intersect, lapply(ldList, rownames))
+        if (any(!vg %in% allisec)) {
+            diff <- setdiff(vg, allisec)
+            cli::cli_alert_warning("{.val {length(diff)}} variable gene{?s} not found in all datasets ({.val {diff}}). Including all into unstructured misc data.")
+            ligerComp$uns$varFeatures <- diff
+        } else {
+            ligerComp$varFeatures <- vg
+        }
     }
 
     hnorm <- methods::slot(object, "H.norm")
@@ -644,7 +665,7 @@ updateOldLiger <- function(
 
     w <- methods::slot(object, "W")
     if (!.skip(w, "factorized W matrix")) {
-        ligerComp$W <- w
+        ligerComp$W <- t(w)
     }
 
     aggData <- methods::slot(object, "agg.data")
