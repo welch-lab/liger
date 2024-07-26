@@ -778,15 +778,18 @@ updateRliger2NS <- function(
         clusterName = NULL,
         h5FilePath = NULL
 ) {
-    if (missing(dimredName)) {
-        cli::cli_alert_warning("{.field dimredName} not specified. Keeping them all in {.field cellMeta} if they exist.")
-        dimredName <- NULL
-    }
     # Slots that contain things of rliger2 namespace
     datasetList <- list()
     drList <- list()
     commandList <- list()
     cm <- methods::slot(object, "cellMeta")
+    if (missing(dimredName)) {
+        cli::cli_alert_warning("{.field dimredName} not specified. Keeping them all in {.field cellMeta} if they exist.")
+        multiDimVarIdx <- sapply(cm, function(v) !is.null(dim(v)))
+        guessArg <- paste0('"', names(cm)[multiDimVarIdx], '"', collapse = ", ")
+        cli::cli_alert_info("Guess you need: {.code dimredName = c({guessArg})}")
+        dimredName <- NULL
+    }
     for (i in dimredName) {
         if (i %in% colnames(cm)) {
             drList[[i]] <- cm[[i]]
