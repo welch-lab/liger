@@ -23,11 +23,12 @@ dimensionality reduction matrix, which originally located in
 clustering assignment, which originally located in \code{clusters} slot.
 Default \code{"clusters"}.}
 
-\item{h5FilePath}{Named list, to specify the path to the H5 file of each
-dataset if location has been changed. Default \code{NULL} looks at the file
-paths stored in object.}
+\item{h5FilePath}{Named character vector for all H5 file paths. Not required
+for object run with in-memory analysis. For object containing H5-based
+analysis (e.g. online iNMF), this must be supplied if the H5 file location is
+different from that at creation time.}
 
-\item{update}{Logical, whether to update an old (<=1.0.0) \code{liger} object
+\item{update}{Logical, whether to update an old (<=1.99.0) \code{liger} object
 to the currect version of structure. Default \code{TRUE}.}
 }
 \value{
@@ -45,6 +46,7 @@ structure by default.
 # Save and read regular current-version liger object
 tempPath <- tempfile(fileext = ".rds")
 saveRDS(pbmc, tempPath)
+
 pbmc <- readLiger(tempPath, dimredName = NULL)
 
 # Save and read H5-based liger object
@@ -54,7 +56,8 @@ file.copy(from = h5Path, to = h5tempPath)
 lig <- createLiger(list(ctrl = h5tempPath))
 tempPath <- tempfile(fileext = ".rds")
 saveRDS(lig, tempPath)
-lig <- readLiger(tempPath)
+
+lig <- readLiger(tempPath, h5FilePath = c(ctrl = h5tempPath))
 
 \dontrun{
 # Read a old liger object <= 1.0.1
@@ -63,8 +66,7 @@ lig <- readLiger(tempPath)
 lig <- readLiger(
     filename = "path/to/oldLiger.rds",
     dimredName = "UMAP",
-    clusterName = "louvain",
-    update = TRUE
+    clusterName = "louvain"
 )
 }
 }

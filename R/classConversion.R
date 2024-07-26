@@ -400,7 +400,10 @@ seuratToLiger <- as.liger.Seurat
 #' Please see Details section.
 #' @param clusterName Name of the clustering assignment variable to be stored.
 #' Please see Details section.
-#' @param h5FilePath TODO
+#' @param h5FilePath Named character vector for all H5 file paths. Not required
+#' for object run with in-memory analysis. For object containing H5-based
+#' analysis (e.g. online iNMF), this must be supplied if the H5 file location is
+#' different from that at creation time.
 #' @details
 #' Old liger object (<1.99.0) stores only one embedding at slot
 #' \code{tsne.coords}. \code{dimredName} must be specified as a single
@@ -449,6 +452,9 @@ updateLigerObject <- function(
         if (methods::.hasSlot(object, "dimReds")) {
             # Current structure
             cli::cli_alert_info("Detected {.cls liger} object with up-to-date structure.")
+            if (isH5Liger(object)) {
+                object <- restoreH5Liger(object, filePath = h5FilePath)
+            }
             methods::slot(object, "version") <- package_version(version)
         } else {
             # 1.99.0 dev version structure
@@ -485,6 +491,12 @@ updateOldLiger <- function(
         names(methods::slot(object, "norm.data"))
     ))
 
+    if (!is.null(h5FilePath)) {
+        if (is.null(names(h5FilePath)) ||
+            !is.character(h5FilePath)) {
+            cli::cli_abort("{.field h5FilePath} must be a named character vector.")
+        }
+    }
     ldList <- list()
     ldmiscList <- list()
     for (i in seq_along(datasetNames)) {
@@ -500,9 +512,14 @@ updateOldLiger <- function(
 
         if (!is.null(h5meta)) {
             # H5 mode
-            dsh5path <- h5FilePath[[dn]] %||% h5meta$file.path
+            dsh5path <- NULL
+            if (!dn %in% names(h5FilePath)) {
+                dsh5path <- h5meta$file.path
+            } else {
+                dsh5path <- h5FilePath[[dn]]
+            }
             if (!file.exists(dsh5path)) {
-                cli::cli_alert_danger("H5 file not found for {.val {dn}}. Skipped.")
+                cli::cli_alert_danger("H5 file not found for {.val {dn}}: {.file {dsh5path}}. Skipped.")
                 next
             }
             components <- tryCatch({

@@ -20,7 +20,10 @@ Please see Details section.}
 \item{clusterName}{Name of the clustering assignment variable to be stored.
 Please see Details section.}
 
-\item{h5FilePath}{TODO}
+\item{h5FilePath}{Named character vector for all H5 file paths. Not required
+for object run with in-memory analysis. For object containing H5-based
+analysis (e.g. online iNMF), this must be supplied if the H5 file location is
+different from that at creation time.}
 }
 \value{
 Updated liger object.

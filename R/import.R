@@ -434,10 +434,11 @@ createH5LigerDataset <- function(
 #' @param clusterName The name of variable in \code{cellMeta} slot to store the
 #' clustering assignment, which originally located in \code{clusters} slot.
 #' Default \code{"clusters"}.
-#' @param h5FilePath Named list, to specify the path to the H5 file of each
-#' dataset if location has been changed. Default \code{NULL} looks at the file
-#' paths stored in object.
-#' @param update Logical, whether to update an old (<=1.0.0) \code{liger} object
+#' @param h5FilePath Named character vector for all H5 file paths. Not required
+#' for object run with in-memory analysis. For object containing H5-based
+#' analysis (e.g. online iNMF), this must be supplied if the H5 file location is
+#' different from that at creation time.
+#' @param update Logical, whether to update an old (<=1.99.0) \code{liger} object
 #' to the currect version of structure. Default \code{TRUE}.
 #' @return New version of \linkS4class{liger} object
 #' @export
@@ -445,6 +446,7 @@ createH5LigerDataset <- function(
 #' # Save and read regular current-version liger object
 #' tempPath <- tempfile(fileext = ".rds")
 #' saveRDS(pbmc, tempPath)
+#'
 #' pbmc <- readLiger(tempPath, dimredName = NULL)
 #'
 #' # Save and read H5-based liger object
@@ -454,7 +456,8 @@ createH5LigerDataset <- function(
 #' lig <- createLiger(list(ctrl = h5tempPath))
 #' tempPath <- tempfile(fileext = ".rds")
 #' saveRDS(lig, tempPath)
-#' lig <- readLiger(tempPath)
+#'
+#' lig <- readLiger(tempPath, h5FilePath = c(ctrl = h5tempPath))
 #'
 #' \dontrun{
 #' # Read a old liger object <= 1.0.1
@@ -463,8 +466,7 @@ createH5LigerDataset <- function(
 #' lig <- readLiger(
 #'     filename = "path/to/oldLiger.rds",
 #'     dimredName = "UMAP",
-#'     clusterName = "louvain",
-#'     update = TRUE
+#'     clusterName = "louvain"
 #' )
 #' }
 readLiger <- function(
@@ -478,31 +480,6 @@ readLiger <- function(
         object <- updateLigerObject(object, dimredName, clusterName, h5FilePath)
     }
     return(object)
-    #
-    # obj <- readRDS(filename)
-    # if (!inherits(obj, "liger")) # nocov start
-    #     cli::cli_abort("Object is not of class {.cls liger}.") # nocov end
-    # ver <- obj@version
-    # if (ver == package_version("1.99.0")) {
-    #     obj <- rliger2_to_rliger_namespace(obj, dimredName = dimredName)
-    # }
-    # if (ver >= package_version("1.99.0")) {
-    #     if (isH5Liger(obj)) obj <- restoreH5Liger(obj)
-    #     return(obj)
-    # }
-    # if (ver < package_version("1.99.1"))
-    #     cli::cli_alert_info("Older version ({.val {ver}}) of {.cls liger} object detected.")
-    # if (isTRUE(update)) {
-    #     cli::cli_alert_info(
-    #         "Updating the object structure to make it compatible with current version {.val {utils::packageVersion('rliger')}}"
-    #     )
-    #     return(convertOldLiger(obj, dimredName = dimredName,
-    #                            clusterName = clusterName,
-    #                            h5FilePath = h5FilePath))
-    # } else {
-    #     cli::cli_alert_info("{.code update = FALSE} specified. Returning the original object.")
-    #     return(obj)
-    # }
 }
 
 # nocov start
