@@ -528,6 +528,9 @@ plotClusterProportions <- function(
 }
 
 #' @rdname plotProportion
+#' @param circleColors Character vector of colors. \code{plotProportionPie}
+#' parameter for setting the colors of circles, i.e. categorical variable
+#' controlled by \code{class2}. Default \code{NULL} uses ggplot default hues.
 #' @export
 plotProportionPie <- function(
         object,
@@ -535,6 +538,7 @@ plotProportionPie <- function(
         class2 = "dataset",
         labelSize = 4,
         labelColor = "white",
+        circleColors = NULL,
         ...
 ) {
     class1 <- class1 %||% object@uns$defaultCluster
@@ -570,6 +574,13 @@ plotProportionPie <- function(
                                    colour = .data[[class2]]),
             linewidth = 2
         )
+    if (!is.null(circleColors)) {
+        if (length(circleColors) < length(class2Uniq)) {
+            cli::cli_alert_warning("Less {.field circleColors} ({.val {length(circleColors)}}) specified than required from {.val {class2}} ({.val {length(class2Uniq)}}). Using default.")
+        } else {
+            p <- p + ggplot2::scale_color_manual(values = circleColors)
+        }
+    }
 
     if (!requireNamespace("ggrepel", quietly = TRUE)) {
         p <- p + ggplot2::geom_text(

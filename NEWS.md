@@ -23,6 +23,7 @@
 - Added `plotBarcodeRank()` for basic QC visualization
 - Added `plotPairwiseDEGHeatmap()` for visualizing pairwise DEG results
 - Added `plotGODot()` for visualizing GO enrichment results
+- Optimized `plotProportionPie()` by adding argument `circleColors`
 - Optimized `plotVolcano()` text annotation positioning
 - Optimized visualization function additional argument documentation
 - Added `calcNMI()` for evaluating clustering results against ground truth

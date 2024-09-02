@@ -44,6 +44,7 @@ plotProportionPie(
   class2 = "dataset",
   labelSize = 4,
   labelColor = "white",
+  circleColors = NULL,
   ...
 )
 }
@@ -76,6 +77,10 @@ while \code{class2} is hardcoded with \code{"dataset"}.}
 
 \item{labelSize, labelColor}{Settings on pie chart percentage label. Default
 \code{4} and \code{"white"}.}
+
+\item{circleColors}{Character vector of colors. \code{plotProportionPie}
+parameter for setting the colors of circles, i.e. categorical variable
+controlled by \code{class2}. Default \code{NULL} uses ggplot default hues.}
 }
 \value{
 ggplot or list of ggplot
