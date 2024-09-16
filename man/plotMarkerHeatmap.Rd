@@ -52,9 +52,41 @@ plotting. Default \code{50}.}
 
 \item{column_title}{Title on the column. Default \code{NULL}.}
 
-\item{...}{Parameter passed to wrapped functions in the inheritance order:
-\code{\link{plotGeneHeatmap}}, \code{\link{.plotHeatmap}},
-\code{ComplexHeatmap::\link[ComplexHeatmap]{Heatmap}}}
+\item{...}{
+  Arguments passed on to \code{\link[=plotGeneHeatmap]{plotGeneHeatmap}}, \code{\link[=.plotHeatmap]{.plotHeatmap}}
+  \describe{
+    \item{\code{cellAnnotation}}{data.frame object for using external annotation, with
+each column a variable and each row is a cell. Row names of this data.frame
+will be used for matching cells involved in heatmap. For cells not found in
+this data.frame, \code{NA}s will be added with warning. Default \code{NULL}.}
+    \item{\code{transpose}}{Logical, whether to "rotate" the heatmap by 90 degrees so
+that cell information is displayed by row. Default \code{FALSE}.}
+    \item{\code{showCellLabel,showFeatureLabel}}{Logical, whether to show cell barcodes,
+gene symbols or factor names. Default \code{TRUE} for gene/factors but
+\code{FALSE} for cells.}
+    \item{\code{cellAnnColList,featureAnnColList}}{List object, with each element a
+named vector of R-interpretable color code. The names of the list elements
+are used for matching the annotation variable names. The names of the colors
+in the vectors are used for matching the levels of a variable (factor object,
+categorical). Default \code{NULL} generates ggplot-flavor categorical colors.}
+    \item{\code{scale}}{Logical, whether to take z-score to scale and center gene
+expression. Applied after \code{dataScaleFunc}. Default \code{FALSE}.}
+    \item{\code{trim}}{Numeric vector of two values. Limit the z-score value into this
+range when \code{scale = TRUE}. Default \code{c(-2, 2)}.}
+    \item{\code{baseSize}}{One-parameter control of all text sizes. Individual text
+element sizes can be controlled by other size arguments. "Title" sizes are
+2 points larger than "text" sizes when being controlled by this.}
+    \item{\code{cellTextSize,featureTextSize,legendTextSize}}{Size of cell barcode
+labels, gene/factor labels, or legend values. Default \code{NULL}.}
+    \item{\code{cellTitleSize,featureTitleSize,legendTitleSize}}{Size of titles of the
+cell slices, gene/factor slices, or the legends. Default \code{NULL}.}
+    \item{\code{viridisOption,viridisDirection}}{See argument \code{option} and
+\code{direction} of \code{\link[viridisLite]{viridis}}. Default \code{"A"}
+and \code{-1}.}
+    \item{\code{RColorBrewerOption}}{When \code{scale = TRUE}, heatmap color will be
+mapped with \code{\link[RColorBrewer]{brewer.pal}}. This is passed to
+\code{name}. Default \code{"RdBu"}.}
+  }}
 }
 \value{
 A \linkS4class{HeatmapList} object.

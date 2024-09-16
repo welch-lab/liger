@@ -57,7 +57,7 @@ lig <- createLiger(list(ctrl = h5tempPath))
 tempPath <- tempfile(fileext = ".rds")
 saveRDS(lig, tempPath)
 
-lig <- readLiger(tempPath, h5FilePath = c(ctrl = h5tempPath))
+lig <- readLiger(tempPath, h5FilePath = list(ctrl = h5tempPath))
 
 \dontrun{
 # Read a old liger object <= 1.0.1

@@ -29,8 +29,7 @@
 #' @param viridisOption See \code{option} argument of
 #' \code{\link[viridisLite]{viridis}}. Default \code{"C"} (plasma) for
 #' \code{plotGeneHeatmap} and \code{"D"} (viridis) for \code{plotFactorHeatmap}.
-#' @param ... Additional arguments passed to general function
-#' \code{\link{.plotHeatmap}} and \code{\link[ComplexHeatmap]{Heatmap}}.
+#' @inheritDotParams .plotHeatmap transpose showCellLabel showCellLegend showFeatureLabel showFeatureLegend cellAnnColList featureAnnColList scale baseSize cellTextSize featureTextSize cellTitleSize featureTitleSize legendTextSize legendTitleSize viridisDirection RColorBrewerOption
 #' @return \code{\link[ComplexHeatmap]{HeatmapList-class}} object
 #' @export
 #' @rdname plotHeatmap

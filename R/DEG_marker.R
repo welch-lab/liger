@@ -1011,9 +1011,8 @@ computePval <- function(ustat, ties, N, n1n2) {
 #' @param groupSize Maximum number of cells in each group to be downsampled for
 #' plotting. Default \code{50}.
 #' @param column_title Title on the column. Default \code{NULL}.
-#' @param ... Parameter passed to wrapped functions in the inheritance order:
-#' \code{\link{plotGeneHeatmap}}, \code{\link{.plotHeatmap}},
-#' \code{ComplexHeatmap::\link[ComplexHeatmap]{Heatmap}}
+#' @inheritDotParams plotGeneHeatmap cellAnnotation
+#' @inheritDotParams .plotHeatmap transpose showCellLabel showCellLegend showFeatureLabel cellAnnColList featureAnnColList scale trim baseSize cellTextSize featureTextSize cellTitleSize featureTitleSize legendTextSize legendTitleSize viridisOption viridisDirection RColorBrewerOption
 #' @return A \linkS4class{HeatmapList} object.
 #' @examples
 #' defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
@@ -1116,9 +1115,7 @@ plotMarkerHeatmap <- function(
 #' \code{NULL} includes dataset source and the default cluster.
 #' @param column_title Title on the column. Default \code{NULL}.
 #' @param seed Random seed for reproducibility. Default \code{1}.
-#' @param ... Parameter passed to wrapped functions in the inheritance order:
-#' \code{\link{plotGeneHeatmap}}, \code{\link{.plotHeatmap}},
-#' \code{ComplexHeatmap::\link[ComplexHeatmap]{Heatmap}}
+#' @inheritDotParams .plotHeatmap transpose showCellLabel showCellLegend showFeatureLabel cellAnnColList featureAnnColList scale trim baseSize cellTextSize featureTextSize cellTitleSize featureTitleSize legendTextSize legendTitleSize viridisOption viridisDirection RColorBrewerOption
 #' @return A \linkS4class{HeatmapList} object.
 #' @examples
 #' defaultCluster(pbmc) <- pbmcPlot$leiden_cluster

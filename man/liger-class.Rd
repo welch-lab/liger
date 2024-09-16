@@ -382,7 +382,7 @@ analysis in R. The slot \code{datasets} is a list where each element should
 be a \linkS4class{ligerDataset} object containing dataset specific
 information, such as the expression matrices. The other parts of liger object
 stores information that can be shared across the analysis, such as the cell
-metadata and factorization result matrices.
+metadata.
 
 This manual provides explanation to the \code{liger} object structure as well
 as usage of class-specific methods. Please see detail sections for more
@@ -400,16 +400,15 @@ please try updating the objects individually with
 interact with. See detailed section accordingly.}
 
 \item{\code{cellMeta}}{\linkS4class{DFrame} object for cell metadata. Pre-existing
-metadata, QC metrics, cluster labeling, low-dimensional embedding and etc.
-are all stored here. Use generic \code{cellMeta}, \code{cellMeta<-},
-\code{$}, \code{[[]]} or \code{[[]]<-} to interact with. See detailed section
-accordingly.}
+metadata, QC metrics, cluster labeling and etc. are all stored here. Use
+generic \code{cellMeta}, \code{cellMeta<-}, \code{$}, \code{[[]]} or
+\code{[[]]<-} to interact with. See detailed section accordingly.}
 
-\item{\code{varFeatures}}{Character vector of feature names. Use generic
+\item{\code{varFeatures}}{Character vector of names of variable features. Use generic
 \code{varFeatures} or \code{varFeatures<-} to interact with. See detailed
 section accordingly.}
 
-\item{\code{W}}{Matrix of gene loading for each factor. See
+\item{\code{W}}{iNMF output matrix of shared gene loadings for each factor. See
 \code{\link{runIntegration}}.}
 
 \item{\code{H.norm}}{Matrix of aligned factor loading for each cell. See

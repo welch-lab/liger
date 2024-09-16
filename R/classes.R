@@ -26,21 +26,29 @@ NULL
 #' higher level \linkS4class{liger} object
 #' @docType class
 #' @rdname ligerDataset-class
-#' @slot rawData Raw data.
-#' @slot normData Normalized data
-#' @slot scaleData Scaled data, usually with subset variable features
-#' @slot scaleUnsharedData Scaled data of features not shared with other
-#' datasets
-#' @slot varUnsharedFeatures Variable features not shared with other datasets
-#' @slot V matrix
-#' @slot A matrix
-#' @slot B matrix
-#' @slot H matrix
-#' @slot U matrix
-#' @slot h5fileInfo list
-#' @slot featureMeta Feature metadata, DataFrame
-#' @slot colnames character
-#' @slot rownames character
+#' @slot rawData Raw data. Feature by cell matrix. Most of the time, sparse
+#' matrix of integer numbers for RNA and ATAC data.
+#' @slot normData Normalized data. Feature by cell matrix. Sparse if the
+#' \code{rawData} it is normalized from is sparse.
+#' @slot scaleData Scaled data, usually with subset shared variable features, by
+#' cells. Most of the time sparse matrix of float numbers. This is the data used
+#' for iNMF factorization.
+#' @slot scaleUnsharedData Scaled data of variable features not shared with
+#' other datasets. This is the data used for UINMF factorization.
+#' @slot varUnsharedFeatures Variable features not shared with other datasets.
+#' @slot V iNMF output matrix holding the dataset specific gene loading of each
+#' factor. Feature by factor matrix.
+#' @slot A Online iNMF intermediate product matrix.
+#' @slot B Online iNMF intermediate product matrix.
+#' @slot H iNMF output matrix holding the factor loading of each cell. Factor by
+#' cell matrix.
+#' @slot U UINMF output matrix holding the unshared variable gene loading of
+#' each factor. Feature by factor matrix.
+#' @slot h5fileInfo list of meta information of HDF5 file used for constructing
+#' the object.
+#' @slot featureMeta Feature metadata, DataFrame object.
+#' @slot colnames Character vector of unique cell identifiers.
+#' @slot rownames Character vector of unique feature names.
 #' @importClassesFrom S4Vectors DataFrame
 #' @exportClass ligerDataset
 ligerDataset <- setClass(
@@ -147,7 +155,7 @@ setValidity("ligerDataset", .valid.ligerDataset)
 #' be a \linkS4class{ligerDataset} object containing dataset specific
 #' information, such as the expression matrices. The other parts of liger object
 #' stores information that can be shared across the analysis, such as the cell
-#' metadata and factorization result matrices.
+#' metadata.
 #'
 #' This manual provides explanation to the \code{liger} object structure as well
 #' as usage of class-specific methods. Please see detail sections for more
@@ -160,14 +168,13 @@ setValidity("ligerDataset", .valid.ligerDataset)
 #' \code{dataset}, \code{dataset<-}, \code{datasets} or \code{datasets<-} to
 #' interact with. See detailed section accordingly.
 #' @slot cellMeta \linkS4class{DFrame} object for cell metadata. Pre-existing
-#' metadata, QC metrics, cluster labeling, low-dimensional embedding and etc.
-#' are all stored here. Use generic \code{cellMeta}, \code{cellMeta<-},
-#' \code{$}, \code{[[]]} or \code{[[]]<-} to interact with. See detailed section
-#' accordingly.
-#' @slot varFeatures Character vector of feature names. Use generic
+#' metadata, QC metrics, cluster labeling and etc. are all stored here. Use
+#' generic \code{cellMeta}, \code{cellMeta<-}, \code{$}, \code{[[]]} or
+#' \code{[[]]<-} to interact with. See detailed section accordingly.
+#' @slot varFeatures Character vector of names of variable features. Use generic
 #' \code{varFeatures} or \code{varFeatures<-} to interact with. See detailed
 #' section accordingly.
-#' @slot W Matrix of gene loading for each factor. See
+#' @slot W iNMF output matrix of shared gene loadings for each factor. See
 #' \code{\link{runIntegration}}.
 #' @slot H.norm Matrix of aligned factor loading for each cell. See
 #' \code{\link{quantileNorm}} and \code{\link{runIntegration}}.

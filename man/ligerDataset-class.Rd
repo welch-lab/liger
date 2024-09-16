@@ -155,34 +155,42 @@ higher level \linkS4class{liger} object
 \section{Slots}{
 
 \describe{
-\item{\code{rawData}}{Raw data.}
+\item{\code{rawData}}{Raw data. Feature by cell matrix. Most of the time, sparse
+matrix of integer numbers for RNA and ATAC data.}
 
-\item{\code{normData}}{Normalized data}
+\item{\code{normData}}{Normalized data. Feature by cell matrix. Sparse if the
+\code{rawData} it is normalized from is sparse.}
 
-\item{\code{scaleData}}{Scaled data, usually with subset variable features}
+\item{\code{scaleData}}{Scaled data, usually with subset shared variable features, by
+cells. Most of the time sparse matrix of float numbers. This is the data used
+for iNMF factorization.}
 
-\item{\code{scaleUnsharedData}}{Scaled data of features not shared with other
-datasets}
+\item{\code{scaleUnsharedData}}{Scaled data of variable features not shared with
+other datasets. This is the data used for UINMF factorization.}
 
-\item{\code{varUnsharedFeatures}}{Variable features not shared with other datasets}
+\item{\code{varUnsharedFeatures}}{Variable features not shared with other datasets.}
 
-\item{\code{V}}{matrix}
+\item{\code{V}}{iNMF output matrix holding the dataset specific gene loading of each
+factor. Feature by factor matrix.}
 
-\item{\code{A}}{matrix}
+\item{\code{A}}{Online iNMF intermediate product matrix.}
 
-\item{\code{B}}{matrix}
+\item{\code{B}}{Online iNMF intermediate product matrix.}
 
-\item{\code{H}}{matrix}
+\item{\code{H}}{iNMF output matrix holding the factor loading of each cell. Factor by
+cell matrix.}
 
-\item{\code{U}}{matrix}
+\item{\code{U}}{UINMF output matrix holding the unshared variable gene loading of
+each factor. Feature by factor matrix.}
 
-\item{\code{h5fileInfo}}{list}
+\item{\code{h5fileInfo}}{list of meta information of HDF5 file used for constructing
+the object.}
 
-\item{\code{featureMeta}}{Feature metadata, DataFrame}
+\item{\code{featureMeta}}{Feature metadata, DataFrame object.}
 
-\item{\code{colnames}}{character}
+\item{\code{colnames}}{Character vector of unique cell identifiers.}
 
-\item{\code{rownames}}{character}
+\item{\code{rownames}}{Character vector of unique feature names.}
 }}
 
 \section{Matrix access}{
