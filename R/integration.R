@@ -1863,14 +1863,17 @@ calcAlignment <- function(
         cellIdx <- .idxCheck(object, cellIdx, "cell")
         if (!is.null(cellComp)) {
             cellComp <- .idxCheck(object, cellComp, "cell")
-            cellIdx <- c(cellIdx, cellComp)
             datasetVar <- factor(rep.int(c("cellIdx", "cellComp"), c(length(cellIdx), length(cellComp))))
+            cellIdx <- c(cellIdx, cellComp)
             cli::cli_alert_info("Using designated sets {.var cellIdx} and {.var cellComp} as subsets to compare.")
         } else {
             datasetVar <- droplevels(object$dataset[cellIdx])
         }
     } else {
         clusterVar <- clusterVar %||% object@uns$defaultCluster
+        if (is.null(clusterVar)) {
+            cli::cli_abort("No {.field clusterVar} specified or default preset by {.fn runCluster}.")
+        }
         clusters <- .fetchCellMetaVar(object, clusterVar, checkCategorical = TRUE)
         notFound <- clustersUse[!clustersUse %in% clusters]
         if (length(notFound) > 0) {

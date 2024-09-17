@@ -674,20 +674,7 @@ plotProportionBox <- function(
             MARGIN = 1,
             function(row) colnames(conditionTable)[row > 0]
         )
-        conditionVar <- .fetchCellMetaVar(
-            object = object, variables = conditionBy, checkCategorical = TRUE
-        )
-        # Check that condition variable is strictly a high level variable of dataset
-        if (!all(rowSums(table(datasetVar, conditionVar) > 0) == 1)) {
-            cli::cli_abort("Condition variable must be a high level variable of the datasets, i.e. each dataset must belong to only one condition.")
-        }
 
-        conditionTable <- table(datasetVar, conditionVar)
-        conditionMap <- apply(
-            conditionTable,
-            MARGIN = 1,
-            function(row) colnames(conditionTable)[row > 0]
-        )
         dfLong[[conditionBy]] <- factor(
             conditionMap[dfLong[[sampleBy]]],
             levels = levels(conditionVar)

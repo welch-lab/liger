@@ -399,7 +399,7 @@ calcPurity <- function(object,
         if (length(trueCluster) != length(cellIdx)) {
             if (is.null(names(trueCluster))) {
                 cli::cli_abort(
-                    "Longer/shorter {.var trueCluster} than cells considered requires {.fn names()} to identify matching."
+                    "Longer/shorter {.var trueCluster} than cells considered requires {.fn names} to identify matching."
                 )
             }
         } else {
@@ -502,7 +502,7 @@ calcARI <- function(object,
         if (length(trueCluster) != length(cellIdx)) {
             if (is.null(names(trueCluster))) {
                 cli::cli_abort(
-                    "Longer/shorter {.var trueCluster} than cells considered requires {.fn names()} to identify matching."
+                    "Longer/shorter {.var trueCluster} than cells considered requires {.fn names} to identify matching."
                 )
             }
         } else {
@@ -625,7 +625,7 @@ calcNMI <- function(object,
         if (length(trueCluster) != length(cellIdx)) {
             if (is.null(names(trueCluster))) {
                 cli::cli_abort(
-                    "Longer/shorter {.var trueCluster} than cells considered requires {.fn names()} to identify matching."
+                    "Longer/shorter {.var trueCluster} than cells considered requires {.fn names} to identify matching."
                 )
             }
         } else {

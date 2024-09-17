@@ -1286,8 +1286,8 @@ setReplaceMethod(
 #' @rdname liger-class
 setMethod(
     "defaultDimRed",
-    signature(x = "liger", useDatasets = "ANY"),
-    function(x, useDatasets = NULL, cellIdx = cellIdx) {
+    signature(x = "liger", useDatasets = "ANY", cellIdx = "ANY"),
+    function(x, useDatasets = NULL, cellIdx = NULL) {
         name <- x@uns$defaultDimRed
         if (is.null(name)) return(NULL)
         else dimRed(x, name = name, useDatasets = useDatasets, cellIdx = cellIdx)

@@ -287,7 +287,7 @@ commands(x, funcName = NULL, arg = NULL)
   ...
 ) <- value
 
-\S4method{defaultDimRed}{liger}(x, useDatasets = NULL, cellIdx = cellIdx)
+\S4method{defaultDimRed}{liger}(x, useDatasets = NULL, cellIdx = NULL)
 
 \S4method{defaultDimRed}{liger,character}(x) <- value
 

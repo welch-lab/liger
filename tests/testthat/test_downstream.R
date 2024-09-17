@@ -80,10 +80,40 @@ test_that("clustering", {
     pbmc <- quantileNorm(pbmc)
     expect_message(pbmc <- runCluster(pbmc, nRandomStarts = 1, saveSNN = TRUE),
                    "leiden clustering on quantile normalized")
+    expect_is(defaultCluster(pbmc, droplevels = TRUE), "factor")
     expect_is(pbmc@uns$snn, "dgCMatrix")
-    expect_message(runCluster(pbmc, nRandomStarts = 1, method = "louvain"),
+    expect_message(pbmc <- runCluster(pbmc, nRandomStarts = 1, method = "louvain"),
                    "louvain clustering on quantile normalized")
+    expect_message(defaultCluster(pbmc, name = "louvain_cluster") <- "louvain_cluster",
+                   "Cannot have")
+    expect_error(defaultCluster(pbmc) <- "notexist", "Selected variable does not exist")
+    defaultCluster(pbmc) <- pbmc$leiden_cluster
+    expect_identical(pbmc$leiden_cluster, pbmc$defaultCluster)
+    expect_error(defaultCluster(pbmc) <- factor(letters), "Length of")
+    defaultCluster(pbmc) <- NULL
+    defaultCluster(pbmc, name = "leiden") <- unname(pbmc$leiden_cluster)
+    expect_identical(pbmc$leiden, pbmc$leiden_cluster)
 
+    fakevar <- pbmc$leiden_cluster
+    names(fakevar)[1:26] <- letters
+    expect_error(defaultCluster(pbmc) <- fakevar, "Not all `names")
+
+
+
+    expect_equal(calcPurity(pbmc, "leiden_cluster", "leiden_cluster"), 1)
+    expect_error(calcPurity(pbmc, letters, "leiden_cluster"),
+                 "Longer/shorter `trueCluster` than cells considered requires")
+    expect_message(calcPurity(pbmc, unname(pbmc$leiden_cluster), "leiden_cluster"), "Assuming unnamed")
+
+    expect_equal(calcARI(pbmc, "leiden_cluster", "leiden_cluster"), 1)
+    expect_error(calcARI(pbmc, letters, "leiden_cluster"),
+                 "Longer/shorter `trueCluster` than cells considered requires")
+    expect_message(calcARI(pbmc, unname(pbmc$leiden_cluster), "leiden_cluster"), "Assuming unnamed")
+
+    expect_equal(calcNMI(pbmc, "leiden_cluster", "leiden_cluster"), 1)
+    expect_error(calcNMI(pbmc, letters, "leiden_cluster"),
+                 "Longer/shorter `trueCluster` than cells considered requires")
+    expect_message(calcNMI(pbmc, unname(pbmc$leiden_cluster), "leiden_cluster"), "Assuming unnamed")
     # Tests for singleton grouping. Need to find the case where there are singletons
     # expect_message(runCluster(pbmc, nRandomStarts = 1,
     #                          partitionType = "CPMVertexPartition"),
@@ -109,7 +139,6 @@ test_that("clustering", {
                               colnames(pbmc)))
 })
 
-
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Dimensionality reduction
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,9 +149,21 @@ test_that("dimensionality reduction", {
     pbmc <- process(pbmc)
     expect_message(runUMAP(pbmc, useRaw = TRUE),
                    "Generating UMAP on unnormalized")
+    expect_error(dimRed(pbmc), "available in this")
     expect_message(pbmc <- runUMAP(pbmc, useRaw = FALSE),
                    "Generating UMAP on quantile normalized")
-    expect_equal(dim(dimRed(pbmc, "UMAP")), c(ncol(pbmc), 2))
+    pbmc@uns$defaultDimRed <- NULL
+    expect_message(dimRed(pbmc), "No default")
+    defaultDimRed(pbmc) <- "UMAP"
+    expect_error(defaultDimRed(pbmc) <- letters, "Can only set one")
+    expect_identical(defaultDimRed(pbmc), dimRed(pbmc, "UMAP"))
+    expect_equal(dim(dimRed(pbmc)), c(ncol(pbmc), 2))
+    expect_no_error(dimRed(pbmc, "UMAP2") <- dimRed(pbmc, "UMAP"))
+    expect_equal(nrow(dimRed(pbmc, name = 1, cellIdx = 1:10)), 10)
+    expect_equal(nrow(dimRed(pbmc, name = 1, useDatasets = names(pbmc))), ncol(pbmc))
+    expect_equal(nrow(dimRed(pbmc, name = "UMAP", cellIdx = 1:10)), 10)
+    expect_equal(nrow(dimRed(pbmc, name = "UMAP", useDatasets = names(pbmc))), ncol(pbmc))
+    expect_no_error(dimRed(pbmc, 2) <- NULL)
 
     expect_message(runTSNE(pbmc, useRaw = TRUE),
                    "Generating TSNE \\(Rtsne\\) on unnormalized")
@@ -184,6 +225,12 @@ test_that("wilcoxon", {
         go2 <- runGOEnrich(res1, group = 0, orderBy = "pval", significant = FALSE)
         expect_is(go2, "list")
         expect_is(go2$`0`$result, "data.frame")
+        go3 <- runGOEnrich(res1, group = c(0, 1), orderBy = "pval", significant = FALSE)
+
+        expect_is(plotGODot(go1, pvalThresh = 1), "ggplot")
+        expect_error(plotGODot(go1, group = "ctrl"), "Specified group not available")
+        expect_message(plotGODot(go1, group = '0'), "No enough matching")
+        expect_is(plotGODot(go3, pvalThresh = 1), "list")
     }
 })
 
