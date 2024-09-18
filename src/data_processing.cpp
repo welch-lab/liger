@@ -294,3 +294,23 @@ void updatePseudoBulkRcpp(
     }
   }
 }
+
+// out - dense matrix of n feature rows and 2 cols
+// sparseRaw - the raw expression data to be counted
+// featureIdx - integer vector with NAs, length equals to nrow(sparseRaw),
+//   indicating which row of `out` the current `it.row()` should be incremented.
+// groupVar - integer vector with NAs, length equals to ncol(sparseRaw),
+//   indicating which col of `out` the current `it.col()` should be incremented.
+// [[Rcpp::export()]]
+void updateNCellExprRcpp(
+  Rcpp::NumericMatrix& out,
+  const arma::sp_mat& sparseRaw,
+  const Rcpp::IntegerVector& featureIdx,
+  const Rcpp::IntegerVector& groupVar
+) {
+  for (arma::sp_mat::const_iterator it = sparseRaw.begin(); it != sparseRaw.end(); ++it) {
+    if (featureIdx[it.row()] != NA_INTEGER && groupVar[it.col()] != NA_INTEGER) {
+      out(featureIdx[it.row()], groupVar[it.col()])++;
+    }
+  }
+}

@@ -483,6 +483,12 @@ runWilcoxon <- function(
             result <- tryCatch({
                 subVar <- factor(ifelse(var == testName, testName, "others"),
                                  levels = c(testName, "others"))
+                aux <- calcPctInOut(
+                    object,
+                    cellIdx = allCellIdx,
+                    features = features,
+                    groups = subVar
+                )
                 # `useReplicate` can be a vector of multiple variables
                 replicateAnn <- .fetchCellMetaVar(
                     object, useReplicate,
@@ -512,6 +518,8 @@ runWilcoxon <- function(
                 )
                 pb <- pbs[[1]]
                 subVar <- pbs[[2]]
+
+
                 # resultList[[testName]] <- .callDESeq2(pb, subVar, printDiagnostic)
                 result <- .callDESeq2(pb, subVar, printDiagnostic)
                 if (length(levels(var)) <= 2) {
@@ -525,7 +533,7 @@ runWilcoxon <- function(
                         }
                     }
                 }
-                result
+                cbind(result, aux)
             }, error = function(e) {
                 cli::cli_alert_danger(
                     "Error when computing on {.val {testName}}: {e$message}"
@@ -754,6 +762,9 @@ makePseudoBulk <- function(
     # them into the initialized pseudo-bulk following the guidance of
     # `replicateAnn`
 
+    # Meanwhile, calculate auxiliary metrics `pct_in` and `pct_out` during the
+    # for loop for each dataset.
+
     # repAnnExpand - broad cast the repAnn for only involved cells to all cells
     repAnnExpand <- rep(NA, ncol(object))
     repAnnExpand[cellIdx] <- replicateAnn
@@ -771,6 +782,57 @@ makePseudoBulk <- function(
         )
     }
     return(list(pseudoBulk, groupOut))
+}
+
+calcPctInOut <- function(
+    object,
+    cellIdx,
+    features,
+    groups
+) {
+    datasetInvolved <- unique(object$dataset[cellIdx])
+    # Initialize the output matrix
+    # `nCellExpr` is a matrix of n features rows and 2 cols. The first column
+    # stores number of cells in test group that express each feature, and the
+    # second column stores number of cells in control group that express each
+    # feature.
+    # After counting, we will calculate `pct_in` and `pct_out` for each feature
+    # by dividing the first column by total number of cells in test group and
+    # the second column by total number of cells in control group.
+    nCellExpr <- matrix(
+        data = 0,
+        nrow = length(features),
+        ncol = 2,
+        dimnames = list(features, c("pct_in", "pct_out"))
+    )
+    groupExpand <- rep(NA, ncol(object))
+    # When inserting a factor (`group`) in to the NA vector, the factor
+    # is automatically converted to 1-based integers.
+    groupExpand[cellIdx] <- groups
+    groupExpand <- groupExpand - 1
+
+    # Go through each dataset, find out the cells involved and calculate
+    # `pct_in` and `pct_out` for each feature
+    for (i in seq_along(datasetInvolved)) {
+        # dn - dataset name
+        dn <- datasetInvolved[i]
+        raw <- rawData(object, dn)
+        # The `updateNCellExprRcpp` Rcpp function in-place updates `nCellExpr`
+        # using each raw matrix so no redundant memory allocation is needed.
+        # Information needed:
+        # - index that tells which cells in `raw` are for the test group and
+        #   which are for the control group
+        updateNCellExprRcpp(
+            out = nCellExpr,
+            sparseRaw = raw,
+            featureIdx = match(rownames(raw), features) - 1,
+            groupVar = groupExpand[object$dataset == dn]
+        )
+    }
+    # Finally, calculate the percentage
+    nCellExpr[,1] <- nCellExpr[,1]/sum(groups == levels(groups)[1]) * 100
+    nCellExpr[,2] <- nCellExpr[,2]/sum(groups == levels(groups)[2]) * 100
+    return(nCellExpr)
 }
 
 # makePseudoBulkOld <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {

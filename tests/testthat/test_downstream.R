@@ -245,12 +245,12 @@ test_that("pseudo bulk", {
                            groupCtrl = pbmc$leiden_cluster == 2,
                            method = "pseudo")
     expect_is(res1, "data.frame")
-    expect_true(all.equal(dim(res1), c(nIsecGenes, 5)))
+    expect_true(all.equal(dim(res1), c(nIsecGenes, 7)))
     res2 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
                            variable1 = "leiden_cluster",
                            method = "pseudo", useReplicate = "dataset")
     expect_is(res2, "data.frame")
-    expect_true(all.equal(dim(res2), c(nIsecGenes, 5)))
+    expect_true(all.equal(dim(res2), c(nIsecGenes, 7)))
     res3 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
                            variable1 = "leiden_cluster",
                            method = "pseudo")
