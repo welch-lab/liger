@@ -82,6 +82,7 @@ runUMAP <- function(
                        min_dist = minDist)
     if (isTRUE(verbose)) cli::cli_process_done()
     dimRed(object, dimredName) <- umap
+    defaultDimRed(object) <- dimredName
     if (isTRUE(verbose))
         cli::cli_alert_info("{.field DimRed} {.val {dimredName}} is now set as default.")
     return(object)
@@ -184,6 +185,7 @@ runTSNE <- function(
     }
     if (isTRUE(verbose)) cli::cli_process_done()
     dimRed(object, dimredName) <- tsne
+    defaultDimRed(object) <- dimredName
     object@uns$TSNE <- list(method = method)
     if (isTRUE(verbose))
         cli::cli_alert_info("{.field DimRed} {.val {dimredName}} is now set as default.")
