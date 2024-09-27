@@ -7,6 +7,7 @@
 createLiger(
   rawData,
   modal = NULL,
+  organism = "human",
   cellMeta = NULL,
   removeMissing = TRUE,
   addPrefix = "auto",
@@ -41,6 +42,12 @@ an HDF5 file. See detail for HDF5 reading.}
 datasets, or the same number of strings as the number of datasets. Currently
 options of \code{"default"}, \code{"rna"}, \code{"atac"}, \code{"spatial"}
 and \code{"meth"} are supported.}
+
+\item{organism}{Character vector for setting organism for identifying mito,
+ribo and hemo genes for expression percentage calculation. Use one string for
+all datasets, or the same number of strings as the number of datasets.
+Currently options of \code{"mouse"}, \code{"human"}, \code{"zebrafish"},
+\code{"rat"}, and \code{"drosophila"} are supported.}
 
 \item{cellMeta}{data.frame of metadata at single-cell level. Default
 \code{NULL}.}

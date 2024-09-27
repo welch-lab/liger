@@ -623,14 +623,13 @@ cli_or <- function(x) cli::cli_vec(x, list("vec-last" = " or "))
 }
 
 
-splitRmMiss <- function(x, y, rmMiss = TRUE) {
+splitRmMiss <- function(x, y) {
     y <- factor(y)
     y <- droplevels(y)
     matList <- lapply(levels(y), function(lvl) {
         idx <- y == lvl
         xsub <- x[, idx, drop = FALSE]
-        if (rmMiss) xsub[rowSums(xsub) > 0, , drop = FALSE]
-        else xsub
+        return(xsub)
     })
     names(matList) <- levels(y)
     return(matList)

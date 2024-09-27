@@ -2,18 +2,56 @@
 
 #' General QC for liger object
 #' @description Calculate number of UMIs, number of detected features and
-#' percentage of feature subset (e.g. mito) expression per cell.
+#' percentage of feature subset (e.g. mito, ribo and hemo) expression per cell.
+#' @details
+#' This function by default calculates:
+#'
+#' \itemize{
+#' \item{\code{nUMI} - The column sum of the raw data matrix per cell.
+#' Represents the total number of UMIs per cell if given raw counts.}
+#' \item{\code{nGene} - Number of detected features per cell}
+#' \item{\code{mito} - Percentage of mitochondrial gene expression per cell}
+#' \item{\code{ribo} - Percentage of ribosomal gene expression per cell}
+#' \item{\code{hemo} - Percentage of hemoglobin gene expression per cell}
+#' }
+#'
+#' Users can also specify their own feature subsets with argument
+#' \code{features}, or regular expression patterns that match to genes of
+#' interests with argument \code{pattern}, to calculate the expression
+#' percentage. If a character vector is given to \code{features}, a QC metric
+#' variable named \code{"featureSubset_name"} will be computed. If a named list
+#' of multiple subsets is given, the names will be used as the variable names.
+#' If a single pattern is given to \code{pattern}, a QC metric variable named
+#' \code{"featureSubset_pattern"} will be computed. If a named list of multiple
+#' patterns is given, the names will be used as the variable names.
+#' \bold{Duplicated QC metric names between these two arguments and the default
+#' five listed above should be avoided.}
+#'
+#' This function is automatically operated at the creation time of each
+#' \linkS4class{liger} object to capture the raw status. Argument
+#' \code{overwrite} is set to FALSE by default to avoid mistakenly updating
+#' existing metrics after filtering the object. Users can still opt to update
+#' all newly calculated metrics (including the default five) by setting
+#' \code{overwrite = TRUE}, or only some of newly calculated ones by providing
+#' a character vector of the names of the metrics to update. Intended
+#' overwriting only happens to datasets selected with \code{useDatasets}.
+#'
 #' @param object \linkS4class{liger} object with \code{rawData} available in
 #' each \linkS4class{ligerDataset} embedded
-#' @param mito,ribo,hemo Whether to calculate the expression percentage of
-#' mitochondrial, ribosomal or hemoglobin genes, respectively. Default
-#' \code{TRUE}.
+#' @param organism Specify the organism of the dataset to identify the
+#' mitochondrial, ribosomal and hemoglobin genes. Available options are
+#' \code{"mouse"}, \code{"human"}, \code{"zebrafish"}, \code{"rat"} and
+#' \code{"drosophila"}. Set \code{NULL} to disable mito, ribo and hemo
+#' calculation.
 #' @param features Feature names matching the feature subsets that users want to
 #' calculate the expression percentage with. A vector for a single subset, or a
 #' named list for multiple subset. Default \code{NULL}.
 #' @param pattern Regex patterns for matching the feature subsets that users
 #' want to calculate the expression percentage with. A vector for a single
 #' subset, or a named list for multiple subset. Default \code{NULL}.
+#' @param overwrite Whether to overwrite existing QC metric variables. Default
+#' \code{FALSE} do not update existing result. Use \code{TRUE} for updating all.
+#' Use a character vector to specify which to update. See Details.
 #' @param useDatasets A character vector of the names, a numeric or logical
 #' vector of the index of the datasets to be included for QC. Default
 #' \code{NULL} performs QC on all datasets.
@@ -21,38 +59,96 @@
 #' on HDF5 based dataset. Default \code{1000}
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
-#' @return Updated \code{object} with \code{nUMI}, \code{nGene} updated
-#' in \code{cellMeta(object)}, as well as expression percentage value for each
-#' feature subset.
+#' @param mito,ribo,hemo [Deprecated] Now will always compute the percentages
+#' of mitochondrial, ribosomal and hemoglobin gene counts. These arguments will
+#' be ignored.
+#' @return Updated \code{object} with the \code{cellMeta(object)} updated as
+#' intended by users. See Details for more information.
 #' @export
 #' @examples
-#' pbmc <- runGeneralQC(pbmc)
+#' pbmc <- runGeneralQC(pbmc, "human", overwrite = TRUE)
 runGeneralQC <- function(
         object,
-        mito = TRUE,
-        ribo = TRUE,
-        hemo = TRUE,
+        organism,
         features = NULL,
         pattern = NULL,
+        overwrite = FALSE,
         useDatasets = NULL,
         chunkSize = 1000,
-        verbose = getOption("ligerVerbose", TRUE)
+        verbose = getOption("ligerVerbose", TRUE),
+        mito = NULL,
+        ribo = NULL,
+        hemo = NULL
 ) {
     .checkObjVersion(object)
+    if (!missing(mito) || !missing(ribo) || !missing(hemo)) {
+        cli::cli_alert_info("Arguments {.code mito}, {.code ribo}, {.code hemo} are deprecated and now we always compute the percentage.")
+    }
+    if (!is.null(organism)) {
+        organism <- match.arg(organism, choices = c("mouse", "human", "zebrafish", "rat", "drosophila"))
+    }
+
     useDatasets <- .checkUseDatasets(object, useDatasets)
     # Process the the two arguments all into one named list of feature names
     # before exactly calculate the percentage
     featureSubsets <- list()
-    allFeatures <- unique(unlist(lapply(datasets(object), rownames),
-                                 use.names = FALSE))
+    allFeatures <- unique(
+        unlist(
+            lapply(datasets(object)[useDatasets], rownames),
+            use.names = FALSE
+        )
+    )
 
-    # Work on the presets
-    if (isTRUE(mito))
-        featureSubsets$mito <- grep("^MT-", allFeatures, value = TRUE)
-    if (isTRUE(ribo))
-        featureSubsets$ribo <- grep("^RP[SL]", allFeatures, value = TRUE)
-    if (isTRUE(hemo))
-        featureSubsets$hemo <- grep("^HB[^(P)]", allFeatures, value = TRUE)
+    # Idea from package scCustomize, with more curation and added hemoglobins
+    # Removed marmoset though because couldn't verify against online database
+    # Accepted species names
+    if (!is.null(organism)) {
+        organism <- .checkArgLen(organism, n = 1, class = "character")
+        mitoPattern <- switch(
+            EXPR = organism,
+            mouse = "^mt-",
+            human = "^MT-",
+            zebrafish = "^mt-",
+            rat = "^[Mm]t-",
+            drosophila = "^mt:",
+        )
+        if (startsWith(mitoPattern, "^")) {
+            featureSubsets$mito <- grep(mitoPattern, allFeatures, value = TRUE)
+        } else {
+            featureSubsets$mito <- intersect(mitoPattern, allFeatures)
+        }
+        if (length(featureSubsets$mito) == 0) {
+            cli::cli_alert_warning("No {organism} mitochondrial gene found in the union of dataset {.val {useDatasets}}")
+        }
+        riboPattern <- switch(
+            EXPR = organism,
+            mouse = "^Rp[sl]",
+            human = "^RP[SL]",
+            zebrafish = "^rp[sl]",
+            rat = "^Rp[sl]",
+            drosophila = "^Rp[SL]"
+        )
+        featureSubsets$ribo <- grep(riboPattern, allFeatures, value = TRUE)
+        if (length(featureSubsets$ribo) == 0) {
+            cli::cli_alert_warning("No {organism} ribosomal gene found in the union of dataset {.val {names(object)[useDatasets]}}")
+        }
+
+        hemoPattern <- switch(
+            EXPR = organism,
+            mouse = "^Hb(?!egf|s1l|p1)",
+            human = "^HB(?!EGF|S1L|P1)",
+            zebrafish = "^hb(?!egf|s1l|p1)",
+            rat = "^Hb(?!egf|s1l|p1)",
+            drosophila = NA
+        )
+        if (!is.na(hemoPattern)) {
+            featureSubsets$hemo <- grep(hemoPattern, allFeatures, value = TRUE, perl = TRUE)
+        }
+        if ("hemo" %in% names(featureSubsets) && length(featureSubsets$hemo) == 0) {
+            cli::cli_alert_warning("No {organism} hemoglobin gene found in the union of dataset {.val {names(object)[useDatasets]}}")
+        }
+    }
+
 
     # Then process the user specified gene sets
     if (!is.null(features)) {
@@ -77,6 +173,20 @@ runGeneralQC <- function(
     # Start calculation on each dataset
     newResultNames <- c("nUMI", "nGene", names(featureSubsets))
 
+    # Overwriting logic:
+    # By default - FALSE, no overwrite
+    # If TRUE, overwrite all that exist
+    # If given specific column names, only overwrite given ones but do not touch
+    #    other existing ones
+    if (isTRUE(overwrite)) {
+        # Just use newResultNames
+    } else if (isFALSE(overwrite)) {
+        newResultNames <- setdiff(newResultNames, colnames(object@cellMeta))
+    } else if (is.character(overwrite)) {
+        newResultNames <- newResultNames[newResultNames %in% overwrite | !newResultNames %in% colnames(object@cellMeta)]
+    }
+
+
     for (d in useDatasets) {
         ld <- dataset(object, d)
         if (isTRUE(verbose))
@@ -94,7 +204,13 @@ runGeneralQC <- function(
                 featureSubsets = featureSubsets,
                 verbose = verbose
             )
-        object@cellMeta[object$dataset == d, newResultNames] <- results$cell
+        resultCell <- results$cell[, newResultNames, drop = FALSE]
+        if (ncol(resultCell) > 0) {
+            object@cellMeta[object$dataset == d, newResultNames] <- resultCell
+            cli::cli_alert_info("Updated QC variables: {.val {newResultNames}}")
+        } else {
+            cli::cli_alert_info("No QC variable updated.")
+        }
         featureMeta(ld, check = FALSE)$nCell <- results$feature
         datasets(object, check = FALSE)[[d]] <- ld
         if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
@@ -102,6 +218,82 @@ runGeneralQC <- function(
 
     return(object)
 }
+
+# runGeneralQCOld <- function(
+#         object,
+#         mito = TRUE,
+#         ribo = TRUE,
+#         hemo = TRUE,
+#         features = NULL,
+#         pattern = NULL,
+#         useDatasets = NULL,
+#         chunkSize = 1000,
+#         verbose = getOption("ligerVerbose", TRUE)
+# ) {
+#     .checkObjVersion(object)
+#     useDatasets <- .checkUseDatasets(object, useDatasets)
+#     # Process the the two arguments all into one named list of feature names
+#     # before exactly calculate the percentage
+#     featureSubsets <- list()
+#     allFeatures <- unique(unlist(lapply(datasets(object), rownames),
+#                                  use.names = FALSE))
+#
+#     # Work on the presets
+#     if (isTRUE(mito))
+#         featureSubsets$mito <- grep("^MT-", allFeatures, value = TRUE)
+#     if (isTRUE(ribo))
+#         featureSubsets$ribo <- grep("^RP[SL]", allFeatures, value = TRUE)
+#     if (isTRUE(hemo))
+#         featureSubsets$hemo <- grep("^HB[^(P)]", allFeatures, value = TRUE)
+#
+#     # Then process the user specified gene sets
+#     if (!is.null(features)) {
+#         if (is.list(features)) {
+#             featureSubsets <- c(featureSubsets, features)
+#         } else if (is.vector(features)) {
+#             featureSubsets[["featureSubset_name"]] <- features
+#         }
+#     }
+#     if (!is.null(pattern)) {
+#         if (is.list(pattern)) {
+#             pattern <- lapply(pattern, function(x) {
+#                 grep(x, allFeatures, value = TRUE)
+#             })
+#             featureSubsets <- c(featureSubsets, pattern)
+#         } else if (is.vector(pattern)) {
+#             pattern <- grep(pattern, allFeatures, value = TRUE)
+#             featureSubsets[["featureSubset_pattern"]] <- pattern
+#         }
+#     }
+#
+#     # Start calculation on each dataset
+#     newResultNames <- c("nUMI", "nGene", names(featureSubsets))
+#
+#     for (d in useDatasets) {
+#         ld <- dataset(object, d)
+#         if (isTRUE(verbose))
+#             cliID <- cli::cli_process_start("calculating QC for dataset {.val {d}}")
+#         if (isH5Liger(ld))
+#             results <- runGeneralQC.h5(
+#                 ld,
+#                 featureSubsets = featureSubsets,
+#                 chunkSize = chunkSize,
+#                 verbose = verbose
+#             )
+#         else
+#             results <- runGeneralQC.Matrix(
+#                 ld,
+#                 featureSubsets = featureSubsets,
+#                 verbose = verbose
+#             )
+#         object@cellMeta[object$dataset == d, newResultNames] <- results$cell
+#         featureMeta(ld, check = FALSE)$nCell <- results$feature
+#         datasets(object, check = FALSE)[[d]] <- ld
+#         if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
+#     }
+#
+#     return(object)
+# }
 
 #' Calculate general QC on H5 based ligerDataset object
 #' @param object ligerDataset object

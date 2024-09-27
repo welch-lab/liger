@@ -13,6 +13,11 @@
 #' datasets, or the same number of strings as the number of datasets. Currently
 #' options of \code{"default"}, \code{"rna"}, \code{"atac"}, \code{"spatial"}
 #' and \code{"meth"} are supported.
+#' @param organism Character vector for setting organism for identifying mito,
+#' ribo and hemo genes for expression percentage calculation. Use one string for
+#' all datasets, or the same number of strings as the number of datasets.
+#' Currently options of \code{"mouse"}, \code{"human"}, \code{"zebrafish"},
+#' \code{"rat"}, and \code{"drosophila"} are supported.
 #' @param cellMeta data.frame of metadata at single-cell level. Default
 #' \code{NULL}.
 #' @param removeMissing Logical. Whether to remove cells that do not have any
@@ -67,6 +72,7 @@
 createLiger <- function(
         rawData,
         modal = NULL,
+        organism = "human",
         cellMeta = NULL,
         removeMissing = TRUE,
         addPrefix = "auto",
@@ -107,6 +113,12 @@ createLiger <- function(
     if (missing(modal) || is.null(modal)) modal <- "default"
     modal <- tolower(modal)
     modal <- .checkArgLen(modal, nData, repN = TRUE, class = "character")
+
+    organism <- tolower(organism)
+    organism <- .checkArgLen(organism, nData, repN = TRUE, class = "character")
+    if (!all(organism %in% c("mouse", "human", "zebrafish", "rat", "drosophila"))) {
+        cli::cli_abort("Invalid {.var organism} value. Only support: mouse, human, zebrafish, rat, drosophila.")
+    }
 
     # TODO handle h5 specific argument for hybrid of H5 and in memory stuff.
     datasets <- list()
@@ -171,7 +183,16 @@ createLiger <- function(
                         datasets = datasets,
                         cellMeta = cellMeta,
                         ...)
-    obj <- runGeneralQC(obj, verbose = verbose)
+    for (i in seq_along(datasets)) {
+        obj <- runGeneralQC(
+            object = obj,
+            organism = organism[i],
+            useDatasets = i,
+            overwrite = TRUE,
+            verbose = verbose
+        )
+    }
+
     if (isTRUE(removeMissing)) {
         obj <- removeMissing(obj, "both", filenameSuffix = "qc",
                              verbose = verbose, newH5 = newH5)

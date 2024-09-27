@@ -113,7 +113,7 @@ as.liger.Seurat <- function(
                                    class = c("factor", "character"))
         if (!is.factor(datasetVar)) datasetVar <- factor(datasetVar)
         datasetVar <- droplevels(datasetVar)
-        raw <- splitRmMiss(raw, datasetVar, rmMiss = FALSE)
+        raw <- splitRmMiss(raw, datasetVar)
     } else {
         names(raw) <- gsub("counts.", "", names(raw))
     }

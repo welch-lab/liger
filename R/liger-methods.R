@@ -371,7 +371,9 @@ setReplaceMethod("dataset", signature(x = "liger", dataset = "character",
                          }
                      }
                      methods::validObject(x)
-                     if (qc) x <- runGeneralQC(x, useDatasets = dataset,
+                     if (qc) x <- runGeneralQC(x, organism = NULL,
+                                               useDatasets = dataset,
+                                               overwrite = TRUE,
                                                verbose = FALSE)
                      x
                  })
