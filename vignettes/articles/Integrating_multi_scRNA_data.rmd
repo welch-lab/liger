@@ -1,7 +1,7 @@
 ---
 title: "Joint definition of cell types from multiple scRNA-seq datasets"
 author: "Yichen Wang, Joshua Sodicoff and Joshua Welch"
-date: "2024-07-03"
+date: "2024-09-27"
 output:
   html_document: 
     toc: 3
@@ -25,9 +25,7 @@ library(dplyr)
 library(cowplot)
 ```
 
-## Preprocessing and Normalization
-
-### Loading data
+## Loading data
 
 For the first portion of this protocol, we will be integrating data from control and interferon-stimulated PBMCs from [Kang et al, 2017](https://www.nature.com/articles/nbt.4042). The data can be found in the Gene Expression Omnibus, [Series GSE96583](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE96583). This dataset was originally in the form of output from the 10X Cellranger pipeline. In this tutorial, we prepared a downsampled version of the data.
 
@@ -77,6 +75,52 @@ pbmcLiger <- importPBMC()
 ```
 
 For creating a liger object from raw counts data or any other types of source (e.g. import cellranger H5 files, convert from Seurat, SingleCellExperiment, or even H5AD file), please refer to the [detailed tutorial for importing data](import_data.html).
+
+### Quality control
+
+It is always the best practice to check the quality control metrics of the scRNAseq data before performing any other processing. *rliger* by default have it calculated when `createLiger()` is called, with the following variables accessible in `cellMeta(pbmcLiger)` or with the `$` operator:
+
+- `pbmcLiger$nUMI`: The sum of UMI counts for each cell.
+- `pbmcLiger$nGene`: The number of genes detected in each cell.
+- `pbmcLiger$mito`: The percentage of mitochondrial genes detected in each cell. 
+- `pbmcLiger$ribo`: The percentage of ribosomal genes detected in each cell.
+- `pbmcLiger$hemo`: The percentage of hemoglobin genes detected in each cell.
+
+> **NOTE** that the example dataset is collected from human samples while the `organism` argument of `createLiger()` is by default "human". If users are working with other species like mouse, they should set the argument to the matching values in order to correctly identify the mitochondrial, ribosomal and hemoglobin genes.
+
+The wrapper function `plotTotalCountViolin()` and `plotGeneDetectedViolin()` show the density distribution of `nUMI` and `nGene`, respectively. 
+
+```{r, fig.width=10, fig.height=4}
+plotNUMI <- plotTotalCountViolin(pbmcLiger, dot = TRUE)
+plotNGene <- plotGeneDetectedViolin(pbmcLiger, dot = TRUE)
+cowplot::plot_grid(plotNUMI, plotNGene, ncol = 2)
+```
+
+For plotting the mitochondrial gene expression percentage, please use the following command:
+
+```{r, fig.height=2, fig.width=5}
+plotCellViolin(pbmcLiger, "mito", groupBy = "dataset", dot = TRUE)
+```
+
+It happens that there is no mitochondrial gene detected in the datasets we use for this tutorial. Users seeing such result with their own data need to pay attention to species setting for identifying the mitochondrial genes and rerun `runGeneralQC()` (click to see usage). If there are mitochondrial genes detected, it is recommended to filter out cells with high mitochondrial gene expression percentage, as they are likely to be dead or dying cells.
+
+There are two approaches of filtering genes and cells in a liger object. The first is to use `removeMissing()` function, which mainly removes non-expressing genes and cells with no counts. This function also allows removing genes that are expressed in too few cells (argument `minCells`) and cells that express too few genes (argument `minFeatures`). The following command removes genes that are detected in less than 3 cells and removes cells that express less than 200 genes.
+
+```{r, results='hide'}
+pbmcLiger <- removeMissing(pbmcLiger, minCells = 3, minFeatures = 200)
+```
+
+The second way is to use R's native matrix subsetting syntax and use the `cellMeta(pbmcLiger)` variables which are accessible with `$` operator. The following command 
+
+- keeps cells with total counts greater than 500
+- keeps cells with more than 200 detected genes
+- keeps cells with mitochondrial gene expression percentage less than 5%
+
+```{r, results='hide'}
+pbmcLiger <- pbmcLiger[, pbmcLiger$nUMI > 500 & pbmcLiger$nGene > 200 & pbmcLiger$mito < 5]
+```
+
+## Preprocessing and Normalization
 
 ### Preprocess
 
