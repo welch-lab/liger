@@ -205,7 +205,8 @@ test_that("quantileNorm", {
     pbmc2 <- quantileNorm(pbmc)
     expect_equal(dim(getMatrix(pbmc2, "H.norm")), c(ncol(pbmc), 20))
 
-    pbmc2 <- quantileNorm(pbmc, reference = "ctrl")
+    pbmc2 <- alignFactors(pbmc, reference = "ctrl")
+    # pbmc2 <- quantileNorm(pbmc, reference = "ctrl")
     expect_equal(dim(getMatrix(pbmc2, "H.norm")), c(ncol(pbmc), 20))
 
     # For quantileNorm,list method
@@ -228,6 +229,19 @@ test_that("quantileNorm", {
     #              "Unable to understand `reference`.")
 })
 
+test_that("centroidAlign", {
+    skip_if_not_installed("RcppPlanc")
+    pbmc <- process(pbmc)
+    pbmc <- runOnlineINMF(pbmc, k = 20, minibatchSize = 100)
+
+    expect_error(pbmc <- centroidAlign(pbmc, centerCluster = TRUE, shift = FALSE),
+                 "Negative values found prior to normalizing")
+    expect_no_error(pbmc <- alignFactors(pbmc, method = "centroid", diagnosis = TRUE))
+    expect_equal(dim(getMatrix(pbmc, "H.norm")), c(ncol(pbmc), 20))
+    expect_is(pbmc$raw_which.max, "factor")
+    expect_is(pbmc$Z_which.max, "factor")
+    expect_is(pbmc$R_which.max, "factor")
+})
 
 test_that("consensus iNMF", {
     skip_if_not_installed("RcppPlanc")
@@ -271,10 +285,15 @@ test_that("Seurat wrapper", {
     expect_in("inmf", SeuratObject::Reductions(seu))
     expect_in("onlineINMF", SeuratObject::Reductions(seu))
 
-    expect_error(quantileNorm(seu, reduction = "orig.ident"),
+    expect_error(alignFactors(seu, reduction = "orig.ident"),
                  "Specified `reduction` does not points to a")
-    seu <- quantileNorm(seu, reduction = "inmf")
-    expect_in("inmfNorm", SeuratObject::Reductions(seu))
+    # expect_error(quantileNorm(seu, reduction = "orig.ident"),
+    #              "Specified `reduction` does not points to a")
+    seu1 <- quantileNorm(seu, reduction = "inmf")
+    expect_in("inmfNorm", SeuratObject::Reductions(seu1))
+
+    seu2 <- alignFactors(seu, "centroid", reduction = "inmf")
+    expect_in("inmfNorm", SeuratObject::Reductions(seu2))
 
     expect_error(quantileNorm(seu, reference = "hello"),
                  "Should specify one existing dataset")

@@ -71,6 +71,7 @@ A ggplot object if only one group or a list of ggplot objects.
 Visualize GO enrichment test result in dot plot
 }
 \examples{
+\donttest{
 defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
 # Test the DEG between "stim" and "ctrl", within each cluster
 result <- runPairwiseDEG(
@@ -82,7 +83,6 @@ result <- runPairwiseDEG(
 )
 # Setting `significant = FALSE` because it's hard for a gene list obtained
 # from small test dataset to represent real-life biology.
-\donttest{
 if (requireNamespace("gprofiler2", quietly = TRUE)) {
     go <- runGOEnrich(result, group = "0.stim", significant = FALSE)
     # The toy example won't have significant result.

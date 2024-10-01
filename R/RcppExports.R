@@ -5,28 +5,16 @@ RunModularityClusteringCpp <- function(SNN, modularityFunction, resolution, algo
     .Call(`_rliger_RunModularityClusteringCpp`, SNN, modularityFunction, resolution, algorithm, nRandomStarts, nIterations, randomSeed, printOutput, edgefilename)
 }
 
-normalize_dense_cpp <- function(x, MARGIN = 2L, L = 1L) {
-    .Call(`_rliger_normalize_dense_cpp`, x, MARGIN, L)
-}
-
-scale_dense_cpp <- function(x, MARGIN = 2L, center = TRUE, scale = TRUE) {
-    .Call(`_rliger_scale_dense_cpp`, x, MARGIN, center, scale)
-}
-
-colNormalize_dense_cpp <- function(x, L) {
-    .Call(`_rliger_colNormalize_dense_cpp`, x, L)
-}
-
-colAggregateMedian_dense_cpp <- function(x, group, n) {
-    .Call(`_rliger_colAggregateMedian_dense_cpp`, x, group, n)
-}
-
-harmony_moe_correct_ridge_cpp <- function(Z_orig, R, lambda, Phi, B, N) {
-    .Call(`_rliger_harmony_moe_correct_ridge_cpp`, Z_orig, R, lambda, Phi, B, N)
+moe_correct_ridge_cpp <- function(Z_orig, R, lambda, Phi, B, N) {
+    .Call(`_rliger_moe_correct_ridge_cpp`, Z_orig, R, lambda, Phi, B, N)
 }
 
 normalize_byCol_dense_rcpp <- function(x) {
     .Call(`_rliger_normalize_byCol_dense_rcpp`, x)
+}
+
+colNormalize_dense_cpp <- function(x, L) {
+    .Call(`_rliger_colNormalize_dense_cpp`, x, L)
 }
 
 scaleNotCenter_byRow_rcpp <- function(x) {
@@ -71,6 +59,10 @@ SparseRowVarStd <- function(x, mu, sd, vmax) {
 
 colAggregateSums_sparse <- function(x, group, ngroups) {
     .Call(`_rliger_colAggregateSums_sparse`, x, group, ngroups)
+}
+
+colAggregateMedian_dense_cpp <- function(x, group, n) {
+    .Call(`_rliger_colAggregateMedian_dense_cpp`, x, group, n)
 }
 
 sample_cpp <- function(x, size) {

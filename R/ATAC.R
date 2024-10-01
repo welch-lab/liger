@@ -2,11 +2,11 @@
 #' after integration
 #' @description
 #' This function is designed for creating peak data for a dataset with only gene
-#' expression. This function uses quantile normalized cell factor loading to
-#' find nearest neighbors between cells from the queried dataset (without peak)
-#' and cells from reference dataset (with peak). And then impute the peak for
-#' the former basing on the weight. Therefore, the reference dataset selected
-#' must be of "atac" modality setting.
+#' expression. This function uses aligned cell factor loading to find nearest
+#' neighbors between cells from the queried dataset (without peak) and cells
+#' from reference dataset (with peak). And then impute the peak for the former
+#' basing on the weight. Therefore, the reference dataset selected must be of
+#' "atac" modality setting.
 #' @param object \linkS4class{liger} object with aligned factor loading computed
 #' in advance.
 #' @param nNeighbors The maximum number of nearest neighbors to search. Default
@@ -39,7 +39,7 @@
 #' bmmc <- scaleNotCenter(bmmc)
 #' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
 #'     bmmc <- runINMF(bmmc, k = 20)
-#'     bmmc <- quantileNorm(bmmc)
+#'     bmmc <- alignFactors(bmmc)
 #'     bmmc <- normalizePeak(bmmc)
 #'     bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
 #' }
@@ -60,7 +60,7 @@ imputeKNN <- function(
     if (is.null(getMatrix(object, "H.norm")))
         cli::cli_abort(
             "Aligned factor loading has to be available for imputation.
-            Please run {.fn quantileNorm} in advance.")
+            Please run {.fn alignFactors} in advance.")
     reference <- .checkArgLen(reference, n = 1)
     reference <- .checkUseDatasets(object, reference)#, modal = "atac")
     queries <- .checkUseDatasets(object, queries)
@@ -177,7 +177,7 @@ imputeKNN <- function(
 #'     bmmc <- selectGenes(bmmc)
 #'     bmmc <- scaleNotCenter(bmmc)
 #'     bmmc <- runINMF(bmmc, miniBatchSize = 100)
-#'     bmmc <- quantileNorm(bmmc)
+#'     bmmc <- alignFactors(bmmc)
 #'     bmmc <- normalizePeak(bmmc)
 #'     bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
 #'     corr <- linkGenesAndPeaks(
@@ -370,7 +370,7 @@ linkGenesAndPeaks <- function(
 #'     requireNamespace("IRanges", quietly = TRUE) &&
 #'     requireNamespace("psych", quietly = TRUE)) {
 #'     bmmc <- runINMF(bmmc)
-#'     bmmc <- quantileNorm(bmmc)
+#'     bmmc <- alignFactors(bmmc)
 #'     bmmc <- normalizePeak(bmmc)
 #'     bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
 #'     corr <- linkGenesAndPeaks(
@@ -480,7 +480,7 @@ exportInteractTrack <- function(
     invisible(NULL)
 }
 
-#' [Deprecated] Export predicted gene-pair interaction
+#' `r lifecycle::badge("deprecated")` Export predicted gene-pair interaction
 #' @description Export the predicted gene-pair interactions calculated by
 #' upstream function \code{\link{linkGenesAndPeaks}} into an Interact Track file
 #' which is compatible with \href{https://genome.ucsc.edu/cgi-bin/hgCustom}{UCSC

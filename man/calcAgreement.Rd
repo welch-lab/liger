@@ -19,7 +19,8 @@ calcAgreement(
 )
 }
 \arguments{
-\item{object}{\code{liger} object. Should call quantile_norm before calling.}
+\item{object}{\code{liger} object. Should call \code{\link{alignFactors}}
+before calling.}
 
 \item{ndims}{Number of factors to produce in NMF. Default \code{40}.}
 
@@ -27,7 +28,7 @@ calcAgreement(
 index. Default \code{15}.}
 
 \item{useRaw}{Whether to evaluate just factorized \eqn{H} matrices instead of
-using quantile aligned \eqn{H.norm} matrix. Default \code{FALSE} uses
+using aligned \eqn{H.norm} matrix. Default \code{FALSE} uses
 aligned matrix.}
 
 \item{byDataset}{Whether to return agreement calculated for each dataset
@@ -35,11 +36,14 @@ instead of the average for all datasets. Default \code{FALSE}.}
 
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
 
-\item{dr.method}{[defunct] We no longer support other methods but just NMF.}
+\item{dr.method}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#defunct}{\figure{lifecycle-defunct.svg}{options: alt='[Defunct]'}}}{\strong{[Defunct]}} We no longer support other
+methods but just NMF.}
 
-\item{k, rand.seed, by.dataset}{[Deprecated] See Usage for replacement.}
+\item{k, rand.seed, by.dataset}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} See Usage
+for replacement.}
 
-\item{use.aligned}{[defunct] Use \code{useRaw} instead.}
+\item{use.aligned}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Use \code{useRaw}
+instead.}
 }
 \value{
 A numeric vector of agreement metric. A single value if
@@ -49,11 +53,11 @@ A numeric vector of agreement metric. A single value if
 This metric quantifies how much the factorization and alignment distorts the
 geometry of the original datasets. The greater the agreement, the less
 distortion of geometry there is. This is calculated by performing
-dimensionality reduction on the original and quantile aligned (or just
-factorized) datasets, and measuring similarity between the k nearest
-neighbors for each cell in original and aligned datasets. The Jaccard index
-is used to quantify similarity, and is the final metric averages across all
-cells.
+dimensionality reduction on the original and integrated (factorized or plus
+aligned) datasets, and measuring similarity between the k nearest
+neighbors for each cell in original and integrated datasets. The Jaccard
+index is used to quantify similarity, and is the final metric averages across
+all cells.
 
 Note that for most datasets, the greater the chosen \code{nNeighbor}, the
 greater the agreement in general. Although agreement can theoretically
@@ -66,7 +70,7 @@ if (requireNamespace("RcppPlanc", quietly = TRUE)) {
     selectGenes \%>\%
     scaleNotCenter \%>\%
     runINMF \%>\%
-    quantileNorm
+    alignFactors
     calcAgreement(pbmc)
 }
 }

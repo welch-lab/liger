@@ -50,9 +50,9 @@ on HDF5 based dataset. Default \code{1000}}
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
-\item{mito, ribo, hemo}{[Deprecated] Now will always compute the percentages
-of mitochondrial, ribosomal and hemoglobin gene counts. These arguments will
-be ignored.}
+\item{mito, ribo, hemo}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} Now will always
+compute the percentages of mitochondrial, ribosomal and hemoglobin gene
+counts. These arguments will be ignored.}
 }
 \value{
 Updated \code{object} with the \code{cellMeta(object)} updated as

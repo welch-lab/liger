@@ -23,7 +23,7 @@
 #' @param removeMissing Logical. Whether to remove cells that do not have any
 #' counts and features not expressed in any cells from each dataset. Default
 #' \code{TRUE}.
-#' @param addPrefix Logical. Whether to add "<dataset name>_" as a prefix of
+#' @param addPrefix Logical. Whether to add "datasetName_" as a prefix of
 #' cell identifiers (e.g. barcodes) to avoid duplicates in multiple libraries (
 #' common with 10X data). Default \code{"auto"} detects if matrix columns
 #' already has the exact prefix or not. Logical value forces the action.
@@ -47,8 +47,8 @@
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Additional slot values that should be directly placed in object.
 #' @param raw.data,remove.missing,format.type,data.name,indices.name,indptr.name,genes.name,barcodes.name
-#' \bold{Deprecated.} See Usage section for replacement.
-#' @param take.gene.union Defuncted. Will be ignored.
+#' `r lifecycle::badge("superseded")` See Usage section for replacement.
+#' @param take.gene.union `r lifecycle::badge("defunct")` Will be ignored.
 #' @export
 #' @seealso \code{\link{createLigerDataset}}, \code{\link{createH5LigerDataset}}
 #' @examples
@@ -444,10 +444,11 @@ createH5LigerDataset <- function(
 #' @description
 #' This file reads a liger object stored in RDS files under all kinds of types.
 #' 1. A \linkS4class{liger} object with in-memory data created from package
-#' version since 1.99. 2. A liger object with on-disk H5 data associated, where
-#' the link to H5 files will be automatically restored. 3. A liger object
-#' created with older package version, and can be updated to the latest data
-#' structure by default.
+#' version since 1.99.
+#' 2. A liger object with on-disk H5 data associated, where the link to H5 files
+#' will be automatically restored.
+#' 3. A liger object created with older package version, and can be updated to
+#' the latest data structure by default.
 #' @param filename Path to an RDS file of a \code{liger} object of old versions.
 #' @param dimredName The name of variable in \code{cellMeta} slot to store the
 #' dimensionality reduction matrix, which originally located in
@@ -702,10 +703,10 @@ importCGE <- function(
 #' pipelines but needs user arguments for correct recognition. Similarly, the
 #' returned value can directly be used for constructing a \linkS4class{liger}
 #' object.
-#' @param path [A.] A Directory containing the matrix.mtx, genes.tsv (or
+#' @param path (A.) A Directory containing the matrix.mtx, genes.tsv (or
 #' features.tsv), and barcodes.tsv files provided by 10X. A vector, a named
 #' vector, a list or a named list can be given in order to load several data
-#' directories. [B.] The 10X root directory where subdirectories of per-sample
+#' directories. (B.) The 10X root directory where subdirectories of per-sample
 #' output folders can be found. Sample names will by default take the name of
 #' the vector, list or subfolders.
 #' @param sampleNames A vector of names to override the detected or set sample

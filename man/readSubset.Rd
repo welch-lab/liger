@@ -2,7 +2,7 @@
 % Please edit documentation in R/downsample.R
 \name{readSubset}
 \alias{readSubset}
-\title{[Deprecated] See \code{\link{downsample}}}
+\title{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} See \code{\link{downsample}}}
 \usage{
 readSubset(
   object,

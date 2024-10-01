@@ -2,7 +2,7 @@
 % Please edit documentation in R/integration.R
 \name{online_iNMF-deprecated}
 \alias{online_iNMF-deprecated}
-\title{[Deprecated] Perform online iNMF on scaled datasets}
+\title{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} Perform online iNMF on scaled datasets}
 \arguments{
 \item{object}{\code{liger} object with data stored in HDF5 files. Should
 normalize, select genes, and scale before calling.}
@@ -28,12 +28,12 @@ A value in the range 20-50 works well for most analyses.}
 
 \item{lambda}{Regularization parameter. Larger values penalize
 dataset-specific effects more
-  strongly (ie. alignment should increase as lambda increases). We recommend
-  always using the default value except
-  possibly for analyses with relatively small differences (biological
-  replicates, male/female comparisons, etc.)
-  in which case a lower value such as 1.0 may improve reconstruction quality.
-  (default 5.0).}
+strongly (ie. alignment should increase as lambda increases). We recommend
+always using the default value except
+possibly for analyses with relatively small differences (biological
+replicates, male/female comparisons, etc.)
+in which case a lower value such as 1.0 may improve reconstruction quality.
+(default 5.0).}
 
 \item{max.epochs}{Maximum number of epochs (complete passes through the
 data). (default 5)}

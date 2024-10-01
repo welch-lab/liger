@@ -59,9 +59,9 @@
 #' on HDF5 based dataset. Default \code{1000}
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
-#' @param mito,ribo,hemo [Deprecated] Now will always compute the percentages
-#' of mitochondrial, ribosomal and hemoglobin gene counts. These arguments will
-#' be ignored.
+#' @param mito,ribo,hemo `r lifecycle::badge("deprecated")` Now will always
+#' compute the percentages of mitochondrial, ribosomal and hemoglobin gene
+#' counts. These arguments will be ignored.
 #' @return Updated \code{object} with the \code{cellMeta(object)} updated as
 #' intended by users. See Details for more information.
 #' @export

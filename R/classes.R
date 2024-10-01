@@ -177,7 +177,7 @@ setValidity("ligerDataset", .valid.ligerDataset)
 #' @slot W iNMF output matrix of shared gene loadings for each factor. See
 #' \code{\link{runIntegration}}.
 #' @slot H.norm Matrix of aligned factor loading for each cell. See
-#' \code{\link{quantileNorm}} and \code{\link{runIntegration}}.
+#' \code{\link{alignFactors}} and \code{\link{runIntegration}}.
 #' @slot commands List of \linkS4class{ligerCommand} objects. Record of
 #' analysis. Use \code{commands} to retrieve information. See detailed section
 #' accordingly.

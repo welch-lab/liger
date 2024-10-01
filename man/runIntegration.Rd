@@ -76,8 +76,8 @@ linked in Description.
 }
 \description{
 LIGER provides dataset integration methods based on iNMF (integrative
-Non-negative Matrix Factorization [1]) and its variants (online iNMF [2] and
-UINMF [3]). This function wraps \code{\link{runINMF}},
+Non-negative Matrix Factorization [1]) and its variants (online iNMF [2]
+and UINMF [3]). This function wraps \code{\link{runINMF}},
 \code{\link{runOnlineINMF}} and \code{\link{runUINMF}}, of which the help
 pages have more detailed description.
 }
@@ -91,11 +91,11 @@ if (requireNamespace("RcppPlanc", quietly = TRUE)) {
 }
 \references{
 \enumerate{
- \item{Joshua D. Welch and et al., Single-Cell Multi-omic Integration Compares
+\item{Joshua D. Welch and et al., Single-Cell Multi-omic Integration Compares
 and Contrasts Features of Brain Cell Identity, Cell, 2019}
- \item{Chao Gao and et al., Iterative single-cell multi-omic integration using
+\item{Chao Gao and et al., Iterative single-cell multi-omic integration using
 online learning, Nat Biotechnol., 2021}
- \item{April R. Kriebel and Joshua D. Welch, UINMF performs mosaic integration
+\item{April R. Kriebel and Joshua D. Welch, UINMF performs mosaic integration
 of single-cell multi-omic datasets using nonnegative matrix factorization,
 Nat. Comm., 2022}
 }

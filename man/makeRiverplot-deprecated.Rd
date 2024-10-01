@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualization.R
 \name{makeRiverplot-deprecated}
 \alias{makeRiverplot-deprecated}
-\title{[Deprecated] Generate a river (Sankey) plot}
+\title{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} Generate a river (Sankey) plot}
 \arguments{
 \item{object}{\code{liger} object. Should run quantileAlignSNF before calling.}
 

@@ -1,14 +1,13 @@
 #' SNN Graph Based Community Detection
 #' @description
-#' After quantile normalization, users can additionally run the Leiden or
+#' After aligning cell factor loadings, users can additionally run the Leiden or
 #' Louvain algorithm for community detection, which is widely used in
 #' single-cell analysis and excels at merging small clusters into broad cell
 #' classes.
 #'
-#' While using quantile normalized factor loadings (result from
-#' \code{\link{quantileNorm}}) is recommended, this function looks for
-#' unnormalized factor loadings (result from \code{\link{runIntegration}}) when
-#' the former is not available.
+#' While using aligned factor loadings (result from \code{\link{alignFactors}})
+#' is recommended, this function looks for unaligned factor loadings (raw result
+#' from \code{\link{runIntegration}}) when the former is not available.
 #' @param object A \linkS4class{liger} object. Should have valid factorization
 #' result available.
 #' @param nNeighbors Integer, the maximum number of nearest neighbors to
@@ -80,7 +79,7 @@ runCluster <- function(object,
     Hsearch <- searchH(object, useRaw)
     H <- Hsearch$H
     useRaw <- Hsearch$useRaw
-    type <- ifelse(useRaw, "unnormalized", "quantile normalized")
+    type <- ifelse(useRaw, "unaligned", "aligned")
 
     if (!is.null(useDims))
         H <- H[, useDims, drop = FALSE]
@@ -148,7 +147,7 @@ runCluster <- function(object,
     return(object)
 }
 
-#' [Deprecated] Louvain algorithm for community detection
+#' `r lifecycle::badge("superseded")` Louvain algorithm for community detection
 #' @description
 #' After quantile normalization, users can additionally run the Louvain
 #' algorithm for community detection, which is widely used in single-cell
@@ -362,7 +361,8 @@ mapCellMeta <- function(object, from, newTo = NULL, ...) {
 #' calculation. Default \code{NULL} uses all datasets.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
-#' @param classes.compare [Deprecated/Renamed]. Use \code{trueCluster} instead.
+#' @param classes.compare `r lifecycle::badge("superseded")` Use
+#' \code{trueCluster} instead.
 #' @return A numeric scalar, the purity of the clustering result indicated by
 #' \code{useCluster} compared to \code{trueCluster}.
 #' @export
@@ -451,7 +451,8 @@ calcPurity <- function(object,
 #' calculation. Default \code{NULL} uses all datasets.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
-#' @param classes.compare [Deprecated/Renamed]. Use \code{trueCluster} instead.
+#' @param classes.compare . `r lifecycle::badge("superseded")` Use
+#' \code{trueCluster} instead.
 #' @return A numeric scalar, the ARI of the clustering result indicated by
 #' \code{useCluster} compared to \code{trueCluster}.
 #' @export

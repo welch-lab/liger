@@ -130,10 +130,10 @@
 #' \code{1}.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
-#' @return A data.frame with DEG information with the following field:
-#' \enumerate{
-#'  \item{feature - Gene names}
-#'  \item{group - Test group name. Multiple tests might be present for each
+#' @return A data.frame with DEG information with the all or some of the
+#' following fields:
+#'  \item{feature}{Gene names}
+#'  \item{group}{Test group name. Multiple tests might be present for each
 #'    function call. This is the main variable to distinguish the tests. For a
 #'    pairwise test, a row with a certain group name represents the test result
 #'    between the this group against the other control group; When split by a
@@ -144,21 +144,20 @@
 #'    all other cells. When running split marker detection, the group name would
 #'    be in "split.group" format, meaning the stats is by comparing the group in
 #'    the split level against all other cells in the same split level.}
-#'  \item{logFC - Log fold change}
-#'  \item{pval - P-value}
-#'  \item{padj - Adjusted p-value}
-#'  \item{avgExpr - Mean expression in the test group indicated by the "group"
+#'  \item{logFC}{Log fold change}
+#'  \item{pval}{P-value}
+#'  \item{padj}{Adjusted p-value}
+#'  \item{avgExpr}{Mean expression in the test group indicated by the "group"
 #'    field. Only available for wilcoxon tests.}
-#'  \item{statistic - Wilcoxon rank-sum test statistic. Only available for
+#'  \item{statistic}{Wilcoxon rank-sum test statistic. Only available for
 #'    wilcoxon tests.}
-#'  \item{auc - Area under the ROC curve. Only available for wilcoxon tests.}
-#'  \item{pct_in - Percentage of cells in the test group, indicated by the
+#'  \item{auc}{Area under the ROC curve. Only available for wilcoxon tests.}
+#'  \item{pct_in}{Percentage of cells in the test group, indicated by the
 #'    "group" field, that express the feature. Only available for wilcoxon
 #'    tests.}
-#'  \item{pct_out - Percentage of cells in the control group or other cells, as
+#'  \item{pct_out}{Percentage of cells in the control group or other cells, as
 #'    explained for the "group" field, that express the feature. Only available
 #'    for wilcoxon tests.}
-#' }
 #' @rdname liger-DEG
 #' @export
 #' @examples

@@ -96,21 +96,21 @@ stored. Default \code{"inmf"}.}
 \value{
 Updated input object
 \itemize{
- \item{liger method
- \itemize{
-     \item{Update the \code{H.norm} slot for the alignment cell factor
-         loading, ready for running graph based community detection
-         clustering or dimensionality reduction for visualization.}
-     \item{Update the \code{cellMata} slot with a cluster assignment basing
-         on cell factor loading}
- }}
- \item{Seurat method
- \itemize{
-     \item{Update the \code{reductions} slot with a new \code{DimReduc}
-         object containing the aligned cell factor loading.}
-     \item{Update the metadata with a cluster assignment basing on cell
-         factor loading}
- }}
+\item{liger method
+\itemize{
+\item{Update the \code{H.norm} slot for the alignment cell factor
+loading, ready for running graph based community detection
+clustering or dimensionality reduction for visualization.}
+\item{Update the \code{cellMata} slot with a cluster assignment basing
+on cell factor loading}
+}}
+\item{Seurat method
+\itemize{
+\item{Update the \code{reductions} slot with a new \code{DimReduc}
+object containing the aligned cell factor loading.}
+\item{Update the metadata with a cluster assignment basing on cell
+factor loading}
+}}
 }
 }
 \description{

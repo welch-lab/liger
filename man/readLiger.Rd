@@ -36,11 +36,14 @@ New version of \linkS4class{liger} object
 }
 \description{
 This file reads a liger object stored in RDS files under all kinds of types.
-1. A \linkS4class{liger} object with in-memory data created from package
-version since 1.99. 2. A liger object with on-disk H5 data associated, where
-the link to H5 files will be automatically restored. 3. A liger object
-created with older package version, and can be updated to the latest data
-structure by default.
+\enumerate{
+\item A \linkS4class{liger} object with in-memory data created from package
+version since 1.99.
+\item A liger object with on-disk H5 data associated, where the link to H5 files
+will be automatically restored.
+\item A liger object created with older package version, and can be updated to
+the latest data structure by default.
+}
 }
 \examples{
 # Save and read regular current-version liger object

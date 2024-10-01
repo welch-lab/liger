@@ -258,6 +258,7 @@ runGOEnrich <- function(
 #' @return A ggplot object if only one group or a list of ggplot objects.
 #' @export
 #' @examples
+#' \donttest{
 #' defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
 #' # Test the DEG between "stim" and "ctrl", within each cluster
 #' result <- runPairwiseDEG(
@@ -269,7 +270,6 @@ runGOEnrich <- function(
 #' )
 #' # Setting `significant = FALSE` because it's hard for a gene list obtained
 #' # from small test dataset to represent real-life biology.
-#' \donttest{
 #' if (requireNamespace("gprofiler2", quietly = TRUE)) {
 #'     go <- runGOEnrich(result, group = "0.stim", significant = FALSE)
 #'     # The toy example won't have significant result.
@@ -317,11 +317,11 @@ plotGODot <- function(
             next
         }
         g <- resdf %>%
-            dplyr::select(
-                .data[['term_name']],
-                .data[['p_value']],
-                .data[['intersection_size']]
-            ) %>%
+            dplyr::select(dplyr::all_of(c(
+                'term_name',
+                'p_value',
+                'intersection_size'
+            ))) %>%
             dplyr::arrange(.data[['p_value']]) %>%
             dplyr::slice_head(n = n) %>%
             dplyr::mutate(

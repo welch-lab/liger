@@ -24,6 +24,7 @@ ggplot
 Create volcano plot with EnhancedVolcano
 }
 \examples{
+\donttest{
 if (requireNamespace("EnhancedVolcano", quietly = TRUE)) {
     defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
     # Test the DEG between "stim" and "ctrl", within each cluster
@@ -35,5 +36,6 @@ if (requireNamespace("EnhancedVolcano", quietly = TRUE)) {
         splitBy = "defaultCluster"
     )
     plotEnhancedVolcano(result, "0.stim")
+}
 }
 }

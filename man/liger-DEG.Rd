@@ -99,35 +99,34 @@ cells, while \code{"datasets"} run within each cluster and compare each
 dataset against all other datasets.}
 }
 \value{
-A data.frame with DEG information with the following field:
-\enumerate{
- \item{feature - Gene names}
- \item{group - Test group name. Multiple tests might be present for each
-   function call. This is the main variable to distinguish the tests. For a
-   pairwise test, a row with a certain group name represents the test result
-   between the this group against the other control group; When split by a
-   variable, it would be presented in "split.group" format, meaning the stats
-   is by comparing the group in the split level against the control group in
-   the same split level. When running marker detection without splitting,
-   a row with group "a" represents the stats of the gene in group "a" against
-   all other cells. When running split marker detection, the group name would
-   be in "split.group" format, meaning the stats is by comparing the group in
-   the split level against all other cells in the same split level.}
- \item{logFC - Log fold change}
- \item{pval - P-value}
- \item{padj - Adjusted p-value}
- \item{avgExpr - Mean expression in the test group indicated by the "group"
-   field. Only available for wilcoxon tests.}
- \item{statistic - Wilcoxon rank-sum test statistic. Only available for
-   wilcoxon tests.}
- \item{auc - Area under the ROC curve. Only available for wilcoxon tests.}
- \item{pct_in - Percentage of cells in the test group, indicated by the
-   "group" field, that express the feature. Only available for wilcoxon
-   tests.}
- \item{pct_out - Percentage of cells in the control group or other cells, as
-   explained for the "group" field, that express the feature. Only available
-   for wilcoxon tests.}
-}
+A data.frame with DEG information with the all or some of the
+following fields:
+\item{feature}{Gene names}
+\item{group}{Test group name. Multiple tests might be present for each
+function call. This is the main variable to distinguish the tests. For a
+pairwise test, a row with a certain group name represents the test result
+between the this group against the other control group; When split by a
+variable, it would be presented in "split.group" format, meaning the stats
+is by comparing the group in the split level against the control group in
+the same split level. When running marker detection without splitting,
+a row with group "a" represents the stats of the gene in group "a" against
+all other cells. When running split marker detection, the group name would
+be in "split.group" format, meaning the stats is by comparing the group in
+the split level against all other cells in the same split level.}
+\item{logFC}{Log fold change}
+\item{pval}{P-value}
+\item{padj}{Adjusted p-value}
+\item{avgExpr}{Mean expression in the test group indicated by the "group"
+field. Only available for wilcoxon tests.}
+\item{statistic}{Wilcoxon rank-sum test statistic. Only available for
+wilcoxon tests.}
+\item{auc}{Area under the ROC curve. Only available for wilcoxon tests.}
+\item{pct_in}{Percentage of cells in the test group, indicated by the
+"group" field, that express the feature. Only available for wilcoxon
+tests.}
+\item{pct_out}{Percentage of cells in the control group or other cells, as
+explained for the "group" field, that express the feature. Only available
+for wilcoxon tests.}
 }
 \description{
 Two methods are supported: \code{"pseudoBulk"} and
@@ -142,14 +141,14 @@ While using pseudo-bulk method, it is generally recommended that you have
 these variables available in your object:
 
 \enumerate{
-  \item{The cell type or cluster labeling. This can be obtained from prior
-  study or computed with \code{\link{runCluster}}}
-  \item{The biological replicate labeling, most of the time the
-  \code{"dataset"} variable automatically generated when the
-  \linkS4class{liger} object is created. Users may use other variables if
-  a "dataset" is merged from multiple replicates.}
-  \item{The condition labeling that reflects the study design, such as the
-  treatment or disease status for each sample/dataset.}
+\item{The cell type or cluster labeling. This can be obtained from prior
+study or computed with \code{\link{runCluster}}}
+\item{The biological replicate labeling, most of the time the
+\code{"dataset"} variable automatically generated when the
+\linkS4class{liger} object is created. Users may use other variables if
+a "dataset" is merged from multiple replicates.}
+\item{The condition labeling that reflects the study design, such as the
+treatment or disease status for each sample/dataset.}
 }
 
 Please see below for detailed scenarios.

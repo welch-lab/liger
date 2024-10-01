@@ -23,7 +23,7 @@ calcAlignment(
 )
 }
 \arguments{
-\item{object}{A \linkS4class{liger} object, with \code{\link{quantileNorm}}
+\item{object}{A \linkS4class{liger} object, with \code{\link{alignFactors}}
 already run.}
 
 \item{clustersUse}{The clusters to consider for calculating the alignment.
@@ -46,10 +46,10 @@ On which level should the mean alignment be calculated. Default \code{"all"}.}
 
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
 
-\item{k, rand.seed, cells.use, cells.comp, clusters.use}{[Deprecated] Please
-see Usage for replacement.}
+\item{k, rand.seed, cells.use, cells.comp, clusters.use}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Please see Usage for replacement.}
 
-\item{by.cell, by.dataset}{[Defunct] Use \code{resultBy} instead.}
+\item{by.cell, by.dataset}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Use
+\code{resultBy} instead.}
 }
 \value{
 The alignment metric.
@@ -94,7 +94,7 @@ if (requireNamespace("RcppPlanc", quietly = TRUE)) {
     selectGenes \%>\%
     scaleNotCenter \%>\%
     runINMF \%>\%
-    quantileNorm
+    alignFactors
     calcAlignment(pbmc)
 }
 }

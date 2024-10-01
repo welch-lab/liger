@@ -103,30 +103,31 @@ feature key. Default \code{"cinmf"}.}
 }
 \value{
 \itemize{
- \item{liger method - Returns updated input \linkS4class{liger} object
- \itemize{
-     \item{A list of all \eqn{H} matrices can be accessed with
-         \code{getMatrix(object, "H")}}
-     \item{A list of all \eqn{V} matrices can be accessed with
-         \code{getMatrix(object, "V")}}
-     \item{The \eqn{W} matrix can be accessed with
-         \code{getMatrix(object, "W")}}
- }}
- \item{Seurat method - Returns updated input Seurat object
- \itemize{
-     \item{\eqn{H} matrices for all datasets will be concatenated and
-         transposed (all cells by k), and form a DimReduc object in the
-         \code{reductions} slot named by argument \code{reduction}.}
-     \item{\eqn{W} matrix will be presented as \code{feature.loadings} in the
-         same DimReduc object.}
-     \item{\eqn{V} matrices, an objective error value and the dataset
-         variable used for the factorization is currently stored in
-         \code{misc} slot of the same DimReduc object.}
- }}
+\item{liger method - Returns updated input \linkS4class{liger} object
+\itemize{
+\item{A list of all \eqn{H} matrices can be accessed with
+\code{getMatrix(object, "H")}}
+\item{A list of all \eqn{V} matrices can be accessed with
+\code{getMatrix(object, "V")}}
+\item{The \eqn{W} matrix can be accessed with
+\code{getMatrix(object, "W")}}
+}}
+\item{Seurat method - Returns updated input Seurat object
+\itemize{
+\item{\eqn{H} matrices for all datasets will be concatenated and
+transposed (all cells by k), and form a DimReduc object in the
+\code{reductions} slot named by argument \code{reduction}.}
+\item{\eqn{W} matrix will be presented as \code{feature.loadings} in the
+same DimReduc object.}
+\item{\eqn{V} matrices, an objective error value and the dataset
+variable used for the factorization is currently stored in
+\code{misc} slot of the same DimReduc object.}
+}}
 }
 }
 \description{
-\bold{NOT STABLE} - This is an experimental function and is subject to change.
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} This is an experimental function and is
+subject to change.
 
 Performs consensus integrative non-negative matrix factorization (c-iNMF)
 to return factorized \eqn{H}, \eqn{W}, and \eqn{V} matrices. In order to

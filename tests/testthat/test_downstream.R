@@ -72,18 +72,18 @@ test_that("clustering", {
 
     pbmc <- runOnlineINMF(pbmc, k = 20, minibatchSize = 100)
     expect_message(runCluster(pbmc, nRandomStarts = 1),
-                   "leiden clustering on unnormalized")
+                   "leiden clustering on unaligned")
 
     expect_message(runCluster(pbmc, nRandomStarts = 1, method = "louvain"),
-                   "louvain clustering on unnormalized")
+                   "louvain clustering on unaligned")
 
     pbmc <- quantileNorm(pbmc)
     expect_message(pbmc <- runCluster(pbmc, nRandomStarts = 1, saveSNN = TRUE),
-                   "leiden clustering on quantile normalized")
+                   "leiden clustering on aligned")
     expect_is(defaultCluster(pbmc, droplevels = TRUE), "factor")
     expect_is(pbmc@uns$snn, "dgCMatrix")
     expect_message(pbmc <- runCluster(pbmc, nRandomStarts = 1, method = "louvain"),
-                   "louvain clustering on quantile normalized")
+                   "louvain clustering on aligned")
     expect_message(defaultCluster(pbmc, name = "louvain_cluster") <- "louvain_cluster",
                    "Cannot have")
     expect_error(defaultCluster(pbmc) <- "notexist", "Selected variable does not exist")
@@ -148,10 +148,10 @@ test_that("dimensionality reduction", {
     skip_if_not_installed("RcppPlanc")
     pbmc <- process(pbmc)
     expect_message(runUMAP(pbmc, useRaw = TRUE),
-                   "Generating UMAP on unnormalized")
+                   "Generating UMAP on unaligned")
     expect_error(dimRed(pbmc), "available in this")
     expect_message(pbmc <- runUMAP(pbmc, useRaw = FALSE),
-                   "Generating UMAP on quantile normalized")
+                   "Generating UMAP on aligned")
     pbmc@uns$defaultDimRed <- NULL
     expect_message(dimRed(pbmc), "No default")
     defaultDimRed(pbmc) <- "UMAP"
@@ -166,9 +166,9 @@ test_that("dimensionality reduction", {
     expect_no_error(dimRed(pbmc, 2) <- NULL)
 
     expect_message(runTSNE(pbmc, useRaw = TRUE),
-                   "Generating TSNE \\(Rtsne\\) on unnormalized")
+                   "Generating TSNE \\(Rtsne\\) on unaligned")
     expect_message(pbmc <- runTSNE(pbmc, useRaw = FALSE),
-                   "Generating TSNE \\(Rtsne\\) on quantile normalized")
+                   "Generating TSNE \\(Rtsne\\) on aligned")
     expect_equal(dim(dimRed(pbmc, "TSNE")), c(ncol(pbmc), 2))
 
     expect_error(runTSNE(pbmc, method = "fft"),

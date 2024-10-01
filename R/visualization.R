@@ -901,6 +901,7 @@ plotVolcano <- function(
 #' @returns ggplot
 #' @export
 #' @examples
+#' \donttest{
 #' if (requireNamespace("EnhancedVolcano", quietly = TRUE)) {
 #'     defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
 #'     # Test the DEG between "stim" and "ctrl", within each cluster
@@ -912,6 +913,7 @@ plotVolcano <- function(
 #'         splitBy = "defaultCluster"
 #'     )
 #'     plotEnhancedVolcano(result, "0.stim")
+#' }
 #' }
 plotEnhancedVolcano <- function(
         result,
@@ -1428,7 +1430,7 @@ plotSankey <- function(
     graphics::mtext(titles[3], side = 3, adj = 0.95, cex = titleCex, font = 2)
 }
 
-#' [Deprecated] Generate a river (Sankey) plot
+#' `r lifecycle::badge("deprecated")` Generate a river (Sankey) plot
 #' @description
 #' Creates a riverplot to show how separate cluster assignments from two
 #' datasets map onto a joint clustering. The joint clustering is by default the

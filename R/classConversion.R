@@ -256,14 +256,15 @@ as.ligerDataset.SingleCellExperiment <- function(
 #' default cluster labeling to set the Idents. Default \code{FALSE}.
 #' @param merge Logical, whether to merge layers of different datasets into one.
 #' Not recommended. Default \code{FALSE}.
-#' @param by.dataset [Deprecated]. Use \code{identByDataset} instead.
-#' @param nms [Defunct] Will be ignored because new object structure does not
-#' have related problem.
-#' @param renormalize [Defunct] Will be ignored because since Seurat V5, layers
-#' of data can exist at the same time and it is better to left it for users to
-#' do it by themselves.
-#' @param use.liger.genes [Defunct] Will be ignored and will always set LIGER
-#' variable features to the place.
+#' @param by.dataset `r lifecycle::badge("superseded")`. Use
+#' \code{identByDataset} instead.
+#' @param nms `r lifecycle::badge("defunct")` Will be ignored because new object
+#' structure does not have related problem.
+#' @param renormalize `r lifecycle::badge("defunct")` Will be ignored because
+#' since Seurat V5, layers of data can exist at the same time and it is better
+#' to left it for users to do it by themselves.
+#' @param use.liger.genes `r lifecycle::badge("defunct")` Will be ignored and
+#' will always set LIGER variable features to the place.
 #' @export
 #' @rdname ligerToSeurat
 #' @return Always returns Seurat object(s) of the latest version. By default a

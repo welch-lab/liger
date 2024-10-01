@@ -645,7 +645,7 @@ searchH <- function(object, useRaw = NULL) {
             if (is.null(Ht)) {
                 cli::cli_abort(
                     "No cell factor loading available.
-                    Please run {.fn runIntegration} and {.fn quantileNorm} first."
+                    Please run {.fn runIntegration} and {.fn alignFactors} first."
                 )
             } else {
                 useRaw <- TRUE
@@ -669,8 +669,8 @@ searchH <- function(object, useRaw = NULL) {
             H <- getMatrix(object, "H.norm")
             if (is.null(H)) {
                 cli::cli_abort(
-                    "Quantile-normalized cell factor loading requested but
-                    not found. Please run {.fn quantileNorm} after
+                    "Aligned cell factor loading requested but
+                    not found. Please run {.fn alignFactors} after
                     {.fn runIntegration}."
                 )
             }

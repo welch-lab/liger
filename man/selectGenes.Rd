@@ -113,14 +113,14 @@ annotation. Default \code{"orig.ident"}.}
 \value{
 Updated object
 \itemize{
- \item{liger method - Each involved dataset stored in
- \linkS4class{ligerDataset} is updated with its \code{\link{featureMeta}}
- slot and \code{varUnsharedFeatures} slot (if requested with
- \code{useUnsharedDatasets}), while \code{\link{varFeatures}(object)} will be
- updated with the final combined gene set.}
- \item{Seurat method - Final selection will be updated at
- \code{Seurat::VariableFeatures(object)}. Per-dataset information is
- stored in the \code{meta.features} slot of the chosen Assay.}
+\item{liger method - Each involved dataset stored in
+\linkS4class{ligerDataset} is updated with its \code{\link{featureMeta}}
+slot and \code{varUnsharedFeatures} slot (if requested with
+\code{useUnsharedDatasets}), while \code{\link{varFeatures}(object)} will be
+updated with the final combined gene set.}
+\item{Seurat method - Final selection will be updated at
+\code{Seurat::VariableFeatures(object)}. Per-dataset information is
+stored in the \code{meta.features} slot of the chosen Assay.}
 }
 }
 \description{

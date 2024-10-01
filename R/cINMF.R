@@ -1,6 +1,7 @@
 #' Perform consensus iNMF on scaled datasets
 #' @description
-#' \bold{NOT STABLE} - This is an experimental function and is subject to change.
+#' `r lifecycle::badge("experimental")` This is an experimental function and is
+#' subject to change.
 #'
 #' Performs consensus integrative non-negative matrix factorization (c-iNMF)
 #' to return factorized \eqn{H}, \eqn{W}, and \eqn{V} matrices. In order to

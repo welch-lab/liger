@@ -30,7 +30,7 @@ runTSNE(
 \item{object}{\linkS4class{liger} object with factorization results.}
 
 \item{useRaw}{Whether to use un-aligned cell factor loadings (\eqn{H}
-matrices). Default \code{NULL} search for quantile-normalized loadings first
+matrices). Default \code{NULL} search for aligned factor loadings first
 and un-aligned loadings then.}
 
 \item{useDims}{Index of factors to use for computing the embedding. Default
@@ -73,8 +73,8 @@ The \code{object} where a \code{"TSNE"} variable is updated in the
 \code{cellMeta} slot with the whole 2D embedding matrix.
 }
 \description{
-Runs t-SNE on the quantile normalized cell factors (result from
-\code{\link{quantileNorm}}), or unnormalized cell factors (result from
+Runs t-SNE on the aligned cell factors (result from
+\code{\link{alignFactors}}), or unaligned cell factors (result from
 \code{\link{runIntegration}})) to generate a 2D embedding for visualization.
 By default \code{\link[Rtsne]{Rtsne}} (Barnes-Hut implementation of t-SNE)
 method is invoked, while alternative "fftRtsne" method (FFT-accelerated

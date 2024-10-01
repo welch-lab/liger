@@ -49,10 +49,10 @@ read10XATAC(
 )
 }
 \arguments{
-\item{path}{[A.] A Directory containing the matrix.mtx, genes.tsv (or
+\item{path}{(A.) A Directory containing the matrix.mtx, genes.tsv (or
 features.tsv), and barcodes.tsv files provided by 10X. A vector, a named
 vector, a list or a named list can be given in order to load several data
-directories. [B.] The 10X root directory where subdirectories of per-sample
+directories. (B.) The 10X root directory where subdirectories of per-sample
 output folders can be found. Sample names will by default take the name of
 the vector, list or subfolders.}
 
@@ -106,17 +106,17 @@ show available options if argument specification cannot be found.}
 }
 \value{
 \itemize{
- \item{When only one sample is given or detected, and only one feature type
- is detected or using CellRanger < 3.0, and \code{returnList = FALSE}, a
- sparse matrix object (dgCMatrix class) will be returned.}
- \item{When using \code{read10XRNA} or \code{read10XATAC}, which are modality
- specific, returns a list named by samples, and each element is the
- corresponding sparse matrix object (dgCMatrix class).}
- \item{\code{read10X} generally returns a list named by samples. Each sample
- element will be another list named by feature types even if only one feature
- type is detected (or using CellRanger < 3.0) for data structure consistency.
- The feature type "Gene Expression" always comes as the first type if
- available.}
+\item{When only one sample is given or detected, and only one feature type
+is detected or using CellRanger < 3.0, and \code{returnList = FALSE}, a
+sparse matrix object (dgCMatrix class) will be returned.}
+\item{When using \code{read10XRNA} or \code{read10XATAC}, which are modality
+specific, returns a list named by samples, and each element is the
+corresponding sparse matrix object (dgCMatrix class).}
+\item{\code{read10X} generally returns a list named by samples. Each sample
+element will be another list named by feature types even if only one feature
+type is detected (or using CellRanger < 3.0) for data structure consistency.
+The feature type "Gene Expression" always comes as the first type if
+available.}
 }
 }
 \description{

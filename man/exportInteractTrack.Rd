@@ -43,7 +43,7 @@ if (requireNamespace("RcppPlanc", quietly = TRUE) &&
     requireNamespace("IRanges", quietly = TRUE) &&
     requireNamespace("psych", quietly = TRUE)) {
     bmmc <- runINMF(bmmc)
-    bmmc <- quantileNorm(bmmc)
+    bmmc <- alignFactors(bmmc)
     bmmc <- normalizePeak(bmmc)
     bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
     corr <- linkGenesAndPeaks(

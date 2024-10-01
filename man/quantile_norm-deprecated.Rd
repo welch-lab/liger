@@ -2,7 +2,7 @@
 % Please edit documentation in R/integration.R
 \name{quantile_norm-deprecated}
 \alias{quantile_norm-deprecated}
-\title{[Deprecated] Quantile align (normalize) factor loading}
+\title{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Quantile align (normalize) factor loading}
 \arguments{
 \item{object}{\code{liger} object. Should run optimizeALS before calling.}
 
@@ -23,7 +23,7 @@ Lower values give more accurate nearest neighbor graphs but take much longer
 to computer.}
 
 \item{dims.use}{Indices of factors to use for shared nearest factor
-determination (default 1:ncol(H[[1]])).}
+determination (default \code{1:ncol(H[[1]])}).}
 
 \item{do.center}{Centers the data when scaling factors (useful for less
 sparse modalities like methylation data). (default FALSE)}

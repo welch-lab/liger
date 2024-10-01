@@ -19,6 +19,22 @@ arma::mat normalize_byCol_dense_rcpp(arma::mat x) {
   return x;
 }
 
+// Different from the one above, this function supports L-n normalization
+// while the one above only does sum normalization, not even necessarily L-1
+// [[Rcpp::export()]]
+arma::mat colNormalize_dense_cpp(arma::mat& x, const arma::uword L) {
+  arma::mat result(x);
+  for (int j = 0; j < x.n_cols; ++j) {
+    double norm = arma::norm(x.col(j), L);
+    if (norm == 0) {
+      continue;
+    }
+    for (int i = 0; i < x.n_rows; ++i) {
+      result(i, j) /= norm;
+    }
+  }
+  return result;
+}
 
 // ========================= Used for scaleNotCenter ===========================
 
@@ -264,6 +280,21 @@ arma::sp_mat colAggregateSums_sparse(const arma::sp_mat& x,
 //     }
 //     return out;
 // }
+
+// x: n features by n selected factors
+// group: n-selected-factor integer vector, pre-transformed to 0-base,
+// from upstream kmeans clustering.
+// [[Rcpp::export()]]
+arma::mat colAggregateMedian_dense_cpp(const arma::mat& x, const arma::uvec& group, const arma::uword n) {
+  arma::mat result(x.n_rows, n);
+  for (int i = 0; i < n; ++i) {
+    arma::uvec idx = arma::find(group == i);
+    arma::mat sub_x = x.cols(idx);
+    arma::vec median = arma::median(sub_x, 1);
+    result.col(i) = median;
+  }
+  return result;
+}
 
 // [[Rcpp::export()]]
 Rcpp::NumericVector sample_cpp(const int x, const int size) {

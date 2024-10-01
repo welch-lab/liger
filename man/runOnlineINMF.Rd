@@ -102,29 +102,29 @@ feature key. Default \code{"onlineINMF"}.}
 }
 \value{
 \itemize{
- \item{liger method - Returns updated input \linkS4class{liger} object.
- \itemize{
-     \item{A list of all \eqn{H} matrices can be accessed with
-         \code{getMatrix(object, "H")}}
-     \item{A list of all \eqn{V} matrices can be accessed with
-         \code{getMatrix(object, "V")}}
-     \item{The \eqn{W} matrix can be accessed with
-         \code{getMatrix(object, "W")}}
-     \item{Meanwhile, intermediate matrices \eqn{A} and \eqn{B} produced in
-         HALS update can also be accessed similarly.}
- }
- }
- \item{Seurat method - Returns updated input Seurat object.
- \itemize{
-     \item{\eqn{H} matrices for all datasets will be concatenated and
-         transposed (all cells by k), and form a DimReduc object in the
-         \code{reductions} slot named by argument \code{reduction}.}
-     \item{\eqn{W} matrix will be presented as \code{feature.loadings} in the
-         same DimReduc object.}
-     \item{\eqn{V} matrices, \eqn{A} matrices, \eqn{B} matricesm an objective
-         error value and the dataset variable used for the factorization is
-         currently stored in \code{misc} slot of the same DimReduc object.}
- }}
+\item{liger method - Returns updated input \linkS4class{liger} object.
+\itemize{
+\item{A list of all \eqn{H} matrices can be accessed with
+\code{getMatrix(object, "H")}}
+\item{A list of all \eqn{V} matrices can be accessed with
+\code{getMatrix(object, "V")}}
+\item{The \eqn{W} matrix can be accessed with
+\code{getMatrix(object, "W")}}
+\item{Meanwhile, intermediate matrices \eqn{A} and \eqn{B} produced in
+HALS update can also be accessed similarly.}
+}
+}
+\item{Seurat method - Returns updated input Seurat object.
+\itemize{
+\item{\eqn{H} matrices for all datasets will be concatenated and
+transposed (all cells by k), and form a DimReduc object in the
+\code{reductions} slot named by argument \code{reduction}.}
+\item{\eqn{W} matrix will be presented as \code{feature.loadings} in the
+same DimReduc object.}
+\item{\eqn{V} matrices, \eqn{A} matrices, \eqn{B} matricesm an objective
+error value and the dataset variable used for the factorization is
+currently stored in \code{misc} slot of the same DimReduc object.}
+}}
 }
 }
 \description{
@@ -137,9 +137,9 @@ represent multiple single-cell datasets in terms of \eqn{H}, \eqn{W}, and
 \code{k}. The function allows online learning in 3 scenarios:
 
 \enumerate{
- \item Fully observed datasets;
- \item Iterative refinement using continually arriving datasets;
- \item Projection of new datasets without updating the existing factorization
+\item Fully observed datasets;
+\item Iterative refinement using continually arriving datasets;
+\item Projection of new datasets without updating the existing factorization
 }
 
 All three scenarios require fixed memory independent of the number of cells.
@@ -159,14 +159,14 @@ Under the circumstance where users need customized information for existing
 factorization, arguments \code{WInit}, \code{VInit}, \code{AInit} and
 \code{BInit} are exposed. The requirements for these argument follows:
 \itemize{
- \item{WInit - A matrix object of size \eqn{m \times k}. (see
-     \code{\link{runINMF}} for notation)}
- \item{VInit - A list object of matrices each of size \eqn{m \times k}.
-     Number of matrices should match with \code{newDatasets}.}
- \item{AInit - A list object of matrices each of size \eqn{k \times k}.
-     Number of matrices should match with \code{newDatasets}.}
- \item{BInit - A list object of matrices each of size \eqn{m \times k}.
-     Number of matrices should match with \code{newDatasets}.}
+\item{WInit - A matrix object of size \eqn{m \times k}. (see
+\code{\link{runINMF}} for notation)}
+\item{VInit - A list object of matrices each of size \eqn{m \times k}.
+Number of matrices should match with \code{newDatasets}.}
+\item{AInit - A list object of matrices each of size \eqn{k \times k}.
+Number of matrices should match with \code{newDatasets}.}
+\item{BInit - A list object of matrices each of size \eqn{m \times k}.
+Number of matrices should match with \code{newDatasets}.}
 }
 
 Minibatch iterations is performed on small subset of cells. The exact
