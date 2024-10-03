@@ -371,7 +371,8 @@ plotBarcodeRank <- function(
 #' plot.
 #'
 #' Having package "ggrepel" installed can help adding tidier percentage
-#' annotation on the pie chart.
+#' annotation on the pie chart. Run \code{options(ggrepel.max.overlaps = n)}
+#' before plotting to set allowed label overlaps.
 #' @param object A \linkS4class{liger} object.
 #' @param class1,class2 Each should be a single name of a categorical variable
 #' available in \code{cellMeta} slot. Number of cells in each categories in
@@ -380,8 +381,9 @@ plotBarcodeRank <- function(
 #' "dataset"}.
 #' @param method For bar plot, choose whether to draw \code{"stack"} or
 #' \code{"group"} bar plot. Default \code{"stack"}.
-#' @param showLegend,panelBorder,... ggplot theme setting arguments passed to
-#' \code{\link{.ggplotLigerTheme}}.
+#' @param showLegend Whether to show the legend. Default \code{TRUE}.
+#' @param panelBorder Whether to show rectangle border of the panel instead of
+#' using ggplot classic bottom and left axis lines. Default \code{FALSE}.
 #' @param inclRev Logical, for barplot, whether to reverse the specification for
 #' \code{class1} and \code{class2} and produce two plots. Default \code{FALSE}.
 #' @param combinePlot Logical, whether to combine the two plots with
@@ -391,7 +393,8 @@ plotBarcodeRank <- function(
 #' while \code{class2} is hardcoded with \code{"dataset"}.
 #' @param labelSize,labelColor Settings on pie chart percentage label. Default
 #' \code{4} and \code{"white"}.
-#' @param return.plot \bold{defuncted}.
+#' @inheritDotParams .ggplotLigerTheme title subtitle xlab ylab legendFillTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize panelBorder legendNRow legendNCol colorLabels colorValues colorPalette colorDirection naColor colorLow colorMid colorHigh colorMidPoint plotly
+#' @param return.plot `r lifecycle::badge("defunct")`
 #' @return ggplot or list of ggplot
 #' @rdname plotProportion
 #' @export
@@ -537,7 +540,7 @@ plotProportionPie <- function(
         class1 = NULL,
         class2 = "dataset",
         labelSize = 4,
-        labelColor = "white",
+        labelColor = "black",
         circleColors = NULL,
         ...
 ) {
@@ -589,8 +592,8 @@ plotProportionPie <- function(
         )
     } else {
         p <- p + ggrepel::geom_text_repel(
-            size = labelSize, color = labelColor, force = 0.001, max.overlaps = 4,
-            position = ggplot2::position_nudge(y = 0.25)
+            size = labelSize, color = labelColor, force = 1,
+            nudge_y = 0.25, bg.colour = "white"
         )
     }
     .ggplotLigerTheme(p, ...) +
@@ -824,25 +827,29 @@ plotVolcano <- function(
               i = "Available ones: {.val {unique(result$group)}}")
         )
     }
-    result <- result[result$group == group, ]
-    result <- result[order(abs(result$logFC), decreasing = TRUE), ]
-    rownames(result) <- result$Gene
-    # Prepare for coloring that shows the filtering
-    result$Significance <- "Not significant"
-    result$Significance[abs(result$logFC) > logFCThresh] <- "logFC"
-    result$Significance[result$padj < padjThresh] <- "padj"
-    result$Significance[abs(result$logFC) > logFCThresh &
-                            result$padj < padjThresh] <- "padj & logFC"
-    result$Significance <- factor(result$Significance,
-                                  levels = c("Not significant",
-                                             "logFC", "padj", "padj & logFC"))
-    result$padj[result$padj == 0] <- min(result$padj[result$padj > 0]) / 10
-    result$padj <- -log10(result$padj)
-    # Prepare for Top result text labeling
+    minPosPadj <- min(result$padj[result$padj > 0], na.rm = TRUE) / 10
+    result <- result %>%
+        dplyr::filter(.data[['group']] == group, !is.na(.data[['padj']])) %>%
+        dplyr::mutate(Significance = dplyr::case_when(
+            abs(.data[['logFC']]) > logFCThresh &
+                .data[['padj']] < padjThresh ~ "padj & logFC",
+            abs(.data[['logFC']]) > logFCThresh ~ "logFC",
+            .data[['padj']] < padjThresh ~ "padj",
+            .default = "Not significant"
+        )) %>%
+        dplyr::mutate(Significance = factor(.data[["Significance"]],
+                                            levels = c("Not significant",
+                                                       "logFC", "padj", "padj & logFC"))) %>%
+        dplyr::mutate(padj = ifelse(.data[['padj']] == 0, minPosPadj, .data[['padj']])) %>%
+        dplyr::mutate(padj = -log10(.data[['padj']])) %>%
+        dplyr::arrange(dplyr::desc(.data[['padj']]),
+                       dplyr::desc(.data[['logFC']]))
+
     passIdx <- result$Significance == "padj & logFC"
+
     result$label <- NA
     if (!is.null(labelTopN) && !isFALSE(labelTopN)) {
-        labelTopN <- min(labelTopN, length(which(passIdx)))
+        labelTopN <- min(labelTopN, sum(passIdx))
         if (labelTopN > 0) {
             labelIdx <- which(passIdx)[seq(labelTopN)]
             result$label[labelIdx] <- result$feature[labelIdx]
@@ -868,7 +875,8 @@ plotVolcano <- function(
                     ylab = "-log10 Adjusted P-value",
                     colorValues = c("black", "#ef2301", "#416ae1", "#238b22"),
                     legendPosition = legendPosition,
-                    dotSize = dotSize, dotAlpha = dotAlpha, ...) +
+                    dotSize = dotSize, dotAlpha = dotAlpha,
+                    ggrepelLabelTick = TRUE, ...) +
         ggplot2::xlim(-max(abs(result$logFC)), max(abs(result$logFC))) +
         ggplot2::geom_vline(data = vlineLab,
                             mapping = ggplot2::aes(xintercept = .data[["X"]]),

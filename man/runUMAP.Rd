@@ -41,7 +41,7 @@ space. Default \code{"cosine"}, alternative options include:
 \code{"euclidean"}, \code{"manhattan"} and \code{"hamming"}.}
 
 \item{nNeighbors}{Number of neighboring points used in local approximations
-of manifold structure. Default \code{10}.}
+of manifold structure. Default \code{20}.}
 
 \item{minDist}{Numeric. Controls how tightly the embedding is allowed
 compress points together. Default \code{0.1}.}

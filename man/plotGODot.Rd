@@ -7,6 +7,7 @@
 plotGODot(
   result,
   group = NULL,
+  query = c("Up", "Down"),
   pvalThresh = 0.05,
   n = 20,
   termIDMatch = "^GO",
@@ -22,6 +23,10 @@ plotGODot(
 
 \item{group}{Character vector of group names, must be available in
 \code{names(result)}. Default \code{NULL} make plots for all groups.}
+
+\item{query}{A single string selecting from which query to show the result.
+Choose from \code{"Up"} for results using up-regulated genes, \code{"Down"}
+for down-regulated genes. Default \code{"Up"}.}
 
 \item{pvalThresh}{Numeric scalar, cutoff for p-value where smaller values are
 considered as significant. Default \code{0.05}.}
@@ -84,7 +89,7 @@ result <- runPairwiseDEG(
 # Setting `significant = FALSE` because it's hard for a gene list obtained
 # from small test dataset to represent real-life biology.
 if (requireNamespace("gprofiler2", quietly = TRUE)) {
-    go <- runGOEnrich(result, group = "0.stim", significant = FALSE)
+    go <- runGOEnrich(result, group = "0.stim", splitReg = TRUE, significant = FALSE)
     # The toy example won't have significant result.
     plotGODot(go)
 }

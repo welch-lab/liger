@@ -303,7 +303,7 @@ groupSingletons <- function(ids,
 #' pbmc <- mapCellMeta(pbmc, from = "dataset", newTo = "modal",
 #'                     ctrl = "rna", stim = "rna")
 mapCellMeta <- function(object, from, newTo = NULL, ...) {
-    object <- recordCommand(object, ...)
+    # object <- recordCommand(object, ...)
     from <- cellMeta(object, from)
     if (!is.factor(from))
         cli::cli_abort("{.var from} must be a {.cls factor}.")

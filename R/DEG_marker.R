@@ -1240,20 +1240,21 @@ plotPairwiseDEGHeatmap <- function(
         dplyr::filter(
             abs(.data[['logFC']]) >= absLFCThresh,
             .data[['padj']] <= padjThresh
-        )
-    if ("pct_in" %in% colnames(result) &&
-        "pct_out" %in% colnames(result)) {
-        result <- result %>%
-            dplyr::filter(
-                .data[['pct_in']] > pctInThresh,
-                .data[['pct_out']] < pctOutThresh
-            )
-    }
-    result <- result %>%
+        ) %>%
         dplyr::mutate(regulation = factor(
             ifelse(.data[['logFC']] > 0, "up", "down"),
             levels = c("up", "down")
-        )) %>%
+        ))
+    if ("pct_in" %in% colnames(result) &&
+        "pct_out" %in% colnames(result)) {
+        result <- result %>% filter(
+            dplyr::case_when(
+                .data[['logFC']] > 0 ~ .data[['pct_in']] > pctInThresh,
+                .data[['logFC']] < 0 ~ .data[['pct_out']] > pctOutThresh
+            )
+        )
+    }
+    result <- result %>%
         dplyr::group_by(.data[['regulation']]) %>%
         dplyr::arrange(
             .data[['padj']],

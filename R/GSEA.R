@@ -244,6 +244,9 @@ runGOEnrich <- function(
 #' @param result Returned list object from \code{\link{runGOEnrich}}.
 #' @param group Character vector of group names, must be available in
 #' \code{names(result)}. Default \code{NULL} make plots for all groups.
+#' @param query A single string selecting from which query to show the result.
+#' Choose from \code{"Up"} for results using up-regulated genes, \code{"Down"}
+#' for down-regulated genes. Default \code{"Up"}.
 #' @param pvalThresh Numeric scalar, cutoff for p-value where smaller values are
 #' considered as significant. Default \code{0.05}.
 #' @param n Number of top terms to be shown, ranked by p-value. Default
@@ -271,7 +274,7 @@ runGOEnrich <- function(
 #' # Setting `significant = FALSE` because it's hard for a gene list obtained
 #' # from small test dataset to represent real-life biology.
 #' if (requireNamespace("gprofiler2", quietly = TRUE)) {
-#'     go <- runGOEnrich(result, group = "0.stim", significant = FALSE)
+#'     go <- runGOEnrich(result, group = "0.stim", splitReg = TRUE, significant = FALSE)
 #'     # The toy example won't have significant result.
 #'     plotGODot(go)
 #' }
@@ -279,6 +282,7 @@ runGOEnrich <- function(
 plotGODot <- function(
         result,
         group = NULL,
+        query = c("Up", "Down"),
         pvalThresh = 0.05,
         n = 20,
         termIDMatch = "^GO",
@@ -295,14 +299,15 @@ plotGODot <- function(
               i = "Available one{?s} {?is/are}: {.val {names(result)}}")
         )
     }
-
+    query <- match.arg(query)
     plotList <- list()
     for (i in seq_along(group)) {
         gname <- group[i]
         resdf <- result[[gname]]$result
+        resdf <- resdf[resdf$query == query, , drop = FALSE]
         if (is.null(resdf) || nrow(resdf) == 0) {
             cli::cli_alert_warning(
-                "No significant result returned for group {.val {gname}}."
+                "No significant result returned for group {.val {gname}} and query {.val {query}}."
             )
             next
         }

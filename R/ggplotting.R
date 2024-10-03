@@ -191,6 +191,11 @@ plotDimRed <- function(
 #' Does not work when continuous coloring is specified.
 #' @param labelTextSize Numeric, controls the size of label size when
 #' \code{labelText = TRUE}. Default \code{4}.
+#' @param ggrepelLabelTick Logical, whether to force showing the tick between
+#' label texts and the position they point to. Useful when a lot of text labels
+#' are required. Default \code{FALSE}. Run
+#' \code{options(ggrepel.max.overlaps = n)} before plotting to set allowed label
+#' overlaps.
 #' @param seed Random seed for reproducibility. Default \code{1}.
 #' @param ... More theme setting arguments passed to
 #' \code{\link{.ggplotLigerTheme}}.
@@ -212,6 +217,7 @@ plotDimRed <- function(
         labelBy = colorBy,
         labelText = TRUE,
         labelTextSize = 4,
+        ggrepelLabelTick = FALSE,
         seed = 1,
         ...
 ) {
@@ -290,14 +296,28 @@ plotDimRed <- function(
                     size = labelTextSize
                 )
             } else {
-                p <- p + ggrepel::geom_text_repel(
-                    data = textData,
-                    mapping = ggplot2::aes(x = .data[["x"]],
-                                           y = .data[["y"]],
-                                           label = .data[[labelBy]]),
-                    color = "black", size = labelTextSize, inherit.aes = FALSE,
-                    bg.colour = "white", bg.r = .2
-                )
+                if (isTRUE(ggrepelLabelTick)) {
+                    p <- p + ggrepel::geom_text_repel(
+                        data = textData,
+                        mapping = ggplot2::aes(x = .data[["x"]],
+                                               y = .data[["y"]],
+                                               label = .data[[labelBy]]),
+                        color = "black", size = labelTextSize, inherit.aes = FALSE,
+                        bg.colour = "white", bg.r = .2,
+                        force = 1,
+                        min.segment.length = 0,
+                        nudge_y = 1
+                    )
+                } else {
+                    p <- p + ggrepel::geom_text_repel(
+                        data = textData,
+                        mapping = ggplot2::aes(x = .data[["x"]],
+                                               y = .data[["y"]],
+                                               label = .data[[labelBy]]),
+                        color = "black", size = labelTextSize, inherit.aes = FALSE,
+                        bg.colour = "white", bg.r = .2, hjust = 0.5, vjust = 0.5
+                    )
+                }
             }
 
             # Important to have `inherit.aes = F` above, otherwise

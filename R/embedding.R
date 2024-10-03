@@ -27,7 +27,7 @@
 #' space. Default \code{"cosine"}, alternative options include:
 #' \code{"euclidean"}, \code{"manhattan"} and \code{"hamming"}.
 #' @param nNeighbors Number of neighboring points used in local approximations
-#' of manifold structure. Default \code{10}.
+#' of manifold structure. Default \code{20}.
 #' @param minDist Numeric. Controls how tightly the embedding is allowed
 #' compress points together. Default \code{0.1}.
 #' @param dimredName Name of the variable in \code{cellMeta} slot to store the
