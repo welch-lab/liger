@@ -15,8 +15,10 @@ reference:
   - starts_with("create")
   - readLiger
   - read10X
+  - read10XFiles
   - as.ligerDataset
   - as.liger
+  - updateLigerObject
 - title: "Example Data"
 - contents:
   - importBMMC
@@ -46,7 +48,9 @@ reference:
   - runCINMF
 - subtitle: "Post-Factorization Alignment"
 - contents:
+  - alignFactors
   - quantileNorm
+  - centroidAlign
 - subtitle: "Evaluation"
 - contents:
   - calcAlignment
@@ -69,6 +73,7 @@ reference:
   - mapCellMeta
   - calcARI
   - calcPurity
+  - calcNMI
 - subtitle: "Differential Expression"
 - contents:
   - runMarkerDEG
@@ -104,6 +109,7 @@ reference:
   - subsetLigerDataset
   - convertOldLiger
   - ligerToSeurat
+  - ligerToH5AD
   - is.newLiger
   - modalOf
   - isH5Liger
