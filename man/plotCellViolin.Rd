@@ -47,8 +47,58 @@ to produce a violin plot containing only the cells in each group. Default
 many elements as multiple plots are supposed to be generated. Default
 \code{NULL}.}
 
-\item{...}{More plot setting arguments. See \code{\link{.ggCellViolin}} and
-\code{\link{.ggplotLigerTheme}}.}
+\item{...}{
+  Arguments passed on to \code{\link[=.ggCellViolin]{.ggCellViolin}}, \code{\link[=.ggplotLigerTheme]{.ggplotLigerTheme}}
+  \describe{
+    \item{\code{violin,box,dot}}{Logical, whether to add violin plot, box plot or dot
+(scatter) plot, respectively. Layers are added in the order of dot, violin,
+and violin on the top surface. By default, only violin plot is generated.}
+    \item{\code{violinAlpha,boxAlpha}}{Numeric, controls the transparency of layers.
+Default \code{0.8}, \code{0.6}, respectively.}
+    \item{\code{violinWidth,boxWidth}}{Numeric, controls the width of violin/box
+bounding box. Default \code{0.9} and \code{0.4}.}
+    \item{\code{dotColor,dotSize}}{Numeric, globally controls the appearance of all
+dots. Default \code{"black"} and \code{getOption("ligerDotSize")} (1).}
+    \item{\code{xlabAngle}}{Numeric, counter-clockwise rotation angle of X axis label
+text. Default \code{45}.}
+    \item{\code{raster}}{Logical, whether to rasterize the dot plot. Default \code{NULL}
+automatically rasterizes the dot plot when number of total cells to be
+plotted exceeds 100,000.}
+    \item{\code{seed}}{Random seed for reproducibility. Default \code{1}.}
+    \item{\code{title,subtitle,xlab,ylab}}{Main title, subtitle or X/Y axis title text.
+By default, no main title or subtitle will be set, and X/Y axis title will be
+the names of variables used for plotting. Use \code{NULL} to hide elements.
+\code{TRUE} for \code{xlab} or \code{ylab} shows default values.}
+    \item{\code{legendFillTitle}}{Legend title text for fill aesthetics, often used for
+violin, box, bar plots. Default \code{NULL} shows the original variable name.}
+    \item{\code{showLegend}}{Whether to show the legend. Default \code{TRUE}.}
+    \item{\code{legendPosition}}{Text indicating where to place the legend. Choose from
+\code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. Default
+\code{"right"}.}
+    \item{\code{baseSize}}{One-parameter control of all text sizes. Individual text
+element sizes can be controlled by other size arguments. "Title" sizes are
+2 points larger than "text" sizes when being controlled by this.}
+    \item{\code{titleSize,xTitleSize,yTitleSize,legendTitleSize}}{Size of main title,
+axis titles and legend title. Default \code{NULL} controls by
+\code{baseSize + 2}.}
+    \item{\code{subtitleSize,xTextSize,yTextSize,legendTextSize}}{Size of subtitle text,
+axis texts and legend text. Default \code{NULL} controls by \code{baseSize}.}
+    \item{\code{panelBorder}}{Whether to show rectangle border of the panel instead of
+using ggplot classic bottom and left axis lines. Default \code{FALSE}.}
+    \item{\code{colorLabels}}{Character vector for modifying category names in a
+color legend. Passed to \code{ggplot2::scale_color_manual(labels)}. Default
+\code{NULL} uses original levels of the factor.}
+    \item{\code{colorValues}}{Character vector of colors for modifying category colors
+in a color legend. Passed to \code{ggplot2::scale_color_manual(values)}.
+Default \code{NULL} uses internal selected palette when <= 26 categories are
+presented, otherwise ggplot hues.}
+    \item{\code{legendNRow,legendNCol}}{Integer, when too many categories in one
+variable, arranges number of rows or columns. Default \code{NULL},
+automatically split to \code{ceiling(levels(variable)/10)} columns.}
+    \item{\code{plotly}}{Whether to use plotly to enable web based interactive browsing
+for the plot. Requires installation of package "plotly". Default
+\code{FALSE}.}
+  }}
 }
 \value{
 A ggplot object when a single plot is intended. A list of ggplot

@@ -110,6 +110,7 @@ test_that("QC", {
     expect_equal(ncol(pbmc), 600)
 
     skip_if_not_installed("DoubletFinder")
+    skip_if_not_installed("fields")
     pbmc.df1 <- runDoubletFinder(pbmc)
     expect_is(pbmc.df1$DoubletFinder_classification, "character")
     expect_is(pbmc.df1$DoubletFinder_pANN, "numeric")

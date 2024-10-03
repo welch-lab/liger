@@ -31,11 +31,14 @@ calculation. Default \code{NULL} uses all datasets.}
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
-\item{classes.compare}{[Deprecated/Renamed]. Use \code{trueCluster} instead.}
+\item{classes.compare}{. \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Use
+\code{trueCluster} instead.}
 }
 \value{
 A numeric scalar, the ARI of the clustering result indicated by
 \code{useCluster} compared to \code{trueCluster}.
+
+A numeric scalar of the ARI value
 }
 \description{
 This function aims at calculating the adjusted Rand index for the clustering
@@ -71,6 +74,9 @@ cellMeta(pbmcPlot, "stim_true_label", useDatasets = "stim") <- stimTrueLabel
 # evaluated
 calcARI(pbmcPlot, trueCluster = "stim_true_label",
         useCluster = "leiden_cluster", useDatasets = "stim")
+
+# Comparison of the same labeling should always yield 1.
+calcARI(pbmcPlot, trueCluster = "leiden_cluster", useCluster = "leiden_cluster")
 }
 \references{
 L. Hubert and P. Arabie (1985) Comparing Partitions, Journal of

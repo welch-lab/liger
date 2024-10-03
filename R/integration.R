@@ -1,8 +1,8 @@
 #' Integrate scaled datasets with iNMF or variant methods
 #' @description
 #' LIGER provides dataset integration methods based on iNMF (integrative
-#' Non-negative Matrix Factorization [1]) and its variants (online iNMF [2] and
-#' UINMF [3]). This function wraps \code{\link{runINMF}},
+#' Non-negative Matrix Factorization \[1\]) and its variants (online iNMF \[2\]
+#' and UINMF \[3\]). This function wraps \code{\link{runINMF}},
 #' \code{\link{runOnlineINMF}} and \code{\link{runUINMF}}, of which the help
 #' pages have more detailed description.
 #' @param object A \linkS4class{liger} object or a Seurat object with
@@ -430,7 +430,7 @@ runINMF.Seurat <- function(
     return(bestResult)
 }
 
-#' [Deprecated] Perform iNMF on scaled datasets
+#' `r lifecycle::badge("deprecated")` Perform iNMF on scaled datasets
 #' @description
 #' \bold{Please turn to \code{\link{runINMF}} or \code{\link{runIntegration}}}.
 #'
@@ -941,7 +941,7 @@ runOnlineINMF.Seurat <- function(
     return(object)
 }
 
-#' [Deprecated] Perform online iNMF on scaled datasets
+#' `r lifecycle::badge("deprecated")` Perform online iNMF on scaled datasets
 #' @description
 #' \bold{Please turn to \code{\link{runOnlineINMF}} or
 #' \code{\link{runIntegration}}}.
@@ -1251,8 +1251,125 @@ runUINMF.liger <- function(
 }
 
 
+#' Align factor loadings to get final integration
+#' @description
+#' This function is a wrapper to switch between alternative factor loading
+#' alignment methods that LIGER provides, which is a required step for producing
+#' the final integrated result. Two methods are provided (click on options for
+#' more details):
+#'
+#' \itemize{
+#' \item{\code{method = "\link{quantileNorm}"}: Previously published quantile
+#' normalization method. (default)}
+#' \item{\code{method = "\link{centroidAlign}"}: Newly developed centroid
+#' alignment method. `r lifecycle::badge("experimental")`}
+#' }
+#' @export
+#' @rdname alignFactors
+#' @seealso \code{\link{quantileNorm}}, \code{\link{centroidAlign}}
+#' @param object A \linkS4class{liger} or Seurat object with valid factorization
+#' result available (i.e. \code{\link{runIntegration}} performed in advance).
+#' @param method Character, method to align factors. Default
+#' \code{"centroidAlign"}. Optionally \code{"quantileNorm"}.
+#' @param ... Additional arguments passed to selected methods.
+#' For \code{"quantileNorm"}:
+#' \describe{
+#'    \item{\code{quantiles}}{Number of quantiles to use for quantile
+#'    normalization. Default \code{50}.}
+#'    \item{\code{reference}}{Character, numeric or logical selection of one
+#'    dataset, out of all available datasets in \code{object}, to use as a
+#'    "reference" for quantile normalization. Default \code{NULL} tries to find
+#'    an RNA dataset with the largest number of cells; if no RNA dataset
+#'    available, use the globally largest dataset.}
+#'    \item{\code{minCells}}{Minimum number of cells to consider a cluster
+#'    shared across datasets. Default \code{20}.}
+#'    \item{\code{nNeighbors}}{Number of nearest neighbors for within-dataset
+#'    knn graph. Default \code{20}.}
+#'    \item{\code{useDims}}{Indices of factors to use for shared nearest factor
+#'    determination. Default \code{NULL} uses all factors.}
+#'    \item{\code{center}}{Whether to center the data when scaling factors.
+#'    Could be useful for less sparse modalities like methylation data.
+#'    Default \code{FALSE}.}
+#'    \item{\code{maxSample}}{Maximum number of cells used for quantile
+#'    normalization of each cluster and factor. Default \code{1000}.}
+#'    \item{\code{eps}}{The error bound of the nearest neighbor search. Lower
+#'    values give more accurate nearest neighbor graphs but take much longer to
+#'    compute. Default \code{0.9}.}
+#'    \item{\code{refineKNN}}{Whether to increase robustness of cluster
+#'    assignments using KNN graph. Default \code{TRUE}.}
+#'    \item{\code{clusterName}}{Variable name that will store the clustering
+#'    result in metadata of a \linkS4class{liger} object or a \code{Seurat}
+#'    object. Default \code{"quantileNorm_cluster"}.}
+#'    \item{\code{seed}}{Random seed to allow reproducible results. Default
+#'    \code{1}.}
+#'    \item{\code{verbose}}{Logical. Whether to show information of the
+#'    progress. Default \code{getOption("ligerVerbose")} or \code{TRUE} if
+#'    users have not set.}
+#' }
+#' For \code{"centroidAlign"} `r lifecycle::badge("experimental")`:
+#' \describe{
+#'    \item{\code{lambda}}{Ridge regression penalty applied to each dataset.
+#'    Can be one number that applies to all datasets, or a numeric vector with
+#'    length equal to the number of datasets. Default \code{1}.}
+#'    \item{\code{useDims}}{Indices of factors to use considered for the
+#'    alignment. Default \code{NULL} uses all factors.}
+#'    \item{\code{scaleEmb}}{Logical, whether to scale the factor loading being
+#'    considered as the embedding. Default \code{TRUE}.}
+#'    \item{\code{centerEmb}}{Logical, whether to center the factor loading
+#'    being considered as the embedding before scaling it. Default \code{TRUE}.}
+#'    \item{\code{scaleCluster}}{Logical, whether to scale the factor loading
+#'    being considered as the cluster assignment probability. Default
+#'    \code{FALSE}.}
+#'    \item{\code{centerCluster}}{Logical, whether to center the factor loading
+#'    being considered as the cluster assignment probability before scaling it.
+#'    Default \code{FALSE}.}
+#'    \item{\code{shift}}{Logical, whether to shift the factor loading being
+#'    considered as the cluster assignment probability after centered scaling.
+#'    Default \code{FALSE}.}
+#'    \item{\code{diagnosis}}{Logical, whether to return cell metadata variables
+#'    with diagnostic information. Default \code{FALSE}.}
+#'  }
+alignFactors <- function(
+        object,
+        method = c("quantileNorm", "centroidAlign"),
+        ...
+) {
+    UseMethod("alignFactors", object)
+}
 
+#' @export
+#' @rdname alignFactors
+#' @method alignFactors liger
+alignFactors.liger <- function(
+        object,
+        method = c("quantileNorm", "centroidAlign"),
+        ...
+) {
+    method <- match.arg(method)
+    if (method == "centroidAlign") {
+        object <- centroidAlign(object, ...)
+    } else if (method == "quantileNorm") {
+        object <- quantileNorm(object, ...)
+    }
+    return(object)
+}
 
+#' @export
+#' @rdname alignFactors
+#' @method alignFactors Seurat
+alignFactors.Seurat <- function(
+        object,
+        method = c("quantileNorm", "centroidAlign"),
+        ...
+) {
+    method <- match.arg(method)
+    if (method == "centroidAlign") {
+        object <- centroidAlign(object, ...)
+    } else if (method == "quantileNorm") {
+        object <- quantileNorm(object, ...)
+    }
+    return(object)
+}
 
 ########################### Quantile Normalization #############################
 
@@ -1383,6 +1500,7 @@ quantileNorm.liger <- function(
     )
     object@H.norm <- out$H.norm
     cellMeta(object, clusterName, check = FALSE) <- out$clusters
+    object@uns$alignmentMethod <- "quantileNorm"
     return(object)
 }
 
@@ -1553,7 +1671,7 @@ quantileNorm.Seurat <- function(
     return(ref)
 }
 
-#' [Deprecated] Quantile align (normalize) factor loading
+#' `r lifecycle::badge("superseded")` Quantile align (normalize) factor loading
 #' @description
 #' \bold{Please turn to \code{\link{quantileNorm}}.}
 #'
@@ -1584,7 +1702,7 @@ quantileNorm.Seurat <- function(
 #' Lower values give more accurate nearest neighbor graphs but take much longer
 #' to computer.
 #' @param dims.use Indices of factors to use for shared nearest factor
-#' determination (default 1:ncol(H[[1]])).
+#' determination (default \code{1:ncol(H[[1]])}).
 #' @param do.center Centers the data when scaling factors (useful for less
 #' sparse modalities like methylation data). (default FALSE)
 #' @param max_sample Maximum number of cells used for quantile normalization of
@@ -1633,10 +1751,6 @@ quantile_norm <- function( # nocov start
     )
 } # nocov end
 
-
-
-
-
 .same <- function(x, y) {
     if (identical(x, y)) return(x)
     else cli::cli_abort("Different features are used for each dataset.")
@@ -1644,8 +1758,271 @@ quantile_norm <- function( # nocov start
 
 
 
+########################### align centroid #############################
+
+#' `r lifecycle::badge("experimental")` Align factor loading by centroid alignment (beta)
+#' @description
+#' This process treats the factor loading of each dataset as the low dimensional
+#' embedding as well as the cluster assignment probability, i.e. the soft
+#' clustering result. Then the method aligns the embedding by linearly moving
+#' the centroids of the same cluster but within each dataset towards each other.
+#'
+#' \bold{ATTENTION: This method is still under development while has shown
+#' encouraging results in benchmarking tests. The arguments and their default
+#' values reflect the best scored parameters in the tests and some of them may
+#' be subject to change in the future.}
+#' @details
+#' Diagnostic information include:
+#'
+#' \itemize{
+#' \item{object$raw_which.max: The index of the factor with the maximum value
+#' in the raw factor loading.}
+#' \item{object$R_which.max: The index of the factor with the maximum value in
+#' the soft clustering probability matrix used for correction.}
+#' \item{object$Z_which.max: The index of the factor with the maximum value in
+#' the aligned factor loading.}
+#' }
+#'
+#' @param object A \linkS4class{liger} or Seurat object with valid factorization
+#' result available (i.e. \code{\link{runIntegration}} performed in advance).
+#' @param lambda Ridge regression penalty applied to each dataset. Can be one
+#' number that applies to all datasets, or a numeric vector with length equal to
+#' the number of datasets. Default \code{1}.
+#' @param useDims Indices of factors to use considered for the alignment.
+#' Default \code{NULL} uses all factors.
+#' @param scaleEmb Logical, whether to scale the factor loading being considered
+#' as the embedding. Default \code{TRUE}.
+#' @param centerEmb Logical, whether to center the factor loading being
+#' considered as the embedding before scaling it. Default \code{TRUE}.
+#' @param scaleCluster Logical, whether to scale the factor loading being
+#' considered as the cluster assignment probability. Default \code{FALSE}.
+#' @param centerCluster Logical, whether to center the factor loading being
+#' considered as the cluster assignment probability before scaling it. Default
+#' \code{FALSE}.
+#' @param shift Logical, whether to shift the factor loading being considered as
+#' the cluster assignment probability after centered scaling. Default
+#' \code{FALSE}.
+#' @param diagnosis Logical, whether to return cell metadata variables with
+#' diagnostic information. See Details. Default \code{FALSE}.
+#' @param ... Arguments passed to other S3 methods of this function.
+#' @return Returns the updated input object
+#' \itemize{
+#'  \item{liger method
+#'  \itemize{
+#'      \item{Update the \code{H.norm} slot for the aligned cell factor
+#'      loading, ready for running graph based community detection clustering
+#'      or dimensionality reduction for visualization.}
+#'      \item{Update the \code{cellMata} slot with diagnostic information if
+#'      \code{diagnosis = TRUE}.}
+#'  }}
+#'  \item{Seurat method
+#'  \itemize{
+#'      \item{Update the \code{reductions} slot with a new \code{DimReduc}
+#'          object containing the aligned cell factor loading.}
+#'      \item{Update the metadata with diagnostic information if
+#'      \code{diagnosis = TRUE}.}
+#'  }}
+#' }
+#' @examples
+#' pbmc <- centroidAlign(pbmcPlot)
+#' @export
+#' @rdname centroidAlign
+centroidAlign <- function(
+        object,
+        ...
+) {
+    lifecycle::signal_stage(stage = "experimental", "centroidAlign()")
+    UseMethod("centroidAlign", object)
+}
+
+#' @export
+#' @rdname centroidAlign
+#' @method centroidAlign liger
+centroidAlign.liger <- function(
+        object,
+        lambda = 1,
+        useDims = NULL,
+        scaleEmb = TRUE,
+        centerEmb = TRUE,
+        scaleCluster = FALSE,
+        centerCluster = FALSE,
+        shift = FALSE,
+        diagnosis = FALSE,
+        ...
+) {
+    .checkObjVersion(object)
+    .checkValidFactorResult(object, checkV = FALSE)
+
+    object <- recordCommand(object, ...)
+
+    if (any(modalOf(object) == "meth")) {
+        cli::cli_alert_warning(
+            "Methylation data is detected while centroid alignment method is not optimized for methylation data yet."
+        )
+        cli::cli_alert_info("It is recommended to use {.fn quantileNorm} method instead.")
+    }
+
+    lambda <- .checkArgLen(lambda, length(object), repN = TRUE, class = "numeric")
+
+    out <- .centroidAlign.Hraw(
+        object = Reduce(cbind, getMatrix(object, "H")),
+        datasetVar = object$dataset,
+        lambda = lambda,
+        useDims = useDims,
+        diagnosis = diagnosis,
+        scaleEmb = scaleEmb, centerEmb = centerEmb,
+        scaleCluster = scaleCluster, centerCluster = centerCluster,
+        shift = shift,
+        ...
+    )
+    object@H.norm <- out$aligned
+    object@uns$alignmentMethod <- "centroidAlign"
+    if ("raw_which.max" %in% names(out)) {
+        cellMeta(object, "raw_which.max", check = FALSE) <- out$raw_which.max
+    }
+    if ("Z_which.max" %in% names(out)) {
+        cellMeta(object, "Z_which.max", check = FALSE) <- out$Z_which.max
+    }
+    if ("R_which.max" %in% names(out)) {
+        cellMeta(object, "R_which.max", check = FALSE) <- out$R_which.max
+    }
+    return(object)
+}
 
 
+
+#' @export
+#' @rdname centroidAlign
+#' @method centroidAlign Seurat
+#' @param reduction Name of the reduction where LIGER integration result is
+#' stored. Default \code{"inmf"}.
+centroidAlign.Seurat <- function(
+        object,
+        reduction = "inmf",
+        lambda = 1,
+        useDims = NULL,
+        scaleEmb = TRUE,
+        centerEmb = TRUE,
+        scaleCluster = FALSE,
+        centerCluster = FALSE,
+        shift = FALSE,
+        diagnosis = FALSE,
+        ...
+) {
+    resName <- paste0(reduction, "Norm")
+    reduction <- object[[reduction]]
+    if (!inherits(reduction, "DimReduc")) {
+        cli::cli_abort("Specified {.var reduction} does not points to a {.cls DimReduc}.")
+    }
+    # Retrieve some information. Might have better ways instead of using `@`
+    ## Due to proper formatting in Seurat object, Hconcat is already cell x k
+    ## Transposed to k x N, as in liger
+    Hconcat <- t(reduction[[]])
+    datasetVar <- reduction@misc$dataset
+    assay <- reduction@assay.used
+    W <- reduction[]
+
+    lambda <- .checkArgLen(lambda, length(unique(datasetVar)), repN = TRUE, class = "numeric")
+
+    result <- .centroidAlign.Hraw(
+        object = Hconcat,
+        datasetVar = datasetVar,
+        lambda = lambda,
+        useDims = useDims,
+        scaleEmb = scaleEmb, centerEmb = centerEmb,
+        scaleCluster = scaleCluster, centerCluster = centerCluster,
+        shift = shift,
+        diagnosis = diagnosis
+    )
+
+    reddim <- Seurat::CreateDimReducObject(
+        embeddings = result$aligned, loadings = W,
+        assay = assay, key = paste0(resName, "_")
+    )
+    object[[resName]] <- reddim
+    if ("raw_which.max" %in% names(result)) {
+        object[["raw_which.max"]] <- result$raw_which.max
+    }
+    if ("Z_which.max" %in% names(result)) {
+        object[["Z_which.max"]] <- result$Z_which.max
+    }
+    if ("R_which.max" %in% names(result)) {
+        object[["R_which.max"]] <- result$R_which.max
+    }
+    return(object)
+}
+
+# object - raw H matrices concatenated, k factors by N cells
+.centroidAlign.Hraw <- function(
+        object,
+        datasetVar,
+        lambda,
+        scaleEmb = TRUE,
+        centerEmb = TRUE,
+        scaleCluster = FALSE,
+        centerCluster = FALSE,
+        useDims = NULL,
+        shift = FALSE,
+        diagnosis = FALSE
+) {
+    # Initiate output list
+    out <- list()
+
+    # transposed to N cells by k factors
+    object <- t(object)
+    useDims <- useDims %||% seq_len(ncol(object))
+    object <- object[, useDims]
+
+    if (isTRUE(diagnosis)) {
+        raw_vote <- apply(object, 1, which.max)
+        raw_vote <- factor(raw_vote)
+        names(raw_vote) <- rownames(object)
+        out$raw_which.max <- raw_vote
+    }
+
+    Z <- safe_scale(object, center = centerEmb, scale = scaleEmb)
+    # Z transposed to k factors by N cells
+    Z <- t(Z)
+    # phi - binary design matrix for dataset belonging, B datasets by N cells
+    phi <- Matrix::fac2sparse(datasetVar)
+
+    R <- safe_scale(object, center = centerCluster, scale = scaleCluster)
+    # R transposed to k clusters by N cells
+    R <- t(R)
+    if (isTRUE(shift)) {
+        R <- R - min(R)
+    }
+    if (any(R < 0)) {
+        cli::cli_abort(
+            c(x = "Negative values found prior to normalizing the cluster assignment probablity distribution",
+              i = "Can only do either {.code centerCluster = FALSE} or {.code centerCluster = TRUE, shift = TRUE}.")
+        )
+    }
+
+    R <- normalize_byCol_dense_rcpp(R)
+
+    Z_corr <- moe_correct_ridge_cpp(
+        Z_orig = Z, R = R, lambda = lambda, Phi = phi, B = nrow(phi), N = ncol(phi)
+    )
+    # Z_corr transposed back to N cells by k factors
+    Z_corr <- t(Z_corr)
+    dimnames(Z_corr) <- list(rownames(object), paste0("Factor_", seq_len(ncol(Z_corr))))
+
+    out$aligned <- Z_corr
+
+    if (isTRUE(diagnosis)) {
+        Z_cluster <- apply(Z_corr, 1, which.max)
+        Z_cluster <- factor(Z_cluster)
+        names(Z_cluster) <- colnames(Z)
+        out$Z_which.max <- Z_cluster
+        R_cluster <- apply(R, 2, which.max)
+        R_cluster <- factor(R_cluster)
+        names(R_cluster) <- colnames(R)
+        out$R_which.max <- R_cluster
+    }
+
+    return(out)
+}
 
 ################################## EVALUATION ##################################
 
@@ -1654,28 +2031,32 @@ quantile_norm <- function( # nocov start
 #' This metric quantifies how much the factorization and alignment distorts the
 #' geometry of the original datasets. The greater the agreement, the less
 #' distortion of geometry there is. This is calculated by performing
-#' dimensionality reduction on the original and quantile aligned (or just
-#' factorized) datasets, and measuring similarity between the k nearest
-#' neighbors for each cell in original and aligned datasets. The Jaccard index
-#' is used to quantify similarity, and is the final metric averages across all
-#' cells.
+#' dimensionality reduction on the original and integrated (factorized or plus
+#' aligned) datasets, and measuring similarity between the k nearest
+#' neighbors for each cell in original and integrated datasets. The Jaccard
+#' index is used to quantify similarity, and is the final metric averages across
+#' all cells.
 #'
 #' Note that for most datasets, the greater the chosen \code{nNeighbor}, the
 #' greater the agreement in general. Although agreement can theoretically
 #' approach 1, in practice it is usually no higher than 0.2-0.3.
-#' @param object \code{liger} object. Should call quantile_norm before calling.
+#' @param object \code{liger} object. Should call \code{\link{alignFactors}}
+#' before calling.
 #' @param ndims Number of factors to produce in NMF. Default \code{40}.
 #' @param nNeighbors Number of nearest neighbors to use in calculating Jaccard
 #' index. Default \code{15}.
 #' @param useRaw Whether to evaluate just factorized \eqn{H} matrices instead of
-#' using quantile aligned \eqn{H.norm} matrix. Default \code{FALSE} uses
+#' using aligned \eqn{H.norm} matrix. Default \code{FALSE} uses
 #' aligned matrix.
 #' @param byDataset Whether to return agreement calculated for each dataset
 #' instead of the average for all datasets. Default \code{FALSE}.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
-#' @param k,rand.seed,by.dataset [Deprecated] See Usage for replacement.
-#' @param use.aligned [defunct] Use \code{useRaw} instead.
-#' @param dr.method [defunct] We no longer support other methods but just NMF.
+#' @param k,rand.seed,by.dataset `r lifecycle::badge("superseded")` See Usage
+#' for replacement.
+#' @param use.aligned `r lifecycle::badge("superseded")` Use \code{useRaw}
+#' instead.
+#' @param dr.method `r lifecycle::badge("defunct")` We no longer support other
+#' methods but just NMF.
 #' @return A numeric vector of agreement metric. A single value if
 #' \code{byDataset = FALSE} or each dataset a value otherwise.
 #' @export
@@ -1686,7 +2067,7 @@ quantile_norm <- function( # nocov start
 #'     selectGenes %>%
 #'     scaleNotCenter %>%
 #'     runINMF %>%
-#'     quantileNorm
+#'     alignFactors
 #'     calcAgreement(pbmc)
 #' }
 calcAgreement <- function(
@@ -1794,7 +2175,7 @@ calcAgreement <- function(
 #' between cells specified by the two arguments. \code{cellComp} can contain
 #' cells already specified in \code{cellIdx}.}
 #' }
-#' @param object A \linkS4class{liger} object, with \code{\link{quantileNorm}}
+#' @param object A \linkS4class{liger} object, with \code{\link{alignFactors}}
 #' already run.
 #' @param clustersUse The clusters to consider for calculating the alignment.
 #' Should be a vector of existing levels in \code{clusterVar}. Default
@@ -1810,9 +2191,10 @@ calcAgreement <- function(
 #' @param resultBy Select from \code{"all"}, \code{"dataset"} or \code{"cell"}.
 #' On which level should the mean alignment be calculated. Default \code{"all"}.
 #' @param seed Random seed to allow reproducible results. Default \code{1}.
-#' @param k,rand.seed,cells.use,cells.comp,clusters.use [Deprecated] Please
-#' see Usage for replacement.
-#' @param by.cell,by.dataset [Defunct] Use \code{resultBy} instead.
+#' @param k,rand.seed,cells.use,cells.comp,clusters.use
+#' `r lifecycle::badge("superseded")` Please see Usage for replacement.
+#' @param by.cell,by.dataset `r lifecycle::badge("superseded")` Use
+#' \code{resultBy} instead.
 #' @return The alignment metric.
 #' @export
 #' @examples
@@ -1822,7 +2204,7 @@ calcAgreement <- function(
 #'     selectGenes %>%
 #'     scaleNotCenter %>%
 #'     runINMF %>%
-#'     quantileNorm
+#'     alignFactors
 #'     calcAlignment(pbmc)
 #' }
 calcAlignment <- function(
@@ -1863,14 +2245,17 @@ calcAlignment <- function(
         cellIdx <- .idxCheck(object, cellIdx, "cell")
         if (!is.null(cellComp)) {
             cellComp <- .idxCheck(object, cellComp, "cell")
-            cellIdx <- c(cellIdx, cellComp)
             datasetVar <- factor(rep.int(c("cellIdx", "cellComp"), c(length(cellIdx), length(cellComp))))
+            cellIdx <- c(cellIdx, cellComp)
             cli::cli_alert_info("Using designated sets {.var cellIdx} and {.var cellComp} as subsets to compare.")
         } else {
             datasetVar <- droplevels(object$dataset[cellIdx])
         }
     } else {
         clusterVar <- clusterVar %||% object@uns$defaultCluster
+        if (is.null(clusterVar)) {
+            cli::cli_abort("No {.field clusterVar} specified or default preset by {.fn runCluster}.")
+        }
         clusters <- .fetchCellMetaVar(object, clusterVar, checkCategorical = TRUE)
         notFound <- clustersUse[!clustersUse %in% clusters]
         if (length(notFound) > 0) {
@@ -1889,6 +2274,7 @@ calcAlignment <- function(
     set.seed(seed)
     minCells <- min(table(datasetVar))
     sampledCells <- lapply(split(cellIdx, datasetVar), sample, size = minCells)
+    sampledCells <- unlist(sampledCells)
     nSampled <- nlevels(datasetVar)*minCells
     maxNNeighbors <- nSampled - 1
     if (is.null(nNeighbors)) {
@@ -1899,9 +2285,10 @@ calcAlignment <- function(
     # RANN::nn2 always consider the query itself as the nearest nearest neighbor
     # So we have to find one more neighbor than we need and remove the first one
     knn <- RANN::nn2(
-        hnorm[unlist(sampledCells), , drop = FALSE],
+        hnorm[sampledCells, , drop = FALSE],
         k = nNeighbors + 1
     )
+    datasetVar <- datasetVar[sampledCells]
     knnIdx <- knn$nn.idx[, -1]
     kOverN <- nNeighbors/nlevels(datasetVar)
     nSameDataset <- sapply(seq_len(nSampled), function(i) {

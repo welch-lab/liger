@@ -4,7 +4,7 @@
 \alias{runPairwiseDEG}
 \alias{runMarkerDEG}
 \alias{runWilcoxon}
-\title{Find DEG between two groups}
+\title{Find DEG between groups}
 \usage{
 runPairwiseDEG(
   object,
@@ -12,11 +12,14 @@ runPairwiseDEG(
   groupCtrl,
   variable1 = NULL,
   variable2 = NULL,
-  method = c("wilcoxon", "pseudoBulk"),
+  splitBy = NULL,
+  method = c("pseudoBulk", "wilcoxon"),
   usePeak = FALSE,
-  useReplicate = NULL,
-  nPsdRep = 5,
-  minCellPerRep = 10,
+  useReplicate = "dataset",
+  nPsdRep = NULL,
+  minCellPerRep = 3,
+  printDiagnostic = FALSE,
+  chunk = NULL,
   seed = 1,
   verbose = getOption("ligerVerbose", TRUE)
 )
@@ -25,12 +28,14 @@ runMarkerDEG(
   object,
   conditionBy = NULL,
   splitBy = NULL,
-  method = c("wilcoxon", "pseudoBulk"),
+  method = c("pseudoBulk", "wilcoxon"),
   useDatasets = NULL,
   usePeak = FALSE,
-  useReplicate = NULL,
-  nPsdRep = 5,
-  minCellPerRep = 10,
+  useReplicate = "dataset",
+  nPsdRep = NULL,
+  minCellPerRep = 3,
+  printDiagnostic = FALSE,
+  chunk = NULL,
   seed = 1,
   verbose = getOption("ligerVerbose", TRUE)
 )
@@ -47,21 +52,31 @@ runWilcoxon(
 \item{groupTest, groupCtrl, variable1, variable2}{Condition specification. See
 \code{?runPairwiseDEG} section \bold{Pairwise DEG Scenarios} for detail.}
 
-\item{method}{DEG test method to use. Choose from \code{"wilcoxon"} or
-\code{"pseudoBulk"}. Default \code{"wilcoxon"}}
+\item{splitBy}{Name(s) of the variable(s) in \code{cellMeta} to split the
+comparison. See Details. Default \code{NULL}.}
+
+\item{method}{DEG test method to use. Choose from \code{"pseudoBulk"} or
+\code{"wilcoxon"}. Default \code{"pseudoBulk"}}
 
 \item{usePeak}{Logical. Whether to use peak count instead of gene count.
 Only supported when ATAC datasets are involved. Default \code{FALSE}.}
 
 \item{useReplicate}{\code{cellMeta} variable of biological replicate
-annotation. Only used with \code{method = "pseudoBulk"}. Default \code{NULL}
-will create \code{nPsdRep} pseudo replicates per group.}
+annotation. Only used with \code{method = "pseudoBulk"}. Default
+\code{"dataset"}.}
 
-\item{nPsdRep}{Number of pseudo replicates to create. Only used when
-\code{method = "pseudoBulk", useReplicate = NULL}. Default \code{5}.}
+\item{nPsdRep}{Number of pseudo-replicates to create. Only used when
+\code{method = "pseudoBulk"}. Default \code{NULL}. See Details.}
 
 \item{minCellPerRep}{Numeric, will not make pseudo-bulk for replicate with
-less than this number of cells. Default \code{10}.}
+less than this number of cells. Default \code{3}.}
+
+\item{printDiagnostic}{Logical. Whether to show more detail when
+\code{verbose = TRUE}. Default \code{FALSE}.}
+
+\item{chunk}{Number of features to process at a time during Wilcoxon test.
+Useful when memory is limited. Default \code{NULL} will process all features
+at once.}
 
 \item{seed}{Random seed to use for pseudo-replicate generation. Default
 \code{1}.}
@@ -72,9 +87,6 @@ less than this number of cells. Default \code{10}.}
 \item{conditionBy}{\code{cellMeta} variable(s). Marker detection will be
 performed for each level of this variable. Multiple variables will be
 combined. Default \code{NULL} uses default cluster.}
-
-\item{splitBy}{Split data by \code{cellMeta} variable(s) here and identify
-markers for \code{conditionBy} within each chunk. Default \code{NULL}.}
 
 \item{useDatasets}{Datasets to perform marker detection within. Default
 \code{NULL} will use all datasets.}
@@ -87,17 +99,120 @@ cells, while \code{"datasets"} run within each cluster and compare each
 dataset against all other datasets.}
 }
 \value{
-A data.frame with DEG information
+A data.frame with DEG information with the all or some of the
+following fields:
+\item{feature}{Gene names}
+\item{group}{Test group name. Multiple tests might be present for each
+function call. This is the main variable to distinguish the tests. For a
+pairwise test, a row with a certain group name represents the test result
+between the this group against the other control group; When split by a
+variable, it would be presented in "split.group" format, meaning the stats
+is by comparing the group in the split level against the control group in
+the same split level. When running marker detection without splitting,
+a row with group "a" represents the stats of the gene in group "a" against
+all other cells. When running split marker detection, the group name would
+be in "split.group" format, meaning the stats is by comparing the group in
+the split level against all other cells in the same split level.}
+\item{logFC}{Log fold change}
+\item{pval}{P-value}
+\item{padj}{Adjusted p-value}
+\item{avgExpr}{Mean expression in the test group indicated by the "group"
+field. Only available for wilcoxon tests.}
+\item{statistic}{Wilcoxon rank-sum test statistic. Only available for
+wilcoxon tests.}
+\item{auc}{Area under the ROC curve. Only available for wilcoxon tests.}
+\item{pct_in}{Percentage of cells in the test group, indicated by the
+"group" field, that express the feature. Only available for wilcoxon
+tests.}
+\item{pct_out}{Percentage of cells in the control group or other cells, as
+explained for the "group" field, that express the feature. Only available
+for wilcoxon tests.}
 }
 \description{
-Find DEG between two groups. Two methods are supported:
-\code{"wilcoxon"} and \code{"pseudoBulk"}. Wilcoxon rank sum test is
-performed on single-cell level, while pseudo-bulk method aggregates cells
-basing on biological replicates and calls bulk RNAseq DE methods, DESeq2 wald
-test. When real biological replicates are not available, pseudo replicates
-can be generated. Please see below for detailed scenario usage.
+Two methods are supported: \code{"pseudoBulk"} and
+\code{"wilcoxon"}. Pseudo-bulk method aggregates cells basing on biological
+replicates and calls bulk RNAseq DE methods, DESeq2 wald test, while
+Wilcoxon rank sum test is performed on single-cell level.
+\code{runPairwiseDEG()} is generally used for flexibly comparing two specific
+groups of cells, while \code{runMarkerDEG()} is used for a one-vs-rest marker
+test strategy.
+
+While using pseudo-bulk method, it is generally recommended that you have
+these variables available in your object:
+
+\enumerate{
+\item{The cell type or cluster labeling. This can be obtained from prior
+study or computed with \code{\link{runCluster}}}
+\item{The biological replicate labeling, most of the time the
+\code{"dataset"} variable automatically generated when the
+\linkS4class{liger} object is created. Users may use other variables if
+a "dataset" is merged from multiple replicates.}
+\item{The condition labeling that reflects the study design, such as the
+treatment or disease status for each sample/dataset.}
 }
-\section{Pairwise DEG Scenarios}{
+
+Please see below for detailed scenarios.
+}
+\section{Using Wilcoxon rank-sum test}{
+
+Wilcoxon rank-sum test works for each gene and is based on the rank of the
+expression in each cell. LIGER provides dataset integration but does not
+"correct" the expression values. Projects with strong batch effects or
+integrate drastically different modalities should be cautious when using
+this method.
+}
+
+\section{Comparing difference between/across cell types}{
+
+Most of times, people would want to know what cell types are for each cluster
+after clustering. This can be done with a marker detection method that test
+each cluster against all the other cells. This can be done with a command
+like \code{runMarkerDEG(object, conditionBy = "cluster_var")}. When using
+default pseudo-bulk method, users should additionaly determine the
+pseudo-bulk setup parameters. If the real biological replicate variable is
+available, it should be supplied to argument \code{useReplicate}, otherwise,
+pseudo-replicates should be created. See "Pseudo-Replicate" section for more.
+}
+
+\section{Compare between conditions}{
+
+It is frequently needed to identify the difference between conditions. Users
+can simply set \code{conditionBy = "condition_var"}. However, most of time,
+such comparisons should be ideally done in a per-cluster manner. This can be
+done by setting \code{splitBy = "cluster_var"}. This will run a loop for each
+cluster, and within the group of cells, compare each condition against all
+other cells in the cluster.
+
+In the scenario when users only need to compare two conditions for each
+cluster, running \code{runPairwiseDEG(object, groupTest = "condition1",
+groupCtrl = "condition2", variable1 = "condition_var",
+splitBy = "cluster_var")} would address the need.
+
+For both use case, if pseudo-bulk (default) method is used, users should
+determine the pseudo-bulk setup parameters as mentioned in the previous
+section.
+}
+
+\section{Detailed \code{runMarkerDEG} usage}{
+
+Marker detection is performed in a one vs. rest manner. The grouping of such
+condition is specified by \code{conditionBy}, which should be a column name
+in \code{cellMeta}. When \code{splitBy} is specified as another variable
+name in \code{cellMeta}, the marker detection will be iteratively done for
+within each level of \code{splitBy} variable.
+
+For example, when \code{conditionBy = "celltype"} and \code{splitBy = NULL},
+marker detection will be performed by comparing all cells of "celltype_i"
+against all other cells, and etc. This is analogous to the old version when
+running \code{runWilcoxon(method = "cluster")}.
+
+When \code{conditionBy = "gender"} and \code{splitBy = "leiden_cluster"},
+marker detection will be performed by comparing "gender_i" cells from "cluster_j"
+against other cells from "cluster_j", and etc. This is analogous to the old
+version when running \code{runWilcoxon(method = "dataset")}.
+}
+
+\section{Detailed \code{runPairwiseDEG} usage}{
 
 Users can select classes of cells from a variable in \code{cellMeta}.
 \code{variable1} and \code{variable2} are used to specify a column in
@@ -118,37 +233,31 @@ When both \code{variable1} and \code{variable2} are missing, \code{groupTest}
 and \code{groupCtrl} should be valid index of cells in \code{object}.
 }
 
-\section{Marker Detection Scenarios}{
+\section{Pseudo-Replicate}{
 
-Marker detection is generally performed in a one vs. rest manner. The
-grouping of such condition is specified by \code{conditionBy}, which should
-be a column name in \code{cellMeta}. When \code{splitBy} is specified as
-another variable name in \code{cellMeta}, the marker detection will be
-iteratively done for within each level of \code{splitBy} variable.
-
-For example, when \code{conditionBy = "celltype"} and \code{splitBy = NULL},
-marker detection will be performed by comparing all cells of "celltype_i"
-against all other cells, and etc.
-
-When \code{conditionBy = "celltype"} and \code{splitBy = "gender"}, marker
-detection will be performed by comparing "celltype_i" cells from "gender_j"
-against other cells from "gender_j", and etc.
+Pseudo-replicate assignment is a technique to complement the lack of real
+biological replicates when using pseudo-bulk DE methods. LIGER's pseudo-bulk
+method generally requires that each comparison group has at least 3
+replicates each composed of at least 3 cells, in order to ensure the
+statistic power. When less than 3 real replicates are found for a comparison,
+the default setting (\code{nPsdRep = NULL}) splits each into 3
+pseudo-replicates, otherwise no pseudo-replicates are automatically
+generated. When \code{nPsdRep} is given a number, LIGER will always go
+through each comparison group and split each real replicate into the given
+number of pseudo-replicates.
 }
 
 \examples{
-# Compare between cluster "0" and cluster "1"
-degStats <- runPairwiseDEG(pbmcPlot, groupTest = 0, groupCtrl = 1,
-                           variable1 = "leiden_cluster")
-# Compare between all cells from cluster "5" and
-# all cells from dataset "stim"
-degStats <- runPairwiseDEG(pbmcPlot, groupTest = "5", groupCtrl = "stim",
-                           variable1 = "leiden_cluster",
-                           variable2 = "dataset")
-# Identify markers for each cluster. Equivalent to old version
-# `runWilcoxon(method = "cluster")`
-markerStats <- runMarkerDEG(pbmcPlot, conditionBy = "leiden_cluster")
-# Identify dataset markers within each cluster. Equivalent to old version
-# `runWilcoxon(method = "dataset")`.
-markerStatsList <- runMarkerDEG(pbmcPlot, conditionBy = "dataset",
-                                splitBy = "leiden_cluster")
+\donttest{
+pbmc$leiden_cluster <- pbmcPlot$leiden_cluster
+
+# Identify cluster markers
+degStats1 <- runMarkerDEG(pbmc, conditionBy = "leiden_cluster")
+
+# Compare "stim" data against "ctrl" data within each cluster
+degStats3 <- runPairwiseDEG(pbmc, groupTest = "stim", groupCtrl = "ctrl",
+                            variable1 = "dataset",
+                            splitBy = "leiden_cluster",
+                            minCellPerRep = 4)
+}
 }

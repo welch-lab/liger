@@ -888,7 +888,7 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
             subsetData$normPeak <- normPeak(object)[, cellIdx, drop = FALSE]
         }
         if (modal == "spatial") {
-            value$coordinate <- coordinate(object)[cellIdx, , drop = FALSE]
+            subsetData$coordinate <- coordinate(object)[cellIdx, , drop = FALSE]
         }
     # }
     if (isTRUE(returnObject)) {

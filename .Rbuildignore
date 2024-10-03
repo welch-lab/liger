@@ -21,6 +21,6 @@ LICENSE
 ^devdata
 ^tests/testthat/*\.h5$
 ^vignettes/articles$
+cran-comments.md
 ^doc$
 ^Meta$
-cran-comments.md

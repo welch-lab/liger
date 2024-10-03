@@ -20,6 +20,7 @@
   labelBy = colorBy,
   labelText = TRUE,
   labelTextSize = 4,
+  ggrepelLabelTick = FALSE,
   seed = 1,
   ...
 )
@@ -50,7 +51,7 @@ continuous \code{colorBy} variable. Default \code{NULL}.}
 \code{colorBy} variable to \code{NA} so the color of these value.}
 
 \item{raster}{Logical, whether to rasterize the plot. Default \code{NULL}
-automatically rasterize the plot when number of total cells to be plotted
+automatically rasterize the plot when number of total dots to be plotted
 exceeds 100,000.}
 
 \item{labelBy}{A variable name available in \code{plotDF}. If the variable is
@@ -64,6 +65,12 @@ Does not work when continuous coloring is specified.}
 
 \item{labelTextSize}{Numeric, controls the size of label size when
 \code{labelText = TRUE}. Default \code{4}.}
+
+\item{ggrepelLabelTick}{Logical, whether to force showing the tick between
+label texts and the position they point to. Useful when a lot of text labels
+are required. Default \code{FALSE}. Run
+\code{options(ggrepel.max.overlaps = n)} before plotting to set allowed label
+overlaps.}
 
 \item{seed}{Random seed for reproducibility. Default \code{1}.}
 

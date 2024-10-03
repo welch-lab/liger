@@ -317,7 +317,7 @@ bmmcLiger <- normalizePeak(bmmcLiger)
 Now we can perform the Wilcoxon test on the peak counts with setting `usePeak = TRUE`:
 
 ```{r, eval=FALSE}
-peak.wilcoxon <- runWilcoxon(bmmcLiger, useDatasets = "atac", usePeak = TRUE)
+peak.wilcoxon <- runMarkerDEG(bmmcLiger, useDatasets = "atac", usePeak = TRUE)
 ```
 
 We can now use the results of the Wilcoxon test to retain only peaks showing differential accessibility across our set of joint clusters. Here we kept peaks with Benjamini-Hochberg adjusted p-value < 0.05 and log fold change > 2.

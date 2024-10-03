@@ -83,7 +83,7 @@ downsample <- function(
     else return(subsetLiger(object = object, cellIdx = selected, ...))
 }
 
-#' [Deprecated] See \code{\link{downsample}}
+#' `r lifecycle::badge("superseded")` See \code{\link{downsample}}
 #' @description This function mainly aims at downsampling datasets to a size
 #' suitable for plotting.
 #' @param object \linkS4class{liger} object

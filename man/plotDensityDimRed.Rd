@@ -74,8 +74,31 @@ of character vector input should match with number of plots generated.}
 \item{colorDirection}{Color gradient direction for
 \code{\link[ggplot2]{scale_fill_viridis_c}}. Default \code{-1}.}
 
-\item{...}{More theme setting arguments passed to
-\code{\link{.ggplotLigerTheme}}.}
+\item{...}{
+  Arguments passed on to \code{\link[=.ggplotLigerTheme]{.ggplotLigerTheme}}
+  \describe{
+    \item{\code{title,subtitle,xlab,ylab}}{Main title, subtitle or X/Y axis title text.
+By default, no main title or subtitle will be set, and X/Y axis title will be
+the names of variables used for plotting. Use \code{NULL} to hide elements.
+\code{TRUE} for \code{xlab} or \code{ylab} shows default values.}
+    \item{\code{showLegend}}{Whether to show the legend. Default \code{TRUE}.}
+    \item{\code{legendPosition}}{Text indicating where to place the legend. Choose from
+\code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. Default
+\code{"right"}.}
+    \item{\code{baseSize}}{One-parameter control of all text sizes. Individual text
+element sizes can be controlled by other size arguments. "Title" sizes are
+2 points larger than "text" sizes when being controlled by this.}
+    \item{\code{titleSize,xTitleSize,yTitleSize,legendTitleSize}}{Size of main title,
+axis titles and legend title. Default \code{NULL} controls by
+\code{baseSize + 2}.}
+    \item{\code{subtitleSize,xTextSize,yTextSize,legendTextSize}}{Size of subtitle text,
+axis texts and legend text. Default \code{NULL} controls by \code{baseSize}.}
+    \item{\code{panelBorder}}{Whether to show rectangle border of the panel instead of
+using ggplot classic bottom and left axis lines. Default \code{FALSE}.}
+    \item{\code{plotly}}{Whether to use plotly to enable web based interactive browsing
+for the plot. Requires installation of package "plotly". Default
+\code{FALSE}.}
+  }}
 }
 \value{
 A ggplot object when only one plot is generated, A ggplot object

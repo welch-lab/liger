@@ -65,7 +65,7 @@ if (requireNamespace("RcppPlanc", quietly = TRUE) &&
     bmmc <- selectGenes(bmmc)
     bmmc <- scaleNotCenter(bmmc)
     bmmc <- runINMF(bmmc, miniBatchSize = 100)
-    bmmc <- quantileNorm(bmmc)
+    bmmc <- alignFactors(bmmc)
     bmmc <- normalizePeak(bmmc)
     bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
     corr <- linkGenesAndPeaks(

@@ -81,15 +81,14 @@ variable in \code{cellMeta} slot. Can be fetched with
 be stored at \code{object@uns$snn}.
 }
 \description{
-After quantile normalization, users can additionally run the Leiden or
+After aligning cell factor loadings, users can additionally run the Leiden or
 Louvain algorithm for community detection, which is widely used in
 single-cell analysis and excels at merging small clusters into broad cell
 classes.
 
-While using quantile normalized factor loadings (result from
-\code{\link{quantileNorm}}) is recommended, this function looks for
-unnormalized factor loadings (result from \code{\link{runIntegration}}) when
-the former is not available.
+While using aligned factor loadings (result from \code{\link{alignFactors}})
+is recommended, this function looks for unaligned factor loadings (raw result
+from \code{\link{runIntegration}}) when the former is not available.
 }
 \examples{
 pbmcPlot <- runCluster(pbmcPlot)

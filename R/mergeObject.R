@@ -227,3 +227,4 @@ mergeH5 <- function(file.list,
     }
     h5_merged$close_all()
 }
+

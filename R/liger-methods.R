@@ -371,7 +371,9 @@ setReplaceMethod("dataset", signature(x = "liger", dataset = "character",
                          }
                      }
                      methods::validObject(x)
-                     if (qc) x <- runGeneralQC(x, useDatasets = dataset,
+                     if (qc) x <- runGeneralQC(x, organism = NULL,
+                                               useDatasets = dataset,
+                                               overwrite = TRUE,
                                                verbose = FALSE)
                      x
                  })
@@ -601,7 +603,7 @@ setReplaceMethod(
                     cli::cli_abort(
                         c("x" = "{.code names(value)} do match to cells selected. ",
                           "i" = "The first three given names: {.val {names(value)[1:3]}}",
-                          "i" = "The first three selected names: {.val {barocdes[1:3]}}")
+                          "i" = "The first three selected names: {.val {barcodes[1:3]}}")
                     )
                 }
                 names(value) <- barcodes
@@ -1286,8 +1288,8 @@ setReplaceMethod(
 #' @rdname liger-class
 setMethod(
     "defaultDimRed",
-    signature(x = "liger", useDatasets = "ANY"),
-    function(x, useDatasets = NULL, cellIdx = cellIdx) {
+    signature(x = "liger", useDatasets = "ANY", cellIdx = "ANY"),
+    function(x, useDatasets = NULL, cellIdx = NULL) {
         name <- x@uns$defaultDimRed
         if (is.null(name)) return(NULL)
         else dimRed(x, name = name, useDatasets = useDatasets, cellIdx = cellIdx)

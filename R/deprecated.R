@@ -11,7 +11,7 @@ NULL
 # These are deprecated functions likely to be removed in future versions.
 # Documentation for these functions is incomplete.
 
-#' Quantile align (normalize) factor loadings
+#' `r lifecycle::badge("superseded")` Quantile align (normalize) factor loadings
 #'
 #' This is a deprecated function. Calling 'quantileNorm' instead.
 #'
@@ -46,7 +46,7 @@ NULL
 #' @param resolution Controls the number of communities detected. Higher resolution -> more
 #'   communities. (default 1)
 #' @param dims.use Indices of factors to use for shared nearest factor determination (default
-#'   1:ncol(H[[1]])).
+#'   \code{1:ncol(H[[1]])}).
 #' @param dist.use Distance metric to use in calculating nearest neighbors (default "CR").
 #' @param center Centers the data when scaling factors (useful for less sparse modalities like
 #'   methylation data). (default FALSE)

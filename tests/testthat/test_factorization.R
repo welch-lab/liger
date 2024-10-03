@@ -205,7 +205,8 @@ test_that("quantileNorm", {
     pbmc2 <- quantileNorm(pbmc)
     expect_equal(dim(getMatrix(pbmc2, "H.norm")), c(ncol(pbmc), 20))
 
-    pbmc2 <- quantileNorm(pbmc, reference = "ctrl")
+    pbmc2 <- alignFactors(pbmc, reference = "ctrl")
+    # pbmc2 <- quantileNorm(pbmc, reference = "ctrl")
     expect_equal(dim(getMatrix(pbmc2, "H.norm")), c(ncol(pbmc), 20))
 
     # For quantileNorm,list method
@@ -228,6 +229,32 @@ test_that("quantileNorm", {
     #              "Unable to understand `reference`.")
 })
 
+test_that("centroidAlign", {
+    skip_if_not_installed("RcppPlanc")
+    pbmc <- process(pbmc)
+    pbmc <- runOnlineINMF(pbmc, k = 20, minibatchSize = 100)
+
+    expect_error(pbmc <- centroidAlign(pbmc, centerCluster = TRUE, shift = FALSE),
+                 "Negative values found prior to normalizing")
+    expect_no_error(pbmc <- alignFactors(pbmc, method = "centroid", diagnosis = TRUE))
+    expect_equal(dim(getMatrix(pbmc, "H.norm")), c(ncol(pbmc), 20))
+    expect_is(pbmc$raw_which.max, "factor")
+    expect_is(pbmc$Z_which.max, "factor")
+    expect_is(pbmc$R_which.max, "factor")
+})
+
+test_that("consensus iNMF", {
+    skip_if_not_installed("RcppPlanc")
+    pbmc <- process(pbmc)
+    expect_error(pbmc <- runCINMF(pbmc, k = 10, nRandomStarts = 1),
+                 "must be greater than 1")
+    expect_error(pbmc <- runCINMF(pbmc, k = 10, rho = 2),
+                 "must be in the range")
+    expect_error(pbmc <- runCINMF(pbmc, k = 10, rho = 0.1, nRandomStarts = 2),
+                 "Please use a larger `rho` or/and a larger `nRandomStarts`")
+    pbmc <- runCINMF(pbmc, k = 10)
+    expect_no_error(.checkValidFactorResult(pbmc))
+})
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Seurat wrapper for everything
@@ -258,10 +285,15 @@ test_that("Seurat wrapper", {
     expect_in("inmf", SeuratObject::Reductions(seu))
     expect_in("onlineINMF", SeuratObject::Reductions(seu))
 
-    expect_error(quantileNorm(seu, reduction = "orig.ident"),
+    expect_error(alignFactors(seu, reduction = "orig.ident"),
                  "Specified `reduction` does not points to a")
-    seu <- quantileNorm(seu, reduction = "inmf")
-    expect_in("inmfNorm", SeuratObject::Reductions(seu))
+    # expect_error(quantileNorm(seu, reduction = "orig.ident"),
+    #              "Specified `reduction` does not points to a")
+    seu1 <- quantileNorm(seu, reduction = "inmf")
+    expect_in("inmfNorm", SeuratObject::Reductions(seu1))
+
+    seu2 <- alignFactors(seu, "centroid", reduction = "inmf")
+    expect_in("inmfNorm", SeuratObject::Reductions(seu2))
 
     expect_error(quantileNorm(seu, reference = "hello"),
                  "Should specify one existing dataset")
@@ -269,4 +301,51 @@ test_that("Seurat wrapper", {
                  "Should specify one existing dataset as reference")
     expect_error(quantileNorm(seu, reference = c(TRUE, FALSE, TRUE)),
                  "Should specify one existing dataset as reference")
+})
+
+
+context("alignment metrics")
+test_that("Alignment metrics", {
+    skip_if_not_installed("RcppPlanc")
+    pbmc <- process(pbmc)
+    pbmc <- runIntegration(pbmc, k = 10, nIteration = 2)
+    pbmc <- quantileNorm(pbmc)
+
+    # Working cases for agreement
+    expect_equal(calcAgreement(pbmc), 0.2215288, tol = 1e-6)
+    expect_equal(calcAgreement(pbmc, useRaw = TRUE), 0.2480121)
+    expect_true(all.equal(calcAgreement(pbmc, byDataset = TRUE), c(0.2660032, 0.1770543), tol = 1e-6))
+
+    # failing cases for agreement
+    hnorm <- pbmc@H.norm
+    pbmc@H.norm <- NULL
+    expect_error(calcAgreement(pbmc), "available")
+    ctrl.H <- pbmc@datasets$ctrl@H
+    pbmc@datasets$ctrl@H <- NULL
+    expect_error(calcAgreement(pbmc, useRaw = TRUE), "available for dataset")
+    pbmc@H.norm <- hnorm
+    pbmc@datasets$ctrl@H <- ctrl.H
+    ctrlsd <- scaleData(pbmc, "ctrl")
+    scaleData(pbmc, "ctrl") <- NULL
+    expect_error(calcAgreement(pbmc), "available for dataset:")
+    scaleData(pbmc, "ctrl") <- ctrlsd
+
+    # Working cases for alignment
+    expect_equal(calcAlignment(pbmc), 0.772)
+    expect_message(calcAlignment(pbmc, cellIdx = 1:100), "Alignment null for single dataset")
+    expect_equal(calcAlignment(pbmc, cellIdx = 1:600), 0.772)
+    expect_equal(calcAlignment(pbmc, cellIdx = 201:400, cellComp = c(1:200, 401:600)), 0.6975)
+    expect_equal(calcAlignment(pbmc, resultBy = "dataset"), c(ctrl = 0.720, stim = 0.824))
+    expect_length(calcAlignment(pbmc, resultBy = "cell"), 600)
+
+    # Failing cases for alignment
+    pbmc@H.norm <- NULL
+    expect_error(calcAlignment(pbmc), "Aligned cell factor loading")
+    pbmc@H.norm <- hnorm
+    expect_error(calcAlignment(pbmc, clustersUse = 1:3), "specified or default preset by")
+    pbmc <- runCluster(pbmc)
+    expect_error(calcAlignment(pbmc, clustersUse = letters), "26 clusters not found in")
+    expect_error(calcAlignment(pbmc, clustersUse = integer()), "No cell is selected")
+    expect_error(calcAlignment(pbmc, nNeighbors = 600), "Please select")
+
 })

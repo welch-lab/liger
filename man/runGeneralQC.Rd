@@ -6,23 +6,27 @@
 \usage{
 runGeneralQC(
   object,
-  mito = TRUE,
-  ribo = TRUE,
-  hemo = TRUE,
+  organism,
   features = NULL,
   pattern = NULL,
+  overwrite = FALSE,
   useDatasets = NULL,
   chunkSize = 1000,
-  verbose = getOption("ligerVerbose", TRUE)
+  verbose = getOption("ligerVerbose", TRUE),
+  mito = NULL,
+  ribo = NULL,
+  hemo = NULL
 )
 }
 \arguments{
 \item{object}{\linkS4class{liger} object with \code{rawData} available in
 each \linkS4class{ligerDataset} embedded}
 
-\item{mito, ribo, hemo}{Whether to calculate the expression percentage of
-mitochondrial, ribosomal or hemoglobin genes, respectively. Default
-\code{TRUE}.}
+\item{organism}{Specify the organism of the dataset to identify the
+mitochondrial, ribosomal and hemoglobin genes. Available options are
+\code{"mouse"}, \code{"human"}, \code{"zebrafish"}, \code{"rat"} and
+\code{"drosophila"}. Set \code{NULL} to disable mito, ribo and hemo
+calculation.}
 
 \item{features}{Feature names matching the feature subsets that users want to
 calculate the expression percentage with. A vector for a single subset, or a
@@ -31,6 +35,10 @@ named list for multiple subset. Default \code{NULL}.}
 \item{pattern}{Regex patterns for matching the feature subsets that users
 want to calculate the expression percentage with. A vector for a single
 subset, or a named list for multiple subset. Default \code{NULL}.}
+
+\item{overwrite}{Whether to overwrite existing QC metric variables. Default
+\code{FALSE} do not update existing result. Use \code{TRUE} for updating all.
+Use a character vector to specify which to update. See Details.}
 
 \item{useDatasets}{A character vector of the names, a numeric or logical
 vector of the index of the datasets to be included for QC. Default
@@ -41,16 +49,52 @@ on HDF5 based dataset. Default \code{1000}}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
+
+\item{mito, ribo, hemo}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} Now will always
+compute the percentages of mitochondrial, ribosomal and hemoglobin gene
+counts. These arguments will be ignored.}
 }
 \value{
-Updated \code{object} with \code{nUMI}, \code{nGene} updated
-in \code{cellMeta(object)}, as well as expression percentage value for each
-feature subset.
+Updated \code{object} with the \code{cellMeta(object)} updated as
+intended by users. See Details for more information.
 }
 \description{
 Calculate number of UMIs, number of detected features and
-percentage of feature subset (e.g. mito) expression per cell.
+percentage of feature subset (e.g. mito, ribo and hemo) expression per cell.
+}
+\details{
+This function by default calculates:
+
+\itemize{
+\item{\code{nUMI} - The column sum of the raw data matrix per cell.
+Represents the total number of UMIs per cell if given raw counts.}
+\item{\code{nGene} - Number of detected features per cell}
+\item{\code{mito} - Percentage of mitochondrial gene expression per cell}
+\item{\code{ribo} - Percentage of ribosomal gene expression per cell}
+\item{\code{hemo} - Percentage of hemoglobin gene expression per cell}
+}
+
+Users can also specify their own feature subsets with argument
+\code{features}, or regular expression patterns that match to genes of
+interests with argument \code{pattern}, to calculate the expression
+percentage. If a character vector is given to \code{features}, a QC metric
+variable named \code{"featureSubset_name"} will be computed. If a named list
+of multiple subsets is given, the names will be used as the variable names.
+If a single pattern is given to \code{pattern}, a QC metric variable named
+\code{"featureSubset_pattern"} will be computed. If a named list of multiple
+patterns is given, the names will be used as the variable names.
+\bold{Duplicated QC metric names between these two arguments and the default
+five listed above should be avoided.}
+
+This function is automatically operated at the creation time of each
+\linkS4class{liger} object to capture the raw status. Argument
+\code{overwrite} is set to FALSE by default to avoid mistakenly updating
+existing metrics after filtering the object. Users can still opt to update
+all newly calculated metrics (including the default five) by setting
+\code{overwrite = TRUE}, or only some of newly calculated ones by providing
+a character vector of the names of the metrics to update. Intended
+overwriting only happens to datasets selected with \code{useDatasets}.
 }
 \examples{
-pbmc <- runGeneralQC(pbmc)
+pbmc <- runGeneralQC(pbmc, "human", overwrite = TRUE)
 }

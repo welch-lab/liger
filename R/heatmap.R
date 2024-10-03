@@ -29,8 +29,7 @@
 #' @param viridisOption See \code{option} argument of
 #' \code{\link[viridisLite]{viridis}}. Default \code{"C"} (plasma) for
 #' \code{plotGeneHeatmap} and \code{"D"} (viridis) for \code{plotFactorHeatmap}.
-#' @param ... Additional arguments passed to general function
-#' \code{\link{.plotHeatmap}} and \code{\link[ComplexHeatmap]{Heatmap}}.
+#' @inheritDotParams .plotHeatmap transpose showCellLabel showCellLegend showFeatureLabel showFeatureLegend cellAnnColList featureAnnColList scale baseSize cellTextSize featureTextSize cellTitleSize featureTitleSize legendTextSize legendTitleSize viridisDirection RColorBrewerOption
 #' @return \code{\link[ComplexHeatmap]{HeatmapList-class}} object
 #' @export
 #' @rdname plotHeatmap
@@ -404,7 +403,11 @@ plotFactorHeatmap <- function(
                 } else {
                     # Automatic generate with ggplot2 strategy,
                     # with level awareness
-                    annCol[[var]] <- scales::hue_pal()(length(levels(df[[var]])))
+                    if (nlevels(df[[var]]) > length(scPalette)) {
+                        annCol[[var]] <- scales::hue_pal()(nlevels(df[[var]]))
+                    } else {
+                        annCol[[var]] <- scPalette[1:nlevels(df[[var]])]
+                    }
                     names(annCol[[var]]) <- levels(df[[var]])
                     df[[var]] <- droplevels(df[[var]])
                 }

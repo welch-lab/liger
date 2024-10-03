@@ -25,9 +25,9 @@
 #' @param factor.share.thresh,dataset.specificity,log.fc.thresh,pval.thresh,num.genes,print.genes
 #' \bold{Deprecated}. See Usage section for replacement.
 #' @return A list object consisting of the following entries:
-#' \item{[value of `dataset1`]}{data.frame of dataset1-specific markers}
+#' \item{value of `dataset1`}{data.frame of dataset1-specific markers}
 #' \item{shared}{data.frame of shared markers}
-#' \item{[value of `dataset1`]}{data.frame of dataset2-specific markers}
+#' \item{value of `dataset1`}{data.frame of dataset2-specific markers}
 #' \item{num_factors_V1}{A frequency table indicating the number of factors each
 #' marker appears, in dataset1}
 #' \item{num_factors_V2}{A frequency table indicating the number of factors each

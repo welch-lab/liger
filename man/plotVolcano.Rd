@@ -2,12 +2,11 @@
 % Please edit documentation in R/visualization.R
 \name{plotVolcano}
 \alias{plotVolcano}
-\alias{plotEnhancedVolcano}
 \title{Create volcano plot for Wilcoxon test result}
 \usage{
 plotVolcano(
   result,
-  group,
+  group = NULL,
   logFCThresh = 1,
   padjThresh = 0.01,
   labelTopN = 20,
@@ -17,13 +16,13 @@ plotVolcano(
   labelSize = 4,
   ...
 )
-
-plotEnhancedVolcano(result, group, ...)
 }
 \arguments{
-\item{result}{Data frame table returned by \code{\link{runWilcoxon}}}
+\item{result}{Data frame table returned by \code{\link{runMarkerDEG}} or
+\code{\link{runPairwiseDEG}}.}
 
-\item{group}{Selection of one group available from \code{result$group}}
+\item{group}{Selection of one group available from \code{result$group}. If
+only one group is available from \code{result}, default \code{NULL} uses it.}
 
 \item{logFCThresh}{Number for the threshold on the absolute value of the log2
 fold change statistics. Default \code{1}.}
@@ -44,9 +43,39 @@ Default \code{2} and \code{0.8}.}
 \item{labelSize}{Size of labeled top features and line annotations. Default
 \code{4}.}
 
-\item{...}{For \code{plotVolcano}, more theme setting arguments passed to
-\code{\link{.ggplotLigerTheme}}. For \code{plotEnhancedVolcano}, arguments
-passed to \code{EnhancedVolcano::EnhancedVolcano()}.}
+\item{...}{
+  Arguments passed on to \code{\link[=.ggScatter]{.ggScatter}}, \code{\link[=.ggplotLigerTheme]{.ggplotLigerTheme}}
+  \describe{
+    \item{\code{dotOrder}}{Controls the order that each dot is added to the plot. Choose
+from \code{"shuffle"}, \code{"ascending"}, or \code{"descending"}. Default
+\code{"shuffle"}, useful when coloring by categories that overlaps (e.g.
+"dataset"), \code{"ascending"} can be useful when coloring by a continuous
+variable (e.g. gene expression) where high values needs more
+highlight. \code{NULL} use default order.}
+    \item{\code{raster}}{Logical, whether to rasterize the plot. Default \code{NULL}
+automatically rasterize the plot when number of total dots to be plotted
+exceeds 100,000.}
+    \item{\code{labelText}}{Logical, whether to show text label at the median position
+of each categorical group specified by \code{colorBy}. Default \code{TRUE}.
+Does not work when continuous coloring is specified.}
+    \item{\code{labelTextSize}}{Numeric, controls the size of label size when
+\code{labelText = TRUE}. Default \code{4}.}
+    \item{\code{seed}}{Random seed for reproducibility. Default \code{1}.}
+    \item{\code{legendColorTitle}}{Legend title text for color aesthetics, often used
+for categorical or continuous coloring of dots. Default \code{NULL} shows the
+original variable name.}
+    \item{\code{showLegend}}{Whether to show the legend. Default \code{TRUE}.}
+    \item{\code{baseSize}}{One-parameter control of all text sizes. Individual text
+element sizes can be controlled by other size arguments. "Title" sizes are
+2 points larger than "text" sizes when being controlled by this.}
+    \item{\code{titleSize,xTitleSize,yTitleSize,legendTitleSize}}{Size of main title,
+axis titles and legend title. Default \code{NULL} controls by
+\code{baseSize + 2}.}
+    \item{\code{subtitleSize,xTextSize,yTextSize,legendTextSize}}{Size of subtitle text,
+axis texts and legend text. Default \code{NULL} controls by \code{baseSize}.}
+    \item{\code{panelBorder}}{Whether to show rectangle border of the panel instead of
+using ggplot classic bottom and left axis lines. Default \code{FALSE}.}
+  }}
 }
 \value{
 ggplot
@@ -60,6 +89,14 @@ substantial amount of arguments for graphical control. However, that requires
 the installation of package "EnhancedVolcano".
 }
 \examples{
-result <- runMarkerDEG(pbmcPlot)
-plotVolcano(result, 1)
+defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
+# Test the DEG between "stim" and "ctrl", within each cluster
+result <- runPairwiseDEG(
+    pbmc,
+    groupTest = "stim",
+    groupCtrl = "ctrl",
+    variable1 = "dataset",
+    splitBy = "defaultCluster"
+)
+plotVolcano(result, "0.stim")
 }

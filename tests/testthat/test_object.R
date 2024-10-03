@@ -71,12 +71,13 @@ test_that("liger object creation - in memory", {
     expect_identical(cellMeta(pbmc), cellMeta(pbmc2))
 
     pbmc <- removeMissing(pbmc)
-    pbmc <- runGeneralQC(pbmc, pattern = "^S100",
+    pbmc <- runGeneralQC(pbmc, organism = "human", pattern = "^S100",
                          features = rownames(ldList[[1]]))
     expect_true(all(c("featureSubset_pattern", "featureSubset_name") %in%
                         colnames(cellMeta(pbmc))))
 
-    pbmc <- runGeneralQC(pbmc, pattern = list(p1 = "^S100", p2 = "^MT"),
+    pbmc <- runGeneralQC(pbmc, organism = "human",
+                         pattern = list(p1 = "^S100", p2 = "^MT"),
                          features = list(f1 = letters,
                                          f2 = rownames(ldList[[2]])[6:10]))
     expect_true(all(c("p1", "p2", "f1", "f2") %in% colnames(cellMeta(pbmc))))

@@ -29,17 +29,18 @@ default cluster labeling to set the Idents. Default \code{FALSE}.}
 \item{merge}{Logical, whether to merge layers of different datasets into one.
 Not recommended. Default \code{FALSE}.}
 
-\item{nms}{[Defunct] Will be ignored because new object structure does not
-have related problem.}
+\item{nms}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#defunct}{\figure{lifecycle-defunct.svg}{options: alt='[Defunct]'}}}{\strong{[Defunct]}} Will be ignored because new object
+structure does not have related problem.}
 
-\item{renormalize}{[Defunct] Will be ignored because since Seurat V5, layers
-of data can exist at the same time and it is better to left it for users to
-do it by themselves.}
+\item{renormalize}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#defunct}{\figure{lifecycle-defunct.svg}{options: alt='[Defunct]'}}}{\strong{[Defunct]}} Will be ignored because
+since Seurat V5, layers of data can exist at the same time and it is better
+to left it for users to do it by themselves.}
 
-\item{use.liger.genes}{[Defunct] Will be ignored and will always set LIGER
-variable features to the place.}
+\item{use.liger.genes}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#defunct}{\figure{lifecycle-defunct.svg}{options: alt='[Defunct]'}}}{\strong{[Defunct]}} Will be ignored and
+will always set LIGER variable features to the place.}
 
-\item{by.dataset}{[Deprecated]. Use \code{identByDataset} instead.}
+\item{by.dataset}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}}. Use
+\code{identByDataset} instead.}
 }
 \value{
 Always returns Seurat object(s) of the latest version. By default a

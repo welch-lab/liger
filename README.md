@@ -6,7 +6,15 @@
 
 # LIGER (Linked Inference of Genomic Experimental Relationships)
 
->**Now we have a comprehensive documentation site for the latest version of [rliger (2.0)](https://welch-lab.github.io/liger/index.html)!**
+<div style="background: #dddddd;">
+
+>**NEWS**
+>- Checkout new cell factor alignment method (function [`centroidAlign()`](https://welch-lab.github.io/liger/reference/centroidAlign.html)), which aligns cell factor loading by moving soft clustering centroids. This method is benchmarked with [*scib*](https://scib.readthedocs.io/en/latest/index.html) datasets and metrics and shows better overall performance than our previous quantile normalization method, especially for the ability to conserve biological information.
+>- Checkout Consensus iNMF method (function [`runCINMF()`](https://welch-lab.github.io/liger/reference/runCINMF.html)), which runs regular iNMF multiple times with different random initialization and summarizes a consensus result with better confidence.
+>- Please visit [*rliger* website](https://welch-lab.github.io/liger/index.html) for comprehensive documentation and [revised tutorial](https://welch-lab.github.io/liger/articles/Integrating_multi_scRNA_data.html) that walks through scRNAseq integration and analysis in detail
+>- More [changelogs](https://welch-lab.github.io/liger/news/index.html)
+
+</div>
 
 LIGER (installed as `rliger` ) is a package for integrating and analyzing multiple single-cell datasets, developed by the Macosko lab and maintained/extended by the Welch lab. It relies on integrative non-negative matrix factorization to identify shared and dataset-specific factors.
 
@@ -59,21 +67,21 @@ If you have any questions, comments, or suggestions, you are welcomed to [open a
 
 ## Usage
 
-For usage examples and guided walkthroughs, check the `vignettes` directory of the repo.
+For usage examples and guided walkthroughs of specific use cases, please check our articles below:
 
 * [Integrating Multiple Single-Cell RNA-seq Datasets](https://welch-lab.github.io/liger/articles/Integrating_multi_scRNA_data.html)
 * [Jointly Defining Cell Types from scRNA-seq and scATAC-seq](https://welch-lab.github.io/liger/articles/Integrating_scRNA_and_scATAC_data.html)
 * [Iterative Single-Cell Multi-Omic Integration Using Online iNMF](https://welch-lab.github.io/liger/articles/online_iNMF_tutorial.html)
-* [Integrating unshared features with UINMF](https://welch-lab.github.io/liger/articles/UINMF_vignette.html)
+* [Integrating datasets using unshared features with UINMF](https://welch-lab.github.io/liger/articles/UINMF_vignette.html)
 * [Integrating spatial transcriptomic and transcriptomic datasets using UINMF](https://welch-lab.github.io/liger/articles/STARmap_dropviz_vig.html)
-* [scATAC and scRNA Integration using unshared features (UINMF)](https://welch-lab.github.io/liger/articles/SNAREseq_walkthrough.html)
+* [Integrating scATAC and scRNA using unshared features (UINMF)](https://welch-lab.github.io/liger/articles/SNAREseq_walkthrough.html)
 * [Cross-species Analysis with UINMF](https://welch-lab.github.io/liger/articles/cross_species_vig.html)
 * [Jointly Defining Cell Types from Single-Cell RNA-seq and DNA Methylation](https://welch-lab.github.io/liger/articles/rna_methylation.html)
 
 Meanwhile, since version 2.0.0, LIGER is massively updated for usability and interoperability with other packages. Below are links to the introduction of new features.
 
 * [Introduction to new liger object and other related classes](https://welch-lab.github.io/liger/articles/liger_object.html)
-* [Running Liger directly on Seurat objects](https://welch-lab.github.io/liger/articles/liger_with_seurat.html)
+* [Running LIGER directly on Seurat objects](https://welch-lab.github.io/liger/articles/liger_with_seurat.html)
 
 If you need to refer to the tutorials for the old version of rliger, please check the [GitHub archive v1.0.1](https://github.com/welch-lab/liger/tree/v1.0.1/vignettes), download the desired rendered HTML files and open them in your browser.
 

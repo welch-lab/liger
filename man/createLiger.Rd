@@ -7,6 +7,7 @@
 createLiger(
   rawData,
   modal = NULL,
+  organism = "human",
   cellMeta = NULL,
   removeMissing = TRUE,
   addPrefix = "auto",
@@ -42,6 +43,12 @@ datasets, or the same number of strings as the number of datasets. Currently
 options of \code{"default"}, \code{"rna"}, \code{"atac"}, \code{"spatial"}
 and \code{"meth"} are supported.}
 
+\item{organism}{Character vector for setting organism for identifying mito,
+ribo and hemo genes for expression percentage calculation. Use one string for
+all datasets, or the same number of strings as the number of datasets.
+Currently options of \code{"mouse"}, \code{"human"}, \code{"zebrafish"},
+\code{"rat"}, and \code{"drosophila"} are supported.}
+
 \item{cellMeta}{data.frame of metadata at single-cell level. Default
 \code{NULL}.}
 
@@ -49,7 +56,7 @@ and \code{"meth"} are supported.}
 counts and features not expressed in any cells from each dataset. Default
 \code{TRUE}.}
 
-\item{addPrefix}{Logical. Whether to add "<dataset name>_" as a prefix of
+\item{addPrefix}{Logical. Whether to add "datasetName_" as a prefix of
 cell identifiers (e.g. barcodes) to avoid duplicates in multiple libraries (
 common with 10X data). Default \code{"auto"} detects if matrix columns
 already has the exact prefix or not. Logical value forces the action.}
@@ -80,9 +87,9 @@ can be dangerous for large scale analysis.}
 
 \item{...}{Additional slot values that should be directly placed in object.}
 
-\item{raw.data, remove.missing, format.type, data.name, indices.name, indptr.name, genes.name, barcodes.name}{\bold{Deprecated.} See Usage section for replacement.}
+\item{raw.data, remove.missing, format.type, data.name, indices.name, indptr.name, genes.name, barcodes.name}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} See Usage section for replacement.}
 
-\item{take.gene.union}{Defuncted. Will be ignored.}
+\item{take.gene.union}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#defunct}{\figure{lifecycle-defunct.svg}{options: alt='[Defunct]'}}}{\strong{[Defunct]}} Will be ignored.}
 }
 \description{
 This function allows creating \linkS4class{liger} object from

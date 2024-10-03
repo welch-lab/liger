@@ -2,6 +2,7 @@
 % Please edit documentation in R/preprocess.R
 \name{normalize}
 \alias{normalize}
+\alias{normalize.matrix}
 \alias{normalize.dgCMatrix}
 \alias{normalize.ligerDataset}
 \alias{normalize.liger}
@@ -10,6 +11,8 @@
 \title{Normalize raw counts data}
 \usage{
 normalize(object, ...)
+
+\method{normalize}{matrix}(object, log = FALSE, scaleFactor = NULL, ...)
 
 \method{normalize}{dgCMatrix}(object, log = FALSE, scaleFactor = NULL, ...)
 
@@ -74,13 +77,13 @@ Default \code{"ligerNormData"}. For older Seurat, stored to \code{data} slot.}
 \value{
 Updated \code{object}.
 \itemize{
- \item{dgCMatrix method - Returns processed dgCMatrix object}
- \item{ligerDataset method - Updates the \code{normData} slot of the object}
- \item{liger method - Updates the \code{normData} slot of chosen datasets}
- \item{Seurat method - Adds a named layer in chosen assay (V5), or update the
- \code{data} slot of the chosen assay (<=V4)}
- \item{\code{normalizePeak} - Updates the \code{normPeak} slot of chosen
- datasets.}
+\item{dgCMatrix method - Returns processed dgCMatrix object}
+\item{ligerDataset method - Updates the \code{normData} slot of the object}
+\item{liger method - Updates the \code{normData} slot of chosen datasets}
+\item{Seurat method - Adds a named layer in chosen assay (V5), or update the
+\code{data} slot of the chosen assay (<=V4)}
+\item{\code{normalizePeak} - Updates the \code{normPeak} slot of chosen
+datasets.}
 }
 }
 \description{

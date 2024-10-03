@@ -58,11 +58,11 @@ normalized imputed peak counts if \code{norm = TRUE}.
 }
 \description{
 This function is designed for creating peak data for a dataset with only gene
-expression. This function uses quantile normalized cell factor loading to
-find nearest neighbors between cells from the queried dataset (without peak)
-and cells from reference dataset (with peak). And then impute the peak for
-the former basing on the weight. Therefore, the reference dataset selected
-must be of "atac" modality setting.
+expression. This function uses aligned cell factor loading to find nearest
+neighbors between cells from the queried dataset (without peak) and cells
+from reference dataset (with peak). And then impute the peak for the former
+basing on the weight. Therefore, the reference dataset selected must be of
+"atac" modality setting.
 }
 \examples{
 bmmc <- normalize(bmmc)
@@ -70,7 +70,7 @@ bmmc <- selectGenes(bmmc, datasets.use = "rna")
 bmmc <- scaleNotCenter(bmmc)
 if (requireNamespace("RcppPlanc", quietly = TRUE)) {
     bmmc <- runINMF(bmmc, k = 20)
-    bmmc <- quantileNorm(bmmc)
+    bmmc <- alignFactors(bmmc)
     bmmc <- normalizePeak(bmmc)
     bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
 }

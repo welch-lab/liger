@@ -87,6 +87,18 @@ test_that("scatter plots", {
     expect_gg(
         plotDimRed(pbmcPlot, colorBy = "leiden_cluster", raster = TRUE)
     )
+
+    expect_gg(plotGroupClusterDimRed(pbmcPlot))
+    do.call(expect_gg, plotGroupClusterDimRed(pbmcPlot, combinePlot = FALSE))
+
+    do.call(expect_gg, plotBarcodeRank(pbmc))
+    # Fake operation to create ATAC datasets
+    pbmcPlot@datasets$ctrl <- as.ligerDataset(dataset(pbmcPlot, "ctrl"), "atac")
+    pbmcPlot@datasets$stim <- as.ligerDataset(dataset(pbmcPlot, "stim"), "atac")
+    normPeak(pbmcPlot, "ctrl") <- normData(pbmcPlot, "ctrl")
+    normPeak(pbmcPlot, "stim") <- normData(pbmcPlot, "stim")
+    expect_gg(plotPeakDimRed(pbmcPlot, "ISG15"))
+
 })
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -188,6 +200,19 @@ test_that("Proportion plots", {
                  "`class1` and `class2` must be")
     expect_error(plotProportionBar(pbmcPlot, letters),
                  "`class1` and `class2` must be")
+
+    defaultCluster(pbmcPlot) <- NULL
+    expect_error(plotProportionBox(pbmcPlot), "No cluster specified nor default set")
+    defaultCluster(pbmcPlot) <- "leiden_cluster"
+    expect_error(plotProportionBox(pbmcPlot, conditionBy = "leiden_cluster"),
+                 "Condition variable must be a high level variable of the datasets")
+    expect_gg(
+        plotProportionBox(pbmcPlot, dot = TRUE),
+        plotProportionBox(pbmcPlot, conditionBy = "dataset")
+    )
+    do.call(expect_gg, plotProportionBox(pbmcPlot, splitByCluster = TRUE, dot = TRUE))
+    do.call(expect_gg, plotProportionBox(pbmcPlot, splitByCluster = TRUE, conditionBy = "dataset"))
+
 })
 
 

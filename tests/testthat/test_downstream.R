@@ -72,18 +72,48 @@ test_that("clustering", {
 
     pbmc <- runOnlineINMF(pbmc, k = 20, minibatchSize = 100)
     expect_message(runCluster(pbmc, nRandomStarts = 1),
-                   "leiden clustering on unnormalized")
+                   "leiden clustering on unaligned")
 
     expect_message(runCluster(pbmc, nRandomStarts = 1, method = "louvain"),
-                   "louvain clustering on unnormalized")
+                   "louvain clustering on unaligned")
 
     pbmc <- quantileNorm(pbmc)
     expect_message(pbmc <- runCluster(pbmc, nRandomStarts = 1, saveSNN = TRUE),
-                   "leiden clustering on quantile normalized")
+                   "leiden clustering on aligned")
+    expect_is(defaultCluster(pbmc, droplevels = TRUE), "factor")
     expect_is(pbmc@uns$snn, "dgCMatrix")
-    expect_message(runCluster(pbmc, nRandomStarts = 1, method = "louvain"),
-                   "louvain clustering on quantile normalized")
+    expect_message(pbmc <- runCluster(pbmc, nRandomStarts = 1, method = "louvain"),
+                   "louvain clustering on aligned")
+    expect_message(defaultCluster(pbmc, name = "louvain_cluster") <- "louvain_cluster",
+                   "Cannot have")
+    expect_error(defaultCluster(pbmc) <- "notexist", "Selected variable does not exist")
+    defaultCluster(pbmc) <- pbmc$leiden_cluster
+    expect_identical(pbmc$leiden_cluster, pbmc$defaultCluster)
+    expect_error(defaultCluster(pbmc) <- factor(letters), "Length of")
+    defaultCluster(pbmc) <- NULL
+    defaultCluster(pbmc, name = "leiden") <- unname(pbmc$leiden_cluster)
+    expect_identical(pbmc$leiden, pbmc$leiden_cluster)
 
+    fakevar <- pbmc$leiden_cluster
+    names(fakevar)[1:26] <- letters
+    expect_error(defaultCluster(pbmc) <- fakevar, "Not all `names")
+
+
+
+    expect_equal(calcPurity(pbmc, "leiden_cluster", "leiden_cluster"), 1)
+    expect_error(calcPurity(pbmc, letters, "leiden_cluster"),
+                 "Longer/shorter `trueCluster` than cells considered requires")
+    expect_message(calcPurity(pbmc, unname(pbmc$leiden_cluster), "leiden_cluster"), "Assuming unnamed")
+
+    expect_equal(calcARI(pbmc, "leiden_cluster", "leiden_cluster"), 1)
+    expect_error(calcARI(pbmc, letters, "leiden_cluster"),
+                 "Longer/shorter `trueCluster` than cells considered requires")
+    expect_message(calcARI(pbmc, unname(pbmc$leiden_cluster), "leiden_cluster"), "Assuming unnamed")
+
+    expect_equal(calcNMI(pbmc, "leiden_cluster", "leiden_cluster"), 1)
+    expect_error(calcNMI(pbmc, letters, "leiden_cluster"),
+                 "Longer/shorter `trueCluster` than cells considered requires")
+    expect_message(calcNMI(pbmc, unname(pbmc$leiden_cluster), "leiden_cluster"), "Assuming unnamed")
     # Tests for singleton grouping. Need to find the case where there are singletons
     # expect_message(runCluster(pbmc, nRandomStarts = 1,
     #                          partitionType = "CPMVertexPartition"),
@@ -109,7 +139,6 @@ test_that("clustering", {
                               colnames(pbmc)))
 })
 
-
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Dimensionality reduction
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -119,15 +148,27 @@ test_that("dimensionality reduction", {
     skip_if_not_installed("RcppPlanc")
     pbmc <- process(pbmc)
     expect_message(runUMAP(pbmc, useRaw = TRUE),
-                   "Generating UMAP on unnormalized")
+                   "Generating UMAP on unaligned")
+    expect_error(dimRed(pbmc), "available in this")
     expect_message(pbmc <- runUMAP(pbmc, useRaw = FALSE),
-                   "Generating UMAP on quantile normalized")
-    expect_equal(dim(dimRed(pbmc, "UMAP")), c(ncol(pbmc), 2))
+                   "Generating UMAP on aligned")
+    pbmc@uns$defaultDimRed <- NULL
+    expect_message(dimRed(pbmc), "No default")
+    defaultDimRed(pbmc) <- "UMAP"
+    expect_error(defaultDimRed(pbmc) <- letters, "Can only set one")
+    expect_identical(defaultDimRed(pbmc), dimRed(pbmc, "UMAP"))
+    expect_equal(dim(dimRed(pbmc)), c(ncol(pbmc), 2))
+    expect_no_error(dimRed(pbmc, "UMAP2") <- dimRed(pbmc, "UMAP"))
+    expect_equal(nrow(dimRed(pbmc, name = 1, cellIdx = 1:10)), 10)
+    expect_equal(nrow(dimRed(pbmc, name = 1, useDatasets = names(pbmc))), ncol(pbmc))
+    expect_equal(nrow(dimRed(pbmc, name = "UMAP", cellIdx = 1:10)), 10)
+    expect_equal(nrow(dimRed(pbmc, name = "UMAP", useDatasets = names(pbmc))), ncol(pbmc))
+    expect_no_error(dimRed(pbmc, 2) <- NULL)
 
     expect_message(runTSNE(pbmc, useRaw = TRUE),
-                   "Generating TSNE \\(Rtsne\\) on unnormalized")
+                   "Generating TSNE \\(Rtsne\\) on unaligned")
     expect_message(pbmc <- runTSNE(pbmc, useRaw = FALSE),
-                   "Generating TSNE \\(Rtsne\\) on quantile normalized")
+                   "Generating TSNE \\(Rtsne\\) on aligned")
     expect_equal(dim(dimRed(pbmc, "TSNE")), c(ncol(pbmc), 2))
 
     expect_error(runTSNE(pbmc, method = "fft"),
@@ -145,19 +186,21 @@ test_that("wilcoxon", {
                  "No `conditionBy` given or default cluster not set")
     pbmc <- process(pbmc)
     pbmc <- runCluster(pbmc, nRandomStarts = 1)
-    res0 <- runMarkerDEG(pbmc, conditionBy = "dataset", useDatasets = 1)
+    res0 <- runMarkerDEG(pbmc, conditionBy = "dataset", useDatasets = 1, method = "wilcox")
     expect_true(all(is.nan(res0$pval)))
 
-    res1 <- runMarkerDEG(pbmc)
+    res1 <- runMarkerDEG(pbmc, method = "wilcox")
     expect_equal(dim(res1), c(249 * nlevels(pbmc$leiden_cluster), 10))
-    res2 <- runMarkerDEG(pbmc, conditionBy = "dataset", splitBy = "leiden_cluster")
-    expect_is(res2, "list")
+    res2 <- runMarkerDEG(pbmc, conditionBy = "dataset", splitBy = "leiden_cluster", method = "wilcox")
+    expect_is(res2, "data.frame")
     hm1 <- plotMarkerHeatmap(pbmc, res1, dedupBy = "l")
     hm2 <- plotMarkerHeatmap(pbmc, res1, dedupBy = "p")
     expect_is(hm1, "HeatmapList")
     expect_is(hm2, "HeatmapList")
     expect_is(plotVolcano(res1, 0), "ggplot")
-    expect_is(plotEnhancedVolcano(res1, 0), "ggplot")
+    if (requireNamespace("EnhancedVolcano", quietly = TRUE)) {
+        expect_is(plotEnhancedVolcano(res1, 0), "ggplot")
+    }
 
     expect_error(getFactorMarkers(pbmc, "ctrl", "stim", factorShareThresh = 0),
                  "No factor passed the dataset specificity threshold")
@@ -182,6 +225,12 @@ test_that("wilcoxon", {
         go2 <- runGOEnrich(res1, group = 0, orderBy = "pval", significant = FALSE)
         expect_is(go2, "list")
         expect_is(go2$`0`$result, "data.frame")
+        go3 <- runGOEnrich(res1, group = c(0, 1), orderBy = "pval", significant = FALSE)
+
+        expect_is(plotGODot(go1, pvalThresh = 1), "ggplot")
+        expect_error(plotGODot(go1, group = "ctrl"), "Specified group not available")
+        expect_message(plotGODot(go1, group = '0'), "No enough matching")
+        expect_is(plotGODot(go3, pvalThresh = 1), "list")
     }
 })
 
@@ -189,22 +238,23 @@ test_that("wilcoxon", {
 test_that("pseudo bulk", {
     skip_if_not_installed("RcppPlanc")
     skip_if_not_installed("DESeq2")
+    nIsecGenes <- length(Reduce(intersect, lapply(rawData(pbmc), rownames)))
     pbmc <- process(pbmc)
     pbmc <- runCluster(pbmc, nRandomStarts = 1)
     res1 <- runPairwiseDEG(pbmc, groupTest = pbmc$leiden_cluster == 1,
                            groupCtrl = pbmc$leiden_cluster == 2,
                            method = "pseudo")
     expect_is(res1, "data.frame")
-    expect_true(all.equal(dim(res1), c(238, 5)))
+    expect_true(all.equal(dim(res1), c(nIsecGenes, 7)))
     res2 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
                            variable1 = "leiden_cluster",
                            method = "pseudo", useReplicate = "dataset")
     expect_is(res2, "data.frame")
-    expect_true(all.equal(dim(res2), c(238, 5)))
+    expect_true(all.equal(dim(res2), c(nIsecGenes, 7)))
     res3 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
                            variable1 = "leiden_cluster",
                            method = "pseudo")
-    expect_true(identical(res1[,-2], res3[,-2])) # Different in "group" column
+    expect_true(all.equal(res1[,-2], res3[,-2])) # Different in "group" column
     pbmc$leiden2 <- pbmc$leiden_cluster
     res4 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
                            variable1 = "leiden_cluster", variable2 = "leiden2",
@@ -214,13 +264,13 @@ test_that("pseudo bulk", {
     expect_error(runPairwiseDEG(pbmc, variable2 = "yo"),
                  "Please see")
 
-    expect_error(
+    expect_message(
         runPairwiseDEG(
             pbmc, groupTest = pbmc$dataset == "ctrl" & pbmc$leiden_cluster == 0,
             groupCtrl = pbmc$dataset == "stim" & pbmc$leiden_cluster == 0,
-            method = "pseudo", useReplicate = "dataset"
+            method = "pseudo", useReplicate = "dataset", nPsdRep = 1
         ),
-        "Too few replicates for condition"
+        "Too few replicates"
     )
 
     pbmc@datasets$ctrl@rawData <- NULL

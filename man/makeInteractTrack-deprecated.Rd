@@ -2,7 +2,7 @@
 % Please edit documentation in R/ATAC.R
 \name{makeInteractTrack-deprecated}
 \alias{makeInteractTrack-deprecated}
-\title{[Deprecated] Export predicted gene-pair interaction}
+\title{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} Export predicted gene-pair interaction}
 \arguments{
 \item{corr.mat}{A sparse matrix of correlation with peak names as rows and
 gene names as columns.}

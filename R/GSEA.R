@@ -157,12 +157,22 @@ runGSEA <- function(
 #' See \code{gprofiler2::gost()}. for detailed explanation.
 #' @export
 #' @examples
-#' res <- runMarkerDEG(pbmcPlot)
+#' defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
+#' # Test the DEG between "stim" and "ctrl", within each cluster
+#' result <- runPairwiseDEG(
+#'     pbmc,
+#'     groupTest = "stim",
+#'     groupCtrl = "ctrl",
+#'     variable1 = "dataset",
+#'     splitBy = "defaultCluster",
+#'     nPsdRep = 3,
+#'     minCellPerRep = 3
+#' )
 #' # Setting `significant = FALSE` because it's hard for a gene list obtained
 #' # from small test dataset to represent real-life biology.
 #' \donttest{
 #' if (requireNamespace("gprofiler2", quietly = TRUE)) {
-#'     go <- runGOEnrich(res, group = 0, significant = FALSE)
+#'     go <- runGOEnrich(result, group = "0.stim", significant = FALSE)
 #' }
 #' }
 runGOEnrich <- function(
@@ -229,3 +239,122 @@ runGOEnrich <- function(
     return(resultList)
 }
 
+
+#' Visualize GO enrichment test result in dot plot
+#' @param result Returned list object from \code{\link{runGOEnrich}}.
+#' @param group Character vector of group names, must be available in
+#' \code{names(result)}. Default \code{NULL} make plots for all groups.
+#' @param query A single string selecting from which query to show the result.
+#' Choose from \code{"Up"} for results using up-regulated genes, \code{"Down"}
+#' for down-regulated genes. Default \code{"Up"}.
+#' @param pvalThresh Numeric scalar, cutoff for p-value where smaller values are
+#' considered as significant. Default \code{0.05}.
+#' @param n Number of top terms to be shown, ranked by p-value. Default
+#' \code{20}.
+#' @param termIDMatch Regular expression pattern to match the term ID. Default
+#' \code{"^GO"} for only using GO terms from returned results.
+#' @param colorPalette,colorDirection Viridis palette options. Default
+#' \code{"E"} and \code{1}.
+#' @param xlab,ylab Axis title for x and y axis. Default
+#' \code{"-log10(P-value)"} and \code{"Term name"}, respectively.
+#' @inheritDotParams .ggplotLigerTheme title subtitle legendColorTitle legendSizeTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize plotly
+#' @return A ggplot object if only one group or a list of ggplot objects.
+#' @export
+#' @examples
+#' \donttest{
+#' defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
+#' # Test the DEG between "stim" and "ctrl", within each cluster
+#' result <- runPairwiseDEG(
+#'     pbmc,
+#'     groupTest = "stim",
+#'     groupCtrl = "ctrl",
+#'     variable1 = "dataset",
+#'     splitBy = "defaultCluster"
+#' )
+#' # Setting `significant = FALSE` because it's hard for a gene list obtained
+#' # from small test dataset to represent real-life biology.
+#' if (requireNamespace("gprofiler2", quietly = TRUE)) {
+#'     go <- runGOEnrich(result, group = "0.stim", splitReg = TRUE, significant = FALSE)
+#'     # The toy example won't have significant result.
+#'     plotGODot(go)
+#' }
+#' }
+plotGODot <- function(
+        result,
+        group = NULL,
+        query = c("Up", "Down"),
+        pvalThresh = 0.05,
+        n = 20,
+        termIDMatch = "^GO",
+        colorPalette = "E",
+        colorDirection = 1,
+        xlab = '-log10(P-value)',
+        ylab = 'Term name',
+        ...
+) {
+    group <- group %||% names(result)
+    if (any(!group %in% names(result))) {
+        cli::cli_abort(
+            c(x = "Specified group{?s} not available in {.var result}: {.val {group[!group %in% names(result)]}}",
+              i = "Available one{?s} {?is/are}: {.val {names(result)}}")
+        )
+    }
+    query <- match.arg(query)
+    plotList <- list()
+    for (i in seq_along(group)) {
+        gname <- group[i]
+        resdf <- result[[gname]]$result
+        resdf <- resdf[resdf$query == query, , drop = FALSE]
+        if (is.null(resdf) || nrow(resdf) == 0) {
+            cli::cli_alert_warning(
+                "No significant result returned for group {.val {gname}} and query {.val {query}}."
+            )
+            next
+        }
+        resdf %<>% dplyr::filter(
+            grepl(termIDMatch, .data[['term_id']]),
+            .data[['p_value']] <= pvalThresh
+        )
+        if (nrow(resdf) == 0) {
+            cli::cli_alert_warning(
+                "No enough matching terms ({.field termIDMatch}) nor significant terms (p-value <= {.val {pvalThresh}}) for group {.val {gname}}."
+            )
+            next
+        }
+        g <- resdf %>%
+            dplyr::select(dplyr::all_of(c(
+                'term_name',
+                'p_value',
+                'intersection_size'
+            ))) %>%
+            dplyr::arrange(.data[['p_value']]) %>%
+            dplyr::slice_head(n = n) %>%
+            dplyr::mutate(
+                term_name = factor(
+                    .data[['term_name']],
+                    levels = rev(.data[['term_name']])
+                )
+            ) %>%
+            ggplot2::ggplot(ggplot2::aes(
+                x = -log10(.data[['p_value']]),
+                y = .data[['term_name']],
+                size = .data[['intersection_size']],
+                color = -log10(.data[['p_value']])
+            )) +
+            ggplot2::geom_point()
+        plotList[[gname]] <- .ggplotLigerTheme(
+            plot = g,
+            colorPalette = colorPalette,
+            colorDirection = colorDirection,
+            xlab = xlab,
+            ylab = ylab,
+            panelBorder = TRUE,
+            ...
+        )
+    }
+    if (length(plotList) == 1) {
+        return(plotList[[1]])
+    } else {
+        return(plotList)
+    }
+}

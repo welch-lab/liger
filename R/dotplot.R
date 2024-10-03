@@ -89,11 +89,11 @@ plotClusterGeneDot <- function(
     mat <- retrieveCellFeature(object, feature = unique(features[,1]),
                                slot = "normData", cellIdx = cellIdx,
                                verbose = verbose)
-    if (any(duplicated(features[,1]))) {
-        mat <- mat[,features[,1]]
-    }
     # In case specified features not found
-    features <- features[features[,1] %in% colnames(mat), , drop = FALSE]
+    geneAvail <- colnames(mat)
+    features <- features[features[,1] %in% geneAvail, , drop = FALSE]
+    # In case retriever function mess up the order or deduplicated the query
+    mat <- mat[, features[,1], drop = FALSE]
     allFeatures <- make.unique(features[,1])
     # Make sure everything consistent
     colnames(mat) <- allFeatures

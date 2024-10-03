@@ -43,7 +43,8 @@ plotProportionPie(
   class1 = NULL,
   class2 = "dataset",
   labelSize = 4,
-  labelColor = "white",
+  labelColor = "black",
+  circleColors = NULL,
   ...
 )
 }
@@ -59,8 +60,56 @@ By default \code{class1 = NULL} and uses default clusters and \code{class2 =
 \item{method}{For bar plot, choose whether to draw \code{"stack"} or
 \code{"group"} bar plot. Default \code{"stack"}.}
 
-\item{showLegend, panelBorder, ...}{ggplot theme setting arguments passed to
-\code{\link{.ggplotLigerTheme}}.}
+\item{...}{
+  Arguments passed on to \code{\link[=.ggplotLigerTheme]{.ggplotLigerTheme}}
+  \describe{
+    \item{\code{title,subtitle,xlab,ylab}}{Main title, subtitle or X/Y axis title text.
+By default, no main title or subtitle will be set, and X/Y axis title will be
+the names of variables used for plotting. Use \code{NULL} to hide elements.
+\code{TRUE} for \code{xlab} or \code{ylab} shows default values.}
+    \item{\code{legendFillTitle}}{Legend title text for fill aesthetics, often used for
+violin, box, bar plots. Default \code{NULL} shows the original variable name.}
+    \item{\code{legendPosition}}{Text indicating where to place the legend. Choose from
+\code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. Default
+\code{"right"}.}
+    \item{\code{baseSize}}{One-parameter control of all text sizes. Individual text
+element sizes can be controlled by other size arguments. "Title" sizes are
+2 points larger than "text" sizes when being controlled by this.}
+    \item{\code{titleSize,xTitleSize,yTitleSize,legendTitleSize}}{Size of main title,
+axis titles and legend title. Default \code{NULL} controls by
+\code{baseSize + 2}.}
+    \item{\code{subtitleSize,xTextSize,yTextSize,legendTextSize}}{Size of subtitle text,
+axis texts and legend text. Default \code{NULL} controls by \code{baseSize}.}
+    \item{\code{colorLabels}}{Character vector for modifying category names in a
+color legend. Passed to \code{ggplot2::scale_color_manual(labels)}. Default
+\code{NULL} uses original levels of the factor.}
+    \item{\code{colorValues}}{Character vector of colors for modifying category colors
+in a color legend. Passed to \code{ggplot2::scale_color_manual(values)}.
+Default \code{NULL} uses internal selected palette when <= 26 categories are
+presented, otherwise ggplot hues.}
+    \item{\code{legendNRow,legendNCol}}{Integer, when too many categories in one
+variable, arranges number of rows or columns. Default \code{NULL},
+automatically split to \code{ceiling(levels(variable)/10)} columns.}
+    \item{\code{colorPalette}}{For continuous coloring, an index or a palette name to
+select from available options from ggplot
+\code{\link[ggplot2]{scale_brewer}} or \code{\link[viridisLite]{viridis}}.
+Default \code{"magma"}.}
+    \item{\code{colorDirection}}{Choose \code{1} or \code{-1}. Applied when
+\code{colorPalette} is from Viridis options. Default \code{-1} use darker
+color for higher value, while \code{1} reverses this direction.}
+    \item{\code{colorLow,colorMid,colorHigh,colorMidPoint}}{All four of these must be
+specified to customize palette with}
+    \item{\code{naColor}}{The color code for \code{NA} values. Default \code{"#DEDEDE"}.
+\code{\link[ggplot2]{scale_colour_gradient2}}. Default \code{NULL}.}
+    \item{\code{plotly}}{Whether to use plotly to enable web based interactive browsing
+for the plot. Requires installation of package "plotly". Default
+\code{FALSE}.}
+  }}
+
+\item{showLegend}{Whether to show the legend. Default \code{TRUE}.}
+
+\item{panelBorder}{Whether to show rectangle border of the panel instead of
+using ggplot classic bottom and left axis lines. Default \code{FALSE}.}
 
 \item{inclRev}{Logical, for barplot, whether to reverse the specification for
 \code{class1} and \code{class2} and produce two plots. Default \code{FALSE}.}
@@ -72,10 +121,14 @@ By default \code{class1 = NULL} and uses default clusters and \code{class2 =
 \item{useCluster}{For \code{plotClusterProportions}. Same as \code{class1}
 while \code{class2} is hardcoded with \code{"dataset"}.}
 
-\item{return.plot}{\bold{defuncted}.}
+\item{return.plot}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#defunct}{\figure{lifecycle-defunct.svg}{options: alt='[Defunct]'}}}{\strong{[Defunct]}}}
 
 \item{labelSize, labelColor}{Settings on pie chart percentage label. Default
 \code{4} and \code{"white"}.}
+
+\item{circleColors}{Character vector of colors. \code{plotProportionPie}
+parameter for setting the colors of circles, i.e. categorical variable
+controlled by \code{class2}. Default \code{NULL} uses ggplot default hues.}
 }
 \value{
 ggplot or list of ggplot
@@ -88,7 +141,8 @@ plot. \code{plotProportion} produces a combination of both bar plots and dot
 plot.
 
 Having package "ggrepel" installed can help adding tidier percentage
-annotation on the pie chart.
+annotation on the pie chart. Run \code{options(ggrepel.max.overlaps = n)}
+before plotting to set allowed label overlaps.
 }
 \examples{
 plotProportion(pbmcPlot)

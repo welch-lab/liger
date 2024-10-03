@@ -2,7 +2,7 @@
 % Please edit documentation in R/integration.R
 \name{optimizeALS-deprecated}
 \alias{optimizeALS-deprecated}
-\title{[Deprecated] Perform iNMF on scaled datasets}
+\title{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} Perform iNMF on scaled datasets}
 \arguments{
 \item{object}{\code{liger} object. Should normalize, select genes, and scale
 before calling.}

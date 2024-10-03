@@ -2,7 +2,7 @@
 % Please edit documentation in R/deprecated.R
 \name{quantileAlignSNF}
 \alias{quantileAlignSNF}
-\title{Quantile align (normalize) factor loadings}
+\title{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Quantile align (normalize) factor loadings}
 \usage{
 quantileAlignSNF(
   object,
@@ -48,7 +48,7 @@ starts (default 10).}
 communities. (default 1)}
 
 \item{dims.use}{Indices of factors to use for shared nearest factor determination (default
-1:ncol(H[[1]])).}
+\code{1:ncol(H[[1]])}).}
 
 \item{dist.use}{Distance metric to use in calculating nearest neighbors (default "CR").}
 

@@ -13,6 +13,7 @@ runUMAP(
   nNeighbors = 20,
   minDist = 0.1,
   dimredName = "UMAP",
+  asDefault = NULL,
   seed = 42,
   verbose = getOption("ligerVerbose", TRUE),
   k = nDims,
@@ -27,10 +28,10 @@ runUMAP(
 \item{object}{\linkS4class{liger} object with factorization results.}
 
 \item{useRaw}{Whether to use un-aligned cell factor loadings (\eqn{H}
-matrices). Default \code{NULL} search for quantile-normalized loadings first
+matrices). Default \code{NULL} search for aligned factor loadings first
 and un-aligned loadings then.}
 
-\item{useDims}{Index of factors to use for computing UMAP embedding. Default
+\item{useDims}{Index of factors to use for computing the embedding. Default
 \code{NULL} uses all factors.}
 
 \item{nDims}{Number of dimensions to reduce to. Default \code{2}.}
@@ -40,13 +41,16 @@ space. Default \code{"cosine"}, alternative options include:
 \code{"euclidean"}, \code{"manhattan"} and \code{"hamming"}.}
 
 \item{nNeighbors}{Number of neighboring points used in local approximations
-of manifold structure. Default \code{10}.}
+of manifold structure. Default \code{20}.}
 
 \item{minDist}{Numeric. Controls how tightly the embedding is allowed
 compress points together. Default \code{0.1}.}
 
 \item{dimredName}{Name of the variable in \code{cellMeta} slot to store the
 result matrix. Default \code{"UMAP"}.}
+
+\item{asDefault}{Logical, whether to set the resulting dimRed as default for
+visualization. Default \code{NULL} will set it when no default is set.}
 
 \item{seed}{Random seed for reproducibility. Default \code{42}.}
 
@@ -61,8 +65,8 @@ The \code{object} where a \code{"UMAP"} variable is updated in the
 \code{cellMeta} slot with the whole 2D embedding matrix.
 }
 \description{
-Run UMAP on the quantile normalized cell factors (result from
-\code{\link{quantileNorm}}), or unnormalized cell factors (result from
+Run UMAP on the aligned cell factors (result from
+\code{\link{alignFactors}}), or unaligned cell factors (raw result from
 \code{\link{runIntegration}})) to generate a 2D embedding for visualization
 (or general dimensionality reduction). Has option to run on subset of
 factors. It is generally recommended to use this method for dimensionality

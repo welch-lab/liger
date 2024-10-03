@@ -31,7 +31,8 @@ calculation. Default \code{NULL} uses all datasets.}
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
-\item{classes.compare}{[Deprecated/Renamed]. Use \code{trueCluster} instead.}
+\item{classes.compare}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Use
+\code{trueCluster} instead.}
 }
 \value{
 A numeric scalar, the purity of the clustering result indicated by

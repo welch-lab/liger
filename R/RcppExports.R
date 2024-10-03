@@ -5,16 +5,28 @@ RunModularityClusteringCpp <- function(SNN, modularityFunction, resolution, algo
     .Call(`_rliger_RunModularityClusteringCpp`, SNN, modularityFunction, resolution, algorithm, nRandomStarts, nIterations, randomSeed, printOutput, edgefilename)
 }
 
+moe_correct_ridge_cpp <- function(Z_orig, R, lambda, Phi, B, N) {
+    .Call(`_rliger_moe_correct_ridge_cpp`, Z_orig, R, lambda, Phi, B, N)
+}
+
+normalize_byCol_dense_rcpp <- function(x) {
+    .Call(`_rliger_normalize_byCol_dense_rcpp`, x)
+}
+
 colNormalize_dense_cpp <- function(x, L) {
     .Call(`_rliger_colNormalize_dense_cpp`, x, L)
 }
 
-colAggregateMedian_dense_cpp <- function(x, group, n) {
-    .Call(`_rliger_colAggregateMedian_dense_cpp`, x, group, n)
-}
-
 scaleNotCenter_byRow_rcpp <- function(x) {
     .Call(`_rliger_scaleNotCenter_byRow_rcpp`, x)
+}
+
+safe_scale <- function(x, center, scale) {
+    .Call(`_rliger_safe_scale`, x, center, scale)
+}
+
+scaleNotCenter_byCol_dense_rcpp <- function(x) {
+    .Call(`_rliger_scaleNotCenter_byCol_dense_rcpp`, x)
 }
 
 scaleNotCenter_byRow_perDataset_rcpp <- function(x, ann, n) {
@@ -49,8 +61,20 @@ colAggregateSums_sparse <- function(x, group, ngroups) {
     .Call(`_rliger_colAggregateSums_sparse`, x, group, ngroups)
 }
 
+colAggregateMedian_dense_cpp <- function(x, group, n) {
+    .Call(`_rliger_colAggregateMedian_dense_cpp`, x, group, n)
+}
+
 sample_cpp <- function(x, size) {
     .Call(`_rliger_sample_cpp`, x, size)
+}
+
+updatePseudoBulkRcpp <- function(psdBulk, sparseRaw, featureIdx, repIdx) {
+    invisible(.Call(`_rliger_updatePseudoBulkRcpp`, psdBulk, sparseRaw, featureIdx, repIdx))
+}
+
+updateNCellExprRcpp <- function(out, sparseRaw, featureIdx, groupVar) {
+    invisible(.Call(`_rliger_updateNCellExprRcpp`, out, sparseRaw, featureIdx, groupVar))
 }
 
 #' Fast calculation of feature count matrix

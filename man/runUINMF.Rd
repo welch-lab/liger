@@ -53,18 +53,18 @@ Default \code{2L}. Only supported for platform with OpenMP support.}
 }
 \value{
 \itemize{
- \item{liger method - Returns updated input \linkS4class{liger} object.
- \itemize{
-     \item{A list of all \eqn{H} matrices can be accessed with
-         \code{getMatrix(object, "H")}}
-     \item{A list of all \eqn{V} matrices can be accessed with
-         \code{getMatrix(object, "V")}}
-     \item{The \eqn{W} matrix can be accessed with
-         \code{getMatrix(object, "W")}}
-     \item{A list of all \eqn{U} matrices can be accessed with
-         \code{getMatrix(object, "U")}}
- }
- }
+\item{liger method - Returns updated input \linkS4class{liger} object.
+\itemize{
+\item{A list of all \eqn{H} matrices can be accessed with
+\code{getMatrix(object, "H")}}
+\item{A list of all \eqn{V} matrices can be accessed with
+\code{getMatrix(object, "V")}}
+\item{The \eqn{W} matrix can be accessed with
+\code{getMatrix(object, "W")}}
+\item{A list of all \eqn{U} matrices can be accessed with
+\code{getMatrix(object, "U")}}
+}
+}
 }
 }
 \description{

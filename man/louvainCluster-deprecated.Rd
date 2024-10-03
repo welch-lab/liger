@@ -2,7 +2,7 @@
 % Please edit documentation in R/clustering.R
 \name{louvainCluster-deprecated}
 \alias{louvainCluster-deprecated}
-\title{[Deprecated] Louvain algorithm for community detection}
+\title{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Louvain algorithm for community detection}
 \arguments{
 \item{object}{\code{liger} object. Should run quantile_norm before calling.}
 

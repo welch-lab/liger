@@ -1,7 +1,7 @@
 ---
 title: "Joint definition of cell types from multiple scRNA-seq datasets"
-author: "Joshua Sodicoff and Joshua Welch"
-date: "2023-02-27"
+author: "Yichen Wang, Joshua Sodicoff and Joshua Welch"
+date: "2024-10-01"
 output:
   html_document: 
     toc: 3
@@ -13,24 +13,124 @@ output:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 
-This guide will demonstrate the usage of the Liger package in the style of the R Console, which can be accessed through an R development environment (e.g., RStudio) or directly from the R command line.
+This article is an general walkthrough of all main LIGER functionalities. We demonstrate the usage of the *rliger* package in the style of the R Console, which can be accessed through an R development environment (e.g., RStudio) or directly from the R command line.
 
-## Stage I: Preprocessing and Normalization
+LIGER relies on iNMF (integrative Non-negative Matrix Factorization, [Welch, JD 2019](https://doi.org/10.1016/j.cell.2019.05.006)) to jointly factorize single-cell data into interpretable low-dimensional representations, and integrated clustering can be obtained upon aligned cell factor loading. The package also provides a variety of utilities for visualization and analysis of clustering, gene expression across datasets, comparisons of cluster assignments and etc.
 
-### 1. Loading data
+## Setup the session
 
-For the first portion of this protocol, we will be integrating data from control and interferon-stimulated PBMCs from [Kang et al, 2017](https://www.nature.com/articles/nbt.4042). The data can be found in the Gene Expression Omnibus, [Series GSE96583](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE96583). This dataset was originally in the form of output from the 10X Cellranger pipeline, though we will directly load downsampled versions of the control and stimulated DGEs here.
-
-**For convenience, we have prepared the pre-processed data which are ready to use.** There are two datasets: PBMC control and PBMC interferon-stimulated. We provided ready-to-use liger object, which can be easily loaded with `importPBMC()`. 
+To get started, please make sure that *rliger* is successfully installed in R, as guided on the [Installation help page](installation.html). Then, we load the package to the current R session, together with a few other helpful packages. [*dplyr*](https://dplyr.tidyverse.org/) has been widely used for data table manupulation and is famous for its unique user-friendly syntax. [*cowplot*](https://wilkelab.org/cowplot/index.html) is a package that provides a simple and consistent way to combine multiple plots into a single figure.
 
 ```{r, results='hide'}
 library(rliger)
+library(dplyr)
+library(cowplot)
+```
+
+## Load the data
+
+In this tutorial, we will be integrating data from control and interferon-stimulated PBMCs from [Kang et al, 2017](https://www.nature.com/articles/nbt.4042). The data can be found in the Gene Expression Omnibus, [Series GSE96583](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE96583). This dataset was originally in the form of output from the 10X Cellranger pipeline. In this tutorial, we prepared a downsampled version of the data.
+
+- [**Click to download `pbmc_ifnb_example.tar.gz`**](https://figshare.com/ndownloader/files/47748940)
+
+After downloading the archive file (.tar.gz) to your working directory, we need to extract the content to a folder. You can use any unzip tool available on your computer to extract the content. For platform without a graphical UI, operate the following command **in its terminal (not in R)**.
+
+```bash
+tar -xvzf pbmc_ifnb_example.tar.gz
+```
+
+This will result you a folder called `pbmc_ifnb_example` in your working directory, with inner structure like below:
+
+```
+pbmc_ifnb_example
+├── ctrl
+│   └── outs
+│       └── filtered_feature_bc_matrix
+│           ├── barcodes.tsv.gz
+│           ├── features.tsv.gz
+│           └── matrix.mtx.gz
+└── stim
+    └── outs
+        └── filtered_feature_bc_matrix
+            ├── barcodes.tsv.gz
+            ├── features.tsv.gz
+            └── matrix.mtx.gz
+```
+
+Now we can start to work in R to have the two datasets loaded. When doing your own hands on, **make sure to replace the path to the folder with the actual path on your machine**.
+
+```{r}
+# Make sure to modify the following path to reflect the exact location of the folder
+pathToFolder <- "pbmc_ifnb_example"
+rawList <- read10XRNA(pathToFolder)
+pbmcLiger <- createLiger(rawList, organism = "human")
+pbmcLiger
+```
+
+The loaded raw data `rawList` is a list object containing two matrices for the "ctrl" and "stim" datasets. Then `createLiger()` will take the list of all datasets to be integrated as an input and construct the [liger object](liger_object.html).
+
+````{=html}
+<details>
+  <summary><b>Convenience function for loading the example object</b></summary>
+````
+
+For convenience, we have also prepared the pre-processed data which are ready to use, easily loaded with `importPBMC()`. 
+
+```{r, eval=FALSE}
+# This is not run at rendering time.
 pbmcLiger <- importPBMC()
 ```
 
-For creating a liger object from raw counts data or any other types of source, please refer to the [detailed tutorial for importing data](#).
+````{=html}
+</details>
+<br>
+````
 
-### 2. Preprocess
+For creating a liger object from raw counts data or any other types of source (e.g. import cellranger H5 files, convert from Seurat, SingleCellExperiment, or even H5AD file), please refer to the [detailed tutorial for importing data](import_data.html).
+
+## Quality control
+
+It is always the best practice to check the quality control metrics of the scRNAseq data before performing any other processing, in order to rule out cells of poor quality that might affect the downstream analysis. *rliger* by default have the most frequently used metrics calculated when `createLiger()` is called, with the following variables accessible in `cellMeta(pbmcLiger)` or with the `$` operator:
+
+- `pbmcLiger$nUMI`: The sum of UMI counts for each cell.
+- `pbmcLiger$nGene`: The number of genes detected in each cell.
+- `pbmcLiger$mito`: The percentage of mitochondrial genes detected in each cell. 
+- `pbmcLiger$ribo`: The percentage of ribosomal genes detected in each cell.
+- `pbmcLiger$hemo`: The percentage of hemoglobin genes detected in each cell.
+
+The function `plotTotalCountViolin()` and `plotGeneDetectedViolin()` show the density distribution of `nUMI` and `nGene`, respectively. 
+
+```{r, fig.width=10, fig.height=4}
+plotNUMI <- plotTotalCountViolin(pbmcLiger, dot = TRUE)
+plotNGene <- plotGeneDetectedViolin(pbmcLiger, dot = TRUE)
+cowplot::plot_grid(plotNUMI, plotNGene, ncol = 2)
+```
+
+For plotting the mitochondrial gene expression percentage, please use the following command:
+
+```{r, fig.height=2, fig.width=5}
+plotCellViolin(pbmcLiger, "mito", groupBy = "dataset", dot = TRUE)
+```
+
+**It happens that there is no mitochondrial gene detected in the datasets we use for this tutorial.** Users seeing such result with their own data need to pay attention to species setting for identifying the mitochondrial genes and rerun `runGeneralQC()` (click to see usage). If there are mitochondrial genes detected, it is recommended to filter out cells with high mitochondrial gene expression percentage, as they are likely to be dead or dying cells.
+
+There are two approaches of filtering genes and cells in a liger object. The first is to use `removeMissing()` function, which mainly removes non-expressing genes and cells with no counts. This function also allows removing genes that are expressed in too few cells (argument `minCells`) and cells that express too few genes (argument `minFeatures`). The following command removes cells that express less than 200 genes.
+
+```{r, results='hide'}
+pbmcLiger <- removeMissing(pbmcLiger, minFeatures = 200)
+```
+
+The second way is to use R's native matrix subsetting syntax and use the `cellMeta(pbmcLiger)` variables which are accessible with `$` operator. The following command 
+
+- keeps cells with total counts greater than 500
+- keeps cells with more than 200 detected genes
+- keeps cells with mitochondrial gene expression percentage less than 5%
+
+```{r, results='hide'}
+pbmcLiger <- pbmcLiger[, pbmcLiger$nUMI > 500 & pbmcLiger$mito < 5]
+```
+
+## Preprocess
 
 Before we can run iNMF on our datasets, we must run several preprocessing steps to normalize expression data to account for differences in sequencing depth and efficiency between cells, identify variably expressed genes, and scale the data so that each gene has the same variance. Note that because nonnegative matrix factorization requires positive values, we do not center the data by subtracting the mean. We also do not log transform the data.
 
@@ -41,124 +141,418 @@ pbmcLiger <- pbmcLiger %>%
     scaleNotCenter()
 ```
 
-## Stage II: Integration with Joint Matrix Factorization
+For gene selection, we use a customized approach that selects gene for each dataset separately and take the union (or intersection) at last. The selection for each dataset is based on a variance threshold and thus the number of genes selected can be different for each dataset. Users may see the message log from the run and decide whether to raise or lower the threshold for each dataset to obtain optimal number of genes being selected. 
 
-### 3. Determine parameters and perform iNMF integration
+## Integration with Joint Matrix Factorization
 
-We are now able to run integrative non-negative matrix factorization (iNMF) on the normalized and scaled datasets. The key parameter for this analysis is `k`, the number of matrix factors (analogous to the number of principal components in PCA). In general, we find that a value of `k` between 20 and 40 is suitable for most analyses and that results are robust for choice of `k`. Because LIGER is an unsupervised, exploratory approach, there is no single "right" value for `k`. In practice, users choose `k` from a combination of biological prior knowledge and other information. For this tutorial, we set `k = 20`.
+### Joint factorization
+
+We are now able to perform iNMF on the scaled datasets. The key parameter for this analysis is `k`, the number of ranks each dataset is factorized into (analogous to the number of principal components in PCA). In general, we find that a value of `k` between 20 and 40 is suitable for most analyses and that results are robust for choice of `k`. Because LIGER is an unsupervised, exploratory approach, there is no single "right" value for `k`. In practice, users choose `k` from a combination of biological prior knowledge and other information. A higher `k` value might be considered when there are more distinct composition expected from all datasets involved. A too-high `k` value might result in splitting a distinct cell population into unnecessary subpopulations, while a too-low `k` value might not be sufficient enough for separating a distinct cell population apart from others. For this tutorial, we set `k = 30`.
 
 ```{r Count-6, results='hide'}
-pbmcLiger <- runIntegration(pbmcLiger, k = 20)
+pbmcLiger <- runIntegration(pbmcLiger, k = 30)
 ```
 
 >Starting from rliger 2.0.0, we use an optimized implementation of iNMF. Here we deprecated the parameter `thresh` which stands for a convergence detecter in order to speed up each algorithm iteration by omitting the calculation of objective error.
 
-The factorization yields several lower dimension matrices, including the $H$ matrices of metagene loadings for each cell, the $W$ matrix of shared factor loadings and the $V$ matrices of dataset-specific factor loadings. Please refer to [liger object documentation](#) for how to access them.
+The factorization yields several lower dimension matrices: 
 
-The time consumption of this step is dependent of the size of the datasets, in terms of number of cells, number of variable genes selected, and the value of `k`. The implementation supports OpenMP multi-threading, and there for using a machine with a number of cores allocated helps speeding it up.
+- an $H$ matrix for each dataset, representing the factor loadings for each cell. A factor can be regarded as a metagene.
+- the $W$ matrix of shared gene loadings for each factor. 
+- A $V$ matrix for each dataset, standing for the dataset-specific gene loadings for each factor. 
 
-## Stage III: Quantile Normalization and Joint Clustering
+Please refer to [liger object documentation](liger_object.html) for how to access them.
 
-### 4. Align the factors
+The time consumption of this step is linearly dependent of the size of the datasets, in terms of number of cells, number of variable genes selected, and the value of `k`. The implementation supports OpenMP multi-threading on non-Apple-Sillicon machines, and therefore using a machine with a number of cores allocated and setting argument `nCores` to a >1 integer helps speeding it up. While `nCores` setting is not applicable on Apple Sillicon machines, the benchmarking there still shows comparable performance.
 
-We can now use the resulting factors to jointly cluster cells and perform quantile normalization by dataset, factor, and cluster to fully integrate the datasets. All of this functionality is encapsulated within the `quantileNorm()` function, which uses max factor assignment followed by refinement using a k-nearest neighbors graph.
+### Factor alignment
 
-```{r loading-1, results='hide'}
-pbmcLiger <- quantileNorm(pbmcLiger)
+As introduced above, the $H$ matrices for each dataset can be treated as low-dimensional representation of cells and can be used for clustering. These matrices are interpretable in a way that each factor can be considered as a metagene, cell identity program, biological activity program and etc. We need one last step to align the factor loading values across datasets, so that cells voted to be of the same "type" by the factors will have a aligned loading values across datasets, before calling a clustering algorithm or generating embeddings for visualization.
+
+From *rliger 2.1.0*, we introduce a newly developed cell factor loading alignment method.
+
+```{r}
+pbmcLiger <- alignFactors(pbmcLiger, method = "centroidAlign")
 ```
 
-### 5. Clustering
+This method treats the factor loadings in each cell as soft-clustering probabilities and therefore can yield centroids for each cluster per dataset. We then linearly transform the scaled $H$ matrices by moving the centroids of the same cluster from different datasets towards each other. This method is benchmarked to show much better overall performance than the previous quantile normalization method. While having comparable power in removing batch effect, the centroid alignment method has much improved ability to conserve biological information, especially when uncommon cell types are present in part of the datasets.
 
-The `quantileNorm()` procedure produces joint clustering assignments and a low-dimensional representation that integrates the datasets together. These joint clusters directly from iNMF can be used for downstream analyses (see below). Alternatively, you can also run Louvain community detection, an algorithm commonly used for single-cell data, on the normalized cell factors. The Louvain algorithm excels at merging small clusters into broad cell classes and thus may be more desirable in some cases than the maximum factor assignments produced directly by iNMF.
+
+````{=html}
+<details>
+  <summary><b>Running conventianal quantile normalization</b></summary>
+````
+
+Quantile normalization relies on the selection of a reference dataset and matches the quantiles of the factor loading across a cluster in each dataset to that of the reference dataset. This method is powerful when the same cell types are expected to be present in all datasets (e.g. the PBMC datasets demonstrated in this tutorial) and provides strong batch effect removal. However, it may not be optimal when the cell types are not shared across datasets or when the cell types are not evenly distributed across datasets.
+
+```{r, eval=FALSE}
+pbmcLiger <- alignFactors(pbmcLiger, method = "quantileNorm")
+```
+
+````{=html}
+</details>
+<br>
+````
+
+The factor loading alignment produces matrix $H.norm$, which is considered as the final low-dimensional representation that integrates the datasets together, which can be then used for clustering or visualization.
+
+### Clustering
+
+We run Leiden community detection on SNN graph inferred from the aligned cell factors loading, an approach commonly used for single-cell data. The Leiden algorithm excels at merging small clusters into broad cell classes and thus may be more desirable in some cases than the maximum factor assignments.
 
 ```{r loading-2, results='hide'}
-pbmcLiger <- runCluster(pbmcLiger, resolution = 0.25, nNeighbors = 30)
+pbmcLiger <- runCluster(pbmcLiger, resolution = 0.3)
 ```
 
->Starting from rliger 2.0.0, cluster labeling will be stored in cell metadata, which can be accessed with `cellMeta(pbmcLiger)`. Use argument `clusterName` to specify unique variable names for the result can enable storing multiple cluster labeling variables at the same time.
+>Starting from rliger 2.0.0, cluster labeling will be stored in cell metadata, which can be accessed with `cellMeta(pbmcLiger)`. Use argument `clusterName` in `runCluster()` to specify unique variable names for the result so that multiple cluster labeling variables can be stored at the same time.
 
-## Stage IV: Visualization and Downstream Analysis
+### Visualize the integration
 
-### 6. Generate dimensionality reduced embedding
-
-To visualize the clustering of cells graphically, we can project the normalized cell factors to two or three dimensions. LIGER supports both UMAP and t-SNE for this purpose. 
+To visualize the clustering of cells, we can project the aligned cell factors to 2D space. LIGER supports both UMAP and t-SNE for this purpose. 
 
 ```{r pre-1, results='hide'}
-pbmcLiger <- runUMAP(pbmcLiger, n_neighbors = 30, min_dist = 0.3)
+pbmcLiger <- runUMAP(pbmcLiger, minDist = 0.3)
 ```
 
->Starting from rliger 2.0.0, the slot for storing dimensionality reduction matrices will be renamed to "dimReds". It will be a list that can hold multiple low dimensional matrices that match to the dataset by cell identifiers. Users can access individual matrix with `dimRed(object, "name")`. Use argument `dimredName` to specify unique  names for the UMAP result so that it allows storing multiple low-dimensional representation matrices at the same time.
+>Starting from rliger 2.0.0, the slot for storing dimensionality reduction matrices will be renamed to "dimReds". It will be a list that can hold multiple low dimensional matrices that match to all datasets by cell identifiers. Users can access individual matrix with `dimRed(object, "name")`. Use argument `dimredName` in `runUMAP()` (or `runTSNE()` to specify unique names for the UMAP/tSNE result so that it allows storing multiple low-dimensional representation matrices at the same time.
 
-### 7. Create plots 
-
-We provide a variety of utilities for visualization and analysis of clustering, gene expression across datasets, and comparisons of cluster assignments. Here we demonstrate several commonly used examples.
-
-`plotByDatasetAndCluster()` returns two graphs, generated by t-SNE or UMAP in the previous step. The first colors cells by dataset of origin, and the second by cluster as determined by previous clustering step. The plots provide visual confirmation that the datasets are well aligned and the clusters are consistent with the shape of the data as revealed by UMAP.
+`plotByDatasetAndCluster()` returns two graphs, generated with the UMAP in the previous step. The first colors cells by dataset of origin, and the second by cluster as determined by previous clustering step. The plots provide visual confirmation that the datasets are well aligned and the clusters are consistent with the shape of the data as revealed by UMAP.
 
 The two subplots can individually be generated with `plotDatasetDimRed()` and `plotClusterDimRed()`, respectively. 
 
-```{r 4-1, fig.align='center', fig.width=10}
+```{r 4-1, fig.align='center', fig.height=6, fig.width=14}
 plotByDatasetAndCluster(pbmcLiger)
 ```
 
-To directly study the impact of factors on the clustering and determine what genes load most highly on each factor, we use the `plotGeneLoadings()` function, which returns plots of factor loading on the dimensionality reduction and highly loaded genes by dataset for each factor.
+Sometimes it is also important to have a look at the cluster distribution within each dataset, because the UMAP plot colored by dataset can be too messy when different colors are expected to be mixed up. This can be achieved by running `plotClusterDimRed()` with setting `splitBy = "dataset"`. Additionally, we can make a contour density plot of the dimensionality reduction to further assist interpreting the distribution.
 
-```{r, results='hide', fig.keep='all', fig.align='center', fig.height=7}
+```{r, fig.align='center', fig.height=10, fig.width=12}
+clusterUmapList <- plotClusterDimRed(pbmcLiger, splitBy = "dataset", title = names(pbmcLiger))
+densityList <- plotDensityDimRed(pbmcLiger, splitBy = "dataset", combinePlot = FALSE)
+# Use cowplot's functionality to bring individual plots in the list together
+plot_grid(plotlist = c(clusterUmapList, densityList), align = "hv")
+```
+
+From the plots above, we can visually see that there is a location shift at cluster 0. But otherwise the density pattern in most of the parts is very similar between the two datasets, which is a good sign of successful integration.
+
+## Explore and interpret the factors
+
+Non-negative matrix factorization approach is known for its interpretability of the information from the low dimensional result. To directly study the impact of factors on the clustering and determine what genes load most highly on each factor, we use the `plotGeneLoadings()` function, which returns plots of factor loading on the dimensionality reduction and highly loaded genes by dataset for each factor. Knowing the highly loaded gene of each factor largely helps helps understanding what biological processes are driving the clustering and guides the annotation of cell types. The dataset-specific gene loading further helps to understand the differences between datasets.
+
+In this example, we show the 11'th factor, which is highly loaded in cluster 7. From the top loaded genes, we can easily identify that cluster 7 should be considered as NK cells given the context of PBMCs, as GNLY and NKG7 are well known markers for NK cells. From the top loaded genes in the "stim" dataset (interferon stimulated), we can also observe IFI6 (interferon-alpha inducible protein 6), which agrees with the biological context of the experiment.
+
+```{r, results='hide', fig.keep='all', fig.align='center', fig.height=7, fig.width=6}
 factorMarkers <- getFactorMarkers(pbmcLiger, dataset1 = "ctrl", dataset2 = "stim")
 plotGeneLoadings(pbmcLiger, markerTable = factorMarkers, useFactor = 11)
 ```
 
-### 8. Differential expression
+## Explore cell type proportions
 
-Using the `runMarkerDEG()` function, we can next identify gene markers for all clusters. We can also compare expression within each cluster across datasets, which in this case reveals markers of interferon-beta stimulation. The function returns a table of data that allows us to determine the significance of each gene’s differential expression, including log fold change, area under the curve (auc) and p-value.
+*rliger* provides a good number of functions that visualize the cell type proportion within each dataset, which helps understanding the compositional change across conditions of interests, also known as a differential abundance analysis.
 
-The default parameters performs Wilcoxon rank-sum test at a cluster level:
+### Pie charts
 
-```{r 4-2}
-cluster.results <- runMarkerDEG(pbmcLiger)
-head(cluster.results)
+Here we show a pie chart layered by dataset and sliced by cluster proportion, allowing us to directly see the proportion of each cluster within each dataset while being able to compare the differential abundance of clusters across datasets. 
+
+```{r, fig.align='center'}
+plotProportionPie(pbmcLiger)
 ```
 
-Alternatively, it is also helpful to identify dataset specific markers within each cluster. For example in this tutorial, we can split data by cluster labeling, and within a cluster, find the markers from interferon-stimulated cells.
+From above, we can clearly see a difference of proportion in cluster 0 and 1, between the two datasets. Combined with what we observed earlier from the UMAP, this indicates that the interferon stimulation may have an impact on the composition of the PBMCs, especially on the cell type that cluster 0 represents. 
 
-```{r datasets}
-datasets.results <- runMarkerDEG(pbmcLiger, conditionBy = "dataset", splitBy = "leiden_cluster")
-head(datasets.results$`0`) # Note that the first cluster is "0"
+### Box plots
+
+In the scenario of a more complicated study design, where different biological conditions consist of multiple samples, it is more informative to visualize the proportions grouped by the condition covariate. The function `plotProportionBox()` is designed to group the proportion of each cluster within each sample by condition so that we can see the differential abundance of clusters across conditions. 
+
+In the example dataset we show in this tutorial, we only have one sample for each condition. Therefore, to demonstrate how this function works, we need to manually divide each dataset into three pseudo-replicates and regard the original dataset covariate as the condition variable. 
+
+**In real-life analysis, users should use real sample variable at `sampleBy` and real condition variable at `conditionBy`**.
+
+
+```{r, fig.align='center', fig.height=3, fig.width=7}
+pbmcLiger$pseudo_replicate <- factor(sprintf(
+    fmt = "%s_%s", 
+    pbmcLiger$dataset, 
+    sample(1:3, ncol(pbmcLiger), replace = TRUE)
+))
+print(table(pbmcLiger$dataset, pbmcLiger$pseudo_replicate))
+plotProportionBox(pbmcLiger, conditionBy = "dataset", sampleBy = "pseudo_replicate")
 ```
 
-The number of significant genes identified by `runMarkerDEG()` varies and depends on the datasets used. And the raw output of the function contains the statistics of all tested genes in all groups (clusters). In order to pick out the top markers for each cluster, we strongly suggest using package "dplyr", which provides a user-friendly interface for data table manipulation. The following code chunk first filters the markers which are statistically and biologically significant. For example, we filter the output by taking markers which have padj (Benjamini-Hochberg adjusted p-value) less than 0.05 and logFC (log fold change between observations in group versus out) larger than 3. Then for each cluster, we sort the markers primarily by its padj value in ascending order. Given that mathematically, the lowest padj values are rounded to 0 as they are too small, for genes tying on this metric, we then sort the markers by logFC in descending order. Finally, we select the top 20 markers for each cluster.
+For the boxplot, given the fact that there are always some clusters of small size and the proportions they take can be squeezed in the plot by the larger clusters. To get over this, we can use option `splitByCluster = TRUE` to generate the plot of the same information for each cluster. The return value is now a list of plots, and we will bring them together with cowplot's `plot_grid()` function.
+
+```{r, fig.align='center', fig.height=8, fig.width=14}
+propBoxList <- plotProportionBox(
+  pbmcLiger, 
+  conditionBy = "dataset", 
+  sampleBy = "pseudo_replicate", 
+  splitByCluster = TRUE
+)
+# Again, use cowplot's functionality to bring individual plots in the list together
+plot_grid(plotlist = propBoxList)
+```
+
+Please also checkout other functions like `plotProportionDot()` and `plotProportionBar()` that express similar information in different ways.
+
+## Differential expression
+
+Starting from *rliger* 2.1.0, we move the default differential expression test method to pseudo-bulk test performed with [DESeq2](https://bioconductor.org/packages/DESeq2/). This is generally tested to be more robust when comparing across batches than wilcoxon rank-sum test that we previously used. We provide two functions, `runMarkerDEG()` and `runPairwiseDEG()` for different purposes. Please click on the function name to be redirected to detailed usage reference.
+
+- `runMarkerDEG()` always performs tests in a one-vs-rest manner, which is suitable for marker identification. Cluster markers can be identified easily, while dataset-specific markers can be identified within each cluster. See example below.
+- `runPairwiseDEG()` performs test between two specific groups of cells, either specified by metadata variable or user customized cell indices with great flexibility. Comparison between two conditions can be done within each cluster. See example below.
+
+Pseudo-bulk method works optimally when real replicate information is available, i.e. a pseudo-bulk should better be created with cells that belong to the same biological replicate. We recommend inserting such metadata information into the object beforehand and supply the variable name to argument `useReplicate`. Most of the time, the variable `"dataset"` is used for this purpose if users create the [liger object](liger_object.html) with each matrix representing a single real replicate.
+
+### Marker detection for each cluster
+
+For identifying cluster markers, we can simply call the function with setting `conditionBy = "leiden_cluster"` to allow the test to be built on the cluster labels we just got. 
 
 ```{r}
-library(dplyr)
-cluster.results.sort <- cluster.results %>%
-    filter(padj < 0.05, logFC > 3) %>%
+# Run the pseudo-bulk DE test for cluster marker detection
+clusterMarkerStats <- runMarkerDEG(pbmcLiger, conditionBy = "leiden_cluster")
+```
+
+### Manipulate marker tables
+
+The returned object is a `data.frame` object containing all the statistics for all clusters. Split by `"group"` column, each part of the table represents the result of DEG test comparing the cluster that the `"group"` column indicates against all other clusters. We recommend using package *dplyr* for further data manipulation.
+
+```{r}
+# Show the top 10 markers ranked by adjusted p-value and logFC for cluster 7, NK cells
+clusterMarkerStats %>%
+    filter(group == 7, logFC > 0) %>%
+    arrange(padj, desc(logFC)) %>%
+    head(n = 10)
+```
+
+### Make marker heatmaps
+
+We can visualize cluster markers identified by `runMarkerDEG()` with `plotMarkerHeatmap()`. A checkerboard pattern should be observed most of the time. In the heatmap, each row is a marker gene and each column is a cell. We don't by default plot all the cells as it requires too much computation resource, but instead subsample a sufficient number of cells to show the pattern. the column annotations on the top edge indicates the metadata for cells being shown, including the cluster label and dataset source. These two are by default added. The row annotation of the left edge indicates which cluster the gene is a marker of. A gene might appear to be significant for multiple clusters. In this case, we assign it to the cluster where it shows the highest logFC value and only show it once in the heatmap, since we can still observe its expression in the other clusters. 
+
+```{r 4-3, fig.align='center', fig.height=6, fig.width=8}
+plotMarkerHeatmap(pbmcLiger, result = clusterMarkerStats)
+```
+
+### Show top markers from the table
+
+We can also make use of the user-friendly *dplyr* interface to filter and sort for the top markers for each cluster.
+
+```{r 4-4}
+markerTop3 <- clusterMarkerStats %>%
+    # Exlude insignificant result and use only up-regulated genes for each cluster
+    filter(padj < 0.05, logFC > 0) %>% 
+    # Allow the following operations to be done within each cluster
     group_by(group) %>%
-    arrange(padj, -logFC, .by_group = TRUE) %>%
-    top_n(20)# rank by logFC from high to low
-
-# Show the markers for cluster 3
-cluster.results.sort %>% filter(group == 3)
+    # Sort the result by adjusted p-value ascending and logFC descending, and keep 
+    # the sorting happening within each cluster
+    arrange(padj, desc(logFC), .by_group = TRUE) %>%
+    # Show the top three markers. Since we grouped by cluster, that's for each cluster
+    slice_head(n = 3)
+print(markerTop3)
 ```
 
-We can then visualize the expression profiles of individual genes, such as the differentially expressed genes that we just identified. This allows us to visually confirm the cluster- or dataset-specific expression patterns of marker genes. `plotGeneDimRed()` returns graphs of gene loading on the dimensionality reduced graph for each dataset.
+### Make dot plots for top markers
 
-```{r, fig.align='center', fig.width=6}
-plotGeneDimRed(pbmcLiger, "PRF1")
+`plotClusterGeneDot()` function produces publication ready dot plots for showing marker expression and expression percentage in each cluster. Users can visualize the marker detection result from above as well as visualizing customized marker list. Here is how we show the detected markers for each cluster. Make sure to subset the marker stats table to only include the top ones of each cluster, because the function itself does not do the selection.
+
+```{r, fig.align='center'}
+plotClusterGeneDot(pbmcLiger, features = markerTop3)
 ```
 
-We can also plot the gene expression by dataset.
+### Make dot plots from custom marker list
 
-```{r, fig.align='center', fig.width=10}
-prf1List <- plotGeneDimRed(pbmcLiger, "PRF1", splitBy = "dataset")
-cowplot::plot_grid(plotlist = prf1List, labels = names(prf1List))
+The following code demonstrates how to make a dot plot with a custom marker list. We suggest starting from manually writing down the information into an R list object, for the sake of better readability. Then we convert the list to a `data.frame` so that `plotClusterGeneDot()` can interpret it. When we call the plotting function, we had two additional arguments this time:
+
+- `transpose` rotates the plot so that we have wider room for the cell type label (set in the marker list) to be shown
+- `featureTitleSize` sets the font size of the cell type label.
+
+```{r, fig.align='center', fig.width=7, fig.height=4}
+# Write down the marker list
+pbmcMarkerList <- list(
+  `CD14 Mono` = c("CD14", "LYZ"),
+  `T naive` = c("SELL", "LEF1"),
+  `T memory` = c("IL7R", "CCR7"),
+  `B` = c("MS4A1", "CD79A"),
+  `CD16 Mono` = c("FCGR3A", "MS4A7"),
+  `T activated` = c("CD69", "IL2RA"),
+  `CD8_T` = c("CD8A", "CD8B"),
+  `NK` = c("GNLY", "NKG7"),
+  `DC` = c("FCER1A", "CST3"),
+  `Mk` = c("PPBP", "ITGA2B"),
+  `pDC` = c("CLEC4C", "IL3RA"),
+  `Eryth` = c("HBB", "HBA1")
+)
+# Convert to acceptable data.frame format
+pbmcMarkerDF <- data.frame(
+  gene = unlist(pbmcMarkerList, use.names = FALSE),
+  cell_type = factor(rep(names(pbmcMarkerList), lengths(pbmcMarkerList)), 
+                     levels = names(pbmcMarkerList))
+)
+# Make the plot
+plotClusterGeneDot(pbmcLiger, features = pbmcMarkerDF, transpose = TRUE, featureTitleSize = 6)
 ```
 
-We can also use `plotGeneDimRed()` to compare the loading of cluster markers within and between datasets.
+### Visualize individual gene expression {.tabset}
 
-```{r, paged.print=FALSE, fig.align='center', fig.height=9, fig.width=9}
-IFIT3 <- plotGeneDimRed(pbmcLiger, "IFIT3", splitBy = "dataset")
-IFITM3 <- plotGeneDimRed(pbmcLiger, "IFITM3", splitBy = "dataset")
-cowplot::plot_grid(IFIT3[[1]], IFIT3[[2]], IFITM3[[1]], IFITM3[[2]], ncol = 2, labels = c("ctrl", "stim", "ctrl", "stim"))
+We can also visualize the expression profiles of individual genes, such as the markers that we just identified. This allows us to visually confirm the cluster- or dataset-specific expression patterns of marker genes. 
+
+#### Single UMAP with all cells
+
+`plotGeneDimRed()` by default returns a plot of the dimensionality reduction of all cells, colored by specified genes. 
+
+```{r, fig.align='center', fig.width=7, fig.height=6}
+plotGeneDimRed(pbmcLiger, "GNLY")
+```
+
+#### UMAP view split by dataset
+
+Here, we further split the plot by dataset to check if the marker expression is consistent across datasets.
+
+```{r, fig.align='center', fig.width=14, fig.height=6}
+# By splitting the plot by dataset, we get a list of two plots
+nkg7PlotList <- plotGeneDimRed(pbmcLiger, "NKG7", splitBy = "dataset", title = names(pbmcLiger))
+# Then combine them into one with cowplot function
+plot_grid(plotlist = nkg7PlotList)
+```
+
+#### Violin plot
+
+`plotGeneViolin()` provides a simple interface for creating violin plots of gene expression across clusters. Users can optionally add box plots to the plot to see the quantiles and outliers. This function by default returns a list of plots, one for each dataset.
+
+```{r, fig.align='center', fig.width=6, fig.height=5}
+GNLYviolinList <- plotGeneViolin(pbmcLiger, "GNLY", box = TRUE, colorBy = "leiden_cluster", titles = names(pbmcLiger), legendNCol = 2)
+plot_grid(plotlist = GNLYviolinList, ncol = 1, align = "hv")
+```
+
+### Annotate clusters by cell type names
+
+We provide the function `mapCellMeta()` to assign names to each cluster. We name the functions roughly as shown below, given the evidence we visualized above. In real life analysis, researchers might have been through much more work to identify the cell types and finer sub-types. 
+
+Users need to specify `from` to state where to find the cluster labels that need to be renamed, and `newTo` to create a new column where the new assigned cell types will be stored. Following these, use a cluster name as an argument and the corresponding cell type name as the value. If a cluster is not mentioned in the call, it will be left as it is and stored in `newTo`.
+
+
+```{r, fig.align='center', fig.width=7, fig.height=5}
+pbmcLiger <- mapCellMeta(
+    object = pbmcLiger,
+    from = "leiden_cluster", 
+    newTo = "cell_type", 
+    `0` = "CD14 Mono",
+    `1` = "CD4 Naive T",
+    `2` = "CD4 Memory T",
+    `3` = "B",
+    `4` = "CD16 Mono",
+    `5` = "T activated",
+    `6` = "CD8 T",
+    `7` = "NK",
+    `8` = "DC",
+    `9` = "Mk",
+    `10` = "pDC",
+    `11` = "CD14 Mono",
+    `12` = "Eryth"
+)
+plotClusterDimRed(pbmcLiger, "cell_type")
+```
+
+### Dataset marker detection split by cluster
+
+Additionally, by specifying `conditionBy = "dataset"` or other metadata variable, the function will do one-vs-rest marker test basing on the specified variable. So it works for dataset-specific marker detection as well. By adding another argument `splitBy`, the tes can even be done within each level of another variable. For example, `runMarkerDEG(pbmcLiger, conditionBy = "dataset", splitBy = "leiden_cluster")` will perform the test within each cluster and find the marker for each dataset. We skip this demonstration because the example data only contains two datasets which is more suitable for pairwise comparison.
+
+### Pairwise comparison between two specific conditions
+
+In a more complexed study design than what this tutorial has, we may have more combinations of condition, such as gender, treatment, age and etc. Comparing the appropriate conditions helps to understand the biological changes happening in the experiment. We introduce the `runPairwiseDEG()` function for this purpose. In order to see what changes are happening in the "stim" dataset compared to the "ctrl" dataset, we set `groupTest = "stim"` and `groupCtrl = "ctrl"`. We need to also set `variable1 = "dataset"` to allow the the group setting to be found. We further set `splitBy = "cell_type"` to allow the test to be done within each cluster, in order to under stand if the condition effect happens within any certain cell types. 
+
+```{r}
+stimVsCtrlStats <- runPairwiseDEG(
+  pbmcLiger, 
+  groupTest = "stim", 
+  groupCtrl = "ctrl", 
+  variable1 = "dataset",
+  splitBy = "cell_type"
+)
+```
+
+Similar to what `runMarkerDEG()` returns, the result table is a combination of results. The column `"group"` splits the result by the cell types, as indicated by `splitBy = "cell_type"`. For the slice for each cell type in the result, the statistics are calculated by comparing `groupTest` against `groupCtrl`, which is "stim" against "ctrl" in this case. For downstream visualization and GO term enrichment analysis, we can use the result table directly. The `group` option from those functions requires an available group label from this test, which can be chosen from:
+
+```{r}
+groupAvail <- as.character(unique(stimVsCtrlStats$group))
+print(groupAvail)
+```
+
+Recall the compositional difference we identified in cluster 0, which is later labeled as CD14 Monocytes, here we visualize the DEG result tested within this cluster to see what genes are differentially expressed between the two datasets.
+
+```{r, fig.align='center', fig.width=8}
+options(ggrepel.max.overlaps = 40)
+plotVolcano(stimVsCtrlStats, group = "CD14 Mono.stim", labelTopN = 80, labelTextSize = 3)
+```
+
+By specifying `group = "CD14 Mono.stim"`, the function makes a volcano plot for that test that happened within the CD14 Monocytes, and compares the "stim" dataset to the "ctrl" dataset. From the upper-right part of the volcano plot, we can easily tell that ISGs (Interferon-Stimulated Genes) and IFIs (Interferon-induced proteins) are highly expressed in the CD14 monocytes from "stim" dataset compared to those from "ctrl", which obviously agrees with the biological context of the experiment. 
+
+Similar to what we did in marker detection visualization, we also provide a heatmap function for pairwise DE testt. It shows the gene expression in downsampled cells involved in a specified test and divide the heatmap vertically by comparison groups and horizontally by up-/down-regulation.
+
+```{r, fig.align='center', fig.height=6}
+plotPairwiseDEGHeatmap(pbmcLiger, result = stimVsCtrlStats, group = "CD14 Mono.stim")
+```
+
+## GO term enrichment analysis
+
+After getting the differentially expressed genes, we can submit them to tests that identify enriched GO terms. Function `runGOEnrich()` wraps the functionality of [gprofiler2](https://CRAN.R-project.org/package=gprofiler2) package and can directly be called with the returned `data.frame`s from the DEG functions of *rliger*. Note the active internet connection is required for the function to submit the query to *gprofiler*'s server. 
+
+```{r}
+goResult <- runGOEnrich(stimVsCtrlStats, group = "CD14 Mono.stim", splitReg = TRUE, organism = "hsapiens", evcodes = TRUE)
+```
+
+- `splitReg = TRUE` requires sending separate queries for both up- and down-regulated genes. This is helpful when working on pairwise comparisons, while specifying `splitReg = FALSE` for marker detection makes more sense.
+- `organism` specifies the species for the GO term database. `"hsapiens"` for human and `"mmusculus"` for mouse.
+- `evcodes = TRUE` is optional. It requests the overlapping genes between the query gene set and each term. This is by default not turned on because it slows down the analysis. If set, an additional column `"intersection"` will be added to the result table.
+
+If the input DE analysis result consists of multiple tests (e.g. split by cluster, as we did above, or marker detection), the returned result would be a list for each test group. Each element would be an individual GO enrichment analysis result, represented as a list of one `data.frame` for the statistics (`goResult$group_name$result`) and one list for meta information used by *gprofiler2* (`goResult$group_name$meta`). Here we simply use *dplyr* expression to show the enriched GO terms from the up-regulated genes in the comparison of "stim" against "ctrl", within CD14 monocytes. 
+
+```{r, eval=FALSE}
+goResult[["CD14 Mono.stim"]]$result %>%
+    filter(query == "Up", startsWith(term_id, "GO")) %>%
+    arrange(p_value) %>%
+    select(query, term_name, term_id, p_value, intersection, term_size, intersection_size)
+```
+
+```{r, echo=FALSE}
+goResult[["CD14 Mono.stim"]]$result %>%
+    filter(query == "Up", startsWith(term_id, "GO")) %>%
+    arrange(p_value) %>%
+    select(query, term_name, term_id, p_value, intersection, term_size, intersection_size) %>% 
+    mutate(
+      p_value = signif(p_value, digits = 3),
+    ) %>%
+    DT::datatable(options = list(pageLength = 5))
+```
+
+And similarly, show the GO terms enriched within the down-regulated genes.
+
+```{r, eval=FALSE}
+goResult[["CD14 Mono.stim"]]$result %>%
+    filter(query == "Down", startsWith(term_id, "GO")) %>%
+    arrange(p_value) %>%
+    select(query, term_name, term_id, p_value, intersection, term_size, intersection_size)
+```
+
+```{r, echo=FALSE}
+goResult[["CD14 Mono.stim"]]$result %>%
+    filter(query == "Down", startsWith(term_id, "GO")) %>%
+    arrange(p_value) %>%
+    select(query, term_name, term_id, p_value, intersection, term_size, intersection_size) %>% 
+    mutate(
+      p_value = signif(p_value, digits = 3),
+    ) %>%
+    DT::datatable(options = list(pageLength = 5))
+```
+
+Here's also a simple visualization function that generates a dot plot per test, with dot size representing the interaction size between query gene set and each term, and color representing the significance of the term. Use `group = "CD14 Mono.stim"` to specify the test group, and `query = "Up"` or `query = "Down"` to specify the if the test uses up- or down-regulated genes, respectively.
+
+
+```{r, fig.align='center', fig.width=9, fig.height=5}
+plotGODot(goResult, group = "CD14 Mono.stim", query = "Up")
+```
+
+```{r, fig.align='center', fig.height=4, fig.width=9}
+plotGODot(goResult, group = "CD14 Mono.stim", query = "Down")
 ```
 
 ## R Session Info

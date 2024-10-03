@@ -13,12 +13,17 @@
 #' datasets, or the same number of strings as the number of datasets. Currently
 #' options of \code{"default"}, \code{"rna"}, \code{"atac"}, \code{"spatial"}
 #' and \code{"meth"} are supported.
+#' @param organism Character vector for setting organism for identifying mito,
+#' ribo and hemo genes for expression percentage calculation. Use one string for
+#' all datasets, or the same number of strings as the number of datasets.
+#' Currently options of \code{"mouse"}, \code{"human"}, \code{"zebrafish"},
+#' \code{"rat"}, and \code{"drosophila"} are supported.
 #' @param cellMeta data.frame of metadata at single-cell level. Default
 #' \code{NULL}.
 #' @param removeMissing Logical. Whether to remove cells that do not have any
 #' counts and features not expressed in any cells from each dataset. Default
 #' \code{TRUE}.
-#' @param addPrefix Logical. Whether to add "<dataset name>_" as a prefix of
+#' @param addPrefix Logical. Whether to add "datasetName_" as a prefix of
 #' cell identifiers (e.g. barcodes) to avoid duplicates in multiple libraries (
 #' common with 10X data). Default \code{"auto"} detects if matrix columns
 #' already has the exact prefix or not. Logical value forces the action.
@@ -42,8 +47,8 @@
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param ... Additional slot values that should be directly placed in object.
 #' @param raw.data,remove.missing,format.type,data.name,indices.name,indptr.name,genes.name,barcodes.name
-#' \bold{Deprecated.} See Usage section for replacement.
-#' @param take.gene.union Defuncted. Will be ignored.
+#' `r lifecycle::badge("superseded")` See Usage section for replacement.
+#' @param take.gene.union `r lifecycle::badge("defunct")` Will be ignored.
 #' @export
 #' @seealso \code{\link{createLigerDataset}}, \code{\link{createH5LigerDataset}}
 #' @examples
@@ -67,6 +72,7 @@
 createLiger <- function(
         rawData,
         modal = NULL,
+        organism = "human",
         cellMeta = NULL,
         removeMissing = TRUE,
         addPrefix = "auto",
@@ -107,6 +113,12 @@ createLiger <- function(
     if (missing(modal) || is.null(modal)) modal <- "default"
     modal <- tolower(modal)
     modal <- .checkArgLen(modal, nData, repN = TRUE, class = "character")
+
+    organism <- tolower(organism)
+    organism <- .checkArgLen(organism, nData, repN = TRUE, class = "character")
+    if (!all(organism %in% c("mouse", "human", "zebrafish", "rat", "drosophila"))) {
+        cli::cli_abort("Invalid {.var organism} value. Only support: mouse, human, zebrafish, rat, drosophila.")
+    }
 
     # TODO handle h5 specific argument for hybrid of H5 and in memory stuff.
     datasets <- list()
@@ -171,7 +183,16 @@ createLiger <- function(
                         datasets = datasets,
                         cellMeta = cellMeta,
                         ...)
-    obj <- runGeneralQC(obj, verbose = verbose)
+    for (i in seq_along(datasets)) {
+        obj <- runGeneralQC(
+            object = obj,
+            organism = organism[i],
+            useDatasets = i,
+            overwrite = TRUE,
+            verbose = verbose
+        )
+    }
+
     if (isTRUE(removeMissing)) {
         obj <- removeMissing(obj, "both", filenameSuffix = "qc",
                              verbose = verbose, newH5 = newH5)
@@ -423,10 +444,11 @@ createH5LigerDataset <- function(
 #' @description
 #' This file reads a liger object stored in RDS files under all kinds of types.
 #' 1. A \linkS4class{liger} object with in-memory data created from package
-#' version since 1.99. 2. A liger object with on-disk H5 data associated, where
-#' the link to H5 files will be automatically restored. 3. A liger object
-#' created with older package version, and can be updated to the latest data
-#' structure by default.
+#' version since 1.99.
+#' 2. A liger object with on-disk H5 data associated, where the link to H5 files
+#' will be automatically restored.
+#' 3. A liger object created with older package version, and can be updated to
+#' the latest data structure by default.
 #' @param filename Path to an RDS file of a \code{liger} object of old versions.
 #' @param dimredName The name of variable in \code{cellMeta} slot to store the
 #' dimensionality reduction matrix, which originally located in
@@ -434,10 +456,11 @@ createH5LigerDataset <- function(
 #' @param clusterName The name of variable in \code{cellMeta} slot to store the
 #' clustering assignment, which originally located in \code{clusters} slot.
 #' Default \code{"clusters"}.
-#' @param h5FilePath Named list, to specify the path to the H5 file of each
-#' dataset if location has been changed. Default \code{NULL} looks at the file
-#' paths stored in object.
-#' @param update Logical, whether to update an old (<=1.0.0) \code{liger} object
+#' @param h5FilePath Named character vector for all H5 file paths. Not required
+#' for object run with in-memory analysis. For object containing H5-based
+#' analysis (e.g. online iNMF), this must be supplied if the H5 file location is
+#' different from that at creation time.
+#' @param update Logical, whether to update an old (<=1.99.0) \code{liger} object
 #' to the currect version of structure. Default \code{TRUE}.
 #' @return New version of \linkS4class{liger} object
 #' @export
@@ -445,6 +468,7 @@ createH5LigerDataset <- function(
 #' # Save and read regular current-version liger object
 #' tempPath <- tempfile(fileext = ".rds")
 #' saveRDS(pbmc, tempPath)
+#'
 #' pbmc <- readLiger(tempPath, dimredName = NULL)
 #'
 #' # Save and read H5-based liger object
@@ -454,7 +478,8 @@ createH5LigerDataset <- function(
 #' lig <- createLiger(list(ctrl = h5tempPath))
 #' tempPath <- tempfile(fileext = ".rds")
 #' saveRDS(lig, tempPath)
-#' lig <- readLiger(tempPath)
+#'
+#' lig <- readLiger(tempPath, h5FilePath = list(ctrl = h5tempPath))
 #'
 #' \dontrun{
 #' # Read a old liger object <= 1.0.1
@@ -463,40 +488,20 @@ createH5LigerDataset <- function(
 #' lig <- readLiger(
 #'     filename = "path/to/oldLiger.rds",
 #'     dimredName = "UMAP",
-#'     clusterName = "louvain",
-#'     update = TRUE
+#'     clusterName = "louvain"
 #' )
 #' }
 readLiger <- function(
         filename,
-        dimredName = "tsne_coords",
+        dimredName,
         clusterName = "clusters",
         h5FilePath = NULL,
         update = TRUE) {
-    obj <- readRDS(filename)
-    if (!inherits(obj, "liger")) # nocov start
-        cli::cli_abort("Object is not of class {.cls liger}.") # nocov end
-    ver <- obj@version
-    if (ver == package_version("1.99.0")) {
-        obj <- rliger2_to_rliger_namespace(obj, dimredName = dimredName)
-    }
-    if (ver >= package_version("1.99.0")) {
-        if (isH5Liger(obj)) obj <- restoreH5Liger(obj)
-        return(obj)
-    }
-    if (ver < package_version("1.99.1"))
-        cli::cli_alert_info("Older version ({.val {ver}}) of {.cls liger} object detected.")
+    object <- readRDS(filename)
     if (isTRUE(update)) {
-        cli::cli_alert_info(
-            "Updating the object structure to make it compatible with current version {.val {utils::packageVersion('rliger')}}"
-        )
-        return(convertOldLiger(obj, dimredName = dimredName,
-                               clusterName = clusterName,
-                               h5FilePath = h5FilePath))
-    } else {
-        cli::cli_alert_info("{.code update = FALSE} specified. Returning the original object.")
-        return(obj)
+        object <- updateLigerObject(object, dimredName, clusterName, h5FilePath)
     }
+    return(object)
 }
 
 # nocov start
@@ -698,15 +703,17 @@ importCGE <- function(
 #' pipelines but needs user arguments for correct recognition. Similarly, the
 #' returned value can directly be used for constructing a \linkS4class{liger}
 #' object.
-#' @param path [A.] A Directory containing the matrix.mtx, genes.tsv (or
+#' @param path (A.) A Directory containing the matrix.mtx, genes.tsv (or
 #' features.tsv), and barcodes.tsv files provided by 10X. A vector, a named
 #' vector, a list or a named list can be given in order to load several data
-#' directories. [B.] The 10X root directory where subdirectories of per-sample
+#' directories. (B.) The 10X root directory where subdirectories of per-sample
 #' output folders can be found. Sample names will by default take the name of
 #' the vector, list or subfolders.
 #' @param sampleNames A vector of names to override the detected or set sample
 #' names for what is given to \code{path}. Default \code{NULL}. If no name
 #' detected at all and multiple samples are given, will name them by numbers.
+#' @param addPrefix Logical, whether to add sample names as a prefix to the
+#' barcodes. Default \code{FALSE}.
 #' @param useFiltered Logical, if \code{path} is given as case B, whether to use
 #' the filtered feature barcode matrix instead of raw (unfiltered). Default
 #' \code{TRUE}.
@@ -776,6 +783,7 @@ importCGE <- function(
 read10X <- function(
         path,
         sampleNames = NULL,
+        addPrefix = FALSE,
         useFiltered = NULL,
         reference = NULL,
         geneCol = 2,
@@ -892,8 +900,8 @@ read10X <- function(
         }
         data <- read10XFiles(matrixPath = matrix.loc, barcodesPath = barcode.loc,
                              featuresPath = ifelse(isOldVer, gene.loc, features.loc),
-                             sampleName = sampleNames[i], geneCol = geneCol,
-                             cellCol = cellCol)
+                             sampleName = if (isTRUE(addPrefix)) sampleNames[i] else NULL,
+                             geneCol = geneCol, cellCol = cellCol, returnList = TRUE)
         if (isOldVer) names(data) <- "Gene Expression"
         allData[[i]] <- data
         if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
@@ -925,12 +933,13 @@ read10X <- function(
 read10XRNA <- function(
         path,
         sampleNames = NULL,
+        addPrefix = FALSE,
         useFiltered = NULL,
         reference = NULL,
         returnList = FALSE,
         ...
 ) {
-    dataList <- read10X(path, sampleNames = sampleNames,
+    dataList <- read10X(path, sampleNames = sampleNames, addPrefix = addPrefix,
                         useFiltered = useFiltered, reference = reference,
                         returnList = TRUE, ...)
     dataList <- lapply(dataList, `[[`, i = "Gene Expression")
@@ -951,6 +960,7 @@ read10XRNA <- function(
 read10XATAC <- function(
         path,
         sampleNames = NULL,
+        addPrefix = FALSE,
         useFiltered = NULL,
         pipeline = c("atac", "arc"),
         arcFeatureType = "Peaks",
@@ -1033,9 +1043,10 @@ read10XATAC <- function(
         data <- read10XFiles(matrixPath = matrix.loc,
                              barcodesPath = barcode.loc,
                              featuresPath = feature.loc,
-                             sampleName = sampleNames[i],
+                             sampleName = if (isTRUE(addPrefix)) sampleNames[i] else NULL,
                              geneCol = geneCol, cellCol = cellCol,
-                             isATAC = pipeline == "atac")
+                             isATAC = pipeline == "atac",
+                             returnList = TRUE)
         if (pipeline == "arc" && !arcFeatureType %in% names(data)) {
             cli::cli_abort(
                 c("No ATAC data retrieved from cellranger-arc pipeline. ",
@@ -1061,6 +1072,47 @@ read10XATAC <- function(
     }
 }
 
+
+#' Read 10X cellranger files (matrix, barcodes and features) into R session
+#' @description
+#' This function works for loading a single sample with specifying the paths to
+#' the matrix.mtx, barcodes.tsv, and features.tsv files. This function is
+#' internally used by \code{\link{read10X}} functions for loading individual
+#' samples from cellranger output directory, while it can also be convenient
+#' when out-of-standard files are presented (e.g. data downloaded from GEO).
+#' @param matrixPath Character string, path to the matrix MTX file. Can be
+#' gzipped.
+#' @param barcodesPath Character string, path to the barcodes TSV file. Can be
+#' gzipped.
+#' @param featuresPath Character string, path to the features TSV file. Can be
+#' gzipped.
+#' @param sampleName Character string attached as a prefix to the cell barcodes
+#' loaded from the barcodes file. Default \code{NULL} does not add any prefix.
+#' Useful when users plan to merge multiple samples into one matrix and need
+#' to avoid duplicated cell barcodes from different batches.
+#' @param geneCol An integer indicating which column in the features file to
+#' extract as the feature identifiers. Default \code{2}.
+#' @param cellCol An integer indicating which column in the barcodes file to
+#' extract as the cell identifiers. Default \code{1}.
+#' @param isATAC Logical, whether the data is for ATAC-seq. Default
+#' \code{FALSE}. If \code{TRUE}, feature identifiers will be generated by
+#' combining the first three columns of the features file in the format of
+#' "chr:start-end".
+#' @param returnList Logical, used internally by wrapper functions. Whether to
+#' force putting the loaded matrix in a list even if there's only one matrix.
+#' Default \code{FALSE}.
+#' @export
+#' @return For a single-modal sample, a dgCMatrix object, or a list of one
+#' dgCMatrix when \code{returnList = TRUE}. A list of multiple dgCMatrix objects
+#' when multiple feature types are detected.
+#' @examples
+#' \dontrun{
+#' matrix <- read10XFiles(
+#'     matrixPath = "path/to/matrix.mtx.gz",
+#'     barcodesPath = "path/to/barcodes.tsv.gz",
+#'     featuresPath = "path/to/features.tsv.gz"
+#' )
+#' }
 read10XFiles <- function(
         matrixPath,
         barcodesPath,
@@ -1068,7 +1120,8 @@ read10XFiles <- function(
         sampleName = NULL,
         geneCol = 2,
         cellCol = 1,
-        isATAC = FALSE
+        isATAC = FALSE,
+        returnList = FALSE
 ) {
     # Matrix can be easily read
     data <- methods::as(Matrix::readMM(matrixPath), "CsparseMatrix")
@@ -1139,7 +1192,7 @@ read10XFiles <- function(
         })
         names(data) <- lvls
     } else{
-        data <- list(data)
+        if (isTRUE(returnList)) data <- list(data)
     }
     return(data)
 }
