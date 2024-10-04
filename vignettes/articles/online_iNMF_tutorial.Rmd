@@ -81,31 +81,29 @@ plotByDatasetAndCluster(pbmcs)
 For downstream analysis that requires expression data, such as differential expression test, we currently do not support direct computation using on-disk HDF5 data. In order to conduct such analyses, users need to create downsampled subset from the large-scale on-disk data and read it into memory. By default, `downsample()` function randomly samples `maxCells` cells. Alternatively, we can set balanced sampling basing on given categorical variables. Note that `newH5 = FALSE` has to be set in order to take the subsample into memory, other wise another downsampled HDF5 file would be created and still cannot be used for those downstream analysis method. 
 
 ```{R}
-pbmcs.sample <- downsample(pbmcs, maxCells = 5000, useSlot = "normData", newH5 = FALSE)
+pbmcs.sample <- downsample(pbmcs, maxCells = 5000, useSlot = "rawData", newH5 = FALSE)
 ```
 
 Using the sampled data stored in memory, we can now compare clusters or datasets to identify differentially expressed genes. The `runMarkerDEG()` function performs differential expression analysis, by default with Wilcoxon rank-sum test. The default mode of mark detection goes for finding the marker of each cluster by performing the test between a cluster against all the rest. Here, we demonstrate finding the dataset-specific markers, within each cluster.
 
 ```{R}
-markerTableList <- runMarkerDEG(pbmcs.sample, conditionBy = "dataset", splitBy = "leiden_cluster")
+markerTable <- runMarkerDEG(pbmcs.sample, conditionBy = "dataset", splitBy = "leiden_cluster")
 ```
 
 The returned object is a list where each element is a dataset-specific marker table derived within each cluster and contains all stats for all the genes without filtering or sorting. We strongly suggest using package "dplyr" for data frame operation due to the simplicity. Here, we show an example of getting the top 10 markers for "stim" within cluster 2.
 
 ```{R}
 library(dplyr)
-markerTable2 <- markerTableList$`2`
-markerTable2 %>%
-    filter(logFC > 1, padj < 0.05, group == "stim") %>%
+markerTable %>%
+    filter(group == "2.stim", logFC > 1, padj < 0.05) %>%
     arrange(padj, -logFC) %>%
-    top_n(10) %>%
-    select(feature, logFC, padj)
-    
+    slice_head(n = 10)
 ```
 
 We can show UMAP coordinates of sampled cells by their loadings on each factor (Factor 4 as an example). The lower part of the figure shows the gene loading ranking of the factor, with the middle showing the ranking of the shared gene loading, and the dataset-specific gene loading ranking on two sides. 
 
-```{r, fig.height=6}
+```{r, fig.height=6, fig.width=6}
+pbmcs.sample <- normalize(pbmcs.sample)
 factorMarker <- getFactorMarkers(pbmcs.sample, dataset1 = "ctrl", dataset2 = "stim")
 plotGeneLoadings(pbmcs.sample, markerTable = factorMarker, useFactor = 4)
 ```
