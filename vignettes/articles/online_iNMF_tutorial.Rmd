@@ -81,31 +81,30 @@ plotByDatasetAndCluster(pbmcs)
 For downstream analysis that requires expression data, such as differential expression test, we currently do not support direct computation using on-disk HDF5 data. In order to conduct such analyses, users need to create downsampled subset from the large-scale on-disk data and read it into memory. By default, `downsample()` function randomly samples `maxCells` cells. Alternatively, we can set balanced sampling basing on given categorical variables. Note that `newH5 = FALSE` has to be set in order to take the subsample into memory, other wise another downsampled HDF5 file would be created and still cannot be used for those downstream analysis method. 
 
 ```{R}
-pbmcs.sample <- downsample(pbmcs, maxCells = 5000, useSlot = "normData", newH5 = FALSE)
+pbmcs.sample <- downsample(pbmcs, maxCells = 5000, useSlot = "rawData", newH5 = FALSE)
 ```
 
 Using the sampled data stored in memory, we can now compare clusters or datasets to identify differentially expressed genes. The `runMarkerDEG()` function performs differential expression analysis, by default with Wilcoxon rank-sum test. The default mode of mark detection goes for finding the marker of each cluster by performing the test between a cluster against all the rest. Here, we demonstrate finding the dataset-specific markers, within each cluster.
 
 ```{R}
-markerTableList <- runMarkerDEG(pbmcs.sample, conditionBy = "dataset", splitBy = "leiden_cluster")
+markerTable <- runMarkerDEG(pbmcs.sample, conditionBy = "dataset", splitBy = "leiden_cluster")
 ```
 
-The returned object is a list where each element is a dataset-specific marker table derived within each cluster and contains all stats for all the genes without filtering or sorting. We strongly suggest using package "dplyr" for data frame operation due to the simplicity. Here, we show an example of getting the top 10 markers for "stim" within cluster 2.
+The returned object is a `data.frame` with all test result combined in one, without filtering or sorting. The `group` column contains the information for splitting the tests. For example, when the value is `"2.stim"`, it indicates the result statistics is done within cluster 2 comparing "stim" dataset against others. Here we show how to use *dplyr* commands to get the top 20 dataset markers of "stim" within cluster 2.
 
 ```{R}
 library(dplyr)
-markerTable2 <- markerTableList$`2`
-markerTable2 %>%
-    filter(logFC > 1, padj < 0.05, group == "stim") %>%
+markerTable %>%
+    filter(group == "2.stim", logFC > 0, padj < 0.05) %>%
     arrange(padj, -logFC) %>%
-    top_n(10) %>%
-    select(feature, logFC, padj)
+    slice_head(n = 20)
     
 ```
 
-We can show UMAP coordinates of sampled cells by their loadings on each factor (Factor 4 as an example). The lower part of the figure shows the gene loading ranking of the factor, with the middle showing the ranking of the shared gene loading, and the dataset-specific gene loading ranking on two sides. 
+We can show UMAP coordinates of sampled cells by their loadings on each factor (Factor 4 as an example). The lower part of the figure shows the gene loading ranking of the factor, with the middle showing the ranking of the shared gene loading, and the dataset-specific gene loading ranking on two sides. Note that this part of test requires normalized gene expression loaded in memory, whereas we only down-sampled the raw count data.
 
-```{r, fig.height=6}
+```{r, fig.height=6, fig.width=6}
+pbmcs.sample <- normalize(pbmcs.sample)
 factorMarker <- getFactorMarkers(pbmcs.sample, dataset1 = "ctrl", dataset2 = "stim")
 plotGeneLoadings(pbmcs.sample, markerTable = factorMarker, useFactor = 4)
 ```
@@ -114,7 +113,7 @@ plotGeneLoadings(pbmcs.sample, markerTable = factorMarker, useFactor = 4)
 
 With the subsampled data loaded into memory, we can then also generate plots of dimensional reduction coordinates colored by expression of specified gene. For example, the gene ISG15 has expression visualized below.
 
-```{r, fig.width=6}
+```{r}
 plotGeneDimRed(pbmcs.sample, "ISG15")
 ```
 
@@ -152,9 +151,9 @@ pbmcs.new <- runOnlineINMF(pbmcs, newDatasets = list(stim = "pbmcs_stim_vignette
 
 After the factorization, we can go through the same procedure to align the factor loading and jointly cluster the cells, as well as visualize the integration result.
 
-```{r, fig.width=10}
+```{r, fig.width=10, fig.height=4}
 pbmcs.new <- quantileNorm(pbmcs.new) %>%
-  runCluster(nNeighbors = 30, resolution = .6, nRandomStarts = 2) %>%
+  runCluster(nNeighbors = 30, resolution = .3) %>%
   runUMAP(nNeighbors = 30, minDist = .3) 
 plotByDatasetAndCluster(pbmcs.new)
 ```
@@ -163,7 +162,7 @@ plotByDatasetAndCluster(pbmcs.new)
 
 The third scenario serves as a fast inspection for new datasets. We do not update the factorization with newly arriving data, but instead, compute the factor loading in cells (i.e. $H$ matrices for new datasets) using the existing gene loading in the factors ($W$ matrix from previous factorization). Therefore, no dataset-specific gene loading in factors ($V$ matrices) can be produced for the new datasets in this approach. Scenario 3 can be triggered with specifying the new datasets, following the same guidance as in scenario 2 above, and set `projection = TRUE`. 
 
-```{r, fig.width=10}
+```{r, fig.width=10, fig.height=4}
 pbmcs <- createLiger(list(ctrl = "pbmcs_ctrl_vignette.h5")) %>%
   normalize() %>%
   selectGenes() %>%
@@ -171,7 +170,7 @@ pbmcs <- createLiger(list(ctrl = "pbmcs_ctrl_vignette.h5")) %>%
   runIntegration(method = "online")
 pbmcs.new <- runOnlineINMF(pbmcs, newDatasets = list(stim = "pbmcs_stim_vignette.h5"), projection = TRUE)
 pbmcs.new <- quantileNorm(pbmcs.new) %>%
-  runCluster(nNeighbors = 30, resolution = .6, nRandomStarts = 2) %>%
+  runCluster(nNeighbors = 30, resolution = .3) %>%
   runUMAP(nNeighbors = 30, minDist = .3) 
 plotByDatasetAndCluster(pbmcs.new)
 ```
