@@ -425,6 +425,10 @@ runWilcoxon <- function(
     dataList <- getMatrix(object, slot, datasetInvolve, returnList = TRUE)
     # mat <- mergeSparseAll(dataList, mode = "intersection")
     features <- Reduce(intersect, lapply(dataList, rownames))
+    if (length(features) == 0) {
+        cli::cli_abort("No shared feature available from datasets involved for the test.
+                       Datasets involved: {.val {datasetInvolve}}")
+    }
     featureOrder <- stats::setNames(seq_along(features), features)
     # dataList <- lapply(dataList, function(x) x[features, , drop = FALSE])
 
