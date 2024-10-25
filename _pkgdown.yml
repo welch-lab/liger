@@ -109,7 +109,6 @@ reference:
   - subsetLigerDataset
   - convertOldLiger
   - ligerToSeurat
-  - ligerToH5AD
   - is.newLiger
   - modalOf
   - isH5Liger
@@ -152,6 +151,8 @@ navbar:
           href: articles/SNAREseq_walkthrough.html
         - text: "Integrating scRNAseq and DNA methylation"
           href: articles/rna_methylation.html
+        - text: "Benchmarking integration quality"
+          href: articles/benchmark.html
     - text: "Usage"
       menu:
         - text: "Import data"
