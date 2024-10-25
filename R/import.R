@@ -21,8 +21,7 @@
 #' @param cellMeta data.frame of metadata at single-cell level. Default
 #' \code{NULL}.
 #' @param removeMissing Logical. Whether to remove cells that do not have any
-#' counts and features not expressed in any cells from each dataset. Default
-#' \code{TRUE}.
+#' counts from each dataset. Default \code{TRUE}.
 #' @param addPrefix Logical. Whether to add "datasetName_" as a prefix of
 #' cell identifiers (e.g. barcodes) to avoid duplicates in multiple libraries (
 #' common with 10X data). Default \code{"auto"} detects if matrix columns
@@ -194,7 +193,7 @@ createLiger <- function(
     }
 
     if (isTRUE(removeMissing)) {
-        obj <- removeMissing(obj, "both", filenameSuffix = "qc",
+        obj <- removeMissing(obj, "cell", filenameSuffix = "qc",
                              verbose = verbose, newH5 = newH5)
     }
 

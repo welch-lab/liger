@@ -9,7 +9,8 @@ plotVolcano(
   group = NULL,
   logFCThresh = 1,
   padjThresh = 0.01,
-  labelTopN = 20,
+  highlight = NULL,
+  labelTopN = NULL,
   dotSize = 2,
   dotAlpha = 0.8,
   legendPosition = "top",
@@ -30,8 +31,12 @@ fold change statistics. Default \code{1}.}
 \item{padjThresh}{Number for the threshold on the adjusted p-value
 statistics. Default \code{0.01}.}
 
+\item{highlight}{A character vector of feature names to be highlighted.
+Default \code{NULL}.}
+
 \item{labelTopN}{Number of top differential expressed features to be labeled
-on the top of the dots. Default \code{20}.}
+on the top of the dots. Ranked by adjusted p-value first and absolute value
+of logFC next. Default \code{NULL}.}
 
 \item{dotSize, dotAlpha}{Numbers for universal aesthetics control of dots.
 Default \code{2} and \code{0.8}.}
@@ -81,12 +86,15 @@ using ggplot classic bottom and left axis lines. Default \code{FALSE}.}
 ggplot
 }
 \description{
-\code{plotVolcano} is a simple implementation and shares
-most of arguments with other rliger plotting functions.
-\code{plotEnhancedVolcano} is a wrapper function of
-\code{EnhancedVolcano::EnhancedVolcano()}, which has provides
-substantial amount of arguments for graphical control. However, that requires
-the installation of package "EnhancedVolcano".
+\code{plotVolcano} is a simple implementation and shares most of arguments
+with other rliger plotting functions. \code{plotEnhancedVolcano} is a
+wrapper function of \code{EnhancedVolcano::EnhancedVolcano()}, which has
+provides substantial amount of arguments for graphical control. However, that
+requires the installation of package "EnhancedVolcano".
+
+\code{highlight} and \code{labelTopN} both controls the feature name
+labeling, whereas \code{highlight} is considered first. If both are as
+default (\code{NULL}), all significant features will be labeled.
 }
 \examples{
 defaultCluster(pbmc) <- pbmcPlot$leiden_cluster

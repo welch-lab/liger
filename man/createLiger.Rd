@@ -53,8 +53,7 @@ Currently options of \code{"mouse"}, \code{"human"}, \code{"zebrafish"},
 \code{NULL}.}
 
 \item{removeMissing}{Logical. Whether to remove cells that do not have any
-counts and features not expressed in any cells from each dataset. Default
-\code{TRUE}.}
+counts from each dataset. Default \code{TRUE}.}
 
 \item{addPrefix}{Logical. Whether to add "datasetName_" as a prefix of
 cell identifiers (e.g. barcodes) to avoid duplicates in multiple libraries (

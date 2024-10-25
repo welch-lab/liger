@@ -8,7 +8,7 @@
 
 <div style="background: #dddddd;">
 
->**NEWS**
+>**NEWS** Oct., 2024
 >- Checkout new cell factor alignment method (function [`centroidAlign()`](https://welch-lab.github.io/liger/reference/centroidAlign.html)), which aligns cell factor loading by moving soft clustering centroids. This method is benchmarked with [*scib*](https://scib.readthedocs.io/en/latest/index.html) datasets and metrics and shows better overall performance than our previous quantile normalization method, especially for the ability to conserve biological information.
 >- Checkout Consensus iNMF method (function [`runCINMF()`](https://welch-lab.github.io/liger/reference/runCINMF.html)), which runs regular iNMF multiple times with different random initialization and summarizes a consensus result with better confidence.
 >- Please visit [*rliger* website](https://welch-lab.github.io/liger/index.html) for comprehensive documentation and [revised tutorial](https://welch-lab.github.io/liger/articles/Integrating_multi_scRNA_data.html) that walks through scRNAseq integration and analysis in detail

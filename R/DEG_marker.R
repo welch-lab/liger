@@ -425,6 +425,10 @@ runWilcoxon <- function(
     dataList <- getMatrix(object, slot, datasetInvolve, returnList = TRUE)
     # mat <- mergeSparseAll(dataList, mode = "intersection")
     features <- Reduce(intersect, lapply(dataList, rownames))
+    if (length(features) == 0) {
+        cli::cli_abort("No shared feature available from datasets involved for the test.
+                       Datasets involved: {.val {datasetInvolve}}")
+    }
     featureOrder <- stats::setNames(seq_along(features), features)
     # dataList <- lapply(dataList, function(x) x[features, , drop = FALSE])
 
@@ -457,8 +461,8 @@ runWilcoxon <- function(
                 dplyr::mutate(padj = stats::p.adjust(.data[['pval']], method = "BH")) %>%
                 as.data.frame()
         }
-        rownames(result) <- NULL
-        result$group <- factor(result$group, levels = levels(var))
+
+        # result$group <- factor(result$group, levels = levels(var))
     } else if (method == "pseudoBulk") {
         resultList <- list()
         if (isTRUE(verbose)) {
@@ -563,8 +567,10 @@ runWilcoxon <- function(
             if (length(levels(var)) <= 2 && isTRUE(skipTwoGroup)) break
         }
         result <- Reduce(rbind, resultList)
-        result$group <- factor(result$group, levels = levels(var)[levels(var) %in% result$group])
+
     }
+    rownames(result) <- NULL
+    result$group <- factor(result$group, levels = levels(var)[levels(var) %in% result$group])
     return(result)
 }
 
@@ -742,7 +748,7 @@ makePseudoBulk <- function(
     groups <- groups[replicateAnn %in% keep]
     replicateAnn <- droplevels(replicateAnn[replicateAnn %in% keep])
 
-    datasetInvolved <- unique(object$dataset[cellIdx])
+    datasetInvolved <- as.character(unique(object$dataset[cellIdx]))
     # Initialize the output matrix
     pseudoBulk <- matrix(
         data = 0,
@@ -789,7 +795,7 @@ calcPctInOut <- function(
     features,
     groups
 ) {
-    datasetInvolved <- unique(object$dataset[cellIdx])
+    datasetInvolved <- as.character(unique(object$dataset[cellIdx]))
     # Initialize the output matrix
     # `nCellExpr` is a matrix of n features rows and 2 cols. The first column
     # stores number of cells in test group that express each feature, and the
@@ -1237,6 +1243,7 @@ plotPairwiseDEGHeatmap <- function(
     # Idk why `filter(.data[['group']] == group)` won't work there lol
     result <- result[result$group == group,]
     result <- result %>%
+        dplyr::filter(!is.na(.data[['padj']])) %>%
         dplyr::filter(
             abs(.data[['logFC']]) >= absLFCThresh,
             .data[['padj']] <= padjThresh
@@ -1247,12 +1254,13 @@ plotPairwiseDEGHeatmap <- function(
         ))
     if ("pct_in" %in% colnames(result) &&
         "pct_out" %in% colnames(result)) {
-        result <- result %>% filter(
-            dplyr::case_when(
-                .data[['logFC']] > 0 ~ .data[['pct_in']] > pctInThresh,
-                .data[['logFC']] < 0 ~ .data[['pct_out']] > pctOutThresh
+        result <- result %>%
+            dplyr::filter(
+                dplyr::case_when(
+                    .data[['logFC']] > 0 ~ .data[['pct_in']] > pctInThresh & .data[['pct_out']] < pctOutThresh,
+                    .data[['logFC']] < 0 ~ .data[['pct_out']] > pctInThresh & .data[['pct_in']] < pctOutThresh,
+                )
             )
-        )
     }
     result <- result %>%
         dplyr::group_by(.data[['regulation']]) %>%
