@@ -285,10 +285,12 @@ plotDimRed <- function(
     if (!is.null(labelBy) &&
         (is.factor(plotDF[[labelBy]]) || is.character(plotDF[[labelBy]]))) {
         if (isTRUE(labelText)) {
-            textData <- dplyr::group_by(plotDF, .data[[labelBy]])
-            textData <- dplyr::summarise(textData,
-                                         x = stats::median(.data[[x]]),
-                                         y = stats::median(.data[[y]]))
+            textData <- dplyr::group_by(plotDF, .data[[labelBy]]) %>%
+                dplyr::summarise(
+                    x = stats::median(.data[[x]]),
+                    y = stats::median(.data[[y]])
+                ) %>%
+                dplyr::filter(!is.na(.data[[labelBy]]), !is.na(x), !is.na(y))
             if (!requireNamespace("ggrepel", quietly = TRUE)) {
                 p <- p + ggplot2::annotate(
                     "text", x = textData$x, y = textData$y,

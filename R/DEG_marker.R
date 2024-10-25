@@ -461,8 +461,8 @@ runWilcoxon <- function(
                 dplyr::mutate(padj = stats::p.adjust(.data[['pval']], method = "BH")) %>%
                 as.data.frame()
         }
-        rownames(result) <- NULL
-        result$group <- factor(result$group, levels = levels(var))
+
+        # result$group <- factor(result$group, levels = levels(var))
     } else if (method == "pseudoBulk") {
         resultList <- list()
         if (isTRUE(verbose)) {
@@ -567,8 +567,10 @@ runWilcoxon <- function(
             if (length(levels(var)) <= 2 && isTRUE(skipTwoGroup)) break
         }
         result <- Reduce(rbind, resultList)
-        result$group <- factor(result$group, levels = levels(var)[levels(var) %in% result$group])
+
     }
+    rownames(result) <- NULL
+    result$group <- factor(result$group, levels = levels(var)[levels(var) %in% result$group])
     return(result)
 }
 
@@ -1241,6 +1243,7 @@ plotPairwiseDEGHeatmap <- function(
     # Idk why `filter(.data[['group']] == group)` won't work there lol
     result <- result[result$group == group,]
     result <- result %>%
+        dplyr::filter(!is.na(.data[['padj']])) %>%
         dplyr::filter(
             abs(.data[['logFC']]) >= absLFCThresh,
             .data[['padj']] <= padjThresh
@@ -1255,7 +1258,7 @@ plotPairwiseDEGHeatmap <- function(
             dplyr::filter(
                 dplyr::case_when(
                     .data[['logFC']] > 0 ~ .data[['pct_in']] > pctInThresh & .data[['pct_out']] < pctOutThresh,
-                    .data[['logFC']] < 0 ~ .data[['pct_out']] > pctOutThresh & .data[['pct_in']] < pctInThresh,
+                    .data[['logFC']] < 0 ~ .data[['pct_out']] > pctInThresh & .data[['pct_in']] < pctOutThresh,
                 )
             )
     }

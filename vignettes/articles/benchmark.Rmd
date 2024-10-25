@@ -190,7 +190,7 @@ cowplot::plot_grid(p1, p2, ncol = 2)
 
 ## Export to H5AD
 
-In order to utilize *scib* prepared metric calculation functions, we need to export the result from the liger object to an H5AD file. This functionality has been implemented in a single function call to `ligerToH5AD()`. 
+In order to utilize *scib* prepared metric calculation functions, we need to export the result from the liger object to an H5AD file. This functionality has been implemented in a single function call to `ligerToH5AD()` which is **not part of *rliger*** package, but need to be loaded via source code. For usage of the function, please call `help.ligerToH5AD()` after loading the source code.
 
 ```{r, include=FALSE}
 if (file.exists("human_pancreas_liger_integrated.h5ad")) {
@@ -199,6 +199,9 @@ if (file.exists("human_pancreas_liger_integrated.h5ad")) {
 ```
 
 ```{r}
+# Load the function from source code
+source(system.file("extdata/ligerToH5AD.R", package = "rliger"))
+# Call the loaded function
 ligerToH5AD(lig, "human_pancreas_liger_integrated.h5ad")
 ```
 

@@ -1,3 +1,39 @@
+help.ligerToH5AD <- function() {
+    cat(
+        "Write liger object to H5AD files\n",
+        "\n",
+        "Usage:\n",
+        "  ligerToH5AD(\n",
+        "    object,\n",
+        "    filename,\n",
+        "    useSlot = c(\"scaleData\", \"normData\", \"rawData\"),\n",
+        "    saveRaw = useSlot != \"rawData\",\n",
+        "    overwrite = FALSE,\n",
+        "    verbose = getOption(\"ligerVerbose\", TRUE)\n",
+        "  )\n",
+        "\n",
+        "Arguments:\n",
+        "  object:    A liger object\n",
+        "  filename:  A character string, the path to the H5AD file to be written\n",
+        "  useSlot:   Character scalar, which type of data is going to be stored\n",
+        "             to `adata.X`. Default \"scaleData\", choose from\n",
+        "             \"scaleData\", \"normData\", or \"rawData\".\n",
+        "  saveRaw:   Logical, whether to save rawData to `adata.raw.X`.\n",
+        "             Default TRUE when `useSlot` is not \"rawData\", otherwise\n",
+        "             FALSE.\n",
+        "  overwrite: Logical, whether to overwrite the file if it exists.\n",
+        "  verbose:   Logical. Whether to show information of the progress. Default\n",
+        "             `getOption(\"ligerVerbose\")` which is TRUE if users have not set.\n",
+        "\n",
+        "Value:\n",
+        "  No return value, an H5AD file is written to disk\n",
+        "\n",
+        "Examples:\n",
+        "  ligerToH5AD(pbmc, filename = tempfile(fileext = \".h5ad\"))\n"
+    )
+}
+
+
 #' Write liger object to H5AD files
 #' @param object A \linkS4class{liger} object
 #' @param filename A character string, the path to the H5AD file to be written
@@ -39,10 +75,10 @@ ligerToH5AD <- function(
 
     # Work on expression matrices
     Xslot <- NULL
-    if (all(!sapply(getMatrix(object, useSlot), is.null))) {
+    if (all(!sapply(rliger::getMatrix(object, useSlot), is.null))) {
         # If the specified slot is all available, use it
         Xslot <- useSlot
-        Xmat <- mergeSparseAll(getMatrix(object, useSlot))
+        Xmat <- rliger::mergeSparseAll(rliger::getMatrix(object, useSlot))
     } else {
         cli::cli_alert_warning(
             "Requested {.field {useSlot}} is not available, trying other slots."
@@ -52,7 +88,7 @@ ligerToH5AD <- function(
             if (all(!sapply(getMatrix(object, i), is.null))) {
                 # If the specified slot is all available, use it
                 Xslot <- i
-                Xmat <- mergeSparseAll(getMatrix(object, i))
+                Xmat <- rliger::mergeSparseAll(rliger::getMatrix(object, i))
                 break
             }
         }
@@ -86,7 +122,7 @@ ligerToH5AD <- function(
         if (isTRUE(verbose)) {
             cliID <- cli::cli_process_start(sprintf("Adding %s to raw", rawSlot))
         }
-        rawMat <- mergeSparseAll(rawData(object))
+        rawMat <- rliger::mergeSparseAll(rliger::rawData(object))
         dfile$create_group(name = 'raw')
         .writeMatrixToH5AD(x = rawMat, dfile = dfile, dname = "raw/X")
         .H5AD.addEncoding(dfile = dfile, dname = 'raw/X')
@@ -111,7 +147,7 @@ ligerToH5AD <- function(
     obsm <- dfile$create_group(name = 'obsm')
     varm <- dfile$create_group(name = 'varm')
     reductions <- object@dimReds
-    h <- getMatrix(object, "H")
+    h <- rliger::getMatrix(object, "H")
     if (all(!sapply(h, is.null))) {
         H <- Reduce(cbind, h)
         H <- t(H)

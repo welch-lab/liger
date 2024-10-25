@@ -760,12 +760,16 @@ plotProportionBox <- function(
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #' Create volcano plot for Wilcoxon test result
-#' @description \code{plotVolcano} is a simple implementation and shares
-#' most of arguments with other rliger plotting functions.
-#' \code{plotEnhancedVolcano} is a wrapper function of
-#' \code{EnhancedVolcano::EnhancedVolcano()}, which has provides
-#' substantial amount of arguments for graphical control. However, that requires
-#' the installation of package "EnhancedVolcano".
+#' @description
+#' \code{plotVolcano} is a simple implementation and shares most of arguments
+#' with other rliger plotting functions. \code{plotEnhancedVolcano} is a
+#' wrapper function of \code{EnhancedVolcano::EnhancedVolcano()}, which has
+#' provides substantial amount of arguments for graphical control. However, that
+#' requires the installation of package "EnhancedVolcano".
+#'
+#' \code{highlight} and \code{labelTopN} both controls the feature name
+#' labeling, whereas \code{highlight} is considered first. If both are as
+#' default (\code{NULL}), all significant features will be labeled.
 #' @param result Data frame table returned by \code{\link{runMarkerDEG}} or
 #' \code{\link{runPairwiseDEG}}.
 #' @param group Selection of one group available from \code{result$group}. If
@@ -774,8 +778,11 @@ plotProportionBox <- function(
 #' fold change statistics. Default \code{1}.
 #' @param padjThresh Number for the threshold on the adjusted p-value
 #' statistics. Default \code{0.01}.
+#' @param highlight A character vector of feature names to be highlighted.
+#' Default \code{NULL}.
 #' @param labelTopN Number of top differential expressed features to be labeled
-#' on the top of the dots. Default \code{20}.
+#' on the top of the dots. Ranked by adjusted p-value first and absolute value
+#' of logFC next. Default \code{NULL}.
 #' @param dotSize,dotAlpha Numbers for universal aesthetics control of dots.
 #' Default \code{2} and \code{0.8}.
 #' @param legendPosition Text indicating where to place the legend. Choose from
@@ -803,7 +810,8 @@ plotVolcano <- function(
         group = NULL,
         logFCThresh = 1,
         padjThresh = 0.01,
-        labelTopN = 20,
+        highlight = NULL,
+        labelTopN = NULL,
         dotSize = 2,
         dotAlpha = 0.8,
         legendPosition = "top",
@@ -813,7 +821,7 @@ plotVolcano <- function(
     if (!is.factor(result$group)) result$group <- factor(result$group)
     result$group <- droplevels(result$group)
     if (is.null(group)) {
-        if (nlevels(result$group) == 1) group <- levels(result$group)
+        if (nlevels(result$group) == 1) groupUse <- levels(result$group)
         else {
             cli::cli_abort(
                 c("Please specify one group to visualize",
@@ -827,9 +835,15 @@ plotVolcano <- function(
               i = "Available ones: {.val {unique(result$group)}}")
         )
     }
+    # Avoid dplyr namespace weird bug
+    # That when "group" is a column in the data, and `group` exists as a
+    # variable out of the pipe, doing `.data[['group']] == group` will be
+    # interpreted as `.data[['group']] == .data[['group']]`
+    groupUse <- group
     minPosPadj <- min(result$padj[result$padj > 0], na.rm = TRUE) / 10
+
     result <- result %>%
-        dplyr::filter(.data[['group']] == group, !is.na(.data[['padj']])) %>%
+        dplyr::filter(.data[['group']] == groupUse, !is.na(.data[['padj']])) %>%
         dplyr::mutate(Significance = dplyr::case_when(
             abs(.data[['logFC']]) > logFCThresh &
                 .data[['padj']] < padjThresh ~ "padj & logFC",
@@ -845,16 +859,32 @@ plotVolcano <- function(
         dplyr::arrange(dplyr::desc(.data[['padj']]),
                        dplyr::desc(.data[['logFC']]))
 
-    passIdx <- result$Significance == "padj & logFC"
-
-    result$label <- NA
-    if (!is.null(labelTopN) && !isFALSE(labelTopN)) {
-        labelTopN <- min(labelTopN, sum(passIdx))
-        if (labelTopN > 0) {
-            labelIdx <- which(passIdx)[seq(labelTopN)]
-            result$label[labelIdx] <- result$feature[labelIdx]
+    # Decide which genes to label
+    if (!is.null(highlight)) {
+        notFound <- highlight[!highlight %in% result$feature]
+        if (length(notFound) > 0) {
+            cli::cli_alert_warning(
+                "The following features are not found in the result or got NA p-value: {.val {notFound}}"
+            )
         }
+        result <- result %>%
+            dplyr::mutate(
+                label = dplyr::case_when(
+                    .data[['feature']] %in% highlight ~ .data[['feature']],
+                    TRUE ~ NA_character_
+                )
+            )
+    } else {
+        if (is.null(labelTopN)) {
+            labelTopN <- sum(result$Significance == "padj & logFC")
+        } else {
+            labelTopN <- min(labelTopN, sum(result$Significance == "padj & logFC"))
+        }
+        labelIdx <- which(result$Significance == "padj & logFC")[seq(labelTopN)]
+        result$label <- NA_character_
+        result$label[labelIdx] <- result$feature[labelIdx]
     }
+
     # Prepare for lines that mark the cutoffs
     vlineLab <- data.frame(
         X = c(-logFCThresh, logFCThresh)
