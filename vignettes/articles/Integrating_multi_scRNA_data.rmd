@@ -521,7 +521,7 @@ goResult[["CD14 Mono.stim"]]$result %>%
     mutate(
       p_value = signif(p_value, digits = 3),
     ) %>%
-    DT::datatable(options = list(pageLength = 5))
+    DT::datatable(options = list(pageLength = 5, scrollX = TRUE))
 ```
 
 And similarly, show the GO terms enriched within the down-regulated genes.
@@ -541,7 +541,7 @@ goResult[["CD14 Mono.stim"]]$result %>%
     mutate(
       p_value = signif(p_value, digits = 3),
     ) %>%
-    DT::datatable(options = list(pageLength = 5))
+    DT::datatable(options = list(pageLength = 5, scrollX = TRUE))
 ```
 
 Here's also a simple visualization function that generates a dot plot per test, with dot size representing the interaction size between query gene set and each term, and color representing the significance of the term. Use `group = "CD14 Mono.stim"` to specify the test group, and `query = "Up"` or `query = "Down"` to specify the if the test uses up- or down-regulated genes, respectively.
