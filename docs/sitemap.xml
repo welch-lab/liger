@@ -22,6 +22,9 @@
     <loc>/articles/UINMF_vignette.html</loc>
   </url>
   <url>
+    <loc>/articles/benchmark.html</loc>
+  </url>
+  <url>
     <loc>/articles/cross_species_vig.html</loc>
   </url>
   <url>
@@ -61,6 +64,9 @@
     <loc>/reference/H5Apply.html</loc>
   </url>
   <url>
+    <loc>/reference/alignFactors.html</loc>
+  </url>
+  <url>
     <loc>/reference/as.liger.html</loc>
   </url>
   <url>
@@ -82,7 +88,13 @@
     <loc>/reference/calcDatasetSpecificity.html</loc>
   </url>
   <url>
+    <loc>/reference/calcNMI.html</loc>
+  </url>
+  <url>
     <loc>/reference/calcPurity.html</loc>
+  </url>
+  <url>
+    <loc>/reference/centroidAlign.html</loc>
   </url>
   <url>
     <loc>/reference/closeAllH5.html</loc>
@@ -172,6 +184,9 @@
     <loc>/reference/ligerSpatialDataset-class.html</loc>
   </url>
   <url>
+    <loc>/reference/ligerToH5AD.html</loc>
+  </url>
+  <url>
     <loc>/reference/ligerToSeurat.html</loc>
   </url>
   <url>
@@ -232,6 +247,9 @@
     <loc>/reference/peak.html</loc>
   </url>
   <url>
+    <loc>/reference/plotBarcodeRank.html</loc>
+  </url>
+  <url>
     <loc>/reference/plotCellViolin.html</loc>
   </url>
   <url>
@@ -247,6 +265,12 @@
     <loc>/reference/plotDimRed.html</loc>
   </url>
   <url>
+    <loc>/reference/plotEnhancedVolcano.html</loc>
+  </url>
+  <url>
+    <loc>/reference/plotGODot.html</loc>
+  </url>
+  <url>
     <loc>/reference/plotGeneLoadings.html</loc>
   </url>
   <url>
@@ -259,7 +283,13 @@
     <loc>/reference/plotMarkerHeatmap.html</loc>
   </url>
   <url>
+    <loc>/reference/plotPairwiseDEGHeatmap.html</loc>
+  </url>
+  <url>
     <loc>/reference/plotProportion.html</loc>
+  </url>
+  <url>
+    <loc>/reference/plotProportionBox.html</loc>
   </url>
   <url>
     <loc>/reference/plotSankey.html</loc>
@@ -289,6 +319,9 @@
     <loc>/reference/read10X.html</loc>
   </url>
   <url>
+    <loc>/reference/read10XFiles.html</loc>
+  </url>
+  <url>
     <loc>/reference/readLiger.html</loc>
   </url>
   <url>
@@ -311,6 +344,9 @@
   </url>
   <url>
     <loc>/reference/rliger-deprecated.html</loc>
+  </url>
+  <url>
+    <loc>/reference/rliger-package.html</loc>
   </url>
   <url>
     <loc>/reference/runCINMF.html</loc>
@@ -371,6 +407,9 @@
   </url>
   <url>
     <loc>/reference/subsetLigerDataset.html</loc>
+  </url>
+  <url>
+    <loc>/reference/updateLigerObject.html</loc>
   </url>
   <url>
     <loc>/reference/writeH5.html</loc>

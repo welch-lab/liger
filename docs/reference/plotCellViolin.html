@@ -6,7 +6,7 @@ can be used to form the color annotation. When it is different from the
 grouping, it forms a nested grouping. Multiple y-axis variables are allowed
 from the same specification of slot, and this returns a list of violin
 plot for each. Users can further split the plot(s) by grouping on cells (e.g.
-datasets)."><title>Generate violin/box plot(s) using liger object — plotCellViolin • rliger</title><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.9/font.css" rel="stylesheet"><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous"><!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet"><meta property="og:title" content="Generate violin/box plot(s) using liger object — plotCellViolin"><meta property="og:description" content="This function allows for using available cell metadata, feature
+datasets)."><title>Generate violin/box plot(s) using liger object — plotCellViolin • rliger</title><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.9/font.css" rel="stylesheet"><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous"><!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js" integrity="sha512-7O5pXpc0oCRrxk8RUfDYFgn0nO1t+jLuIOQdOMRp4APB7uZ4vSjspzp5y6YDtDs4VzUSTbWzBFZ/LKJhnyFOKw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet"><meta property="og:title" content="Generate violin/box plot(s) using liger object — plotCellViolin"><meta property="og:description" content="This function allows for using available cell metadata, feature
 expression or factor loading to generate violin plot, and grouping the data
 with available categorical cell metadata. Available categorical cell metadata
 can be used to form the color annotation. When it is different from the
@@ -20,11 +20,11 @@ datasets)."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
     
 
-    <nav class="navbar fixed-top navbar-light navbar-expand-lg bg-light"><div class="container">
+    <nav class="navbar fixed-top navbar-light navbar-expand-lg bg-light" data-bs-theme="light"><div class="container">
     
     <a class="navbar-brand me-2" href="../index.html">rliger</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,6 +46,7 @@ datasets)."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/
     <a class="dropdown-item" href="../articles/STARmap_dropviz_vig.html">UINMF with STARmap spatial and transcriptomic</a>
     <a class="dropdown-item" href="../articles/SNAREseq_walkthrough.html">UINMF with SNAREseq scATAC and scRNA</a>
     <a class="dropdown-item" href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
+    <a class="dropdown-item" href="../articles/benchmark.html">Benchmarking integration quality</a>
   </div>
 </li>
 <li class="nav-item dropdown">
@@ -167,8 +168,94 @@ many elements as multiple plots are supposed to be generated. Default
 
 
 <dt>...</dt>
-<dd><p>More plot setting arguments. See <code><a href="dot-ggCellViolin.html">.ggCellViolin</a></code> and
-<code><a href="dot-ggplotLigerTheme.html">.ggplotLigerTheme</a></code>.</p></dd>
+<dd><p>Arguments passed on to <code><a href="dot-ggCellViolin.html">.ggCellViolin</a></code>, <code><a href="dot-ggplotLigerTheme.html">.ggplotLigerTheme</a></code></p><dl><dt><code>violin,box,dot</code></dt>
+<dd><p>Logical, whether to add violin plot, box plot or dot
+(scatter) plot, respectively. Layers are added in the order of dot, violin,
+and violin on the top surface. By default, only violin plot is generated.</p></dd>
+
+    <dt><code>violinAlpha,boxAlpha</code></dt>
+<dd><p>Numeric, controls the transparency of layers.
+Default <code>0.8</code>, <code>0.6</code>, respectively.</p></dd>
+
+    <dt><code>violinWidth,boxWidth</code></dt>
+<dd><p>Numeric, controls the width of violin/box
+bounding box. Default <code>0.9</code> and <code>0.4</code>.</p></dd>
+
+    <dt><code>dotColor,dotSize</code></dt>
+<dd><p>Numeric, globally controls the appearance of all
+dots. Default <code>"black"</code> and <code>getOption("ligerDotSize")</code> (1).</p></dd>
+
+    <dt><code>xlabAngle</code></dt>
+<dd><p>Numeric, counter-clockwise rotation angle of X axis label
+text. Default <code>45</code>.</p></dd>
+
+    <dt><code>raster</code></dt>
+<dd><p>Logical, whether to rasterize the dot plot. Default <code>NULL</code>
+automatically rasterizes the dot plot when number of total cells to be
+plotted exceeds 100,000.</p></dd>
+
+    <dt><code>seed</code></dt>
+<dd><p>Random seed for reproducibility. Default <code>1</code>.</p></dd>
+
+    <dt><code>title,subtitle,xlab,ylab</code></dt>
+<dd><p>Main title, subtitle or X/Y axis title text.
+By default, no main title or subtitle will be set, and X/Y axis title will be
+the names of variables used for plotting. Use <code>NULL</code> to hide elements.
+<code>TRUE</code> for <code>xlab</code> or <code>ylab</code> shows default values.</p></dd>
+
+    <dt><code>legendFillTitle</code></dt>
+<dd><p>Legend title text for fill aesthetics, often used for
+violin, box, bar plots. Default <code>NULL</code> shows the original variable name.</p></dd>
+
+    <dt><code>showLegend</code></dt>
+<dd><p>Whether to show the legend. Default <code>TRUE</code>.</p></dd>
+
+    <dt><code>legendPosition</code></dt>
+<dd><p>Text indicating where to place the legend. Choose from
+<code>"top"</code>, <code>"bottom"</code>, <code>"left"</code> or <code>"right"</code>. Default
+<code>"right"</code>.</p></dd>
+
+    <dt><code>baseSize</code></dt>
+<dd><p>One-parameter control of all text sizes. Individual text
+element sizes can be controlled by other size arguments. "Title" sizes are
+2 points larger than "text" sizes when being controlled by this.</p></dd>
+
+    <dt><code>titleSize,xTitleSize,yTitleSize,legendTitleSize</code></dt>
+<dd><p>Size of main title,
+axis titles and legend title. Default <code>NULL</code> controls by
+<code>baseSize + 2</code>.</p></dd>
+
+    <dt><code>subtitleSize,xTextSize,yTextSize,legendTextSize</code></dt>
+<dd><p>Size of subtitle text,
+axis texts and legend text. Default <code>NULL</code> controls by <code>baseSize</code>.</p></dd>
+
+    <dt><code>panelBorder</code></dt>
+<dd><p>Whether to show rectangle border of the panel instead of
+using ggplot classic bottom and left axis lines. Default <code>FALSE</code>.</p></dd>
+
+    <dt><code>colorLabels</code></dt>
+<dd><p>Character vector for modifying category names in a
+color legend. Passed to <code>ggplot2::scale_color_manual(labels)</code>. Default
+<code>NULL</code> uses original levels of the factor.</p></dd>
+
+    <dt><code>colorValues</code></dt>
+<dd><p>Character vector of colors for modifying category colors
+in a color legend. Passed to <code>ggplot2::scale_color_manual(values)</code>.
+Default <code>NULL</code> uses internal selected palette when &lt;= 26 categories are
+presented, otherwise ggplot hues.</p></dd>
+
+    <dt><code>legendNRow,legendNCol</code></dt>
+<dd><p>Integer, when too many categories in one
+variable, arranges number of rows or columns. Default <code>NULL</code>,
+automatically split to <code>ceiling(levels(variable)/10)</code> columns.</p></dd>
+
+    <dt><code>plotly</code></dt>
+<dd><p>Whether to use plotly to enable web based interactive browsing
+for the plot. Requires installation of package "plotly". Default
+<code>FALSE</code>.</p></dd>
+
+  
+</dl></dd>
 
 </dl></div>
     <div class="section level2">
@@ -215,18 +302,15 @@ value as <code>violinWidth</code> under this situation.</p>
 <span class="r-in"><span>               ylab <span class="op">=</span> <span class="st">"Total counts per cell"</span>,</span></span>
 <span class="r-in"><span>               colorValues <span class="op">=</span> <span class="fu">RColorBrewer</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RColorBrewer/man/ColorBrewer.html" class="external-link">brewer.pal</a></span><span class="op">(</span><span class="fl">8</span>, <span class="st">"Set1"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $nUMI.ctrl</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Duplicated `override.aes` is ignored.</span>
 <span class="r-plt img"><img src="plotCellViolin-2.png" alt="" width="700" height="433"></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $nUMI.stim</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Duplicated `override.aes` is ignored.</span>
 <span class="r-plt img"><img src="plotCellViolin-3.png" alt="" width="700" height="433"></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="fu">plotCellViolin</span><span class="op">(</span><span class="va">pbmcPlot</span>, y <span class="op">=</span> <span class="st">"S100A8"</span>, slot <span class="op">=</span> <span class="st">"normData"</span>,</span></span>
 <span class="r-in"><span>               yFunc <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="fl">10000</span><span class="op">*</span><span class="va">x</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>               groupBy <span class="op">=</span> <span class="st">"dataset"</span>, colorBy <span class="op">=</span> <span class="st">"leiden_cluster"</span>,</span></span>
 <span class="r-in"><span>               box <span class="op">=</span> <span class="cn">TRUE</span>, ylab <span class="op">=</span> <span class="st">"S100A8 Expression"</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Duplicated `override.aes` is ignored.</span>
 <span class="r-plt img"><img src="plotCellViolin-4.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>
@@ -235,11 +319,11 @@ value as <code>violinWidth</code> under this situation.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p></p><p>Developed by Joshua Welch, Yichen Wang, Chao Gao, Jialin Liu, Joshua Sodicoff, Velina Kozareva, Evan Macosko.</p>
+  <p>Developed by Joshua Welch, Yichen Wang, Chao Gao, Jialin Liu, Joshua Sodicoff, Velina Kozareva, Evan Macosko.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.9.</p>
 </div>
 
     </footer></div>

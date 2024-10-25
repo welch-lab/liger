@@ -3,7 +3,7 @@
 multiple datasets of various forms (See rawData).
 DO make a copy of the H5AD files because rliger functions write to
 the files and they will not be able to be read back to Python. This will be
-fixed in the future."><title>Create liger object — createLiger • rliger</title><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.9/font.css" rel="stylesheet"><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous"><!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet"><meta property="og:title" content="Create liger object — createLiger"><meta property="og:description" content="This function allows creating liger object from
+fixed in the future."><title>Create liger object — createLiger • rliger</title><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.9/font.css" rel="stylesheet"><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous"><!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js" integrity="sha512-7O5pXpc0oCRrxk8RUfDYFgn0nO1t+jLuIOQdOMRp4APB7uZ4vSjspzp5y6YDtDs4VzUSTbWzBFZ/LKJhnyFOKw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet"><meta property="og:title" content="Create liger object — createLiger"><meta property="og:description" content="This function allows creating liger object from
 multiple datasets of various forms (See rawData).
 DO make a copy of the H5AD files because rliger functions write to
 the files and they will not be able to be read back to Python. This will be
@@ -14,11 +14,11 @@ fixed in the future."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
     
 
-    <nav class="navbar fixed-top navbar-light navbar-expand-lg bg-light"><div class="container">
+    <nav class="navbar fixed-top navbar-light navbar-expand-lg bg-light" data-bs-theme="light"><div class="container">
     
     <a class="navbar-brand me-2" href="../index.html">rliger</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,7 @@ fixed in the future."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/
     <a class="dropdown-item" href="../articles/STARmap_dropviz_vig.html">UINMF with STARmap spatial and transcriptomic</a>
     <a class="dropdown-item" href="../articles/SNAREseq_walkthrough.html">UINMF with SNAREseq scATAC and scRNA</a>
     <a class="dropdown-item" href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
+    <a class="dropdown-item" href="../articles/benchmark.html">Benchmarking integration quality</a>
   </div>
 </li>
 <li class="nav-item dropdown">
@@ -99,6 +100,7 @@ fixed in the future.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">createLiger</span><span class="op">(</span></span>
 <span>  <span class="va">rawData</span>,</span>
 <span>  modal <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  organism <span class="op">=</span> <span class="st">"human"</span>,</span>
 <span>  cellMeta <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  removeMissing <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  addPrefix <span class="op">=</span> <span class="st">"auto"</span>,</span>
@@ -140,6 +142,14 @@ options of <code>"default"</code>, <code>"rna"</code>, <code>"atac"</code>, <cod
 and <code>"meth"</code> are supported.</p></dd>
 
 
+<dt>organism</dt>
+<dd><p>Character vector for setting organism for identifying mito,
+ribo and hemo genes for expression percentage calculation. Use one string for
+all datasets, or the same number of strings as the number of datasets.
+Currently options of <code>"mouse"</code>, <code>"human"</code>, <code>"zebrafish"</code>,
+<code>"rat"</code>, and <code>"drosophila"</code> are supported.</p></dd>
+
+
 <dt>cellMeta</dt>
 <dd><p>data.frame of metadata at single-cell level. Default
 <code>NULL</code>.</p></dd>
@@ -147,12 +157,11 @@ and <code>"meth"</code> are supported.</p></dd>
 
 <dt>removeMissing</dt>
 <dd><p>Logical. Whether to remove cells that do not have any
-counts and features not expressed in any cells from each dataset. Default
-<code>TRUE</code>.</p></dd>
+counts from each dataset. Default <code>TRUE</code>.</p></dd>
 
 
 <dt>addPrefix</dt>
-<dd><p>Logical. Whether to add "&lt;dataset name&gt;_" as a prefix of
+<dd><p>Logical. Whether to add "datasetName_" as a prefix of
 cell identifiers (e.g. barcodes) to avoid duplicates in multiple libraries (
 common with 10X data). Default <code>"auto"</code> detects if matrix columns
 already has the exact prefix or not. Logical value forces the action.</p></dd>
@@ -199,11 +208,11 @@ can be dangerous for large scale analysis.</p></dd>
 
 
 <dt>raw.data, remove.missing, format.type, data.name, indices.name, indptr.name, genes.name, barcodes.name</dt>
-<dd><p><b>Deprecated.</b> See Usage section for replacement.</p></dd>
+<dd><p><a href="https://lifecycle.r-lib.org/articles/stages.html#superseded" class="external-link"><img src="figures/lifecycle-superseded.svg" alt="[Superseded]"></a> See Usage section for replacement.</p></dd>
 
 
 <dt>take.gene.union</dt>
-<dd><p>Defuncted. Will be ignored.</p></dd>
+<dd><p><a href="https://lifecycle.r-lib.org/articles/stages.html#defunct" class="external-link"><img src="figures/lifecycle-defunct.svg" alt="[Defunct]"></a> Will be ignored.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -217,10 +226,16 @@ can be dangerous for large scale analysis.</p></dd>
 <span class="r-in"><span><span class="va">ctrl.raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="ligerDataset-class.html">rawData</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"ctrl"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">stim.raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="ligerDataset-class.html">rawData</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"stim"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pbmc1</span> <span class="op">&lt;-</span> <span class="fu">createLiger</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>ctrl <span class="op">=</span> <span class="va">ctrl.raw</span>, stim <span class="op">=</span> <span class="va">stim.raw</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> No human mitochondrial gene found in the union of dataset <span style="color: #0000BB;">"ctrl"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Updated QC variables: <span style="color: #0000BB;">"nUMI"</span>, <span style="color: #0000BB;">"nGene"</span>, <span style="color: #0000BB;">"mito"</span>, <span style="color: #0000BB;">"ribo"</span>, and <span style="color: #0000BB;">"hemo"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span> ... done</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> No human mitochondrial gene found in the union of dataset <span style="color: #0000BB;">"stim"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"stim"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Updated QC variables: <span style="color: #0000BB;">"nUMI"</span>, <span style="color: #0000BB;">"nGene"</span>, <span style="color: #0000BB;">"mito"</span>, <span style="color: #0000BB;">"ribo"</span>, and <span style="color: #0000BB;">"hemo"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"stim"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"stim"</span> ... done</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
@@ -236,21 +251,30 @@ can be dangerous for large scale analysis.</p></dd>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Also defined by ‘hdf5r’</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Found more than one class "H5D" in cache; using the first, from namespace 'rliger'</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Also defined by ‘hdf5r’</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> No human mitochondrial gene found in the union of dataset <span style="color: #0000BB;">"ctrl"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Updated QC variables: <span style="color: #0000BB;">"nUMI"</span>, <span style="color: #0000BB;">"nGene"</span>, <span style="color: #0000BB;">"mito"</span>, <span style="color: #0000BB;">"ribo"</span>, and <span style="color: #0000BB;">"hemo"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span> ... done</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Create from other container object</span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SeuratObject"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>    <span class="va">ctrl.seu</span> <span class="op">&lt;-</span> <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SeuratObject/man/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span><span class="va">ctrl.raw</span><span class="op">)</span></span></span>
-<span class="r-in"><span>    <span class="va">stim.seu</span> <span class="op">&lt;-</span> <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SeuratObject/man/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span><span class="va">stim.raw</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">ctrl.seu</span> <span class="op">&lt;-</span> <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://mojaveazure.github.io/seurat-object/reference/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span><span class="va">ctrl.raw</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">stim.seu</span> <span class="op">&lt;-</span> <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://mojaveazure.github.io/seurat-object/reference/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span><span class="va">stim.raw</span><span class="op">)</span></span></span>
 <span class="r-in"><span>    <span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu">createLiger</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>ctrl <span class="op">=</span> <span class="va">ctrl.seu</span>, stim <span class="op">=</span> <span class="va">stim.seu</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> No human mitochondrial gene found in the union of dataset <span style="color: #0000BB;">"ctrl"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Updated QC variables: <span style="color: #0000BB;">"nUMI"</span>, <span style="color: #0000BB;">"nGene"</span>, <span style="color: #0000BB;">"mito"</span>, <span style="color: #0000BB;">"ribo"</span>, and <span style="color: #0000BB;">"hemo"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"ctrl"</span> ... done</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> No human mitochondrial gene found in the union of dataset <span style="color: #0000BB;">"stim"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"stim"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Updated QC variables: <span style="color: #0000BB;">"nUMI"</span>, <span style="color: #0000BB;">"nGene"</span>, <span style="color: #0000BB;">"mito"</span>, <span style="color: #0000BB;">"ribo"</span>, and <span style="color: #0000BB;">"hemo"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> calculating QC for dataset <span style="color: #0000BB;">"stim"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> calculating QC for dataset <span style="color: #0000BB;">"stim"</span> ... done</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>
@@ -260,11 +284,11 @@ can be dangerous for large scale analysis.</p></dd>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p></p><p>Developed by Joshua Welch, Yichen Wang, Chao Gao, Jialin Liu, Joshua Sodicoff, Velina Kozareva, Evan Macosko.</p>
+  <p>Developed by Joshua Welch, Yichen Wang, Chao Gao, Jialin Liu, Joshua Sodicoff, Velina Kozareva, Evan Macosko.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.9.</p>
 </div>
 
     </footer></div>

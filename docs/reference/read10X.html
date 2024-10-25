@@ -8,7 +8,7 @@ object. See Examples for demonstration.
 read10XATAC works for both cellRanger-ARC and cellRanger-ATAC
 pipelines but needs user arguments for correct recognition. Similarly, the
 returned value can directly be used for constructing a liger
-object.'><title>Load in data from 10X — read10X • rliger</title><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.9/font.css" rel="stylesheet"><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous"><!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet"><meta property="og:title" content="Load in data from 10X — read10X"><meta property="og:description" content='Enables easy loading of sparse data matrices provided by 10X genomics.
+object.'><title>Load in data from 10X — read10X • rliger</title><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.9/font.css" rel="stylesheet"><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous"><!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js" integrity="sha512-7O5pXpc0oCRrxk8RUfDYFgn0nO1t+jLuIOQdOMRp4APB7uZ4vSjspzp5y6YDtDs4VzUSTbWzBFZ/LKJhnyFOKw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet"><meta property="og:title" content="Load in data from 10X — read10X"><meta property="og:description" content='Enables easy loading of sparse data matrices provided by 10X genomics.
 read10X works generally for 10X cellranger pipelines including:
 CellRanger &amp;lt; 3.0 &amp;amp; &amp;gt;= 3.0 and CellRanger-ARC.
 read10XRNA invokes read10X and takes the "Gene Expression" out,
@@ -24,11 +24,11 @@ object.'><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mat
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
     
 
-    <nav class="navbar fixed-top navbar-light navbar-expand-lg bg-light"><div class="container">
+    <nav class="navbar fixed-top navbar-light navbar-expand-lg bg-light" data-bs-theme="light"><div class="container">
     
     <a class="navbar-brand me-2" href="../index.html">rliger</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,6 +50,7 @@ object.'><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mat
     <a class="dropdown-item" href="../articles/STARmap_dropviz_vig.html">UINMF with STARmap spatial and transcriptomic</a>
     <a class="dropdown-item" href="../articles/SNAREseq_walkthrough.html">UINMF with SNAREseq scATAC and scRNA</a>
     <a class="dropdown-item" href="../articles/rna_methylation.html">Integrating scRNAseq and DNA methylation</a>
+    <a class="dropdown-item" href="../articles/benchmark.html">Benchmarking integration quality</a>
   </div>
 </li>
 <li class="nav-item dropdown">
@@ -114,6 +115,7 @@ object.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">read10X</span><span class="op">(</span></span>
 <span>  <span class="va">path</span>,</span>
 <span>  sampleNames <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  addPrefix <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  useFiltered <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  reference <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  geneCol <span class="op">=</span> <span class="fl">2</span>,</span>
@@ -132,6 +134,7 @@ object.</p>
 <span><span class="fu">read10XRNA</span><span class="op">(</span></span>
 <span>  <span class="va">path</span>,</span>
 <span>  sampleNames <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  addPrefix <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  useFiltered <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  reference <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  returnList <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -141,6 +144,7 @@ object.</p>
 <span><span class="fu">read10XATAC</span><span class="op">(</span></span>
 <span>  <span class="va">path</span>,</span>
 <span>  sampleNames <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  addPrefix <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  useFiltered <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  pipeline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"atac"</span>, <span class="st">"arc"</span><span class="op">)</span>,</span>
 <span>  arcFeatureType <span class="op">=</span> <span class="st">"Peaks"</span>,</span>
@@ -154,10 +158,10 @@ object.</p>
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
     <dl><dt>path</dt>
-<dd><p>[A.] A Directory containing the matrix.mtx, genes.tsv (or
+<dd><p>(A.) A Directory containing the matrix.mtx, genes.tsv (or
 features.tsv), and barcodes.tsv files provided by 10X. A vector, a named
 vector, a list or a named list can be given in order to load several data
-directories. [B.] The 10X root directory where subdirectories of per-sample
+directories. (B.) The 10X root directory where subdirectories of per-sample
 output folders can be found. Sample names will by default take the name of
 the vector, list or subfolders.</p></dd>
 
@@ -166,6 +170,11 @@ the vector, list or subfolders.</p></dd>
 <dd><p>A vector of names to override the detected or set sample
 names for what is given to <code>path</code>. Default <code>NULL</code>. If no name
 detected at all and multiple samples are given, will name them by numbers.</p></dd>
+
+
+<dt>addPrefix</dt>
+<dd><p>Logical, whether to add sample names as a prefix to the
+barcodes. Default <code>FALSE</code>.</p></dd>
 
 
 <dt>useFiltered</dt>
@@ -236,16 +245,16 @@ show available options if argument specification cannot be found.</p></dd>
     
 
 <ul><li><p>When only one sample is given or detected, and only one feature type
- is detected or using CellRanger &lt; 3.0, and <code>returnList = FALSE</code>, a
- sparse matrix object (dgCMatrix class) will be returned.</p></li>
+is detected or using CellRanger &lt; 3.0, and <code>returnList = FALSE</code>, a
+sparse matrix object (dgCMatrix class) will be returned.</p></li>
 <li><p>When using <code>read10XRNA</code> or <code>read10XATAC</code>, which are modality
- specific, returns a list named by samples, and each element is the
- corresponding sparse matrix object (dgCMatrix class).</p></li>
+specific, returns a list named by samples, and each element is the
+corresponding sparse matrix object (dgCMatrix class).</p></li>
 <li><p><code>read10X</code> generally returns a list named by samples. Each sample
- element will be another list named by feature types even if only one feature
- type is detected (or using CellRanger &lt; 3.0) for data structure consistency.
- The feature type "Gene Expression" always comes as the first type if
- available.</p></li>
+element will be another list named by feature types even if only one feature
+type is detected (or using CellRanger &lt; 3.0) for data structure consistency.
+The feature type "Gene Expression" always comes as the first type if
+available.</p></li>
 </ul></div>
 
     <div class="section level2">
@@ -294,11 +303,11 @@ show available options if argument specification cannot be found.</p></dd>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p></p><p>Developed by Joshua Welch, Yichen Wang, Chao Gao, Jialin Liu, Joshua Sodicoff, Velina Kozareva, Evan Macosko.</p>
+  <p>Developed by Joshua Welch, Yichen Wang, Chao Gao, Jialin Liu, Joshua Sodicoff, Velina Kozareva, Evan Macosko.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.9.</p>
 </div>
 
     </footer></div>

@@ -1,19 +1,20 @@
-pandoc: 3.1.1
-pkgdown: 2.0.7
+pandoc: '3.2'
+pkgdown: 2.0.9
 pkgdown_sha: ~
 articles:
-  Integrating_multi_scRNA_data: Integrating_multi_scRNA_data.html
-  Integrating_scRNA_and_scATAC_data: Integrating_scRNA_and_scATAC_data.html
-  SNAREseq_walkthrough: SNAREseq_walkthrough.html
-  STARmap_dropviz_vig: STARmap_dropviz_vig.html
-  UINMF_vignette: UINMF_vignette.html
+  benchmark: benchmark.html
   cross_species_vig: cross_species_vig.html
   import_data: import_data.html
   installation: installation.html
+  Integrating_multi_scRNA_data: Integrating_multi_scRNA_data.html
+  Integrating_scRNA_and_scATAC_data: Integrating_scRNA_and_scATAC_data.html
   liger_object: liger_object.html
   liger_with_seurat: liger_with_seurat.html
+  liger-vignette: liger-vignette.html
   online_iNMF_tutorial: online_iNMF_tutorial.html
   rna_methylation: rna_methylation.html
-  liger-vignette: liger-vignette.html
-last_built: 2024-04-05T01:01Z
+  SNAREseq_walkthrough: SNAREseq_walkthrough.html
+  STARmap_dropviz_vig: STARmap_dropviz_vig.html
+  UINMF_vignette: UINMF_vignette.html
+last_built: 2024-10-25T19:11Z
 
