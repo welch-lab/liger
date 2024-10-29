@@ -339,9 +339,13 @@ plotGeneDetectedViolin <- function(
 #' function arguments before matching the \code{...} arguments.
 #' @param object A \linkS4class{liger} object.
 #' @param gene Character vector of gene names.
-#' @param groupBy Names of available categorical variable in \code{cellMeta}
-#' slot. Use \code{FALSE} for no grouping. Default \code{NULL} looks clustering
-#' result but will not group if no clustering found.
+#' @param groupBy The name of an available categorical variable in
+#' \code{cellMeta} slot. This forms the main x-axis columns. Use \code{FALSE}
+#' for no grouping. Default \code{NULL} looks clustering result but will not
+#' group if no clustering is found.
+#' @param colorBy The name of another categorical variable in \code{cellMeta}
+#' slot. This split the main grouping columns and color the violins. Default
+#' \code{NULL} will not split and color the violins.
 #' @param box Logical, whether to add boxplot. Default \code{FALSE}.
 #' @param boxAlpha Numeric, transparency of boxplot. Default \code{0.1}.
 #' @param yFunc Function to transform the y-axis. Default is
@@ -358,10 +362,11 @@ plotClusterGeneViolin <- function(
         object,
         gene,
         groupBy = NULL,
+        colorBy = NULL,
         box = FALSE,
         boxAlpha = 0.1,
         yFunc = function(x) log1p(x*1e4),
-        showLegend = FALSE,
+        showLegend = !is.null(colorBy),
         xlabAngle = 40,
         ...
 ) {
@@ -382,19 +387,38 @@ plotClusterGeneViolin <- function(
         groupBy <- "group"
         featureDF[[groupBy]] <- factor("All")
     }
-    p <- featureDF %>%
+    if (!is.null(colorBy)) {
+        colorVar <- .fetchCellMetaVar(
+            object = object, variables = colorBy, checkCategorical = TRUE
+        )
+        featureDF[[colorBy]] <- factor(colorVar)
+    }
+
+    featureDF <- featureDF %>%
         .pivot_longer(
             cols = seq(ngene),
             names_to = "gene",
             values_to = "Expression"
         ) %>%
-        dplyr::mutate(gene = factor(.data[["gene"]], levels = geneUse)) %>%
-        ggplot2::ggplot(ggplot2::aes(
-            x = .data[[groupBy]],
-            y = .data[["Expression"]],
-            fill = .data[[groupBy]]
-        )) +
-        ggplot2::geom_violin()
+        dplyr::mutate(gene = factor(.data[["gene"]], levels = geneUse))
+    if (!is.null(colorBy)) {
+        p <- ggplot2::ggplot(
+            data = featureDF,
+            mapping = ggplot2::aes(
+                x = .data[[groupBy]],
+                y = .data[["Expression"]],
+                fill = .data[[colorBy]]
+            ))
+    } else {
+        p <- ggplot2::ggplot(
+            data = featureDF,
+            mapping = ggplot2::aes(
+                x = .data[[groupBy]],
+                y = .data[["Expression"]],
+                fill = .data[[groupBy]]
+            ))
+    }
+    p <- p + ggplot2::geom_violin()
     if (isTRUE(box)) {
         p <- p + ggplot2::geom_boxplot(alpha = boxAlpha)
     }

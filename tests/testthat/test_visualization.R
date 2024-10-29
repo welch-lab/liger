@@ -117,7 +117,7 @@ test_that("Violin plots", {
     )
 
     expect_gg(
-        plotClusterGeneViolin(pbmcPlot, "S100A8", box = TRUE),
+        plotClusterGeneViolin(pbmcPlot, "S100A8", box = TRUE, colorBy = "dataset"),
         plotClusterGeneViolin(pbmcPlot, "S100A8", groupBy = FALSE)
     )
     # General

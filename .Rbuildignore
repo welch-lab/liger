@@ -1,6 +1,4 @@
 LICENSE
-.*rds$
-.*RDS$
 ^\.lintr$
 ^\.vscode
 ^.*\.Rproj$

@@ -8,10 +8,11 @@ plotClusterGeneViolin(
   object,
   gene,
   groupBy = NULL,
+  colorBy = NULL,
   box = FALSE,
   boxAlpha = 0.1,
   yFunc = function(x) log1p(x * 10000),
-  showLegend = FALSE,
+  showLegend = !is.null(colorBy),
   xlabAngle = 40,
   ...
 )
@@ -21,9 +22,14 @@ plotClusterGeneViolin(
 
 \item{gene}{Character vector of gene names.}
 
-\item{groupBy}{Names of available categorical variable in \code{cellMeta}
-slot. Use \code{FALSE} for no grouping. Default \code{NULL} looks clustering
-result but will not group if no clustering found.}
+\item{groupBy}{The name of an available categorical variable in
+\code{cellMeta} slot. This forms the main x-axis columns. Use \code{FALSE}
+for no grouping. Default \code{NULL} looks clustering result but will not
+group if no clustering is found.}
+
+\item{colorBy}{The name of another categorical variable in \code{cellMeta}
+slot. This split the main grouping columns and color the violins. Default
+\code{NULL} will not split and color the violins.}
 
 \item{box}{Logical, whether to add boxplot. Default \code{FALSE}.}
 

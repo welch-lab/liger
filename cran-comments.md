@@ -15,8 +15,6 @@ Suggests or Enhances not in mainstream repositories:
 Availability using Additional_repositories specification:
   DoubletFinder   yes   https://blaserlab.r-universe.dev
   RcppPlanc       yes   https:/welch-lab.r-universe.dev 
-  
-Package has a VignetteBuilder field but no prebuilt vignette index.
 ```
 
 ```
