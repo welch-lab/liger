@@ -163,7 +163,7 @@ Default \code{NULL} uses internal selected palette when <= 26 categories are
 presented, otherwise ggplot hues.}
     \item{\code{legendNRow,legendNCol}}{Integer, when too many categories in one
 variable, arranges number of rows or columns. Default \code{NULL},
-automatically split to \code{ceiling(levels(variable)/10)} columns.}
+automatically split to \code{ceiling(levels(variable)/15)} columns.}
     \item{\code{colorDirection}}{Choose \code{1} or \code{-1}. Applied when
 \code{colorPalette} is from Viridis options. Default \code{-1} use darker
 color for higher value, while \code{1} reverses this direction.}

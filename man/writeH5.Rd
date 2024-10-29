@@ -40,9 +40,10 @@ writeH5(x, file, ...)
 Default \code{FALSE}.}
 
 \item{indicesPath, indptrPath, dataPath}{The paths inside the H5 file where
-the \linkS4class{dgCMatrix} constructor \code{i}, \code{p}, and \code{x} will
-be written to, respectively. Default using cellranger convention
-\code{"matrix/indices"}, \code{"matrix/indptr"}, and \code{"matrix/data"}.}
+the \link[Matrix]{dgCMatrix-class} constructor \code{i}, \code{p}, and
+\code{x} will be written to, respectively. Default using cellranger
+convention \code{"matrix/indices"}, \code{"matrix/indptr"}, and
+\code{"matrix/data"}.}
 
 \item{shapePath}{The path inside the H5 file where the shape of the matrix
 will be written to. Default \code{"matrix/shape"}.}
@@ -73,9 +74,9 @@ information might be lost.
 Basing on the goal of the whole workflow, the data will always be written
 in a CSC matrix format and colnames/rownames are always required.
 
-The default method coerces the input to a \linkS4class{dgCMatrix}. Methods
-for other container classes tries to extract proper data and calls the
-default method.
+The default method coerces the input to a \link[Matrix]{dgCMatrix-class}
+object. Methods for other container classes tries to extract proper data and
+calls the default method.
 }
 \examples{
 raw <- rawData(pbmc, "ctrl")

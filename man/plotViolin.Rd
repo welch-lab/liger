@@ -78,7 +78,7 @@ Default \code{NULL} uses internal selected palette when <= 26 categories are
 presented, otherwise ggplot hues.}
     \item{\code{legendNRow,legendNCol}}{Integer, when too many categories in one
 variable, arranges number of rows or columns. Default \code{NULL},
-automatically split to \code{ceiling(levels(variable)/10)} columns.}
+automatically split to \code{ceiling(levels(variable)/15)} columns.}
     \item{\code{plotly}}{Whether to use plotly to enable web based interactive browsing
 for the plot. Requires installation of package "plotly". Default
 \code{FALSE}.}

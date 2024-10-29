@@ -1080,15 +1080,11 @@ computePval <- function(ustat, ties, N, n1n2) {
 #' @param column_title Title on the column. Default \code{NULL}.
 #' @inheritDotParams plotGeneHeatmap cellAnnotation
 #' @inheritDotParams .plotHeatmap transpose showCellLabel showCellLegend showFeatureLabel cellAnnColList featureAnnColList scale trim baseSize cellTextSize featureTextSize cellTitleSize featureTitleSize legendTextSize legendTitleSize viridisOption viridisDirection RColorBrewerOption
-#' @return A \linkS4class{HeatmapList} object.
+#' @return A \link[ComplexHeatmap]{HeatmapList-class} object.
 #' @examples
 #' defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
-#' markerTable <- runMarkerDEG(
-#'     pbmc,
-#'     minCellPerRep = 5
-#' )
 #' pbmc <- normalize(pbmc)
-#' plotMarkerHeatmap(pbmc, markerTable)
+#' plotMarkerHeatmap(pbmc, deg.marker)
 plotMarkerHeatmap <- function(
         object,
         result,
@@ -1183,18 +1179,11 @@ plotMarkerHeatmap <- function(
 #' @param column_title Title on the column. Default \code{NULL}.
 #' @param seed Random seed for reproducibility. Default \code{1}.
 #' @inheritDotParams .plotHeatmap transpose showCellLabel showCellLegend showFeatureLabel cellAnnColList featureAnnColList scale trim baseSize cellTextSize featureTextSize cellTitleSize featureTitleSize legendTextSize legendTitleSize viridisOption viridisDirection RColorBrewerOption
-#' @return A \linkS4class{HeatmapList} object.
+#' @return A \link[ComplexHeatmap]{HeatmapList-class} object.
 #' @examples
 #' defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
-#' degTest <- runPairwiseDEG(
-#'     pbmc,
-#'     groupTest = "stim",
-#'     groupCtrl = "ctrl",
-#'     variable1 = "dataset",
-#'     splitBy = "defaultCluster"
-#' )
 #' pbmc <- normalize(pbmc)
-#' plotPairwiseDEGHeatmap(pbmc, degTest, '4.stim')
+#' plotPairwiseDEGHeatmap(pbmc, deg.pw, '4.stim')
 plotPairwiseDEGHeatmap <- function(
         object,
         result,

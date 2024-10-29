@@ -97,14 +97,5 @@ labeling, whereas \code{highlight} is considered first. If both are as
 default (\code{NULL}), all significant features will be labeled.
 }
 \examples{
-defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
-# Test the DEG between "stim" and "ctrl", within each cluster
-result <- runPairwiseDEG(
-    pbmc,
-    groupTest = "stim",
-    groupCtrl = "ctrl",
-    variable1 = "dataset",
-    splitBy = "defaultCluster"
-)
-plotVolcano(result, "0.stim")
+plotVolcano(deg.pw, "0.stim")
 }

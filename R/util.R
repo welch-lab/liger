@@ -447,7 +447,7 @@ cli_or <- function(x) cli::cli_vec(x, list("vec-last" = " or "))
             cli::cli_abort(
                 "Package {.pkg scattermore} is needed for rasterizing the scatter
                 plot. Please install it by command:
-                {.code BiocManager::install('scattermore')}"
+                {.code install.packages('scattermore')}"
             )
         }
     }
@@ -678,4 +678,28 @@ searchH <- function(object, useRaw = NULL) {
         }
     }
     return(list(H = H, useRaw = useRaw))
+}
+
+
+.pivot_longer <- function(
+        data,
+        cols,
+        names_to = "name",
+        values_to = "value"
+) {
+    if (is.numeric(cols) || is.logical(cols)) cols <- colnames(data)[cols]
+    if (!is.character(cols))
+        cli::cli_abort("`cols` should be a character vector.")
+    keeps <- setdiff(colnames(data), cols)
+    blocks <- lapply(cols, function(col) {
+        len <- nrow(data)
+        blockData <- list()
+        blockData[[names_to]] <- rep(col, len)
+        blockData[[values_to]] <- data[[col]]
+        for (keep in keeps) {
+            blockData[[keep]] <- data[[keep]]
+        }
+        as.data.frame(blockData)
+    })
+    do.call(rbind, blocks)
 }

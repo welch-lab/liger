@@ -327,6 +327,95 @@ plotGeneDetectedViolin <- function(
                    ylab = "Number of Genes Detected", ...)
 }
 
+
+#' Create violin plot for multiple genes grouped by clusters
+#' @description
+#' Make violin plots for each given gene grouped by cluster variable and stack
+#' along y axis.
+#'
+#' @details
+#' If \code{xlab} need to be set, set \code{xlabAngle} at the same time. This is
+#' due to that the argument parsing mechanism will partially match it to main
+#' function arguments before matching the \code{...} arguments.
+#' @param object A \linkS4class{liger} object.
+#' @param gene Character vector of gene names.
+#' @param groupBy Names of available categorical variable in \code{cellMeta}
+#' slot. Use \code{FALSE} for no grouping. Default \code{NULL} looks clustering
+#' result but will not group if no clustering found.
+#' @param box Logical, whether to add boxplot. Default \code{FALSE}.
+#' @param boxAlpha Numeric, transparency of boxplot. Default \code{0.1}.
+#' @param yFunc Function to transform the y-axis. Default is
+#' \code{log1p(x*1e4)}. Set to \code{NULL} for no transformation.
+#' @param showLegend Whether to show the legend. Default \code{FALSE}.
+#' @param xlabAngle Numeric, counter-clockwise rotation angle in degrees of X
+#' axis label text. Default \code{40}.
+#' @inheritDotParams .ggplotLigerTheme title subtitle xlab ylab legendFillTitle legendPosition baseSize titleSize xTitleSize yTitleSize legendTitleSize subtitleSize xTextSize yTextSize legendTextSize yFacetSize panelBorder legendNRow legendNCol colorLabels colorValues plotly
+#' @return A ggplot object.
+#' @export
+#' @examples
+#' plotClusterGeneViolin(pbmcPlot, varFeatures(pbmcPlot)[1:10])
+plotClusterGeneViolin <- function(
+        object,
+        gene,
+        groupBy = NULL,
+        box = FALSE,
+        boxAlpha = 0.1,
+        yFunc = function(x) log1p(x*1e4),
+        showLegend = FALSE,
+        xlabAngle = 40,
+        ...
+) {
+    groupBy <-  groupBy %||% object@uns$defaultCluster
+    gene <- unique(gene)
+    featureDF <- retrieveCellFeature(object, gene, slot = "normData")
+    # Account for the case where the gene is not detected in any cell
+    ngene <- ncol(featureDF)
+    geneUse <- gene[gene %in% colnames(featureDF)]
+    if (!is.null(yFunc)) featureDF <- as.data.frame(apply(featureDF, 2, yFunc))
+    if (!isFALSE(groupBy)) {
+        featureDF[[groupBy]] <- .fetchCellMetaVar(
+            object = object,
+            variables = groupBy,
+            checkCategorical = TRUE
+        )
+    } else {
+        groupBy <- "group"
+        featureDF[[groupBy]] <- factor("All")
+    }
+    p <- featureDF %>%
+        .pivot_longer(
+            cols = seq(ngene),
+            names_to = "gene",
+            values_to = "Expression"
+        ) %>%
+        dplyr::mutate(gene = factor(.data[["gene"]], levels = geneUse)) %>%
+        ggplot2::ggplot(ggplot2::aes(
+            x = .data[[groupBy]],
+            y = .data[["Expression"]],
+            fill = .data[[groupBy]]
+        )) +
+        ggplot2::geom_violin()
+    if (isTRUE(box)) {
+        p <- p + ggplot2::geom_boxplot(alpha = boxAlpha)
+    }
+    p <- p +
+        ggplot2::facet_wrap(
+            stats::formula("~gene"),
+            scales = "free_y",
+            nrow = ngene,
+            strip.position = "left"
+        )
+    .ggplotLigerTheme(
+        p,
+        showLegend = showLegend,
+        xlabAngle = xlabAngle,
+        ...
+    )
+}
+
+
+
+
 #' Create barcode-rank plot for each dataset
 #' @description
 #' This function ranks the total count of each cell within each dataset and make
@@ -795,16 +884,7 @@ plotProportionBox <- function(
 #' @return ggplot
 #' @export
 #' @examples
-#' defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
-#' # Test the DEG between "stim" and "ctrl", within each cluster
-#' result <- runPairwiseDEG(
-#'     pbmc,
-#'     groupTest = "stim",
-#'     groupCtrl = "ctrl",
-#'     variable1 = "dataset",
-#'     splitBy = "defaultCluster"
-#' )
-#' plotVolcano(result, "0.stim")
+#' plotVolcano(deg.pw, "0.stim")
 plotVolcano <- function(
         result,
         group = NULL,

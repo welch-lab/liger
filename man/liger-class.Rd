@@ -399,7 +399,7 @@ please try updating the objects individually with
 \code{dataset}, \code{dataset<-}, \code{datasets} or \code{datasets<-} to
 interact with. See detailed section accordingly.}
 
-\item{\code{cellMeta}}{\linkS4class{DFrame} object for cell metadata. Pre-existing
+\item{\code{cellMeta}}{\link[S4Vectors]{DFrame} object for cell metadata. Pre-existing
 metadata, QC metrics, cluster labeling and etc. are all stored here. Use
 generic \code{cellMeta}, \code{cellMeta<-}, \code{$}, \code{[[]]} or
 \code{[[]]<-} to interact with. See detailed section accordingly.}

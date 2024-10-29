@@ -88,20 +88,13 @@ mapped with \code{\link[RColorBrewer]{brewer.pal}}. This is passed to
   }}
 }
 \value{
-A \linkS4class{HeatmapList} object.
+A \link[ComplexHeatmap]{HeatmapList-class} object.
 }
 \description{
 Create heatmap for pairwise DEG analysis result
 }
 \examples{
 defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
-degTest <- runPairwiseDEG(
-    pbmc,
-    groupTest = "stim",
-    groupCtrl = "ctrl",
-    variable1 = "dataset",
-    splitBy = "defaultCluster"
-)
 pbmc <- normalize(pbmc)
-plotPairwiseDEGHeatmap(pbmc, degTest, '4.stim')
+plotPairwiseDEGHeatmap(pbmc, deg.pw, '4.stim')
 }

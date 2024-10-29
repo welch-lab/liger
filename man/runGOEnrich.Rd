@@ -42,10 +42,19 @@ up-regulated genes and should be preferred when \code{result} comes from
 marker detection test. When \code{result} comes from group-to-group DE test,
 it is recommended to set \code{splitReg = TRUE}.}
 
-\item{...}{Additional arguments passed to \code{gprofiler2::gost()}.
+\item{...}{Additional arguments passed to \code{gprofiler2::gost()}. Useful
+ones are:
+
+\describe{
+\item{\code{organism}}{The organism to be used for the analysis. "hsapiens"
+for human, "mmusculus" for mouse.}
+\item{\code{evcodes}}{Whether to include overlapping genes for each term.
+Default \code{FALSE}.}
+\item{\code{significant}}{Whether to filter out non-significant terms.
+Default \code{TRUE}.}
+}
 Arguments \code{query}, \code{custom_bg}, \code{domain_scope}, and
-\code{ordered_query} are pre-specified by this wrapper function. Users must
-set \code{organism = "mmusculus"} when working on mouse data.}
+\code{ordered_query} are pre-specified by this wrapper function.}
 }
 \value{
 A list object where each element is a result list for a group. Each
@@ -60,22 +69,11 @@ This function forms genesets basing on the differential expression result,
 and calls gene ontology (GO) analysis method provided by gprofiler2.
 }
 \examples{
-defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
-# Test the DEG between "stim" and "ctrl", within each cluster
-result <- runPairwiseDEG(
-    pbmc,
-    groupTest = "stim",
-    groupCtrl = "ctrl",
-    variable1 = "dataset",
-    splitBy = "defaultCluster",
-    nPsdRep = 3,
-    minCellPerRep = 3
-)
 # Setting `significant = FALSE` because it's hard for a gene list obtained
 # from small test dataset to represent real-life biology.
 \donttest{
 if (requireNamespace("gprofiler2", quietly = TRUE)) {
-    go <- runGOEnrich(result, group = "0.stim", significant = FALSE)
+    go <- runGOEnrich(deg.pw, group = "0.stim", significant = FALSE)
 }
 }
 }

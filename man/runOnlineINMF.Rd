@@ -59,8 +59,9 @@ as 1.0 may improve reconstruction quality. Default \code{5.0}.}
 
 \item{...}{Arguments passed to other S3 methods of this function.}
 
-\item{newDatasets}{Named list of \linkS4class{dgCMatrix}. New datasets for
-scenario 2 or scenario 3. Default \code{NULL} triggers scenario 1.}
+\item{newDatasets}{Named list of \link[Matrix]{dgCMatrix-class} object. New
+datasets for scenario 2 or scenario 3. Default \code{NULL} triggers scenario
+1.}
 
 \item{projection}{Whether to perform data integration with scenario 3 when
 \code{newDatasets} is specified. See description. Default \code{FALSE}.}

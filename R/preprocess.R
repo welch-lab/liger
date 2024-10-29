@@ -1339,7 +1339,7 @@ selectGenesVST <- function(
 #' done by doing \code{scaleNotCenter(lig, useDataset = c("other", "datasets"))},
 #' and then \code{\link{reverseMethData}(lig, useDataset = c("meth", "datasets"))}.
 #' @param object \linkS4class{liger} object, \linkS4class{ligerDataset} object,
-#' \linkS4class{dgCMatrix}, or a Seurat object.
+#' \link[Matrix]{dgCMatrix-class} object, or a Seurat object.
 #' @param ... Arguments passed to other methods. The order goes by: "liger"
 #' method calls "ligerDataset" method", which then calls "dgCMatrix" method.
 #' "Seurat" method directly calls "dgCMatrix" method.

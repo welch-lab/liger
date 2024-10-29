@@ -361,17 +361,18 @@ closeAllH5.ligerDataset <- function(object) {
 #' Basing on the goal of the whole workflow, the data will always be written
 #' in a CSC matrix format and colnames/rownames are always required.
 #'
-#' The default method coerces the input to a \linkS4class{dgCMatrix}. Methods
-#' for other container classes tries to extract proper data and calls the
-#' default method.
+#' The default method coerces the input to a \link[Matrix]{dgCMatrix-class}
+#' object. Methods for other container classes tries to extract proper data and
+#' calls the default method.
 #' @param x An object with in-memory data to be written into H5 file.
 #' @param file A character string of the file path to be written.
 #' @param overwrite Logical, whether to overwrite the file if it already exists.
 #' Default \code{FALSE}.
 #' @param indicesPath,indptrPath,dataPath The paths inside the H5 file where
-#' the \linkS4class{dgCMatrix} constructor \code{i}, \code{p}, and \code{x} will
-#' be written to, respectively. Default using cellranger convention
-#' \code{"matrix/indices"}, \code{"matrix/indptr"}, and \code{"matrix/data"}.
+#' the \link[Matrix]{dgCMatrix-class} constructor \code{i}, \code{p}, and
+#' \code{x} will be written to, respectively. Default using cellranger
+#' convention \code{"matrix/indices"}, \code{"matrix/indptr"}, and
+#' \code{"matrix/data"}.
 #' @param shapePath The path inside the H5 file where the shape of the matrix
 #' will be written to. Default \code{"matrix/shape"}.
 #' @param barcodesPath The path inside the H5 file where the barcodes/colnames
