@@ -87,8 +87,11 @@ axis titles and legend title. Default \code{NULL} controls by
 \item{subtitleSize, xTextSize, yTextSize, legendTextSize}{Size of subtitle text,
 axis texts and legend text. Default \code{NULL} controls by \code{baseSize}.}
 
-\item{xFacetSize, yFacetSize}{Size of facet label text. Default \code{NULL}
-controls by \code{baseSize - 2}.}
+\item{xFacetSize}{Size of facet strip label text on x-axis. Default
+\code{NULL} controls by \code{baseSize - 2}.}
+
+\item{yFacetSize}{Size of facet strip label text on y-axis. Default
+\code{NULL} controls by \code{baseSize - 2}.}
 
 \item{legendDotSize}{Allow dots in legend region to be large enough to see
 the colors/shapes clearly. Default \code{4}.}
@@ -98,7 +101,7 @@ using ggplot classic bottom and left axis lines. Default \code{FALSE}.}
 
 \item{legendNRow, legendNCol}{Integer, when too many categories in one
 variable, arranges number of rows or columns. Default \code{NULL},
-automatically split to \code{ceiling(levels(variable)/10)} columns.}
+automatically split to \code{ceiling(levels(variable)/15)} columns.}
 
 \item{colorLabels}{Character vector for modifying category names in a
 color legend. Passed to \code{ggplot2::scale_color_manual(labels)}. Default

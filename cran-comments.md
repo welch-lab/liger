@@ -1,4 +1,4 @@
-# rliger 2.0.0
+# rliger 2.1.0
 
 ## R CMD check results
 

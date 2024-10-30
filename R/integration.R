@@ -582,8 +582,9 @@ optimizeALS <- function( # nocov start
 #' matrices with a single Seurat object. We strongly recommend that users create
 #' a \linkS4class{liger} object which has the specific structure.
 #' @param object \linkS4class{liger} object. Scaled data required.
-#' @param newDatasets Named list of \linkS4class{dgCMatrix}. New datasets for
-#' scenario 2 or scenario 3. Default \code{NULL} triggers scenario 1.
+#' @param newDatasets Named list of \link[Matrix]{dgCMatrix-class} object. New
+#' datasets for scenario 2 or scenario 3. Default \code{NULL} triggers scenario
+#' 1.
 #' @param projection Whether to perform data integration with scenario 3 when
 #' \code{newDatasets} is specified. See description. Default \code{FALSE}.
 #' @param WInit,VInit,AInit,BInit Optional initialization for \eqn{W}, \eqn{V},

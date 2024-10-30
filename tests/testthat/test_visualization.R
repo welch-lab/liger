@@ -116,6 +116,10 @@ test_that("Violin plots", {
         plotTotalCountViolin(pbmc, dot = TRUE)
     )
 
+    expect_gg(
+        plotClusterGeneViolin(pbmcPlot, "S100A8", box = TRUE, colorBy = "dataset"),
+        plotClusterGeneViolin(pbmcPlot, "S100A8", groupBy = FALSE)
+    )
     # General
     skip_if_not_installed("scattermore")
     expect_gg(
@@ -172,14 +176,17 @@ context("Density plot")
 test_that("Density plot", {
     expect_gg(
         expect_no_warning(plotDensityDimRed(pbmcPlot, splitBy = "dataset",
-                                            title = "one")),
-        expect_message(plotDensityDimRed(pbmcPlot, title = letters[1:3],
-                                         dotRaster = TRUE),
-                       "`title` has length greater than")
+                                            title = "one"))
     )
     expect_is(plotDensityDimRed(pbmcPlot, "UMAP", splitBy = "dataset",
                                 title = names(pbmcPlot), combinePlot = FALSE),
               "list")
+    skip_if_not(requireNamespace("scattermore", quietly = TRUE))
+    expect_gg(
+        expect_message(plotDensityDimRed(pbmcPlot, title = letters[1:3],
+                                         dotRaster = TRUE),
+                       "`title` has length greater than")
+    )
 })
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

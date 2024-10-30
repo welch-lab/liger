@@ -616,8 +616,10 @@ plotCellViolin <- function(
 #' \code{baseSize + 2}.
 #' @param subtitleSize,xTextSize,yTextSize,legendTextSize Size of subtitle text,
 #' axis texts and legend text. Default \code{NULL} controls by \code{baseSize}.
-#' @param xFacetSize,yFacetSize Size of facet label text. Default \code{NULL}
-#' controls by \code{baseSize - 2}.
+#' @param xFacetSize Size of facet strip label text on x-axis. Default
+#' \code{NULL} controls by \code{baseSize - 2}.
+#' @param yFacetSize Size of facet strip label text on y-axis. Default
+#' \code{NULL} controls by \code{baseSize - 2}.
 #' @param legendDotSize Allow dots in legend region to be large enough to see
 #' the colors/shapes clearly. Default \code{4}.
 #' @param panelBorder Whether to show rectangle border of the panel instead of
@@ -631,7 +633,7 @@ plotCellViolin <- function(
 #' presented, otherwise ggplot hues.
 #' @param legendNRow,legendNCol Integer, when too many categories in one
 #' variable, arranges number of rows or columns. Default \code{NULL},
-#' automatically split to \code{ceiling(levels(variable)/10)} columns.
+#' automatically split to \code{ceiling(levels(variable)/15)} columns.
 #' @param colorPalette For continuous coloring, an index or a palette name to
 #' select from available options from ggplot
 #' \code{\link[ggplot2]{scale_brewer}} or \code{\link[viridisLite]{viridis}}.

@@ -144,10 +144,19 @@ runGSEA <- function(
 #' up-regulated genes and should be preferred when \code{result} comes from
 #' marker detection test. When \code{result} comes from group-to-group DE test,
 #' it is recommended to set \code{splitReg = TRUE}.
-#' @param ... Additional arguments passed to \code{gprofiler2::gost()}.
+#' @param ... Additional arguments passed to \code{gprofiler2::gost()}. Useful
+#' ones are:
+#'
+#' \describe{
+#' \item{\code{organism}}{The organism to be used for the analysis. "hsapiens"
+#' for human, "mmusculus" for mouse.}
+#' \item{\code{evcodes}}{Whether to include overlapping genes for each term.
+#' Default \code{FALSE}.}
+#' \item{\code{significant}}{Whether to filter out non-significant terms.
+#' Default \code{TRUE}.}
+#' }
 #' Arguments \code{query}, \code{custom_bg}, \code{domain_scope}, and
-#' \code{ordered_query} are pre-specified by this wrapper function. Users must
-#' set \code{organism = "mmusculus"} when working on mouse data.
+#' \code{ordered_query} are pre-specified by this wrapper function.
 #' @references Kolberg, L. et al, 2020 and Raudvere, U. et al, 2019
 #' @return A list object where each element is a result list for a group. Each
 #' result list contains two elements:
@@ -157,22 +166,11 @@ runGSEA <- function(
 #' See \code{gprofiler2::gost()}. for detailed explanation.
 #' @export
 #' @examples
-#' defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
-#' # Test the DEG between "stim" and "ctrl", within each cluster
-#' result <- runPairwiseDEG(
-#'     pbmc,
-#'     groupTest = "stim",
-#'     groupCtrl = "ctrl",
-#'     variable1 = "dataset",
-#'     splitBy = "defaultCluster",
-#'     nPsdRep = 3,
-#'     minCellPerRep = 3
-#' )
 #' # Setting `significant = FALSE` because it's hard for a gene list obtained
 #' # from small test dataset to represent real-life biology.
 #' \donttest{
 #' if (requireNamespace("gprofiler2", quietly = TRUE)) {
-#'     go <- runGOEnrich(result, group = "0.stim", significant = FALSE)
+#'     go <- runGOEnrich(deg.pw, group = "0.stim", significant = FALSE)
 #' }
 #' }
 runGOEnrich <- function(

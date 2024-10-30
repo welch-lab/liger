@@ -49,7 +49,7 @@ scaleNotCenter(object, ...)
 }
 \arguments{
 \item{object}{\linkS4class{liger} object, \linkS4class{ligerDataset} object,
-\linkS4class{dgCMatrix}, or a Seurat object.}
+\link[Matrix]{dgCMatrix-class} object, or a Seurat object.}
 
 \item{...}{Arguments passed to other methods. The order goes by: "liger"
 method calls "ligerDataset" method", which then calls "dgCMatrix" method.

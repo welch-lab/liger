@@ -1,16 +1,17 @@
 ---
-title: "Data Integration with LIGER"
-author: "Joshua D. Welch"
-date: "`r Sys.Date()`"
+title: "Data integration with LIGER"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Data Integration with LIGER}
+  %\VignetteIndexEntry{Data integration with LIGER}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set()
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
 ```
 
 ## Introduction
@@ -52,3 +53,9 @@ Meanwhile, since version 2.0.0, LIGER is massively updated for usability and int
 
 * [Introduction to new liger object and other related classes](https://welch-lab.github.io/liger/articles/liger_object.html)
 * [Running Liger directly on Seurat objects](https://welch-lab.github.io/liger/articles/liger_with_seurat.html)
+
+## Loading the package
+
+```{r setup, message=FALSE}
+library(rliger)
+```

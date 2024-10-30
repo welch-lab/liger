@@ -89,17 +89,13 @@ mapped with \code{\link[RColorBrewer]{brewer.pal}}. This is passed to
   }}
 }
 \value{
-A \linkS4class{HeatmapList} object.
+A \link[ComplexHeatmap]{HeatmapList-class} object.
 }
 \description{
 Create heatmap for showing top marker expression in conditions
 }
 \examples{
 defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
-markerTable <- runMarkerDEG(
-    pbmc,
-    minCellPerRep = 5
-)
 pbmc <- normalize(pbmc)
-plotMarkerHeatmap(pbmc, markerTable)
+plotMarkerHeatmap(pbmc, deg.marker)
 }
