@@ -27,6 +27,8 @@ reference:
   - pbmc
   - pbmcPlot
   - bmmc
+  - deg.marker
+  - deg.pw
 - title: "Preprocessing"
 - contents:
   - runGeneralQC
