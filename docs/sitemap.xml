@@ -43,6 +43,9 @@
     <loc>/articles/liger_object.html</loc>
   </url>
   <url>
+    <loc>/articles/liger_vignette.html</loc>
+  </url>
+  <url>
     <loc>/articles/liger_with_seurat.html</loc>
   </url>
   <url>
@@ -116,6 +119,12 @@
   </url>
   <url>
     <loc>/reference/createLigerDataset.html</loc>
+  </url>
+  <url>
+    <loc>/reference/deg.marker.html</loc>
+  </url>
+  <url>
+    <loc>/reference/deg.pw.html</loc>
   </url>
   <url>
     <loc>/reference/dot-complexHeatmapDotPlot.html</loc>
@@ -257,6 +266,9 @@
   </url>
   <url>
     <loc>/reference/plotClusterGeneDot.html</loc>
+  </url>
+  <url>
+    <loc>/reference/plotClusterGeneViolin.html</loc>
   </url>
   <url>
     <loc>/reference/plotDensityDimRed.html</loc>

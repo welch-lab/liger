@@ -79,19 +79,20 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="2.0.99" id="rliger-2099">rliger 2.0.99<a class="anchor" aria-label="anchor" href="#rliger-2099"></a></h2>
+<h2 class="pkg-version" data-toc-text="2.1.0" id="rliger-210">rliger 2.1.0<a class="anchor" aria-label="anchor" href="#rliger-210"></a></h2><p class="text-muted">CRAN release: 2024-10-29</p>
 <ul><li>Added <code><a href="../reference/centroidAlign.html">centroidAlign()</a></code> for new cell factor loading alignment method</li>
 <li>Added <code><a href="../reference/plotProportionBox.html">plotProportionBox()</a></code> for visualizing compositional analysis</li>
+<li>Added <code><a href="../reference/plotClusterGeneViolin.html">plotClusterGeneViolin()</a></code> for visualizing gene expression in clusters</li>
 <li>Added <code><a href="../reference/plotBarcodeRank.html">plotBarcodeRank()</a></code> for basic QC visualization</li>
 <li>Added <code><a href="../reference/plotPairwiseDEGHeatmap.html">plotPairwiseDEGHeatmap()</a></code> for visualizing pairwise DEG results</li>
 <li>Added <code><a href="../reference/plotGODot.html">plotGODot()</a></code> for visualizing GO enrichment results</li>
 <li>Added <code><a href="../reference/calcNMI.html">calcNMI()</a></code> for evaluating clustering results against ground truth</li>
-<li>Added <code>ligerToH5AD()</code> allowing reticulate/Python free export of liger object to H5AD format. This might not be releasable due to the need of calling non-exported functions from <em>hdf5r</em> library.</li>
+<li>Added <code>ligerToH5AD()</code> allowing reticulate/Python free export of liger object to H5AD format. This is presented in extension source code (i.e. not loaded with <code><a href="https://welch-lab.github.io/liger/" class="external-link">library(rliger)</a></code>).</li>
 <li>Added organism support in <code><a href="../reference/runGeneralQC.html">runGeneralQC()</a></code> and refined hemoglobin gene matching regex pattern.</li>
 <li>Optimized DE test memory usage scalability for both pseudo-bulk method and wilcoxon test</li>
 <li>Optimized <code><a href="../reference/plotProportion.html">plotProportionPie()</a></code> by adding argument <code>circleColors</code>
 </li>
-<li>Optimized <code><a href="../reference/plotVolcano.html">plotVolcano()</a></code> text annotation positioning</li>
+<li>Optimized <code><a href="../reference/plotVolcano.html">plotVolcano()</a></code> text annotation positioning and gene highlighting logic.</li>
 <li>Optimized visualization function additional argument documentation</li>
 <li>Changed <code><a href="../reference/liger-DEG.html">runMarkerDEG()</a></code> and <code><a href="../reference/liger-DEG.html">runPairwiseDEG()</a></code> default method from <code>"wilcoxon"</code> to <code>"pseudoBulk"</code>
 </li>

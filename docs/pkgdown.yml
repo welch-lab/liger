@@ -9,12 +9,12 @@ articles:
   Integrating_multi_scRNA_data: Integrating_multi_scRNA_data.html
   Integrating_scRNA_and_scATAC_data: Integrating_scRNA_and_scATAC_data.html
   liger_object: liger_object.html
+  liger_vignette: liger_vignette.html
   liger_with_seurat: liger_with_seurat.html
-  liger-vignette: liger-vignette.html
   online_iNMF_tutorial: online_iNMF_tutorial.html
   rna_methylation: rna_methylation.html
   SNAREseq_walkthrough: SNAREseq_walkthrough.html
   STARmap_dropviz_vig: STARmap_dropviz_vig.html
   UINMF_vignette: UINMF_vignette.html
-last_built: 2024-10-25T19:11Z
+last_built: 2024-10-30T14:35Z
 
