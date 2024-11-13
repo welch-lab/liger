@@ -29,7 +29,7 @@ For convenience, we have prepared the pre-processed data which are ready to use,
 - [hg19_genes.bed](https://figshare.com/ndownloader/files/40054870)
 
 ```{r, results='hide'}
-# library(rliger)
+library(rliger)
 if (!file.exists("liger_BMMC_rna_D1T1.rds"))
     download.file("https://figshare.com/ndownloader/files/40054858",
                   destfile = "liger_BMMC_rna_D1T1.rds")
