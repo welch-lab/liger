@@ -64,6 +64,21 @@ setReplaceMethod(
         x
     })
 
+#' @export
+#' @rdname ligerDataset-class
+setMethod(
+    "getMatrix", signature(x = "ligerATACDataset", dataset = "missing",
+                           returnList = "missing"),
+    function(x,
+             slot = c("rawData", "normData", "scaleData",
+                      "scaleUnsharedData", "H", "V", "U", "A", "B", "rawPeak", "normPeak"),
+             dataset = NULL) {
+        # TODO: Currently directly find the data with slot, but need to
+        # think about maintainability when we need to change slot name.
+        slot <- match.arg(slot)
+        methods::slot(x, slot)
+    })
+
 #' @rdname coordinate
 #' @export
 setMethod("coordinate", signature(x = "ligerSpatialDataset", dataset = "missing"),

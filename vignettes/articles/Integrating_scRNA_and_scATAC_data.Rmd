@@ -29,7 +29,7 @@ For convenience, we have prepared the pre-processed data which are ready to use,
 - [hg19_genes.bed](https://figshare.com/ndownloader/files/40054870)
 
 ```{r, results='hide'}
-library(rliger)
+# library(rliger)
 if (!file.exists("liger_BMMC_rna_D1T1.rds"))
     download.file("https://figshare.com/ndownloader/files/40054858",
                   destfile = "liger_BMMC_rna_D1T1.rds")
@@ -182,7 +182,7 @@ bmmcLiger <- runIntegration(bmmcLiger, k = 20)
 Using the metagene factors calculated by iNMF, we then assign each cell to the factor on which it has the highest loading, giving joint clusters that correspond across datasets. We then perform quantile normalization by dataset, factor, and cluster to fully integrate the datasets. To perform this analysis, typing in:
 
 ```{r 4-2}
-bmmcLiger <- quantileNorm(bmmcLiger)
+bmmcLiger <- quantileNorm(bmmcLiger, reference = "rna")
 ```
 
 ### 5. Clustering
@@ -205,7 +205,7 @@ In order to visualize the clustering results, the user can use two dimensionalit
 bmmcLiger <- runUMAP(bmmcLiger, nNeighbors = 30, minDist = 0.3)
 ```
 
->Starting from rliger 2.0.0, dimensionality reduction matrices will be stored in cell metadata, which can be accessed with `cellMeta(bmmcLiger)`. Use argument `dimredName` to specify unique variable names for the result can enable storing multiple low-dimensional representation matrices as variables at the same time.
+>Starting from rliger 2.0.0, the slot for storing dimensionality reduction matrices will be renamed to "dimReds". It will be a list that can hold multiple low dimensional matrices that match to all datasets by cell identifiers. Users can access individual matrix with `dimRed(object, "name")`. Use argument `dimredName` in `runUMAP()` (or `runTSNE()` to specify unique names for the UMAP/tSNE result so that it allows storing multiple low-dimensional representation matrices at the same time.
 
 ### 7. Create plots 
 
@@ -237,10 +237,10 @@ marker.cluster <- marker.cluster %>%
     filter(padj < 0.05, logFC > 3) %>%
     group_by(group) %>%
     arrange(padj, -logFC, .by_group = TRUE) %>%
-    top_n(20)
+    slice_head(n = 20)
 ```
 
-We can then view the selected top 20 markers for cluster 1 by:
+We can then view the selected top 20 markers for cluster 3 by:
 
 ```{r}
 marker.cluster %>% filter(group == 3)
@@ -316,13 +316,13 @@ bmmcLiger <- normalizePeak(bmmcLiger)
 
 Now we can perform the Wilcoxon test on the peak counts with setting `usePeak = TRUE`:
 
-```{r, eval=FALSE}
-peak.wilcoxon <- runMarkerDEG(bmmcLiger, useDatasets = "atac", usePeak = TRUE)
+```{r}
+peak.wilcoxon <- runMarkerDEG(bmmcLiger, useDatasets = "atac", method = "wilcox", usePeak = TRUE)
 ```
 
 We can now use the results of the Wilcoxon test to retain only peaks showing differential accessibility across our set of joint clusters. Here we kept peaks with Benjamini-Hochberg adjusted p-value < 0.05 and log fold change > 2.
 
-```{r, eval=FALSE}
+```{r}
 peak.wilcoxon <- peak.wilcoxon %>% filter(padj < 0.05, logFC > 2)
 peaks.sel <- unique(peak.wilcoxon$feature)
 rawPeak(bmmcLiger, "atac") <- rawPeak(bmmcLiger, "atac")[peaks.sel,]
@@ -331,7 +331,7 @@ bmmcLiger <- normalizePeak(bmmcLiger)
 
 Using this set of differentially accessible peaks, we now impute a set of “pseudo-multi-omic” profiles by inferring the intergenic peak accessibility for scRNA-seq profiles based on their nearest neighbors in the joint LIGER space. LIGER provides a function named `imputeKNN()` that performs this task, yielding a set of profiles containing both gene expression and chromatin accessibility measurements for the same single cells:
 
-```{r, eval=FALSE}
+```{r}
 bmmcLiger <- imputeKNN(bmmcLiger, reference = 'atac', queries = "rna")
 ```
 
@@ -342,6 +342,8 @@ bmmcLiger <- imputeKNN(bmmcLiger, reference = 'atac', queries = "rna")
 Now that we have both the (imputed) peak-level counts matrix and the (observed) gene expression counts matrix for the same cells, we can evaluate the relationships between pairs of genes and peaks, linking genes to putative regulatory elements. We use a simple strategy to identify such gene-peak links: Calculate correlation between gene expression and peak accessibility of all peaks within 500 KB of a gene, then retain all peaks showing statistically significant correlation with the gene. The `linkGenesAndPeaks()` function performs this analysis:
 
 ```{r, eval=FALSE}
+# NOT RUN AT VIGNETTE BUILDING
+# ETA: 30min
 if (!file.exists("hg19_genes.bed"))
     download.file("https://figshare.com/ndownloader/files/40054870",
                   destfile = "hg19_genes.bed")
@@ -349,7 +351,7 @@ if (!file.exists("hg19_genes.bed"))
 regnet <- linkGenesAndPeaks(bmmcLiger, useDataset = "rna", pathToCoords = "hg19_genes.bed", method = "spearman", alpha = 0.05)
 ```
 
-The output of this function is a sparse matrix with peak names as rows and gene symbols as columns, with each element indicating the correlation between peak *i* and gene *j*. The value would be 0 if the corresponding gene and peak are not significantly linked. For example, we can subset the results for marker gene S100A9, which is highly expressed in cluster 6, 8, 9, 10 and 12:
+The output of this function is a sparse matrix with peak names as rows and gene symbols as columns, with each element indicating the correlation between peak *i* and gene *j*. The value would be 0 if the corresponding gene and peak are not significantly linked. For example, we can subset the results for marker gene S100A9, which is highly expressed in cluster 1, 3 and 12:
 
 ```{r, eval=FALSE}
 S100A9 <- regnet[, 'S100A9']

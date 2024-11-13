@@ -1,4 +1,9 @@
+// [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
+
+// [[Rcpp::depends(RcppProgress)]]
+#include <progress.hpp>
+#include <progress_bar.hpp>
 
 using namespace std;
 using namespace Rcpp;
@@ -54,18 +59,28 @@ std::list<float> cpp_in_place_rank_mean(arma::vec& v_temp, int idx_begin,
 
 // [[Rcpp::export]]
 std::vector<std::list<float> > cpp_rank_matrix_dgc(
-        arma::vec& x, const arma::vec& p, int nrow, int ncol) {
+        arma::vec& x, const arma::vec& p, int nrow, int ncol,
+        bool showProgress = false
+) {
     vector<list<float> > ties(ncol);
     int n_zero;
+    if (showProgress) {
+        Rcpp::Rcerr << "Wilcoxon rank-sum test over " << ncol << " features across " << nrow << " cells" << std::endl;
+    }
+    Progress pb(ncol, showProgress);
     for (int i = 0; i < ncol; i++) {
+        if (Progress::check_abort()) return ties;
+
         n_zero = nrow - (p[i+1] - p[i]);
         if (p[i+1] == p[i]) {
             ties[i].push_back(n_zero);
+            pb.increment();
             continue;
         }
         ties[i] = cpp_in_place_rank_mean(x, p[i], p[i + 1] - 1);
         ties[i].push_back(n_zero);
         x.rows(p[i], p[i + 1] - 1) += n_zero;
+        pb.increment();
     }
     return ties;
 }

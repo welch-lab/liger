@@ -927,7 +927,7 @@ setMethod(
     function(x,
              slot = c("rawData", "normData", "scaleData",
                       "scaleUnsharedData", "H", "V", "U", "A", "B",
-                      "W", "H.norm"),
+                      "W", "H.norm", "rawPeak", "normPeak"),
              dataset = NULL,
              returnList = FALSE) {
         slot <- match.arg(slot)

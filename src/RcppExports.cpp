@@ -330,8 +330,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_rank_matrix_dgc
-std::vector<std::list<float> > cpp_rank_matrix_dgc(arma::vec& x, const arma::vec& p, int nrow, int ncol);
-RcppExport SEXP _rliger_cpp_rank_matrix_dgc(SEXP xSEXP, SEXP pSEXP, SEXP nrowSEXP, SEXP ncolSEXP) {
+std::vector<std::list<float> > cpp_rank_matrix_dgc(arma::vec& x, const arma::vec& p, int nrow, int ncol, bool showProgress);
+RcppExport SEXP _rliger_cpp_rank_matrix_dgc(SEXP xSEXP, SEXP pSEXP, SEXP nrowSEXP, SEXP ncolSEXP, SEXP showProgressSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -339,7 +339,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::vec& >::type p(pSEXP);
     Rcpp::traits::input_parameter< int >::type nrow(nrowSEXP);
     Rcpp::traits::input_parameter< int >::type ncol(ncolSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_rank_matrix_dgc(x, p, nrow, ncol));
+    Rcpp::traits::input_parameter< bool >::type showProgress(showProgressSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_rank_matrix_dgc(x, p, nrow, ncol, showProgress));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -422,7 +423,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rliger_ComputeSNN", (DL_FUNC) &_rliger_ComputeSNN, 2},
     {"_rliger_WriteEdgeFile", (DL_FUNC) &_rliger_WriteEdgeFile, 3},
     {"_rliger_DirectSNNToFile", (DL_FUNC) &_rliger_DirectSNNToFile, 4},
-    {"_rliger_cpp_rank_matrix_dgc", (DL_FUNC) &_rliger_cpp_rank_matrix_dgc, 4},
+    {"_rliger_cpp_rank_matrix_dgc", (DL_FUNC) &_rliger_cpp_rank_matrix_dgc, 5},
     {"_rliger_rowAggregateSum_sparse", (DL_FUNC) &_rliger_rowAggregateSum_sparse, 3},
     {"_rliger_colAggregateSum_sparse", (DL_FUNC) &_rliger_colAggregateSum_sparse, 3},
     {"_rliger_colNNZAggr_sparse", (DL_FUNC) &_rliger_colNNZAggr_sparse, 3},

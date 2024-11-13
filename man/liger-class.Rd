@@ -246,7 +246,7 @@ commands(x, funcName = NULL, arg = NULL)
 \S4method{getMatrix}{liger,ANY,ANY,ANY}(
   x,
   slot = c("rawData", "normData", "scaleData", "scaleUnsharedData", "H", "V", "U", "A",
-    "B", "W", "H.norm"),
+    "B", "W", "H.norm", "rawPeak", "normPeak"),
   dataset = NULL,
   returnList = FALSE
 )

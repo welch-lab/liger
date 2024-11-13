@@ -445,11 +445,12 @@ runWilcoxon <- function(
             end <- min(i * chunk, length(features))
             mat <- extractMergedNormData(
                 object,
+                slot = slot,
                 cellIdx = allCellBC,
                 featureIdx = features[start:end]
             )
             mat <- log1p(1e10*mat)
-            resultList[[i]] <- wilcoxauc(mat, var)
+            resultList[[i]] <- wilcoxauc(mat, var, verbose = verbose)
             if (nchunk > 1) gc()
             cli::cli_progress_update(set = i)
         }
@@ -840,53 +841,6 @@ calcPctInOut <- function(
     return(nCellExpr)
 }
 
-# makePseudoBulkOld <- function(mat, replicateAnn, minCellPerRep, verbose = TRUE) {
-#     # mat - Extracted and contatenated matrix. intersection of genes by
-#     #       c(groupTest, groupCtrl) cells
-#     # groups - list of groups
-#     # replicateAnn - data.frame of replicate annotation, with rownames as
-#     #                barcodes and columns as variables
-#
-#     # Check whether enough replicates per condition
-#     for (gr in levels(replicateAnn$groups)) {
-#         subrep <- replicateAnn[replicateAnn$groups == gr,]
-#         splitLabel <- interaction(subrep, drop = TRUE)
-#         if (nlevels(splitLabel) < 2) {
-#             cli::cli_abort(
-#                 c("Too few replicates for condition {.val {gr}}. Cannot create pseudo-bulks.",
-#                   "i" = "Please consider creating pseudo-replicates or using {.code method = 'wilcoxon'} instead.")
-#             )
-#         }
-#     }
-#     splitLabel <- interaction(replicateAnn, drop = TRUE)
-#     repSizeTab <- table(splitLabel)
-#     if (verbose) {
-#         cli::cli_alert_info("Replicate sizes:")
-#         print(repSizeTab)
-#     }
-#     labelCounts <- table(splitLabel)
-#     ignored <- names(labelCounts)[labelCounts < minCellPerRep]
-#     if (length(ignored) > 0) {
-#         cli::cli_alert_warning(
-#             "Ignoring replicates (size in bracket) with too few cells: {.val {paste0(ignored, ' (', repSizeTab[ignored], ')')}}"
-#         )
-#         cli::cli_alert_info(
-#             "Consider decrease {.field minCellPerRep} to exclude less replicates or/and lower {.field nPsdRep} to generate larger pseudo-replicates."
-#         )
-#     }
-#     keep <- names(labelCounts)[labelCounts >= minCellPerRep]
-#     idx <- splitLabel %in% keep
-#     splitLabel <- splitLabel[idx, drop = TRUE]
-#     mat <- mat[, idx, drop = FALSE]
-#     replicateAnn <- replicateAnn[idx, , drop = FALSE]
-#
-#     pseudoBulks <- colAggregateSums_sparse(mat, as.integer(splitLabel) - 1,
-#                                            nlevels(splitLabel))
-#     dimnames(pseudoBulks) <- list(rownames(mat), levels(splitLabel))
-#     pseudoBulks <- pseudoBulks[rowSums(pseudoBulks) > 0,]
-#     return(list(pseudoBulks, replicateAnn))
-# }
-
 .callDESeq2 <- function(pseudoBulks, groups,
                          verbose = getOption("ligerVerbose", TRUE)) {
     # DESeq2 workflow
@@ -926,18 +880,24 @@ calcPctInOut <- function(
 
 extractMergedNormData <- function(
         object,
+        slot,
         cellIdx = NULL,
         featureIdx = NULL
 ) {
     cellIdx <- .idxCheck(object, cellIdx, "cell")
     datasetInvolved <- unique(object$dataset[cellIdx])
     cellID <- colnames(object)[cellIdx]
+    getter <- switch(
+        slot,
+        normData = normData,
+        normPeak = normPeak
+    )
     if (is.null(featureIdx)) {
         # Use intersection by default
         featureIdx <- Reduce(
             intersect,
             lapply(
-                normData(object, datasetInvolved),
+                getter(object, datasetInvolved),
                 rownames
             )
         )
@@ -945,10 +905,21 @@ extractMergedNormData <- function(
     out <- NULL
     for (i in seq_along(datasetInvolved)) {
         dn <- datasetInvolved[i]
-        ldFeatureIdx <- .idxCheck(dataset(object, dn), featureIdx, "feature")
+        ld <- dataset(object, dn)
+        mat <- getter(ld)
+        allFeature <- rownames(mat)
+        ldFeatureIdx <- match(featureIdx, allFeature)
+        ldFeatureIdx <- ldFeatureIdx[!is.na(ldFeatureIdx)]
+        # if (slot == "normData") {
+        #     ldFeatureIdx <- .idxCheck(dataset(object, dn), featureIdx, "feature")
+        # } else {
+        #     allPeaks <- rownames(getter())
+        # }
+
         ldCellIdx <- match(cellID, colnames(dataset(object, dn)))
         ldCellIdx <- ldCellIdx[!is.na(ldCellIdx)]
-        out <- cbind(out, normData(object, dn)[ldFeatureIdx, ldCellIdx, drop = FALSE])
+        out <- cbind(out, mat[ldFeatureIdx, ldCellIdx, drop = FALSE])
+        # out <- cbind(out, getter(object, dn)[ldFeatureIdx, ldCellIdx, drop = FALSE])
     }
     out[, cellID]
 }
@@ -956,7 +927,7 @@ extractMergedNormData <- function(
 # X: matrix of data to be tested
 # y: grouping label of columns of X
 # Rcpp source code located in src/wilcoxon.cpp
-wilcoxauc <- function(x, clusterVar) {
+wilcoxauc <- function(x, clusterVar, verbose = verbose) {
     if (methods::is(x, 'dgTMatrix')) x <- methods::as(x, 'CsparseMatrix') # nocov start
     if (methods::is(x, 'TsparseMatrix')) x <- methods::as(x, 'CsparseMatrix')
     if (is.null(row.names(x))) {
@@ -972,7 +943,7 @@ wilcoxauc <- function(x, clusterVar) {
     xRanked <- Matrix::t(x)
     # This computes the ranking of non-zero values and the ties
     ties <- cpp_rank_matrix_dgc(xRanked@x, xRanked@p,
-                                nrow(xRanked), ncol(xRanked))
+                                nrow(xRanked), ncol(xRanked), showProgress = verbose)
     # ranksRes <- list(X_ranked = xT, ties = ties)
 
     # rankRes <- colRanking(x)

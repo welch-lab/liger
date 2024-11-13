@@ -115,8 +115,8 @@ DirectSNNToFile <- function(nn_ranked, prune, display_progress, filename) {
     .Call(`_rliger_DirectSNNToFile`, nn_ranked, prune, display_progress, filename)
 }
 
-cpp_rank_matrix_dgc <- function(x, p, nrow, ncol) {
-    .Call(`_rliger_cpp_rank_matrix_dgc`, x, p, nrow, ncol)
+cpp_rank_matrix_dgc <- function(x, p, nrow, ncol, showProgress = FALSE) {
+    .Call(`_rliger_cpp_rank_matrix_dgc`, x, p, nrow, ncol, showProgress)
 }
 
 rowAggregateSum_sparse <- function(X, groups, ngroups) {

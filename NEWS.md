@@ -13,6 +13,10 @@
   - Pseudo-bulk should be easy because we are just aggregating cells.
   - Wilcoxon might be a bit harder because ranks are calculated per gene but the H5 sparse data is column majored. Might need to find a fast on-disk transposition method, which would also enhance RcppPlanc performance when running ANLS on H5 data.
 
+## rliger 2.1.0.9001
+
+- Fixed Wilcoxon rank-sum test bug when using ATAC peak counts
+
 ## rliger 2.1.0
 
 - Added `centroidAlign()` for new cell factor loading alignment method
