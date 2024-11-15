@@ -242,6 +242,18 @@ test_that("selectGenes - on disk", {
     )
 })
 
+test_that("selectBatchHVG", {
+    expect_no_error(pbmc <- selectBatchHVG(pbmc, nGenes = 100))
+    expect_length(varFeatures(pbmc), 100)
+    expect_message(pbmc <- selectBatchHVG(pbmc, nGenes = 300),
+                   "Only 249 genes")
+    ctrl.raw <- rawData(pbmc, "ctrl")
+    sel1 <- selectBatchHVG(ctrl.raw, nGenes = 100)
+    expect_length(sel1, 100)
+    sel1 <- selectBatchHVG(ctrl.raw, nGenes = 100, returnStats = TRUE)
+    expect_true(any(is.nan(sel1$dispersion_norm)))
+})
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Scaling
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
