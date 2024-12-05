@@ -107,7 +107,7 @@ selectBatchHVG.liger <- function(
                     "Selected {nrow(hvgDFSub)} gene{?s} that {?is/are} highly variable in {n_batch_look} batch{?es}"
                 )
             }
-            nSelected <- nrow(hvgDFSub)
+            nSelected <- nSelected + nrow(hvgDFSub)
             nNeeded <- nGenes - nSelected
             n_batch_look <- n_batch_look - 1
         } else {

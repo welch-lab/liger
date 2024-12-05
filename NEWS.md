@@ -13,10 +13,13 @@
   - Pseudo-bulk should be easy because we are just aggregating cells.
   - Wilcoxon might be a bit harder because ranks are calculated per gene but the H5 sparse data is column majored. Might need to find a fast on-disk transposition method, which would also enhance RcppPlanc performance when running ANLS on H5 data.
 
-## rliger 2.1.0.9002
+## rliger 2.1.0.9003
 
 - Added `selectBatchHVG()` which implements another HVG selection strategy, credit to SCIB
-- Fixed Wilcoxon rank-sum test bug when using ATAC peak counts
+- Fixed multiple problems related to ATAC analysis
+  - Fixed Wilcoxon rank-sum test bug when using ATAC peak counts
+  - Fixed gene coordinate parsing bug from BED file
+  - Optimized peak parsing speed
 
 ## rliger 2.1.0
 

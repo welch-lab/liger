@@ -420,8 +420,11 @@ exportInteractTrack <- function(
         colClasses = c("character", "integer", "integer",
                        "character", "NULL", "NULL")
     )
-    genesCoords <- genesCoords[stats::complete.cases(genesCoords$V4), ]
-    rownames(genesCoords) <- genesCoords[, 4]
+    mask <- stats::complete.cases(genesCoords$V4) & genesCoords$V4 != ""
+    genesCoords <- genesCoords[mask, , drop = FALSE]
+    uniqnames <- make.unique(genesCoords$V4)
+    rownames(genesCoords) <- uniqnames
+
     # split peak names into chrom and coordinates
     regions <- .splitPeakRegion(rownames(corrMat))
 
@@ -440,41 +443,45 @@ exportInteractTrack <- function(
                        'visibility=full')
     write(trackDoc, file = outputPath)
     for (gene in useGenes) {
-        peaksSel <- corrMat[, gene] != 0
-        track <- data.frame(
-            chrom = regions$chrs[peaksSel],
-            chromStart = regions$chrsStart[peaksSel],
-            chromEnd = regions$chrsEnd[peaksSel],
-            name = paste0(gene, "/", rownames(corrMat)[peaksSel]),
-            score = 0,
-            value = as.numeric(corrMat[peaksSel, gene]),
-            exp = ".",
-            color = 5,
-            sourceChrom = regions$chrs[peaksSel],
-            sourceStart = regions$chrsStart[peaksSel],
-            sourceEnd = regions$chrsStart[peaksSel] + 1,
-            sourceName = ".",
-            sourceStrand = ".",
-            targetChrom = genesCoords[gene, 1],
-            targetStart = genesCoords[gene, 2],
-            targetEnd = genesCoords[gene, 2] + 1,
-            targetName = gene,
-            targetStrand = "."
-        )
-        utils::write.table(
-            track,
-            file = outputPath,
-            append = TRUE,
-            quote = FALSE,
-            sep = "\t",
-            eol = "\n",
-            na = "NA",
-            dec = ".",
-            row.names = FALSE,
-            col.names = FALSE,
-            qmethod = c("escape", "double"),
-            fileEncoding = ""
-        )
+        coordSel <- which(genesCoords$V4 == gene)
+        for (geneUniqIdx in coordSel) {
+            peaksSel <- corrMat[, gene] != 0
+            track <- data.frame(
+                chrom = regions$chrs[peaksSel],
+                chromStart = regions$chrsStart[peaksSel],
+                chromEnd = regions$chrsEnd[peaksSel],
+                name = paste0(gene, "/", rownames(corrMat)[peaksSel]),
+                score = 0,
+                value = as.numeric(corrMat[peaksSel, gene]),
+                exp = ".",
+                color = 5,
+                sourceChrom = regions$chrs[peaksSel],
+                sourceStart = regions$chrsStart[peaksSel],
+                sourceEnd = regions$chrsStart[peaksSel] + 1,
+                sourceName = ".",
+                sourceStrand = ".",
+                targetChrom = genesCoords[geneUniqIdx, 1],
+                targetStart = genesCoords[geneUniqIdx, 2],
+                targetEnd = genesCoords[geneUniqIdx, 2] + 1,
+                targetName = gene,
+                targetStrand = "."
+            )
+            utils::write.table(
+                track,
+                file = outputPath,
+                append = TRUE,
+                quote = FALSE,
+                sep = "\t",
+                eol = "\n",
+                na = "NA",
+                dec = ".",
+                row.names = FALSE,
+                col.names = FALSE,
+                qmethod = c("escape", "double"),
+                fileEncoding = ""
+            )
+        }
+
     }
     cli::cli_alert_success("Result written at: {.file {outputPath}}")
     invisible(NULL)
@@ -516,10 +523,12 @@ makeInteractTrack <- function(
 
 .splitPeakRegion <- function(peakNames) {
     peakNames <- strsplit(peakNames, "[:-]")
-    chrs <- Reduce(append, lapply(peakNames, function(peak) peak[1]))
-    chrsStart <- Reduce(append, lapply(peakNames, function(peak) peak[2]))
-    chrsEnd <- Reduce(append, lapply(peakNames, function(peak) peak[3]))
-    list(chrs = chrs,
-         chrsStart = as.numeric(chrsStart),
-         chrsEnd = as.numeric(chrsEnd))
+    # chrs <- Reduce(append, lapply(peakNames, function(peak) peak[1]))
+    # chrsStart <- Reduce(append, lapply(peakNames, function(peak) peak[2]))
+    # chrsEnd <- Reduce(append, lapply(peakNames, function(peak) peak[3]))
+    list(
+        chrs = sapply(peakNames, `[`, i = 1),
+        chrsStart = as.numeric(sapply(peakNames, `[`, i = 2)),
+        chrsEnd = as.numeric(sapply(peakNames, `[`, i = 3))
+    )
 }
