@@ -148,7 +148,7 @@ selectBatchHVG.ligerDataset <- function(
     fm <- featureMeta(object)
     idx <- rep(FALSE, nrow(object))
     idx[features] <- TRUE
-    idx <- idx & (fm$nCell > 0)
+    # idx <- idx & (fm$nCell > 0)
     mat <- mat[idx, , drop = FALSE]
     stats <- selectBatchHVG(mat, nGenes = nGenes, verbose = verbose,
                             returnStats = TRUE, ...)
@@ -175,6 +175,8 @@ selectBatchHVG.dgCMatrix <- function(
         ...
 ) {
     # Get mean and var
+    idx <- Matrix::rowSums(object > 0) > 0
+    object <- object[idx, , drop = FALSE]
     means <- Matrix::rowMeans(object)
     vars <- rowVars_sparse_rcpp(object, means)
     stats <- .selectBatchHVG.by.metric(
