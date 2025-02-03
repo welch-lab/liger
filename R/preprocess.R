@@ -607,12 +607,12 @@ normalize.dgCMatrix <- function(
 
 #' @rdname normalize
 #' @export
-#' @param overwrite Logical. When writing newly computed HDF5Array to a separate
-#' HDF5 file, whether to overwrite the existing file. Default \code{FALSE}
-#' raises an error when the file already exists.
+#' @param overwrite Logical. When writing newly computed HDF5 array to a
+#' separate HDF5 file, whether to overwrite the existing file. Default
+#' \code{FALSE} raises an error when the file already exists.
 #' @param returnStats Logical. Used in LIGER internal workflow to allow
 #' captureing precalculated statistics for downstream use. Default \code{FALSE}
-#' only returns the normalized data for HDF5Array method.
+#' only returns the normalized data for DelayedArray method.
 #' @method normalize DelayedArray
 normalize.DelayedArray <- function(
         object,
@@ -1450,9 +1450,9 @@ scaleNotCenter.dgCMatrix <- function(
 }
 
 #' @export
-#' @param overwrite Logical. When writing newly computed HDF5Array to a separate
-#' HDF5 file, whether to overwrite the existing file. Default \code{FALSE}
-#' raises an error when the file already exists.
+#' @param overwrite Logical. When writing newly computed HDF5 array to a
+#' separate HDF5 file, whether to overwrite the existing file. Default
+#' \code{FALSE} raises an error when the file already exists.
 #' @rdname scaleNotCenter
 #' @method scaleNotCenter DelayedArray
 scaleNotCenter.DelayedArray <- function(

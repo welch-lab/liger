@@ -241,17 +241,17 @@ createLigerDataset <- function(
     }
     if (!is.null(rawData)) {
         rn <- rownames(rawData)
-        if (!inherits(rawData, "dgCMatrix") && !inherits(rawData, "HDF5Array"))
+        if (!inherits(rawData, "dgCMatrix") && !inherits(rawData, "DelayedArray"))
             rawData <- methods::as(rawData, "CsparseMatrix")
     }
     if (!is.null(normData)) {
         if (is.null(rn)) rn <- rownames(normData)
-        if (!inherits(normData, "dgCMatrix") && !inherits(normData, "HDF5Array"))
+        if (!inherits(normData, "dgCMatrix") && !inherits(normData, "DelayedArray"))
             normData <- methods::as(normData, "CsparseMatrix")
     }
     if (!is.null(scaleData)) {
         if (is.null(rn)) rn <- rownames(scaleData)
-        if (!inherits(scaleData, "dgCMatrix")  && !inherits(scaleData, "HDF5Array"))
+        if (!inherits(scaleData, "dgCMatrix")  && !inherits(scaleData, "DelayedArray"))
             scaleData <- methods::as(scaleData, "CsparseMatrix")
     }
     if (is.null(h5fileInfo)) h5fileInfo <- list()

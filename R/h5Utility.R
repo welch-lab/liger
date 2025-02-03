@@ -575,11 +575,11 @@ get_DelayedArray_group <- function(x) {
         if ("seeds" %in% methods::slotNames(x)) x <- x@seeds[[1]]
     }
     if (!inherits(x, "HDF5ArraySeed")) {
-        cli::cli_abort("The DelayedArray representation is not of HDF5Array class which is required by rliger.")
+        cli::cli_abort("The DelayedArray representation does not contain HDF5Array backend which is required by rliger.")
     }
     if ("group" %in% methods::slotNames(x)) return(x@group)
     else if ("name" %in% methods::slotNames(x)) return(x@name)
     else {
-        cli::cli_abort("Cannot detect data path within the HDF5Array.")
+        cli::cli_abort("Cannot detect data path within the HDF5Array-backed DelayedArray.")
     }
 }
