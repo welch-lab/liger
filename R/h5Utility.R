@@ -565,6 +565,9 @@ get_DelayedArray_filepath <- function(x) {
         x <- x@seed
         if ("seeds" %in% methods::slotNames(x)) x <- x@seeds[[1]]
     }
+    if (!inherits(x, "HDF5ArraySeed") && !inherits(x, "TENxMatrixSeed")) {
+        cli::cli_abort("The DelayedArray representation does not contain HDF5Array backend which is required by rliger.")
+    }
     x@filepath
 }
 
@@ -574,7 +577,7 @@ get_DelayedArray_group <- function(x) {
         x <- x@seed
         if ("seeds" %in% methods::slotNames(x)) x <- x@seeds[[1]]
     }
-    if (!inherits(x, "HDF5ArraySeed")) {
+    if (!inherits(x, "HDF5ArraySeed") && !inherits(x, "TENxMatrixSeed")) {
         cli::cli_abort("The DelayedArray representation does not contain HDF5Array backend which is required by rliger.")
     }
     if ("group" %in% methods::slotNames(x)) return(x@group)
