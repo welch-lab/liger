@@ -33,8 +33,8 @@ scaleNotCenter_byRow_perDataset_rcpp <- function(x, ann, n) {
     .Call(`_rliger_scaleNotCenter_byRow_perDataset_rcpp`, x, ann, n)
 }
 
-rowVars_sparse_rcpp <- function(x, means) {
-    .Call(`_rliger_rowVars_sparse_rcpp`, x, means)
+rowVars_sparse_rcpp <- function(x, means, ncol) {
+    .Call(`_rliger_rowVars_sparse_rcpp`, x, means, ncol)
 }
 
 rowDivide_rcpp <- function(x, v) {

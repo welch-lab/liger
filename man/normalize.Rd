@@ -4,6 +4,7 @@
 \alias{normalize}
 \alias{normalize.matrix}
 \alias{normalize.dgCMatrix}
+\alias{normalize.DelayedArray}
 \alias{normalize.ligerDataset}
 \alias{normalize.liger}
 \alias{normalize.Seurat}
@@ -15,6 +16,17 @@ normalize(object, ...)
 \method{normalize}{matrix}(object, log = FALSE, scaleFactor = NULL, ...)
 
 \method{normalize}{dgCMatrix}(object, log = FALSE, scaleFactor = NULL, ...)
+
+\method{normalize}{DelayedArray}(
+  object,
+  log = FALSE,
+  scaleFactor = NULL,
+  chunk = 1000,
+  overwrite = FALSE,
+  returnStats = FALSE,
+  verbose = getOption("ligerVerbose", TRUE),
+  ...
+)
 
 \method{normalize}{ligerDataset}(object, chunk = 1000, verbose = getOption("ligerVerbose", TRUE), ...)
 
@@ -52,6 +64,14 @@ factor before transformation. \code{NULL} for not scaling. Default
 
 \item{chunk}{Integer. Number of maximum number of cells in each chunk when
 working on HDF5 file based ligerDataset. Default \code{1000}.}
+
+\item{overwrite}{Logical. When writing newly computed HDF5Array to a separate
+HDF5 file, whether to overwrite the existing file. Default \code{FALSE}
+raises an error when the file already exists.}
+
+\item{returnStats}{Logical. Used in LIGER internal workflow to allow
+captureing precalculated statistics for downstream use. Default \code{FALSE}
+only returns the normalized data for HDF5Array method.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}

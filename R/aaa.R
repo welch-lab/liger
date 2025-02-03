@@ -3,6 +3,8 @@
 #' @importFrom rlang .data %||%
 #' @importFrom methods new show
 #' @importFrom utils .DollarNames
+#' @importClassesFrom DelayedArray DelayedArray
+#' @importClassesFrom HDF5Array HDF5Array
 #' @useDynLib rliger, .registration = TRUE
 NULL
 

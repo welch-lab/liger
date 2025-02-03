@@ -1,6 +1,6 @@
 Package: rliger
-Version: 2.1.0.9004
-Date: 2025-01-07
+Version: 2.1.0.9005
+Date: 2025-02-03
 Type: Package
 Title: Linked Inference of Genomic Experimental Relationships
 Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors. See Welch J, Kozareva V, et al (2019) <doi:10.1016/j.cell.2019.05.006>, and Liu J, Gao C, Sodicoff J, et al (2020) <doi:10.1038/s41596-020-0391-8> for more details.
@@ -49,9 +49,11 @@ Imports:
     cli,
     cowplot,
     ComplexHeatmap,
+    DelayedArray,
     dplyr,
     ggplot2,
     grid,
+    HDF5Array,
     hdf5r,
     leidenAlg (>= 1.1.1),
     lifecycle,
@@ -61,13 +63,13 @@ Imports:
     RColorBrewer,
     Rcpp,
     rlang,
-    Rtsne,
     S4Vectors,
     scales,
     uwot,
     viridis
 Suggests:
     AnnotationDbi,
+    DelayedMatrixStats,
     DESeq2,
     DoubletFinder (>= 2.0.4),
     EnhancedVolcano,
@@ -83,6 +85,7 @@ Suggests:
     RcppPlanc,
     reactome.db,
     rmarkdown,
+    Rtsne,
     sankey,
     scattermore (>= 0.7),
     Seurat,

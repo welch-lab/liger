@@ -5,6 +5,7 @@
 \alias{selectBatchHVG.liger}
 \alias{selectBatchHVG.ligerDataset}
 \alias{selectBatchHVG.dgCMatrix}
+\alias{selectBatchHVG.DelayedArray}
 \title{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} Batch-aware highly variable gene selection}
 \usage{
 selectBatchHVG(object, ...)
@@ -31,6 +32,16 @@ selectBatchHVG(object, ...)
   verbose = getOption("ligerVerbose", TRUE),
   ...
 )
+
+\method{selectBatchHVG}{DelayedArray}(
+  object,
+  nGenes = 2000,
+  means = NULL,
+  returnStats = FALSE,
+  chunk = 1000,
+  verbose = getOption("ligerVerbose", TRUE),
+  ...
+)
 }
 \arguments{
 \item{object}{A \code{\linkS4class{liger}} object,
@@ -52,6 +63,14 @@ considered. Default \code{NULL} selects from all features.}
 \item{returnStats}{Logical, for dgCMatrix-method, whether to return a data
 frame of statistics for all features, or by default \code{FALSE} just return
 a character vector of selected features.}
+
+\item{means}{Numeric vector of pre-calculated means per gene, derived from
+log1p CPM normalized expression. Only used in LIGER's internal workflow.
+Default \code{NULL} assumes users are running the function on a DelayedArray
+directly and use DelayedArray implementation to calculate statistics.}
+
+\item{chunk}{Integer. Number of maximum number of cells in each chunk when
+working on HDF5Array Default \code{1000}.}
 }
 \value{
 \itemize{
@@ -84,6 +103,7 @@ For selection from only part of the datasets and selection for
 dataset-specific unshared features, please use \code{\link{selectGenes}()}.
 }
 \examples{
+pbmc <- normalize(pbmc)
 pbmc <- selectBatchHVG(pbmc, nGenes = 10)
 varFeatures(pbmc)
 }

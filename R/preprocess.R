@@ -198,12 +198,22 @@ runGeneralQC <- function(
                 chunkSize = chunkSize,
                 verbose = verbose
             )
-        else
-            results <- runGeneralQC.Matrix(
-                ld,
-                featureSubsets = featureSubsets,
-                verbose = verbose
-            )
+        else {
+            if (inherits(rawData(ld), "DelayedArray")) {
+                results <- runGeneralQC.DelayedH5(
+                    ld,
+                    featureSubsets = featureSubsets,
+                    chunkSize = chunkSize,
+                    verbose = verbose
+                )
+            } else {
+                results <- runGeneralQC.Matrix(
+                    ld,
+                    featureSubsets = featureSubsets,
+                    verbose = verbose
+                )
+            }
+        }
         resultCell <- results$cell[, newResultNames, drop = FALSE]
         if (ncol(resultCell) > 0) {
             object@cellMeta[object$dataset == d, newResultNames] <- resultCell
@@ -219,81 +229,47 @@ runGeneralQC <- function(
     return(object)
 }
 
-# runGeneralQCOld <- function(
-#         object,
-#         mito = TRUE,
-#         ribo = TRUE,
-#         hemo = TRUE,
-#         features = NULL,
-#         pattern = NULL,
-#         useDatasets = NULL,
-#         chunkSize = 1000,
-#         verbose = getOption("ligerVerbose", TRUE)
-# ) {
-#     .checkObjVersion(object)
-#     useDatasets <- .checkUseDatasets(object, useDatasets)
-#     # Process the the two arguments all into one named list of feature names
-#     # before exactly calculate the percentage
-#     featureSubsets <- list()
-#     allFeatures <- unique(unlist(lapply(datasets(object), rownames),
-#                                  use.names = FALSE))
-#
-#     # Work on the presets
-#     if (isTRUE(mito))
-#         featureSubsets$mito <- grep("^MT-", allFeatures, value = TRUE)
-#     if (isTRUE(ribo))
-#         featureSubsets$ribo <- grep("^RP[SL]", allFeatures, value = TRUE)
-#     if (isTRUE(hemo))
-#         featureSubsets$hemo <- grep("^HB[^(P)]", allFeatures, value = TRUE)
-#
-#     # Then process the user specified gene sets
-#     if (!is.null(features)) {
-#         if (is.list(features)) {
-#             featureSubsets <- c(featureSubsets, features)
-#         } else if (is.vector(features)) {
-#             featureSubsets[["featureSubset_name"]] <- features
-#         }
-#     }
-#     if (!is.null(pattern)) {
-#         if (is.list(pattern)) {
-#             pattern <- lapply(pattern, function(x) {
-#                 grep(x, allFeatures, value = TRUE)
-#             })
-#             featureSubsets <- c(featureSubsets, pattern)
-#         } else if (is.vector(pattern)) {
-#             pattern <- grep(pattern, allFeatures, value = TRUE)
-#             featureSubsets[["featureSubset_pattern"]] <- pattern
-#         }
-#     }
-#
-#     # Start calculation on each dataset
-#     newResultNames <- c("nUMI", "nGene", names(featureSubsets))
-#
-#     for (d in useDatasets) {
-#         ld <- dataset(object, d)
-#         if (isTRUE(verbose))
-#             cliID <- cli::cli_process_start("calculating QC for dataset {.val {d}}")
-#         if (isH5Liger(ld))
-#             results <- runGeneralQC.h5(
-#                 ld,
-#                 featureSubsets = featureSubsets,
-#                 chunkSize = chunkSize,
-#                 verbose = verbose
-#             )
-#         else
-#             results <- runGeneralQC.Matrix(
-#                 ld,
-#                 featureSubsets = featureSubsets,
-#                 verbose = verbose
-#             )
-#         object@cellMeta[object$dataset == d, newResultNames] <- results$cell
-#         featureMeta(ld, check = FALSE)$nCell <- results$feature
-#         datasets(object, check = FALSE)[[d]] <- ld
-#         if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
-#     }
-#
-#     return(object)
-# }
+runGeneralQC.DelayedH5 <- function(
+        object,
+        featureSubsets = NULL,
+        chunkSize = 1000,
+        verbose = getOption("ligerVerbose", TRUE)
+) {
+    allFeatures <- rownames(object)
+    # Initialize results
+    cell <- data.frame(row.names = colnames(object))
+    cell$nUMI <- 0
+    cell$nGene <- 0
+    for (i in names(featureSubsets)) {
+        cell[[i]] <- 0
+    }
+    nCell <- rep(0, nrow(object))
+    rowIndices <- lapply(featureSubsets, function(x) allFeatures %in% x)
+
+    delayedRawData <- rawData(object)
+
+    # Calculate in only one iteration
+    H5Apply(
+        delayedRawData,
+        init = list(cell = cell, feature = nCell),
+        useData = "rawData",
+        chunkSize = chunkSize,
+        verbose = verbose,
+        FUN = function(chunk, sparseXIdx, cellIdx, values) {
+            nUMI <- colSums(chunk)
+            values$cell$nUMI[cellIdx] <- nUMI
+            nonzero <- methods::as(chunk, "lMatrix")
+            values$cell$nGene[cellIdx] <- colSums(nonzero)
+            for (fs in names(rowIndices)) {
+                values$cell[[fs]][cellIdx] <-
+                    colSums(chunk[rowIndices[[fs]], , drop = FALSE]) / nUMI *
+                    100
+            }
+            values$feature <- values$feature + Matrix::rowSums(nonzero)
+            return(values)
+        }
+    )
+}
 
 #' Calculate general QC on H5 based ligerDataset object
 #' @param object ligerDataset object
@@ -305,7 +281,8 @@ runGeneralQC.h5 <- function(
         object,
         featureSubsets = NULL,
         chunkSize = 1000,
-        verbose = getOption("ligerVerbose", TRUE)) {
+        verbose = getOption("ligerVerbose", TRUE)
+) {
     allFeatures <- rownames(object)
     # Initialize results
     cell <- data.frame(row.names = colnames(object))
@@ -354,7 +331,12 @@ runGeneralQC.Matrix <- function(
     # matrix, keep it sparse with 1 for TRUE
     # nonzero <- rawData(object)
     # nonzero@x <- rep(1, length(nonzero@x))
-    nonzero <- methods::as(rawData(object), "lMatrix")
+    if (inherits(rawData(object), "dgCMatrix")) {
+        nonzero <- methods::as(rawData(object), "lMatrix")
+    } else {
+        nonzero <- rawData(object) > 0
+    }
+
     nGene <- Matrix::colSums(nonzero)
     nCell <- Matrix::rowSums(nonzero)
     results <- data.frame(nUMI = nUMI, nGene = nGene,
@@ -398,6 +380,9 @@ getProportionMito <- function(object, use.norm = FALSE, pattern = "^mt-") {
     result <- numeric()
     for (d in names(object)) {
         ld <- dataset(object, d)
+        if (isH5Liger(ld)) {
+            cli::cli_abort("Please use {.fn runGeneralQC()} to do the calculation for H5-based object.")
+        }
         mitoGeneIdx <- grep(pattern, rownames(ld))
         if (isTRUE(use.norm)) {
             pctMT <- colSums(normData(ld)[mitoGeneIdx, , drop = FALSE]) /
@@ -622,6 +607,82 @@ normalize.dgCMatrix <- function(
 
 #' @rdname normalize
 #' @export
+#' @param overwrite Logical. When writing newly computed HDF5Array to a separate
+#' HDF5 file, whether to overwrite the existing file. Default \code{FALSE}
+#' raises an error when the file already exists.
+#' @param returnStats Logical. Used in LIGER internal workflow to allow
+#' captureing precalculated statistics for downstream use. Default \code{FALSE}
+#' only returns the normalized data for HDF5Array method.
+#' @method normalize DelayedArray
+normalize.DelayedArray <- function(
+        object,
+        log = FALSE,
+        scaleFactor = NULL,
+        chunk = 1000,
+        overwrite = FALSE,
+        returnStats = FALSE,
+        verbose = getOption("ligerVerbose", TRUE),
+        ...
+) {
+    stats <- list(
+        means = rep(0, nrow(object))
+    )
+    rawH5Filename <- get_DelayedArray_filepath(object)
+    newFilename <- gsub(".h5$", "_normData.h5", rawH5Filename)
+    if (isTRUE(overwrite)) {
+        if (file.exists(newFilename)) file.remove(newFilename)
+    } else {
+        if (file.exists(newFilename)) {
+            cli::cli_abort("File {.val {newFilename}} already exists. Use {.code overwrite=TRUE} to overwrite.")
+        }
+    }
+    if (isTRUE(verbose)) {
+        cli::cli_alert_info("Writing normalized data to {.file {newFilename}}")
+    }
+    h5RawData <- hdf5r::H5File$new(rawH5Filename, mode = "r")
+    rawGroup <- get_DelayedArray_group(object)
+
+    h5NormData <- hdf5r::H5File$new(newFilename, mode = "w")
+    nnz <- h5RawData[[file.path(rawGroup, "data")]]$dims
+    lengthColptr <- h5RawData[[file.path(rawGroup, "indptr")]]$dims
+    safeH5Create(object = h5NormData, dataPath = "matrix/data",
+                 dims = nnz, dtype = "double", chunkSize = 4096)
+    safeH5Create(object = h5NormData, dataPath = "matrix/indices",
+                 dims = nnz, dtype = "int", chunkSize = 4096)
+    safeH5Create(object = h5NormData, dataPath = "matrix/indptr",
+                 dims = lengthColptr, dtype = "int", chunkSize = 2048)
+    safeH5Create(object = h5NormData, dataPath = "matrix/shape",
+                 dims = 2, dtype = "int")
+    h5NormData[['matrix/shape']][1:2] <- h5RawData[[file.path(rawGroup, "shape")]][]
+    h5NormData[['matrix/indices']][1:nnz] <- h5RawData[[file.path(rawGroup, "indices")]][]
+    h5NormData[['matrix/indptr']][1:lengthColptr] <- h5RawData[[file.path(rawGroup, "indptr")]][]
+    h5RawData$close_all()
+    # Chunk run
+    stats <- H5Apply(
+        object,
+        function(chunk, sparseXIdx, cellIdx, values) {
+            normChunk <- normalize(chunk)
+            h5NormData[['matrix/data']][sparseXIdx] <- normChunk@x
+            normChunk <- log1p(normChunk * 1e6)
+            values$means <- values$means + rowSums(normChunk)
+            return(values)
+        },
+        init = stats, chunkSize = chunk, verbose = verbose
+    )
+    stats$means <- stats$means / ncol(object)
+    # featureMeta(object, check = FALSE)$means <- stats$means
+    h5NormData$close_all()
+    norm <- HDF5Array::TENxMatrix(newFilename, group = "matrix")
+    dimnames(norm) <- dimnames(object)
+    if (isTRUE(returnStats)) {
+        return(list(norm, stats))
+    } else {
+        return(norm)
+    }
+}
+
+#' @rdname normalize
+#' @export
 #' @param chunk Integer. Number of maximum number of cells in each chunk when
 #' working on HDF5 file based ligerDataset. Default \code{1000}.
 #' @param verbose Logical. Whether to show information of the progress. Default
@@ -634,7 +695,14 @@ normalize.ligerDataset <- function(
         ...
 ) {
     if (!isH5Liger(object)) {
-        normData(object) <- normalize(rawData(object), ...)
+        raw <- rawData(object)
+        res <- normalize(raw, returnStats = TRUE, ...)
+        if (is.list(res)) {
+            normData(object) <- res[[1]]
+            featureMeta(object, check = FALSE)$means <- res[[2]]$means
+        } else {
+            normData(object) <- res
+        }
     } else {
         # Initialize result
         results <- list(
@@ -946,7 +1014,7 @@ selectGenes.liger <- function(
         featureMeta(object, check = FALSE)$geneMeans <-
             Matrix::rowMeans(normData(object))
         featureMeta(object, check = FALSE)$geneVars <-
-            rowVars_sparse_rcpp(normData(object), featureMeta(object)$geneMeans)
+            rowVars_sparse_rcpp(normData(object), featureMeta(object)$geneMeans, ncol(object))
     }
     selected.shared <- .selectGenes.withMetric(
         genes = rownames(object)[sharedFeature],
@@ -1066,7 +1134,7 @@ selectGenes.Seurat <- function(
         means <- Matrix::rowMeans(submat)
         hvg.info[[paste0("liger.mean.", d)]] <- 0
         hvg.info[rownames(submat), paste0("liger.mean.", d)] <- means
-        vars <- rowVars_sparse_rcpp(submat, means)
+        vars <- rowVars_sparse_rcpp(submat, means, ncol(submat))
         hvg.info[[paste0("liger.variance.", d)]] <- 0
         hvg.info[rownames(submat), paste0("liger.variance.", d)] <- vars
         thresh_i <- thresh[levels(datasetVar) == d]
@@ -1267,7 +1335,7 @@ selectGenesVST <- function(
         clipMax <- sqrt(ncol(data))
     }
     hvf.info <- data.frame(mean = Matrix::rowMeans(data))
-    hvf.info$variance <- rowVars_sparse_rcpp(data, hvf.info$mean)
+    hvf.info$variance <- rowVars_sparse_rcpp(data, hvf.info$mean, ncol(data))
     not.const <- hvf.info$variance > 0
     hvf.info$variance.expected <- 0
     fit <- stats::loess(formula = log10(variance) ~ log10(mean),
@@ -1370,13 +1438,83 @@ scaleNotCenter <- function(object, ...) {
 #' @method scaleNotCenter dgCMatrix
 scaleNotCenter.dgCMatrix <- function(
         object,
+        features,
         ...)
 {
+    object <- object[features, , drop = FALSE]
     if (nrow(object) == 0) return(object)
     scaled <- scaleNotCenter_byRow_rcpp(object)
     scaled@x[is.na(scaled@x)] <- 0 # Is this really happening?
     dimnames(scaled) <- dimnames(object)
     return(scaled)
+}
+
+#' @export
+#' @param overwrite Logical. When writing newly computed HDF5Array to a separate
+#' HDF5 file, whether to overwrite the existing file. Default \code{FALSE}
+#' raises an error when the file already exists.
+#' @rdname scaleNotCenter
+#' @method scaleNotCenter DelayedArray
+scaleNotCenter.DelayedArray <- function(
+        object,
+        features,
+        overwrite = FALSE,
+        chunk = 1000,
+        verbose = getOption("ligerVerbose", TRUE),
+        ...
+) {
+    allFeatures <- rownames(object)
+    if (length(features) == 0) return(object)
+
+    rawH5Filename <- get_DelayedArray_filepath(object)
+    newFilename <- gsub(".h5$", "_scaleData.h5", rawH5Filename)
+    if (isTRUE(overwrite)) {
+        if (file.exists(newFilename)) file.remove(newFilename)
+    } else {
+        if (file.exists(newFilename)) {
+            cli::cli_abort("File {.val {newFilename}} already exists. Use {.code overwrite=TRUE} to overwrite.")
+        }
+    }
+    if (isTRUE(verbose)) {
+        cli::cli_alert_info("Writing scaled data to {.file {newFilename}}")
+    }
+    h5ScaleData <- hdf5r::H5File$new(newFilename, mode = "w")
+    safeH5Create(object = h5ScaleData, dataPath = "data",
+                 dims = c(length(features), ncol(object)),
+                 dtype = "double", chunkSize = c(2048, 4096))
+    # Chunk run
+    geneRootMeanSumSq <- numeric(length(features))
+    if (is.character(features)) features <- match(features, allFeatures)
+    geneRootMeanSumSq <- H5Apply(
+        object,
+        function(chunk, sparseXIdx, cellIdx, values) {
+            chunk <- chunk[features, , drop = FALSE]
+            values <- values + rowVars_sparse_rcpp(
+                chunk,
+                rep(0, nrow(chunk)),
+                ncol = ncol(object)
+            )
+        },
+        init = geneRootMeanSumSq, chunkSize = chunk, verbose = verbose
+    )
+    geneRootMeanSumSq <- sqrt(geneRootMeanSumSq)
+
+    H5Apply(
+        object,
+        function(chunk, sparseXIdx, cellIdx, values) {
+            chunk <- chunk[features, , drop = FALSE]
+            chunk <- rowDivide_rcpp(chunk, geneRootMeanSumSq)
+            chunk <- as.matrix(chunk)
+            chunk[is.na(chunk)] <- 0
+            h5ScaleData[['data']][,cellIdx] <- chunk
+        },
+        init = geneRootMeanSumSq, chunkSize = chunk, verbose = verbose
+    )
+    h5ScaleData$close_all()
+    scale <- HDF5Array::HDF5Array(newFilename, name = "data", as.sparse = FALSE)
+    colnames(scale) <- colnames(object)
+    rownames(scale) <- allFeatures[features]
+    return(scale)
 }
 
 #' @export
@@ -1402,11 +1540,15 @@ scaleNotCenter.ligerDataset <- function(
     unsharedIdx <- .idxCheck(object, object@varUnsharedFeatures, "feature")
     if (!isH5Liger(object)) {
         scaleData(object) <- scaleNotCenter(
-            normData(object)[features, , drop = FALSE]
+            normData(object),
+            features,
+            ...
         )
         if (length(unsharedIdx) > 0)
             scaleUnsharedData(object) <- scaleNotCenter(
-                normData(object)[unsharedIdx, , drop = FALSE]
+                normData(object),
+                unsharedIdx,
+                ...
             )
     } else {
         object <- .scaleH5SpMatrix(object, features,
@@ -1505,7 +1647,7 @@ scaleNotCenter.Seurat <- function(
 
     if (is.list(normed)) {
         scaled <- lapply(normed, function(x) {
-            scaleNotCenter(x[features, , drop = FALSE])
+            scaleNotCenter(x, features, ...)
         })
     } else {
         # Condition for all batches in one matrix

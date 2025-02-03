@@ -166,6 +166,12 @@ runTSNE <- function(
         cli::cli_process_start("Generating TSNE ({method}) on {type} cell factor loadings")
     if (!is.null(useDims)) H <- H[, useDims, drop = FALSE]
     if (method == "Rtsne") {
+        if (!requireNamespace("Rtsne", quietly = TRUE)) {
+            cli::cli_abort(
+                "Package {.pkg Rtsne} is needed for this function to work.
+            Please install it by command:
+            {.code install.packages('Rtsne')}")
+        }
         set.seed(seed)
         tsne <- Rtsne::Rtsne(H,
                              dims = nDims,

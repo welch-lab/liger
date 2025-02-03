@@ -126,7 +126,7 @@ setMethod(
         # Use class(object) so that the inheriting classes can be shown properly
         cat("An object of class", class(object), "with",
             ncol(object), "cells\n")
-        if (isH5Liger(object) &
+        if (isH5Liger(object) &&
             !isTRUE(methods::validObject(object, test = TRUE))) {
             cli::cli_alert_danger("Link to HDF5 file fails. Please try running {.code restoreH5Liger(object)}.")
             return()
@@ -138,6 +138,9 @@ setMethod(
                 if (inherits(data, c("matrix", "dgCMatrix",
                                      "dgTMatrix", "dgeMatrix"))) {
                     cat(paste0(slot, ":"), nrow(data), "features\n")
+                }
+                if (inherits(data, "HDF5Array")) {
+                    cat(paste0(slot, ":"), nrow(data), "features (on-disk)\n")
                 }
                 if (inherits(data, "H5D")) {
                     if (length(data$dims) == 1) {

@@ -43,8 +43,23 @@ H5Apply <- function(
         ...
 ) {
     fun.args <- list(...)
-    useData <- match.arg(useData)
-    h5meta <- h5fileInfo(object)
+    if (inherits(object, "ligerDataset")) {
+        useData <- match.arg(useData)
+        h5meta <- h5fileInfo(object)
+
+        h5file <- h5meta$H5File
+        colptr <- h5file[[h5meta$indptrName]]
+        rowind <- h5file[[h5meta$indicesName]]
+        data <- h5file[[h5meta[[useData]]]]
+    } else if (inherits(object, "DelayedArray")) {
+        h5Path <- get_DelayedArray_filepath(object)
+        h5file <- hdf5r::H5File$new(h5Path, mode = "r")
+        on.exit(h5file$close_all())
+        h5group <- get_DelayedArray_group(object)
+        colptr <- h5file[[file.path(h5group, "indptr")]]
+        rowind <- h5file[[file.path(h5group, "indices")]]
+        data <- h5file[[file.path(h5group, "data")]]
+    }
     numCells <- ncol(object)
     numFeatures <- nrow(object)
 
@@ -52,10 +67,7 @@ H5Apply <- function(
     prev_end_data <- 1
     numChunks <- ceiling(numCells / chunkSize)
     ind <- 0
-    h5file <- h5meta$H5File
-    colptr <- h5file[[h5meta$indptrName]]
-    rowind <- h5file[[h5meta$indicesName]]
-    data <- h5file[[h5meta[[useData]]]]
+
     if (isTRUE(verbose))
         cliID <- cli::cli_progress_bar(name = "HDF5 chunk processing", type = "iter",
                                        total = numChunks, clear = FALSE)
@@ -491,7 +503,16 @@ writeH5.dgCMatrix <- function(
     )
     h5file[[featuresPath]][] <- rownames(x)
 
-    h5file$close()
+    featureTypePath <- gsub("name$", "feature_type", featuresPath)
+    safeH5Create(
+        object = h5file,
+        dataPath = featureTypePath,
+        dims = nrow(x),
+        dtype = "char"
+    )
+    h5file[[featureTypePath]][] <- rep("Gene Expression", nrow(x))
+
+    h5file$close_all()
     invisible(NULL)
 }
 
@@ -536,4 +557,29 @@ writeH5.liger <- function(x, file, useDatasets, ...) {
         )
     }
     invisible(NULL)
+}
+
+get_DelayedArray_filepath <- function(x) {
+    if ("seeds" %in% methods::slotNames(x)) x <- x@seeds[[1]]
+    while ("seed" %in% methods::slotNames(x)) {
+        x <- x@seed
+        if ("seeds" %in% methods::slotNames(x)) x <- x@seeds[[1]]
+    }
+    x@filepath
+}
+
+get_DelayedArray_group <- function(x) {
+    if ("seeds" %in% methods::slotNames(x)) x <- x@seeds[[1]]
+    while ("seed" %in% methods::slotNames(x)) {
+        x <- x@seed
+        if ("seeds" %in% methods::slotNames(x)) x <- x@seeds[[1]]
+    }
+    if (!inherits(x, "HDF5ArraySeed")) {
+        cli::cli_abort("The DelayedArray representation is not of HDF5Array class which is required by rliger.")
+    }
+    if ("group" %in% methods::slotNames(x)) return(x@group)
+    else if ("name" %in% methods::slotNames(x)) return(x@name)
+    else {
+        cli::cli_abort("Cannot detect data path within the HDF5Array.")
+    }
 }

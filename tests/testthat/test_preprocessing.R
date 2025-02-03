@@ -243,6 +243,7 @@ test_that("selectGenes - on disk", {
 })
 
 test_that("selectBatchHVG", {
+    pbmc <- normalize(pbmc)
     expect_no_error(pbmc <- selectBatchHVG(pbmc, nGenes = 100))
     expect_length(varFeatures(pbmc), 100)
     expect_message(pbmc <- selectBatchHVG(pbmc, nGenes = 300),

@@ -3,6 +3,7 @@
 \name{scaleNotCenter}
 \alias{scaleNotCenter}
 \alias{scaleNotCenter.dgCMatrix}
+\alias{scaleNotCenter.DelayedArray}
 \alias{scaleNotCenter.ligerDataset}
 \alias{scaleNotCenter.ligerMethDataset}
 \alias{scaleNotCenter.liger}
@@ -11,7 +12,16 @@
 \usage{
 scaleNotCenter(object, ...)
 
-\method{scaleNotCenter}{dgCMatrix}(object, ...)
+\method{scaleNotCenter}{dgCMatrix}(object, features, ...)
+
+\method{scaleNotCenter}{DelayedArray}(
+  object,
+  features,
+  overwrite = FALSE,
+  chunk = 1000,
+  verbose = getOption("ligerVerbose", TRUE),
+  ...
+)
 
 \method{scaleNotCenter}{ligerDataset}(
   object,
@@ -60,6 +70,10 @@ feature to be scaled. "liger" method by default uses
 \code{\link{varFeatures}(object)}. "ligerDataset" method by default uses all
 features. "Seurat" method by default uses
 \code{Seurat::VariableFeatures(object)}.}
+
+\item{overwrite}{Logical. When writing newly computed HDF5Array to a separate
+HDF5 file, whether to overwrite the existing file. Default \code{FALSE}
+raises an error when the file already exists.}
 
 \item{chunk}{Integer. Number of maximum number of cells in each chunk, when
 scaling is applied to any HDF5 based dataset. Default \code{1000}.}

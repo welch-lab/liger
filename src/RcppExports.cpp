@@ -118,14 +118,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // rowVars_sparse_rcpp
-NumericVector rowVars_sparse_rcpp(const arma::sp_mat& x, const NumericVector& means);
-RcppExport SEXP _rliger_rowVars_sparse_rcpp(SEXP xSEXP, SEXP meansSEXP) {
+NumericVector rowVars_sparse_rcpp(const arma::sp_mat& x, const NumericVector& means, const double& ncol);
+RcppExport SEXP _rliger_rowVars_sparse_rcpp(SEXP xSEXP, SEXP meansSEXP, SEXP ncolSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type x(xSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type means(meansSEXP);
-    rcpp_result_gen = Rcpp::wrap(rowVars_sparse_rcpp(x, means));
+    Rcpp::traits::input_parameter< const double& >::type ncol(ncolSEXP);
+    rcpp_result_gen = Rcpp::wrap(rowVars_sparse_rcpp(x, means, ncol));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -406,7 +407,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rliger_safe_scale", (DL_FUNC) &_rliger_safe_scale, 3},
     {"_rliger_scaleNotCenter_byCol_dense_rcpp", (DL_FUNC) &_rliger_scaleNotCenter_byCol_dense_rcpp, 1},
     {"_rliger_scaleNotCenter_byRow_perDataset_rcpp", (DL_FUNC) &_rliger_scaleNotCenter_byRow_perDataset_rcpp, 3},
-    {"_rliger_rowVars_sparse_rcpp", (DL_FUNC) &_rliger_rowVars_sparse_rcpp, 2},
+    {"_rliger_rowVars_sparse_rcpp", (DL_FUNC) &_rliger_rowVars_sparse_rcpp, 3},
     {"_rliger_rowDivide_rcpp", (DL_FUNC) &_rliger_rowDivide_rcpp, 2},
     {"_rliger_sumSquaredDeviations", (DL_FUNC) &_rliger_sumSquaredDeviations, 2},
     {"_rliger_denseZScore", (DL_FUNC) &_rliger_denseZScore, 2},

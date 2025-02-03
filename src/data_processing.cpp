@@ -142,24 +142,32 @@ arma::sp_mat scaleNotCenter_byRow_perDataset_rcpp(arma::sp_mat x,
   return x;
 }
 
+// The `ncol` argument is dedicated for chunk calculation
+// When `ncol` is number of column of the full-sized original matrix, this
+// function calculates exact row-variances.
+// When chunking by a number of columns, use `ncol` from the original full size,
+// and sum up the output of this function from all chunks to get the exact
+// row-variances.
 // [[Rcpp::export]]
 NumericVector rowVars_sparse_rcpp(const arma::sp_mat& x,
-                                  const NumericVector& means) {
-  int nrow = x.n_rows, ncol = x.n_cols;
+                                  const NumericVector& means,
+                                  const double& ncol) {
+  double nrow = x.n_rows;
 
   NumericVector vars(nrow);
   NumericVector nonzero_vals(nrow);
 
   for(arma::sp_mat::const_iterator i = x.begin(); i != x.end(); ++i) {
-    vars(i.row()) += (*i-means(i.row()))*(*i-means(i.row()));
+    double diff = *i - means(i.row());
+    vars(i.row()) += pow(diff, 2.0);
     nonzero_vals(i.row())++;
   }
   // Add back square mean error for zero elements
   // const_iterator only loops over nonzero elements
-  for (int i = 0; i < nrow; ++i) {
-    vars(i) += (ncol - nonzero_vals(i))*means(i)*means(i);
-    vars(i) /= ncol - 1;
-  }
+  NumericVector means_square = pow(means, 2.0);
+  NumericVector zero_contrib = -1*nonzero_vals + x.n_cols;
+  vars += zero_contrib * means_square;
+  vars = vars / (ncol - 1.0);
   return vars;
 }
 

@@ -390,6 +390,10 @@ runINMF.Seurat <- function(
     allFeatures <- lapply(object, rownames)
     features <- Reduce(.same, allFeatures)
 
+    if (inherits(object[[1]], "DelayedArray")) {
+        object <- lapply(object, as.H5Mat.DelayedArray)
+    }
+
     if (min(lengths(barcodeList)) < k) {
         cli::cli_abort("Number of factors (k={k}) should be less than the number of cells in the smallest dataset ({min(lengths(barcodeList))}).")
     }
@@ -428,6 +432,12 @@ runINMF.Seurat <- function(
     names(bestResult$V) <- names(bestResult$H) <- names(object)
     dimnames(bestResult$W) <- list(features, factorNames)
     return(bestResult)
+}
+
+as.H5Mat.DelayedArray <- function(x) {
+    filename <- get_DelayedArray_filepath(x)
+    group <- get_DelayedArray_group(x)
+    RcppPlanc::H5Mat(filename = filename, dataPath = group)
 }
 
 #' `r lifecycle::badge("deprecated")` Perform iNMF on scaled datasets
