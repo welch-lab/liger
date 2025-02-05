@@ -11,7 +11,7 @@ runGeneralQC(
   pattern = NULL,
   overwrite = FALSE,
   useDatasets = NULL,
-  chunkSize = 1000,
+  chunkSize = getOption("ligerChunkSize", 20000),
   verbose = getOption("ligerVerbose", TRUE),
   mito = NULL,
   ribo = NULL,
@@ -45,7 +45,7 @@ vector of the index of the datasets to be included for QC. Default
 \code{NULL} performs QC on all datasets.}
 
 \item{chunkSize}{Integer number of cells to include in a chunk when working
-on HDF5 based dataset. Default \code{1000}}
+on HDF5 based dataset. Default \code{20000}}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}

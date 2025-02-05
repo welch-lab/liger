@@ -17,7 +17,7 @@ selectGenes(object, thresh = 0.1, nGenes = NULL, alpha = 0.99, ...)
   useUnsharedDatasets = NULL,
   unsharedThresh = 0.1,
   combine = c("union", "intersection"),
-  chunk = 1000,
+  chunk = getOption("ligerChunkSize", 20000),
   verbose = getOption("ligerVerbose", TRUE),
   var.thresh = thresh,
   alpha.thresh = alpha,
@@ -85,7 +85,7 @@ unshared features. A single value for all datasets in
 Choose from \code{"union"} or \code{"intersection"}. Default \code{"union"}.}
 
 \item{chunk}{Integer. Number of maximum number of cells in each chunk, when
-gene selection is applied to any HDF5 based dataset. Default \code{1000}.}
+gene selection is applied to any HDF5 based dataset. Default \code{20000}.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}

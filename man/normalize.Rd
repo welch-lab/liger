@@ -9,7 +9,7 @@
 \alias{normalize.liger}
 \alias{normalize.Seurat}
 \alias{normalizePeak}
-\title{Normalize raw counts data}
+\title{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} Normalize raw counts data}
 \usage{
 normalize(object, ...)
 
@@ -21,14 +21,19 @@ normalize(object, ...)
   object,
   log = FALSE,
   scaleFactor = NULL,
-  chunk = 1000,
+  chunk = getOption("ligerChunkSize", 20000),
   overwrite = FALSE,
   returnStats = FALSE,
   verbose = getOption("ligerVerbose", TRUE),
   ...
 )
 
-\method{normalize}{ligerDataset}(object, chunk = 1000, verbose = getOption("ligerVerbose", TRUE), ...)
+\method{normalize}{ligerDataset}(
+  object,
+  chunk = getOption("ligerChunkSize", 20000),
+  verbose = getOption("ligerVerbose", TRUE),
+  ...
+)
 
 \method{normalize}{liger}(
   object,
@@ -63,15 +68,15 @@ factor before transformation. \code{NULL} for not scaling. Default
 \code{1e4}.}
 
 \item{chunk}{Integer. Number of maximum number of cells in each chunk when
-working on HDF5 file based ligerDataset. Default \code{1000}.}
+working on HDF5 file based ligerDataset. Default \code{20000}.}
 
-\item{overwrite}{Logical. When writing newly computed HDF5Array to a separate
-HDF5 file, whether to overwrite the existing file. Default \code{FALSE}
-raises an error when the file already exists.}
+\item{overwrite}{Logical. When writing newly computed HDF5 array to a
+separate HDF5 file, whether to overwrite the existing file. Default
+\code{FALSE} raises an error when the file already exists.}
 
 \item{returnStats}{Logical. Used in LIGER internal workflow to allow
 captureing precalculated statistics for downstream use. Default \code{FALSE}
-only returns the normalized data for HDF5Array method.}
+only returns the normalized data for DelayedArray method.}
 
 \item{verbose}{Logical. Whether to show information of the progress. Default
 \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}

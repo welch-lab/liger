@@ -13,7 +13,7 @@
   - Pseudo-bulk should be easy because we are just aggregating cells.
   - Wilcoxon might be a bit harder because ranks are calculated per gene but the H5 sparse data is column majored. Might need to find a fast on-disk transposition method, which would also enhance RcppPlanc performance when running ANLS on H5 data.
 
-## rliger 2.1.0.9005
+## rliger 2.1.0.9006
 
 - Added DelayedArray/HDF5Array support. HDF5-based data (primarily 10X output 
 format) can now be loaded via `HDF5Array::TENxMatrix()` and a liger object can be
@@ -24,6 +24,8 @@ The backend computation still follows customized HDF5 chunking computation thoug
   - Fixed Wilcoxon rank-sum test bug when using ATAC peak counts
   - Fixed gene coordinate parsing bug from BED file
   - Optimized peak parsing speed
+- Soft deprecating `normalize()` as we can (and have been doing so) simply store the nUMI scale factor, thus
+no need to have another full matrix loaded/written along the way.
 
 ## rliger 2.1.0
 

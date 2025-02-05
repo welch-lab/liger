@@ -139,7 +139,7 @@ setMethod(
                                      "dgTMatrix", "dgeMatrix"))) {
                     cat(paste0(slot, ":"), nrow(data), "features\n")
                 }
-                if (inherits(data, "HDF5Array")) {
+                if (inherits(data, "DelayedArray")) {
                     cat(paste0(slot, ":"), nrow(data), "features (on-disk)\n")
                 }
                 if (inherits(data, "H5D")) {

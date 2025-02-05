@@ -56,7 +56,7 @@
 #' vector of the index of the datasets to be included for QC. Default
 #' \code{NULL} performs QC on all datasets.
 #' @param chunkSize Integer number of cells to include in a chunk when working
-#' on HDF5 based dataset. Default \code{1000}
+#' on HDF5 based dataset. Default \code{20000}
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param mito,ribo,hemo `r lifecycle::badge("deprecated")` Now will always
@@ -74,7 +74,7 @@ runGeneralQC <- function(
         pattern = NULL,
         overwrite = FALSE,
         useDatasets = NULL,
-        chunkSize = 1000,
+        chunkSize = getOption("ligerChunkSize", 2e4),
         verbose = getOption("ligerVerbose", TRUE),
         mito = NULL,
         ribo = NULL,
@@ -221,7 +221,8 @@ runGeneralQC <- function(
         } else {
             cli::cli_alert_info("No QC variable updated.")
         }
-        featureMeta(ld, check = FALSE)$nCell <- results$feature
+        featureMeta(ld, check = FALSE)$nCell <- results$feature$nCell
+        featureMeta(ld, check = FALSE)$means <- results$feature$means
         datasets(object, check = FALSE)[[d]] <- ld
         if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     }
@@ -243,7 +244,9 @@ runGeneralQC.DelayedH5 <- function(
     for (i in names(featureSubsets)) {
         cell[[i]] <- 0
     }
-    nCell <- rep(0, nrow(object))
+    feature <- data.frame(row.names = allFeatures)
+    feature$nCell <- rep(0, nrow(object))
+    feature$means <- rep(0, nrow(object))
     rowIndices <- lapply(featureSubsets, function(x) allFeatures %in% x)
 
     delayedRawData <- rawData(object)
@@ -251,7 +254,7 @@ runGeneralQC.DelayedH5 <- function(
     # Calculate in only one iteration
     H5Apply(
         delayedRawData,
-        init = list(cell = cell, feature = nCell),
+        init = list(cell = cell, feature = feature),
         useData = "rawData",
         chunkSize = chunkSize,
         verbose = verbose,
@@ -265,7 +268,9 @@ runGeneralQC.DelayedH5 <- function(
                     colSums(chunk[rowIndices[[fs]], , drop = FALSE]) / nUMI *
                     100
             }
-            values$feature <- values$feature + Matrix::rowSums(nonzero)
+            values$feature$nCell <- values$feature$nCell + Matrix::rowSums(nonzero)
+            chunk@x <- log1p(1e6*chunk@x/rep.int(nUMI, diff(chunk@p)))
+            values$feature$means <- values$feature$means + Matrix::rowSums(chunk) / ncol(object)
             return(values)
         }
     )
@@ -285,19 +290,19 @@ runGeneralQC.h5 <- function(
 ) {
     allFeatures <- rownames(object)
     # Initialize results
-    cell <- data.frame(row.names = colnames(object))
-    cell$nUMI <- 0
-    cell$nGene <- 0
+    cellDF <- data.frame(row.names = colnames(object))
+    cellDF$nUMI <- 0
+    cellDF$nGene <- 0
     for (i in names(featureSubsets)) {
-        cell[[i]] <- 0
+        cellDF[[i]] <- 0
     }
-    nCell <- rep(0, nrow(object))
     rowIndices <- lapply(featureSubsets, function(x) allFeatures %in% x)
-
+    featureDF <- data.frame(row.names = allFeatures)
+    featureDF$nCell <- rep(0, nrow(object))
     # Calculate in only one iteration
     H5Apply(
         object,
-        init = list(cell = cell, feature = nCell),
+        init = list(cell = cellDF, feature = featureDF),
         useData = "rawData",
         chunkSize = chunkSize,
         verbose = verbose,
@@ -311,7 +316,7 @@ runGeneralQC.h5 <- function(
                     colSums(chunk[rowIndices[[fs]], , drop = FALSE]) / nUMI *
                     100
             }
-            values$feature <- values$feature + Matrix::rowSums(nonzero)
+            values$feature$nCell <- values$feature$nCell + Matrix::rowSums(nonzero)
             return(values)
         }
     )
@@ -326,20 +331,14 @@ runGeneralQC.Matrix <- function(
         object,
         featureSubsets = NULL,
         verbose = getOption("ligerVerbose", TRUE)) {
-    nUMI <- Matrix::colSums(rawData(object))
-    # Instead of using `nonzero <- rawData > 0` which generates dense logical
-    # matrix, keep it sparse with 1 for TRUE
-    # nonzero <- rawData(object)
-    # nonzero@x <- rep(1, length(nonzero@x))
-    if (inherits(rawData(object), "dgCMatrix")) {
-        nonzero <- methods::as(rawData(object), "lMatrix")
-    } else {
-        nonzero <- rawData(object) > 0
-    }
+    raw <- rawData(object)
+    nUMI <- Matrix::colSums(raw)
+    # Directly converting to sparse logical matrix, where TRUE indicates nonzero
+    nonzero <- methods::as(raw, "lMatrix")
 
     nGene <- Matrix::colSums(nonzero)
     nCell <- Matrix::rowSums(nonzero)
-    results <- data.frame(nUMI = nUMI, nGene = nGene,
+    cellDF <- data.frame(nUMI = nUMI, nGene = nGene,
                           row.names = colnames(object))
     if (length(featureSubsets) > 0) {
         percentages <- lapply(featureSubsets, function(x) {
@@ -351,9 +350,12 @@ runGeneralQC.Matrix <- function(
                            colSums(rawData(object)) * 100)
             }
         })
-        results <- cbind(results, as.data.frame(percentages))
+        cellDF <- cbind(cellDF, as.data.frame(percentages))
     }
-    list(cell = results, feature = nCell)
+    raw@x <- log1p(1e6*raw@x/rep.int(nUMI, diff(raw@p)))
+    featureDF <- data.frame(nCell = nCell, means = Matrix::rowMeans(raw),
+                            row.names = rownames(object))
+    list(cell = cellDF, feature = featureDF)
 }
 
 #' Calculate proportion mitochondrial contribution
@@ -528,7 +530,7 @@ removeMissingObs <- function(
 
 ################################ Normalize #####################################
 
-#' Normalize raw counts data
+#' `r lifecycle::badge("deprecated")` Normalize raw counts data
 #' @description Perform library size normalization on raw counts input. As for
 #' the preprocessing step of iNMF integration, by default we don't multiply the
 #' normalized values with a scale factor, nor do we take the log transformation.
@@ -556,6 +558,13 @@ removeMissingObs <- function(
 #' @examples
 #' pbmc <- normalize(pbmc)
 normalize <- function(object, ...) {
+    lifecycle::deprecate_soft(
+        when = "2.1.0.9006",
+        what = "normalize()",
+        details = "Explicit call to `normalize()` is no longer necessary in
+        newer versions of rliger. Running `selectBatchHVG()` and then
+        `scaleNotCenter()` will keep the results consistent, while less
+        memory and storage will be used.")
     UseMethod("normalize", object)
 }
 
@@ -618,14 +627,15 @@ normalize.DelayedArray <- function(
         object,
         log = FALSE,
         scaleFactor = NULL,
-        chunk = 1000,
+        chunk = getOption("ligerChunkSize", 2e4),
         overwrite = FALSE,
         returnStats = FALSE,
         verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     stats <- list(
-        means = rep(0, nrow(object))
+        means = rep(0, nrow(object)),
+        rootMeanSq = rep(0, nrow(object))
     )
     rawH5Filename <- get_DelayedArray_filepath(object)
     newFilename <- gsub(".h5$", "_normData.h5", rawH5Filename)
@@ -640,7 +650,7 @@ normalize.DelayedArray <- function(
         cli::cli_alert_info("Writing normalized data to {.file {newFilename}}")
     }
     h5RawData <- hdf5r::H5File$new(rawH5Filename, mode = "r")
-    rawGroup <- get_DelayedArray_group(object)
+    rawGroup <- DelayedArray::seed(object)@group
 
     h5NormData <- hdf5r::H5File$new(newFilename, mode = "w")
     nnz <- h5RawData[[file.path(rawGroup, "data")]]$dims
@@ -653,23 +663,31 @@ normalize.DelayedArray <- function(
                  dims = lengthColptr, dtype = "int", chunkSize = 2048)
     safeH5Create(object = h5NormData, dataPath = "matrix/shape",
                  dims = 2, dtype = "int")
+    safeH5Create(object = h5NormData, dataPath = "matrix/barcodes",
+                 dims = ncol(object), dtype = "char")
+    safeH5Create(object = h5NormData, dataPath = "matrix/features/name",
+                 dims = nrow(object), dtype = "char")
     h5NormData[['matrix/shape']][1:2] <- h5RawData[[file.path(rawGroup, "shape")]][]
     h5NormData[['matrix/indices']][1:nnz] <- h5RawData[[file.path(rawGroup, "indices")]][]
     h5NormData[['matrix/indptr']][1:lengthColptr] <- h5RawData[[file.path(rawGroup, "indptr")]][]
+    h5NormData[['matrix/barcodes']][1:(lengthColptr - 1)] <- h5RawData[[file.path(rawGroup, "barcodes")]][]
+    h5NormData[['matrix/features/name']][1:nrow(object)] <- h5RawData[[file.path(rawGroup, "features/name")]][]
     h5RawData$close_all()
     # Chunk run
     stats <- H5Apply(
         object,
         function(chunk, sparseXIdx, cellIdx, values) {
             normChunk <- normalize(chunk)
+            values$rootMeanSq <- values$rootMeanSq + rowSums(normChunk * normChunk)/(ncol(object) - 1)
             h5NormData[['matrix/data']][sparseXIdx] <- normChunk@x
             normChunk <- log1p(normChunk * 1e6)
-            values$means <- values$means + rowSums(normChunk)
+            values$means <- values$means + rowSums(normChunk) / ncol(object)
+
             return(values)
         },
         init = stats, chunkSize = chunk, verbose = verbose
     )
-    stats$means <- stats$means / ncol(object)
+    stats$rootMeanSq <- sqrt(stats$rootMeanSq)
     # featureMeta(object, check = FALSE)$means <- stats$means
     h5NormData$close_all()
     norm <- HDF5Array::TENxMatrix(newFilename, group = "matrix")
@@ -684,13 +702,13 @@ normalize.DelayedArray <- function(
 #' @rdname normalize
 #' @export
 #' @param chunk Integer. Number of maximum number of cells in each chunk when
-#' working on HDF5 file based ligerDataset. Default \code{1000}.
+#' working on HDF5 file based ligerDataset. Default \code{20000}.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @method normalize ligerDataset
 normalize.ligerDataset <- function(
         object,
-        chunk = 1000,
+        chunk = getOption("ligerChunkSize", 2e4),
         verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
@@ -700,6 +718,7 @@ normalize.ligerDataset <- function(
         if (is.list(res)) {
             normData(object) <- res[[1]]
             featureMeta(object, check = FALSE)$means <- res[[2]]$means
+            featureMeta(object, check = FALSE)$rootMeanSq <- res[[2]]$rootMeanSq
         } else {
             normData(object) <- res
         }
@@ -768,8 +787,8 @@ normalize.liger <- function(
         ld <- dataset(object, d)
         ld <- normalize(ld, verbose = verbose, ...)
         datasets(object, check = FALSE)[[d]] <- ld
+        if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     }
-    if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     object
 }
 
@@ -892,7 +911,7 @@ selectGenes <- function(
 #' \code{useUnsharedDatasets} or a vector for dataset-specific setting.* Default
 #' \code{0.1}.
 #' @param chunk Integer. Number of maximum number of cells in each chunk, when
-#' gene selection is applied to any HDF5 based dataset. Default \code{1000}.
+#' gene selection is applied to any HDF5 based dataset. Default \code{20000}.
 #' @param var.thresh,alpha.thresh,num.genes,datasets.use,unshared.datasets,unshared.thresh \bold{Deprecated}.
 #' These arguments are renamed and will be removed in the future. Please see
 #' function usage for replacement.
@@ -910,7 +929,7 @@ selectGenes.liger <- function(
         useUnsharedDatasets = NULL,
         unsharedThresh = .1,
         combine = c("union", "intersection"),
-        chunk = 1000,
+        chunk = getOption("ligerChunkSize", 2e4),
         verbose = getOption("ligerVerbose", TRUE),
         var.thresh = thresh,
         alpha.thresh = alpha,
@@ -999,7 +1018,7 @@ selectGenes.liger <- function(
         unshared = FALSE,
         unsharedThresh = .1,
         alpha = .99,
-        chunk = 1000,
+        chunk = getOption("ligerChunkSize", 2e4),
         verbose = getOption("ligerVerbose", TRUE)
 ) {
     if (is.null(normData(object))) cli::cli_abort("Normalized data not available.")
@@ -1047,7 +1066,7 @@ selectGenes.liger <- function(
 #' Calculate Gene Variance for ligerDataset object
 #' @param object ligerDataset object
 #' @param chunkSize Integer for the maximum number of cells in each chunk.
-#' Default \code{1000}.
+#' Default \code{20000}.
 #' @param verbose Logical. Whether to show a progress bar. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @return The input \code{object} with calculated var updated in the H5 file.
@@ -1426,8 +1445,7 @@ selectGenesVST <- function(
 #' @export
 #' @rdname scaleNotCenter
 #' @examples
-#' pbmc <- normalize(pbmc)
-#' pbmc <- selectGenes(pbmc)
+#' pbmc <- selectBatchHVG(pbmc, n = 10)
 #' pbmc <- scaleNotCenter(pbmc)
 scaleNotCenter <- function(object, ...) {
     UseMethod("scaleNotCenter", object)
@@ -1439,10 +1457,15 @@ scaleNotCenter <- function(object, ...) {
 scaleNotCenter.dgCMatrix <- function(
         object,
         features,
+        scaleFactor = NULL,
         ...)
 {
     object <- object[features, , drop = FALSE]
     if (nrow(object) == 0) return(object)
+    if (!is.null(scaleFactor)) {
+        # This is when we don't want to "write" normalized data anywhere
+        object@x <- object@x / rep.int(scaleFactor, times = diff(object@p))
+    }
     scaled <- scaleNotCenter_byRow_rcpp(object)
     scaled@x[is.na(scaled@x)] <- 0 # Is this really happening?
     dimnames(scaled) <- dimnames(object)
@@ -1450,6 +1473,14 @@ scaleNotCenter.dgCMatrix <- function(
 }
 
 #' @export
+#' @param geneRootMeanSq Numeric vector of root-mean-square of unit-normalized
+#' expression for each gene. This is pre-calculated at the call of
+#' \code{\link{selectBatchHVG}} (stored at
+#' \code{featureMeta(dataset(object, "datasetName"))$rootMeanSq} and internally
+#' specified in S3 method chains, thus is generally not needed to be specified
+#' by users.
+#' @param chunk Integer. Number of maximum number of cells in each chunk, when
+#' scaling is applied to any HDF5 based dataset. Default \code{20000}.
 #' @param overwrite Logical. When writing newly computed HDF5 array to a
 #' separate HDF5 file, whether to overwrite the existing file. Default
 #' \code{FALSE} raises an error when the file already exists.
@@ -1458,11 +1489,15 @@ scaleNotCenter.dgCMatrix <- function(
 scaleNotCenter.DelayedArray <- function(
         object,
         features,
+        geneRootMeanSq = NULL,
         overwrite = FALSE,
-        chunk = 1000,
+        chunk = getOption("ligerChunkSize", 2e4),
         verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
+    if (is.null(geneRootMeanSq)) {
+        cli::cli_abort("Pre-calculated {.field geneRootMeanSq} (row-root-mean-square of unit-normalized expression) is required.")
+    }
     allFeatures <- rownames(object)
     if (length(features) == 0) return(object)
 
@@ -1483,32 +1518,18 @@ scaleNotCenter.DelayedArray <- function(
                  dims = c(length(features), ncol(object)),
                  dtype = "double", chunkSize = c(2048, 4096))
     # Chunk run
-    geneRootMeanSumSq <- numeric(length(features))
     if (is.character(features)) features <- match(features, allFeatures)
-    geneRootMeanSumSq <- H5Apply(
-        object,
-        function(chunk, sparseXIdx, cellIdx, values) {
-            chunk <- chunk[features, , drop = FALSE]
-            values <- values + rowVars_sparse_rcpp(
-                chunk,
-                rep(0, nrow(chunk)),
-                ncol = ncol(object)
-            )
-        },
-        init = geneRootMeanSumSq, chunkSize = chunk, verbose = verbose
-    )
-    geneRootMeanSumSq <- sqrt(geneRootMeanSumSq)
-
+    geneRootMeanSq <- geneRootMeanSq[features]
     H5Apply(
         object,
         function(chunk, sparseXIdx, cellIdx, values) {
             chunk <- chunk[features, , drop = FALSE]
-            chunk <- rowDivide_rcpp(chunk, geneRootMeanSumSq)
+            chunk <- rowDivide_rcpp(chunk, geneRootMeanSq)
             chunk <- as.matrix(chunk)
             chunk[is.na(chunk)] <- 0
             h5ScaleData[['data']][,cellIdx] <- chunk
         },
-        init = geneRootMeanSumSq, chunkSize = chunk, verbose = verbose
+        init = geneRootMeanSq, chunkSize = chunk, verbose = verbose
     )
     h5ScaleData$close_all()
     scale <- HDF5Array::HDF5Array(newFilename, name = "data", as.sparse = FALSE)
@@ -1525,29 +1546,39 @@ scaleNotCenter.DelayedArray <- function(
 #' \code{\link{varFeatures}(object)}. "ligerDataset" method by default uses all
 #' features. "Seurat" method by default uses
 #' \code{Seurat::VariableFeatures(object)}.
-#' @param chunk Integer. Number of maximum number of cells in each chunk, when
-#' scaling is applied to any HDF5 based dataset. Default \code{1000}.
+#' @param scaleFactor Numeric vector of scaling factor to normalize the raw
+#' counts to unit sum. This pre-calculated at liger object creation (stored as
+#' \code{object$nUMI} and internally specified in S3 method chains, thus is
+#' generally not needed to be specified by users.
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 scaleNotCenter.ligerDataset <- function(
         object,
         features = NULL,
-        chunk = 1000,
+        scaleFactor = NULL,
+        chunk = getOption("ligerChunkSize", 2e4),
         verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     features <- .idxCheck(object, features, "feature")
     unsharedIdx <- .idxCheck(object, object@varUnsharedFeatures, "feature")
+    geneRootMeanSq <- featureMeta(object)$rootMeanSq
+    mat <- if (is.null(scaleFactor)) normData(object) else rawData(object)
+    scaleFactor <- scaleFactor %||% rep(1, ncol(object))
     if (!isH5Liger(object)) {
         scaleData(object) <- scaleNotCenter(
-            normData(object),
+            mat,
             features,
+            scaleFactor = scaleFactor,
+            geneRootMeanSq = geneRootMeanSq,
             ...
         )
         if (length(unsharedIdx) > 0)
             scaleUnsharedData(object) <- scaleNotCenter(
-                normData(object),
+                mat,
                 unsharedIdx,
+                scaleFactor = scaleFactor,
+                geneRootMeanSq = geneRootMeanSq,
                 ...
             )
     } else {
@@ -1608,7 +1639,15 @@ scaleNotCenter.liger <- function(
     for (d in useDatasets) {
         if (isTRUE(verbose)) cliID <- cli::cli_process_start("Scaling dataset {.val {d}}")
         ld <- dataset(object, d)
-        ld <- scaleNotCenter(ld, features = features, verbose = verbose, ...)
+        scaleFactor <- NULL
+        if (is.null(normData(ld))) scaleFactor <- object$nUMI[object$dataset == d]
+        ld <- scaleNotCenter(
+            object = ld,
+            features = features,
+            scaleFactor = scaleFactor,
+            verbose = verbose,
+            ...
+        )
         datasets(object, check = FALSE)[[d]] <- ld
         if (isTRUE(verbose)) cli::cli_process_done(id = cliID)
     }
@@ -1675,7 +1714,7 @@ scaleNotCenter.Seurat <- function(
     features <- rownames(ld)[featureIdx]
     geneSumSq <- featureMeta(ld)$geneSumSq[featureIdx]
     nCells <- ncol(ld)
-    geneRootMeanSumSq = sqrt(geneSumSq / (nCells - 1))
+    geneRootMeanSq = sqrt(geneSumSq / (nCells - 1))
     h5file <- getH5File(ld)
     # Count the subset nnz first before creating data space
     nnz <- 0
@@ -1709,7 +1748,7 @@ scaleNotCenter.Seurat <- function(
             # Subset variable features
             chunk <- chunk[featureIdx, , drop = FALSE]
             # Calculate scale not center
-            chunk <- rowDivide_rcpp(chunk, geneRootMeanSumSq)
+            chunk <- rowDivide_rcpp(chunk, geneRootMeanSq)
             chunk@x[is.na(chunk@x)] = 0
             # Write
             nnzRange <- seq(from = values[1], length.out = length(chunk@i))

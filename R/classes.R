@@ -1,3 +1,8 @@
+#' @importClassesFrom Matrix dgCMatrix dgTMatrix dgeMatrix
+#' @importClassesFrom DelayedArray DelayedArray
+#' @importClassesFrom HDF5Array HDF5Array
+NULL
+
 setClassUnion("dgCMatrix_OR_NULL", c("dgCMatrix", "NULL"))
 setClassUnion("matrix_OR_NULL", c("matrix", "NULL"))
 setClassUnion("matrixLike", c("matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix", "DelayedArray"))
@@ -11,9 +16,7 @@ setClassUnion("index",
 setClassUnion("Number_or_NULL", c("integer", "numeric", "NULL"))
 setClassUnion("dataframe", c("data.frame", "DataFrame", "NULL", "missing"))
 setClassUnion("missing_OR_NULL", c("missing", "NULL"))
-setOldClass("H5Group")
-#' @importClassesFrom Matrix dgCMatrix dgTMatrix dgeMatrix
-NULL
+# setOldClass("H5Group")
 
 
 #' ligerDataset class

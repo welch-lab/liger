@@ -26,8 +26,9 @@
 #' log-1p transformed from CPM normalized counts in cell per column orientation.
 #' @param nGenes Integer number of target genes to select. Default \code{2000}.
 #' @param features For ligerDataset method, the feature subset to limit the
-#' selection to, due to liger downstream requires non-zero features to be
-#' considered. Default \code{NULL} selects from all features.
+#' selection to, mainly for limiting the selection to happen within the shared
+#' genes of all datasets. Default \code{NULL} selects from all features in the
+#' ligerDataset object.
 #' @param verbose Logical. Whether to show a progress bar. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @param returnStats Logical, for dgCMatrix-method, whether to return a data
@@ -49,7 +50,6 @@
 #' }
 #' @export
 #' @examples
-#' pbmc <- normalize(pbmc)
 #' pbmc <- selectBatchHVG(pbmc, nGenes = 10)
 #' varFeatures(pbmc)
 selectBatchHVG <- function(
@@ -70,29 +70,28 @@ selectBatchHVG.liger <- function(
 ) {
     object <- recordCommand(object, ...)
     sharedFeature <- Reduce(intersect, lapply(datasets(object), rownames))
-    hvgDFList <- list()
+    mean_disp_norm <- numeric(length(sharedFeature))
+    sum_is_hvg <- integer(length(sharedFeature))
     for (d in names(object)) {
         if (isTRUE(verbose))
             cli::cli_alert_info("Selecting variable features for dataset {.val {d}}")
         ld <- dataset(object, d)
+        scaleFactor <- object$nUMI[object$dataset == d]
         ld <- selectBatchHVG(ld, nGenes = nGenes, features = sharedFeature,
-                             verbose = verbose, ...)
+                             scaleFactor = scaleFactor, verbose = verbose, ...)
         object@datasets[[d]] <- ld
         fm <- featureMeta(ld)[sharedFeature, , drop = FALSE]
-        fm$dataset <- d
-        fm$feature <- rownames(fm)
-        hvgDFList[[d]] <- as.data.frame(fm)
+
+        mean_disp_norm <- mean_disp_norm + fm$dispersion_norm
+        sum_is_hvg <- sum_is_hvg + fm$highly_variable
     }
-    hvgDFAgg <- Reduce(rbind, hvgDFList)
-    hvgDFAgg <- hvgDFAgg %>%
-        dplyr::mutate(feature = factor(.data[['feature']], levels = sharedFeature)) %>%
-        dplyr::group_by(.data[['feature']]) %>%
-        dplyr::summarise(
-            means = mean(.data[['means']]),
-            dispersion = mean(.data[['dispersion']]),
-            dispersion_norm = mean(.data[['dispersion_norm']]),
-            n_batch = sum(.data[['highly_variable']])
-        )
+    mean_disp_norm <- mean_disp_norm / length(object)
+
+    hvgDFAgg <- data.frame(
+        feature = sharedFeature,
+        dispersion_norm = mean_disp_norm,
+        n_batch = sum_is_hvg
+    )
     res <- character()
     enough <- FALSE
     nSelected <- 0
@@ -135,25 +134,29 @@ selectBatchHVG.liger <- function(
 
 #' @export
 #' @method selectBatchHVG ligerDataset
+#' @param scaleFactor Numeric vector of scaling factor to normalize the raw
+#' counts to unit sum. This pre-calculated at liger object creation (stored as
+#' \code{object$nUMI} and internally specified in S3 method chains, thus is
+#' generally not needed to be specified by users.
 #' @rdname selectBatchHVG
 selectBatchHVG.ligerDataset <- function(
         object,
         nGenes = 2000,
         features = NULL,
+        scaleFactor = NULL,
         verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     features <- .idxCheck(object, features, orient = "feature")
-    mat <- normData(object)
-    mat <- log1p(mat*1e6)
+    mat <- rawData(object)
     fm <- featureMeta(object)
     idx <- rep(FALSE, nrow(object))
     idx[features] <- TRUE
-    # idx <- idx & (fm$nCell > 0)
     mat <- mat[idx, , drop = FALSE]
     stats <- selectBatchHVG(mat, nGenes = nGenes, verbose = verbose,
                             returnStats = TRUE,
                             means = featureMeta(object)$means[idx],
+                            scaleFactor = scaleFactor,
                             ...)
     fm$means <- 0
     fm$vars <- 0
@@ -161,6 +164,9 @@ selectBatchHVG.ligerDataset <- function(
     fm$dispersion_norm <- 0
     fm$highly_variable <- FALSE
     fm[stats$feature, "means"] <- stats$means
+    if ("geneRootMeanSq" %in% colnames(stats)) {
+        fm[stats$feature, "rootMeanSq"] <- stats$geneRootMeanSq
+    }
     fm[stats$feature, "dispersion"] <- stats$dispersion
     fm[stats$feature, "dispersion_norm"] <- stats$dispersion_norm
     fm[stats$feature, "highly_variable"] <- stats$highly_variable
@@ -176,12 +182,16 @@ selectBatchHVG.dgCMatrix <- function(
         object,
         nGenes = 2000,
         returnStats = FALSE,
+        scaleFactor = NULL,
         verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
     # Get mean and var
     idx <- Matrix::rowSums(object > 0) > 0
     object <- object[idx, , drop = FALSE]
+    if (!is.null(scaleFactor)) {
+        object@x <- log1p(1e6*object@x/rep.int(scaleFactor, times = diff(object@p)))
+    }
     means <- Matrix::rowMeans(object)
     vars <- rowVars_sparse_rcpp(object, means, ncol(object))
     stats <- .selectBatchHVG.by.metric(
@@ -204,9 +214,7 @@ selectBatchHVG.dgCMatrix <- function(
 #' @export
 #' @method selectBatchHVG DelayedArray
 #' @param means Numeric vector of pre-calculated means per gene, derived from
-#' log1p CPM normalized expression. Only used in LIGER's internal workflow.
-#' Default \code{NULL} assumes users are running the function on a DelayedArray
-#' directly and use DelayedArray implementation to calculate statistics.
+#' log1p CPM normalized expression.
 #' @param chunk Integer. Number of maximum number of cells in each chunk when
 #' working on HDF5Array Default \code{1000}.
 #' @rdname selectBatchHVG
@@ -214,46 +222,49 @@ selectBatchHVG.DelayedArray <- function(
         object,
         nGenes = 2000,
         means = NULL,
+        scaleFactor = NULL,
         returnStats = FALSE,
         chunk = 1000,
         verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {
-    if (!is.null(means)) {
-        # When means are pre-calculated, assume doing LIGER internal workflow
-        # otherwise, generally do selection as if users are simply giving a
-        # DelayedArray without context.
-        rowIdx <- means > 0
-        vars <- numeric(sum(rowIdx))
-        means <- means[rowIdx]
-        vars <- H5Apply(
-            object,
-            function(chunk, sparseXIdx, cellIdx, values) {
-                chunk <- chunk[rowIdx, , drop = FALSE]
-                chunk <- log1p(chunk*1e6)
-                # See C++ source code comments for explanation on how this works
-                values <- values + rowVars_sparse_rcpp(chunk, means, ncol(object))
-                return(values)
-            }, init = vars, chunkSize = chunk, verbose = verbose
-        )
-        feature <- rownames(object)[rowIdx]
-    } else {
-        if (!requireNamespace("DelayedMatrixStats", quietly = TRUE))
-            stop("DelayedMatrixStats is required for DelayedArray method.")
-        rowIdx <- DelayedMatrixStats::rowSums2(object > 0) > 0
-        object <- object[rowIdx, , drop = FALSE]
-        means <- Matrix::rowMeans(object)
-        vars <- DelayedMatrixStats::rowVars(object)
-        feature <- rownames(object)
+    if (is.null(means)) {
+        cli::cli_abort("Pre-calculated {.field means} (row-means of log1p CPM normalized expression) is required.")
     }
+    if (is.null(scaleFactor)) {
+        cli::cli_abort("Pre-calculated {.field scaleFactor} (column-sums of raw counts) is required.")
+    }
+    rowIdx <- means > 0
+    prestats <- data.frame(
+        vars = numeric(sum(rowIdx)),
+        geneRootMeanSq = numeric(sum(rowIdx))
+    )
+    # vars <- numeric(sum(rowIdx))
+    means <- means[rowIdx]
+    prestats <- H5Apply(
+        object,
+        function(chunk, sparseXIdx, cellIdx, values) {
+            chunk <- chunk[rowIdx, , drop = FALSE]
+            chunk@x <- chunk@x/rep.int(scaleFactor[cellIdx], times = diff(chunk@p))
+            values$geneRootMeanSq <- values$geneRootMeanSq +
+                rowVars_sparse_rcpp(chunk, rep(0, length(means)), ncol(object))
+            chunk <- log1p(chunk*1e6)
+            # See C++ source code comments for explanation on how this works
+            values$vars <- values$vars + rowVars_sparse_rcpp(chunk, means, ncol(object))
+            return(values)
+        }, init = prestats, chunkSize = chunk, verbose = verbose
+    )
+    prestats$geneRootMeanSq <- sqrt(prestats$geneRootMeanSq)
+    feature <- rownames(object)[rowIdx]
 
     stats <- .selectBatchHVG.by.metric(
         feature = feature,
         means = means,
-        vars = vars,
+        vars = prestats$vars,
         nGenes = nGenes,
         verbose = verbose
     )
+    stats$geneRootMeanSq <- prestats$geneRootMeanSq
     if (isTRUE(returnStats)) {
         return(stats)
     } else {

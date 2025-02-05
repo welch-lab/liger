@@ -3,8 +3,6 @@
 #' @importFrom rlang .data %||%
 #' @importFrom methods new show
 #' @importFrom utils .DollarNames
-#' @importClassesFrom DelayedArray DelayedArray
-#' @importClassesFrom HDF5Array HDF5Array
 #' @useDynLib rliger, .registration = TRUE
 NULL
 
@@ -41,7 +39,8 @@ scPalette <- c('#E41A1C', '#377EB8', '#4DAF4A', '#FFCF00', '#aa47b9', '#e67c14',
 .ligerOptions <- list(
     ligerBaseSize = 10,
     ligerVerbose = TRUE,
-    ligerDotSize = 1
+    ligerDotSize = 1,
+    ligerChunkSize = 2e4
 )
 
 .onLoad <- function(libname, pkgname) {

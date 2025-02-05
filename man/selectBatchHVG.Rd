@@ -21,6 +21,7 @@ selectBatchHVG(object, ...)
   object,
   nGenes = 2000,
   features = NULL,
+  scaleFactor = NULL,
   verbose = getOption("ligerVerbose", TRUE),
   ...
 )
@@ -29,6 +30,7 @@ selectBatchHVG(object, ...)
   object,
   nGenes = 2000,
   returnStats = FALSE,
+  scaleFactor = NULL,
   verbose = getOption("ligerVerbose", TRUE),
   ...
 )
@@ -37,6 +39,7 @@ selectBatchHVG(object, ...)
   object,
   nGenes = 2000,
   means = NULL,
+  scaleFactor = NULL,
   returnStats = FALSE,
   chunk = 1000,
   verbose = getOption("ligerVerbose", TRUE),
@@ -57,17 +60,21 @@ log-1p transformed from CPM normalized counts in cell per column orientation.}
 \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.}
 
 \item{features}{For ligerDataset method, the feature subset to limit the
-selection to, due to liger downstream requires non-zero features to be
-considered. Default \code{NULL} selects from all features.}
+selection to, mainly for limiting the selection to happen within the shared
+genes of all datasets. Default \code{NULL} selects from all features in the
+ligerDataset object.}
+
+\item{scaleFactor}{Numeric vector of scaling factor to normalize the raw
+counts to unit sum. This pre-calculated at liger object creation (stored as
+\code{object$nUMI} and internally specified in S3 method chains, thus is
+generally not needed to be specified by users.}
 
 \item{returnStats}{Logical, for dgCMatrix-method, whether to return a data
 frame of statistics for all features, or by default \code{FALSE} just return
 a character vector of selected features.}
 
 \item{means}{Numeric vector of pre-calculated means per gene, derived from
-log1p CPM normalized expression. Only used in LIGER's internal workflow.
-Default \code{NULL} assumes users are running the function on a DelayedArray
-directly and use DelayedArray implementation to calculate statistics.}
+log1p CPM normalized expression.}
 
 \item{chunk}{Integer. Number of maximum number of cells in each chunk when
 working on HDF5Array Default \code{1000}.}
@@ -103,7 +110,6 @@ For selection from only part of the datasets and selection for
 dataset-specific unshared features, please use \code{\link{selectGenes}()}.
 }
 \examples{
-pbmc <- normalize(pbmc)
 pbmc <- selectBatchHVG(pbmc, nGenes = 10)
 varFeatures(pbmc)
 }
