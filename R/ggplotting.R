@@ -758,7 +758,7 @@ plotCellViolin <- function(
     for (a in names(guide)) {
         varName <- rlang::as_label(plot$mapping[[a]])
         if (varName == "NULL") next
-        if (is.factor(plot$data[[varName]])) {
+        if (is.factor(plot$data[[varName]]) || is.logical(plot$data[[varName]])) {
             # Categorical setting
             guideFunc[[a]] <- ggplot2::guide_legend
             # Set dot size in legend

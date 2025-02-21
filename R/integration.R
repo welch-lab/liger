@@ -391,7 +391,8 @@ runINMF.Seurat <- function(
     features <- Reduce(.same, allFeatures)
 
     if (inherits(object[[1]], "DelayedArray")) {
-        object <- lapply(object, as.H5Mat.DelayedArray)
+        object <- lapply(object, as.H5SpMat.DelayedArray)
+        # object <- lapply(object, as.H5Mat.DelayedArray)
     }
 
     if (min(lengths(barcodeList)) < k) {
@@ -438,6 +439,19 @@ as.H5Mat.DelayedArray <- function(x) {
     filename <- get_DelayedArray_filepath(x)
     group <- get_DelayedArray_group(x)
     RcppPlanc::H5Mat(filename = filename, dataPath = group)
+}
+
+as.H5SpMat.DelayedArray <- function(x) {
+    filename <- get_DelayedArray_filepath(x)
+    group <- get_DelayedArray_group(x)
+    RcppPlanc::H5SpMat(
+        filename = filename,
+        valuePath = file.path(group, "data"),
+        rowindPath = file.path(group, "indices"),
+        colptrPath = file.path(group, "indptr"),
+        nrow = nrow(x),
+        ncol = ncol(x)
+    )
 }
 
 #' `r lifecycle::badge("deprecated")` Perform iNMF on scaled datasets

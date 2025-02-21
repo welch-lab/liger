@@ -1489,6 +1489,7 @@ scaleNotCenter.dgCMatrix <- function(
 scaleNotCenter.DelayedArray <- function(
         object,
         features,
+        scaleFactor = NULL,
         geneRootMeanSq = NULL,
         overwrite = FALSE,
         chunk = getOption("ligerChunkSize", 2e4),
@@ -1502,6 +1503,7 @@ scaleNotCenter.DelayedArray <- function(
     if (length(features) == 0) return(object)
 
     rawH5Filename <- get_DelayedArray_filepath(object)
+    h5groupName <- get_DelayedArray_group(object)
     newFilename <- gsub(".h5$", "_scaleData.h5", rawH5Filename)
     if (isTRUE(overwrite)) {
         if (file.exists(newFilename)) file.remove(newFilename)
@@ -1514,27 +1516,95 @@ scaleNotCenter.DelayedArray <- function(
         cli::cli_alert_info("Writing scaled data to {.file {newFilename}}")
     }
     h5ScaleData <- hdf5r::H5File$new(newFilename, mode = "w")
-    safeH5Create(object = h5ScaleData, dataPath = "data",
-                 dims = c(length(features), ncol(object)),
-                 dtype = "double", chunkSize = c(2048, 4096))
-    # Chunk run
-    if (is.character(features)) features <- match(features, allFeatures)
+
+
+
+    # To H5 Sparse version
     geneRootMeanSq <- geneRootMeanSq[features]
-    H5Apply(
-        object,
+    nCells <- ncol(object)
+    # Count the subset nnz first before creating data space
+    nnz <- 0
+    nnz <- H5Apply(
+        object = object,
         function(chunk, sparseXIdx, cellIdx, values) {
             chunk <- chunk[features, , drop = FALSE]
-            chunk <- rowDivide_rcpp(chunk, geneRootMeanSq)
-            chunk <- as.matrix(chunk)
-            chunk[is.na(chunk)] <- 0
-            h5ScaleData[['data']][,cellIdx] <- chunk
+            values <- values + length(chunk@x)
         },
-        init = geneRootMeanSq, chunkSize = chunk, verbose = verbose
+        init = nnz, chunkSize = chunk, verbose = verbose
     )
+    # Create datasets
+    dataPath <- file.path(h5groupName, "/data")
+    rowindPath <- file.path(h5groupName, "/indices")
+    colptrPath <- file.path(h5groupName, "/indptr")
+    shapePath <- file.path(h5groupName, "/shape")
+    safeH5Create(h5ScaleData, dataPath = dataPath, dims = nnz,
+                 dtype = "double", chunkSize = 2048)
+    safeH5Create(h5ScaleData, dataPath = rowindPath, dims = nnz,
+                 dtype = "int", chunkSize = 2048)
+    safeH5Create(h5ScaleData, dataPath = colptrPath, dims = nCells + 1,
+                 dtype = "int", chunkSize = 1024)
+    safeH5Create(h5ScaleData, dataPath = shapePath, dims = 2,
+                 dtype = "int", chunkSize = 2)
+    # Process chunks of sparse normData, and write to sparse scaleData
+    h5ScaleData[[colptrPath]][1] <- 0
+    h5ScaleData[[shapePath]][1:2] <- c(length(features), nCells)
+    H5Apply(
+        object,
+        init = c(1, 0), # [1] record of nnz idx start [2] record of last colptr
+        chunkSize = chunk,
+        verbose = verbose,
+        FUN = function(chunk, sparseXIdx, cellIdx, values) {
+            # Subset variable features
+            chunk <- chunk[features, , drop = FALSE]
+            # Calculate scale not center
+            if (!is.null(scaleFactor)) {
+                chunk@x <- chunk@x / rep.int(scaleFactor, times = diff(chunk@p))
+            }
+            chunk <- rowDivide_rcpp(chunk, geneRootMeanSq)
+            chunk@x[is.na(chunk@x)] = 0
+            # Write
+            nnzRange <- seq(from = values[1], length.out = length(chunk@i))
+            h5ScaleData[[rowindPath]][nnzRange] <- chunk@i
+            h5ScaleData[[dataPath]][nnzRange] <- chunk@x
+            values[1] <- values[1] + length(nnzRange)
+            increColptr <- chunk@p + values[2]
+            h5ScaleData[[colptrPath]][cellIdx + 1] =
+                increColptr[seq(2, length(increColptr))]
+            values[2] <- increColptr[length(increColptr)]
+            return(values)
+        }
+    )
+
     h5ScaleData$close_all()
-    scale <- HDF5Array::HDF5Array(newFilename, name = "data", as.sparse = FALSE)
+    scale <- HDF5Array::TENxMatrix(newFilename, group = h5groupName)
     colnames(scale) <- colnames(object)
     rownames(scale) <- allFeatures[features]
+
+
+
+    # To H5 Dense version
+
+    # safeH5Create(object = h5ScaleData, dataPath = "data",
+    #              dims = c(length(features), ncol(object)),
+    #              dtype = "double", chunkSize = c(2048, 4096))
+    # # Chunk run
+    # if (is.character(features)) features <- match(features, allFeatures)
+    # geneRootMeanSq <- geneRootMeanSq[features]
+    # H5Apply(
+    #     object,
+    #     function(chunk, sparseXIdx, cellIdx, values) {
+    #         chunk <- chunk[features, , drop = FALSE]
+    #         chunk <- rowDivide_rcpp(chunk, geneRootMeanSq)
+    #         chunk <- as.matrix(chunk)
+    #         chunk[is.na(chunk)] <- 0
+    #         h5ScaleData[['data']][,cellIdx] <- chunk
+    #     },
+    #     init = geneRootMeanSq, chunkSize = chunk, verbose = verbose
+    # )
+    # h5ScaleData$close_all()
+    # scale <- HDF5Array::HDF5Array(newFilename, name = "data", as.sparse = FALSE)
+    # colnames(scale) <- colnames(object)
+    # rownames(scale) <- allFeatures[features]
     return(scale)
 }
 
