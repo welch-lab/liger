@@ -229,9 +229,9 @@ createLigerDataset <- function(
     args <- as.list(environment())
     additional <- list(...)
     # Necessary initialization of slots
-    if (is.null(rawData) && is.null(normData)) {
-        cli::cli_abort("At least one of {.field rawData} or {.field normData} has to be provided.")
-    }
+    # if (is.null(rawData) && is.null(normData)) {
+    #     cli::cli_abort("At least one of {.field rawData} or {.field normData} has to be provided.")
+    # }
     # Look for proper colnames and rownames
     cn <- NULL
     rn <- NULL

@@ -8,6 +8,10 @@ setClassUnion("matrix_OR_NULL", c("matrix", "NULL"))
 setClassUnion("matrixLike", c("matrix", "dgCMatrix", "dgTMatrix", "dgeMatrix", "DelayedArray"))
 setClassUnion("matrixLike_OR_NULL", c("matrixLike", "NULL"))
 setClassUnion("character_OR_NULL", c("character", "NULL"))
+# It is quite hard to handle "H5D here, which is indeed defined as an R6 class.
+# I'm not sure if this is a proper solution
+# setOldClass("H5D")
+# setOldClass("H5Group")
 # suppressWarnings(setClassUnion("dgCMatrix_OR_H5D_OR_NULL", c("dgCMatrix", "H5D", "NULL")))
 # setClassUnion("matrix_OR_H5D_OR_NULL", c("matrix", "H5D", "NULL"))
 # setClassUnion("matrixLike_OR_H5D_OR_H5Group_OR_NULL", c("matrixLike", "H5D", "H5Group", "NULL"))
@@ -57,10 +61,6 @@ ligerDataset <- setClass(
         normData = "ANY",
         scaleData = "ANY",
         scaleUnsharedData = "ANY",
-        # rawData = "dgCMatrix_OR_H5D_OR_NULL",
-        # normData = "dgCMatrix_OR_H5D_OR_NULL",
-        # scaleData = "matrixLike_OR_H5D_OR_H5Group_OR_NULL",
-        # scaleUnsharedData = "matrixLike_OR_H5D_OR_H5Group_OR_NULL",
         varUnsharedFeatures = "character",
         H = "matrix_OR_NULL",
         V = "matrix_OR_NULL",

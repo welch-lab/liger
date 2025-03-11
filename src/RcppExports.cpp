@@ -267,6 +267,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// objErr_i
+double objErr_i(const arma::mat& H, const arma::mat& W, const arma::mat& V, const arma::sp_mat& E, const double& lambda);
+RcppExport SEXP _rliger_objErr_i(SEXP HSEXP, SEXP WSEXP, SEXP VSEXP, SEXP ESEXP, SEXP lambdaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type H(HSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type W(WSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type V(VSEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type E(ESEXP);
+    Rcpp::traits::input_parameter< const double& >::type lambda(lambdaSEXP);
+    rcpp_result_gen = Rcpp::wrap(objErr_i(H, W, V, E, lambda));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cluster_vote_rcpp
 IntegerVector cluster_vote_rcpp(const arma::mat& nn_ranked, IntegerVector clusts);
 RcppExport SEXP _rliger_cluster_vote_rcpp(SEXP nn_rankedSEXP, SEXP clustsSEXP) {
@@ -419,6 +434,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rliger_updatePseudoBulkRcpp", (DL_FUNC) &_rliger_updatePseudoBulkRcpp, 4},
     {"_rliger_updateNCellExprRcpp", (DL_FUNC) &_rliger_updateNCellExprRcpp, 4},
     {"_rliger_makeFeatureMatrix", (DL_FUNC) &_rliger_makeFeatureMatrix, 2},
+    {"_rliger_objErr_i", (DL_FUNC) &_rliger_objErr_i, 5},
     {"_rliger_cluster_vote_rcpp", (DL_FUNC) &_rliger_cluster_vote_rcpp, 2},
     {"_rliger_max_factor_rcpp", (DL_FUNC) &_rliger_max_factor_rcpp, 3},
     {"_rliger_ComputeSNN", (DL_FUNC) &_rliger_ComputeSNN, 2},
