@@ -404,7 +404,7 @@ runCINMF.Seurat <- function(
     #     Vs[[i]] <- inmf_solveV(Hs[[i]], W, NULL, object[[i]], lambda, nCores = nCores)
     # }
     objErr <- sum(sapply(seq_along(object), function(i)
-        inmf_objErr_i(H = Hs[[i]], W = W, V = Vs[[i]], E = object[[i]],
+        objErr_i(H = t(Hs[[i]]), W = W, V = Vs[[i]], E = object[[i]],
                       lambda = lambda)
     ))
     if (isTRUE(verbose))
@@ -502,28 +502,29 @@ inmf_solveW <- function(Hs, W, Vs, Es, lambda, nCores = 2L) {
     return(t(W))
 }
 
-inmf_objErr_i <- function(H, W, V, E, lambda) {
-    # Objective error function was originally stated as:
-    # obj_i = ||E_i - (W + V_i)*H_i||_F^2 + lambda * ||V_i*H_i||_F^2
-    # (Use caution with the matrix dimensionality, as we might transpose them
-    # occasionally in different implementation.)
-    #
-    # Let L = W + V
-    # ||E - LH||_F^2 = ||E||_F^2 - 2*Tr(Ht*(Et*L)) + Tr((Lt*L)*(Ht*H))
-    # ||V*H||_F^2 = Tr((Vt*V)*(Ht*H))
-    # This improves the performance in both speed and memory usage.
-    L <- W + V
-    sqnormE <- Matrix::norm(E, "F")^2
-    LtL <- t(L) %*% L
-    HtH <- t(H) %*% H
-    TrLtLHtH <- sum(diag(LtL %*% HtH))
-    EtL <- t(E) %*% L
-    TrHtEtL <- sum(Matrix::diag(t(H) %*% EtL))
-    VtV <- t(V) %*% V
-    TrVtVHtH <- sum(diag(VtV %*% HtH))
-    obj <- sqnormE - 2 * TrHtEtL + TrLtLHtH + lambda * TrVtVHtH
-    return(obj)
-}
+# Use Rcpp implementation `objErr_i` for better performance
+# inmf_objErr_i <- function(H, W, V, E, lambda) {
+#     # Objective error function was originally stated as:
+#     # obj_i = ||E_i - (W + V_i)*H_i||_F^2 + lambda * ||V_i*H_i||_F^2
+#     # (Use caution with the matrix dimensionality, as we might transpose them
+#     # occasionally in different implementation.)
+#     #
+#     # Let L = W + V
+#     # ||E - LH||_F^2 = ||E||_F^2 - 2*Tr(Ht*(Et*L)) + Tr((Lt*L)*(Ht*H))
+#     # ||V*H||_F^2 = Tr((Vt*V)*(Ht*H))
+#     # This improves the performance in both speed and memory usage.
+#     L <- W + V
+#     sqnormE <- Matrix::norm(E, "F")^2
+#     LtL <- t(L) %*% L
+#     HtH <- t(H) %*% H
+#     TrLtLHtH <- sum(diag(LtL %*% HtH))
+#     EtL <- t(E) %*% L
+#     TrHtEtL <- sum(Matrix::diag(t(H) %*% EtL))
+#     VtV <- t(V) %*% V
+#     TrVtVHtH <- sum(diag(VtV %*% HtH))
+#     obj <- sqnormE - 2 * TrHtEtL + TrLtLHtH + lambda * TrVtVHtH
+#     return(obj)
+# }
 
 factor_cluster_sel <- function(geneLoadings, nNeighbor = 3, minWeight = 0.6,
                                k = 20, resolution = 0.2) {

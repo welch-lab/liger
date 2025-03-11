@@ -95,6 +95,10 @@ makeFeatureMatrix <- function(bedmat, barcodes) {
     .Call(`_rliger_makeFeatureMatrix`, bedmat, barcodes)
 }
 
+objErr_i <- function(H, W, V, E, lambda) {
+    .Call(`_rliger_objErr_i`, H, W, V, E, lambda)
+}
+
 cluster_vote_rcpp <- function(nn_ranked, clusts) {
     .Call(`_rliger_cluster_vote_rcpp`, nn_ranked, clusts)
 }
