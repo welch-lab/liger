@@ -92,11 +92,17 @@ setMethod(
     signature(object = "liger"),
     definition = function(object) {
         .checkObjVersion(object)
-        cat("An object of class liger with", ncol(object), "cells\n")
+        cat("An object of class liger with",
+            format(ncol(object), big.mark = ','),
+            "cells\n")
         cat(paste0("datasets(", length(object), "): "))
-        datasetInfos <- paste0(names(object), " (",
-                               unlist(lapply(datasets(object), ncol)),
-                               " cells)")
+        datasetInfos <- paste0(
+            names(object), " (",
+            unlist(lapply(datasets(object), function(ld) {
+                format(ncol(ld), big.mark = ',')
+            })),
+            " cells)"
+        )
         cat(.collapseLongNames(datasetInfos), "\n")
         cat(paste0("cellMeta(", ncol(cellMeta(object)), "): "))
         cat(.collapseLongNames(colnames(cellMeta(object))), "\n")

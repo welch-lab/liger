@@ -225,6 +225,10 @@ plotDimRed <- function(
     set.seed(seed)
     raster <- .checkRaster(nrow(plotDF), raster)
     if (!is.null(colorBy)) {
+        if (is.character(plotDF[[colorBy]]) ||
+            is.logical(plotDF[[colorBy]])) {
+            plotDF[[colorBy]] <- factor(plotDF[[colorBy]])
+        }
         if (dotOrder == "shuffle") {
             # Always put NA at bottom layer, i.e. plot them first
             isNA <- which(is.na(plotDF[[colorBy]]))
@@ -238,7 +242,9 @@ plotDimRed <- function(
             plotDF <- plotDF[order(plotDF[[colorBy]], decreasing = TRUE,
                                    na.last = FALSE),]
         }
-        if (!is.factor(plotDF[[colorBy]])) {
+        if (!is.factor(plotDF[[colorBy]]) &&
+            !is.character(plotDF[[colorBy]]) &&
+            !is.logical(plotDF[[colorBy]])) {
             if (!is.null(trimHigh))
                 plotDF[[colorBy]][plotDF[[colorBy]] > trimHigh] <- trimHigh
             if (!is.null(trimLow))
@@ -758,33 +764,47 @@ plotCellViolin <- function(
     for (a in names(guide)) {
         varName <- rlang::as_label(plot$mapping[[a]])
         if (varName == "NULL") next
-        if (is.factor(plot$data[[varName]]) || is.logical(plot$data[[varName]])) {
+        if (is.factor(plot$data[[varName]]) ||
+            is.logical(plot$data[[varName]]) ||
+            is.character(plot$data[[varName]])) {
             # Categorical setting
             guideFunc[[a]] <- ggplot2::guide_legend
             # Set dot size in legend
             guide[[a]]$override.aes <- list(size = legendDotSize)
+            nCategory <- switch(
+                EXPR = class(plot$data[[varName]]),
+                factor = nlevels(plot$data[[varName]]),
+                logical = 2,
+                character = length(unique(plot$data[[varName]]))
+            )
             # Set nrow/ncol to arrange the legend categories
             if (is.null(legendNRow) & is.null(legendNCol)) {
                 # When nothing set, ggplot automatically makes it one
                 # column, which might be too long, so I add a auto-
                 # arrangement to limit max nrow to 10 but still evenly
                 # distribute the columns.
-                nCategory <- length(levels(plot$data[[varName]]))
+                # nCategory <- length(levels(plot$data[[varName]]))
                 if (nCategory > 15)
                     legendNCol <- ceiling(nCategory/15)
             }
             guide[[a]]$nrow <- legendNRow
             guide[[a]]$ncol <- legendNCol
             if (is.null(colorLabels)) {
-                colorLabels <- levels(plot$data[[varName]])
+                colorLabels <- switch(
+                    EXPR = class(plot$data[[varName]]),
+                    factor = levels(plot$data[[varName]]),
+                    logical = c("FALSE", "TRUE"),
+                    character = unique(plot$data[[varName]])
+                )
+                # colorLabels <- levels(plot$data[[varName]])
             }
             if (is.null(colorValues)) {
-                if (nlevels(plot$data[[varName]]) <= length(scPalette))
-                    colorValues <- scPalette[seq_len(nlevels(plot$data[[varName]]))]
+                if (is.logical(plot$data[[varName]])) {
+                    colorValues <- c("grey", scPalette[1])
+                } else if (nCategory <= length(scPalette))
+                    colorValues <- scPalette[seq_len(nCategory)]
                 else {
-                    colorValues <- scales::hue_pal()(
-                        length(levels(plot$data[[varName]]))
-                    )
+                    colorValues <- scales::hue_pal()(nCategory)
                 }
             }
             if (a %in% c("colour", "fill")) {

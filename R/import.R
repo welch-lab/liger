@@ -1195,5 +1195,173 @@ read10XFiles <- function(
     }
     return(data)
 }
+
+#' Read 10X HDF5 file
+#' @rdname read10XH5
+#' @export
+#' @description
+#' Read count matrix from 10X CellRanger HDF5 file. By default, \code{read10XH5}
+#' load scRNA, scATAC or multimodal data into memory (\code{inMemory = TRUE}).
+#' To use LIGER in delayed mode for handling large datasets, set
+#' \code{inMemory = FALSE} to load the data as a \code{DelayedArray} object. The
+#' delayed mode only supports scRNA data for now.
+#' @param filename Character string, path to the HDF5 file.
+#' @param inMemory Logical, whether to load the data into memory. Default
+#' \code{TRUE}. \code{FALSE} loads the data as a \code{DelayedArray} object.
+#' @param useNames Logical, whether to use gene names as row names. Default
+#' \code{TRUE}. \code{FALSE} uses gene IDs instead.
+#' @param featureMakeUniq Logical, whether to make gene names unique. Default
+#' \code{TRUE}.
+#' @return A sparse matrix when only using older CellRanger output HDF5 file or
+#' when only one genome and one modality is detected. When multiple genomes are
+#' available, will return a list for each genome. When using multimodal data,
+#' each genome will be a list of matrices for each modality. The matrix will be
+#' of dgCMatrix class when in memory, or a TENxMatrix object when in delayed
+#' mode.
+#' @examples
+#' matrix <- read10XH5(
+#'     filename = system.file("extdata/ctrl.h5", package = "rliger"),
+#'     inMemory = TRUE
+#' )
+#' class(matrix) # Should show dgCMatrix
+#' if (requireNamespace("HDF5Array", quietly = TRUE)) {
+#'    matrix <- read10XH5(
+#'       filename = system.file("extdata/ctrl.h5", package = "rliger"),
+#'       inMemory = FALSE
+#'    )
+#'    print(class(matrix)) # Should show TENxMatrix
+#' }
+read10XH5 <- function(
+        filename,
+        inMemory = TRUE,
+        useNames = TRUE,
+        featureMakeUniq = TRUE
+) {
+    if (isTRUE(inMemory)) {
+        read10XH5Mem(filename, useNames, featureMakeUniq)
+    } else {
+        read10XH5Delay(filename, useNames, featureMakeUniq)
+    }
+}
+
+#' @rdname read10XH5
+#' @export
+read10XH5Mem <- function(
+        filename,
+        useNames = TRUE,
+        featureMakeUniq = TRUE
+) {
+    # Adopted from Seurat. with minimum modification to adapt to LIGER coding style
+    if (!is.logical(useNames) || length(useNames) != 1) cli::cli_abort("{.field useNames} must be a logical.")
+    if (!file.exists(filename)) {
+        cli::cli_abort("File not found at {.file {filename}}")
+    }
+    infile <- hdf5r::H5File$new(filename = filename, mode = 'r')
+    genomes <- names(infile)
+    output <- list()
+    if (hdf5r::existsGroup(infile, 'matrix')) {
+        # cellranger version 3
+        featureSlot <- ifelse(useNames, 'features/name', 'features/id')
+    } else {
+        featureSlot <- ifelse(useNames, 'gene_names', 'genes')
+    }
+    for (genome in genomes) {
+        # Modern cellranger output H5 really got genomes as the root group
+        # Older ones just got "matrix" which is the "genome" here
+        counts <- infile[[paste0(genome, '/data')]]
+        indices <- infile[[paste0(genome, '/indices')]]
+        indptr <- infile[[paste0(genome, '/indptr')]]
+        shp <- infile[[paste0(genome, '/shape')]]
+        features <- infile[[paste0(genome, '/', featureSlot)]][]
+        barcodes <- infile[[paste0(genome, '/barcodes')]]
+        mat <- Matrix::sparseMatrix(
+            i = indices[] + 1,
+            p = indptr[],
+            x = as.numeric(counts[]),
+            dims = shp[],
+            repr = "T"
+        )
+        if (isTRUE(featureMakeUniq)) {
+            features <- make.unique(features)
+        }
+        rownames(mat) <- features
+        colnames(mat) <- barcodes[]
+        mat <- as(mat, "CsparseMatrix")
+        # Split v3 multimodal
+        if (infile$exists(paste0(genome, '/features/feature_type'))) {
+            types <- infile[[paste0(genome, '/features/feature_type')]][]
+            typesUniq <- unique(types)
+            if (length(typesUniq) > 1) {
+                cli::cli_alert_info(
+                    "Genome {genome} has multiple modalities, returning a list of matrices for this genome"
+                )
+                mat <- sapply(
+                    X = typesUniq,
+                    FUN = function(x) {
+                        return(mat[which(types == x), ])
+                    },
+                    simplify = FALSE,
+                    USE.NAMES = TRUE
+                )
+            }
+        }
+        output[[genome]] <- mat
+    }
+    infile$close_all()
+    if (length(output) == 1) {
+        return(output[[genome]])
+    } else{
+        return(output)
+    }
+}
+
+#' @rdname read10XH5
+#' @export
+read10XH5Delay <- function(
+        filename,
+        useNames = TRUE,
+        featureMakeUniq = TRUE
+) {
+    if (!requireNamespace("HDF5Array", quitely = TRUE)) {
+        cli::cli_abort(c(
+            x = "Package {.pkg HDF5Array} is required for reading 10X H5 data into DelayedArray.",
+            i = "Please install with {.code BiocManager::install('HDF5Array')}."
+        ))
+    }
+    infile <- hdf5r::H5File$new(filename = filename, mode = 'r')
+    genomes <- names(infile)
+    output <- list()
+    if (hdf5r::existsGroup(infile, 'matrix')) {
+        # cellranger version 3
+        featureSlot <- ifelse(useNames, 'features/name', 'features/id')
+    } else {
+        featureSlot <- ifelse(useNames, 'gene_names', 'genes')
+    }
+    for (genome in genomes) {
+        mat <- HDF5Array::TENxMatrix(filepath = filename, group = genome)
+        features <- infile[[paste0(genome, '/', featureSlot)]][]
+        if (isTRUE(featureMakeUniq)) {
+            features <- make.unique(features)
+        }
+        mat@seed@dimnames[[1]] <- features
+        if (infile$exists(paste0(genome, '/features/feature_type'))) {
+            types <- infile[[paste0(genome, '/features/feature_type')]][]
+            typesUniq <- unique(types)
+            if (length(typesUniq) > 1) {
+                cli::cli_abort(
+                    "LIGER currently does not support multimodal data in DelayedArray."
+                )
+            }
+        }
+        output[[genome]] <- mat
+    }
+    infile$close_all()
+    if (length(output) == 1) {
+        return(output[[genome]])
+    } else{
+        return(output)
+    }
+}
+
 # nocov end
 

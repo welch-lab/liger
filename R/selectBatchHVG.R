@@ -216,7 +216,7 @@ selectBatchHVG.dgCMatrix <- function(
 #' @param means Numeric vector of pre-calculated means per gene, derived from
 #' log1p CPM normalized expression.
 #' @param chunk Integer. Number of maximum number of cells in each chunk when
-#' working on HDF5Array Default \code{1000}.
+#' working on HDF5Array Default \code{20000}.
 #' @rdname selectBatchHVG
 selectBatchHVG.DelayedArray <- function(
         object,
@@ -224,7 +224,7 @@ selectBatchHVG.DelayedArray <- function(
         means = NULL,
         scaleFactor = NULL,
         returnStats = FALSE,
-        chunk = 1000,
+        chunk = getOption("ligerChunkSize", 20000),
         verbose = getOption("ligerVerbose", TRUE),
         ...
 ) {

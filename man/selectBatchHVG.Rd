@@ -41,7 +41,7 @@ selectBatchHVG(object, ...)
   means = NULL,
   scaleFactor = NULL,
   returnStats = FALSE,
-  chunk = 1000,
+  chunk = getOption("ligerChunkSize", 20000),
   verbose = getOption("ligerVerbose", TRUE),
   ...
 )
@@ -77,7 +77,7 @@ a character vector of selected features.}
 log1p CPM normalized expression.}
 
 \item{chunk}{Integer. Number of maximum number of cells in each chunk when
-working on HDF5Array Default \code{1000}.}
+working on HDF5Array Default \code{20000}.}
 }
 \value{
 \itemize{

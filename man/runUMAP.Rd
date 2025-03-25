@@ -21,7 +21,8 @@ runUMAP(
   dims.use = useDims,
   n_neighbors = nNeighbors,
   min_dist = minDist,
-  rand.seed = seed
+  rand.seed = seed,
+  ...
 )
 }
 \arguments{
@@ -59,6 +60,8 @@ visualization. Default \code{NULL} will set it when no default is set.}
 
 \item{k, use.raw, dims.use, n_neighbors, min_dist, rand.seed}{\bold{Deprecated}.
 See Usage section for replacement.}
+
+\item{...}{Additional argument passed to \code{uwot::umap()}.}
 }
 \value{
 The \code{object} where a \code{"UMAP"} variable is updated in the

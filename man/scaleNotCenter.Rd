@@ -17,6 +17,7 @@ scaleNotCenter(object, ...)
 \method{scaleNotCenter}{DelayedArray}(
   object,
   features,
+  scaleFactor = NULL,
   geneRootMeanSq = NULL,
   overwrite = FALSE,
   chunk = getOption("ligerChunkSize", 20000),

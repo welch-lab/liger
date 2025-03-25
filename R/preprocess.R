@@ -1558,7 +1558,7 @@ scaleNotCenter.DelayedArray <- function(
             chunk <- chunk[features, , drop = FALSE]
             # Calculate scale not center
             if (!is.null(scaleFactor)) {
-                chunk@x <- chunk@x / rep.int(scaleFactor, times = diff(chunk@p))
+                chunk@x <- chunk@x / rep.int(scaleFactor[cellIdx], times = diff(chunk@p))
             }
             chunk <- rowDivide_rcpp(chunk, geneRootMeanSq)
             chunk@x[is.na(chunk@x)] = 0
