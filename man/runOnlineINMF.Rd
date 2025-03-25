@@ -17,6 +17,7 @@ runOnlineINMF(object, k = 20, lambda = 5, ...)
   maxEpochs = 5,
   HALSiter = 1,
   minibatchSize = 5000,
+  HInit = NULL,
   WInit = NULL,
   VInit = NULL,
   AInit = NULL,

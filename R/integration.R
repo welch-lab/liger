@@ -704,6 +704,7 @@ runOnlineINMF.liger <- function(
         maxEpochs = 5,
         HALSiter = 1,
         minibatchSize = 5000,
+        HInit = NULL,
         WInit = NULL,
         VInit = NULL,
         AInit = NULL,
@@ -728,11 +729,12 @@ runOnlineINMF.liger <- function(
         else return(sd)
     })
     if (!is.null(newDatasets)) {
+        HInit <- HInit %||% getMatrix(object, "H", returnList = TRUE)
         WInit <- WInit %||% getMatrix(object, "W", returnList = FALSE)
         VInit <- VInit %||% getMatrix(object, "V", returnList = TRUE)
         AInit <- AInit %||% getMatrix(object, "A", returnList = TRUE)
         BInit <- BInit %||% getMatrix(object, "B", returnList = TRUE)
-        if (is.null(WInit) || any(sapply(VInit, is.null)) ||
+        if (any(sapply(HInit, is.null)) || is.null(WInit) || any(sapply(VInit, is.null)) ||
             any(sapply(AInit, is.null)) || any(sapply(BInit, is.null))) {
             cli::cli_abort(
                 "Cannot find complete online iNMF result for current datasets.
@@ -789,8 +791,9 @@ runOnlineINMF.liger <- function(
                                maxEpochs = maxEpochs,
                                minibatchSize = minibatchSize,
                                HALSiter = HALSiter, verbose = verbose,
-                               WInit = WInit, VInit = VInit, AInit = AInit,
-                               BInit = BInit, seed = seed, nCores = nCores)
+                               HInit = HInit, WInit = WInit, VInit = VInit,
+                               AInit = AInit, BInit = BInit,
+                               seed = seed, nCores = nCores)
     if (!isTRUE(projection)) {
         # Scenario 1&2, everything updated
         for (i in seq_along(object)) {
@@ -832,6 +835,7 @@ runOnlineINMF.liger <- function(
         newDatasets = NULL,
         projection = FALSE,
         maxEpochs = 5,
+        HInit = NULL,
         WInit = NULL,
         VInit = NULL,
         AInit = NULL,
@@ -871,8 +875,9 @@ runOnlineINMF.liger <- function(
                                  project = projection, k = k, lambda = lambda,
                                  maxEpoch = maxEpochs,
                                  minibatchSize = minibatchSize,
-                                 maxHALSIter = HALSiter, Vinit = VInit,
-                                 Winit = WInit, Ainit = AInit, Binit = BInit,
+                                 maxHALSIter = HALSiter,
+                                 Hinit = HInit, Winit = WInit, Vinit = VInit,
+                                 Ainit = AInit, Binit = BInit,
                                  nCores = nCores, verbose = verbose)
     factorNames <- paste0("Factor_", seq(k))
     if (isTRUE(projection)) {
@@ -951,8 +956,8 @@ runOnlineINMF.Seurat <- function(
         newDatasets = NULL, projection = FALSE,
         maxEpochs = maxEpochs, HALSiter = HALSiter,
         minibatchSize = minibatchSize, seed = seed, verbose = verbose,
-        nCores = nCores,
-        WInit = NULL, VInit = NULL, AInit = NULL, BInit = NULL,
+        nCores = nCores, HInit = NULL, WInit = NULL, VInit = NULL,
+        AInit = NULL, BInit = NULL
     )
     Hconcat <- t(Reduce(cbind, res$H))
     colnames(Hconcat) <- paste0(reduction, "_", seq_len(ncol(Hconcat)))
@@ -1055,8 +1060,8 @@ online_iNMF <- function( # nocov start
         object = object, k = k, lambda = lambda, maxEpochs = max.epochs,
         HALSiter = miniBatch_max_iters, minibatchSize = miniBatch_size,
         seed = seed, verbose = verbose, newDatasets = X_new,
-        projection = projection, WInit = W.init, VInit = V.init, AInit = A.init,
-        BInit = B.init
+        projection = projection, HInit = H.init, WInit = W.init, VInit = V.init,
+        AInit = A.init, BInit = B.init
     )
     return(object)
 } # nocov end
