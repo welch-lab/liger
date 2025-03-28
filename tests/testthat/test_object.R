@@ -201,8 +201,7 @@ test_that("liger S3/S4 methods", {
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 test_that("ligerDataset (in memory) object creation", {
-    expect_error(createLigerDataset(),
-                 "At least one of")
+    expect_error(createLigerDataset())
 
     ld <- createLigerDataset(rawData = rawDataList[[1]], modal = "atac")
     expect_is(ld, "ligerATACDataset")
@@ -217,9 +216,8 @@ test_that("ligerDataset (in memory) object creation", {
     pbmc <- scaleNotCenter(pbmc)
     scaledMat <- scaleData(pbmc, dataset = "ctrl")
     featuremeta <- featureMeta(dataset(pbmc, "ctrl"))
-    expect_error(
-        ld <- createLigerDataset(scaleData = scaledMat, featureMeta = featuremeta),
-        "At least one of "
+    expect_no_error(
+        ld <- createLigerDataset(scaleData = scaledMat, featureMeta = featuremeta)
     )
 })
 

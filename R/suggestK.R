@@ -8,6 +8,7 @@
 #' error (see \code{\link{runINMF}}) is calculated for the test data and shown
 #' as the mean squared error (MSE) for each k. The k with the lowest MSE is
 #' suggested as the best k for the given data.
+#' @noRd
 suggestK <- function(
         object,
         kTest = c(5, 10, 15, 20, 25, 30, 35, 40, 45, 50),
@@ -103,7 +104,7 @@ suggestK <- function(
     WV <- W + Vi
     CtC <- t(WV) %*% WV + lambda * t(Vi) %*% Vi
     CtB <- t(WV) %*% Xi
-    RcppPlanc:::bppnnls_prod(CtC, as.matrix(CtB))
+    RcppPlanc::bppnnls_prod(CtC, as.matrix(CtB))
 }
 
 .plotSuggestK <- function(stats) {

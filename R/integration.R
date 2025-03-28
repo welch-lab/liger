@@ -578,6 +578,8 @@ optimizeALS <- function( # nocov start
 #' factorization, arguments \code{WInit}, \code{VInit}, \code{AInit} and
 #' \code{BInit} are exposed. The requirements for these argument follows:
 #' \itemize{
+#'  \item{HInit - A list object of matrices each of size \eqn{k \times n_i}.
+#'      Number of matrices should match with \code{newDatasets}.}
 #'  \item{WInit - A matrix object of size \eqn{m \times k}. (see
 #'      \code{\link{runINMF}} for notation)}
 #'  \item{VInit - A list object of matrices each of size \eqn{m \times k}.
@@ -611,9 +613,9 @@ optimizeALS <- function( # nocov start
 #' 1.
 #' @param projection Whether to perform data integration with scenario 3 when
 #' \code{newDatasets} is specified. See description. Default \code{FALSE}.
-#' @param WInit,VInit,AInit,BInit Optional initialization for \eqn{W}, \eqn{V},
-#' \eqn{A}, and \eqn{B} matrices, respectively. Must be presented all together.
-#' See detail. Default \code{NULL}.
+#' @param HInit,WInit,VInit,AInit,BInit Optional initialization for \eqn{H},
+#' \eqn{W}, \eqn{V}, \eqn{A}, and \eqn{B} matrices, respectively. Must be
+#' presented all together. See detail. Default \code{NULL}.
 #' @param k Inner dimension of factorization--number of metagenes. A value in
 #' the range 20-50 works well for most analyses. Default \code{20}.
 #' @param lambda Regularization parameter. Larger values penalize
@@ -730,6 +732,7 @@ runOnlineINMF.liger <- function(
     })
     if (!is.null(newDatasets)) {
         HInit <- HInit %||% getMatrix(object, "H", returnList = TRUE)
+        HInit <- lapply(HInit, t)
         WInit <- WInit %||% getMatrix(object, "W", returnList = FALSE)
         VInit <- VInit %||% getMatrix(object, "V", returnList = TRUE)
         AInit <- AInit %||% getMatrix(object, "A", returnList = TRUE)
@@ -997,6 +1000,7 @@ runOnlineINMF.Seurat <- function(
 #' element should be the name of an HDF5 file.
 #' @param projection Perform data integration by shared metagene (W) projection
 #' (scenario 3). (default FALSE)
+#' @param H.init Optional initialization for H. (default NULL)
 #' @param W.init Optional initialization for W. (default NULL)
 #' @param V.init Optional initialization for V (default NULL)
 #' @param H.init Optional initialization for H (default NULL)

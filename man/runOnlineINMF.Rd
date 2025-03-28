@@ -77,9 +77,9 @@ Default \code{1}. Changing this parameter is not recommended.}
 \item{minibatchSize}{Total number of cells in each minibatch. See detail.
 Default \code{5000}.}
 
-\item{WInit, VInit, AInit, BInit}{Optional initialization for \eqn{W}, \eqn{V},
-\eqn{A}, and \eqn{B} matrices, respectively. Must be presented all together.
-See detail. Default \code{NULL}.}
+\item{HInit, WInit, VInit, AInit, BInit}{Optional initialization for \eqn{H},
+\eqn{W}, \eqn{V}, \eqn{A}, and \eqn{B} matrices, respectively. Must be
+presented all together. See detail. Default \code{NULL}.}
 
 \item{seed}{Random seed to allow reproducible results. Default \code{1}.}
 
@@ -161,6 +161,8 @@ Under the circumstance where users need customized information for existing
 factorization, arguments \code{WInit}, \code{VInit}, \code{AInit} and
 \code{BInit} are exposed. The requirements for these argument follows:
 \itemize{
+\item{HInit - A list object of matrices each of size \eqn{k \times n_i}.
+Number of matrices should match with \code{newDatasets}.}
 \item{WInit - A matrix object of size \eqn{m \times k}. (see
 \code{\link{runINMF}} for notation)}
 \item{VInit - A list object of matrices each of size \eqn{m \times k}.

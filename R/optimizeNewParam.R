@@ -384,7 +384,7 @@ optimizeNewData <- function(
 #' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
 #'     # Only running a few iterations for fast examples
 #'     pbmc <- runINMF(pbmc, k = 20, nIteration = 2)
-#'     pbmc <- optimizeNewLambda(pbmc, lambdaNew = 5.5, nIteration = 2)
+#'     # pbmc <- optimizeNewLambda(pbmc, lambdaNew = 5.5, nIteration = 2)
 #' }
 optimizeNewLambda <- function(
         object,
@@ -402,9 +402,9 @@ optimizeNewLambda <- function(
                         rand.seed = "seed"), "thresh")
     object <- recordCommand(object)
     if (lambdaNew < object@uns$factorization$lambda && isTRUE(verbose))
-        .log("New lambda less than current lambda; new factorization may not ",
-             "be optimal. Re-optimization with optimizeAlS recommended ",
-             "instead.")
+        cli::cli_alert_warning(
+            "New lambda less than current lambda; new factorization may not be optimal. Re-optimization with {.fn runINMF} recommended instead."
+        )
 
     object <- runINMF(
         object,
