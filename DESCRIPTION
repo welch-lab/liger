@@ -1,6 +1,6 @@
 Package: rliger
-Version: 2.1.0.9010
-Date: 2025-03-25
+Version: 2.2.0
+Date: 2025-04-24
 Type: Package
 Title: Linked Inference of Genomic Experimental Relationships
 Description: Uses an extension of nonnegative matrix factorization to identify shared and dataset-specific factors. See Welch J, Kozareva V, et al (2019) <doi:10.1016/j.cell.2019.05.006>, and Liu J, Gao C, Sodicoff J, et al (2020) <doi:10.1038/s41596-020-0391-8> for more details.
@@ -37,7 +37,6 @@ LazyData: true
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr
 Encoding: UTF-8
-Additional_repositories: https://blaserlab.r-universe.dev
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 Depends:
     methods,
@@ -45,10 +44,7 @@ Depends:
     utils,
     R (>= 3.5)
 Imports:
-    circlize,
     cli,
-    cowplot,
-    ComplexHeatmap,
     DelayedArray,
     dplyr,
     ggplot2,
@@ -60,19 +56,18 @@ Imports:
     magrittr,
     Matrix,
     RANN,
-    RColorBrewer,
     Rcpp,
     RcppPlanc (>= 2.0.0),
     rlang,
     S4Vectors,
     scales,
-    uwot,
-    viridis
+    uwot
 Suggests:
     AnnotationDbi,
-    DelayedMatrixStats,
+    circlize,
+    ComplexHeatmap,
+    cowplot,
     DESeq2,
-    DoubletFinder (>= 2.0.4),
     EnhancedVolcano,
     fgsea,
     GenomicRanges,
@@ -92,5 +87,6 @@ Suggests:
     SeuratObject,
     SingleCellExperiment,
     SummarizedExperiment,
-    testthat
+    testthat,
+    viridis
 Roxygen: list(markdown = TRUE)

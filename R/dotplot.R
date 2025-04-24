@@ -284,6 +284,24 @@ plotClusterFactorDot <- function(
         viridisDirection = -1,
         ...
 ) {
+    if (!requireNamespace("viridis", quietly = TRUE)) {
+        cli::cli_abort(c(
+            x = "Package {.pkg viridis} is required for this function.",
+            i = 'Please install it with {.code install.packages("viridis")}'
+        ))
+    }
+    if (!requireNamespace("circlize", quietly = TRUE)) {
+        cli::cli_abort(c(
+            x = "Package {.pkg circlize} is required for this function.",
+            i = 'Please install it with {.code install.packages("circlize")}'
+        ))
+    }
+    if (!requireNamespace("ComplexHeatmap", quietly = TRUE)) {
+        cli::cli_abort(c(
+            x = "Package {.pkg ComplexHeatmap} is required for this function.",
+            i = 'Please install it with {.code BiocManager::install("ComplexHeatmap")}'
+        ))
+    }
     viridisAvail <- c(
         "magma", "A", "inferno", "B", "plasma", "C", "viridis", "D",
         "cividis", "E", "rocket", "F", "mako", "G", "turbo", "H"

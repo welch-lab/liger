@@ -8,7 +8,7 @@ runGOEnrich(
   result,
   group = NULL,
   useBg = TRUE,
-  orderBy = "padj",
+  orderBy = NULL,
   logFCThresh = 1,
   padjThresh = 0.05,
   splitReg = FALSE,
@@ -24,14 +24,14 @@ Default \code{NULL} uses all groups involved in DE \code{result} table.}
 
 \item{useBg}{Logical, whether to set all genes involved in DE analysis
 (before threshold filtering) as a domain background of GO analysis. Default
-\code{TRUE}.}
+\code{TRUE}. Otherwise use all annotated genes from gprofiler2 database.}
 
 \item{orderBy}{Name of DE statistics metric to order the gene list for each
-group. Choose from \code{"logFC"} (default), \code{"pval"} or \code{"padj"}.
-Or set \code{NULL} to turn off ranked mode.}
+group. Choose from \code{"logFC"}, \code{"pval"} or \code{"padj"} to enable
+ranked mode. Default \code{NULL} to use two-list mode.}
 
-\item{logFCThresh}{The log2FC threshold above which the genes will be used.
-Default \code{1}.}
+\item{logFCThresh}{The absolute valued log2FC threshold above which the
+genes will be used. Default \code{1}.}
 
 \item{padjThresh}{The adjusted p-value threshold less than which the genes
 will be used. Default \code{0.05}.}
@@ -44,7 +44,6 @@ it is recommended to set \code{splitReg = TRUE}.}
 
 \item{...}{Additional arguments passed to \code{gprofiler2::gost()}. Useful
 ones are:
-
 \describe{
 \item{\code{organism}}{The organism to be used for the analysis. "hsapiens"
 for human, "mmusculus" for mouse.}
@@ -68,12 +67,24 @@ See \code{gprofiler2::gost()}. for detailed explanation.
 This function forms genesets basing on the differential expression result,
 and calls gene ontology (GO) analysis method provided by gprofiler2.
 }
+\details{
+GO term enrichment test often goes with two modes: two-list mode and ranked
+mode.
+
+Two-list mode comes with a query gene set and a background gene set.
+A query gene set contains the filtered DEGs in this analysis. A background
+can be all the genes involved in the DEG test (default, \code{useBg = TRUE}),
+or use all annotated genes in the gprofiler2 database (\code{useBg = FALSE}).
+
+Ranked mode comes with only one query gene set, which is sorted. It should
+contain the whole domain background genes while significant genes are
+supposed to come first. Set \code{orderBy} to one of the DE statistics metric
+to enable this mode. \code{useBg} will be ignored in this mode.
+}
 \examples{
-# Setting `significant = FALSE` because it's hard for a gene list obtained
-# from small test dataset to represent real-life biology.
 \donttest{
 if (requireNamespace("gprofiler2", quietly = TRUE)) {
-    go <- runGOEnrich(deg.pw, group = "0.stim", significant = FALSE)
+    go <- runGOEnrich(deg.pw)
 }
 }
 }

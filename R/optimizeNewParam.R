@@ -411,7 +411,7 @@ optimizeNewLambda <- function(
         k = object@uns$factorization$k,
         lambda = lambdaNew,
         nIteration = nIteration,
-        HInit = getMatrix(object, "H"),
+        HInit = lapply(getMatrix(object, "H"), t),
         WInit = getMatrix(object, "W"),
         seed = seed,
         verbose = verbose

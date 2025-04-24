@@ -1286,7 +1286,7 @@ read10XH5Mem <- function(
         }
         rownames(mat) <- features
         colnames(mat) <- barcodes[]
-        mat <- as(mat, "CsparseMatrix")
+        mat <- methods::as(mat, "CsparseMatrix")
         # Split v3 multimodal
         if (infile$exists(paste0(genome, '/features/feature_type'))) {
             types <- infile[[paste0(genome, '/features/feature_type')]][]
@@ -1361,6 +1361,176 @@ read10XH5Delay <- function(
     } else{
         return(output)
     }
+}
+
+#' Read matrix from H5AD file
+#' @rdname readH5AD
+#' @export
+#' @description
+#' Read raw count matrix from H5AD file. By default, \code{readH5AD} load
+#' specified layer into memory (\code{inMemory = TRUE}). To use LIGER in delayed
+#' mode for handling large datasets, set \code{inMemory = FALSE} to load the
+#' data as a \code{DelayedArray} object. Note that only CSR format is supported
+#' for the matrix.
+#' @details
+#' Currently, the only supported H5AD AnnData encoding versions are as follows:
+#'
+#' \itemize{
+#'  \item{\code{adata.X}, \code{adata.raw.X}, or \code{adata.layers['layer']} -
+#'  csr_matrix 0.1.0}
+#'  \item{\code{adata.obs} and \code{adata.var} - dataframe 0.2.0}
+#'  \item{Categoricals in a data frame - categorical 0.2.0}
+#' }
+#'
+#' If users possess H5AD files encoded with older specification, please either
+#' open an issue on GitHub or use R package 'anndata' to manually extract
+#' information.
+#' @param filename Character string, path to the H5AD file.
+#' @param layer Character string specifying the H5 path of raw count data to be
+#' loaded. Use \code{'X'} for \code{adata.X}, \code{'raw/X'} for
+#' \code{adata.raw.X}, or \code{'layers/layer_name'} for
+#' \code{adata.layers['layer_name']}.
+#' @param inMemory Logical, whether to load the data into memory. Default
+#' \code{TRUE}. \code{FALSE} loads the data as a \code{DelayedArray} object.
+#' @param obs Logical, whether to also load the cell metadata from
+#' \code{adata.obs}. Default \code{FALSE}.
+#' @return When loaded in memory, a sparse matrix of class \code{dgCMatrix} will
+#' be returned. When loaded in delayed mode, a \code{TENxMatrix} object will be
+#' returned. If \code{obs = TRUE}, a list containing the matrix and the cell
+#' metadata will be returned.
+#' @examples
+#' tempH5AD <- tempfile(fileext = '.h5ad')
+#' writeH5AD(pbmc, tempH5AD, overwrite = TRUE)
+#' mat <- readH5AD(tempH5AD, layer = 'X')
+#' delayMat <- readH5AD(tempH5AD, layer = 'X', inMemory = FALSE)
+readH5AD <- function(
+        filename,
+        layer,
+        inMemory = TRUE,
+        obs = FALSE
+) {
+    if (isTRUE(inMemory)) readH5ADMem(filename, layer, obs)
+    else readH5ADDelay(filename, layer, obs)
+}
+
+#' @rdname readH5AD
+#' @export
+readH5ADMem <- function(
+        filename,
+        layer,
+        obs = FALSE
+) {
+    dfile <- hdf5r::H5File$new(filename, mode = 'r')
+    layer <- .H5AD.checkLayer(dfile, layer)
+
+    # Processing the matrix
+    res <- switch(
+        EXPR = hdf5r::h5attr(dfile[[layer]], 'encoding-type'),
+        csr_matrix = .H5AD.readCSR(dfile, layer)
+    )
+    obs_index_col <- hdf5r::h5attr(dfile[['obs']], '_index')
+    obs_names <- dfile[['obs']][[obs_index_col]][]
+    var_index_col <- hdf5r::h5attr(dfile[['var']], '_index')
+    var_names <- dfile[['var']][[var_index_col]][]
+    dimnames(res) <- list(var_names, obs_names)
+
+    if (isTRUE(obs)) {
+        obs <- .H5AD.readObs(dfile)
+        res <- list(
+            matrix = res,
+            obs = obs
+        )
+    }
+
+    dfile$close_all()
+    return(res)
+}
+
+.H5AD.checkLayer <- function(dfile, layer) {
+    layerAvail <- character()
+    if (dfile$exists('X')) layerAvail <- c(layerAvail, 'X')
+    if (dfile$exists('raw')) {
+        if (dfile$exists('raw/X')) {
+            layerAvail <- c(layerAvail, 'raw/X')
+        }
+    }
+    if (dfile$exists('layers')) {
+        layerAvail <- c(layerAvail, names(dfile[['layers']]))
+    }
+    if (missing(layer)) {
+        cli::cli_abort(
+            c(x = '{.field layer} must be specified',
+              i = 'Available options include: {.val {layerAvail}}')
+        )
+    }
+    if (!layer %in% layerAvail) {
+        cli::cli_abort(
+            c(x = 'Cannot identify specified layer {.val {layer}}.',
+              i = 'Valid options include: {.val {layerAvail}}')
+        )
+    }
+    return(layer)
+}
+
+.H5AD.readCSR <- function(dfile, layer) {
+    i <- dfile[[layer]][['indices']][] + 1
+    p <- dfile[[layer]][['indptr']][]
+    x <- dfile[[layer]][['data']][]
+    dims <- rev(hdf5r::h5attr(dfile[[layer]], 'shape'))
+    Matrix::sparseMatrix(i = i, p = p, x = x, dims = dims, repr = 'C')
+}
+
+.H5AD.readObs <- function(dfile) {
+    obs <- dfile[['obs']]
+    obs_index_col <- hdf5r::h5attr(obs, '_index')
+    obs_names <- obs[[obs_index_col]][]
+    df <- data.frame(row.names = obs_names)
+    for (i in seq_along(names(obs))) {
+        cn <- names(obs)[i]
+        if (cn == '_index') next
+        if (inherits(obs[[cn]], 'H5D')) df[[cn]] <- obs[[cn]][]
+        if (inherits(obs[[cn]], 'H5Group')) {
+            categories <- obs[[cn]][['categories']]
+            codes <- obs[[cn]][['codes']]
+            fct <- factor(categories[codes[] + 1], levels = categories[])
+            df[[cn]] <- fct
+        }
+    }
+    return(df)
+}
+
+#' @rdname readH5AD
+#' @export
+readH5ADDelay <- function(
+        filename,
+        layer,
+        obs = FALSE
+) {
+    if (!requireNamespace("HDF5Array", quietly = TRUE)) {
+        cli::cli_abort(c(
+            x = "Package {.pkg HDF5Array} is required for reading 10X H5 data into DelayedArray.",
+            i = "Please install with {.code BiocManager::install('HDF5Array')}."
+        ))
+    }
+    dfile <- hdf5r::H5File$new(filename, mode = 'r')
+    layer <- .H5AD.checkLayer(dfile, layer)
+    obs_index_col <- hdf5r::h5attr(dfile[['obs']], '_index')
+    obs_names <- dfile[['obs']][[obs_index_col]][]
+    var_index_col <- hdf5r::h5attr(dfile[['var']], '_index')
+    var_names <- dfile[['var']][[var_index_col]][]
+
+    res <- HDF5Array::TENxMatrix(filepath = filename, group = layer)
+    res@seed@dimnames <- list(var_names, obs_names)
+
+    if (isTRUE(obs)) {
+        obs <- .H5AD.readObs(dfile)
+        res <- list(
+            matrix = res,
+            obs = obs
+        )
+    }
+    dfile$close_all()
+    return(res)
 }
 
 # nocov end

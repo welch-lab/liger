@@ -97,5 +97,5 @@ labeling, whereas \code{highlight} is considered first. If both are as
 default (\code{NULL}), all significant features will be labeled.
 }
 \examples{
-plotVolcano(deg.pw, "0.stim")
+plotVolcano(deg.pw, "stim.CD14 Mono")
 }

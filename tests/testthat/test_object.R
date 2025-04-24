@@ -504,3 +504,84 @@ test_that("ligerToSeurat", {
 #     unlink("liger_BMMC_atac_D5T1.rds")
 #     unlink("liger_BMMC_atac_D5T1_peak.rds")
 # })
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# H5AD ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+test_that("H5AD", {
+    ctrlRaw <- rawData(pbmc, 'ctrl')
+    tempfilename1 <- tempfile(fileext = ".h5ad")
+    wrongObs <- cellMeta(pbmc)
+    wrongVar <- wrongObs
+    expect_error(
+        writeH5AD(ctrlRaw, tempfilename1, obs = wrongObs, overwrite = FALSE),
+        'identical'
+    )
+    expect_error(
+        writeH5AD(ctrlRaw, tempfilename1, var = wrongVar, overwrite = FALSE),
+        'identical'
+    )
+    expect_no_error(
+        writeH5AD(ctrlRaw, tempfilename1, overwrite = FALSE)
+    )
+    expect_error(
+        writeH5AD(ctrlRaw, tempfilename1, overwrite = FALSE),
+        'file exists'
+    )
+    expect_no_error(
+        writeH5AD(ctrlRaw, tempfilename1, overwrite = TRUE)
+    )
+    unlink(tempfilename1)
+
+    ctrlLD <- dataset(pbmc, "ctrl")
+    tempfilename2 <- tempfile(fileext = ".h5ad")
+    expect_error(
+        writeH5AD(ctrlLD, tempfilename2, obs = wrongObs, overwrite = FALSE),
+        'identical'
+    )
+    expect_no_error(
+        writeH5AD(ctrlLD, tempfilename2, overwrite = FALSE)
+    )
+    expect_error(
+        writeH5AD(ctrlLD, tempfilename2, overwrite = FALSE),
+        'file exists'
+    )
+    expect_no_error(
+        writeH5AD(ctrlLD, tempfilename2, overwrite = TRUE)
+    )
+    unlink(tempfilename2)
+
+    tempfilename3 <- tempfile(fileext = ".h5ad")
+    pbmcPlot@datasets$ctrl@rawData <- pbmc@datasets$ctrl@rawData
+    pbmcPlot@datasets$stim@rawData <- pbmc@datasets$stim@rawData
+    expect_no_error(
+        writeH5AD(pbmcPlot, tempfilename3, overwrite = FALSE)
+    )
+    expect_error(
+        writeH5AD(pbmcPlot, tempfilename3, overwrite = FALSE),
+        'file exists'
+    )
+    expect_no_error(
+        writeH5AD(pbmc, tempfilename3, overwrite = TRUE)
+    )
+
+    expect_no_error(
+        readBack <- readH5AD(tempfilename3, layer = 'X', inMemory = TRUE, obs = TRUE)
+    )
+    expect_identical(
+        readBack$obs, cellMeta(pbmc, as.data.frame = TRUE)[, colnames(readBack$obs)]
+    )
+    mergedRaw <- mergeSparseAll(rawData(pbmc))
+    expect_identical(
+        readBack$matrix, mergedRaw
+    )
+
+    expect_no_error(
+        readBack <- readH5AD(tempfilename3, layer = 'X', inMemory = FALSE, obs = TRUE)
+    )
+    expect_identical(
+        as(readBack$matrix, 'CsparseMatrix'), mergedRaw
+    )
+    unlink(tempfilename3)
+})

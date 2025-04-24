@@ -213,23 +213,23 @@ test_that("wilcoxon", {
 
     skip_if_not_installed("gprofiler2")
     expect_error(runGOEnrich(res1, group = "a"),
-                 "Selected groups not available")
-    expect_error(runGOEnrich(res1, group = 0, orderBy = c("logFC", "pval")),
-                 "Only one `orderBy`")
+                 "must be one of")
+    expect_error(runGOEnrich(res1, group = '0', orderBy = c("logFC", "pval")),
+                 "must be one of")
     expect_error(runGOEnrich(res1, orderBy = "score"),
-                 "`orderBy` should be one of")
+                 "must be one of")
     if (is_online()) {
-        go1 <- runGOEnrich(res1, group = 0, orderBy = "logFC", significant = FALSE)
+        go1 <- runGOEnrich(res1, group = '0', orderBy = "logFC", significant = FALSE)
         expect_is(go1, "list")
         expect_is(go1$`0`$result, "data.frame")
-        go2 <- runGOEnrich(res1, group = 0, orderBy = "pval", significant = FALSE)
+        go2 <- runGOEnrich(res1, group = '0', orderBy = "pval", significant = FALSE)
         expect_is(go2, "list")
         expect_is(go2$`0`$result, "data.frame")
-        go3 <- runGOEnrich(res1, group = c(0, 1), orderBy = "pval", significant = FALSE)
+        go3 <- runGOEnrich(res1, group = c('0', '1'), significant = FALSE)
 
         expect_is(plotGODot(go1, pvalThresh = 1), "ggplot")
-        expect_error(plotGODot(go1, group = "ctrl"), "Specified group not available")
-        expect_message(plotGODot(go1, group = '0'), "No enough matching")
+        expect_error(plotGODot(go1, group = "ctrl"), "must be one of")
+        expect_message(plotGODot(go1, group = '0', pvalThresh = 1e-50), "No enough matching")
         expect_is(plotGODot(go3, pvalThresh = 1), "list")
     }
 })

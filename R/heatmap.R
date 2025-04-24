@@ -214,6 +214,24 @@ plotFactorHeatmap <- function(
         RColorBrewerOption = "RdBu",
         ...
 ) {
+    if (!requireNamespace("viridis", quietly = TRUE)) {
+        cli::cli_abort(c(
+            x = "Package {.pkg viridis} is required for this function.",
+            i = 'Please install it with {.code install.packages("viridis")}'
+        ))
+    }
+    if (!requireNamespace("circlize", quietly = TRUE)) {
+        cli::cli_abort(c(
+            x = "Package {.pkg circlize} is required for this function.",
+            i = 'Please install it with {.code install.packages("circlize")}'
+        ))
+    }
+    if (!requireNamespace("ComplexHeatmap", quietly = TRUE)) {
+        cli::cli_abort(c(
+            x = "Package {.pkg ComplexHeatmap} is required for this function.",
+            i = 'Please install it with {.code BiocManager::install("ComplexHeatmap")}'
+        ))
+    }
     # Final data processing
     if (!is.null(dataScaleFunc)) dataMatrix <- dataScaleFunc(dataMatrix)
     if (isTRUE(scale)) {
@@ -259,9 +277,7 @@ plotFactorHeatmap <- function(
         # palette and let center value (zero) be white
         col_fun <- circlize::colorRamp2(
             breaks = c(min(dataMatrix), 0, max(dataMatrix)),
-            colors = RColorBrewer::brewer.pal(
-                9, RColorBrewerOption
-            )[c(8, 5, 2)]
+            colors = .RColorBrewerOptionMap[[RColorBrewerOption]]
         )
     }
     ## Construct HeatmapAnnotation
@@ -446,4 +462,15 @@ plotFactorHeatmap <- function(
     return(x)
 }
 
+.RColorBrewerOptionMap <- list(
+    Spectral = c("#66C2A5", "#FFFFBF", "#F46D43"),
+    RdYlGn = c("#66BD63", "#FFFFBF", "#F46D43"),
+    RdYlBu = c("#74ADD1", "#FFFFBF", "#F46D43"),
+    RdGy = c("#878787", "#FFFFFF", "#D6604D"),
+    RdBu = c("#4393C3", "#F7F7F7", "#D6604D"),
+    PuOr = c("#8073AC", "#F7F7F7", "#E08214"),
+    PRGn = c("#5AAE61", "#F7F7F7", "#9970AB"),
+    PiYG = c("#7FBC41", "#F7F7F7", "#DE77AE"),
+    BrBG = c("#35978F", "#F5F5F5", "#BF812D")
+)
 

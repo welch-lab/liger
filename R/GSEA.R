@@ -131,12 +131,12 @@ runGSEA <- function(
 #' Default \code{NULL} uses all groups involved in DE \code{result} table.
 #' @param useBg Logical, whether to set all genes involved in DE analysis
 #' (before threshold filtering) as a domain background of GO analysis. Default
-#' \code{TRUE}.
+#' \code{TRUE}. Otherwise use all annotated genes from gprofiler2 database.
 #' @param orderBy Name of DE statistics metric to order the gene list for each
-#' group. Choose from \code{"logFC"} (default), \code{"pval"} or \code{"padj"}.
-#' Or set \code{NULL} to turn off ranked mode.
-#' @param logFCThresh The log2FC threshold above which the genes will be used.
-#' Default \code{1}.
+#' group. Choose from \code{"logFC"}, \code{"pval"} or \code{"padj"} to enable
+#' ranked mode. Default \code{NULL} to use two-list mode.
+#' @param logFCThresh The absolute valued log2FC threshold above which the
+#' genes will be used. Default \code{1}.
 #' @param padjThresh The adjusted p-value threshold less than which the genes
 #' will be used. Default \code{0.05}.
 #' @param splitReg Whether to have queries of both up-regulated and
@@ -146,7 +146,6 @@ runGSEA <- function(
 #' it is recommended to set \code{splitReg = TRUE}.
 #' @param ... Additional arguments passed to \code{gprofiler2::gost()}. Useful
 #' ones are:
-#'
 #' \describe{
 #' \item{\code{organism}}{The organism to be used for the analysis. "hsapiens"
 #' for human, "mmusculus" for mouse.}
@@ -158,6 +157,20 @@ runGSEA <- function(
 #' Arguments \code{query}, \code{custom_bg}, \code{domain_scope}, and
 #' \code{ordered_query} are pre-specified by this wrapper function.
 #' @references Kolberg, L. et al, 2020 and Raudvere, U. et al, 2019
+#' @details
+#' GO term enrichment test often goes with two modes: two-list mode and ranked
+#' mode.
+#'
+#' Two-list mode comes with a query gene set and a background gene set.
+#' A query gene set contains the filtered DEGs in this analysis. A background
+#' can be all the genes involved in the DEG test (default, \code{useBg = TRUE}),
+#' or use all annotated genes in the gprofiler2 database (\code{useBg = FALSE}).
+#'
+#' Ranked mode comes with only one query gene set, which is sorted. It should
+#' contain the whole domain background genes while significant genes are
+#' supposed to come first. Set \code{orderBy} to one of the DE statistics metric
+#' to enable this mode. \code{useBg} will be ignored in this mode.
+#'
 #' @return A list object where each element is a result list for a group. Each
 #' result list contains two elements:
 #' \item{result}{data.frame of main GO analysis result.}
@@ -166,18 +179,16 @@ runGSEA <- function(
 #' See \code{gprofiler2::gost()}. for detailed explanation.
 #' @export
 #' @examples
-#' # Setting `significant = FALSE` because it's hard for a gene list obtained
-#' # from small test dataset to represent real-life biology.
 #' \donttest{
 #' if (requireNamespace("gprofiler2", quietly = TRUE)) {
-#'     go <- runGOEnrich(deg.pw, group = "0.stim", significant = FALSE)
+#'     go <- runGOEnrich(deg.pw)
 #' }
 #' }
 runGOEnrich <- function(
         result,
         group = NULL,
         useBg = TRUE,
-        orderBy = "padj",
+        orderBy = NULL,
         logFCThresh = 1,
         padjThresh = 0.05,
         splitReg = FALSE,
@@ -189,51 +200,84 @@ runGOEnrich <- function(
             Please install it by command:
             {.code install.packages('gprofiler2')}") # nocov end
 
-    group <- group %||% unique(result$group)
-    if (any(!group %in% result$group)) {
-        cli::cli_abort("Selected groups not available in {.code result$group}: {.val {group[!group %in% result$group]}}")
-    }
-    bg <- NULL
-    domain_scope <- "annotated" # gprofiler2 default
-    if (isTRUE(useBg)) {
-        bg <- unique(result$feature)
-        domain_scope <- "custom"
-    }
-    filter <- result$group %in% group &
-        abs(result$logFC) > logFCThresh &
-        result$padj < padjThresh
-    filter[is.na(filter)] <- FALSE
-    result <- result[filter, , drop = FALSE]
-    resultUp <- result[result$logFC > 0,]
-    if (isTRUE(splitReg)) resultDown <- result[result$logFC < 0,]
-
-    ordered_query <- FALSE
-    if (!is.null(orderBy)) {
-        ordered_query <- TRUE
-        if (length(orderBy) > 1) cli::cli_abort("Only one {.code orderBy} metric allowed")
-        if (!orderBy %in% c("logFC", "pval", "padj")) {
-            cli::cli_abort("{.code orderBy} should be one of {.val logFC}, {.val pval} or {.val padj}.")
-        }
-        if (orderBy == "logFC") {
-            resultUp <- resultUp[order(resultUp$logFC, decreasing = TRUE),]
-            if (isTRUE(splitReg))
-                resultDown <- resultDown[order(resultDown$logFC),]
-        } else {
-            resultUp <- resultUp[order(resultUp[[orderBy]]),]
-            if (isTRUE(splitReg))
-                resultDown <- resultDown[order(resultDown[[orderBy]]),]
-        }
-    }
+    group <- group %||% as.character(unique(result$group))
+    group <- rlang::arg_match(
+        arg = group,
+        values =  as.character(unique(result$group)),
+        multiple = TRUE
+    )
     resultList <- list()
-    for (g in unique(result$group)) {
-        query <- list(Up = resultUp$feature[resultUp$group == g])
-        if (splitReg) query$Down <- resultDown$feature[resultDown$group == g]
-        resultList[[g]] <- gprofiler2::gost(
-            query = query, custom_bg = bg, domain_scope = domain_scope,
-            ordered_query = ordered_query, ...
-        )
+    for (g in group) {
+        groupResult <- result %>% dplyr::filter(.data[['group']] == g)
+        query <- list()
+        if (!is.null(orderBy)) {
+            # Ranked mode
+            orderBy <- rlang::arg_match(arg = orderBy,
+                                        values = c("logFC", "pval", "padj"),
+                                        multiple = FALSE)
+            if (orderBy == 'logFC') {
+                query$Up <- groupResult %>%
+                    dplyr::arrange(dplyr::desc(.data[['logFC']])) %>%
+                    dplyr::pull(.data[['feature']])
+                if (isTRUE(splitReg)) {
+                    query$Down <- groupResult %>%
+                        dplyr::arrange(.data[['logFC']]) %>%
+                        dplyr::pull(.data[['feature']])
+                }
+            } else {
+                if (isTRUE(splitReg)) {
+                    cli::cli_alert_warning(
+                        "Unable to split for up- and down-regulated genes when ranking by {orderBy}."
+                    )
+                }
+                query <- groupResult %>%
+                    dplyr::arrange(.data[[orderBy]]) %>%
+                    dplyr::pull(.data[['feature']])
+            }
+            res <- gprofiler2::gost(
+                query = query,
+                ordered_query = TRUE,
+                ...
+            )
+            res$result <- res$result %>%
+                dplyr::mutate(
+                    fold_enrichment =
+                        (.data[['intersection_size']] / .data[['term_size']]) /
+                        (.data[['query_size']] / .data[['effective_domain_size']])
+                )
+        } else {
+            # Two-list mode
+            query$Up <- groupResult %>%
+                dplyr::filter(.data[['logFC']] > logFCThresh,
+                              .data[['padj']] < padjThresh) %>%
+                dplyr::pull(.data[['feature']])
+            if (isTRUE(splitReg)) {
+                query$Down <- groupResult %>%
+                    dplyr::filter(.data[['logFC']] < -logFCThresh,
+                                  .data[['padj']] < padjThresh) %>%
+                    dplyr::pull(.data[['feature']])
+            }
+            bg <- NULL
+            domainScope <- 'annotated'
+            if (isTRUE(useBg)) {
+                bg <- unique(groupResult$feature)
+                domainScope <- 'custom'
+            }
+            res <- gprofiler2::gost(
+                query = query,
+                custom_bg = bg,
+                domain_scope = domainScope,
+                ...
+            )
+            res$result <- res$result %>%
+                dplyr::mutate(
+                    fold_enrichment =
+                        (.data[['intersection_size']] / .data[['term_size']]) /
+                        (.data[['query_size']] / .data[['effective_domain_size']])
+                )
+        }
+        resultList[[g]] <- res
     }
-
     return(resultList)
 }
 
@@ -244,7 +288,7 @@ runGOEnrich <- function(
 #' \code{names(result)}. Default \code{NULL} make plots for all groups.
 #' @param query A single string selecting from which query to show the result.
 #' Choose from \code{"Up"} for results using up-regulated genes, \code{"Down"}
-#' for down-regulated genes. Default \code{"Up"}.
+#' for down-regulated genes. Default NULL use anything available.
 #' @param pvalThresh Numeric scalar, cutoff for p-value where smaller values are
 #' considered as significant. Default \code{0.05}.
 #' @param n Number of top terms to be shown, ranked by p-value. Default
@@ -253,59 +297,47 @@ runGOEnrich <- function(
 #' \code{"^GO"} for only using GO terms from returned results.
 #' @param colorPalette,colorDirection Viridis palette options. Default
 #' \code{"E"} and \code{1}.
-#' @param xlab,ylab Axis title for x and y axis. Default
-#' \code{"-log10(P-value)"} and \code{"Term name"}, respectively.
 #' @inheritDotParams .ggplotLigerTheme title subtitle legendColorTitle legendSizeTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize plotly
 #' @return A ggplot object if only one group or a list of ggplot objects.
 #' @export
 #' @examples
 #' \donttest{
-#' defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
-#' # Test the DEG between "stim" and "ctrl", within each cluster
-#' result <- runPairwiseDEG(
-#'     pbmc,
-#'     groupTest = "stim",
-#'     groupCtrl = "ctrl",
-#'     variable1 = "dataset",
-#'     splitBy = "defaultCluster"
-#' )
-#' # Setting `significant = FALSE` because it's hard for a gene list obtained
-#' # from small test dataset to represent real-life biology.
 #' if (requireNamespace("gprofiler2", quietly = TRUE)) {
-#'     go <- runGOEnrich(result, group = "0.stim", splitReg = TRUE, significant = FALSE)
-#'     # The toy example won't have significant result.
+#'     go <- runGOEnrich(deg.pw)
 #'     plotGODot(go)
 #' }
 #' }
 plotGODot <- function(
         result,
         group = NULL,
-        query = c("Up", "Down"),
+        query = NULL,
         pvalThresh = 0.05,
         n = 20,
         termIDMatch = "^GO",
         colorPalette = "E",
-        colorDirection = 1,
-        xlab = '-log10(P-value)',
-        ylab = 'Term name',
+        colorDirection = -1,
         ...
 ) {
     group <- group %||% names(result)
-    if (any(!group %in% names(result))) {
-        cli::cli_abort(
-            c(x = "Specified group{?s} not available in {.var result}: {.val {group[!group %in% names(result)]}}",
-              i = "Available one{?s} {?is/are}: {.val {names(result)}}")
-        )
-    }
-    query <- match.arg(query)
+    group <- rlang::arg_match(
+        arg = group,
+        values = names(result),
+        multiple = TRUE
+    )
+    query <- query %||% as.character(unique(result[[group]]$result$query))
+    query <- rlang::arg_match(
+        arg = query,
+        values = as.character(unique(result[[group]]$result$query)),
+        multiple = TRUE
+    )
     plotList <- list()
     for (i in seq_along(group)) {
         gname <- group[i]
-        resdf <- result[[gname]]$result
-        resdf <- resdf[resdf$query == query, , drop = FALSE]
+        resdf <- result[[gname]]$result %>%
+            dplyr::filter(.data[['query']] == query)
         if (is.null(resdf) || nrow(resdf) == 0) {
             cli::cli_alert_warning(
-                "No significant result returned for group {.val {gname}} and query {.val {query}}."
+                "No result returned for group {.val {gname}} and query {.val {query}}."
             )
             next
         }
@@ -315,7 +347,7 @@ plotGODot <- function(
         )
         if (nrow(resdf) == 0) {
             cli::cli_alert_warning(
-                "No enough matching terms ({.field termIDMatch}) nor significant terms (p-value <= {.val {pvalThresh}}) for group {.val {gname}}."
+                "No enough matching terms ({.val termIDMatch}) nor significant terms (p-value <= {.val {pvalThresh}}) for group {.val {gname}}."
             )
             next
         }
@@ -323,7 +355,8 @@ plotGODot <- function(
             dplyr::select(dplyr::all_of(c(
                 'term_name',
                 'p_value',
-                'intersection_size'
+                'intersection_size',
+                'fold_enrichment'
             ))) %>%
             dplyr::arrange(.data[['p_value']]) %>%
             dplyr::slice_head(n = n) %>%
@@ -334,21 +367,27 @@ plotGODot <- function(
                 )
             ) %>%
             ggplot2::ggplot(ggplot2::aes(
-                x = -log10(.data[['p_value']]),
+                x = .data[['fold_enrichment']],
                 y = .data[['term_name']],
                 size = .data[['intersection_size']],
                 color = -log10(.data[['p_value']])
             )) +
-            ggplot2::geom_point()
+            ggplot2::geom_point() +
+            ggplot2::labs(x = 'Fold Enrichment',
+                          y = NULL,
+                          color = bquote(~-log[10](p-value)),
+                          size = "Gene Count")
         plotList[[gname]] <- .ggplotLigerTheme(
             plot = g,
             colorPalette = colorPalette,
             colorDirection = colorDirection,
-            xlab = xlab,
-            ylab = ylab,
             panelBorder = TRUE,
             ...
-        )
+        ) +
+            ggplot2::theme(
+                legend.title.position = 'left',
+                legend.title = ggplot2::element_text(angle = 270, hjust = 0)
+            )
     }
     if (length(plotList) == 1) {
         return(plotList[[1]])

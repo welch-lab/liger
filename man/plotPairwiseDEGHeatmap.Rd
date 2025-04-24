@@ -95,6 +95,8 @@ Create heatmap for pairwise DEG analysis result
 }
 \examples{
 defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
+pbmc$condition_cluster <- interaction(pbmc$dataset, pbmc$defaultCluster)
+deg <- runPairwiseDEG(pbmc, 'stim.0', 'stim.1', 'condition_cluster')
 pbmc <- normalize(pbmc)
-plotPairwiseDEGHeatmap(pbmc, deg.pw, '4.stim')
+plotPairwiseDEGHeatmap(pbmc, deg, 'stim.0')
 }

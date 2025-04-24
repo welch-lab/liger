@@ -5,12 +5,10 @@
 \alias{deg.pw}
 \title{Data frame for example pairwise DEG test result}
 \format{
-data.frame object of 1743 rows with columns:
+data.frame object of 1000 rows with columns:
 \itemize{
-\item feature: gene names, 249 unique genes repeated 7 times for the tests
-done for 7 clusters. (1 less cluster than in \code{\link{deg.marker}} due to
-too tiny sample size in the smallest cluster)
-\item group: cluster names, 7 unique cluster names, dividing the tests.
+\item feature: gene names.
+\item group: class name within the variable being used for the test condition.
 \item logFC: log fold change of the gene expression between the condition of
 interest against the control condition.
 \item pval: p-value of the DEG test.
@@ -26,22 +24,33 @@ deg.pw
 }
 \description{
 The data frame is the direct output of pairwise DEG test applied on example
-dataset which can be loaded with \code{data("pbmc")}. The DEG test was done
-with:
+dataset which can be loaded with \code{importPBMC()}. Cell type annotation
+was obtained from SeuratData package, "ifnb" dataset, since they are the
+same. Use the following command to reproduce the same result:
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
-degTest <- runPairwiseDEG(
-    pbmc,
-    groupTest = "stim",
-    groupCtrl = "ctrl",
-    variable1 = "dataset",
-    splitBy = "defaultCluster"
-)`
+\if{html}{\out{<div class="sourceCode">}}\preformatted{library(rliger)
+library(Seurat)
+library(SeuratData)
+
+lig <- importPBMC()
+ifnb <- LoadData("ifnb")
+lig$cell_type <- ifnb$seurat_annotations
+lig$condition_cell_type <- interaction(lig$dataset, lig$cell_type, drop = FALSE)
+deg.pw <- runPairwiseDEG(
+    object = lig,
+    groupTest = 'stim.CD14 Mono',
+    groupCtrl = 'ctrl.CD14 Mono',
+    variable1 = 'condition_cell_type'
+)
+deg.pw <- deg.pw[order(deg.pw$padj)[1:1000],]
+```
+
+The result represents the statistics of DEG test between stim dataset against
+ctrl dataset, within the CD14 monocytes. The result is randomly sampled to
+1000 entries for minimum demonstration.
+
+[1:1000]: R:1:1000
 }\if{html}{\out{</div>}}
-
-The result is for the DEG test split for each cluster in the dataset, and
-within each cluster, compare the cells from "stim" against the cells from
-"ctrl".
 }
 \seealso{
 \code{\link[=runPairwiseDEG]{runPairwiseDEG()}}

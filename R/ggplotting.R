@@ -403,8 +403,7 @@ plotDimRed <- function(
 #'                slot = "cellMeta", splitBy = "dataset",
 #'                colorBy = "leiden_cluster",
 #'                box = TRUE, dot = TRUE,
-#'                ylab = "Total counts per cell",
-#'                colorValues = RColorBrewer::brewer.pal(8, "Set1"))
+#'                ylab = "Total counts per cell")
 #' plotCellViolin(pbmcPlot, y = "S100A8", slot = "normData",
 #'                yFunc = function(x) log2(10000*x + 1),
 #'                groupBy = "dataset", colorBy = "leiden_cluster",

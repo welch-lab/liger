@@ -558,13 +558,6 @@ removeMissingObs <- function(
 #' @examples
 #' pbmc <- normalize(pbmc)
 normalize <- function(object, ...) {
-    lifecycle::deprecate_soft(
-        when = "2.1.0.9006",
-        what = "normalize()",
-        details = "Explicit call to `normalize()` is no longer necessary in
-        newer versions of rliger. Running `selectBatchHVG()` and then
-        `scaleNotCenter()` will keep the results consistent, while less
-        memory and storage will be used.")
     UseMethod("normalize", object)
 }
 
@@ -1287,6 +1280,12 @@ plotVarFeatures <- function(
         plotList[[d]] <- p
     }
     if (isTRUE(combinePlot)) {
+        if (!requireNamespace("cowplot", quietly = TRUE)) {
+            cli::cli_abort(c(
+                x = "Package {.pkg cowplot} is required for combining plots.",
+                i = "Please install it with {.code install.packages('cowplot')}, or use {.code combinePlot = FALSE} to return a list of plots."
+            ))
+        }
         suppressWarnings({
             legend <- cowplot::get_legend(plotList[[1]])
         })

@@ -8,7 +8,7 @@
 #' \code{NULL} uses default cluster.
 #' @param useDimRed Name of the variable storing dimensionality reduction result
 #' in the \code{cellMeta(object)}. Default \code{NULL} use default dimRed.
-#' @param combinePlots Logical, whether to utilize
+#' @param combinePlot Logical, whether to utilize
 #' \code{\link[cowplot]{plot_grid}} to combine multiple plots into one. Default
 #' \code{TRUE} returns combined ggplot. \code{FALSE} returns a list of ggplot.
 #' @param features,factors Name of genes or index of factors that need to be
@@ -63,10 +63,10 @@ plotByDatasetAndCluster <- function(
         object,
         useDimRed = NULL,
         useCluster = NULL,
-        combinePlots = TRUE,
+        combinePlot = TRUE,
         ...
 ) {
-    plot <- list(
+    plotList <- list(
         dataset = plotDatasetDimRed(
             object, useDimRed = useDimRed, ...
         ),
@@ -74,11 +74,17 @@ plotByDatasetAndCluster <- function(
             object, useCluster = useCluster, useDimRed = useDimRed, ...
         )
     )
-    if (isTRUE(combinePlots)) {
-        plot <- cowplot::plot_grid(plotlist = plot, nrow = 1,
+    if (isTRUE(combinePlot)) {
+        if (!requireNamespace("cowplot", quietly = TRUE)) {
+            cli::cli_abort(c(
+                x = "Package {.pkg cowplot} is required for combining plots.",
+                i = "Please install it with {.code install.packages('cowplot')}, or use {.code combinePlot = FALSE} to return a list of plots."
+            ))
+        }
+        plotList <- cowplot::plot_grid(plotlist = plotList, nrow = 1,
                                    align = "h", axis = "tblr")
     }
-    return(plot)
+    return(plotList)
 }
 
 #' @rdname plotDimRed
@@ -238,6 +244,12 @@ plotGroupClusterDimRed <- function(
             ggplot2::theme(legend.position = "none")
     }
     if (!isTRUE(combinePlot)) return(plotList)
+    if (!requireNamespace("cowplot", quietly = TRUE)) {
+        cli::cli_abort(c(
+            x = "Package {.pkg cowplot} is required for combining plots.",
+            i = "Please install it with {.code install.packages('cowplot')}, or use {.code combinePlot = FALSE} to return a list of plots."
+        ))
+    }
     suppressWarnings({
         legend <- cowplot::get_legend(plotList[[1]])
         plotList <- lapply(plotList, function(gg) {
@@ -313,7 +325,8 @@ plotTotalCountViolin <- function(
         ...
 ) {
     plotCellViolin(object, y = "nUMI", groupBy = groupBy,
-                   ylab = "Total counts", ...)
+                   ylab = "Total counts", ...) +
+        ggplot2::scale_y_log10()
 }
 
 #' @export
@@ -324,7 +337,8 @@ plotGeneDetectedViolin <- function(
         ...
 ) {
     plotCellViolin(object, y = "nGene", groupBy = groupBy,
-                   ylab = "Number of Genes Detected", ...)
+                   ylab = "Number of Genes Detected", ...) +
+        ggplot2::scale_y_log10()
 }
 
 
@@ -522,6 +536,12 @@ plotProportion <- function(
         method = c("stack", "group", "pie"),
         ...
 ) {
+    if (!requireNamespace("cowplot", quietly = TRUE)) {
+        cli::cli_abort(c(
+            x = "Package {.pkg cowplot} is required for combining plots.",
+            i = "Please install it with {.code install.packages('cowplot')}."
+        ))
+    }
     class1 <- class1 %||% object@uns$defaultCluster
     method <- match.arg(method)
     p1 <- plotProportionDot(object, class1 = class1, class2 = class2, ...)
@@ -617,9 +637,17 @@ plotProportionBar <- function(
                                 method = method,
                                 inclRev = FALSE,
                                 panelBorder = panelBorder, ...)
-        if (isTRUE(combinePlot))
+        if (isTRUE(combinePlot)) {
+            if (!requireNamespace("cowplot", quietly = TRUE)) {
+                cli::cli_abort(c(
+                    x = "Package {.pkg cowplot} is required for combining plots.",
+                    i = "Please install it with {.code install.packages('cowplot')}, or use {.code combinePlot = FALSE} to return a list of plots."
+                ))
+            }
             return(cowplot::plot_grid(p, p2, align = "h", axis = "tblr"))
-        else return(list(p, p2))
+        } else {
+            return(list(p, p2))
+        }
     } else {
         return(p)
     }
@@ -908,7 +936,7 @@ plotProportionBox <- function(
 #' @return ggplot
 #' @export
 #' @examples
-#' plotVolcano(deg.pw, "0.stim")
+#' plotVolcano(deg.pw, "stim.CD14 Mono")
 plotVolcano <- function(
         result,
         group = NULL,
@@ -1193,9 +1221,16 @@ plotDensityDimRed <- function(
                                         dotRaster = dotRaster,
                                         ...)
         names(plotList) <- names(drList)
-        if (isTRUE(combinePlot))
+        if (isTRUE(combinePlot)) {
+            if (!requireNamespace("cowplot", quietly = TRUE)) {
+                cli::cli_abort(c(
+                    x = "Package {.pkg cowplot} is required for combining plots.",
+                    i = "Please install it with {.code install.packages('cowplot')}, or use {.code combinePlot = FALSE} to return a list of plots."
+                ))
+            }
             return(cowplot::plot_grid(plotlist = plotList,
                                       align = "hv", axis = "tblr"))
+        }
         else return(plotList)
     }
 }
@@ -1293,6 +1328,12 @@ plotGeneLoadings <- function(
         nPlot = 30,
         ...
 ) {
+    if (!requireNamespace("cowplot", quietly = TRUE)) {
+        cli::cli_abort(c(
+            x = "Package {.pkg cowplot} is required for combining plots.",
+            i = "Please install it with {.code install.packages('cowplot')}"
+        ))
+    }
     allDotArgs <- list(...)
     pdrArgs <- names(as.list(args(plotDimRed)))
     pglrArgs <- names(as.list(args(plotGeneLoadingRank)))

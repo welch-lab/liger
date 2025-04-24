@@ -32,7 +32,7 @@ plotByDatasetAndCluster(
   object,
   useDimRed = NULL,
   useCluster = NULL,
-  combinePlots = TRUE,
+  combinePlot = TRUE,
   ...
 )
 
@@ -179,7 +179,7 @@ for the plot. Requires installation of package "plotly". Default
 \item{useCluster}{Name of variable in \code{cellMeta(object)}. Default
 \code{NULL} uses default cluster.}
 
-\item{combinePlots}{Logical, whether to utilize
+\item{combinePlot}{Logical, whether to utilize
 \code{\link[cowplot]{plot_grid}} to combine multiple plots into one. Default
 \code{TRUE} returns combined ggplot. \code{FALSE} returns a list of ggplot.}
 

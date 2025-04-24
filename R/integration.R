@@ -410,6 +410,31 @@ runINMF.Seurat <- function(
             cli::cli_alert_info("Replicate run [{i}/{nRandomStarts}]")
         }
         set.seed(seed = seed + i - 1)
+        WInit <- WInit %||% matrix(
+            data = abs(stats::runif(n = length(features) * k, min = 0, max = 2)),
+            nrow = length(features),
+            ncol = k
+        )
+        VInit <- VInit %||% lapply(
+            X = seq_along(object),
+            FUN = function(i) {
+                matrix(
+                    data = abs(x = stats::runif(n = length(features) * k, min = 0, max = 2)),
+                    nrow = length(features),
+                    ncol = k
+                )
+            }
+        )
+        HInit <- HInit %||% lapply(
+            X = barcodeList,
+            FUN = function(barcodes) {
+                return(matrix(
+                    data = abs(stats::runif(n = length(barcodes) * k, min = 0, max = 2)),
+                    nrow = length(barcodes),
+                    ncol = k
+                ))
+            }
+        )
         out <- RcppPlanc::inmf(objectList = object, k = k, lambda = lambda,
                                niter = nIteration, Hinit = HInit,
                                Vinit = VInit, Winit = WInit, nCores = nCores,
