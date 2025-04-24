@@ -43,7 +43,7 @@ as.liger.SingleCellExperiment <- function(
             Please install it by command:
             {.code BiocManager::install('SummarizedExperiment')}"
         ) # nocov end
-    raw <- SingleCellExperiment::counts(object)
+    raw <- methods::as(SingleCellExperiment::counts(object), 'CsparseMatrix')
 
     if (is.null(datasetVar)) {
         if ("sample" %in% colnames(SummarizedExperiment::colData(object))) {
@@ -77,7 +77,7 @@ as.liger.SingleCellExperiment <- function(
         cellMeta(lig, cdnNew) <- colDataCopy[[cdn]]
     }
     for (rd in SingleCellExperiment::reducedDimNames(object)) {
-        cellMeta(lig, rd) <- SingleCellExperiment::reducedDim(object, rd)
+        dimRed(lig, rd) <- SingleCellExperiment::reducedDim(object, rd)
     }
 
     return(lig)
@@ -227,7 +227,7 @@ as.ligerDataset.SingleCellExperiment <- function(
             {.code BiocManager::install('SingleCellExperiment')}"
         ) # nocov end
     modal <- match.arg(modal)
-    mat <- SingleCellExperiment::counts(object)
+    mat <- methods::as(SingleCellExperiment::counts(object), 'CsparseMatrix')
     createLigerDataset(rawData = mat, modal = modal, ...)
 }
 

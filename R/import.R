@@ -339,6 +339,14 @@ createH5LigerDataset <- function(
         featureMeta = NULL,
         ...
 ) {
+    replaceFunc <- ifelse(endsWith(h5file, 'h5ad'), 'readH5AD', 'read10XH5')
+    lifecycle::deprecate_warn(
+        when = "2.2.0",
+        what = I('Building liger object with specifying paths to HDF5 files'),
+        with = sprintf('%s()', replaceFunc),
+        details = sprintf("It is now possible to load HDF5 backed data into memory with %s() by default, or featuring the on-disk scalability with %s(inMemory = FALSE)",
+                          replaceFunc, replaceFunc)
+    )
     # Currently commented this check because it fails for unknown reason on
     # Windows platform when subsetting H5 to H5, even if the following part
     # works without passing this check

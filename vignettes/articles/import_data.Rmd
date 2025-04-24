@@ -1,7 +1,7 @@
 ---
 title: "Import Data from Various Source"
 author: "Yichen Wang"
-date: "2024-03-16"
+date: "2024-04-24"
 output: 
   html_document:
     toc: 3
@@ -12,18 +12,20 @@ output:
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
-This article only focuses on reading in data presented in various forms and provides detailed examples and explanations. Currently, we support importing the following forms of input data into a [liger](../reference/liger-class.html) object:
+This article only focuses on creating a [liger](../reference/liger-class.html) object using data presented in various forms and provides detailed examples and explanations. Currently, we support importing the following forms of input data:
 
-- [Flat MTX files](#data-presented-with-mtx-files) containing sparse matrices, together with files containing barcodes and feature names. These are mostly the 10X cellranger output.
-- [H5 files](#data-presented-with-h5-files) containing the sparse data, barcodes, and feature names. These can be found also in 10X cellranger output, as well as [H5AD files](#importing-from-h5ad-file-python-anndata-object) written from a Python AnnData object.
+- [HDF5 files](#data-presented-with-h5-files) containing the sparse data, barcodes, and feature names. These can be found in 10X cellranger output folder, as well as [H5AD files](#importing-from-h5ad-file-python-anndata-object) written from a Python AnnData object.
+- [Flat MTX files](#data-presented-with-mtx-files) containing sparse matrices, together with files containing barcodes and feature names. These are mostly the 10X cellranger output found in users own projects or distributed with publications.
 - Loaded R objects of the following classes:
   - [dgCMatrix](#importing-r-object---dgcmatrix)
   - [Seurat, preferably of V5 structure](#importing-r-object---seurat)
   - [SingleCellExperiment](#importing-r-object---singlecellexperiment)
 
-Whichever type of data you want to bring to a LIGER analysis, we generally recommend that it represents the raw information, such as RNA raw counts, peak counts. LIGER performs optimally with its own normalization (library-size/L1 normalization only) and scaling (no centering) procedures, and other types of transformation may not be compatible with LIGER's assumptions.
+Whichever type of data you want to bring to a LIGER analysis, we generally recommend that it represents the **raw counts** information. LIGER performs optimally with its own normalization (library-size normalization only) and scaling (no centering) procedures, and other types of transformation may not be compatible with LIGER's assumptions.
 
-The data imported from flat MTX files will be read into memory, internally converted into dgCMatrix objects. Data from other R object classes will also be converted into dgCMatrix objects. Data stored in H5 files will not be read into memory, as they are employed for helping with large datasets that cannot be loaded into memory. The main liger object constructor function, `createLiger()`, requires a **named list** as its first argument, where each element is a dataset to be integrated. Each element of the named list can be of different types from described above and below. However, it is limited that we don't currently provide integration method that integrates H5 data with other types of data. That is, either you can integrate H5 data with H5 data, or you can integrate in-memory data with in-memory data. If integration under this situation is needed, we still provide some solution.
+The data imported from flat MTX files will be read into memory, internally converted into dgCMatrix objects. Data from other R object classes will also be converted into dgCMatrix objects. Data stored in HDF5 files can either be loaded into dgCMatrix or HDF5-backed DelayedMatrix representation. The latter is particularly useful when the datasets are large and cannot be loaded into memory. 
+
+The main liger object constructor function, `createLiger()`, requires a **named list** as its first argument, where each element is a dataset to be integrated. The elements of the dataset list must be all of the same type, i.e. all in memory (dgCMatrix) or all on disk (DelayedMatrix). In the case where users have mixed types of data in hand, we provide conversion functions to coerce everything to one side.
 
 If you need to import data presented in other forms but encounter problems coercing them to supported formats, please feel free to [open an Issue on our GitHub repository](https://github.com/welch-lab/liger/issues/new) to request for support.
 
@@ -159,15 +161,25 @@ outs
     ...
 ```
 
-To create a liger object with H5 files, you simply need to provide the path to each H5 files in a named list. 
+Function `read10XH5()` is provided to load the raw count matrix of a single sample into a sparse matrix. The example below loads the data into memory and allows for the best speed in computation. This is typically recommended for transcriptomic data of at most a total of a few hundred thousand single cells.
 
 ```{R importH5, eval=FALSE}
-H5PathList <- list(
-    sample123 = "/home/jdoe/runs/sample123/outs/filtered_feature_bc_matrix.h5",
-    sample456 = "/home/jdoe/runs/sample456/outs/filtered_feature_bc_matrix.h5"
-)
-ligerObj <- createLiger(H5PathList)
+sample1Matrix <- read10XH5("/home/jdoe/runs/sample123/outs/filtered_feature_bc_matrix.h5")
+sample2Matrix <- read10XH5("/home/jdoe/runs/sample456/outs/filtered_feature_bc_matrix.h5")
+matrixList <- list(sample123 = sample1Matrix, sample456 = sample2Matrix)
+ligerObj <- createLiger(matrixList)
 ```     
+
+For projects with a larger number of cells, e.g. a million or more, we recommend loading the data into a HDF5-backed DelayedMatrix representation. This is done by setting `inMemory = FALSE`. Computation will be executed by loading affordable chunks of data into memory at a time. This can scale to millions of cells, at the cost of slightly slower computation speed. The **limitation** here is that one H5 file can only contain one QC'ed dataset, as the subset handling feature of DelayedMatrix is not supported yet. This will be updated in the future. Users can currently perform QC on individual in-memory data and write to equivalent format with `writeH5()`.
+
+```{R importH5Delayed, eval=FALSE}
+sample1Matrix <- read10XH5("/home/jdoe/runs/sample123/outs/filtered_feature_bc_matrix.h5", inMemory = FALSE)
+sample2Matrix <- read10XH5("/home/jdoe/runs/sample456/outs/filtered_feature_bc_matrix.h5", inMemory = FALSE)
+matrixList <- list(sample123 = sample1Matrix, sample456 = sample2Matrix)
+ligerObj <- createLiger(matrixList)
+```
+
+>In rliger version before 2.2.0, HDF5 backed data are imported with simply passing the file paths to `createLiger()`. This usage is still supported though, it is not recommended anymore and will be deprecated in the future. 
 
 ## Importing R object - dgCMatrix
 
@@ -217,6 +229,8 @@ sceList <- list(
 ligerObj <- createLiger(sceList)
 ```
 
+Note that rliger only takes `counts(sce)` for use and coerce it to a dgCMatrix.
+
 ### A single SCE, including many datasets
 
 If it happens that your single SCE object includes multiple datasets that need to be integrated. We suggest using `as.liger()` to convert it into a liger object. In this case, the second argument `datasetVar` must be provided for inferring how to split the data. Assume that the example `sce` object has a column `sample` in its `colData`:
@@ -228,44 +242,67 @@ ligerObj <- as.liger(sce, datasetVar = "sample")
 
 ## Importing from H5AD file, Python AnnData object
 
->**WARNING**: We strongly suggest that you make a COPY of the H5AD file for rliger analyis. rliger load the HDF5 file with read-and-write mode and occasionally writes to the file, which might cause the file unable to be loaded back to Python AnnData object. This will be improved in the future.
+>In rliger version before 2.2.0, HDF5 backed data are imported with simply passing the file paths to `createLiger()`. This usage is still supported though, it is not recommended anymore and will be deprecated in the future. 
 
-[AnnData](https://anndata.readthedocs.io/en/latest/) is a popular Python class for single-cell analysis. When storing the object, it is written to an H5AD file, which is also based on HDF5 library, and is totally supported to be loaded into a liger object. Note that the H5AD specification has been changed since anndata 0.8.0, and we only support the new format. If you have H5AD file written by an older version of anndata, you need to convert it to the new format using an upgraded version of Python anndata package.
+>**WARNING**: We strongly suggest that you make a COPY of the H5AD file for rliger analyis if you create objects with passing the file paths (an old syntax). This mode loads the HDF5 file with read-and-write mode and occasionally writes to the file, which makes the file unable to be loaded back to Python AnnData object. 
+
+[AnnData](https://anndata.readthedocs.io/en/latest/) is a popular Python class for single-cell analysis. When storing the object, it is written to an H5AD file, which is also based on HDF5 library, and is supported to be loaded into a liger object. If you encounter issues of incompatible encoding, please try writing the data to H5AD file with upgraded AnnData package or submit an issue on our GitHub repository.
+
+Different than other types of classes where the raw counts are stored at a fixed location, it is important to explicitly specify where the raw counts can be found in an H5AD file. Please see the function help. 
+
+There are currently a few **limitations** with H5AD files:
+
+- An AnnData must have all features, not subset to variable features.
+- An AnnData must have raw counts in sparse form. 
+- For enabling the scalable on-disk computation, each dataset must be provided with its own QC'ed H5AD file.
+
+### Each H5AD file a dataset
+
+H5AD files with single dataset can be easily loaded into memory with `readH5AD()`. Please make sure the layer specified contains sparse data.
 
 ```{importH5AD, eval=FALSE}
-# NOT RUN, for demonstration only
-ligerObj <- createLiger(
-  list(
-    sample1 = "path/to/sample1.h5ad",
-    sample2 = "path/to/sample2.h5ad"
-  ),
-  formatType = "anndata"
-)
+sample1Matrix <- readH5AD("path/to/sample1.h5ad", layer = "X")
+sample2Matrix <- readH5AD("path/to/sample2.h5ad", layer = "layers/counts")
+matrixList <- list(sample1 = sample1Matrix, sample2 = sample2Matrix)
+ligerObj <- createLiger(matrixList)
 ```
 
-A few limitations to note here are that:
+### One H5AD file, multiple datasets
 
-1. We by default read the data located at `adata.X`. However, due to the fact that people might be storing data at `adata.layers['key']` or `adata.raw.X`, and LIGER requires the raw data as the start point, we provide argument `anndataX` to allow setting the path to the data. See `createH5LigerDataset()` for more details.
-2. LIGER expects that each H5AD file contains only one dataset to be integrated, because we are not loading the H5 based data into memory and hence don't yet have method to split the data by a given variable. This will be updated in the future.
+For H5AD files containing multiple batches, it can be loaded into one in-memory matrix first, and then converted to a liger object with `as.liger()`. The metadata variable specifying the batch information can be loaded at the same time.
+
+```{importH5AD2, eval=FALSE}
+bigMatrixWithObs <- readH5AD('path/to/project.h5ad', layer = 'layers/counts', obs = TRUE)
+bigMatrix <- bigMatrixWithObs$matrix
+metadata <- bigMatrixWithObs$obs
+ligerObj <- as.liger(bigMatrix, datasetVar = metadata$batch)
+# You can also add other necessary variables afterwards.
+# metadata <- metadata[colnames(ligerObj),]
+# ligerObj$varName <- metadata$varName
+```
+
+As stated in the limitations above, large datasets typically providing scaled expression of variable features in dense form is not supported. 
+
+### Scalable on-disk computation with H5AD files
+
+Similar to how we deal with 10X H5 files, data backed in H5AD files can also be loaded into a DelayedMatrix representation. This is also done by setting `inMemory = FALSE`. Computation will be executed by loading affordable chunks of data into memory at a time. This can scale to millions of cells, at the cost of slightly slower computation speed. 
+
+The **limitation** here is that one H5AD file can only contain one QC'ed dataset, as the subset handling feature of DelayedMatrix is not supported yet. This will be updated in the future. Users can currently perform QC on individual in-memory data and write to equivalent format with `writeH5()`.
+
+```{importH5ADDelayed, eval=FALSE}
+sample1Matrix <- readH5AD("path/to/sample1.h5ad", layer = "X", inMemory = FALSE)
+sample2Matrix <- readH5AD("path/to/sample2.h5ad", layer = "layers/counts", inMemory = FALSE)
+matrixList <- list(sample1 = sample1Matrix, sample2 = sample2Matrix)
+ligerObj <- createLiger(matrixList)
+```
 
 ## Working with mixed types of data
 
-The `createLiger()` constructor function expects a named list as its first input, while the element in this list can be of various forms. 
-
-### Mixing cellranger output H5 files with anndata H5AD files
-
-When importing a number of H5-based datasets that are of the same specification, one can tweak the additional arguments of the function to apply the same settings to all these datasets. However, if you want to integrate H5 datasets of different types (e.g. cellranger output and H5AD), you will need to load each dataset into ligerDataset object individually, and then call the `createLiger()` function with a list of these ligerDataset objects.
-
-```{importMixed, eval=FALSE}
-# NOT RUN, for demonstration only
-ligerDataset1 <- createH5LigerDataset("path/to/runs/sample/outs/filtered_feature_bc_matrix.h5", formatType = "10x")
-ligerDataset2 <- createH5LigerDataset("path/to/sample2.h5ad", formatType = "anndata", anndataX = "raw/X")
-ligerObj <- createLiger(list(ligerDataset1, ligerDataset2))
-```
+**LIGER requires that the data to be co-factorized are either all in memory or all on disk. ** 
 
 ### Mixing all kinds of R in-memory objects
 
-If each of your R objects contains a single dataset to be integrated, you can simply pass them to the named list.
+If each of your R objects contains a single dataset to be integrated, you can simply pass them to the named list. Each element of the list is processed separately.
 
 ```{importMixed2, eval=FALSE}
 # NOT RUN, for demonstration only
@@ -278,7 +315,9 @@ ligerObj <- createLiger(
 )
 ```
 
-Function `as.ligerDataset` is called under the hook to convert each R object to a ligerDataset object, and it directly fetches the `'counts'` layer/slot of the default assay from a Seurat object, or the `'counts'` assay from an SCE object. If this is not the desired behavior, you can manually extract the correct matrix.
+A single dgCMatrix object can be loaded from various sources which are not demonstrated in example above (e.g. `read10X()`, `read10XH5()`, `readH5AD()` or any other methods).
+
+Function `as.ligerDataset` is called under the hood to convert each R object to a ligerDataset object, and it directly fetches the `'counts'` layer/slot of the default assay from a Seurat object, or the `'counts'` assay from an SCE object. If this is not the desired behavior, you can manually extract the correct matrix.
 
 ```{importMixed3, eval=FALSE}
 # NOT RUN, for demonstration only
@@ -320,46 +359,35 @@ ligerObj
 ## dimReds(0):
 ```
 
-### Mixing H5 files with in-memory objects
+### Mixing on-disk representation from cellranger H5 files and H5AD files
 
-Technically, with the hints provided above, you can create a liger object with both in-memory and H5-based datasets presented at the same time. However, the integration methods will not work in this situation. Generally, users will have to either write the in-memory part to H5 files and replace the datasets with the H5 copies accordingly, or read subsampled data from H5 files to memory and replace the datasets with the in-memory copies. Note that we assume that H5 files are employed for holding large datasets that cannot be fit into the memory and this is why we suggest subsampling them. If they are indeed okay to be loaded into memory, you can totally load them with `subsetLigerDataset(..., newH5 = FALSE)` and replace the datasets with the full in-memory copies.
+For enabling scalable on-disk computation, we utilize DelayedArray repsentation to hold on-disk sparse data without loading it into memory. This type of representation should be created with either `read10XH5()` or `readH5AD()` with setting `inMemory = FALSE`. Note that **not all types of DelayedArray objects are supported**. Please also see the limitation stated in sections above. 
 
-It is becoming more common that users have large datasets stored in H5 files and are expensive to be all loaded into memory. `runOnlineINMF()` runs highly efficient methods to integrate datasets presented in this form. If you want to bring a rather smaller in-memory dataset to the pool and have it integrated together, you can write the dataset to an H5 file and then create a liger object with it. In this way, the integration will have the maximum information captured from all datasets.
+To use on-disk data from both 10X H5 files and H5AD files, users can simply create the DelayedArray object of each, and normally create a liger object.
 
-```{writeH5, eval=FALSE}
+```{importMixed, eval=FALSE}
 # NOT RUN, for demonstration only
-class(smallData)
-## [1] "dgCMatrix"
-write(smallData, "path/to/smallData.h5")
+tenxSample1 <- read10XH5('path/sample/out/filtered_feature_bc_matrix.h5', inMemory = FALSE)
+adataSample2 <- readH5AD('path/sample2.h5ad', layer = "layers/counts", inMemory = FALSE)
 
-largeLiger
-## An object of class liger with XXXXXX cells
-## datasets(n): sample1 (XXXXX cells), sample2 (XXXXX cells), ...
-## cellMeta(10): dataset, barcode, group, nUMI, ..., hemo 
-## varFeatures(6000): AAA1, AAA2, BBB1, BBB2, ...
-## dimReds(0):  
-smallDataset <- createH5LigerDataset("path/to/smallData.h5")
-dataset(largeLiger, "sampleSmall") <- smallDataset
-
-largeLiger
-## An object of class liger with XXXXXX cells
-## datasets(n): sample1 (XXXXX cells), sample2 (XXXXX cells), ..., sampleSmall (XXXX cells)
-## cellMeta(10): dataset, barcode, group, nUMI, ..., hemo 
-## varFeatures(6000): AAA1, AAA2, BBB1, BBB2, ...
-## dimReds(0):  
+ligerObj <- createLiger(list(sample1 = tenxSample1, sample2 = adataSample2))
 ```
 
-However, after integration, downstream analyses that rely on gene/feature expression values (e.g. differential expression analysis) would still need in-memory form of the data. We provide `downsample()` to sub-sample data from H5 files and read the subset to memory, with fraction of dataset source and/or cell type balanced. This might be improved in the future.
+### Mixing H5/H5AD files with in-memory objects
 
-The following example would randomly sample 4,000 cells from each dataset in `largeLiger` and load only the normalized data into memory. The `newH5` argument is set to `FALSE` to load the data into memory, and the `useSlot` argument is set to `"normData"` to load only the normalized data. The `maxCells` argument is set to `4000` to sample 4,000 cells from each dataset. The resulting `downsampledData` is a liger object with the same structure as `largeLiger`, but with only the downsampled normalized in-memory data.
+It is not supported to mix on-disk and in-memory data in LIGER integration, though, we provide approaches to coerce the data to either side.
 
-```{downsampleH5, eval=FALSE}
-# NOT RUN, for demonstration only
-downsampledData <- downsample(largeLiger, newH5 = FALSE, maxCells = 4000, useSlot = "normData")
-downsampledData
-## An object of class liger with XXXXXX cells
-## datasets(n): sample1 (4000 cells), sample2 (4000 cells), ..., sampleSmall (4000 cells)
-## cellMeta(10): dataset, barcode, group, nUMI, ..., leiden_cluster
-## varFeatures(6000): AAA1, AAA2, BBB1, BBB2, ...
-## dimReds(1): UMAP
+#### H5/H5AD to in-memory
+
+Functions `read10XH5()` or `readH5AD()` can be used to load the data into a dgCMatrix. Users can then follow guides above that cover many situations.
+
+#### In-memory to HDF5
+
+We provide function `writeH5()` to write an in-memory sparse matrix to a 10X-style H5 file. Users can then load it to a DelayedArray object for holding the on-disk information. Note that the written H5 file might not be loadable by some other toolkits, since only gene names are avaiable to be written while some toolkits require both gene name and ID to be avaiable.
+
+```{writeH5, eval=FALSE}
+writeH5(dgCMatrix1, 'path/to/sample1.h5')
+delayed1 <- read10XH5('path/to/sample1.h5', inMemory = FALSE)
+adataSample2 <- readH5AD('path/sample2.h5ad', layer = "layers/counts", inMemory = FALSE)
+ligerObj <- createLiger(list(sample1 = delayed1, sample2 = adataSample2))
 ```
