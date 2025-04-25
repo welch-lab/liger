@@ -172,6 +172,8 @@ navbar:
       href: https://welch-lab.github.io/
     - icon: fab fa-github fa-lg
       href: https://github.com/welch-lab/liger
+      aria-label: "GitHub"
     - icon: fab fa-twitter fa-lg
       href: https://twitter.com/LabWelch
+      aria-label: "Twitter/X"
 

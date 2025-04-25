@@ -10,6 +10,8 @@ plotGODot(
   query = NULL,
   pvalThresh = 0.05,
   n = 20,
+  minDotSize = 3,
+  maxDotSize = 7,
   termIDMatch = "^GO",
   colorPalette = "E",
   colorDirection = -1,
@@ -31,6 +33,11 @@ considered as significant. Default \code{0.05}.}
 
 \item{n}{Number of top terms to be shown, ranked by p-value. Default
 \code{20}.}
+
+\item{minDotSize}{The size of the dot representing the minimum gene count.
+Default \code{3}.}
+
+\item{maxDotSize}{The size of the dot representing the maximum gene count.}
 
 \item{termIDMatch}{Regular expression pattern to match the term ID. Default
 \code{"^GO"} for only using GO terms from returned results.}
@@ -73,8 +80,8 @@ Visualize GO enrichment test result in dot plot
 \examples{
 \donttest{
 if (requireNamespace("gprofiler2", quietly = TRUE)) {
-    go <- runGOEnrich(deg.pw)
-    plotGODot(go)
+   go <- runGOEnrich(deg.pw)
+   plotGODot(go)
 }
 }
 }

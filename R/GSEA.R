@@ -293,6 +293,9 @@ runGOEnrich <- function(
 #' considered as significant. Default \code{0.05}.
 #' @param n Number of top terms to be shown, ranked by p-value. Default
 #' \code{20}.
+#' @param minDotSize The size of the dot representing the minimum gene count.
+#' Default \code{3}.
+#' @param maxDotSize The size of the dot representing the maximum gene count.
 #' @param termIDMatch Regular expression pattern to match the term ID. Default
 #' \code{"^GO"} for only using GO terms from returned results.
 #' @param colorPalette,colorDirection Viridis palette options. Default
@@ -303,8 +306,8 @@ runGOEnrich <- function(
 #' @examples
 #' \donttest{
 #' if (requireNamespace("gprofiler2", quietly = TRUE)) {
-#'     go <- runGOEnrich(deg.pw)
-#'     plotGODot(go)
+#'    go <- runGOEnrich(deg.pw)
+#'    plotGODot(go)
 #' }
 #' }
 plotGODot <- function(
@@ -313,6 +316,8 @@ plotGODot <- function(
         query = NULL,
         pvalThresh = 0.05,
         n = 20,
+        minDotSize = 3,
+        maxDotSize = 7,
         termIDMatch = "^GO",
         colorPalette = "E",
         colorDirection = -1,
@@ -328,13 +333,15 @@ plotGODot <- function(
     query <- rlang::arg_match(
         arg = query,
         values = as.character(unique(result[[group]]$result$query)),
-        multiple = TRUE
+        multiple = FALSE
     )
     plotList <- list()
     for (i in seq_along(group)) {
         gname <- group[i]
-        resdf <- result[[gname]]$result %>%
-            dplyr::filter(.data[['query']] == query)
+        resdf <- result[[gname]]$result
+        # Can't use dplyr call here because the environment object name 'query'
+        # will be wrongly understood as a column.
+        resdf <- resdf[resdf$query == query, , drop = FALSE]
         if (is.null(resdf) || nrow(resdf) == 0) {
             cli::cli_alert_warning(
                 "No result returned for group {.val {gname}} and query {.val {query}}."
@@ -372,7 +379,18 @@ plotGODot <- function(
                 size = .data[['intersection_size']],
                 color = -log10(.data[['p_value']])
             )) +
+            ggplot2::geom_segment(
+                mapping = ggplot2::aes(
+                    x = 0,
+                    y = .data[['term_name']],
+                    xend = .data[['fold_enrichment']],
+                    yend = .data[['term_name']],
+                    color = -log10(.data[['p_value']])
+                ),
+                size = 0.5
+            ) +
             ggplot2::geom_point() +
+            ggplot2::scale_size_continuous(range = c(minDotSize, maxDotSize)) +
             ggplot2::labs(x = 'Fold Enrichment',
                           y = NULL,
                           color = bquote(~-log[10](p-value)),
@@ -384,6 +402,7 @@ plotGODot <- function(
             panelBorder = TRUE,
             ...
         ) +
+            ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.1))) +
             ggplot2::theme(
                 legend.title.position = 'left',
                 legend.title = ggplot2::element_text(angle = 270, hjust = 0)
