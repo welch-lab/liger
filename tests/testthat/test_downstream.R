@@ -229,8 +229,8 @@ test_that("wilcoxon", {
 
         expect_is(plotGODot(go1, pvalThresh = 1), "ggplot")
         expect_error(plotGODot(go1, group = "ctrl"), "must be one of")
-        expect_message(plotGODot(go1, group = '0', pvalThresh = 1e-50), "No enough matching")
-        expect_is(plotGODot(go3, pvalThresh = 1), "list")
+        expect_error(plotGODot(go1, group = '0', pvalThresh = 1e-50), "No enough matching")
+        expect_is(plotGODot(go3, pvalThresh = 1), "ggplot")
     }
 })
 

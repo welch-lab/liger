@@ -21,12 +21,12 @@ plotGODot(
 \arguments{
 \item{result}{Returned list object from \code{\link{runGOEnrich}}.}
 
-\item{group}{Character vector of group names, must be available in
-\code{names(result)}. Default \code{NULL} make plots for all groups.}
+\item{group}{A single group name to be visualized, must be available in
+\code{names(result)}. Default \code{NULL} make plots for the first group.}
 
 \item{query}{A single string selecting from which query to show the result.
 Choose from \code{"Up"} for results using up-regulated genes, \code{"Down"}
-for down-regulated genes. Default NULL use anything available.}
+for down-regulated genes. Default NULL use the first available.}
 
 \item{pvalThresh}{Numeric scalar, cutoff for p-value where smaller values are
 considered as significant. Default \code{0.05}.}
@@ -72,7 +72,7 @@ for the plot. Requires installation of package "plotly". Default
   }}
 }
 \value{
-A ggplot object if only one group or a list of ggplot objects.
+A ggplot object.
 }
 \description{
 Visualize GO enrichment test result in dot plot

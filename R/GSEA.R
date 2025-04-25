@@ -284,11 +284,11 @@ runGOEnrich <- function(
 
 #' Visualize GO enrichment test result in dot plot
 #' @param result Returned list object from \code{\link{runGOEnrich}}.
-#' @param group Character vector of group names, must be available in
-#' \code{names(result)}. Default \code{NULL} make plots for all groups.
+#' @param group A single group name to be visualized, must be available in
+#' \code{names(result)}. Default \code{NULL} make plots for the first group.
 #' @param query A single string selecting from which query to show the result.
 #' Choose from \code{"Up"} for results using up-regulated genes, \code{"Down"}
-#' for down-regulated genes. Default NULL use anything available.
+#' for down-regulated genes. Default NULL use the first available.
 #' @param pvalThresh Numeric scalar, cutoff for p-value where smaller values are
 #' considered as significant. Default \code{0.05}.
 #' @param n Number of top terms to be shown, ranked by p-value. Default
@@ -301,7 +301,7 @@ runGOEnrich <- function(
 #' @param colorPalette,colorDirection Viridis palette options. Default
 #' \code{"E"} and \code{1}.
 #' @inheritDotParams .ggplotLigerTheme title subtitle legendColorTitle legendSizeTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize plotly
-#' @return A ggplot object if only one group or a list of ggplot objects.
+#' @return A ggplot object.
 #' @export
 #' @examples
 #' \donttest{
@@ -327,7 +327,7 @@ plotGODot <- function(
     group <- rlang::arg_match(
         arg = group,
         values = names(result),
-        multiple = TRUE
+        multiple = FALSE
     )
     query <- query %||% as.character(unique(result[[group]]$result$query))
     query <- rlang::arg_match(
@@ -335,82 +335,71 @@ plotGODot <- function(
         values = as.character(unique(result[[group]]$result$query)),
         multiple = FALSE
     )
-    plotList <- list()
-    for (i in seq_along(group)) {
-        gname <- group[i]
-        resdf <- result[[gname]]$result
-        # Can't use dplyr call here because the environment object name 'query'
-        # will be wrongly understood as a column.
-        resdf <- resdf[resdf$query == query, , drop = FALSE]
-        if (is.null(resdf) || nrow(resdf) == 0) {
-            cli::cli_alert_warning(
-                "No result returned for group {.val {gname}} and query {.val {query}}."
-            )
-            next
-        }
-        resdf %<>% dplyr::filter(
-            grepl(termIDMatch, .data[['term_id']]),
-            .data[['p_value']] <= pvalThresh
+    resdf <- result[[group]]$result
+    # Can't use dplyr call here because the environment object name 'query'
+    # will be wrongly understood as a column.
+    resdf <- resdf[resdf$query == query, , drop = FALSE]
+    if (is.null(resdf) || nrow(resdf) == 0) {
+        cli::cli_abort(
+            "No result returned for group {.val {group}} and query {.val {query}}."
         )
-        if (nrow(resdf) == 0) {
-            cli::cli_alert_warning(
-                "No enough matching terms ({.val termIDMatch}) nor significant terms (p-value <= {.val {pvalThresh}}) for group {.val {gname}}."
+    }
+    resdf %<>% dplyr::filter(
+        grepl(termIDMatch, .data[['term_id']]),
+        .data[['p_value']] <= pvalThresh
+    )
+    if (nrow(resdf) == 0) {
+        cli::cli_abort(
+            "No enough matching terms ({.val termIDMatch}) nor significant terms (p-value <= {.val {pvalThresh}}) for group {.val {group}}."
+        )
+    }
+    g <- resdf %>%
+        dplyr::select(dplyr::all_of(c(
+            'term_name',
+            'p_value',
+            'intersection_size',
+            'fold_enrichment'
+        ))) %>%
+        dplyr::arrange(.data[['p_value']]) %>%
+        dplyr::slice_head(n = n) %>%
+        dplyr::mutate(
+            term_name = factor(
+                .data[['term_name']],
+                levels = rev(.data[['term_name']])
             )
-            next
-        }
-        g <- resdf %>%
-            dplyr::select(dplyr::all_of(c(
-                'term_name',
-                'p_value',
-                'intersection_size',
-                'fold_enrichment'
-            ))) %>%
-            dplyr::arrange(.data[['p_value']]) %>%
-            dplyr::slice_head(n = n) %>%
-            dplyr::mutate(
-                term_name = factor(
-                    .data[['term_name']],
-                    levels = rev(.data[['term_name']])
-                )
-            ) %>%
-            ggplot2::ggplot(ggplot2::aes(
-                x = .data[['fold_enrichment']],
+        ) %>%
+        ggplot2::ggplot(ggplot2::aes(
+            x = .data[['fold_enrichment']],
+            y = .data[['term_name']],
+            size = .data[['intersection_size']],
+            color = -log10(.data[['p_value']])
+        )) +
+        ggplot2::geom_segment(
+            mapping = ggplot2::aes(
+                x = 0,
                 y = .data[['term_name']],
-                size = .data[['intersection_size']],
+                xend = .data[['fold_enrichment']],
+                yend = .data[['term_name']],
                 color = -log10(.data[['p_value']])
-            )) +
-            ggplot2::geom_segment(
-                mapping = ggplot2::aes(
-                    x = 0,
-                    y = .data[['term_name']],
-                    xend = .data[['fold_enrichment']],
-                    yend = .data[['term_name']],
-                    color = -log10(.data[['p_value']])
-                ),
-                size = 0.5
-            ) +
-            ggplot2::geom_point() +
-            ggplot2::scale_size_continuous(range = c(minDotSize, maxDotSize)) +
-            ggplot2::labs(x = 'Fold Enrichment',
-                          y = NULL,
-                          color = bquote(~-log[10](p-value)),
-                          size = "Gene Count")
-        plotList[[gname]] <- .ggplotLigerTheme(
-            plot = g,
-            colorPalette = colorPalette,
-            colorDirection = colorDirection,
-            panelBorder = TRUE,
-            ...
+            ),
+            size = 0.5
         ) +
-            ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.1))) +
-            ggplot2::theme(
-                legend.title.position = 'left',
-                legend.title = ggplot2::element_text(angle = 270, hjust = 0)
-            )
-    }
-    if (length(plotList) == 1) {
-        return(plotList[[1]])
-    } else {
-        return(plotList)
-    }
+        ggplot2::geom_point() +
+        ggplot2::scale_size_continuous(range = c(minDotSize, maxDotSize)) +
+        ggplot2::labs(x = 'Fold Enrichment',
+                      y = NULL,
+                      color = bquote(~-log[10](p-value)),
+                      size = "Gene Count")
+    .ggplotLigerTheme(
+        plot = g,
+        colorPalette = colorPalette,
+        colorDirection = colorDirection,
+        panelBorder = TRUE,
+        ...
+    ) +
+        ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.1))) +
+        ggplot2::theme(
+            legend.title.position = 'left',
+            legend.title = ggplot2::element_text(angle = 270, hjust = 0)
+        )
 }
