@@ -50,7 +50,10 @@
 #' }
 #' @export
 #' @examples
+#' print("The example below works, but causes PDF manual rendering issue for some reason")
+#' \dontrun{
 #' writeH5AD(pbmc, filename = tempfile(fileext = ".h5ad"))
+#' }
 writeH5AD <- function(
         object,
         ...

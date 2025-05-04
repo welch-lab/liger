@@ -97,5 +97,8 @@ Supports for single sparse matrices or internal \linkS4class{ligerDataset}
 objects are also provided if there is a need to convert single datasets.
 }
 \examples{
+print("The example below works, but causes PDF manual rendering issue for some reason")
+\dontrun{
 writeH5AD(pbmc, filename = tempfile(fileext = ".h5ad"))
+}
 }

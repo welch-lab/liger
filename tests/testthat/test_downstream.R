@@ -5,17 +5,6 @@ withNewH5Copy <- function(fun) {
     stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
     if (!file.exists(ctrlpath.orig))
         stop("Cannot find original h5 file at: ", ctrlpath.orig)
-    # if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
-    # if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
-    # pwd <- getwd()
-    # # Temp setting for GitHub Actions
-    # fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
-    # if (Sys.info()["sysname"] == "Windows") {
-    #     pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
-    # }
-
-    # ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
-    # stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
     ctrlpath <- tempfile(pattern = "ctrltest_", fileext = ".h5")
     stimpath <- tempfile(pattern = "stimtest_", fileext = ".h5")
     cat("Working ctrl H5 file path: ", ctrlpath, "\n")
@@ -26,20 +15,11 @@ withNewH5Copy <- function(fun) {
         stop("Cannot find copied h5 file at: ", ctrlpath)
     if (!file.exists(stimpath))
         stop("Cannot find copied h5 file at: ", stimpath)
-
+    on.exit({
+        if (file.exists(ctrlpath)) unlink(ctrlpath)
+        if (file.exists(stimpath)) unlink(stimpath)
+    })
     fun(list(ctrl = ctrlpath, stim = stimpath))
-
-    if (file.exists(ctrlpath)) unlink(ctrlpath)
-    if (file.exists(stimpath)) unlink(stimpath)
-}
-
-closeH5Liger <- function(object) {
-    for (d in names(object)) {
-        if (isH5Liger(object, d)) {
-            h5file <- getH5File(object, d)
-            h5file$close()
-        }
-    }
 }
 
 process <- function(object, f = TRUE, q = TRUE) {
@@ -67,17 +47,18 @@ is_online <- function() {
 context("Clustering")
 test_that("clustering", {
     skip_if_not_installed("RcppPlanc")
-    pbmc <- process(pbmc, f = FALSE, q = FALSE)
+    # pbmc <- process(pbmc, f = FALSE, q = FALSE)
     expect_error(runCluster(pbmc), "No cell factor loading available")
-
-    pbmc <- runOnlineINMF(pbmc, k = 20, minibatchSize = 100)
+    pbmc@datasets$ctrl@H <- pbmcPlot@datasets$ctrl@H
+    pbmc@datasets$stim@H <- pbmcPlot@datasets$stim@H
+    pbmc@uns <- pbmcPlot@uns
+    pbmc@uns$defaultCluster <- NULL
+    pbmc@uns$defaultDimRed <- NULL
     expect_message(runCluster(pbmc, nRandomStarts = 1),
                    "leiden clustering on unaligned")
-
     expect_message(runCluster(pbmc, nRandomStarts = 1, method = "louvain"),
                    "louvain clustering on unaligned")
-
-    pbmc <- quantileNorm(pbmc)
+    pbmc@H.norm <- pbmcPlot@H.norm
     expect_message(pbmc <- runCluster(pbmc, nRandomStarts = 1, saveSNN = TRUE),
                    "leiden clustering on aligned")
     expect_is(defaultCluster(pbmc, droplevels = TRUE), "factor")
@@ -99,7 +80,7 @@ test_that("clustering", {
     expect_error(defaultCluster(pbmc) <- fakevar, "Not all `names")
 
 
-
+    skip_on_cran()
     expect_equal(calcPurity(pbmc, "leiden_cluster", "leiden_cluster"), 1)
     expect_error(calcPurity(pbmc, letters, "leiden_cluster"),
                  "Longer/shorter `trueCluster` than cells considered requires")
@@ -146,11 +127,15 @@ test_that("clustering", {
 context("dimensionality reduction")
 test_that("dimensionality reduction", {
     skip_if_not_installed("RcppPlanc")
-    pbmc <- process(pbmc)
-    expect_message(runUMAP(pbmc, useRaw = TRUE),
-                   "Generating UMAP on unaligned")
+    # pbmc <- process(pbmc)
+    pbmc@datasets$ctrl@H <- pbmcPlot@datasets$ctrl@H
+    pbmc@datasets$stim@H <- pbmcPlot@datasets$stim@H
+    pbmc@uns <- pbmcPlot@uns
+    pbmc@uns$defaultCluster <- NULL
+    pbmc@uns$defaultDimRed <- NULL
     expect_error(dimRed(pbmc), "available in this")
-    expect_message(pbmc <- runUMAP(pbmc, useRaw = FALSE),
+    pbmc@H.norm <- pbmcPlot@H.norm
+    expect_message(pbmc <- runUMAP(pbmc),
                    "Generating UMAP on aligned")
     pbmc@uns$defaultDimRed <- NULL
     expect_message(dimRed(pbmc), "No default")
@@ -164,7 +149,9 @@ test_that("dimensionality reduction", {
     expect_equal(nrow(dimRed(pbmc, name = "UMAP", cellIdx = 1:10)), 10)
     expect_equal(nrow(dimRed(pbmc, name = "UMAP", useDatasets = names(pbmc))), ncol(pbmc))
     expect_no_error(dimRed(pbmc, 2) <- NULL)
-
+    skip_on_cran()
+    expect_message(runUMAP(pbmc, useRaw = TRUE),
+                   "Generating UMAP on unaligned")
     expect_message(runTSNE(pbmc, useRaw = TRUE),
                    "Generating TSNE \\(Rtsne\\) on unaligned")
     expect_message(pbmc <- runTSNE(pbmc, useRaw = FALSE),
@@ -184,13 +171,36 @@ test_that("wilcoxon", {
     skip_if_not_installed("RcppPlanc")
     expect_error(runMarkerDEG(pbmc),
                  "No `conditionBy` given or default cluster not set")
-    pbmc <- process(pbmc)
-    pbmc <- runCluster(pbmc, nRandomStarts = 1)
+    pbmc <- normalize(pbmc)
+    pbmc$leiden_cluster <- pbmcPlot$leiden_cluster
+    defaultCluster(pbmc) <- 'leiden_cluster'
     res0 <- runMarkerDEG(pbmc, conditionBy = "dataset", useDatasets = 1, method = "wilcox")
     expect_true(all(is.nan(res0$pval)))
 
     res1 <- runMarkerDEG(pbmc, method = "wilcox")
     expect_equal(dim(res1), c(249 * nlevels(pbmc$leiden_cluster), 10))
+
+    skip_if_not_installed("gprofiler2")
+    expect_error(runGOEnrich(res1, group = "a"),
+                 "must be one of")
+    expect_error(runGOEnrich(res1, group = '0', orderBy = c("logFC", "pval")),
+                 "must be one of")
+    expect_error(runGOEnrich(res1, orderBy = "score"),
+                 "must be one of")
+    skip_on_cran()
+    if (is_online()) {
+        go1 <- runGOEnrich(res1, group = '0', orderBy = "logFC", significant = FALSE)
+        expect_is(go1, "list")
+        expect_is(go1$`0`$result, "data.frame")
+        expect_is(plotGODot(go1, pvalThresh = 1), "ggplot")
+        expect_error(plotGODot(go1, group = "ctrl"), "must be one of")
+        expect_error(plotGODot(go1, group = '0', pvalThresh = 1e-50), "No enough matching")
+        go2 <- runGOEnrich(res1, group = '0', orderBy = "pval", significant = FALSE)
+        expect_is(go2, "list")
+        expect_is(go2$`0`$result, "data.frame")
+        go3 <- runGOEnrich(res1, group = c('0', '1'), significant = FALSE)
+        expect_is(plotGODot(go3, pvalThresh = 1), "ggplot")
+    }
     res2 <- runMarkerDEG(pbmc, conditionBy = "dataset", splitBy = "leiden_cluster", method = "wilcox")
     expect_is(res2, "data.frame")
     hm1 <- plotMarkerHeatmap(pbmc, res1, dedupBy = "l")
@@ -210,28 +220,6 @@ test_that("wilcoxon", {
     expect_is(res3, "list")
     expect_identical(names(res3), c("ctrl", "shared", "stim", "num_factors_V1",
                                    "num_factors_V2"))
-
-    skip_if_not_installed("gprofiler2")
-    expect_error(runGOEnrich(res1, group = "a"),
-                 "must be one of")
-    expect_error(runGOEnrich(res1, group = '0', orderBy = c("logFC", "pval")),
-                 "must be one of")
-    expect_error(runGOEnrich(res1, orderBy = "score"),
-                 "must be one of")
-    if (is_online()) {
-        go1 <- runGOEnrich(res1, group = '0', orderBy = "logFC", significant = FALSE)
-        expect_is(go1, "list")
-        expect_is(go1$`0`$result, "data.frame")
-        go2 <- runGOEnrich(res1, group = '0', orderBy = "pval", significant = FALSE)
-        expect_is(go2, "list")
-        expect_is(go2$`0`$result, "data.frame")
-        go3 <- runGOEnrich(res1, group = c('0', '1'), significant = FALSE)
-
-        expect_is(plotGODot(go1, pvalThresh = 1), "ggplot")
-        expect_error(plotGODot(go1, group = "ctrl"), "must be one of")
-        expect_error(plotGODot(go1, group = '0', pvalThresh = 1e-50), "No enough matching")
-        expect_is(plotGODot(go3, pvalThresh = 1), "ggplot")
-    }
 })
 
 
@@ -239,13 +227,25 @@ test_that("pseudo bulk", {
     skip_if_not_installed("RcppPlanc")
     skip_if_not_installed("DESeq2")
     nIsecGenes <- length(Reduce(intersect, lapply(rawData(pbmc), rownames)))
-    pbmc <- process(pbmc)
-    pbmc <- runCluster(pbmc, nRandomStarts = 1)
+    rawList <- rawData(pbmc)
+    pbmc$leiden_cluster <- pbmcPlot$leiden_cluster
+
+    pbmc@datasets$ctrl@rawData <- NULL
+    expect_error(
+        runPairwiseDEG(
+            pbmc, groupTest = 1, groupCtrl = 2,
+            variable1 = "leiden_cluster",　method = "pseudo",
+            useReplicate = "dataset"
+        ),
+        "not all available for involved datasets"
+    )
+    pbmc@datasets$ctrl@rawData <- rawList$ctrl
     res1 <- runPairwiseDEG(pbmc, groupTest = pbmc$leiden_cluster == 1,
                            groupCtrl = pbmc$leiden_cluster == 2,
                            method = "pseudo")
     expect_is(res1, "data.frame")
     expect_true(all.equal(dim(res1), c(nIsecGenes, 7)))
+
     res2 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
                            variable1 = "leiden_cluster",
                            method = "pseudo", useReplicate = "dataset")
@@ -272,16 +272,6 @@ test_that("pseudo bulk", {
         ),
         "Too few replicates"
     )
-
-    pbmc@datasets$ctrl@rawData <- NULL
-    expect_error(
-        runPairwiseDEG(
-            pbmc, groupTest = 1, groupCtrl = 2,
-            variable1 = "leiden_cluster",　method = "pseudo",
-            useReplicate = "dataset"
-        ),
-        "not all available for involved datasets"
-    )
 })
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -290,6 +280,7 @@ test_that("pseudo bulk", {
 
 context("GSEA")
 test_that("gsea", {
+    skip_on_cran() # cran
     skip_if_not(is_online())
     skip_if_not_installed("org.Hs.eg.db")
     skip_if_not_installed("reactome.db")
@@ -314,6 +305,7 @@ test_that("gsea", {
 context("ATAC")
 data("bmmc")
 test_that("ATAC", {
+    skip_on_cran() # cran
     skip_if_not_installed("RcppPlanc")
     skip_if_not_installed("GenomicRanges")
     skip_if_not_installed("IRanges")
@@ -333,4 +325,3 @@ test_that("ATAC", {
     )
     expect_is(corr, "dgCMatrix")
 })
-

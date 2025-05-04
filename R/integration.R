@@ -2120,6 +2120,7 @@ centroidAlign.Seurat <- function(
 #' \code{byDataset = FALSE} or each dataset a value otherwise.
 #' @export
 #' @examples
+#' \donttest{
 #' if (requireNamespace("RcppPlanc", quietly = TRUE)) {
 #'     pbmc <- pbmc %>%
 #'     normalize %>%
@@ -2128,6 +2129,7 @@ centroidAlign.Seurat <- function(
 #'     runINMF %>%
 #'     alignFactors
 #'     calcAgreement(pbmc)
+#' }
 #' }
 calcAgreement <- function(
         object,

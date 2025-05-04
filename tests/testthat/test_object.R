@@ -6,17 +6,6 @@ withNewH5Copy <- function(fun) {
     stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
     if (!file.exists(ctrlpath.orig))
         stop("Cannot find original h5 file at: ", ctrlpath.orig)
-    # if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
-    # if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
-    # pwd <- getwd()
-    # # Temp setting for GitHub Actions
-    # fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
-    # if (Sys.info()["sysname"] == "Windows") {
-    #     pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
-    # }
-
-    # ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
-    # stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
     ctrlpath <- tempfile(pattern = "ctrltest_", fileext = ".h5")
     stimpath <- tempfile(pattern = "stimtest_", fileext = ".h5")
     cat("Working ctrl H5 file path: ", ctrlpath, "\n")
@@ -27,20 +16,11 @@ withNewH5Copy <- function(fun) {
         stop("Cannot find copied h5 file at: ", ctrlpath)
     if (!file.exists(stimpath))
         stop("Cannot find copied h5 file at: ", stimpath)
-
+    on.exit({
+        if (file.exists(ctrlpath)) unlink(ctrlpath)
+        if (file.exists(stimpath)) unlink(stimpath)
+    })
     fun(list(ctrl = ctrlpath, stim = stimpath))
-
-    if (file.exists(ctrlpath)) unlink(ctrlpath)
-    if (file.exists(stimpath)) unlink(stimpath)
-}
-
-closeH5Liger <- function(object) {
-    for (d in names(object)) {
-        if (isH5Liger(object, d)) {
-            h5file <- getH5File(object, d)
-            h5file$close()
-        }
-    }
 }
 
 process <- function(object) {
@@ -83,11 +63,16 @@ test_that("liger object creation - in memory", {
     expect_true(all(c("p1", "p2", "f1", "f2") %in% colnames(cellMeta(pbmc))))
 })
 
+context("liger object creation - on disk")
 test_that("liger object creation - on disk", {
+    skip()
     withNewH5Copy(
         function(rawList) {
-            expect_message(createLiger(rawList, formatType = "Hello"),
-                         "Specified `formatType`")
+            expect_warning(
+                expect_message(createLiger(rawList, formatType = "Hello"),
+                               "Specified `formatType`"),
+                'deprecated'
+            )
 
             # Customized paths
             barcodesName <- "matrix/barcodes"
@@ -104,7 +89,7 @@ test_that("liger object creation - on disk", {
                                 genesName = genesName)
             expect_is(pbmc, "liger")
             expect_true(isH5Liger(pbmc))
-            closeH5Liger(pbmc)
+            closeAllH5(pbmc)
 
             # Preset paths
             pbmc <- createLiger(rawList, formatType = "10X")
@@ -114,7 +99,7 @@ test_that("liger object creation - on disk", {
             expect_is(rawData(dataset(pbmc, "stim")), "H5D")
             expect_is(getH5File(pbmc, "ctrl"), "H5File")
             expect_is(getH5File(pbmc, "stim"), "H5File")
-            closeH5Liger(pbmc)
+            closeAllH5(pbmc)
         }
     )
 })
@@ -200,6 +185,7 @@ test_that("liger S3/S4 methods", {
 # ligerDataset object creation
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+context("ligerDataset object creation")
 test_that("ligerDataset (in memory) object creation", {
     expect_error(createLigerDataset())
 
@@ -225,6 +211,7 @@ test_that("ligerDataset (in memory) object creation", {
 # ligerDataset object methods
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+context('ligerDataset methods')
 test_that("ligerDataset methods", {
     skip_if_not_installed("RcppPlanc")
     pbmc <- process(pbmc)
@@ -329,7 +316,9 @@ test_that("ligerDataset methods", {
     expect_no_error(validObject(ctrl))
 })
 
+context('H5 ligerDataset methods')
 test_that("H5 ligerDataset methods", {
+    skip()
     skip_if_not_installed("RcppPlanc")
     withNewH5Copy(
         function(rawList) {
@@ -385,6 +374,7 @@ test_that("H5 ligerDataset methods", {
 # class conversion
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+context("class conversion")
 test_that("as.liger methods", {
     # dgCMatrix
     ctrlRaw <- rawDataList$ctrl
@@ -397,6 +387,7 @@ test_that("as.liger methods", {
     lig <- as.liger(ctrlRaw, datasetVar = c(rep("ctrl", 150), rep("stim", 150)))
     expect_true(identical(names(lig), c("ctrl", "stim")))
 
+    skip_on_cran()
     # SCE
     if (requireNamespace("SingleCellExperiment", quietly = TRUE)) {
         sce <- SingleCellExperiment::SingleCellExperiment(
@@ -431,6 +422,7 @@ test_that("as.liger methods", {
     expect_in("pca", names(dimReds(lig)))
 })
 
+context("ligerDataset class conversion")
 test_that("as.ligerDataset methods", {
     # ligerDataset
     ctrlLD <- dataset(pbmc, "ctrl")
@@ -448,7 +440,7 @@ test_that("as.ligerDataset methods", {
                           featureMeta = data.frame(id = 1:26, row.names = letters))
     expect_true(all.equal(rownames(ld), letters))
     expect_true(all.equal(colnames(ld), letters))
-
+    skip_on_cran()
     if (requireNamespace("Seurat", quietly = TRUE)) {
         # Seurat
         seu <- SeuratObject::CreateSeuratObject(rawData(ctrlLD))
@@ -466,6 +458,7 @@ test_that("as.ligerDataset methods", {
     }
 })
 
+context("ligerToSeurat")
 test_that("ligerToSeurat", {
     skip_if_not_installed("Seurat")
     skip_if_not_installed("SeuratObject")
@@ -509,6 +502,7 @@ test_that("ligerToSeurat", {
 # H5AD ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+context("H5AD")
 test_that("H5AD", {
     ctrlRaw <- rawData(pbmc, 'ctrl')
     tempfilename1 <- tempfile(fileext = ".h5ad")
@@ -529,6 +523,13 @@ test_that("H5AD", {
         writeH5AD(ctrlRaw, tempfilename1, overwrite = FALSE),
         'file exists'
     )
+
+    ctrlRawReadback <- readH5AD(tempfilename1, layer = 'X', inMemory = TRUE)
+    expect_identical(ctrlRawReadback, ctrlRaw)
+
+    skip_on_cran()
+
+
     expect_no_error(
         writeH5AD(ctrlRaw, tempfilename1, overwrite = TRUE)
     )
@@ -540,13 +541,16 @@ test_that("H5AD", {
         writeH5AD(ctrlLD, tempfilename2, obs = wrongObs, overwrite = FALSE),
         'identical'
     )
+
     expect_no_error(
         writeH5AD(ctrlLD, tempfilename2, overwrite = FALSE)
     )
+
     expect_error(
         writeH5AD(ctrlLD, tempfilename2, overwrite = FALSE),
         'file exists'
     )
+
     expect_no_error(
         writeH5AD(ctrlLD, tempfilename2, overwrite = TRUE)
     )

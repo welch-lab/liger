@@ -36,7 +36,8 @@ A list containing:
 \item{stats}{A data frame containing the k values, objective errors, and
 random starts.}
 \item{figure}{A ggplot2 object showing the objective errors and variance
-for each k value.}
+for each k value. The left y-axis corresponds to the dots and bands, the
+right second y-axis maps to the blue line that stands for the variance. }
 }
 \description{
 This function sweeps through a series of k values (number of ranks the
@@ -52,10 +53,19 @@ Currently we have identified that a wider step of k values (e.g. 5, 10, 15,
 
 Note that this function is supposed to take a long time when a larger number
 of random starts is requested (e.g. 50) for a robust suggestion. It is safe
-to interupt the progress (e.g. Ctrl+C) and the function will still return
+to interrupt the progress (e.g. Ctrl+C) and the function will still return
 the recorded objective errors already completed.
 }
 \examples{
+\donttest{
 pbmcPlot <- scaleNotCenter(pbmcPlot)
-suggestK(pbmcPlot, kTest = c(10, 15, 20), nRandomStart = 5)
+# Minimum test example, not for demonstrative recommendation
+suggests <- suggestK(
+    object = pbmcPlot,
+    kTest = c(2, 3),
+    nRandomStart = 2,
+    nIteration = 2
+)
+suggests$figure
+}
 }

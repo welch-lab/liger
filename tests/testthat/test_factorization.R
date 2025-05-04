@@ -6,17 +6,6 @@ withNewH5Copy <- function(fun) {
     stimpath.orig <- system.file("extdata/stim.h5", package = "rliger")
     if (!file.exists(ctrlpath.orig))
         stop("Cannot find original h5 file at: ", ctrlpath.orig)
-    # if (file.exists("ctrltest.h5")) file.remove("ctrltest.h5")
-    # if (file.exists("stimtest.h5")) file.remove("stimtest.h5")
-    # pwd <- getwd()
-    # # Temp setting for GitHub Actions
-    # fsep <- ifelse(Sys.info()["sysname"] == "Windows", "\\", "/")
-    # if (Sys.info()["sysname"] == "Windows") {
-    #     pwd <- file.path("C:\\Users", Sys.info()["user"], "Documents", fsep = fsep)
-    # }
-
-    # ctrlpath <- file.path(pwd, "ctrltest.h5", fsep = fsep)
-    # stimpath <- file.path(pwd, "stimtest.h5", fsep = fsep)
     ctrlpath <- tempfile(pattern = "ctrltest_", fileext = ".h5")
     stimpath <- tempfile(pattern = "stimtest_", fileext = ".h5")
     cat("Working ctrl H5 file path: ", ctrlpath, "\n")
@@ -27,20 +16,11 @@ withNewH5Copy <- function(fun) {
         stop("Cannot find copied h5 file at: ", ctrlpath)
     if (!file.exists(stimpath))
         stop("Cannot find copied h5 file at: ", stimpath)
-
+    on.exit({
+        if (file.exists(ctrlpath)) unlink(ctrlpath)
+        if (file.exists(stimpath)) unlink(stimpath)
+    })
     fun(list(ctrl = ctrlpath, stim = stimpath))
-
-    if (file.exists(ctrlpath)) unlink(ctrlpath)
-    if (file.exists(stimpath)) unlink(stimpath)
-}
-
-closeH5Liger <- function(object) {
-    for (d in names(object)) {
-        if (isH5Liger(object, d)) {
-            h5file <- getH5File(object, d)
-            h5file$close()
-        }
-    }
 }
 
 process <- function(object) {
@@ -90,6 +70,7 @@ test_that("iNMF - in-memory", {
 #     )
 # })
 
+context('UINMF')
 test_that("UINMF", {
     skip_if_not_installed("RcppPlanc")
     # Need to fake the situation because test dataset doesn't have real
@@ -117,6 +98,7 @@ test_that("UINMF", {
     expect_no_error(pbmc <- runUINMF(pbmc, k = 10, nIteration = 2))
 })
 
+context('Optimize new parameters')
 test_that("Optimize new parameters", {
     skip_if_not_installed("RcppPlanc")
     pbmc <- process(pbmc)
@@ -150,6 +132,7 @@ test_that("Optimize new parameters", {
     expect_equal(ncol(pbmc5), 900)
 })
 
+context('Online iNMF')
 test_that("Online iNMF - in-memory", {
     skip_if_not_installed("RcppPlanc")
     expect_error(runOnlineINMF(pbmc, k = 20, minibatchSize = 100),
@@ -193,6 +176,7 @@ test_that("Online iNMF - in-memory", {
                            minibatchSize = 100, projection = TRUE, WInit = W)
 })
 
+context('alignment')
 test_that("quantileNorm", {
     skip_if_not_installed("RcppPlanc")
     pbmc <- process(pbmc)
@@ -245,6 +229,7 @@ test_that("centroidAlign", {
 
 test_that("consensus iNMF", {
     skip_if_not_installed("RcppPlanc")
+    skip_on_cran()
     pbmc <- process(pbmc)
     expect_error(pbmc <- runCINMF(pbmc, k = 10, nRandomStarts = 1),
                  "must be greater than 1")
@@ -271,7 +256,12 @@ test_that("Seurat wrapper", {
     seu <- scaleNotCenter(seu)
     seu1 <- runIntegration(seu)
     expect_in("inmf", SeuratObject::Reductions(seu1))
+    seu1 <- quantileNorm(seu1, reduction = "inmf")
+    expect_in("inmfNorm", SeuratObject::Reductions(seu1))
+    seu2 <- alignFactors(seu1, "centroid", reduction = "inmf")
+    expect_in("inmfNorm", SeuratObject::Reductions(seu2))
 
+    skip_on_cran()
     x1 <- seu@assays$RNA@layers$ligerScaleData.ctrl@x[1]
     seu@assays$RNA@layers$ligerScaleData.ctrl@x[1] <- -1
     expect_error(runINMF(seu),
@@ -306,6 +296,7 @@ test_that("Seurat wrapper", {
 
 context("alignment metrics")
 test_that("Alignment metrics", {
+    skip_on_cran()
     skip_if_not_installed("RcppPlanc")
     pbmc <- process(pbmc)
     pbmc <- runIntegration(pbmc, k = 10, nIteration = 2)

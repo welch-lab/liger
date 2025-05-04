@@ -64,6 +64,7 @@ greater the agreement in general. Although agreement can theoretically
 approach 1, in practice it is usually no higher than 0.2-0.3.
 }
 \examples{
+\donttest{
 if (requireNamespace("RcppPlanc", quietly = TRUE)) {
     pbmc <- pbmc \%>\%
     normalize \%>\%
@@ -72,5 +73,6 @@ if (requireNamespace("RcppPlanc", quietly = TRUE)) {
     runINMF \%>\%
     alignFactors
     calcAgreement(pbmc)
+}
 }
 }

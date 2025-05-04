@@ -382,7 +382,7 @@ plotGODot <- function(
                 yend = .data[['term_name']],
                 color = -log10(.data[['p_value']])
             ),
-            size = 0.5
+            linewidth = 0.5
         ) +
         ggplot2::geom_point() +
         ggplot2::scale_size_continuous(range = c(minDotSize, maxDotSize)) +
