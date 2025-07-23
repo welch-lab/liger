@@ -212,10 +212,10 @@ test_that("wilcoxon", {
         expect_is(plotEnhancedVolcano(res1, 0), "ggplot")
     }
 
-    expect_error(getFactorMarkers(pbmc, "ctrl", "stim", factorShareThresh = 0),
+    expect_error(getFactorMarkers(pbmcPlot, "ctrl", "stim", factorShareThresh = 0),
                  "No factor passed the dataset specificity threshold")
     expect_message(
-        res3 <- getFactorMarkers(pbmc, "ctrl", "stim", printGenes = TRUE)
+        res3 <- getFactorMarkers(pbmcPlot, "ctrl", "stim", printGenes = TRUE)
     )
     expect_is(res3, "list")
     expect_identical(names(res3), c("ctrl", "shared", "stim", "num_factors_V1",

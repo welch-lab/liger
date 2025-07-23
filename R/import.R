@@ -1432,10 +1432,15 @@ readH5ADMem <- function(
     layer <- .H5AD.checkLayer(dfile, layer)
 
     # Processing the matrix
-    res <- switch(
-        EXPR = hdf5r::h5attr(dfile[[layer]], 'encoding-type'),
-        csr_matrix = .H5AD.readCSR(dfile, layer)
-    )
+    if (inherits(dfile[[layer]], 'H5Group')) {
+        res <- switch(
+            EXPR = hdf5r::h5attr(dfile[[layer]], 'encoding-type'),
+            csr_matrix = .H5AD.readCSR(dfile, layer)
+        )
+    } else if (inherits(dfile[[layer]], 'H5D')) {
+        res <- .H5AD.readDense(dfile, layer)
+    }
+
     obs_index_col <- hdf5r::h5attr(dfile[['obs']], '_index')
     obs_names <- dfile[['obs']][[obs_index_col]][]
     var_index_col <- hdf5r::h5attr(dfile[['var']], '_index')
@@ -1456,14 +1461,14 @@ readH5ADMem <- function(
 
 .H5AD.checkLayer <- function(dfile, layer) {
     layerAvail <- character()
-    if (dfile$exists('X')) layerAvail <- c(layerAvail, 'X')
+    if (dfile$exists('X')) layerAvail <- c('X')
     if (dfile$exists('raw')) {
         if (dfile$exists('raw/X')) {
             layerAvail <- c(layerAvail, 'raw/X')
         }
     }
     if (dfile$exists('layers')) {
-        layerAvail <- c(layerAvail, names(dfile[['layers']]))
+        layerAvail <- c(layerAvail, paste0('layers/', names(dfile[['layers']])))
     }
     if (missing(layer)) {
         cli::cli_abort(
@@ -1488,6 +1493,22 @@ readH5ADMem <- function(
     Matrix::sparseMatrix(i = i, p = p, x = x, dims = dims, repr = 'C')
 }
 
+.H5AD.readDense <- function(dfile, layer) {
+    chunkSize <- getOption('ligerChunkSize', 1000L)
+    nChunk <- ceiling(dfile[[layer]]$dims[2] / chunkSize)
+    matList <- list()
+    cli::cli_progress_bar("Loading dense data by chunk", total = nChunk)
+    for (i in seq_len(nChunk)) {
+        start <- (i - 1) * chunkSize + 1
+        end <- min(i * chunkSize, dfile[[layer]]$dims[2])
+        chunkMat <- dfile[[layer]][, start:end]
+        chunkMat <- methods::as(chunkMat, 'CsparseMatrix')
+        matList[[i]] <- chunkMat
+        cli::cli_progress_update()
+    }
+    return(Reduce(cbind, matList))
+}
+
 .H5AD.readObs <- function(dfile) {
     obs <- dfile[['obs']]
     obs_index_col <- hdf5r::h5attr(obs, '_index')
@@ -1496,8 +1517,19 @@ readH5ADMem <- function(
     for (i in seq_along(names(obs))) {
         cn <- names(obs)[i]
         if (cn == '_index') next
-        if (inherits(obs[[cn]], 'H5D')) df[[cn]] <- obs[[cn]][]
+        if (cn == '__categories') next
+        if (inherits(obs[[cn]], 'H5D')) {
+            if ('categories' %in% hdf5r::h5attr_names(obs[[cn]])) {
+                # Old stupid encoding
+                categories <- hdf5r::h5attr(obs[[cn]], 'categories')$dereference()[[1]][]
+                ints <- obs[[cn]][] + 1
+                df[[cn]] <- factor(categories[ints], levels = categories)
+            } else {
+                df[[cn]] <- obs[[cn]][]
+            }
+        }
         if (inherits(obs[[cn]], 'H5Group')) {
+            # Latest simple encoding
             categories <- obs[[cn]][['categories']]
             codes <- obs[[cn]][['codes']]
             fct <- factor(categories[codes[] + 1], levels = categories[])

@@ -769,7 +769,7 @@ plotCellViolin <- function(
             # Categorical setting
             guideFunc[[a]] <- ggplot2::guide_legend
             # Set dot size in legend
-            guide[[a]]$override.aes <- list(size = legendDotSize)
+            guide[[a]]$override.aes <- list(size = legendDotSize, alpha = 1)
             nCategory <- switch(
                 EXPR = class(plot$data[[varName]]),
                 factor = nlevels(plot$data[[varName]]),

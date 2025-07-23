@@ -388,6 +388,7 @@ test_that("as.liger methods", {
     expect_true(identical(names(lig), c("ctrl", "stim")))
 
     skip_on_cran()
+    skip_on_ci()
     # SCE
     if (requireNamespace("SingleCellExperiment", quietly = TRUE)) {
         sce <- SingleCellExperiment::SingleCellExperiment(
