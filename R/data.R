@@ -96,3 +96,16 @@
 #' gene.
 #' }
 "deg.pw"
+
+
+#' Cell cycle gene set for human
+#' @description
+#' Copied from Seurat::cc.genes
+#' @format
+#' A list of two character vectors:
+#' \describe{
+#' \item{s.genes}{Genes associated with S-phase}
+#' \item{g2m.genes}{Genes associated with G2M-phase}
+#' }
+#' @source https://www.science.org/doi/abs/10.1126/science.aad0501
+"ccGeneHuman"
