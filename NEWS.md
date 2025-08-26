@@ -1,20 +1,21 @@
 ## rliger Next
 
-- Standardized H5 IO specification that can be shared with other platforms.
-  - ~~Will move to use HDF5Array (TENxMatrix, H5ADMatrix)/ or BPCells for backed data representation, depending on easiness, cleanliness and future-sustainability of the implementation and cross-platform interoperability.~~
-  - Read feature metadata (e.g. id, name, ...) if available; Allow setting "id" as rownames, "name" for visualization.
-  - rawData - coming from the original input, read only (qc filtering should be just stored in the object, no IO)
-  - ~~preprocessing metrics - nUMI, nGene and etc, still go "chunkApply" so the file is read only once~~
-  - ~~normData - delayed computed data from rawData, no on disk representation~~
-  - ~~scaleData - new on-disk file and then create object back, because RcppPlanc won't be able to handle delayed computation~~
 - Ability to reorganize datasets
   - Allow doing something like `reorganize(ligerObj, variable = "somethingNotDataset")` and resulting in a new liger object with different ligerDataset grouping.
 - Ability to do downstream analysis on H5 data
   - Pseudo-bulk should be easy because we are just aggregating cells.
   - Wilcoxon might be a bit harder because ranks are calculated per gene but the 
   H5 sparse data is column majored. Might need to find a fast on-disk 
-  transposition method, ~~which would also enhance RcppPlanc performance when 
-  running ANLS on H5 data~~.
+  transposition method.
+
+## rliger 2.2.1
+
+- Added naive GSEA analysis on factor gene loading (W) to test if any known gene sets (e.g. cell cycle) is enriched in any factor. Implemented in `factorGSEA()`.
+- Added dense data loading support for H5AD files
+- Optimized obs metadata parsing for H5AD files
+- Fixed ggplot2 color picking when coloring by logical value
+- Fixed H5AD file layer detecting bug
+- Fixed some other minor bugs
 
 ## rliger 2.2.0
 
