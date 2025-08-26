@@ -320,7 +320,7 @@ plot.factorGSEA <- function(
         ggplot2::theme_linedraw() +
         ggplot2::labs(
             x = 'Rank',
-            y = 'Gene loading',
+            y = 'log(Gene loading + 1)',
             caption = sprintf(
                 '# Hitting genes: %d\nNormalized enrichment score: %.3f\nP-value: %.3f',
                 sum(plotDF$hits),

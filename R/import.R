@@ -1330,7 +1330,7 @@ read10XH5Delay <- function(
         useNames = TRUE,
         featureMakeUniq = TRUE
 ) {
-    if (!requireNamespace("HDF5Array", quitely = TRUE)) {
+    if (!requireNamespace("HDF5Array", quietly = TRUE)) {
         cli::cli_abort(c(
             x = "Package {.pkg HDF5Array} is required for reading 10X H5 data into DelayedArray.",
             i = "Please install with {.code BiocManager::install('HDF5Array')}."
