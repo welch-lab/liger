@@ -132,7 +132,9 @@ runUMAP <- function(
 #' @seealso \code{\link{runUMAP}}
 #' @export
 #' @examples
+#' \donttest{
 #' pbmc <- runTSNE(pbmcPlot)
+#' }
 runTSNE <- function(
         object,
         useRaw = NULL,

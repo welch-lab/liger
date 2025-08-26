@@ -91,8 +91,10 @@ is recommended, this function looks for unaligned factor loadings (raw result
 from \code{\link{runIntegration}}) when the former is not available.
 }
 \examples{
-pbmcPlot <- runCluster(pbmcPlot)
+pbmcPlot <- runCluster(pbmcPlot, nRandomStarts = 1)
 head(pbmcPlot$leiden_cluster)
+\donttest{
 pbmcPlot <- runCluster(pbmcPlot, method = "louvain")
 head(pbmcPlot$louvain_cluster)
+}
 }

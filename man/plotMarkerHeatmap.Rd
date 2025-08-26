@@ -95,7 +95,9 @@ A \link[ComplexHeatmap]{HeatmapList-class} object.
 Create heatmap for showing top marker expression in conditions
 }
 \examples{
+\donttest{
 defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
 pbmc <- normalize(pbmc)
 plotMarkerHeatmap(pbmc, deg.marker)
+}
 }

@@ -57,8 +57,10 @@ conversion if your \linkS4class{liger} object contains datasets from
 various modalities.
 }
 \examples{
+\donttest{
 if (requireNamespace("SeuratObject", quietly = TRUE) &&
     requireNamespace("Seurat", quietly = TRUE)) {
     seu <- ligerToSeurat(pbmc)
+}
 }
 }

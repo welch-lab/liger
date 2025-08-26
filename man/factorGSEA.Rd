@@ -60,7 +60,7 @@ genes are loaded in the top factor helps understand the identity and activity
 of the cell. This will require users to have there own gene sets prepared.
 }
 \examples{
-\dontrun{
+\donttest{
 pbmc <- pbmc \%>\%
     selectBatchHVG() \%>\%
     scaleNotCenter() \%>\%
@@ -70,7 +70,6 @@ factorGSEAres <- factorGSEA(pbmc, ccGeneHuman)
 print(factorGSEAres)
 summary(factorGSEAres)
 # Make GSEA plot for certain gene set and factor
-plot(factorGSEAres, 'g2m.genes', 'Factor_1')
+plot(factorGSEAres, geneSetName = 'g2m.genes', useFactor = 'Factor_1')
 }
-
 }

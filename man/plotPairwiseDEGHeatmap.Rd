@@ -94,9 +94,11 @@ A \link[ComplexHeatmap]{HeatmapList-class} object.
 Create heatmap for pairwise DEG analysis result
 }
 \examples{
+\donttest{
 defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
 pbmc$condition_cluster <- interaction(pbmc$dataset, pbmc$defaultCluster)
 deg <- runPairwiseDEG(pbmc, 'stim.0', 'stim.1', 'condition_cluster')
 pbmc <- normalize(pbmc)
 plotPairwiseDEGHeatmap(pbmc, deg, 'stim.0')
+}
 }

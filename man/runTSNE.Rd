@@ -87,7 +87,9 @@ Please consult
 \href{https://welch-lab.github.io/liger/articles/installation.html}{detailed guide}.
 }
 \examples{
+\donttest{
 pbmc <- runTSNE(pbmcPlot)
+}
 }
 \seealso{
 \code{\link{runUMAP}}

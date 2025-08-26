@@ -1053,9 +1053,11 @@ computePval <- function(ustat, ties, N, n1n2) {
 #' @inheritDotParams .plotHeatmap transpose showCellLabel showCellLegend showFeatureLabel cellAnnColList featureAnnColList scale trim baseSize cellTextSize featureTextSize cellTitleSize featureTitleSize legendTextSize legendTitleSize viridisOption viridisDirection RColorBrewerOption
 #' @return A \link[ComplexHeatmap]{HeatmapList-class} object.
 #' @examples
+#' \donttest{
 #' defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
 #' pbmc <- normalize(pbmc)
 #' plotMarkerHeatmap(pbmc, deg.marker)
+#' }
 plotMarkerHeatmap <- function(
         object,
         result,
@@ -1152,11 +1154,13 @@ plotMarkerHeatmap <- function(
 #' @inheritDotParams .plotHeatmap transpose showCellLabel showCellLegend showFeatureLabel cellAnnColList featureAnnColList scale trim baseSize cellTextSize featureTextSize cellTitleSize featureTitleSize legendTextSize legendTitleSize viridisOption viridisDirection RColorBrewerOption
 #' @return A \link[ComplexHeatmap]{HeatmapList-class} object.
 #' @examples
+#' \donttest{
 #' defaultCluster(pbmc) <- pbmcPlot$leiden_cluster
 #' pbmc$condition_cluster <- interaction(pbmc$dataset, pbmc$defaultCluster)
 #' deg <- runPairwiseDEG(pbmc, 'stim.0', 'stim.1', 'condition_cluster')
 #' pbmc <- normalize(pbmc)
 #' plotPairwiseDEGHeatmap(pbmc, deg, 'stim.0')
+#' }
 plotPairwiseDEGHeatmap <- function(
         object,
         result,

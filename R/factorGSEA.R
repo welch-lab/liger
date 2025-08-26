@@ -40,7 +40,7 @@
 #' such data frames.
 #' @export
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' pbmc <- pbmc %>%
 #'     selectBatchHVG() %>%
 #'     scaleNotCenter() %>%
@@ -50,9 +50,8 @@
 #' print(factorGSEAres)
 #' summary(factorGSEAres)
 #' # Make GSEA plot for certain gene set and factor
-#' plot(factorGSEAres, 'g2m.genes', 'Factor_1')
+#' plot(factorGSEAres, geneSetName = 'g2m.genes', useFactor = 'Factor_1')
 #' }
-#'
 factorGSEA <- function(
         object,
         geneSet,
@@ -125,7 +124,13 @@ gseaSingleGeneSet <- function(rankedGenes, gs, nPerm = 1000, cliID) {
     inSet <- rankedGenes %in% gs
     Nh <- sum(inSet)
     if (Nh == 0) {
-        return(data.frame(ES = NA, NES = NA, pval = NA))
+        return(list(
+            runningSum = NA,
+            hits = inSet,
+            ES = NA,
+            NES = NA,
+            pval = NA
+        ))
     }
 
     # No weight, uniform increment for hits
@@ -173,16 +178,18 @@ summary.factorGSEA <- function(object, ...) {
         # at gene set level
         for (j in seq_along(object[[i]])) {
             # at factor level
-            if (object[[i]][[j]]$pval < 0.05 && object[[i]][[j]]$NES > 0) {
-                rows <- c(rows, list(
-                    data.frame(
-                        geneSet = names(object)[i],
-                        factor = names(object[[i]])[j],
-                        ES = object[[i]][[j]]$ES,
-                        NES = object[[i]][[j]]$NES,
-                        pval = object[[i]][[j]]$pval
-                    )
-                ))
+            if (!is.na(object[[i]][[j]]$pval)) {
+                if (object[[i]][[j]]$pval < 0.05 && object[[i]][[j]]$NES > 0) {
+                    rows <- c(rows, list(
+                        data.frame(
+                            geneSet = names(object)[i],
+                            factor = names(object[[i]])[j],
+                            ES = object[[i]][[j]]$ES,
+                            NES = object[[i]][[j]]$NES,
+                            pval = object[[i]][[j]]$pval
+                        )
+                    ))
+                }
             }
         }
     }

@@ -65,6 +65,7 @@ basing on the weight. Therefore, the reference dataset selected must be of
 "atac" modality setting.
 }
 \examples{
+\donttest{
 bmmc <- normalize(bmmc)
 bmmc <- selectGenes(bmmc, datasets.use = "rna")
 bmmc <- scaleNotCenter(bmmc)
@@ -73,5 +74,6 @@ if (requireNamespace("RcppPlanc", quietly = TRUE)) {
     bmmc <- alignFactors(bmmc)
     bmmc <- normalizePeak(bmmc)
     bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
+}
 }
 }

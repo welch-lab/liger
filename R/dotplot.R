@@ -47,6 +47,7 @@
 #' @return \code{\link[ComplexHeatmap]{HeatmapList}} object.
 #' @export
 #' @examples
+#' \donttest{
 #' # Use character vector of genes
 #' features <- varFeatures(pbmcPlot)[1:10]
 #' plotClusterGeneDot(pbmcPlot, features = features)
@@ -55,6 +56,7 @@
 #' features <- data.frame(features, rep(letters[1:5], 2))
 #' plotClusterGeneDot(pbmcPlot, features = features,
 #'                    clusterFeature = TRUE, clusterCell = TRUE, maxDotSize = 6)
+#' }
 plotClusterGeneDot <- function(
         object,
         features,
@@ -171,7 +173,9 @@ plotClusterGeneDot <- function(
 #' @return \code{\link[ComplexHeatmap]{HeatmapList}} object.
 #' @export
 #' @examples
+#' \donttest{
 #' plotClusterFactorDot(pbmcPlot)
+#' }
 plotClusterFactorDot <- function(
         object,
         groupBy = NULL,

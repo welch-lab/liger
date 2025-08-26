@@ -83,6 +83,7 @@ column_split, column_title_gp, column_title, column_labels, column_names_gp,
 top_annotation}.
 }
 \examples{
+\donttest{
 # Use character vector of genes
 features <- varFeatures(pbmcPlot)[1:10]
 plotClusterGeneDot(pbmcPlot, features = features)
@@ -91,4 +92,5 @@ plotClusterGeneDot(pbmcPlot, features = features)
 features <- data.frame(features, rep(letters[1:5], 2))
 plotClusterGeneDot(pbmcPlot, features = features,
                    clusterFeature = TRUE, clusterCell = TRUE, maxDotSize = 6)
+}
 }

@@ -272,9 +272,11 @@ as.ligerDataset.SingleCellExperiment <- function(
 #' "counts.stim". If \code{merge = TRUE}, return a single Seurat object with
 #' layers for all datasets merged.
 #' @examples
+#' \donttest{
 #' if (requireNamespace("SeuratObject", quietly = TRUE) &&
 #'     requireNamespace("Seurat", quietly = TRUE)) {
 #'     seu <- ligerToSeurat(pbmc)
+#' }
 #' }
 ligerToSeurat <- function(
         object,

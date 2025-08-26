@@ -51,10 +51,12 @@
 #' @rdname runCluster
 #' @export
 #' @examples
-#' pbmcPlot <- runCluster(pbmcPlot)
+#' pbmcPlot <- runCluster(pbmcPlot, nRandomStarts = 1)
 #' head(pbmcPlot$leiden_cluster)
+#' \donttest{
 #' pbmcPlot <- runCluster(pbmcPlot, method = "louvain")
 #' head(pbmcPlot$louvain_cluster)
+#' }
 runCluster <- function(object,
                        resolution = 1.0,
                        nNeighbors = 20,

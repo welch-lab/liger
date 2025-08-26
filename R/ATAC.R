@@ -34,6 +34,7 @@
 #' normalized imputed peak counts if \code{norm = TRUE}.
 #' @export
 #' @examples
+#' \donttest{
 #' bmmc <- normalize(bmmc)
 #' bmmc <- selectGenes(bmmc, datasets.use = "rna")
 #' bmmc <- scaleNotCenter(bmmc)
@@ -42,6 +43,7 @@
 #'     bmmc <- alignFactors(bmmc)
 #'     bmmc <- normalizePeak(bmmc)
 #'     bmmc <- imputeKNN(bmmc, reference = "atac", queries = "rna")
+#' }
 #' }
 imputeKNN <- function(
         object,

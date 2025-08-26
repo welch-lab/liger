@@ -31,12 +31,14 @@
 #' with the original object.
 #' @export
 #' @examples
+#' \donttest{
 #' # Subsetting an object
 #' pbmc <- downsample(pbmc)
 #' # Creating a subsetting index
 #' sampleIdx <- downsample(pbmcPlot, balance = "leiden_cluster",
 #'                         maxCells = 10, returnIndex = TRUE)
 #' plotClusterDimRed(pbmcPlot, cellIdx = sampleIdx)
+#' }
 downsample <- function(
     object,
     balance = NULL,
