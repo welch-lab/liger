@@ -885,7 +885,7 @@ extractMergedNormData <- function(
         featureIdx = NULL
 ) {
     cellIdx <- .idxCheck(object, cellIdx, "cell")
-    datasetInvolved <- unique(object$dataset[cellIdx])
+    datasetInvolved <- as.character(unique(object$dataset[cellIdx]))
     cellID <- colnames(object)[cellIdx]
     getter <- switch(
         slot,
