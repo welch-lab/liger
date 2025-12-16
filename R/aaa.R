@@ -56,7 +56,7 @@ scPalette <- c('#E41A1C', '#377EB8', '#4DAF4A', '#FFCF00', '#aa47b9', '#e67c14',
         "Package `rliger` has been updated massively since version 1.99.0, ",
         "including the object structure which is not compatible with old ",
         "versions.\n\n",
-        "We recommand you backup your old analysis before overwriting any ",
+        "We recommend you backup your old analysis before overwriting any ",
         "existing result.\n\n",
         "`readLiger()` is provided for reading an RDS file storing an old ",
         "object and it converts the object to the up-to-date structure."
