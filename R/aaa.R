@@ -53,7 +53,7 @@ scPalette <- c('#E41A1C', '#377EB8', '#4DAF4A', '#FFCF00', '#aa47b9', '#e67c14',
 
 .onAttach <- function(libname, pkgname) {
     msg <- paste0(
-        "Package `rliger` has been updated massively since version 1.99.0, ",
+        "Package `rliger` has been updated significantly since version 1.99.0, ",
         "including the object structure which is not compatible with old ",
         "versions.\n\n",
         "We recommend you backup your old analysis before overwriting any ",
