@@ -16,6 +16,12 @@
 #' @param useSlot The slot(s) to only consider. Choose one or more from
 #' \code{"rawData"}, \code{"normData"} and \code{"scaleData"}. Default
 #' \code{NULL} subsets the whole object including analysis result matrices.
+#' @param libSize Numeric vector of total counts for each cell, used for
+#' dividing the raw counts to get normalized data when \code{useSlot} includes
+#' \code{"normData"} but pre-computed normalized data is not available nor
+#' desired. Must have the same length as the number of cells provided in
+#' \code{object}, i.e. to be subset by \code{cellIdx}. Default \code{NULL} uses
+#' \code{object$nUMI} when \code{object} is a \linkS4class{liger} object.
 #' @param newH5 Whether to create new H5 files on disk for the subset datasets
 #' if involved datasets in the \code{object} is HDF5 based. \code{TRUE} writes a
 #' new ones, \code{FALSE} returns in memory data.
@@ -39,6 +45,7 @@ subsetLiger <- function(
         featureIdx = NULL,
         cellIdx = NULL,
         useSlot = NULL,
+        libSize = NULL,
         chunkSize = 1000,
         verbose = getOption("ligerVerbose", TRUE),
         newH5 = TRUE,
@@ -48,8 +55,10 @@ subsetLiger <- function(
     if (inherits(object, "ligerDataset")) {
         object <- subsetLigerDataset(
             object = object, featureIdx = featureIdx, cellIdx = cellIdx,
-            useSlot = useSlot, chunkSize = chunkSize, verbose = verbose,
-            newH5 = newH5, returnObject = returnObject, ...)
+            useSlot = useSlot, libSize = libSize, chunkSize = chunkSize,
+            verbose = verbose, newH5 = newH5, returnObject = returnObject,
+            ...
+        )
         return(object)
     }
     if (!inherits(object, "liger")) {
@@ -62,7 +71,9 @@ subsetLiger <- function(
     orderedCellIdx <- sort(cellIdx)
     barcodes <- colnames(object)[orderedCellIdx]
     datasetVar <- object$dataset[orderedCellIdx]
-    useDatasets <- as.vector(unique(datasetVar))
+    useDatasets <- as.character(unique(datasetVar))
+    libSize <- libSize %||% object$nUMI
+    libSize <- libSize[orderedCellIdx]
     # feature idx need different check from ligerDataset's .idxCheck
     if (!is.null(featureIdx)) {
         if (!is.character(featureIdx)) {
@@ -95,9 +106,12 @@ subsetLiger <- function(
         ld <- subsetLigerDataset(
             object = ld, featureIdx = featureIdxDataset,
             cellIdx = barcodes[datasetVar == d], useSlot = useSlot,
+            libSize = libSize[datasetVar == d],
             chunkSize = chunkSize, verbose = verbose, newH5 = newH5,
-            returnObject = returnObject)
+            returnObject = returnObject
+        )
         datasets.new[[d]] <- ld
+        if (isTRUE(verbose)) cli::cli_process_done()
     }
     if (isTRUE(returnObject)) {
         if (!is.null(featureIdx)) {
@@ -245,6 +259,11 @@ retrieveCellFeature <- function(
 #' @param useSlot The slot(s) to only consider. Choose one or more from
 #' \code{"rawData"}, \code{"normData"} and \code{"scaleData"}. Default
 #' \code{NULL} subsets the whole object including analysis result matrices.
+#' @param libSize Numeric vector of total counts for each cell, used for
+#' dividing the raw counts to get normalized data when \code{useSlot} includes
+#' \code{"normData"} but pre-computed normalized data is not available nor
+#' desired. Must have the same length as the number of cells provided in
+#' \code{object}, i.e. to be subset by \code{cellIdx}.
 #' @param newH5 Whether to create a new H5 file on disk for the subset dataset
 #' if \code{object} is HDF5 based. \code{TRUE} writes a new one, \code{FALSE}
 #' returns in memory data.
@@ -274,6 +293,7 @@ subsetLigerDataset <- function(
         featureIdx = NULL,
         cellIdx = NULL,
         useSlot = NULL,
+        libSize = NULL,
         newH5 = TRUE,
         filename = NULL,
         filenameSuffix = NULL,
@@ -291,6 +311,7 @@ subsetLigerDataset <- function(
                              returnObject = returnObject, ...)
     else subsetMemLigerDataset(object, featureIdx = featureIdx,
                                cellIdx = cellIdx, useSlot = useSlot,
+                               libSize = libSize,
                                returnObject = returnObject, ...)
 }
 
@@ -825,7 +846,8 @@ subsetH5LigerDatasetToH5 <- function(
 #' @export
 #' @rdname subsetLigerDataset
 subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
-                                  useSlot = NULL, returnObject = TRUE) {
+                                  useSlot = NULL, libSize = NULL,
+                                  returnObject = TRUE) {
     if (!inherits(object, "ligerDataset")) {
         cli::cli_alert_danger("{.var object} is not a {.cls ligerDataset} object.")
         cli::cli_alert_info("Nothing to be done.")
@@ -838,15 +860,21 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
     modal <- modalOf(object)
     featureIdx <- .idxCheck(object, featureIdx, "feature")
     cellIdx <- .idxCheck(object, cellIdx, "cell")
-    slotInvolved <- .checkLDSlot(object, useSlot)
+    slotInvolved <- .checkLDSlot(object, useSlot, hasLibSize = !is.null(libSize))
     subsetData <- list()
     if ("rawData" %in% slotInvolved) {
         subsetData$rawData <- rawData(object)[featureIdx, cellIdx,
                                               drop = FALSE]
     }
     if ("normData" %in% slotInvolved) {
-        subsetData$normData <- normData(object)[featureIdx, cellIdx,
-                                                drop = FALSE]
+        if (!is.null(normData(object))) {
+            subsetData$normData <- normData(object)[featureIdx, cellIdx,
+                                                    drop = FALSE]
+        } else {
+            sub <- rawData(object)[featureIdx, cellIdx, drop = FALSE]
+            sub@x <- sub@x / rep(libSize[cellIdx], diff(sub@p))
+            subsetData$normData <- sub
+        }
     }
 
     if (!is.null(object@scaleUnsharedData)) {
@@ -871,26 +899,24 @@ subsetMemLigerDataset <- function(object, featureIdx = NULL, cellIdx = NULL,
                                          drop = FALSE]
         }
     }
-    # if (is.null(useSlot)) {
-        sfi <- scaleFeatureIdx
-        subsetData <- c(subsetData,
-                        list(H = object@H[, cellIdx, drop = FALSE],
-                             V = object@V[sfi, , drop = FALSE],
-                             A = object@A,
-                             B = object@B[sfi, , drop = FALSE],
-                             U = object@U,
-                             featureMeta = object@featureMeta[featureIdx, ,
-                                                              drop = FALSE]
-                        ))
-        # Additional subsetting for sub-classes, if applicable
-        if (modal == "atac") {
-            subsetData$rawPeak <- rawPeak(object)[, cellIdx, drop = FALSE]
-            subsetData$normPeak <- normPeak(object)[, cellIdx, drop = FALSE]
-        }
-        if (modal == "spatial") {
-            subsetData$coordinate <- coordinate(object)[cellIdx, , drop = FALSE]
-        }
-    # }
+    sfi <- scaleFeatureIdx
+    subsetData <- c(subsetData,
+                    list(H = object@H[, cellIdx, drop = FALSE],
+                         V = object@V[sfi, , drop = FALSE],
+                         A = object@A,
+                         B = object@B[sfi, , drop = FALSE],
+                         U = object@U,
+                         featureMeta = object@featureMeta[featureIdx, ,
+                                                          drop = FALSE]
+                    ))
+    # Additional subsetting for sub-classes, if applicable
+    if (modal == "atac") {
+        subsetData$rawPeak <- rawPeak(object)[, cellIdx, drop = FALSE]
+        subsetData$normPeak <- normPeak(object)[, cellIdx, drop = FALSE]
+    }
+    if (modal == "spatial") {
+        subsetData$coordinate <- coordinate(object)[cellIdx, , drop = FALSE]
+    }
     if (isTRUE(returnObject)) {
         subsetData$modal <- modal
         return(do.call("createLigerDataset", subsetData))

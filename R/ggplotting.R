@@ -48,7 +48,7 @@
 #' many elements as multiple plots are supposed to be generated. Default
 #' \code{NULL}.
 #' @inheritDotParams .ggScatter dotOrder dotSize dotAlpha trimHigh trimLow zeroAsNA raster labelBy labelText labelTextSize seed
-#' @inheritDotParams .ggplotLigerTheme title subtitle xlab ylab legendColorTitle legendShapeTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize legendDotSize panelBorder legendNRow legendNCol colorLabels colorValues colorPalette colorDirection naColor colorLow colorMid colorHigh colorMidPoint plotly
+#' @inheritDotParams .ggplotLigerTheme title subtitle xlab ylab legendColorTitle legendShapeTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize legendDotSize showAxis axisArrows panelBorder legendNRow legendNCol colorLabels colorValues colorPalette colorDirection naColor colorLow colorMid colorHigh colorMidPoint plotly
 #' @param ... More plot setting arguments. See \code{\link{.ggScatter}} and
 #' \code{\link{.ggplotLigerTheme}}.
 #' @return A ggplot object when a single plot is intended. A list of ggplot
@@ -75,11 +75,10 @@ plotDimRed <- function(
         splitBy = NULL,
         shapeBy = NULL,
         titles = NULL,
+        axisArrow = TRUE,
         ...
 ) {
     slot <- match.arg(slot)
-    # useDimRed <- useDimRed %||% object@uns$defaultDimRed
-    # useDimRed <- .findDimRedName(object, useDimRed, stopOnNull = TRUE, returnFirst = TRUE)
     plotDF <- as.data.frame(dimRed(object, useDimRed, cellIdx = cellIdx))
     x <- colnames(plotDF)[1]
     y <- colnames(plotDF)[2]
@@ -143,11 +142,17 @@ plotDimRed <- function(
 
     plotList <- list()
     titles <- .checkArgLen(titles, n = length(plotDFList), class = "ANY", .stop = FALSE)
+    if (!is.null(splitBy) && is.null(titles)) {
+        titles <- names(plotDFList)
+    }
+
     for (i in seq_along(plotDFList)) {
         cliID <- cli::cli_process_start("Plotting feature {.val {names(plotDFList)[i]}} on {.val {nrow(plotDFList[[i]])}} cells")
         plotList[[i]] <- .ggScatter(plotDF = plotDFList[[i]], x = x, y = y,
                                     colorBy = colorByParam[[i]],
-                                    shapeBy = shapeBy, title = titles[i], ...)
+                                    shapeBy = shapeBy, title = titles[i],
+                                    axisArrow = axisArrow,
+                                    ...)
         cli::cli_process_done(cliID)
     }
     names(plotList) <- names(plotDFList)
@@ -155,7 +160,8 @@ plotDimRed <- function(
     if (length(plotList) == 1) {
         return(plotList[[1]])
     } else {
-        return(plotList)
+        return(patchwork::wrap_plots(plotList))
+        # return(plotList)
     }
 }
 
@@ -627,6 +633,9 @@ plotCellViolin <- function(
 #' \code{NULL} controls by \code{baseSize - 2}.
 #' @param legendDotSize Allow dots in legend region to be large enough to see
 #' the colors/shapes clearly. Default \code{4}.
+#' @param showAxis Whether to show axis lines or arrows. Default \code{TRUE}.
+#' @param axisArrows Whether to draw short fixed-length arrows for axis. Default
+#' \code{FALSE}.
 #' @param panelBorder Whether to show rectangle border of the panel instead of
 #' using ggplot classic bottom and left axis lines. Default \code{FALSE}.
 #' @param colorLabels Character vector for modifying category names in a
@@ -683,6 +692,8 @@ plotCellViolin <- function(
         legendTitleSize = NULL,
         legendDotSize = 4,
         # Other
+        showAxis = TRUE,
+        axisArrows = FALSE,
         panelBorder = FALSE,
         legendNRow = NULL,
         legendNCol = NULL,
@@ -743,13 +754,30 @@ plotCellViolin <- function(
             legend.title = ggplot2::element_text(size = legendTitleSize)
         )
 
+    if (isTRUE(showAxis)) {
+        if (isTRUE(axisArrows)) {
+            plot <- plot + theme_axis_shortArrow()
+        }
+    } else {
+        plot <- plot + ggplot2::theme(
+            axis.line.x = ggplot2::element_blank(),
+            axis.line.y = ggplot2::element_blank(),
+            axis.ticks = ggplot2::element_blank(),
+            axis.text.x = ggplot2::element_blank(),
+            axis.text.y = ggplot2::element_blank(),
+            axis.title.x = ggplot2::element_blank(),
+            axis.title.y = ggplot2::element_blank()
+        )
+    }
     if (isTRUE(panelBorder)) {
         plot <- plot + ggplot2::theme(
-            axis.line = ggplot2::element_line(linewidth = 0),
+            axis.line.x = ggplot2::element_blank(),
+            axis.line.y = ggplot2::element_blank(),
             panel.border = ggplot2::element_rect(fill = NA, colour = "black",
                                                  linewidth = 0.7)
         )
     }
+
 
     # legend region settings. Need to prepare a list so we call
     # `guides()` once, otherwise any previous calls will be overwritten.
@@ -948,4 +976,169 @@ plotCellViolin <- function(
     # When nothing set, return NULL. "+ NULL" on a ggplot object doesn't
     # change anything
     return(layer)
+}
+
+
+
+# Making fixed-length arrows for pretty embedding plots ####
+
+#' @title Line element with fixed length setting
+#' @export
+#' @description
+#' Used at the place in ggplot theme `axis.line*`
+#' @param colour,color Line/border colour. Color is an alias for colour.
+#' @param length a [grid::unit()] object to specify length of the line.
+#' @param linewidth Line/border size in mm.
+#' @param linetype Line type. An integer (0:8), a name (blank, solid,
+#'    dashed, dotted, dotdash, longdash, twodash), or a string with
+#'    an even number (up to eight) of hexadecimal digits which give the
+#'    lengths in consecutive positions in the string.
+#' @param lineend Line end Line end style (round, butt, square)
+#' @param arrow Arrow specification, as created by [grid::arrow()]
+#' @param inherit.blank Should this element inherit the existence of an
+#'   `element_blank` among its parents? If `TRUE` the existence of
+#'   a blank element among its parents will cause this element to be blank as
+#'   well. If `FALSE` any blank parent element will be ignored when
+#'   calculating final element state.
+#' @return An S3 object of class `element_line_fixlen`, `element_line`, and `element`.
+#' @examples
+#' ggplot(mtcars, aes(mpg, wt)) +
+#'     geom_point() +
+#'     theme(
+#'         axis.line = element_line_fixlen(length = unit(1, "cm")),
+#'         axis.ticks = element_blank(),
+#'         axis.text = element_blank(),
+#'         axis.title = element_text(hjust = 0)
+#'     )
+element_line_fixlen <- function(colour = NULL, length = NULL, linewidth = NULL, linetype = NULL,
+                                lineend = NULL, color = NULL, arrow = NULL,
+                                inherit.blank = FALSE) {
+    if (!is.null(color)) colour <- color
+    if (is.null(colour)) colour <- "black"
+    if (is.null(arrow)) arrow <- FALSE
+
+    structure(
+        list(colour = colour, length = length, linewidth = linewidth,
+             linetype = linetype, lineend = lineend, arrow = arrow,
+             inherit.blank = inherit.blank),
+        class = c("element_line_fixlen", "element_line", "element")
+    )
+}
+
+
+#' @exportS3Method ggplot2::element_grob
+#' @method element_grob element_line_fixlen
+#' @export
+element_grob.element_line_fixlen <- function(
+        element,
+        x = 0:1,
+        y = 0:1,
+        colour = NULL,
+        length = NULL,
+        linewidth = NULL,
+        linetype = NULL,
+        lineend = NULL,
+        default.units = "npc",
+        id.lengths = NULL,
+        ...
+) {
+    gp <- grid::gpar(col = colour, fill = colour,
+               lwd = len0_null(linewidth * .pt), lty = linetype,
+               lineend = lineend)
+    element_gp <- grid::gpar(col = element$colour, fill = element$colour,
+                       lwd = len0_null(element$linewidth * .pt),
+                       lty = element$linetype, lineend = element$lineend)
+    arrow <- if (is.logical(element$arrow) && !element$arrow) {
+        NULL
+    } else {
+        element$arrow
+    }
+    length <- if (is.null(element$length)) {
+        1
+    } else {
+        element$length
+    }
+
+    # length <- length %||% element$length %||% 1
+    if (
+        !identical(x[1], x[2]) && identical(y[1], y[2])
+    ) {
+        # horizontal
+        if (grid::is.unit(length)) {
+            x[2] <- grid::convertWidth(length, "cm")
+        }
+    } else if (
+        identical(x[1], x[2]) && !identical(y[1], y[2])
+    ) {
+        # vertical
+        if (grid::is.unit(length)) {
+            y[2] <- grid::convertHeight(length, "cm")
+        }
+    } else {
+        cli::cli_abort("{.field element_line_fixlen} can only be used for axis.line* for now.")
+    }
+
+    grid::polylineGrob(
+        x, y, default.units = default.units, gp = modify_list(element_gp, gp),
+        id.lengths = id.lengths, arrow = arrow, ...
+    )
+}
+
+# Helper functions copied from ggplot2
+len0_null <- function(x) {
+    if (length(x) == 0)
+        NULL
+    else x
+}
+
+modify_list <- function(old, new) {
+    for (i in names(new)) old[[i]] <- new[[i]]
+    old
+}
+
+#' Theme for short-arrow axis like scanpy umap
+#' @param axis.length Length of the axis line. Default `15`.
+#' @param axis.length.unit Unit of the axis line length. Default `"mm"`.
+#' @param arrow.type,arrow.angle,arrow.length Parameters for the arrow. Default
+#' `"closed"`, `20`, and `unit(0.1, "in")`. See `?arrow` for more details.
+#' @param ... Additional arguments passed to `element_line_fixlen`
+#' @return A `theme` object to be added to a plot
+#' @export
+#' @seealso [element_line_fixlen()]
+#' @examples
+#' ggplot(mtcars, aes(mpg, wt)) +
+#'     geom_point() +
+#'     theme_axis_shortArrow()
+theme_axis_shortArrow <- function(
+        axis.length = 15,
+        axis.length.unit = "mm",
+        arrow.type = "closed",
+        arrow.angle = 20,
+        arrow.length = unit(0.1, "in"),
+        ...
+) {
+    ggplot2::theme(
+        axis.ticks.x.top = ggplot2::element_blank(),
+        axis.ticks.x.bottom = ggplot2::element_blank(),
+        axis.ticks.y.right = ggplot2::element_blank(),
+        axis.ticks.y.left = ggplot2::element_blank(),
+        axis.text.x.top = ggplot2::element_blank(),
+        axis.text.x.bottom = ggplot2::element_blank(),
+        axis.text.y.right = ggplot2::element_blank(),
+        axis.text.y.left = ggplot2::element_blank(),
+        panel.background = ggplot2::element_blank(),
+        panel.grid.major = ggplot2::element_blank(),
+        panel.grid.minor = ggplot2::element_blank(),
+        axis.title.x.bottom = ggplot2::element_text(hjust = 0),
+        axis.title.y.left = ggplot2::element_text(hjust = 0),
+        axis.line = element_line_fixlen(
+            length = grid::unit(axis.length, axis.length.unit),
+            arrow = grid::arrow(
+                type = arrow.type,
+                angle = arrow.angle,
+                length = arrow.length
+            ),
+            ...
+        )
+    )
 }

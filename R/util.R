@@ -248,7 +248,7 @@ cli_or <- function(x) cli::cli_vec(x, list("vec-last" = " or "))
     return(idx)
 }
 
-.checkLDSlot <- function(object, slot) {
+.checkLDSlot <- function(object, slot, hasLibSize = FALSE) {
     avail <- c("rawData", "normData", "scaleData")
     if (is.null(slot)) {
         slot <- avail
@@ -263,8 +263,10 @@ cli_or <- function(x) cli::cli_vec(x, list("vec-last" = " or "))
         if ("rawData" %in% slot && is.null(rawData(object))) {
             cli::cli_abort("`rawData` is not available for use.")
         }
-        if ("normData" %in% slot && is.null(normData(object))) {
-            cli::cli_abort("`normData` is not available for use.")
+        if ("normData" %in% slot &&
+            is.null(normData(object)) &&
+            !hasLibSize) {
+            cli::cli_abort("`normData` is not available for use, or library size has not been provided.")
         }
         if ("scaleData" %in% slot && is.null(scaleData(object))) {
             cli::cli_abort("`scaleData` is not available for use.")

@@ -9,6 +9,7 @@ subsetLiger(
   featureIdx = NULL,
   cellIdx = NULL,
   useSlot = NULL,
+  libSize = NULL,
   chunkSize = 1000,
   verbose = getOption("ligerVerbose", TRUE),
   newH5 = TRUE,
@@ -28,6 +29,13 @@ Missing or \code{NULL} for all cells.}
 \item{useSlot}{The slot(s) to only consider. Choose one or more from
 \code{"rawData"}, \code{"normData"} and \code{"scaleData"}. Default
 \code{NULL} subsets the whole object including analysis result matrices.}
+
+\item{libSize}{Numeric vector of total counts for each cell, used for
+dividing the raw counts to get normalized data when \code{useSlot} includes
+\code{"normData"} but pre-computed normalized data is not available nor
+desired. Must have the same length as the number of cells provided in
+\code{object}, i.e. to be subset by \code{cellIdx}. Default \code{NULL} uses
+\code{object$nUMI} when \code{object} is a \linkS4class{liger} object.}
 
 \item{chunkSize}{Integer. Number of maximum number of cells in each chunk,
 Default \code{1000}.}

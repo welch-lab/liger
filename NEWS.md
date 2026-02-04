@@ -5,8 +5,16 @@
 - Ability to do downstream analysis on H5 data
   - Pseudo-bulk should be easy because we are just aggregating cells.
   - Wilcoxon might be a bit harder because ranks are calculated per gene but the 
-  H5 sparse data is column majored. Might need to find a fast on-disk 
-  transposition method.
+    H5 sparse data is column majored. Might need to find a fast on-disk 
+    transposition method.
+
+## rliger 2.2.1.9002
+
+- Improved scalability of downstream analysis and visualization
+    - Reduced the need of pre-calculated normalized data for performing Wilcoxon's test and producing feature expression plots
+    - Normalized data will only be calculated on the fly from raw data and pre-stored size factor (`obj$nUMI`).
+- Added `theme_axis_shortArrow()` for tidy dimensional reduction plot axis theme.
+- Migrating to patchwork for multi-plot layouting. Mainly for the ease of alignment, legend collection, and subplot extraction.
 
 ## rliger 2.2.1
 

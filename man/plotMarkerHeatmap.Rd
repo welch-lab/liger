@@ -20,8 +20,7 @@ plotMarkerHeatmap(
 )
 }
 \arguments{
-\item{object}{A \linkS4class{liger} object, with normalized data and metadata
-to annotate available.}
+\item{object}{A \linkS4class{liger} object.}
 
 \item{result}{The data.frame returned by \code{\link{runMarkerDEG}}.}
 

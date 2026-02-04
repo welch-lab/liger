@@ -30,7 +30,7 @@
 #' integrate drastically different modalities should be cautious when using
 #' this method.
 #'
-#' @section Comparing difference between/across cell types:
+#' @section Finding difference between/across cell types/clusters:
 #' Most of times, people would want to know what cell types are for each cluster
 #' after clustering. This can be done with a marker detection method that test
 #' each cluster against all the other cells. This can be done with a command
@@ -105,7 +105,7 @@
 #' through each comparison group and split each real replicate into the given
 #' number of pseudo-replicates.
 #'
-#' @param object A \linkS4class{liger} object, with normalized data available
+#' @param object A \linkS4class{liger} object.
 #' @param groupTest,groupCtrl,variable1,variable2 Condition specification. See
 #' \code{?runPairwiseDEG} section \bold{Pairwise DEG Scenarios} for detail.
 #' @param splitBy Name(s) of the variable(s) in \code{cellMeta} to split the
@@ -131,7 +131,7 @@
 #' @param verbose Logical. Whether to show information of the progress. Default
 #' \code{getOption("ligerVerbose")} or \code{TRUE} if users have not set.
 #' @return A data.frame with DEG information with the all or some of the
-#' following fields:
+#' following fields. The first 7 fields are consistent across methods:
 #'  \item{feature}{Gene names}
 #'  \item{group}{Test group name. Multiple tests might be present for each
 #'    function call. This is the main variable to distinguish the tests. For a
@@ -147,17 +147,22 @@
 #'  \item{logFC}{Log fold change}
 #'  \item{pval}{P-value}
 #'  \item{padj}{Adjusted p-value}
-#'  \item{avgExpr}{Mean expression in the test group indicated by the "group"
-#'    field. Only available for wilcoxon tests.}
-#'  \item{statistic}{Wilcoxon rank-sum test statistic. Only available for
-#'    wilcoxon tests.}
-#'  \item{auc}{Area under the ROC curve. Only available for wilcoxon tests.}
 #'  \item{pct_in}{Percentage of cells in the test group, indicated by the
-#'    "group" field, that express the feature. Only available for wilcoxon
-#'    tests.}
+#'    "group" field, that express the feature.}
 #'  \item{pct_out}{Percentage of cells in the control group or other cells, as
-#'    explained for the "group" field, that express the feature. Only available
-#'    for wilcoxon tests.}
+#'    explained for the "group" field, that express the feature.}
+
+#'  These are additional fields specific to Wilcoxon implementation:
+#'  \item{avgExpr}{Mean expression of cells in the test group indicated by the
+#'    "group" field.}
+#'  \item{statistic}{Wilcoxon rank-sum test statistic.}
+#'  \item{auc}{Area under the ROC curve.}
+#'  \item{z}{Z-score derived from the U statistic.}
+#'
+#'  These are additional fields specific to DESeq2 pseudo-bulk implementation:
+#'  \item{baseMean}{Mean of DESeq2-normalized counts for all samples.}
+#'  \item{lfcSE}{Standard error of the log fold change estimate.}
+#'  \item{stat}{Wald statistic. Can be used as z-score.}
 #' @rdname liger-DEG
 #' @export
 #' @examples
@@ -430,11 +435,7 @@ runWilcoxon <- function(
                        Datasets involved: {.val {datasetInvolve}}")
     }
     featureOrder <- stats::setNames(seq_along(features), features)
-    # dataList <- lapply(dataList, function(x) x[features, , drop = FALSE])
 
-    # mat <- Reduce(cbind, dataList)
-
-    # mat <- mat[, allCellBC, drop = FALSE]
     if (method == "wilcoxon") {
         chunk <- chunk %||% length(features)
         nchunk <- ceiling(length(features)/chunk)
@@ -443,12 +444,19 @@ runWilcoxon <- function(
         for (i in seq_len(nchunk)) {
             start <- (i - 1) * chunk + 1
             end <- min(i * chunk, length(features))
-            mat <- extractMergedNormData(
+            mat <- extractMergedRawData(
                 object,
                 slot = slot,
                 cellIdx = allCellBC,
                 featureIdx = features[start:end]
             )
+            libSize <- retrieveCellFeature(
+                object = object,
+                feature = 'nUMI',
+                slot = 'cellMeta',
+                cellIdx = allCellBC
+            )[,1]
+            mat@x <- mat@x / rep(libSize, diff(mat@p))
             mat <- log1p(1e10*mat)
             resultList[[i]] <- wilcoxauc(mat, var, verbose = verbose)
             if (nchunk > 1) gc()
@@ -582,17 +590,15 @@ runWilcoxon <- function(
               "i" = "Try {.code object.sub <- downsample(object, useSlot = 'normData')} to create another object with in memory data")
         )
     } # nocov end
-    if (method == "wilcoxon") {
-        slot <- ifelse(usePeak, "normPeak", "normData")
-    } else if (method == "pseudoBulk") {
+    if (method == "pseudoBulk") {
         if (!requireNamespace("DESeq2", quietly = TRUE)) # nocov start
             cli::cli_abort(
                 "Package {.pkg DESeq2} is needed for this function to work.
                 Please install it by command:
                 {.code BiocManager::install('DESeq2')}"
             ) # nocov end
-        slot <- ifelse(usePeak, "rawPeak", "rawData")
     }
+    slot <- ifelse(usePeak, "rawPeak", "rawData")
     allAvail <- all(sapply(useDatasets, function(d) {
         ld <- dataset(object, d)
         !is.null(methods::slot(ld, slot))
@@ -869,8 +875,15 @@ calcPctInOut <- function(
     res$feature <- rownames(res)
     rownames(res) <- NULL
     res$group <- levels(groups)[2]
-    res <- res[, c(7, 8, 2, 5, 6)]
-    colnames(res) <- c("feature", "group", "logFC", "pval", "padj")
+    res <- res %>%
+        dplyr::select(
+            .data[['feature']], .data[['group']], .data[['log2FoldChange']],
+            .data[['pvalue']], .data[['padj']], dplyr::everything()
+        ) %>%
+        dplyr::rename(
+            logFC = .data[['log2FoldChange']],
+            pval = .data[['pvalue']],
+        )
 
     return(res)
 }
@@ -878,7 +891,7 @@ calcPctInOut <- function(
 
 ####################### Wilcoxon rank-sum test helper ##########################
 
-extractMergedNormData <- function(
+extractMergedRawData <- function(
         object,
         slot,
         cellIdx = NULL,
@@ -889,8 +902,8 @@ extractMergedNormData <- function(
     cellID <- colnames(object)[cellIdx]
     getter <- switch(
         slot,
-        normData = normData,
-        normPeak = normPeak
+        rawData = rawData,
+        rawPeak = rawPeak
     )
     if (is.null(featureIdx)) {
         # Use intersection by default
@@ -910,16 +923,9 @@ extractMergedNormData <- function(
         allFeature <- rownames(mat)
         ldFeatureIdx <- match(featureIdx, allFeature)
         ldFeatureIdx <- ldFeatureIdx[!is.na(ldFeatureIdx)]
-        # if (slot == "normData") {
-        #     ldFeatureIdx <- .idxCheck(dataset(object, dn), featureIdx, "feature")
-        # } else {
-        #     allPeaks <- rownames(getter())
-        # }
-
         ldCellIdx <- match(cellID, colnames(dataset(object, dn)))
         ldCellIdx <- ldCellIdx[!is.na(ldCellIdx)]
         out <- cbind(out, mat[ldFeatureIdx, ldCellIdx, drop = FALSE])
-        # out <- cbind(out, getter(object, dn)[ldFeatureIdx, ldCellIdx, drop = FALSE])
     }
     out[, cellID]
 }
@@ -949,7 +955,8 @@ wilcoxauc <- function(x, clusterVar, verbose = verbose) {
     # rankRes <- colRanking(x)
     ustat <- computeUstat(xRanked, clusterVar, n1n2, groupSize)
     auc <- t(ustat / n1n2)
-    pvals <- computePval(ustat, ties, ncol(x), n1n2)
+    z <- computeZ(ustat, ties, ncol(x), n1n2)
+    pvals <- matrix(2 * stats::pnorm(-abs(as.numeric(z))), ncol = ncol(z))
     fdr <- apply(pvals, 2, function(p) stats::p.adjust(p, 'BH'))
 
     ### Auxiliary Statistics (AvgExpr, PctIn, LFC, etc)
@@ -981,6 +988,7 @@ wilcoxauc <- function(x, clusterVar, verbose = verbose) {
         logFC = as.numeric(lfc),
         statistic = as.numeric(t(ustat)),
         auc = as.numeric(auc),
+        z = as.numeric(z),
         pval = as.numeric(pvals),
         padj = as.numeric(fdr),
         pct_in = as.numeric(100 * group_pct),
@@ -990,22 +998,16 @@ wilcoxauc <- function(x, clusterVar, verbose = verbose) {
 
 computeUstat <- function(Xr, cols, n1n2, groupSize) {
     grs <- rowAggregateSum_sparse(Xr, as.integer(cols) - 1, length(unique(cols)))
-    # grs <- rowAggregateSum(Xr, cols)
-
-    # if (inherits(Xr, 'dgCMatrix')) {
     # With the ranking of only non-zero features, here the tie-ranking of
     # zeros need to be added.
     nnz <- rowNNZAggr_sparse(Xr, as.integer(cols) - 1, length(unique(cols)))
     gnz <- groupSize - nnz
     zero.ranks <- (nrow(Xr) - diff(Xr@p) + 1) / 2
     ustat <- t((t(gnz) * zero.ranks)) + grs - groupSize*(groupSize + 1)/2
-    # } else {
-    #     ustat <- grs - groupSize * (groupSize + 1) / 2
-    # }
     return(ustat)
 }
 
-computePval <- function(ustat, ties, N, n1n2) {
+computeZ <- function(ustat, ties, N, n1n2) {
     z <- ustat - .5 * n1n2
     z <- z - sign(z) * .5
     .x1 <- N ^ 3 - N
@@ -1015,11 +1017,8 @@ computePval <- function(ustat, ties, N, n1n2) {
     }))
     usigma <- sqrt(matrix(n1n2, ncol = 1) %*% matrix(rhs, nrow = 1))
     z <- t(z / usigma)
-    pvals <- matrix(2 * stats::pnorm(-abs(as.numeric(z))), ncol = ncol(z))
-    return(pvals)
+    return(z)
 }
-
-
 
 
 
@@ -1027,8 +1026,7 @@ computePval <- function(ustat, ties, N, n1n2) {
 
 #' Create heatmap for showing top marker expression in conditions
 #' @export
-#' @param object A \linkS4class{liger} object, with normalized data and metadata
-#' to annotate available.
+#' @param object A \linkS4class{liger} object.
 #' @param result The data.frame returned by \code{\link{runMarkerDEG}}.
 #' @param topN Number of top features to be plot for each group. Default
 #' \code{5}.
@@ -1128,8 +1126,7 @@ plotMarkerHeatmap <- function(
 
 #' Create heatmap for pairwise DEG analysis result
 #' @export
-#' @param object A \linkS4class{liger} object, with normalized data and metadata
-#' to annotate available.
+#' @param object A \linkS4class{liger} object.
 #' @param result The data.frame returned by \code{\link{runPairwiseDEG}}.
 #' @param group The test group name among the result to be shown. Must specify
 #' only one if multiple tests are available (i.e. split test). Default

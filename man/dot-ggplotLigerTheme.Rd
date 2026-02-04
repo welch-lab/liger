@@ -29,6 +29,8 @@
   legendTextSize = NULL,
   legendTitleSize = NULL,
   legendDotSize = 4,
+  showAxis = TRUE,
+  axisArrows = FALSE,
   panelBorder = FALSE,
   legendNRow = NULL,
   legendNCol = NULL,
@@ -95,6 +97,11 @@ axis texts and legend text. Default \code{NULL} controls by \code{baseSize}.}
 
 \item{legendDotSize}{Allow dots in legend region to be large enough to see
 the colors/shapes clearly. Default \code{4}.}
+
+\item{showAxis}{Whether to show axis lines or arrows. Default \code{TRUE}.}
+
+\item{axisArrows}{Whether to draw short fixed-length arrows for axis. Default
+\code{FALSE}.}
 
 \item{panelBorder}{Whether to show rectangle border of the panel instead of
 using ggplot classic bottom and left axis lines. Default \code{FALSE}.}

@@ -47,7 +47,7 @@ runWilcoxon(
 )
 }
 \arguments{
-\item{object}{A \linkS4class{liger} object, with normalized data available}
+\item{object}{A \linkS4class{liger} object.}
 
 \item{groupTest, groupCtrl, variable1, variable2}{Condition specification. See
 \code{?runPairwiseDEG} section \bold{Pairwise DEG Scenarios} for detail.}
@@ -100,7 +100,7 @@ dataset against all other datasets.}
 }
 \value{
 A data.frame with DEG information with the all or some of the
-following fields:
+following fields. The first 7 fields are consistent across methods:
 \item{feature}{Gene names}
 \item{group}{Test group name. Multiple tests might be present for each
 function call. This is the main variable to distinguish the tests. For a
@@ -116,17 +116,21 @@ the split level against all other cells in the same split level.}
 \item{logFC}{Log fold change}
 \item{pval}{P-value}
 \item{padj}{Adjusted p-value}
-\item{avgExpr}{Mean expression in the test group indicated by the "group"
-field. Only available for wilcoxon tests.}
-\item{statistic}{Wilcoxon rank-sum test statistic. Only available for
-wilcoxon tests.}
-\item{auc}{Area under the ROC curve. Only available for wilcoxon tests.}
 \item{pct_in}{Percentage of cells in the test group, indicated by the
-"group" field, that express the feature. Only available for wilcoxon
-tests.}
+"group" field, that express the feature.}
 \item{pct_out}{Percentage of cells in the control group or other cells, as
-explained for the "group" field, that express the feature. Only available
-for wilcoxon tests.}
+explained for the "group" field, that express the feature.}
+These are additional fields specific to Wilcoxon implementation:
+\item{avgExpr}{Mean expression of cells in the test group indicated by the
+"group" field.}
+\item{statistic}{Wilcoxon rank-sum test statistic.}
+\item{auc}{Area under the ROC curve.}
+\item{z}{Z-score derived from the U statistic.}
+
+These are additional fields specific to DESeq2 pseudo-bulk implementation:
+\item{baseMean}{Mean of DESeq2-normalized counts for all samples.}
+\item{lfcSE}{Standard error of the log fold change estimate.}
+\item{stat}{Wald statistic. Can be used as z-score.}
 }
 \description{
 Two methods are supported: \code{"pseudoBulk"} and
@@ -162,7 +166,7 @@ integrate drastically different modalities should be cautious when using
 this method.
 }
 
-\section{Comparing difference between/across cell types}{
+\section{Finding difference between/across cell types/clusters}{
 
 Most of times, people would want to know what cell types are for each cluster
 after clustering. This can be done with a marker detection method that test
