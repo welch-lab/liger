@@ -9,7 +9,7 @@ theme_axis_shortArrow(
   axis.length.unit = "mm",
   arrow.type = "closed",
   arrow.angle = 20,
-  arrow.length = unit(0.1, "in"),
+  arrow.length = grid::unit(0.1, "in"),
   ...
 )
 }
@@ -30,8 +30,8 @@ A \code{theme} object to be added to a plot
 Theme for short-arrow axis like scanpy umap
 }
 \examples{
-ggplot(mtcars, aes(mpg, wt)) +
-    geom_point() +
+ggplot2::ggplot(mtcars, ggplot2::aes(mpg, wt)) +
+    ggplot2::geom_point() +
     theme_axis_shortArrow()
 }
 \seealso{

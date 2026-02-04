@@ -178,7 +178,7 @@ test_that("wilcoxon", {
     expect_true(all(is.nan(res0$pval)))
 
     res1 <- runMarkerDEG(pbmc, method = "wilcox")
-    expect_equal(dim(res1), c(249 * nlevels(pbmc$leiden_cluster), 10))
+    expect_equal(dim(res1), c(249 * nlevels(pbmc$leiden_cluster), 11))
 
     skip_if_not_installed("gprofiler2")
     expect_error(runGOEnrich(res1, group = "a"),
@@ -244,13 +244,13 @@ test_that("pseudo bulk", {
                            groupCtrl = pbmc$leiden_cluster == 2,
                            method = "pseudo")
     expect_is(res1, "data.frame")
-    expect_true(all.equal(dim(res1), c(nIsecGenes, 7)))
+    expect_true(all.equal(dim(res1), c(nIsecGenes, 10)))
 
     res2 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
                            variable1 = "leiden_cluster",
                            method = "pseudo", useReplicate = "dataset")
     expect_is(res2, "data.frame")
-    expect_true(all.equal(dim(res2), c(nIsecGenes, 7)))
+    expect_true(all.equal(dim(res2), c(nIsecGenes, 10)))
     res3 <- runPairwiseDEG(pbmc, groupTest = 1, groupCtrl = 2,
                            variable1 = "leiden_cluster",
                            method = "pseudo")

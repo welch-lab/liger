@@ -47,12 +47,12 @@ test_that("scatter plots", {
     # General
     expect_is(
         plotDimRed(pbmcPlot, splitBy = "dataset"),
-        "list"
+        "patchwork"
     )
     expect_is(
         plotDimRed(pbmcPlot, colorBy = "dataset",
                         splitBy = "dataset"),
-        "list"
+        "patchwork"
     )
     for (o in c("shuffle", "ascending", "descending")) {
         expect_gg(plotDimRed(pbmcPlot, colorBy = "dataset", dotOrder = o))

@@ -47,8 +47,10 @@
 #' @param titles Title text. A character scalar or a character vector with as
 #' many elements as multiple plots are supposed to be generated. Default
 #' \code{NULL}.
+#' @param axisArrows Whether to draw short fixed-length arrows for axis. Default
+#' \code{FALSE}.
 #' @inheritDotParams .ggScatter dotOrder dotSize dotAlpha trimHigh trimLow zeroAsNA raster labelBy labelText labelTextSize seed
-#' @inheritDotParams .ggplotLigerTheme title subtitle xlab ylab legendColorTitle legendShapeTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize legendDotSize showAxis axisArrows panelBorder legendNRow legendNCol colorLabels colorValues colorPalette colorDirection naColor colorLow colorMid colorHigh colorMidPoint plotly
+#' @inheritDotParams .ggplotLigerTheme title subtitle xlab ylab legendColorTitle legendShapeTitle showLegend legendPosition baseSize titleSize subtitleSize xTextSize xTitleSize yTextSize yTitleSize legendTextSize legendTitleSize legendDotSize showAxis panelBorder legendNRow legendNCol colorLabels colorValues colorPalette colorDirection naColor colorLow colorMid colorHigh colorMidPoint plotly
 #' @param ... More plot setting arguments. See \code{\link{.ggScatter}} and
 #' \code{\link{.ggplotLigerTheme}}.
 #' @return A ggplot object when a single plot is intended. A list of ggplot
@@ -75,7 +77,7 @@ plotDimRed <- function(
         splitBy = NULL,
         shapeBy = NULL,
         titles = NULL,
-        axisArrow = TRUE,
+        axisArrows = TRUE,
         ...
 ) {
     slot <- match.arg(slot)
@@ -151,7 +153,7 @@ plotDimRed <- function(
         plotList[[i]] <- .ggScatter(plotDF = plotDFList[[i]], x = x, y = y,
                                     colorBy = colorByParam[[i]],
                                     shapeBy = shapeBy, title = titles[i],
-                                    axisArrow = axisArrow,
+                                    axisArrows = axisArrows,
                                     ...)
         cli::cli_process_done(cliID)
     }
@@ -1002,13 +1004,13 @@ plotCellViolin <- function(
 #'   calculating final element state.
 #' @return An S3 object of class `element_line_fixlen`, `element_line`, and `element`.
 #' @examples
-#' ggplot(mtcars, aes(mpg, wt)) +
-#'     geom_point() +
-#'     theme(
-#'         axis.line = element_line_fixlen(length = unit(1, "cm")),
-#'         axis.ticks = element_blank(),
-#'         axis.text = element_blank(),
-#'         axis.title = element_text(hjust = 0)
+#' ggplot2::ggplot(mtcars, ggplot2::aes(mpg, wt)) +
+#'     ggplot2::geom_point() +
+#'     ggplot2::theme(
+#'         axis.line = element_line_fixlen(length = grid::unit(1, "cm")),
+#'         axis.ticks = ggplot2::element_blank(),
+#'         axis.text = ggplot2::element_blank(),
+#'         axis.title = ggplot2::element_text(hjust = 0)
 #'     )
 element_line_fixlen <- function(colour = NULL, length = NULL, linewidth = NULL, linetype = NULL,
                                 lineend = NULL, color = NULL, arrow = NULL,
@@ -1025,7 +1027,7 @@ element_line_fixlen <- function(colour = NULL, length = NULL, linewidth = NULL, 
     )
 }
 
-
+#' @importFrom ggplot2 element_grob
 #' @exportS3Method ggplot2::element_grob
 #' @method element_grob element_line_fixlen
 #' @export
@@ -1043,10 +1045,10 @@ element_grob.element_line_fixlen <- function(
         ...
 ) {
     gp <- grid::gpar(col = colour, fill = colour,
-               lwd = len0_null(linewidth * .pt), lty = linetype,
+               lwd = len0_null(linewidth * ggplot2::.pt), lty = linetype,
                lineend = lineend)
     element_gp <- grid::gpar(col = element$colour, fill = element$colour,
-                       lwd = len0_null(element$linewidth * .pt),
+                       lwd = len0_null(element$linewidth * ggplot2::.pt),
                        lty = element$linetype, lineend = element$lineend)
     arrow <- if (is.logical(element$arrow) && !element$arrow) {
         NULL
@@ -1106,15 +1108,15 @@ modify_list <- function(old, new) {
 #' @export
 #' @seealso [element_line_fixlen()]
 #' @examples
-#' ggplot(mtcars, aes(mpg, wt)) +
-#'     geom_point() +
+#' ggplot2::ggplot(mtcars, ggplot2::aes(mpg, wt)) +
+#'     ggplot2::geom_point() +
 #'     theme_axis_shortArrow()
 theme_axis_shortArrow <- function(
         axis.length = 15,
         axis.length.unit = "mm",
         arrow.type = "closed",
         arrow.angle = 20,
-        arrow.length = unit(0.1, "in"),
+        arrow.length = grid::unit(0.1, "in"),
         ...
 ) {
     ggplot2::theme(

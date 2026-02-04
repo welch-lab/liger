@@ -44,12 +44,12 @@ An S3 object of class \code{element_line_fixlen}, \code{element_line}, and \code
 Used at the place in ggplot theme \verb{axis.line*}
 }
 \examples{
-ggplot(mtcars, aes(mpg, wt)) +
-    geom_point() +
-    theme(
-        axis.line = element_line_fixlen(length = unit(1, "cm")),
-        axis.ticks = element_blank(),
-        axis.text = element_blank(),
-        axis.title = element_text(hjust = 0)
+ggplot2::ggplot(mtcars, ggplot2::aes(mpg, wt)) +
+    ggplot2::geom_point() +
+    ggplot2::theme(
+        axis.line = element_line_fixlen(length = grid::unit(1, "cm")),
+        axis.ticks = ggplot2::element_blank(),
+        axis.text = ggplot2::element_blank(),
+        axis.title = ggplot2::element_text(hjust = 0)
     )
 }

@@ -21,7 +21,7 @@ plotDimRed(
   splitBy = NULL,
   shapeBy = NULL,
   titles = NULL,
-  axisArrow = TRUE,
+  axisArrows = TRUE,
   ...
 )
 
@@ -103,6 +103,9 @@ categorical annotation to be reflected by dot shapes. Default \code{NULL}.}
 many elements as multiple plots are supposed to be generated. Default
 \code{NULL}.}
 
+\item{axisArrows}{Whether to draw short fixed-length arrows for axis. Default
+\code{FALSE}.}
+
 \item{...}{
   Arguments passed on to \code{\link[=.ggScatter]{.ggScatter}}, \code{\link[=.ggplotLigerTheme]{.ggplotLigerTheme}}
   \describe{
@@ -154,8 +157,6 @@ axis texts and legend text. Default \code{NULL} controls by \code{baseSize}.}
     \item{\code{legendDotSize}}{Allow dots in legend region to be large enough to see
 the colors/shapes clearly. Default \code{4}.}
     \item{\code{showAxis}}{Whether to show axis lines or arrows. Default \code{TRUE}.}
-    \item{\code{axisArrows}}{Whether to draw short fixed-length arrows for axis. Default
-\code{FALSE}.}
     \item{\code{panelBorder}}{Whether to show rectangle border of the panel instead of
 using ggplot classic bottom and left axis lines. Default \code{FALSE}.}
     \item{\code{colorLabels}}{Character vector for modifying category names in a
