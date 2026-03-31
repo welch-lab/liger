@@ -593,36 +593,36 @@ cli_or <- function(x) cli::cli_vec(x, list("vec-last" = " or "))
     return(object)
 }
 
-.DataFrame.as.data.frame <- function(x)
-{
-    # Copied from Bioconductor package S4Vectors:::.as.data.frame.DataFrame
-    # Removed some lines not necessary for liger
-    row.names <- rownames(x)
-    if (!is.null(row.names)) row.names <- make.unique(row.names)
-    else if (ncol(x) == 0L) row.names <- seq_len(nrow(x))
-    x_colnames <- colnames(x)
-    df_list <- lapply(stats::setNames(seq_along(x), x_colnames), function(j) {
-        col <- x[[j]]
-        if (is.data.frame(col)) return(col)
-        protect <- !methods::is(col, "AsIs") && is.list(col) && !is.object(col)
-        if (protect) col <- I(col)  # set AsIs class to protect column
-        # Doing all this copy-paste to avoid the R 4.3.2 new deprecation on the
-        # direct call of as.data.frame.<class>. Yet I still don't understand how
-        # the warning is invoked. I suspect that it is related to BiocGenerics
-        # which has S4 generics for as.data.frame. R base as.data.frame.<class>
-        # implements the check by seeing if the function that calls itself is
-        # identical to the generic base::as.data.frame. It could be that
-        # BiocGenerics::as.data.frame overwrote it in S4Vectors namespace.
-        # ALL FOR THE NEXT LINE BELOW.
-        df <- as.data.frame(col)
-        if (protect) df[[1L]] <- unclass(df[[1L]])  # drop AsIs class
-        if (is.null(colnames(col)) && ncol(df) == 1L)
-            colnames(df) <- x_colnames[[j]]
-        df
-    })
-    do.call(data.frame,
-            c(df_list, list(row.names = row.names, stringsAsFactors = FALSE)))
-}
+# .DataFrame.as.data.frame <- function(x)
+# {
+#     # Copied from Bioconductor package S4Vectors:::.as.data.frame.DataFrame
+#     # Removed some lines not necessary for liger
+#     row.names <- rownames(x)
+#     if (!is.null(row.names)) row.names <- make.unique(row.names)
+#     else if (ncol(x) == 0L) row.names <- seq_len(nrow(x))
+#     x_colnames <- colnames(x)
+#     df_list <- lapply(stats::setNames(seq_along(x), x_colnames), function(j) {
+#         col <- x[[j]]
+#         if (is.data.frame(col)) return(col)
+#         protect <- !methods::is(col, "AsIs") && is.list(col) && !is.object(col)
+#         if (protect) col <- I(col)  # set AsIs class to protect column
+#         # Doing all this copy-paste to avoid the R 4.3.2 new deprecation on the
+#         # direct call of as.data.frame.<class>. Yet I still don't understand how
+#         # the warning is invoked. I suspect that it is related to BiocGenerics
+#         # which has S4 generics for as.data.frame. R base as.data.frame.<class>
+#         # implements the check by seeing if the function that calls itself is
+#         # identical to the generic base::as.data.frame. It could be that
+#         # BiocGenerics::as.data.frame overwrote it in S4Vectors namespace.
+#         # ALL FOR THE NEXT LINE BELOW.
+#         df <- as.data.frame(col)
+#         if (protect) df[[1L]] <- unclass(df[[1L]])  # drop AsIs class
+#         if (is.null(colnames(col)) && ncol(df) == 1L)
+#             colnames(df) <- x_colnames[[j]]
+#         df
+#     })
+#     do.call(data.frame,
+#             c(df_list, list(row.names = row.names, stringsAsFactors = FALSE)))
+# }
 
 
 splitRmMiss <- function(x, y) {

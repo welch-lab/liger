@@ -15,16 +15,7 @@
 #' \code{"Factor_[k]"} format, with replacing \code{[k]} with an integer.
 #'
 #' When \code{"cellMeta"}, \code{colorBy} has to be an available column name in
-#' the table. Note that, for \code{colorBy} as well as \code{x}, \code{y},
-#' \code{shapeBy} and \code{splitBy}, since a matrix object is feasible in
-#' \code{cellMeta} table, using a column (e.g. named as \code{"column1"} in a
-#' certain matrix (e.g. named as \code{"matrixVar"}) should follow the syntax of
-#' \code{"matrixVar.column1"}. When the matrix does not have a "colname"
-#' attribute, the subscription goes with \code{"matrixVar.V1"},
-#' \code{"matrixVar.V2"} and etc. Use \code{"UMAP.1"}, \code{"UMAP.2"},
-#' \code{"TSNE.1"} or \code{"TSNE.2"} for the 2D embeddings generated with
-#' rliger package. These are based on the nature of \code{as.data.frame} method
-#' on a \code{\link[S4Vectors]{DataFrame}} object.
+#' the table.
 #' @param object A \linkS4class{liger} object
 #' @param colorBy Available variable name in specified \code{slot} to look for
 #' color annotation information. See details. Default \code{NULL} generates
@@ -364,14 +355,7 @@ plotDimRed <- function(
 #' \code{"Factor_[k]"} format, with replacing \code{[k]} with an integer.
 #'
 #' When \code{"cellMeta"}, \code{y} has to be an available column name in
-#' the table. Note that, for \code{y} as well as \code{groupBy}, \code{colorBy}
-#' and \code{splitBy} since a matrix object is feasible in \code{cellMeta}
-#' table, using a column (e.g. named as \code{"column1"} in a certain matrix
-#' (e.g. named as \code{"matrixVar"}) should follow the syntax of
-#' \code{"matrixVar.column1"}. When the matrix does not have a "colname"
-#' attribute, the subscription goes with \code{"matrixVar.V1"},
-#' \code{"matrixVar.V2"} and etc. These are based on the nature of
-#' \code{as.data.frame} method on a \code{\link[S4Vectors]{DataFrame}} object.
+#' the table.
 #'
 #' \code{groupBy} is basically send to \code{ggplot2::aes(x)}, while
 #' \code{colorBy} is for the "colour" aesthetics. Specifying \code{colorBy}

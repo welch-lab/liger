@@ -44,6 +44,8 @@ is.newLiger <- function(object) {
 #' acceptable. Default \code{NULL} works with all datasets.
 #' @param funcName,arg See Command records section.
 #' @param data fortify method required argument. Not used.
+#' @param drop When extracting cellMeta variable, whether to coerce to vector
+#' when only one variable is selected. Default \code{TRUE}.
 #' @param ... See detailed sections for explanation.
 #' @return See detailed sections for explanetion.
 #' @export
@@ -105,7 +107,7 @@ setMethod(
         )
         cat(.collapseLongNames(datasetInfos), "\n")
         cat(paste0("cellMeta(", ncol(cellMeta(object)), "): "))
-        cat(.collapseLongNames(colnames(cellMeta(object))), "\n")
+        cat(.collapseLongNames(colnames(cellMeta(object))[-1]), "\n")
         cat(paste0("varFeatures(", length(varFeatures(object)), "): "))
         cat(.collapseLongNames(varFeatures(object)), "\n")
         cat(paste0("dimReds(", length(object@dimReds), "): "))
@@ -147,7 +149,7 @@ setMethod("dim", "liger", function(x) {
 #' @rdname liger-class
 #' @export
 setMethod("dimnames", "liger", function(x) {
-    list(NULL, rownames(cellMeta(x)))
+    list(NULL, x@cellMeta$.cellID)
 })
 
 #' @rdname liger-class
@@ -160,7 +162,7 @@ setReplaceMethod("dimnames", c("liger", "list"), function(x, value) {
         # Not using `dataset()` accessor because it does object validity check
         colnames(x@datasets[[d]]) <- value[[2L]][dataset.idx]
     }
-    rownames(cellMeta(x)) <- value[[2L]]
+    x@cellMeta$.cellID <- value[[2L]]
     if (!is.null(x@H.norm)) rownames(x@H.norm) <- value[[2L]]
     x
 })
@@ -268,57 +270,6 @@ setMethod("dataset", signature(x = "liger", dataset = "numeric"),
               datasets(x)[[dataset]]
           })
 
-.mergeCellMeta <- function(cm1, cm2) {
-    newDF <- S4Vectors::DataFrame(row.names = c(rownames(cm1), rownames(cm2)))
-    for (var in names(cm1)) {
-        value <- cm1[[var]]
-        if (var %in% names(cm2)) {
-            # TODO: check type
-            tryCatch(
-                expr = {
-                    if (is.null(dim(value))) {
-                        value <- c(value, cm2[[var]])
-                    } else {
-                        value <- rbind(value, cm2[[var]])
-                    }
-                },
-                finally = {
-                    cm2Idx <- seq(nrow(cm1) + 1, nrow(cm1) + nrow(cm2))
-                    if (is.null(dim(value))) value[cm2Idx] <- NA
-                    else {
-                        empty <- matrix(NA, nrow = nrow(cm2), ncol = ncol(value))
-                        value <- rbind(value, empty)
-                    }
-                }
-            )
-        } else {
-            cm2Idx <- seq(nrow(cm1) + 1, nrow(cm1) + nrow(cm2))
-            if (is.null(dim(value))) value[cm2Idx] <- NA
-            else {
-                empty <- matrix(NA, nrow = nrow(cm2), ncol = ncol(value))
-                value <- rbind(value, empty)
-            }
-        }
-        newDF[[var]] <- value
-    }
-    for (var in names(cm2)[!names(cm2) %in% names(cm1)]) {
-        value <- cm2[[var]]
-        if (is.null(dim(value))) {
-            if (is.factor(value)) {
-                value <- factor(c(rep(NA, nrow(cm1)), value),
-                                levels = levels(value))
-            } else {
-                value <- c(rep(NA, nrow(cm1)), value)
-            }
-        } else {
-            empty <- matrix(NA, nrow = nrow(cm1), ncol = ncol(value))
-            value <- rbind(empty, value)
-        }
-        newDF[[var]] <- value
-    }
-    return(newDF)
-}
-
 .expandDataFrame <- function(df, idx) {
     dfList <- as.list(df)
     dfList <- lapply(dfList, function(x, idx) {
@@ -333,7 +284,7 @@ setMethod("dataset", signature(x = "liger", dataset = "numeric"),
     include <- sapply(dfList, function(x) {
         is.vector(x) | is.factor(x)
     })
-    newdf <- S4Vectors::DataFrame(dfList[include])
+    newdf <- as.cellMeta(tibble::as_tibble(as.data.frame(dfList[include])))
     for (i in which(!include)) newdf[[names(dfList)[i]]] <- dfList[[i]]
     newdf
 }
@@ -352,7 +303,7 @@ setReplaceMethod("dataset", signature(x = "liger", dataset = "character",
                      cm <- x@cellMeta
                      remainingRowname <- rownames(cm)
                      cm <- .expandDataFrame(cm, new.idx)
-                     rownames(cm) <- c(remainingRowname, colnames(value))
+                     cm$.cellID <- c(remainingRowname, colnames(value))
 
                      levels(cm$dataset) <- c(levels(cm$dataset), dataset)
                      cm$dataset[new.idx] <- dataset
@@ -491,10 +442,11 @@ lengths.liger <- function(x, use.names = TRUE) {
         columns = NULL,
         cellIdx = NULL,
         as.data.frame = FALSE,
+        drop = TRUE,
         ...
 ) {
     full <- object@cellMeta
-    if (isTRUE(as.data.frame)) res <- .DataFrame.as.data.frame(full)
+    if (isTRUE(as.data.frame)) res <- tibble::column_to_rownames(full, '.cellID')
     else res <- full
     if (!is.null(columns)) {
         notFound <- !columns %in% colnames(res)
@@ -503,19 +455,20 @@ lengths.liger <- function(x, use.names = TRUE) {
                 "Specified variables from cellMeta not found: {.val {columns[notFound]}}")
             columns <- columns[!notFound]
         }
-        res <- res[, columns, ...]
+        res <- res[, columns, drop = drop]
     }
-    if (length(columns) == 1) {
-        if (!is.null(dim(res))) {
-            rownames(res) <- rownames(full)
-        } else {
+    if (length(columns) == 1 && !as.data.frame) {
+        # if (!is.null(dim(res))) {
+        #     rownames(res) <- rownames(full)
+        # } else {
+        #     res <- res[[1]]
             names(res) <- rownames(full)
-        }
+        # }
     }
     if (!is.null(cellIdx)) {
         cellIdx <- .idxCheck(object, idx = cellIdx, orient = "cell")
         if (is.vector(res) || is.factor(res)) res <- res[cellIdx]
-        else if (!is.null(dim(res))) res <- res[cellIdx, , ...]
+        else if (!is.null(dim(res))) res <- res[cellIdx, , drop = drop]
         else cli::cli_abort("Result before idx subscription corrupted")
     }
     return(res)
@@ -536,13 +489,13 @@ setMethod(
 setMethod(
     "cellMeta",
     signature(x = "liger", columns = "character"),
-    function(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
+    function(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, as.data.frame = FALSE, drop = TRUE, ...) {
         if (is.null(cellIdx) && !is.null(useDatasets)) {
             if (!is.character(useDatasets)) useDatasets <- names(x)[useDatasets]
             cellIdx <- x@cellMeta$dataset %in% useDatasets
         }
         .subsetCellMeta(x, columns = columns, cellIdx = cellIdx,
-                        as.data.frame = as.data.frame, ...)
+                        as.data.frame = as.data.frame, drop = drop, ...)
     }
 )
 
@@ -567,8 +520,10 @@ setReplaceMethod(
     "cellMeta",
     signature(x = "liger", columns = "missing"),
     function(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, check = FALSE, value) {
-        if (!inherits(value, "DFrame"))
-            value <- S4Vectors::DataFrame(value)
+        if (!inherits(value, "tbl_df"))
+            value <- value %>%
+                tibble::rownames_to_column(var = ".cellID") %>%
+                tibble::as.tibble()
         x@cellMeta <- value
         if (isTRUE(check)) methods::validObject(x)
         x
@@ -974,13 +929,13 @@ setMethod("getH5File",
 #' @name sub-sub-liger
 #' @param x A \linkS4class{liger} object
 #' @param i Name or numeric index of cell meta data to fetch
-#' @param ... Anything that \code{S4Vectors::\link[S4Vectors]{DataFrame}}
+#' @param ... Anything that \code{tibble::\link[tibble]{tbl_df}}
 #' method allows.
 #' @export
 #' @method [[ liger
 #' @return If \code{i} is given, the selected metadata will be returned; if it
 #' is missing, the whole cell metadata table in
-#' \code{S4Vectors::\link[S4Vectors]{DataFrame}} class will be returned.
+#' \code{tibble::\link[tibble]{tbl_df}} class will be returned.
 #' @examples
 #' # Retrieve whole cellMeta
 #' pbmc[[]]
@@ -1032,7 +987,7 @@ setMethod("getH5File",
 #' @method $ liger
 `$.liger` <- function(x, name) {
     if (!name %in% colnames(cellMeta(x))) NULL
-    else cellMeta(x, columns = name)
+    else stats::setNames(x@cellMeta[[name]], x@cellMeta[['.cellID']])
 }
 
 #' @export

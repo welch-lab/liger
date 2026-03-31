@@ -347,7 +347,7 @@ ligerToSeurat <- function(
     }
 
     # Split normal data.frame compatible info and dimReds
-    metadata <- .DataFrame.as.data.frame(cellMeta(object))
+    metadata <- cellMeta(object, as.data.frame = TRUE, drop = FALSE)
     dimReds <- dimReds(object)
     srt <- Seurat::CreateSeuratObject(counts = Assay, assay = assay,
                                       meta.data = metadata)
@@ -458,10 +458,16 @@ updateLigerObject <- function(
         if (methods::.hasSlot(object, "dimReds")) {
             # Current structure
             cli::cli_alert_info("Detected {.cls liger} object with up-to-date structure.")
+            if (inherits(object@cellMeta, 'DataFrame')) {
+                object@cellMeta <- as.cellMeta(object@cellMeta)
+                for (i in seq_along(object@datasets)) {
+                    object@datasets[[i]]@featureMeta <- as.featureMeta(object@datasets[[i]]@featureMeta)
+                }
+            }
             if (isH5Liger(object)) {
                 object <- restoreH5Liger(object, filePath = h5FilePath)
             }
-            methods::slot(object, "version") <- package_version(version)
+            methods::slot(object, "version") <- utils::packageVersion('rliger')
         } else {
             # 1.99.0 dev version structure
             cli::cli_alert_info("Detected {.cls liger} object with pre-release structure.")
@@ -657,7 +663,7 @@ updateOldLiger <- function(
                 components$U <- t(ldU)
             }
         }
-        components$featureMeta <- S4Vectors::DataFrame(row.names = rn)
+        components$featureMeta <- data.frame(row.names = rn) %>% as.featureMeta()
 
         ldList[[dn]] <- do.call("new", components)
         cli::cli_alert_success("Constructed dataset {.val {dn}}")
@@ -771,7 +777,7 @@ updateOldLiger <- function(
         ),
         metadata
     )
-    ligerComp$cellMeta <- S4Vectors::DataFrame(metadata)
+    ligerComp$cellMeta <- as.cellMeta(metadata)
 
     new <- tryCatch({
         do.call("new", ligerComp)
@@ -836,7 +842,7 @@ updateRliger2NS <- function(
             scaleUnsharedData = methods::slot(ld, "scaleUnsharedData"),
             U = methods::slot(ld, "U"),
             h5fileInfo = methods::slot(ld, "h5fileInfo"),
-            featureMeta = methods::slot(ld, "featureMeta"),
+            featureMeta = methods::slot(ld, "featureMeta") %>% as.featureMeta(),
             colnames = methods::slot(ld, "colnames"),
             rownames = methods::slot(ld, "rownames")
         )
@@ -891,7 +897,7 @@ updateRliger2NS <- function(
     new <- methods::new(
         "liger",
         datasets = datasetList,
-        cellMeta = cm,
+        cellMeta = as.cellMeta(cm),
         varFeatures = methods::slot(object, "varFeatures"),
         W = methods::slot(object, "W"),
         H.norm = methods::slot(object, "H.norm"),

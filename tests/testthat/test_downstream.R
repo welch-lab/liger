@@ -310,6 +310,7 @@ test_that("ATAC", {
     skip_if_not_installed("GenomicRanges")
     skip_if_not_installed("IRanges")
     skip_if_not_installed("psych")
+    skip_if_not_installed("S4Vectors")
     bmmc <- normalize(bmmc)
     bmmc <- selectGenes(bmmc)
     bmmc <- scaleNotCenter(bmmc)

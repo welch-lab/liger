@@ -16,7 +16,7 @@
 #' @param organism Character vector for setting organism for identifying mito,
 #' ribo and hemo genes for expression percentage calculation. Use one string for
 #' all datasets, or the same number of strings as the number of datasets.
-#' Currently options of \code{"mouse"}, \code{"human"}, \code{"zebrafish"},
+#' Currently options of \code{"human"}, \code{"mouse"}, \code{"zebrafish"},
 #' \code{"rat"}, and \code{"drosophila"} are supported.
 #' @param cellMeta data.frame of metadata at single-cell level. Default
 #' \code{NULL}.
@@ -163,17 +163,18 @@ createLiger <- function(
     })
     cellID <- unlist(lapply(datasets, colnames), use.names = FALSE)
     if (is.null(cellMeta)) {
-        cellMeta <- S4Vectors::DataFrame(
+        cellMeta <- data.frame(
+            row.names = cellID,
             dataset = factor(rep(names(datasets), sapply(datasets, ncol)),
                              levels = names(datasets)),
-            barcode = barcodesOrig,
-            row.names = cellID)
+            barcode = barcodesOrig
+        ) %>%
+            as.cellMeta()
     } else {
-        cellMeta <- S4Vectors::DataFrame(cellMeta)
+        cellMeta <- as.cellMeta(cellMeta[barcodesOrig, , drop = FALSE])
         # TODO Whether the given cell metadata dataframe should have original
         # barcodes or processed cellID?
-        cellMeta <- cellMeta[barcodesOrig, , drop = FALSE]
-        rownames(cellMeta) <- cellID
+        cellMeta$.cellID <- cellID
         # Force writing `dataset` variable as named by @datasets
         cellMeta$dataset <- factor(rep(names(datasets),
                                        lapply(datasets, ncol)))
@@ -256,16 +257,15 @@ createLigerDataset <- function(
     }
     if (is.null(h5fileInfo)) h5fileInfo <- list()
     if (is.null(featureMeta))
-        featureMeta <- S4Vectors::DataFrame(row.names = rn)
-    else if (!inherits(featureMeta, "DFrame"))
-        featureMeta <- S4Vectors::DataFrame(featureMeta)
+        featureMeta <- tibble::tibble(.featureID = rn) %>% as.featureMeta()
+    else if (!inherits(featureMeta, "tbl_df"))
+        featureMeta <- as.featureMeta(featureMeta)
     # Create ligerDataset
     allData <- list(.modalClassDict[[modal]],
                     rawData = rawData, normData = normData,
                     scaleData = scaleData, featureMeta = featureMeta,
                     colnames = cn, rownames = rn)
     allData <- c(allData, additional)
-
     x <- do.call("new", allData)
     return(x)
 }
@@ -423,9 +423,10 @@ createH5LigerDataset <- function(
             if (!is.null(normData)) normData <- h5file[[normData]]
             if (!is.null(scaleData)) scaleData <- h5file[[scaleData]]
             if (is.null(featureMeta))
-                featureMeta <- S4Vectors::DataFrame(row.names = genes)
-            else if (!inherits(featureMeta, "DFrame"))
-                featureMeta <- S4Vectors::DataFrame(featureMeta)
+                featureMeta <- as.featureMeta(data.frame(row.names = genes))
+            else {
+                featureMeta <- as.featureMeta(featureMeta)
+            }
             allData <- list(Class = .modalClassDict[[modal]],
                             rawData = rawData,
                             normData = normData,

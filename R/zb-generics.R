@@ -116,11 +116,12 @@ setMethod("getH5File",
 
 #' @section Feature metadata access:
 #' A slot \code{featureMeta} is included for each \code{ligerDataset} object.
-#' This slot requires a \code{\link[S4Vectors]{DataFrame-class}} object, which
-#' is the same as \code{cellMeta} slot of a \linkS4class{liger} object. However,
-#' the associated S4 methods only include access to the whole table for now.
-#' Internal information access follows the same way as data.frame operation.
-#' For example, \code{featureMeta(ligerD)$nCell} or
+#' This slot requires a \code{\link[tibble]{tbl_df}} object that is extended
+#' with \code{\link{as.featureMeta}}, same as \code{cellMeta} slot of a
+#' \linkS4class{liger} object. However, the associated S4 methods only include
+#' access to the whole table for now. Internal information access follows the
+#' same way as data.frame operation. For example,
+#' \code{featureMeta(ligerD)$nCell} or
 #' \code{featureMeta(ligerD)[varFeatures(ligerObj), "gene_var"]}.
 #' @export
 #' @rdname ligerDataset-class
@@ -233,7 +234,7 @@ setGeneric("dataset<-", function(x, dataset, type = NULL, qc = TRUE, value) {
 #' utilizes both clustering information and the dataset source information.
 setGeneric(
     "cellMeta",
-    function(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, as.data.frame = FALSE, ...) {
+    function(x, columns = NULL, useDatasets = NULL, cellIdx = NULL, as.data.frame = FALSE, drop = TRUE, ...) {
         standardGeneric("cellMeta")
     }
 )

@@ -18,10 +18,12 @@ setClassUnion("character_OR_NULL", c("character", "NULL"))
 setClassUnion("index",
               members = c("logical", "numeric", "character"))
 setClassUnion("Number_or_NULL", c("integer", "numeric", "NULL"))
-setClassUnion("dataframe", c("data.frame", "DataFrame", "NULL", "missing"))
+setClassUnion("dataframe", c("data.frame", "tbl_df", "NULL", "missing"))
 setClassUnion("missing_OR_NULL", c("missing", "NULL"))
 # setOldClass("H5Group")
 
+setOldClass('cellMeta')
+setOldClass('featureMeta')
 
 #' ligerDataset class
 #'
@@ -49,10 +51,10 @@ setClassUnion("missing_OR_NULL", c("missing", "NULL"))
 #' each factor. Feature by factor matrix.
 #' @slot h5fileInfo list of meta information of HDF5 file used for constructing
 #' the object.
-#' @slot featureMeta Feature metadata, DataFrame object.
+#' @slot featureMeta Feature metadata, tbl_df object.
 #' @slot colnames Character vector of unique cell identifiers.
 #' @slot rownames Character vector of unique feature names.
-#' @importClassesFrom S4Vectors DataFrame
+#' @importClassesFrom tibble tbl_df
 #' @exportClass ligerDataset
 ligerDataset <- setClass(
     "ligerDataset",
@@ -68,7 +70,7 @@ ligerDataset <- setClass(
         B = "matrix_OR_NULL",
         U = "matrix_OR_NULL",
         h5fileInfo = "list",
-        featureMeta = "DataFrame",
+        featureMeta = "featureMeta",
         colnames = "character",
         rownames = "character"
     )
@@ -170,7 +172,7 @@ setValidity("ligerDataset", .valid.ligerDataset)
 #' @slot datasets list of \linkS4class{ligerDataset} objects. Use generic
 #' \code{dataset}, \code{dataset<-}, \code{datasets} or \code{datasets<-} to
 #' interact with. See detailed section accordingly.
-#' @slot cellMeta \link[S4Vectors]{DFrame} object for cell metadata. Pre-existing
+#' @slot cellMeta \link[tibble]{tbl_df} object for cell metadata. Pre-existing
 #' metadata, QC metrics, cluster labeling and etc. are all stored here. Use
 #' generic \code{cellMeta}, \code{cellMeta<-}, \code{$}, \code{[[]]} or
 #' \code{[[]]<-} to interact with. See detailed section accordingly.
@@ -186,13 +188,13 @@ setValidity("ligerDataset", .valid.ligerDataset)
 #' accordingly.
 #' @slot uns List for unstructured meta-info of analyses or presets.
 #' @slot version Record of version of rliger package
-#' @importClassesFrom S4Vectors DataFrame
+#' @importClassesFrom tibble tbl_df
 #' @importFrom ggplot2 fortify
 liger <- setClass(
     "liger",
     representation(
         datasets = "list",
-        cellMeta = "DataFrame",
+        cellMeta = "cellMeta",
         varFeatures = "character_OR_NULL",
         W = "matrix_OR_NULL",
         H.norm = "matrix_OR_NULL",
@@ -202,7 +204,7 @@ liger <- setClass(
         version = "ANY"
     ),
     methods::prototype(
-        cellMeta = methods::new("DFrame"),
+        cellMeta = as.cellMeta(tibble::tibble()),
         version = utils::packageVersion("rliger")
     )
 )
@@ -231,7 +233,7 @@ liger <- setClass(
     datasetNamesFromDatasets <- as.character(rep(names(x), lapply(datasets(x), ncol)))
     names(datasetNamesFromDatasets) <- NULL
     if (!identical(datasetNamesFromDatasets, as.character(x$dataset))) {
-        return("names of datasets do not match \"datasets\" variable in cellMeta")
+        return("names of datasets do not match \"dataset\" variable in cellMeta")
     }
     return(NULL)
 }

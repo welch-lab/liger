@@ -262,9 +262,7 @@ setReplaceMethod("dimnames", c("ligerDataset", "list"), function(x, value) {
 #' @param ... Additional arguments passed to \code{\link{subsetLigerDataset}}.
 #' @export
 #' @method [ ligerDataset
-#' @return If \code{i} is given, the selected metadata will be returned; if it
-#' is missing, the whole cell metadata table in
-#' \code{S4Vectors::\link[S4Vectors]{DataFrame}} class will be returned.
+#' @return A subset \linkS4class{ligerDataset} object.
 #' @examples
 #' ctrl <- dataset(pbmc, "ctrl")
 #' ctrl[1:5, 1:5]
@@ -550,8 +548,9 @@ setReplaceMethod(
     "featureMeta",
     signature(x = "ligerDataset", check = "ANY"),
     function(x, check = TRUE, value) {
-        if (!inherits(value, "DFrame"))
-            value <- S4Vectors::DataFrame(value)
+        if (!inherits(value, "tbl_df"))
+            value <- as.data.frame(value) %>%
+                as.featureMeta()
         x@featureMeta <- value
         if (isTRUE(check)) methods::validObject(x)
         x

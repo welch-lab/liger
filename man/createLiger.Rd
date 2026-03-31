@@ -46,7 +46,7 @@ and \code{"meth"} are supported.}
 \item{organism}{Character vector for setting organism for identifying mito,
 ribo and hemo genes for expression percentage calculation. Use one string for
 all datasets, or the same number of strings as the number of datasets.
-Currently options of \code{"mouse"}, \code{"human"}, \code{"zebrafish"},
+Currently options of \code{"human"}, \code{"mouse"}, \code{"zebrafish"},
 \code{"rat"}, and \code{"drosophila"} are supported.}
 
 \item{cellMeta}{data.frame of metadata at single-cell level. Default

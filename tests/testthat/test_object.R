@@ -147,7 +147,7 @@ test_that("liger S3/S4 methods", {
     expect_identical(levels(pbmc$dataset), c("STIM", "CTRL"))
 
     meta <- cellMeta(pbmc)
-    expect_is(meta, "DFrame")
+    expect_is(meta, "cellMeta")
     expect_null(cellMeta(pbmc, NULL))
     expect_is(cellMeta(pbmc, "dataset"), "factor")
     expect_message(cellMeta(pbmc, "UMAP.1"),
@@ -254,9 +254,9 @@ test_that("ligerDataset methods", {
     expect_is(getMatrix(pbmc, "H", dataset = 1, returnList = FALSE), "matrix")
     expect_is(getMatrix(pbmc, "H", dataset = 1:2), "list")
 
-    expect_is(featureMeta(ctrl), "DFrame")
+    expect_is(featureMeta(ctrl), "featureMeta")
     expect_no_error(featureMeta(ctrl) <- featureMeta(ctrl))
-    expect_no_error(featureMeta(ctrl) <- rliger:::.DataFrame.as.data.frame(featureMeta(ctrl)))
+    expect_no_error(featureMeta(ctrl) <- tibble::column_to_rownames(featureMeta(ctrl), '.featureID'))
 
     stim <- dataset(pbmc, "stim")
     merged <- cbind(ctrl, stim)
@@ -590,3 +590,4 @@ test_that("H5AD", {
     )
     unlink(tempfilename3)
 })
+

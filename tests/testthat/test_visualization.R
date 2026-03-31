@@ -308,3 +308,4 @@ test_that("PlotSankey", {
     grDevices::dev.off()
     if (file.exists(pdfName)) unlink(pdfName)
 })
+

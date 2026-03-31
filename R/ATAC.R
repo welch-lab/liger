@@ -218,6 +218,11 @@ linkGenesAndPeaks <- function(
             "Package {.pkg psych} is needed for this function to work.
             Please install it by command:
             {.code BiocManager::install('psych')}")
+    if (!requireNamespace("S4Vectors", quietly = TRUE))
+        cli::cli_abort(
+            "Package {.pkg S4Vectors} is needed for this function to work.
+            Please install it by command:
+            {.code BiocManager::install('S4Vectors')}")
     .deprecateArgs(list(path_to_coords = "pathToCoords",
                         genes.list = "useGenes", dist = "method"))
     method <- match.arg(method)

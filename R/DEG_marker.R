@@ -871,7 +871,7 @@ calcPctInOut <- function(
     des <- DESeq2::DESeq(des, test = "Wald", quiet = !verbose)
     res <- DESeq2::results(des, contrast = c("groups", levels(groups)[2],
                                              levels(groups)[1]))
-    res <- .DataFrame.as.data.frame(res)
+    res <- as.data.frame(res)
     res$feature <- rownames(res)
     rownames(res) <- NULL
     res$group <- levels(groups)[2]

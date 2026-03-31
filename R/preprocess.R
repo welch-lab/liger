@@ -1252,7 +1252,8 @@ plotVarFeatures <- function(
         trx_per_cell <- cellMeta(object, "nUMI", cellIdx = object$dataset == d)
         nolan_constant <- mean((1 / trx_per_cell))
 
-        data <- .DataFrame.as.data.frame(featureMeta(ld))
+        # data <- .DataFrame.as.data.frame(featureMeta(ld))
+        data <- featureMeta(ld)
         nSelect <- sum(data$isVariable)
         data$geneMeans <- log10(data$geneMeans)
         data$geneVars <- log10(data$geneVars)
@@ -1631,7 +1632,7 @@ scaleNotCenter.ligerDataset <- function(
 ) {
     features <- .idxCheck(object, features, "feature")
     unsharedIdx <- .idxCheck(object, object@varUnsharedFeatures, "feature")
-    geneRootMeanSq <- featureMeta(object)$rootMeanSq
+    # geneRootMeanSq <- featureMeta(object)$rootMeanSq
     mat <- if (is.null(scaleFactor)) normData(object) else rawData(object)
     scaleFactor <- scaleFactor %||% rep(1, ncol(object))
     if (!isH5Liger(object)) {
@@ -1639,7 +1640,7 @@ scaleNotCenter.ligerDataset <- function(
             mat,
             features,
             scaleFactor = scaleFactor,
-            geneRootMeanSq = geneRootMeanSq,
+            # geneRootMeanSq = geneRootMeanSq,
             ...
         )
         if (length(unsharedIdx) > 0)
@@ -1647,7 +1648,7 @@ scaleNotCenter.ligerDataset <- function(
                 mat,
                 unsharedIdx,
                 scaleFactor = scaleFactor,
-                geneRootMeanSq = geneRootMeanSq,
+                # geneRootMeanSq = geneRootMeanSq,
                 ...
             )
     } else {
