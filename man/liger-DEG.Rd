@@ -113,7 +113,7 @@ a row with group "a" represents the stats of the gene in group "a" against
 all other cells. When running split marker detection, the group name would
 be in "split.group" format, meaning the stats is by comparing the group in
 the split level against all other cells in the same split level.}
-\item{logFC}{Log fold change}
+\item{logFC}{Log2 fold change}
 \item{pval}{P-value}
 \item{padj}{Adjusted p-value}
 \item{pct_in}{Percentage of cells in the test group, indicated by the

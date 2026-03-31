@@ -8,14 +8,15 @@
     H5 sparse data is column majored. Might need to find a fast on-disk 
     transposition method.
 
-## rliger 2.2.1.9003
+## rliger 2.2.1.9004
 
 - Improved scalability of downstream analysis and visualization
     - Reduced the need of pre-calculated normalized data for performing Wilcoxon's test and producing feature expression plots
-    - Normalized data will only be calculated on the fly from raw data and pre-stored size factor (`obj$nUMI`).
-- Added `theme_axis_shortArrow()` for tidy dimensional reduction plot axis theme.
+    - Normalized data will only be calculated on the fly from raw data and pre-stored size factor (`obj$nUMI`)
+- Added `theme_axis_shortArrow()` for tidy dimensional reduction plot axis theme
 - Migrating to patchwork for multi-plot layouting. Mainly for the ease of alignment, legend collection, and subplot extraction.
-- Migrating to tibble for tidy data frame support, due to the fact that the previous S4Vector package is BioConductor based and subject to unstable CRAN accessibility during routine checks there. 
+- Migrating to tibble for tidy data frame support, due to the fact that the previous S4Vector package is BioConductor based and subject to unstable CRAN accessibility during routine checks there
+- Fixed inflated logFC from wilcoxon test 
 
 
 ## rliger 2.2.1
