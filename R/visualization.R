@@ -826,7 +826,7 @@ plotProportionBox <- function(
     }
 
     dfLong %<>%
-        dplyr::group_by(dataset) %>%
+        dplyr::group_by(.data[[sampleBy]]) %>%
         dplyr::mutate(
             Proportion = .data[["Count"]] / sum(.data[["Count"]]),
         )
@@ -890,6 +890,10 @@ plotProportionBox <- function(
                 )
              else
                  NULL) +
+            ggplot2::geom_vline(
+                xintercept = seq_len(length(levels(dfLong[[useCluster]]))) + 0.5,
+                color = "grey", linetype = "dashed", linewidth = 0.2
+            ) +
             ggplot2::geom_boxplot()
         return(.ggplotLigerTheme(p, ...))
     }

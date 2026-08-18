@@ -18,7 +18,7 @@ LICENSE
 ^/cmake*
 ^vignettes/articles/*
 ^docs
-^devdata
+^devdata/
 ^tests/testthat/*\.h5$
 ^vignettes/articles$
 cran-comments.md
